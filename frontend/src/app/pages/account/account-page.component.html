@@ -138,6 +138,7 @@
                   <ea-number-input
                     label="Year of birth"
                     placeholder="1990"
+                    [required]="true"
                     [min]="minYearOfBirth"
                     [max]="currentYear"
                     [maxDigits]="4"
@@ -146,6 +147,7 @@
                     label="City"
                     autocomplete="address-level2"
                     placeholder="London"
+                    [required]="true"
                     [maxLength]="50"
                     [(value)]="memberCity" />
 
@@ -217,8 +219,8 @@
                 class="privacy-note__icon"
                 aria-hidden="true" />
               <span>
-                <strong>Privacy:</strong> your personal information will never be shared
-                with third parties or used for marketing.
+                <strong>Privacy:</strong> your details stay within the club. We never pass
+                them to anyone else, and never use them for marketing.
               </span>
             </p>
           </ea-card>
@@ -280,7 +282,6 @@
                   label="Current password"
                   type="password"
                   autocomplete="current-password"
-                  [required]="true"
                   [errorMsg]="currentPasswordError()"
                   [(value)]="currentPassword" />
               }
@@ -289,50 +290,15 @@
                   label="New password"
                   type="password"
                   autocomplete="new-password"
-                  [required]="true"
                   [(value)]="newPassword" />
                 @if (newPassword()) {
-                  <ul class="pw-reqs">
-                    <li
-                      class="pw-req"
-                      [class.pw-req--met]="passwordChecks().length">
-                      <ea-icon-check
-                        class="pw-req__icon"
-                        aria-hidden="true" />
-                      At least 8 characters
-                    </li>
-                    <li
-                      class="pw-req"
-                      [class.pw-req--met]="passwordChecks().cases">
-                      <ea-icon-check
-                        class="pw-req__icon"
-                        aria-hidden="true" />
-                      Upper and lowercase letters
-                    </li>
-                    <li
-                      class="pw-req"
-                      [class.pw-req--met]="passwordChecks().number">
-                      <ea-icon-check
-                        class="pw-req__icon"
-                        aria-hidden="true" />
-                      At least one number
-                    </li>
-                    <li
-                      class="pw-req"
-                      [class.pw-req--met]="passwordChecks().special">
-                      <ea-icon-check
-                        class="pw-req__icon"
-                        aria-hidden="true" />
-                      At least one special character
-                    </li>
-                  </ul>
+                  <lcc-password-requirements [password]="newPassword()" />
                 }
               </div>
               <ea-input
                 label="Confirm new password"
                 type="password"
                 autocomplete="new-password"
-                [required]="true"
                 [errorMsg]="confirmMismatch() ? 'Passwords do not match' : ''"
                 [(value)]="confirmPassword" />
             </div>

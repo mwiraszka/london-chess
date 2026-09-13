@@ -4,7 +4,6 @@ import {
   type AvatarEditorCropState,
   ButtonComponent,
   CardComponent,
-  CheckIconComponent,
   DialogComponent,
   DividerComponent,
   InputComponent,
@@ -35,6 +34,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { FieldLabelWithHelpComponent } from '@app/components/field-label-with-help/field-label-with-help.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { PasswordRequirementsComponent } from '@app/components/password-requirements/password-requirements.component';
 import { ChesscomLogoComponent } from '@app/components/platform-logos/chesscom-logo.component';
 import { LichessLogoComponent } from '@app/components/platform-logos/lichess-logo.component';
 import { Member } from '@app/models';
@@ -42,6 +42,7 @@ import { ApiError, ApiService, MetaAndTitleService } from '@app/services';
 import { ClerkService } from '@app/services/clerk.service';
 import { type UserRecord, UserService } from '@app/services/user.service';
 import { isValidEmail } from '@app/utils/email.util';
+import { meetsPasswordRequirements } from '@app/utils/password.util';
 import { asSentence } from '@app/utils/sentence.util';
 
 const SESSION_REFRESH_INTERVAL_MS = 30_000;
@@ -89,7 +90,6 @@ function isAccountSection(value: string | null): value is AccountSection {
     AvatarEditorComponent,
     ButtonComponent,
     CardComponent,
-    CheckIconComponent,
     DialogComponent,
     InputComponent,
     MonitorIconComponent,
@@ -99,6 +99,7 @@ function isAccountSection(value: string | null): value is AccountSection {
     SmartphoneIconComponent,
     UserIconComponent,
     PageHeaderComponent,
+    PasswordRequirementsComponent,
   ],
 })
 export class AccountPageComponent implements OnInit {
@@ -202,19 +203,9 @@ export class AccountPageComponent implements OnInit {
 
   protected readonly hasPassword = computed(() => !!this.clerk.user()?.passwordEnabled);
 
-  protected readonly passwordChecks = computed(() => {
-    const password = this.newPassword();
-    return {
-      length: password.length >= 8,
-      cases: /[a-z]/.test(password) && /[A-Z]/.test(password),
-      number: /\d/.test(password),
-      special: /[^A-Za-z0-9]/.test(password),
-    };
-  });
-  protected readonly isPasswordStrong = computed(() => {
-    const checks = this.passwordChecks();
-    return checks.length && checks.cases && checks.number && checks.special;
-  });
+  protected readonly isPasswordStrong = computed(() =>
+    meetsPasswordRequirements(this.newPassword()),
+  );
   protected readonly confirmMismatch = computed(
     () =>
       this.confirmPassword().length > 0 && this.confirmPassword() !== this.newPassword(),
@@ -279,7 +270,7 @@ export class AccountPageComponent implements OnInit {
   protected readonly canRequestChanges = computed(() => {
     const year = this.memberYearOfBirth();
     const yearValid =
-      year === null || (year >= this.minYearOfBirth && year <= this.currentYear);
+      year !== null && year >= this.minYearOfBirth && year <= this.currentYear;
     const changed =
       this.firstName().trim() !== this.originalFirstName() ||
       this.lastName().trim() !== this.originalLastName() ||
@@ -293,6 +284,7 @@ export class AccountPageComponent implements OnInit {
       !!this.firstName().trim() &&
       !!this.lastName().trim() &&
       yearValid &&
+      !!this.memberCity().trim() &&
       !this.memberPhoneError() &&
       !this.memberLichessError() &&
       !this.memberChessComError()

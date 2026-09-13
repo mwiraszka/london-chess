@@ -111,7 +111,7 @@ export async function getMyMember(
   }
 }
 
-const OPTIONAL_TEXT_FIELDS = {
+const DETAIL_FIELDS = {
   firstName: 'First name',
   lastName: 'Last name',
   yearOfBirth: 'Year of birth',
@@ -121,11 +121,20 @@ const OPTIONAL_TEXT_FIELDS = {
   chessComUsername: 'Chess.com username',
 } as const;
 
-type DetailField = keyof typeof OPTIONAL_TEXT_FIELDS;
+type DetailField = keyof typeof DETAIL_FIELDS;
+
+const REQUIRED_DETAIL_FIELDS: readonly DetailField[] = [
+  'firstName',
+  'lastName',
+  'yearOfBirth',
+  'city',
+];
 
 function validateDetailField(field: DetailField, value: string): string | null {
   if (!value) {
-    return null;
+    return REQUIRED_DETAIL_FIELDS.includes(field)
+      ? `${DETAIL_FIELDS[field]} is required.`
+      : null;
   }
   if (field === 'yearOfBirth' && !/^\d{4}$/.test(value)) {
     return 'Year of birth must be a four-digit year.';
@@ -150,13 +159,13 @@ export async function requestMemberDetailsChange(
 ): Promise<void> {
   try {
     const requested: Partial<Record<DetailField, string>> = {};
-    for (const field of Object.keys(OPTIONAL_TEXT_FIELDS) as DetailField[]) {
+    for (const field of Object.keys(DETAIL_FIELDS) as DetailField[]) {
       const value = (req.body as Record<string, unknown>)[field];
       if (value === undefined) {
         continue;
       }
       if (typeof value !== 'string') {
-        res.status(400).json({ message: `${OPTIONAL_TEXT_FIELDS[field]} must be text.` });
+        res.status(400).json({ message: `${DETAIL_FIELDS[field]} must be text.` });
         return;
       }
       const trimmed = value.trim();
@@ -180,7 +189,7 @@ export async function requestMemberDetailsChange(
       const before = String(current[field] ?? '');
       const after = requested[field] ?? '';
       if (before !== after) {
-        rows.push([OPTIONAL_TEXT_FIELDS[field], before || '(empty)', after || '(empty)']);
+        rows.push([DETAIL_FIELDS[field], before || '(empty)', after || '(empty)']);
       }
     }
     if (!rows.length) {
@@ -788,8 +797,17 @@ export async function requestAccount(
       return;
     }
 
+    if (typeof city !== 'string' || !city.trim()) {
+      res.status(400).json({ message: 'City is required.' });
+      return;
+    }
+    const cityProblem = validateDetailField('city', city.trim());
+    if (cityProblem) {
+      res.status(400).json({ message: cityProblem });
+      return;
+    }
+
     const optional: Array<[DetailField, unknown, string]> = [
-      ['city', city, 'City'],
       ['phoneNumber', phoneNumber, 'Phone number'],
       ['lichessUsername', lichessUsername, 'Lichess username'],
       ['chessComUsername', chessComUsername, 'Chess.com username'],
@@ -819,6 +837,7 @@ export async function requestAccount(
       ['Name', escapeHtml(name)],
       ['Email', escapeHtml(email)],
       ['Year of birth', String(yearOfBirth)],
+      ['City', escapeHtml(city.trim())],
       ...extras,
     ];
     const html = `

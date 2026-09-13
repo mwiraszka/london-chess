@@ -154,8 +154,8 @@
 
 .privacy-note {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
   margin: 24px 0 0;
   padding: 8px 12px;
   font-size: 14px;
@@ -169,7 +169,6 @@
 
 .privacy-note__icon {
   flex-shrink: 0;
-  margin-top: 2px;
   font-size: 16px;
   color: var(--color-success-default);
 }
@@ -217,39 +216,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.pw-reqs {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.pw-req {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.pw-req__icon {
-  flex-shrink: 0;
-  opacity: 0.4;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.pw-req--met {
-  color: var(--color-text-primary);
-}
-
-.pw-req--met .pw-req__icon {
-  opacity: 1;
-  color: var(--color-success-default);
 }
 
 .sessions {
@@ -302,21 +268,19 @@
   }
 }
 
-// On phones the stacked year field and every action button span the row
-@include mixins.respond-to('lt-xs') {
-  .details-form ea-number-input {
-    width: 100%;
-
-    ::ng-deep .ea-number-input-wrapper {
-      width: 100%;
-    }
-
-    ::ng-deep .ea-number-input {
-      flex: 1;
-      width: auto;
-    }
+// The library caps the number box at its digit count; the label sets the floor here
+.details-form ea-number-input {
+  ::ng-deep .ea-number-input-wrapper {
+    min-width: 100%;
   }
 
+  ::ng-deep .ea-number-input {
+    flex-grow: 1;
+  }
+}
+
+// On phones every action button spans the row
+@include mixins.respond-to('lt-xs') {
   .settings-content .actions ea-button {
     width: 100%;
 

@@ -37,8 +37,8 @@
 
 .privacy-note {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
   padding: 8px 12px;
   font-size: 14px;
   line-height: 20px;
@@ -51,7 +51,6 @@
 
 .privacy-note__icon {
   flex-shrink: 0;
-  margin-top: 2px;
   font-size: 16px;
   color: var(--color-success-default);
 }
@@ -62,15 +61,15 @@
   margin: 16px 0;
 }
 
-// The number control caps its own width to its digits; here the field should
-// fill its column like its label does
-.email-year-row ea-number-input ::ng-deep .ea-number-input-wrapper {
-  width: 100%;
-}
+// The library caps the number box at its digit count; the label sets the floor here
+.email-year-row ea-number-input {
+  ::ng-deep .ea-number-input-wrapper {
+    min-width: 100%;
+  }
 
-.email-year-row ea-number-input ::ng-deep .ea-number-input {
-  flex: 1;
-  width: auto;
+  ::ng-deep .ea-number-input {
+    flex-grow: 1;
+  }
 }
 
 .labeled-field {
