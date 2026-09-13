@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.0.0] - TBD
+## [v6.0.0] - 2026-09-14
 
 ### Added
 
@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Let visitors request a member account from the login drawer, with requests emailed to the club for review
 - Add a Site Updates page listing each release's improvements, linked from the menu and the footer
 - Add member profile pages with ratings and activity status, linked from member names across the site
+- Let members edit their phone number and chess-site usernames from the account page
+- Show author avatars beside article bylines and edit history
 - Back up the database and photo storage weekly to encrypted off-site storage
 
 ### Changed
