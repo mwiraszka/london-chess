@@ -9,13 +9,11 @@
   color: var(--lcc-color--link);
   transition:
     color 300ms,
-    text-decoration-color 300ms,
-    text-underline-offset 200ms;
+    text-decoration-color 300ms;
 
   &:hover {
     color: var(--lcc-color--linkOnHover);
     text-decoration-color: var(--lcc-color--linkUnderline);
-    text-underline-offset: 2px;
   }
 
   &[disabled],
