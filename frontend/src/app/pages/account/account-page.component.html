@@ -19,6 +19,7 @@
                 class="settings-nav__icon"
                 aria-hidden="true" />
             }
+
             @case ('security') {
               <ea-icon-shield
                 class="settings-nav__icon"
@@ -39,7 +40,7 @@
       @switch (activeSection()) {
         @case ('profile') {
           <ea-card [fullWidth]="true">
-            <h3 slot="header">Profile</h3>
+            <h3 slot="header">Profile photo</h3>
             <div class="avatar-section">
               <ea-avatar-editor
                 shape="circle"
@@ -53,101 +54,174 @@
                 (errored)="onAvatarRejected($event)" />
             </div>
 
-            @if (loading()) {
-              <div class="fields">
-                <div class="field-skeleton">
-                  <ea-skeleton
-                    variant="text"
-                    width="72px"
-                    height="18px" />
-                  <ea-skeleton
-                    variant="rect"
-                    height="40px" />
-                </div>
-                <div class="field-skeleton">
-                  <ea-skeleton
-                    variant="text"
-                    width="72px"
-                    height="18px" />
-                  <ea-skeleton
-                    variant="rect"
-                    height="40px" />
-                </div>
-              </div>
-              <div class="actions">
-                <ea-skeleton
-                  variant="rect"
-                  width="112px"
-                  height="35px" />
-              </div>
-            } @else {
-              <div class="fields">
-                <ea-input
-                  label="First name"
-                  [required]="true"
-                  [errorMsg]="firstNameError()"
-                  [(value)]="firstName" />
-                <ea-input
-                  label="Last name"
-                  [required]="true"
-                  [errorMsg]="lastNameError()"
-                  [(value)]="lastName" />
-              </div>
-
-              <div class="actions">
-                <ea-button
-                  size="sm"
-                  [disabled]="!hasChanges() || !firstName().trim() || !lastName().trim()"
-                  [loading]="saving()"
-                  (clicked)="onSave()">
-                  Save changes
-                </ea-button>
-              </div>
-            }
+            <div class="actions">
+              <ea-button
+                size="sm"
+                [disabled]="!hasChanges()"
+                [loading]="saving()"
+                (clicked)="onSave()">
+                Update photo
+              </ea-button>
+            </div>
           </ea-card>
 
-          @if (memberRecord()) {
-            <ea-card [fullWidth]="true">
-              <h3 slot="header">Member details</h3>
-              <div class="fields">
-                <div class="labeled-field">
-                  <span class="labeled-field__row">
-                    <ea-field-label
-                      text="Phone number"
-                      forId="member-phone-input" />
-                    <ea-icon-help-circle
-                      class="labeled-field__help"
-                      [tooltip]="phonePrivacyTooltip" />
-                  </span>
-                  <ea-input
-                    id="member-phone-input"
-                    type="tel"
-                    [maxLength]="20"
-                    [errorMsg]="memberPhoneError()"
-                    [(value)]="memberPhone" />
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Personal information</h3>
+
+            @if (loading()) {
+              <div class="details-form">
+                <div class="name-row">
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="72px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
                 </div>
-                <ea-input
-                  label="Lichess username"
-                  [maxLength]="20"
-                  [errorMsg]="memberLichessError()"
-                  [(value)]="memberLichess" />
-                <ea-input
-                  label="Chess.com username"
-                  [maxLength]="25"
-                  [errorMsg]="memberChessComError()"
-                  [(value)]="memberChessCom" />
+                <div class="name-row">
+                  <div class="field-skeleton field-skeleton--narrow">
+                    <ea-skeleton
+                      variant="text"
+                      width="90px"
+                      height="17.5px" />
+                    <ea-skeleton
+                      variant="rect"
+                      width="84px"
+                      height="42px" />
+                  </div>
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="72px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
+                </div>
+                <ea-divider class="fields-divider" />
+                <div class="name-row">
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="110px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
+                </div>
               </div>
-              <div class="actions">
-                <ea-button
-                  size="sm"
-                  [disabled]="!canSaveMemberDetails()"
-                  [loading]="memberSaving()"
-                  (clicked)="onSaveMemberDetails()">
-                  Save changes
-                </ea-button>
+            } @else {
+              <div class="details-form">
+                <div class="name-row">
+                  <ea-input
+                    label="First name"
+                    [required]="true"
+                    [(value)]="firstName" />
+                  <ea-input
+                    label="Last name"
+                    [required]="true"
+                    [(value)]="lastName" />
+                </div>
+
+                <div class="name-row">
+                  <ea-number-input
+                    label="Year of birth"
+                    placeholder="1990"
+                    [min]="minYearOfBirth"
+                    [max]="currentYear"
+                    [maxDigits]="4"
+                    [(value)]="memberYearOfBirth" />
+                  <ea-input
+                    label="City"
+                    autocomplete="address-level2"
+                    placeholder="London"
+                    [maxLength]="50"
+                    [(value)]="memberCity" />
+
+                  <div class="labeled-field">
+                    <lcc-field-label-with-help
+                      text="Phone number"
+                      forId="member-phone-input"
+                      [helpTooltip]="phoneTooltip" />
+                    <ea-input
+                      id="member-phone-input"
+                      type="tel"
+                      autocomplete="tel"
+                      placeholder="555-123-1234"
+                      [maxLength]="20"
+                      [errorMsg]="memberPhoneError()"
+                      [(value)]="memberPhone" />
+                  </div>
+                </div>
+
+                <ea-divider class="fields-divider" />
+
+                <div class="name-row">
+                  <div class="labeled-field">
+                    <lcc-field-label-with-help
+                      text="Lichess username"
+                      forId="member-lichess-input"
+                      [icon]="lichessLogo"
+                      [helpTooltip]="lichessTooltip" />
+                    <ea-input
+                      id="member-lichess-input"
+                      [maxLength]="20"
+                      [errorMsg]="memberLichessError()"
+                      [(value)]="memberLichess" />
+                  </div>
+
+                  <div class="labeled-field">
+                    <lcc-field-label-with-help
+                      text="Chess.com username"
+                      forId="member-chesscom-input"
+                      [icon]="chesscomLogo"
+                      [helpTooltip]="chessComTooltip" />
+                    <ea-input
+                      id="member-chesscom-input"
+                      [maxLength]="25"
+                      [errorMsg]="memberChessComError()"
+                      [(value)]="memberChessCom" />
+                  </div>
+                </div>
               </div>
-            </ea-card>
-          }
+            }
+
+            <div class="actions">
+              <ea-button
+                size="sm"
+                [disabled]="!canRequestChanges()"
+                [loading]="requestingChanges()"
+                (clicked)="onRequestChanges()">
+                Request changes
+              </ea-button>
+            </div>
+
+            <p class="request-hint">
+              An LCC admin will review your request and update your details. You will
+              receive a confirmation at your email address as soon as the changes have
+              been made.
+            </p>
+            <p class="privacy-note">
+              <ea-icon-shield
+                class="privacy-note__icon"
+                aria-hidden="true" />
+              <span>
+                <strong>Privacy:</strong> your personal information will never be shared
+                with third parties or used for marketing.
+              </span>
+            </p>
+          </ea-card>
         }
 
         @case ('security') {
@@ -366,15 +440,25 @@
   </div>
 </ea-dialog>
 
-<ng-template #phonePrivacyTooltip>
-  <div class="phone-privacy-tooltip">
-    <ea-icon-shield
-      class="shield-icon"
-      aria-hidden="true" />
-    <span>
-      Your phone number is only visible to club admins and will never be shared with third
-      parties or used for marketing. It is only used to get in touch when we cannot reach
-      you by email.
-    </span>
+<ng-template #phoneTooltip>
+  <div class="field-tooltip">
+    <em>Optional.</em>
+    Your phone number is only visible to club admins and will never be shared with third
+    parties or used for marketing. It is only used to get in touch when we cannot reach
+    you by email.
+  </div>
+</ng-template>
+
+<ng-template #lichessTooltip>
+  <div class="field-tooltip">
+    <em>Optional.</em>
+    Your username is used to link to your profile page on Lichess.
+  </div>
+</ng-template>
+
+<ng-template #chessComTooltip>
+  <div class="field-tooltip">
+    <em>Optional.</em>
+    Your username is used to link to your profile page on Chess.com.
   </div>
 </ng-template>

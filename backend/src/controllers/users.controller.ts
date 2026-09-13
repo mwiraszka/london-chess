@@ -144,31 +144,28 @@ function validateDetailField(field: DetailField, value: string): string | null {
   return null;
 }
 
-export async function updateMyMember(
+export async function requestMemberDetailsChange(
   req: Request,
-  res: Response<ApiResponse<Member>>,
+  res: Response<ApiResponse<'success'>>,
 ): Promise<void> {
   try {
-    const updates: Partial<Record<MemberDetailField, string>> = {};
-    for (const field of Object.keys(MEMBER_DETAIL_RULES) as MemberDetailField[]) {
+    const requested: Partial<Record<DetailField, string>> = {};
+    for (const field of Object.keys(OPTIONAL_TEXT_FIELDS) as DetailField[]) {
       const value = (req.body as Record<string, unknown>)[field];
       if (value === undefined) {
         continue;
       }
       if (typeof value !== 'string') {
-        res.status(400).json({ message: `${field} must be a string.` });
+        res.status(400).json({ message: `${OPTIONAL_TEXT_FIELDS[field]} must be text.` });
         return;
       }
       const trimmed = value.trim();
-      if (trimmed && !MEMBER_DETAIL_RULES[field].pattern.test(trimmed)) {
-        res.status(400).json({ message: MEMBER_DETAIL_RULES[field].message });
+      const problem = validateDetailField(field, trimmed);
+      if (problem) {
+        res.status(400).json({ message: problem });
         return;
       }
-      updates[field] = trimmed;
-    }
-    if (!Object.keys(updates).length) {
-      res.status(400).json({ message: 'No editable member fields were provided.' });
-      return;
+      requested[field] = trimmed;
     }
 
     const member = await findOwnMember(req.user.id);
@@ -177,21 +174,52 @@ export async function updateMyMember(
       return;
     }
 
-    const user = (await UserModel.findOne({ id: req.user.id }))?.toObject();
-    member.set({
-      ...updates,
-      modificationInfo: {
-        ...member.modificationInfo,
-        dateLastEdited: new Date().toISOString(),
-        lastEditedBy: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
-      },
-    });
-    await member.save();
+    const current = member.toObject();
+    const rows: Array<[string, string, string]> = [];
+    for (const field of Object.keys(requested) as DetailField[]) {
+      const before = String(current[field] ?? '');
+      const after = requested[field] ?? '';
+      if (before !== after) {
+        rows.push([OPTIONAL_TEXT_FIELDS[field], before || '(empty)', after || '(empty)']);
+      }
+    }
+    if (!rows.length) {
+      res.status(400).json({ message: 'No changes were requested.' });
+      return;
+    }
 
-    const { _id, ...rest } = member.toObject();
-    res.status(200).json({ data: { ...rest, id: _id.toString() } });
+    const name = `${current.firstName} ${current.lastName}`.trim();
+    const html = `
+      <div style="font-family: Arial, sans-serif; color: #222;">
+        <h2 style="margin: 0 0 4px;">Member details change request</h2>
+        <p style="margin: 0 0 16px;">${escapeHtml(name)} has requested these changes to their member record.</p>
+        <table style="border-collapse: collapse;">
+          <tr>
+            <td style="padding: 6px 16px 6px 0; font-weight: bold;">Field</td>
+            <td style="padding: 6px 16px 6px 0; font-weight: bold;">Current</td>
+            <td style="padding: 6px 0; font-weight: bold;">Requested</td>
+          </tr>
+          ${rows
+            .map(
+              ([label, before, after]) => `
+                <tr>
+                  <td style="padding: 6px 16px 6px 0;">${escapeHtml(label)}</td>
+                  <td style="padding: 6px 16px 6px 0;">${escapeHtml(before)}</td>
+                  <td style="padding: 6px 0;">${escapeHtml(after)}</td>
+                </tr>`,
+            )
+            .join('')}
+        </table>
+      </div>`;
+    const text = `Member details change request from ${name}\n\n${rows
+      .map(([label, before, after]) => `${label}: ${before} -> ${after}`)
+      .join('\n')}`;
+
+    await sendAdminEmail(`Member details change request from ${name}`, text, html);
+
+    res.status(200).json({ data: 'success' });
   } catch (error) {
-    res.status(500).json({ message: `Unable to update member record: ${error}` });
+    res.status(500).json({ message: `Unable to submit change request: ${error}` });
   }
 }
 

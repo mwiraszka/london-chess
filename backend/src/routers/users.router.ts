@@ -10,10 +10,10 @@ import {
   getUserAvatars,
   requestAccount,
   requestAccountVerification,
+  requestMemberDetailsChange,
   revokeOtherSessions,
   updateCroppedAvatar,
   updateMe,
-  updateMyMember,
   uploadUserAvatar,
 } from '../controllers/users.controller';
 import { auth } from '../middlewares/auth.index';
@@ -25,7 +25,7 @@ export const usersRouter = Router()
   .get('/avatars', getUserAvatars)
   .get('/me', auth, getMe)
   .get('/me/member', auth, getMyMember)
-  .patch('/me/member', auth, updateMyMember)
+  .post('/me/member/change-request', auth, requestMemberDetailsChange)
   .post('/me/sessions/revoke-others', auth, revokeOtherSessions)
   .patch('/me', auth, updateMe)
   .post('/me/password', auth, changePassword)

@@ -6,10 +6,10 @@ import {
   CardComponent,
   CheckIconComponent,
   DialogComponent,
-  FieldLabelComponent,
-  HelpCircleIconComponent,
+  DividerComponent,
   InputComponent,
   MonitorIconComponent,
+  NumberInputComponent,
   SettingsIconComponent,
   ShieldIconComponent,
   SkeletonComponent,
@@ -32,8 +32,10 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { FieldLabelWithHelpComponent } from '@app/components/field-label-with-help/field-label-with-help.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { ChesscomLogoComponent } from '@app/components/platform-logos/chesscom-logo.component';
+import { LichessLogoComponent } from '@app/components/platform-logos/lichess-logo.component';
 import { Member } from '@app/models';
 import { ApiError, ApiService, MetaAndTitleService } from '@app/services';
 import { ClerkService, type SessionInfo } from '@app/services/clerk.service';
@@ -54,9 +56,9 @@ function isAccountSection(value: string | null): value is AccountSection {
   styleUrl: './account-page.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    TooltipDirective,
-    FieldLabelComponent,
-    HelpCircleIconComponent,
+    FieldLabelWithHelpComponent,
+    NumberInputComponent,
+    DividerComponent,
     AlertTriangleIconComponent,
     AvatarEditorComponent,
     ButtonComponent,
@@ -193,16 +195,23 @@ export class AccountPageComponent implements OnInit {
   readonly email = signal('');
   private readonly originalFirstName = signal('');
   private readonly originalLastName = signal('');
-  readonly firstNameError = signal('');
-  readonly lastNameError = signal('');
+  protected readonly lichessLogo = LichessLogoComponent;
+  protected readonly chesscomLogo = ChesscomLogoComponent;
+  protected readonly minYearOfBirth = 1900;
+  protected readonly currentYear = new Date().getFullYear();
+
   readonly memberRecord = signal<Member | null>(null);
   readonly memberPhone = signal('');
   readonly memberLichess = signal('');
   readonly memberChessCom = signal('');
+  readonly memberYearOfBirth = signal<number | null>(null);
+  readonly memberCity = signal('');
   private readonly originalMemberPhone = signal('');
   private readonly originalMemberLichess = signal('');
   private readonly originalMemberChessCom = signal('');
-  readonly memberSaving = signal(false);
+  private readonly originalMemberYearOfBirth = signal<number | null>(null);
+  private readonly originalMemberCity = signal('');
+  readonly requestingChanges = signal(false);
 
   protected readonly memberPhoneError = computed(() => {
     const value = this.memberPhone().trim();
@@ -225,15 +234,28 @@ export class AccountPageComponent implements OnInit {
       : 'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores.';
   });
 
-  protected readonly canSaveMemberDetails = computed(
-    () =>
-      (this.memberPhone().trim() !== this.originalMemberPhone() ||
-        this.memberLichess().trim() !== this.originalMemberLichess() ||
-        this.memberChessCom().trim() !== this.originalMemberChessCom()) &&
+  protected readonly canRequestChanges = computed(() => {
+    const year = this.memberYearOfBirth();
+    const yearValid =
+      year === null || (year >= this.minYearOfBirth && year <= this.currentYear);
+    const changed =
+      this.firstName().trim() !== this.originalFirstName() ||
+      this.lastName().trim() !== this.originalLastName() ||
+      this.memberYearOfBirth() !== this.originalMemberYearOfBirth() ||
+      this.memberCity().trim() !== this.originalMemberCity() ||
+      this.memberPhone().trim() !== this.originalMemberPhone() ||
+      this.memberLichess().trim() !== this.originalMemberLichess() ||
+      this.memberChessCom().trim() !== this.originalMemberChessCom();
+    return (
+      changed &&
+      !!this.firstName().trim() &&
+      !!this.lastName().trim() &&
+      yearValid &&
       !this.memberPhoneError() &&
       !this.memberLichessError() &&
-      !this.memberChessComError(),
-  );
+      !this.memberChessComError()
+    );
+  });
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -250,14 +272,11 @@ export class AccountPageComponent implements OnInit {
   originalFile: File | null = null;
 
   readonly hasChanges = computed(() => {
-    const nameChanged =
-      this.firstName() !== this.originalFirstName() ||
-      this.lastName() !== this.originalLastName();
     const photoChanged =
       this.avatarDirty() && !this.removeAvatar() && !!this.originalFile;
     const photoRemoved =
       this.avatarDirty() && this.removeAvatar() && this.userService.hasAvatar();
-    return nameChanged || photoChanged || photoRemoved || this.isCropChanged();
+    return photoChanged || photoRemoved || this.isCropChanged();
   });
 
   ngOnInit(): void {
@@ -365,13 +384,18 @@ export class AccountPageComponent implements OnInit {
   }
 
   private applyMemberRecord(member: Member): void {
+    const year = /^\d{4}$/.test(member.yearOfBirth) ? Number(member.yearOfBirth) : null;
     this.memberRecord.set(member);
     this.memberPhone.set(member.phoneNumber);
     this.memberLichess.set(member.lichessUsername);
     this.memberChessCom.set(member.chessComUsername);
+    this.memberYearOfBirth.set(year);
+    this.memberCity.set(member.city);
     this.originalMemberPhone.set(member.phoneNumber);
     this.originalMemberLichess.set(member.lichessUsername);
     this.originalMemberChessCom.set(member.chessComUsername);
+    this.originalMemberYearOfBirth.set(year);
+    this.originalMemberCity.set(member.city);
   }
 
   private async loadMemberRecord(): Promise<void> {
@@ -383,39 +407,42 @@ export class AccountPageComponent implements OnInit {
     }
   }
 
-  async onSaveMemberDetails(): Promise<void> {
-    this.memberSaving.set(true);
+  async onRequestChanges(): Promise<void> {
+    this.requestingChanges.set(true);
     try {
-      const member = await this.api.patch<Member>('/users/me/member', {
+      const year = this.memberYearOfBirth();
+      await this.api.post('/users/me/member/change-request', {
+        firstName: this.firstName().trim(),
+        lastName: this.lastName().trim(),
+        yearOfBirth: year === null ? '' : String(year),
+        city: this.memberCity().trim(),
         phoneNumber: this.memberPhone().trim(),
         lichessUsername: this.memberLichess().trim(),
         chessComUsername: this.memberChessCom().trim(),
       });
-      this.applyMemberRecord(member);
-      this.toast.show('Your member details have been updated.', {
-        title: 'Details updated',
-        variant: 'success',
-      });
+      this.toast.show(
+        'Your requested changes have been sent for review – an admin will email you once they are made.',
+        {
+          title: 'Request sent',
+          variant: 'info',
+        },
+      );
     } catch (e: unknown) {
       this.toast.show(
         e instanceof ApiError
           ? asSentence(e.message)
-          : 'Unable to update your member details – please try again.',
+          : 'Unable to send your request – please try again.',
         {
-          title: 'Update failed',
+          title: 'Request failed',
           variant: 'error',
         },
       );
     } finally {
-      this.memberSaving.set(false);
+      this.requestingChanges.set(false);
     }
   }
 
   async onSave(): Promise<void> {
-    if (!this.validate()) {
-      return;
-    }
-
     this.saving.set(true);
 
     try {
@@ -444,44 +471,14 @@ export class AccountPageComponent implements OnInit {
     }
   }
 
-  private validate(): boolean {
-    this.firstNameError.set('');
-    this.lastNameError.set('');
-
-    const firstEmpty = !this.firstName().trim();
-    if (firstEmpty) {
-      this.firstNameError.set('First name is required');
-    }
-
-    const lastEmpty = !this.lastName().trim();
-    if (lastEmpty) {
-      this.lastNameError.set('Last name is required');
-    }
-
-    return !firstEmpty && !lastEmpty;
-  }
-
   private async applyChanges(): Promise<string[]> {
     const changes: string[] = [];
 
-    const firstChanged = this.firstName() !== this.originalFirstName();
-    const lastChanged = this.lastName() !== this.originalLastName();
     const photoChanged =
       this.avatarDirty() && !this.removeAvatar() && !!this.originalFile;
     const photoRemoved =
       this.avatarDirty() && this.removeAvatar() && this.userService.hasAvatar();
     const cropChanged = this.isCropChanged();
-
-    if (firstChanged || lastChanged) {
-      await this.clerk.updateProfile(this.firstName(), this.lastName());
-      await this.saveNameToBackend(firstChanged, lastChanged);
-      if (firstChanged) {
-        changes.push('first name');
-      }
-      if (lastChanged) {
-        changes.push('last name');
-      }
-    }
 
     if (photoChanged) {
       await this.savePhoto();
@@ -495,20 +492,6 @@ export class AccountPageComponent implements OnInit {
     }
 
     return changes;
-  }
-
-  private async saveNameToBackend(
-    firstChanged: boolean,
-    lastChanged: boolean,
-  ): Promise<void> {
-    const body: { firstName?: string; lastName?: string } = {};
-    if (firstChanged) {
-      body.firstName = this.firstName();
-    }
-    if (lastChanged) {
-      body.lastName = this.lastName();
-    }
-    await this.api.patch('/users/me', body);
   }
 
   private async savePhoto(): Promise<void> {

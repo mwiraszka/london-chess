@@ -18,14 +18,14 @@
 .account-page__body {
   display: grid;
   gap: 32px;
-  grid-template-columns: 200px minmax(0, 600px);
+  grid-template-columns: 200px minmax(0, 800px);
   justify-content: center;
   width: 100%;
 
   // Only when both side columns fit does the card itself centre on the page,
   // nav hugging its left edge; narrower screens centre the nav-plus-card block
-  @include mixins.respond-to('gt-xl') {
-    grid-template-columns: 1fr minmax(0, 600px) 1fr;
+  @include mixins.respond-to('gt-xxl') {
+    grid-template-columns: 1fr minmax(0, 800px) 1fr;
   }
 
   @include mixins.respond-to('lt-md') {
@@ -81,26 +81,95 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 600px;
+  max-width: 800px;
 }
 
 .labeled-field {
   display: flex;
+  flex: 1;
   flex-direction: column;
   // Mirrors the label-to-control gap ea-input uses internally
   gap: 6px;
 }
 
 .labeled-field__row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
 }
 
 .labeled-field__help {
+  vertical-align: -2px;
+  margin-left: 6px;
   font-size: 14px;
   color: var(--color-text-secondary);
   cursor: help;
+}
+
+.card-divider {
+  display: block;
+  margin: 24px 0;
+}
+
+.details-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.name-row {
+  display: flex;
+  gap: 16px;
+
+  ea-input {
+    flex: 1;
+  }
+
+  .field-skeleton {
+    flex: 1;
+  }
+
+  .field-skeleton--narrow {
+    flex: 0 0 84px;
+  }
+
+  // Paired columns get too tight for wrapped labels on phones
+  @include mixins.respond-to('lt-xs') {
+    flex-direction: column;
+  }
+}
+
+.fields-divider {
+  display: block;
+  // Composes with the 16px form gap either side for a 48px visual break
+  margin: 32px 0;
+}
+
+.request-hint {
+  margin: 24px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-text-secondary);
+}
+
+.privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: start;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+}
+
+.privacy-note__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--color-success-default);
 }
 
 .card-desc {
@@ -228,5 +297,29 @@
     display: inline-flex;
     font-size: 20px;
     color: var(--color-success-default);
+  }
+}
+
+// On phones the stacked year field and every action button span the row
+@include mixins.respond-to('lt-xs') {
+  .details-form ea-number-input {
+    width: 100%;
+
+    ::ng-deep .ea-number-input-wrapper {
+      width: 100%;
+    }
+
+    ::ng-deep .ea-number-input {
+      flex: 1;
+      width: auto;
+    }
+  }
+
+  .settings-content .actions ea-button {
+    width: 100%;
+
+    ::ng-deep .ea-button {
+      width: 100%;
+    }
   }
 }
