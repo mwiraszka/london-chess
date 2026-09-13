@@ -11,7 +11,7 @@ export const bypassAuthenticate = (
   next: NextFunction,
 ) => {
   // Set a mock admin user for offline development
-  req.user = { id: 'offline-dev-user', isAdmin: true };
+  req.user = { id: 'offline-dev-user', sessionId: 'offline-dev-session', isAdmin: true };
 
   console.log('⚠️  AUTH BYPASS: Using mock authentication (offline mode)');
   next();

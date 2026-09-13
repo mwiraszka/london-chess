@@ -159,6 +159,28 @@ export async function updateMyMember(
   }
 }
 
+// Clerk treats session revocation as a step-up operation client-side, so
+// other sessions are revoked here with the backend key instead
+export async function revokeOtherSessions(
+  req: Request,
+  res: Response<ApiResponse<'success'>>,
+): Promise<void> {
+  try {
+    const sessions = await clerkClient.sessions.getSessionList({
+      userId: req.user.id,
+      status: 'active',
+    });
+    await Promise.all(
+      sessions.data
+        .filter(session => session.id !== req.user.sessionId)
+        .map(session => clerkClient.sessions.revokeSession(session.id)),
+    );
+    res.status(200).json({ data: 'success' });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to log out other sessions: ${error}` });
+  }
+}
+
 export async function getMe(
   req: Request,
   res: Response<ApiResponse<User>>,

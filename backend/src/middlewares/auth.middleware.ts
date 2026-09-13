@@ -29,11 +29,13 @@ export const authenticate = async (
   }
 
   let clerkId: string;
+  let sessionId: string;
   try {
     const payload = await verifyToken(authorization.slice('Bearer '.length), {
       secretKey: CLERK_SECRET_KEY,
     });
     clerkId = payload.sub;
+    sessionId = payload.sid;
   } catch {
     res.status(401).json({ message: 'Unable to validate session token.' });
     return;
@@ -59,7 +61,7 @@ export const authenticate = async (
     }
   }
 
-  req.user = { id: clerkId, isAdmin: user?.isAdmin ?? false };
+  req.user = { id: clerkId, sessionId, isAdmin: user?.isAdmin ?? false };
   next();
 };
 
@@ -79,7 +81,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user: { id: string; isAdmin: boolean };
+      user: { id: string; sessionId: string; isAdmin: boolean };
     }
   }
 }

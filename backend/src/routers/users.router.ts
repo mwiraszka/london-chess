@@ -9,6 +9,7 @@ import {
   getUserAvatar,
   getUserAvatars,
   requestAccount,
+  revokeOtherSessions,
   updateCroppedAvatar,
   updateMe,
   updateMyMember,
@@ -23,6 +24,7 @@ export const usersRouter = Router()
   .get('/me', auth, getMe)
   .get('/me/member', auth, getMyMember)
   .patch('/me/member', auth, updateMyMember)
+  .post('/me/sessions/revoke-others', auth, revokeOtherSessions)
   .patch('/me', auth, updateMe)
   .post('/me/password', auth, changePassword)
   .post('/me/avatar', auth, avatarUpload, uploadUserAvatar)

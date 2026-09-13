@@ -209,16 +209,6 @@ export class ClerkService {
     }));
   }
 
-  async revokeOtherSessions(): Promise<void> {
-    const currentId = this.clerk.session?.id;
-    const sessions = await this.clerk.user!.getSessions();
-    await Promise.all(
-      sessions
-        .filter(session => session.id !== currentId)
-        .map(session => session.revoke()),
-    );
-  }
-
   extractError(e: unknown): string {
     if (e && typeof e === 'object' && 'errors' in e) {
       const errors = (e as { errors: Array<{ code?: string; longMessage?: string }> })

@@ -700,7 +700,7 @@ export class AccountPageComponent implements OnInit {
       });
 
       try {
-        await this.clerk.revokeOtherSessions();
+        await this.api.post('/users/me/sessions/revoke-others', {});
       } catch {
         // non-critical; the password itself changed
       }
@@ -743,7 +743,7 @@ export class AccountPageComponent implements OnInit {
   async onRevokeOtherSessions(): Promise<void> {
     this.revokingOthers.set(true);
     try {
-      await this.clerk.revokeOtherSessions();
+      await this.api.post('/users/me/sessions/revoke-others', {});
       await this.loadSessions();
       this.toast.show('Successfully logged out of all your other devices.', {
         title: 'Logout',
