@@ -43,6 +43,8 @@ import { type UserRecord, UserService } from '@app/services/user.service';
 import { isValidEmail } from '@app/utils/email.util';
 import { asSentence } from '@app/utils/sentence.util';
 
+const SESSION_REFRESH_INTERVAL_MS = 30_000;
+
 interface UserSessionRecord {
   id: string;
   isCurrent: boolean;
@@ -134,11 +136,26 @@ export class AccountPageComponent implements OnInit {
       }
     });
 
-    effect(() => {
-      if (this.activeSection() === 'security' && !this.sessionsRequested) {
+    // Sessions opened or closed on other devices only surface through Clerk's
+    // API, so the list is refreshed on a timer while the tab is watching it
+    effect(onCleanup => {
+      if (this.activeSection() !== 'security') {
+        return;
+      }
+
+      if (this.sessionsRequested) {
+        void this.refreshSessions();
+      } else {
         this.sessionsRequested = true;
         void this.loadSessions();
       }
+
+      const timer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          void this.refreshSessions();
+        }
+      }, SESSION_REFRESH_INTERVAL_MS);
+      onCleanup(() => clearInterval(timer));
     });
 
     // The editor's revert control restores the baseline image without emitting,
@@ -737,6 +754,14 @@ export class AccountPageComponent implements OnInit {
   async loadSessions(): Promise<void> {
     this.sessionsLoading.set(true);
     try {
+      await this.refreshSessions();
+    } finally {
+      this.sessionsLoading.set(false);
+    }
+  }
+
+  private async refreshSessions(): Promise<void> {
+    try {
       const records = await this.api.get<UserSessionRecord[]>('/users/me/sessions');
       // Current session first, the rest by recency
       const sorted = [...records].sort((a, b) => {
@@ -763,8 +788,6 @@ export class AccountPageComponent implements OnInit {
       );
     } catch {
       // non-critical
-    } finally {
-      this.sessionsLoading.set(false);
     }
   }
 
