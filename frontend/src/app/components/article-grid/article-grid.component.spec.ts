@@ -403,17 +403,14 @@ describe('ArticleGridComponent', () => {
 
       it('should render image placeholders instead of real images', () => {
         expect(
-          query(fixture.debugElement, '.image-container.lcc-content-placeholder-wrapper'),
+          query(fixture.debugElement, '.image-container.skeleton-image'),
         ).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-image')).toBeFalsy();
       });
 
       it('should render title placeholders instead of real titles', () => {
         expect(
-          query(
-            fixture.debugElement,
-            '.article-title-wrapper.lcc-content-placeholder-wrapper',
-          ),
+          query(fixture.debugElement, '.article-title-wrapper ea-skeleton'),
         ).toBeTruthy();
         expect(query(fixture.debugElement, '.article-title')).toBeFalsy();
       });

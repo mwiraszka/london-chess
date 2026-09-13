@@ -110,10 +110,6 @@ body[data-theme='dark'] {
   --lcc-color--datePicker-headerText: #{clr(grayscale, white-80)};
   --lcc-color--datePicker-selectedDateText: #{clr(grayscale, white-80)};
 
-  --lcc-color--contentPlaceholder-background: #{clr(grayscale, gray-75)};
-  --lcc-color--contentPlaceholder-foreground1: #{clr(grayscale, gray-65, 0.02)};
-  --lcc-color--contentPlaceholder-foreground2: #{clr(grayscale, gray-65, 0.08)};
-  --lcc-color--contentPlaceholder-foreground3: #{clr(grayscale, gray-65, 0.18)};
   --lcc-color--dialog-background: #{clr(grayscale, white-90)};
   --lcc-color--dialog-closeIcon: #{clr(grayscale, gray-25)};
   --lcc-color--dialog-closeIconOnHover: #{clr(grayscale, black-5)};
@@ -185,6 +181,7 @@ body[data-theme='dark'] {
   --lcc-color--general-cardBoxShadow: #{clr(grayscale, black-10, 0.7)};
   --lcc-color--general-dividerLine: #{clr(grayscale, gray-25, 0.5)};
   --lcc-color--general-dividerLineLight: #{clr(grayscale, gray-35, 0.5)};
+  --lcc-color--general-imageBackdrop: #{clr(grayscale, gray-75)};
   --lcc-color--general-editorTextSpacer: #{clr(grayscale, gray-50)};
   --lcc-color--general-overlayLightBackdrop: #{clr(grayscale, black-20, 0.4)};
   --lcc-color--general-overlayHeavyBackdrop: #{clr(grayscale, black-10, 0.7)};

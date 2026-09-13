@@ -238,10 +238,7 @@ describe('PhotoGridComponent', () => {
 
       it('should render image placeholders instead of real images', () => {
         expect(
-          query(
-            fixture.debugElement,
-            '.album-image-container.lcc-content-placeholder-wrapper',
-          ),
+          query(fixture.debugElement, '.album-image-container.skeleton-image'),
         ).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-image')).toBeFalsy();
       });

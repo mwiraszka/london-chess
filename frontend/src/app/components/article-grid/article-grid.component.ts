@@ -1,4 +1,4 @@
-import { BookmarkIconComponent } from '@eagami/ui';
+import { BookmarkIconComponent, SkeletonComponent } from '@eagami/ui';
 
 import {
   ChangeDetectionStrategy,
@@ -43,6 +43,7 @@ interface ArticleRow {
   styleUrl: './article-grid.component.scss',
   host: { '[class.is-home-page]': '!!isHomePage' },
   imports: [
+    SkeletonComponent,
     AdminControlsDirective,
     FormatDatePipe,
     HighlightPipe,

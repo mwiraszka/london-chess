@@ -14,11 +14,6 @@
   }
 
   tbody {
-    .skeleton-date-widget {
-      border-radius: 50%;
-      background-color: var(--lcc-color--schedule-dateBackground);
-    }
-
     .skeleton-main-content {
       width: 100%;
     }
@@ -26,7 +21,6 @@
     .skeleton-line {
       height: 14px;
       margin: 4px 0;
-      border-radius: 4px;
 
       &.wide {
         width: 80%;

@@ -19,8 +19,11 @@
         (click)="showSkeleton ? null : onClickAlbumCover(image.album)">
         <figure>
           @if (showSkeleton) {
-            <div class="album-image-container lcc-content-placeholder-wrapper">
-              <div class="lcc-content-placeholder"></div>
+            <div class="album-image-container skeleton-image">
+              <ea-skeleton
+                variant="rect"
+                width="100%"
+                height="100%" />
             </div>
           } @else {
             <div class="album-image-container">
@@ -29,11 +32,17 @@
           }
           <figcaption>
             @if (showSkeleton) {
-              <div class="skeleton-album-name lcc-content-placeholder-wrapper">
-                <div class="lcc-content-placeholder"></div>
+              <div class="skeleton-album-name">
+                <ea-skeleton
+                  variant="rect"
+                  width="100%"
+                  height="100%" />
               </div>
-              <div class="skeleton-photo-count lcc-content-placeholder-wrapper">
-                <div class="lcc-content-placeholder"></div>
+              <div class="skeleton-photo-count">
+                <ea-skeleton
+                  variant="rect"
+                  width="100%"
+                  height="100%" />
               </div>
             } @else {
               <div class="album-name lcc-truncate-max-3-lines">{{ image.album }}</div>

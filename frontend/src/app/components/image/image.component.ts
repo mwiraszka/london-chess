@@ -1,3 +1,5 @@
+import { SkeletonComponent } from '@eagami/ui';
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -33,6 +35,7 @@ const TRANSPARENT_PIXEL: Url =
   selector: 'lcc-image',
   templateUrl: './image.component.html',
   styleUrl: './image.component.scss',
+  imports: [SkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageComponent {

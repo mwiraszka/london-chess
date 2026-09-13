@@ -28,3 +28,18 @@
 ea-drawer.lcc-auth-drawer {
   --ea-drawer-panel-background-color: var(--lcc-color--authDrawer-background);
 }
+
+// The library's dark skeleton fill (bg-muted, neutral-700) matches this app's
+// page tone; lift it one tier so loading placeholders read on both the page
+// and the recessed card surfaces.
+body[data-theme='dark'] ea-skeleton .ea-skeleton {
+  background-color: var(--color-bg-emphasis);
+}
+
+// The skeleton host is inline by default, which collapses to nothing inside
+// flex containers; block + full-size lets the sized wrapper drive dimensions
+ea-skeleton {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

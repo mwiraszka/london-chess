@@ -78,7 +78,7 @@
         margin-bottom: 2px;
         border-radius: var(--lcc-borderRadius--small);
 
-        &.lcc-content-placeholder-wrapper {
+        &.skeleton-image {
           aspect-ratio: 1;
         }
       }
@@ -121,13 +121,11 @@
           width: 75%;
           height: 16px;
           margin-bottom: 8px;
-          border-radius: 4px;
         }
 
         .skeleton-photo-count {
           width: 40%;
           height: 12px;
-          border-radius: 4px;
         }
       }
     }

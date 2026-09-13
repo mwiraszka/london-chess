@@ -1,4 +1,4 @@
-import { TrophyIconComponent } from '@eagami/ui';
+import { SkeletonComponent, TrophyIconComponent } from '@eagami/ui';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -28,6 +28,7 @@ import { customSort } from '@app/utils';
   templateUrl: './events-table.component.html',
   styleUrl: './events-table.component.scss',
   imports: [
+    SkeletonComponent,
     AdminControlsDirective,
     CommonModule,
     FormatDatePipe,

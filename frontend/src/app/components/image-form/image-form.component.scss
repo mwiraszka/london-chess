@@ -36,7 +36,7 @@
     justify-content: center;
     max-height: 300px;
     border-radius: var(--lcc-borderRadius--large);
-    background-color: var(--lcc-color--contentPlaceholder-background);
+    background-color: var(--lcc-color--general-imageBackdrop);
 
     &.full-span {
       grid-column: 1 / -1;

@@ -1,4 +1,8 @@
-import { ImageSearchIconComponent, PlusCircleIconComponent } from '@eagami/ui';
+import {
+  ImageSearchIconComponent,
+  PlusCircleIconComponent,
+  SkeletonComponent,
+} from '@eagami/ui';
 
 import { UpperCasePipe } from '@angular/common';
 import {
@@ -33,7 +37,13 @@ import { customSort } from '@app/utils';
   selector: 'lcc-photo-grid',
   templateUrl: './photo-grid.component.html',
   styleUrl: './photo-grid.component.scss',
-  imports: [AdminControlsDirective, AdminToolbarComponent, ImageComponent, UpperCasePipe],
+  imports: [
+    SkeletonComponent,
+    AdminControlsDirective,
+    AdminToolbarComponent,
+    ImageComponent,
+    UpperCasePipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhotoGridComponent implements OnChanges {

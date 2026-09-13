@@ -18,9 +18,11 @@
         [id]="group.events[0].id">
         <td class="event-date-cell">
           @if (showSkeleton) {
-            <div
-              class="event-date-widget skeleton-date-widget lcc-content-placeholder-wrapper">
-              <div class="lcc-content-placeholder"></div>
+            <div class="event-date-widget skeleton-date-widget">
+              <ea-skeleton
+                variant="circle"
+                width="100%"
+                height="100%" />
             </div>
           } @else {
             <div class="event-date-widget">
@@ -41,11 +43,17 @@
           @if (showSkeleton) {
             <div class="event-entry">
               <div class="main-content skeleton-main-content">
-                <div class="skeleton-line wide lcc-content-placeholder-wrapper">
-                  <div class="lcc-content-placeholder"></div>
+                <div class="skeleton-line wide">
+                  <ea-skeleton
+                    variant="rect"
+                    width="100%"
+                    height="100%" />
                 </div>
-                <div class="skeleton-line narrow lcc-content-placeholder-wrapper">
-                  <div class="lcc-content-placeholder"></div>
+                <div class="skeleton-line narrow">
+                  <ea-skeleton
+                    variant="rect"
+                    width="100%"
+                    height="100%" />
                 </div>
               </div>
             </div>

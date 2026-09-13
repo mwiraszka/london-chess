@@ -23,8 +23,11 @@
       }
 
       @if (showSkeleton) {
-        <div class="image-container lcc-content-placeholder-wrapper">
-          <div class="lcc-content-placeholder"></div>
+        <div class="image-container skeleton-image">
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
         </div>
       } @else {
         <div class="image-container">
@@ -34,8 +37,11 @@
 
       <div class="article-summary-container">
         @if (showSkeleton) {
-          <div class="article-title-wrapper lcc-content-placeholder-wrapper">
-            <div class="lcc-content-placeholder"></div>
+          <div class="article-title-wrapper">
+            <ea-skeleton
+              variant="rect"
+              width="100%"
+              height="100%" />
           </div>
         } @else {
           <div class="article-title-wrapper">
@@ -49,11 +55,17 @@
         }
         <hr />
         @if (showSkeleton) {
-          <div class="article-preview lcc-content-placeholder-wrapper">
-            <div class="lcc-content-placeholder"></div>
+          <div class="article-preview">
+            <ea-skeleton
+              variant="rect"
+              width="100%"
+              height="100%" />
           </div>
-          <div class="skeleton-date lcc-content-placeholder-wrapper">
-            <div class="lcc-content-placeholder"></div>
+          <div class="skeleton-date">
+            <ea-skeleton
+              variant="rect"
+              width="100%"
+              height="100%" />
           </div>
         } @else {
           <p

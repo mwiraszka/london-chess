@@ -5,6 +5,7 @@ import {
   CardComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
+  SkeletonComponent,
   UserIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
@@ -28,6 +29,7 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
   templateUrl: './member-profile-page.component.html',
   styleUrl: './member-profile-page.component.scss',
   imports: [
+    SkeletonComponent,
     AvatarComponent,
     BadgeComponent,
     BarChartIconComponent,
