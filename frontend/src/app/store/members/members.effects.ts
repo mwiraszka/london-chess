@@ -132,8 +132,9 @@ export class MembersEffects {
   fetchMember$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(MembersActions.fetchMemberRequested),
-      switchMap(({ memberId }) => {
-        return this.membersApiService.getMember(memberId).pipe(
+      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
+      switchMap(([{ memberId }, isAdmin]) => {
+        return this.membersApiService.getMember(memberId, isAdmin).pipe(
           map(response => MembersActions.fetchMemberSucceeded({ member: response.data })),
           catchError(error =>
             of(MembersActions.fetchMemberFailed({ error: this.parseError(error) })),

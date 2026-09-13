@@ -1,3 +1,4 @@
+import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -7,6 +8,7 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DialogService } from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { query } from '@app/utils';
 
 import { MemberFormComponent } from './member-form.component';
@@ -31,6 +33,7 @@ describe('MemberFormComponent', () => {
     await TestBed.configureTestingModule({
       imports: [MemberFormComponent, ReactiveFormsModule],
       providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
         {
           provide: DialogService,
           useValue: { open: vi.fn() },

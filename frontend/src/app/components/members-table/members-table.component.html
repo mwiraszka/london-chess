@@ -50,21 +50,26 @@
                     <ea-icon-trophy class="city-champion-icon" />
                   </a>
                 }
-                <span [innerHTML]="member.firstName | highlight: options.search"></span>
+                <lcc-member-link [memberId]="member.id">
+                  <span [innerHTML]="member.firstName | highlight: options.search"></span>
+                </lcc-member-link>
               </td>
-              <td
-                class="last-name lcc-truncate"
-                [innerHTML]="member.lastName | highlight: options.search">
+              <td class="last-name lcc-truncate">
+                <lcc-member-link [memberId]="member.id">
+                  <span [innerHTML]="member.lastName | highlight: options.search"></span>
+                </lcc-member-link>
               </td>
             } @else {
               <td
                 class="name lcc-truncate"
                 [tooltip]="member.isActive ? null : 'Inactive member'">
-                <span
-                  [innerHTML]="
-                    member.firstName + ' ' + member.lastName | highlight: options.search
-                  ">
-                </span>
+                <lcc-member-link [memberId]="member.id">
+                  <span
+                    [innerHTML]="
+                      member.firstName + ' ' + member.lastName | highlight: options.search
+                    ">
+                  </span>
+                </lcc-member-link>
                 @if (isCityChampion(member)) {
                   <a
                     class="city-champion-link after-name"

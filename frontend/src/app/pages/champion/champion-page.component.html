@@ -59,7 +59,9 @@
               }
               @for (winner of championship.winners; track winner.name; let last = $last) {
                 <span class="winner-name">
-                  {{ winner.name }}
+                  <lcc-member-link [name]="winner.name">{{
+                    winner.name
+                  }}</lcc-member-link>
                   @if (winner.peakRating) {
                     <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                   }
@@ -127,7 +129,9 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      {{ winner.name }}
+                      <lcc-member-link [name]="winner.name">{{
+                        winner.name
+                      }}</lcc-member-link>
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                       }
@@ -189,7 +193,9 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      {{ winner.name }}
+                      <lcc-member-link [name]="winner.name">{{
+                        winner.name
+                      }}</lcc-member-link>
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">
                           ({{ winner.peakRating }})
@@ -253,7 +259,9 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      {{ winner.name }}
+                      <lcc-member-link [name]="winner.name">{{
+                        winner.name
+                      }}</lcc-member-link>
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">
                           ({{ winner.peakRating }}*)

@@ -10,8 +10,25 @@ import {
   memberTypes,
 } from '../models/member.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
+import { UserModel } from '../models/user.model';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
+
+// The admin badge on member profiles comes from matching members to admin
+// users by email, the only field the two collections share
+async function findAdminMemberIds(): Promise<Set<string>> {
+  const adminUsers = await UserModel.find({ isAdmin: true }, { email: 1 }).lean();
+  const emails = adminUsers.map(user => user.email).filter(Boolean);
+  if (!emails.length) {
+    return new Set();
+  }
+
+  const adminMembers = await MemberModel.find(
+    { email: { $in: emails } },
+    { _id: 1 },
+  ).lean();
+  return new Set(adminMembers.map(member => member._id.toString()));
+}
 
 export function getMembers(scope: 'public' | 'admin') {
   return async (
@@ -120,11 +137,14 @@ export function getMembers(scope: 'public' | 'admin') {
 
       const totalCount = await MemberModel.countDocuments({});
 
+      const adminMemberIds = await findAdminMemberIds();
       const members: Member[] = findResults.map(result => {
         const { _id, ...baseMember } = result;
+        const id = result._id.toString();
         return {
           ...baseMember,
-          id: result._id.toString(),
+          id,
+          isAdmin: adminMemberIds.has(id),
         };
       });
 
@@ -141,26 +161,33 @@ export function getMembers(scope: 'public' | 'admin') {
   };
 }
 
-export async function getMember(
-  req: Request<{ id: Id }>,
-  res: Response<ApiResponse<Member>>,
-): Promise<void> {
-  try {
-    const { id } = req.params;
-    const findResult = await MemberModel.findById(id).lean();
+export function getMember(scope: 'public' | 'admin') {
+  return async (
+    req: Request<{ id: Id }>,
+    res: Response<ApiResponse<Member>>,
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const projection =
+        scope === 'public'
+          ? { dateJoined: 0, email: 0, phoneNumber: 0, yearOfBirth: 0 }
+          : {};
+      const findResult = await MemberModel.findById(id, projection).lean();
 
-    if (!findResult) {
-      res.status(404).json({ message: `Unable to find member [${id}]` });
-      return;
+      if (!findResult) {
+        res.status(404).json({ message: `Unable to find member [${id}]` });
+        return;
+      }
+
+      const adminMemberIds = await findAdminMemberIds();
+      const { _id, ...baseMember } = findResult;
+      const member: Member = { ...baseMember, id, isAdmin: adminMemberIds.has(id) };
+
+      res.status(200).json({ data: member });
+    } catch (error) {
+      res.status(500).json({ message: `Unknown error: ${error}` });
     }
-
-    const { _id, ...baseMember } = findResult;
-    const member: Member = { ...baseMember, id };
-
-    res.status(200).json({ data: member });
-  } catch (error) {
-    res.status(500).json({ message: `Unknown error: ${error}` });
-  }
+  };
 }
 
 export async function addMember(

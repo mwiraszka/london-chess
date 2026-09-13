@@ -1,3 +1,4 @@
+import { provideMockStore } from '@ngrx/store/testing';
 import { pick, uniq } from 'lodash';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -7,6 +8,7 @@ import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/consta
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { LccError } from '@app/models';
 import { DialogService, ImageFileService } from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { GENERATE_UUID } from '@app/tokens';
 import { query } from '@app/utils';
 
@@ -39,6 +41,7 @@ describe('ImageFormComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ImageFormComponent, ReactiveFormsModule],
       providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
         { provide: GENERATE_UUID, useValue: vi.fn() },
         {
           provide: DialogService,

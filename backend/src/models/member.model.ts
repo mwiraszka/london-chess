@@ -17,6 +17,8 @@ export interface Member {
   chessComUsername: string;
   lichessUsername: string;
   isActive: boolean;
+  // Derived from the users collection when serving responses; never stored
+  isAdmin?: boolean;
   dateJoined: IsoDate;
   modificationInfo: ModificationInfo;
 }
@@ -42,7 +44,7 @@ const memberSchema = new Schema<Member>(
 
 export const MemberModel = model<Member>('Member', memberSchema);
 
-export const memberTypes: Record<keyof Member, string | string[]> = {
+export const memberTypes: Record<keyof Omit<Member, 'isAdmin'>, string | string[]> = {
   id: 'string',
   firstName: 'string',
   lastName: 'string',

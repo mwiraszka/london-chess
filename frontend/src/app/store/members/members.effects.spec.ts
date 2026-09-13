@@ -363,6 +363,7 @@ describe('MembersEffects', () => {
   describe('fetchMember$', () => {
     it('should fetch a single member successfully', () =>
       withDone(done => {
+        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
         const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
         membersApiService.getMember.mockReturnValue(of(mockResponse));
 
@@ -374,13 +375,17 @@ describe('MembersEffects', () => {
           expect(action).toEqual(
             MembersActions.fetchMemberSucceeded({ member: MOCK_MEMBERS[0] }),
           );
-          expect(membersApiService.getMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
+          expect(membersApiService.getMember).toHaveBeenCalledWith(
+            MOCK_MEMBERS[0].id,
+            false,
+          );
           done();
         });
       }));
 
     it('should handle fetch member failure', () =>
       withDone(done => {
+        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
         membersApiService.getMember.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
 

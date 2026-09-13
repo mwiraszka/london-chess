@@ -1,3 +1,4 @@
+import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -7,6 +8,7 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { EVENT_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DialogService } from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { query } from '@app/utils';
 import { generateId } from '@app/utils/common/generate-id.util';
 
@@ -32,6 +34,7 @@ describe('EventFormComponent', () => {
     await TestBed.configureTestingModule({
       imports: [EventFormComponent, ReactiveFormsModule],
       providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
         {
           provide: DialogService,
           useValue: { open: vi.fn() },

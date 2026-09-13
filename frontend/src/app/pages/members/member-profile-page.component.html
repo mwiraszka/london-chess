@@ -1,0 +1,135 @@
+<lcc-page-header
+  heading="Member Profile"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+@if (viewModel$ | async; as vm) {
+  @if (vm.member; as member) {
+    <div class="profile">
+      <ea-card
+        class="identity-card"
+        [fullWidth]="true">
+        <div class="identity">
+          <ea-avatar
+            size="lg"
+            [alt]="fullName(member) + '\'s avatar'"
+            [initials]="initials(member)" />
+          <div class="identity-text">
+            <h3 class="member-name">
+              <span>{{ fullName(member) }}</span>
+              @if (member.isAdmin) {
+                <ea-icon-shield-check
+                  class="admin-icon"
+                  tooltip="Club admin" />
+              }
+            </h3>
+            <div class="identity-badges">
+              <ea-badge [variant]="member.isActive ? 'success' : 'default'">
+                {{ member.isActive ? 'Active member' : 'Inactive member' }}
+              </ea-badge>
+              @if (member.city) {
+                <span class="member-city">{{ member.city }}</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-value">{{ member.rating }}</span>
+            <span class="stat-label">Rating</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ member.peakRating }}</span>
+            <span class="stat-label">Peak rating</span>
+          </div>
+        </div>
+
+        @if (member.chessComUsername || member.lichessUsername) {
+          <div class="external-profiles">
+            @if (member.chessComUsername) {
+              <a
+                class="lcc-link"
+                [href]="chessComUrl(member)"
+                rel="noopener noreferrer"
+                target="_blank">
+                <span>Chess.com</span>
+                <ea-icon-external-link class="external-link-icon" />
+              </a>
+            }
+            @if (member.lichessUsername) {
+              <a
+                class="lcc-link"
+                [href]="lichessUrl(member)"
+                rel="noopener noreferrer"
+                target="_blank">
+                <span>Lichess</span>
+                <ea-icon-external-link class="external-link-icon" />
+              </a>
+            }
+          </div>
+        }
+      </ea-card>
+
+      <ea-card
+        class="rating-progression-card"
+        [fullWidth]="true">
+        <h4 slot="header">Rating progression</h4>
+        <div class="rating-progression-placeholder">
+          <ea-icon-bar-chart class="placeholder-icon" />
+          <p>A graph of this member's rating over time is coming soon.</p>
+        </div>
+      </ea-card>
+
+      @if (vm.isAdminViewer) {
+        <ea-card
+          class="details-card"
+          [fullWidth]="true">
+          <h4 slot="header">Member details</h4>
+          <dl class="details">
+            <div class="detail">
+              <dt>Email</dt>
+              <dd>
+                @if (member.email) {
+                  <a
+                    class="lcc-link"
+                    [href]="'mailto:' + member.email">
+                    {{ member.email }}
+                  </a>
+                } @else {
+                  <span>Not on file</span>
+                }
+              </dd>
+            </div>
+            <div class="detail">
+              <dt>Phone number</dt>
+              <dd>{{ member.phoneNumber || 'Not on file' }}</dd>
+            </div>
+            <div class="detail">
+              <dt>Year of birth</dt>
+              <dd>{{ member.yearOfBirth || 'Not on file' }}</dd>
+            </div>
+            <div class="detail">
+              <dt>Date joined</dt>
+              <dd>
+                {{
+                  member.dateJoined
+                    ? (member.dateJoined | formatDate: 'long no-time')
+                    : 'Not on file'
+                }}
+              </dd>
+            </div>
+          </dl>
+        </ea-card>
+      }
+    </div>
+  } @else if (vm.hasError) {
+    <p class="not-found">This member could not be found.</p>
+  } @else {
+    <div class="profile">
+      <div class="loading-placeholder lcc-content-placeholder-wrapper">
+        <div class="lcc-content-placeholder"></div>
+      </div>
+    </div>
+  }
+}

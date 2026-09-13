@@ -50,9 +50,11 @@ export class MembersApiService {
     );
   }
 
-  public getMember(id: Id): Observable<ApiResponse<Member>> {
+  public getMember(id: Id, isAdmin: boolean): Observable<ApiResponse<Member>> {
+    const scope: ApiScope = isAdmin ? 'admin' : 'public';
+
     return this.http.get<ApiResponse<Member>>(
-      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}`,
+      `${this.API_BASE_URL}/${scope}/${this.COLLECTION}/${id}`,
     );
   }
 

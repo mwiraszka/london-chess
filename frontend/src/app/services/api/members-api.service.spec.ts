@@ -118,7 +118,7 @@ describe('MembersApiService', () => {
         data: mockMember,
       };
 
-      service.getMember(mockMember.id).subscribe(response => {
+      service.getMember(mockMember.id, true).subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 

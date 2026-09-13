@@ -1,0 +1,158 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  width: 100%;
+  max-width: var(--lcc-width--smallForm);
+}
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.identity {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 16px;
+
+  .identity-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .member-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    overflow-wrap: anywhere;
+
+    .admin-icon {
+      @include icon-size(20px);
+
+      min-width: 20px;
+      color: var(--lcc-color--pageHeader-adminIcon);
+    }
+  }
+
+  .identity-badges {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 8px;
+
+    .member-city {
+      font-size: 14px;
+    }
+  }
+}
+
+.stats {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 16px;
+  margin-top: 16px;
+
+  .stat {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 120px;
+    padding: 12px;
+    border-radius: var(--lcc-borderRadius--small);
+    box-shadow: 0 1px 3px 0 var(--lcc-color--general-cardBoxShadow);
+    background-color: var(--lcc-color--general-cardBackground);
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+.external-profiles {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 16px;
+  margin-top: 16px;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    .external-link-icon {
+      @include icon-size(14px);
+    }
+  }
+}
+
+.rating-progression-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  font-size: 14px;
+  text-align: center;
+
+  .placeholder-icon {
+    @include icon-size(32px);
+
+    color: var(--lcc-color--pageHeader-icon);
+  }
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+
+  @include respond-to('gt-sm') {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    dt {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    dd {
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
+.not-found {
+  margin-top: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.loading-placeholder {
+  width: 100%;
+  height: 180px;
+  border-radius: var(--lcc-borderRadius--small);
+}

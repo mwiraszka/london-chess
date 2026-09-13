@@ -3,6 +3,7 @@ import { TrophyIconComponent } from '@eagami/ui';
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
 import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
+import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PhotoCarouselComponent } from '@app/components/photo-carousel/photo-carousel.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -15,6 +16,7 @@ import { MetaAndTitleService } from '@app/services';
   styleUrl: './champion-page.component.scss',
   imports: [
     ExpansionPanelComponent,
+    MemberLinkComponent,
     PageHeaderComponent,
     TrophyIconComponent,
     PhotoCarouselComponent,

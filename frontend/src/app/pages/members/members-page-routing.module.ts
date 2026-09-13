@@ -9,6 +9,11 @@ const routes: Routes = [
     component: MembersPageComponent,
   },
   {
+    path: ':id',
+    loadComponent: () =>
+      import('./member-profile-page.component').then(c => c.MemberProfilePageComponent),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

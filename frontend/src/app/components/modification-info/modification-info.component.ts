@@ -2,6 +2,7 @@ import { EditIconComponent, FilePlusIconComponent } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
+import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { ModificationInfo } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 
@@ -14,7 +15,11 @@ import { FormatDatePipe } from '@app/pipes';
 
         <div class="create-text">
           <span>created by</span>
-          <span class="name">{{ info.createdBy }}</span>
+          <span class="name">
+            <lcc-member-link [name]="info.createdBy">{{
+              info.createdBy
+            }}</lcc-member-link>
+          </span>
           <span class="vertical-spacer">|</span>
           <span class="date">{{ info.dateCreated | formatDate: 'short' }}</span>
         </div>
@@ -26,7 +31,11 @@ import { FormatDatePipe } from '@app/pipes';
 
           <div class="edit-text">
             <span>last edited by</span>
-            <span class="name">{{ info.lastEditedBy }}</span>
+            <span class="name">
+              <lcc-member-link [name]="info.lastEditedBy">{{
+                info.lastEditedBy
+              }}</lcc-member-link>
+            </span>
             <span class="vertical-spacer">|</span>
             <span class="date">{{ info.dateLastEdited | formatDate: 'short' }}</span>
           </div>
@@ -35,7 +44,12 @@ import { FormatDatePipe } from '@app/pipes';
     </div>
   `,
   styleUrl: './modification-info.component.scss',
-  imports: [EditIconComponent, FilePlusIconComponent, FormatDatePipe],
+  imports: [
+    EditIconComponent,
+    FilePlusIconComponent,
+    FormatDatePipe,
+    MemberLinkComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ModificationInfoComponent {

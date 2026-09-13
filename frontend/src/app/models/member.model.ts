@@ -18,6 +18,7 @@ export interface Member {
   chessComUsername: string;
   lichessUsername: string;
   isActive: boolean;
+  isAdmin?: boolean;
   dateJoined: IsoDate;
   modificationInfo: ModificationInfo;
 }

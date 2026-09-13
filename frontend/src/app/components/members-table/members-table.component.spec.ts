@@ -1,3 +1,5 @@
+import { provideMockStore } from '@ngrx/store/testing';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -7,6 +9,7 @@ import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DataPaginationOptions, Member } from '@app/models';
 import { DialogService } from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { formatDate, query, queryAll } from '@app/utils';
 
 import { MembersTableComponent } from './members-table.component';
@@ -40,6 +43,7 @@ describe('MembersTableComponent', () => {
     TestBed.configureTestingModule({
       imports: [AdminControlsDirective, MembersTableComponent, TooltipDirective],
       providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
         {
           provide: DialogService,
           useValue: { open: vi.fn() },

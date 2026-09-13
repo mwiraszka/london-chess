@@ -1,7 +1,10 @@
+import { provideMockStore } from '@ngrx/store/testing';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { MetaAndTitleService } from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { query } from '@app/utils';
 
 import { ChampionPageComponent } from './champion-page.component';
@@ -18,6 +21,7 @@ describe('ChampionPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ChampionPageComponent],
       providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
         provideRouter([]),
         {
           provide: MetaAndTitleService,

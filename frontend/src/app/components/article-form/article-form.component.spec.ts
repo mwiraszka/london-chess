@@ -1,3 +1,4 @@
+import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 
 import { Component, Input } from '@angular/core';
@@ -12,6 +13,7 @@ import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image } from '@app/models';
 import { DialogService } from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { query } from '@app/utils';
 
 import { ArticleFormComponent } from './article-form.component';
@@ -51,6 +53,7 @@ describe('ArticleFormComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ArticleFormComponent, ReactiveFormsModule],
       providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
         {
           provide: DialogService,
           useValue: { open: vi.fn() },

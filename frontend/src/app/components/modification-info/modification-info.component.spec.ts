@@ -1,7 +1,10 @@
+import { provideMockStore } from '@ngrx/store/testing';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MOCK_MODIFICATION_INFOS } from '@app/mocks/modification-info.mock';
 import { FormatDatePipe } from '@app/pipes';
+import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { formatDate, query, queryTextContent } from '@app/utils';
 
 import { ModificationInfoComponent } from './modification-info.component';
@@ -13,6 +16,9 @@ describe('ModificationInfoComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [FormatDatePipe, ModificationInfoComponent],
+      providers: [
+        provideMockStore({ initialState: { membersState: membersInitialState } }),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ModificationInfoComponent);
