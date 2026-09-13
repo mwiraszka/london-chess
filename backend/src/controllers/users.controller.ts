@@ -191,6 +191,15 @@ export async function getMe(
       res.status(404).json({ message: 'User not found.' });
       return;
     }
+    // An original stored under a retired storage location can no longer be
+    // served, so present it as absent rather than handing out a dead URL
+    if (
+      user.avatarOriginalUrl &&
+      !user.avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)
+    ) {
+      user.avatarOriginalUrl = null;
+      user.avatarCropState = null;
+    }
     res.status(200).json({ data: user });
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch user: ${error}` });
