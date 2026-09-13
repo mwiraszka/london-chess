@@ -10,7 +10,9 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  margin-top: 8px;
+  // Same card width as the What's Changed page
+  max-width: 800px;
+  margin: 8px auto 0;
 }
 
 .identity {
@@ -66,25 +68,36 @@
 
   .stat {
     display: flex;
-    flex: 1;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    min-width: 120px;
-    padding: 12px;
-    border-radius: var(--lcc-borderRadius--small);
-    box-shadow: 0 1px 3px 0 var(--lcc-color--general-cardBoxShadow);
-    background-color: var(--lcc-color--general-cardBackground);
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 600;
-    }
+    padding: 8px 24px;
 
     .stat-label {
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+  }
+
+  .stat--primary {
+    border-radius: var(--lcc-borderRadius--small);
+    box-shadow: 0 1px 3px 0 var(--lcc-color--general-cardBoxShadow);
+    background-color: var(--lcc-color--general-cardBackground);
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 600;
+    }
+  }
+
+  .stat--secondary {
+    justify-content: center;
+    color: var(--color-text-secondary);
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
     }
   }
 }
@@ -102,7 +115,15 @@
   }
 
   .platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     color: var(--color-text-secondary);
+  }
+
+  .platform-logo {
+    width: auto;
+    height: 16px;
   }
 
   a {
@@ -169,4 +190,9 @@
 .loading-placeholder {
   width: 100%;
   height: 180px;
+}
+
+// The saved logo is solid black; the app theme decides when to flip it
+:host-context(body[data-theme='dark']) .platform-logo--lichess {
+  filter: invert(1);
 }
