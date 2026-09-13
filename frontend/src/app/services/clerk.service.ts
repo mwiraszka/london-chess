@@ -1,9 +1,11 @@
 import { Clerk } from '@clerk/clerk-js';
+import { ToastService } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 
 import { Injectable, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
+import { AuthGuard, loggedInGuard } from '@app/guards/auth.guard';
 import { User } from '@app/models';
 import { AuthActions } from '@app/store/auth';
 
@@ -20,13 +22,13 @@ export interface LoginResult {
 export class ClerkService {
   private readonly router = inject(Router);
   private readonly store = inject(Store);
+  private readonly toast = inject(ToastService);
 
   private clerk!: Clerk;
 
   readonly isLoaded = signal(false);
   readonly isLoggedIn = signal(false);
   readonly user = signal<Clerk['user']>(null, { equal: () => false });
-  readonly externallyDeleted = signal(false);
 
   private _sessionEndExpected = false;
 
@@ -230,9 +232,38 @@ export class ClerkService {
       AuthActions.userChanged({ user: clerkUser ? this.mapUser(clerkUser) : null }),
     );
 
-    if (wasLoggedIn && !clerkUser && !this._sessionEndExpected) {
-      this.externallyDeleted.set(true);
+    if (wasLoggedIn && !clerkUser) {
+      const expected = this._sessionEndExpected;
+      this._sessionEndExpected = false;
+      if (!expected) {
+        this.handleRemoteLogout();
+      }
     }
+  }
+
+  // Clerk notices a session revoked elsewhere on its next session-token
+  // refresh, which lands here as a sign-out this device never asked for
+  private handleRemoteLogout(): void {
+    this.toast.show('You have been logged out on this device.', {
+      title: 'Logged out',
+      variant: 'info',
+    });
+
+    if (this.isOnGuardedRoute()) {
+      void this.router.navigate(['/']);
+    }
+  }
+
+  private isOnGuardedRoute(): boolean {
+    let route: ActivatedRouteSnapshot | null = this.router.routerState.snapshot.root;
+    while (route) {
+      const guards = route.routeConfig?.canActivate ?? [];
+      if (guards.includes(AuthGuard) || guards.includes(loggedInGuard)) {
+        return true;
+      }
+      route = route.firstChild;
+    }
+    return false;
   }
 
   private mapUser(clerkUser: NonNullable<Clerk['user']>): User {
