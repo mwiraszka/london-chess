@@ -196,7 +196,17 @@ export class ClerkService {
   async listSessions(): Promise<SessionInfo[]> {
     const sessions = await this.clerk.user!.getSessions();
     const currentId = this.clerk.session?.id;
-    return sessions.map(session => ({
+    // Current session first, the rest by recency
+    const sorted = [...sessions].sort((a, b) => {
+      if (a.id === currentId) {
+        return -1;
+      }
+      if (b.id === currentId) {
+        return 1;
+      }
+      return b.lastActiveAt.getTime() - a.lastActiveAt.getTime();
+    });
+    return sorted.map(session => ({
       id: session.id,
       isCurrent: session.id === currentId,
       device: describeSession(session),
