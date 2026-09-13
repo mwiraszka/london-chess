@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ClubCardComponent } from '@app/components/club-card/club-card.component';
 import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { LCC_CLUB } from '@app/constants/clubs';
+import { LCC } from '@app/constants/clubs';
 import { Club } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 
@@ -20,7 +20,7 @@ import { MetaAndTitleService } from '@app/services';
 export class AboutPageComponent implements OnInit {
   protected readonly pageIcon = InfoIconComponent;
 
-  public readonly lccClub: Club = LCC_CLUB;
+  public readonly lccClub: Club = LCC;
 
   constructor(private readonly metaAndTitleService: MetaAndTitleService) {}
 

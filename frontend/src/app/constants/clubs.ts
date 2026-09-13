@@ -1,6 +1,6 @@
 import { Club } from '@app/models';
 
-export const LCC_CLUB: Club = {
+export const LCC: Club = {
   id: 'london-chess-club',
   name: 'London Chess Club',
   mapUrl: 'https://maps.app.goo.gl/9KbVMTcdTD938QAz9',

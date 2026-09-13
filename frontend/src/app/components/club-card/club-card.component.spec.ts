@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { LCC_CLUB, REGIONAL_CLUBS } from '@app/constants/clubs';
+import { LCC, REGIONAL_CLUBS } from '@app/constants/clubs';
 import { query } from '@app/utils';
 
 import { ClubCardComponent } from './club-card.component';
@@ -16,7 +16,7 @@ describe('ClubCardComponent', () => {
 
     fixture = TestBed.createComponent(ClubCardComponent);
     component = fixture.componentInstance;
-    component.club = LCC_CLUB;
+    component.club = LCC;
   });
 
   it('should create', () => {
@@ -30,31 +30,29 @@ describe('ClubCardComponent', () => {
 
     it('should render club name', () => {
       const clubName = query(fixture.debugElement, '.club-name');
-      expect(clubName?.nativeElement.textContent).toContain(LCC_CLUB.name);
+      expect(clubName?.nativeElement.textContent).toContain(LCC.name);
     });
 
     it('should render address', () => {
       const address = query(fixture.debugElement, '.address .address');
       const addressText = address?.nativeElement.textContent;
 
-      expect(addressText).toContain(LCC_CLUB.addressLine1);
-      expect(addressText).toContain(LCC_CLUB.addressLine2);
-      expect(addressText).toContain(LCC_CLUB.addressLine3);
+      expect(addressText).toContain(LCC.addressLine1);
+      expect(addressText).toContain(LCC.addressLine2);
+      expect(addressText).toContain(LCC.addressLine3);
     });
 
     it('should render schedule text', () => {
       const schedule = query(fixture.debugElement, '.schedule');
-      expect(schedule?.nativeElement.textContent).toContain(LCC_CLUB.scheduleText);
+      expect(schedule?.nativeElement.textContent).toContain(LCC.scheduleText);
     });
 
     it('should render email link when email is provided', () => {
       const emailLink = query(fixture.debugElement, '.email-link');
 
       expect(emailLink).toBeTruthy();
-      expect(emailLink?.nativeElement.getAttribute('href')).toBe(
-        `mailto:${LCC_CLUB.email}`,
-      );
-      expect(emailLink?.nativeElement.textContent).toContain(LCC_CLUB.email);
+      expect(emailLink?.nativeElement.getAttribute('href')).toBe(`mailto:${LCC.email}`);
+      expect(emailLink?.nativeElement.textContent).toContain(LCC.email);
     });
 
     it('should not render email section when email is not provided', () => {

@@ -2,7 +2,7 @@ import { setOptions } from '@googlemaps/js-api-loader';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { LCC_CLUB } from '@app/constants/clubs';
+import { LCC } from '@app/constants/clubs';
 import { query } from '@app/utils';
 
 import { ClubMapComponent } from './club-map.component';
@@ -27,7 +27,7 @@ describe('ClubMapComponent', () => {
 
     fixture = TestBed.createComponent(ClubMapComponent);
     component = fixture.componentInstance;
-    component.club = LCC_CLUB;
+    component.club = LCC;
 
     // @ts-expect-error Private class member
     initMapSpy = vi.spyOn(component, 'initMap').mockResolvedValue();
@@ -59,13 +59,13 @@ describe('ClubMapComponent', () => {
 
       const anchor = query(fixture.debugElement, 'a');
       expect(anchor).toBeTruthy();
-      expect(anchor?.nativeElement.getAttribute('href')).toBe(LCC_CLUB.mapUrl);
+      expect(anchor?.nativeElement.getAttribute('href')).toBe(LCC.mapUrl);
     });
 
     it('should render the club map div element with dynamic id', () => {
       fixture.detectChanges();
 
-      expect(query(fixture.debugElement, `#${LCC_CLUB.id}-location`)).toBeTruthy();
+      expect(query(fixture.debugElement, `#${LCC.id}-location`)).toBeTruthy();
     });
   });
 });
