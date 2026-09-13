@@ -38,10 +38,32 @@ import { ChesscomLogoComponent } from '@app/components/platform-logos/chesscom-l
 import { LichessLogoComponent } from '@app/components/platform-logos/lichess-logo.component';
 import { Member } from '@app/models';
 import { ApiError, ApiService, MetaAndTitleService } from '@app/services';
-import { ClerkService, type SessionInfo } from '@app/services/clerk.service';
+import { ClerkService } from '@app/services/clerk.service';
 import { type UserRecord, UserService } from '@app/services/user.service';
 import { isValidEmail } from '@app/utils/email.util';
 import { asSentence } from '@app/utils/sentence.util';
+
+interface UserSessionRecord {
+  id: string;
+  isCurrent: boolean;
+  isMobile: boolean;
+  browserName: string | null;
+  deviceType: string | null;
+  lastActiveAt: number;
+}
+
+interface SessionInfo {
+  id: string;
+  isCurrent: boolean;
+  device: string;
+  lastActive: string;
+}
+
+function describeSession(record: UserSessionRecord): string {
+  const browser = record.browserName ?? 'Unknown browser';
+  const os = record.deviceType ?? (record.isMobile ? 'Mobile' : 'Desktop');
+  return `${browser} · ${os}`;
+}
 
 const ACCOUNT_SECTIONS = ['profile', 'security', 'danger'] as const;
 type AccountSection = (typeof ACCOUNT_SECTIONS)[number];
@@ -715,7 +737,30 @@ export class AccountPageComponent implements OnInit {
   async loadSessions(): Promise<void> {
     this.sessionsLoading.set(true);
     try {
-      this.sessions.set(await this.clerk.listSessions());
+      const records = await this.api.get<UserSessionRecord[]>('/users/me/sessions');
+      // Current session first, the rest by recency
+      const sorted = [...records].sort((a, b) => {
+        if (a.isCurrent) {
+          return -1;
+        }
+        if (b.isCurrent) {
+          return 1;
+        }
+        return b.lastActiveAt - a.lastActiveAt;
+      });
+      this.sessions.set(
+        sorted.map(record => ({
+          id: record.id,
+          isCurrent: record.isCurrent,
+          device: describeSession(record),
+          lastActive: new Date(record.lastActiveAt).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          }),
+        })),
+      );
     } catch {
       // non-critical
     } finally {

@@ -8,6 +8,7 @@ import {
   getMyMember,
   getUserAvatar,
   getUserAvatars,
+  listMySessions,
   requestAccount,
   requestAccountVerification,
   requestMemberDetailsChange,
@@ -26,6 +27,7 @@ export const usersRouter = Router()
   .get('/me', auth, getMe)
   .get('/me/member', auth, getMyMember)
   .post('/me/member/change-request', auth, requestMemberDetailsChange)
+  .get('/me/sessions', auth, listMySessions)
   .post('/me/sessions/revoke-others', auth, revokeOtherSessions)
   .patch('/me', auth, updateMe)
   .post('/me/password', auth, changePassword)

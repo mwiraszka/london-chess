@@ -9,27 +9,9 @@ import { AuthActions } from '@app/store/auth';
 
 import { environment } from '@env';
 
-type ClerkSession = Awaited<
-  ReturnType<NonNullable<Clerk['user']>['getSessions']>
->[number];
-
-export interface SessionInfo {
-  id: string;
-  isCurrent: boolean;
-  device: string;
-  lastActive: string;
-}
-
 export interface LoginResult {
   needsSecondFactor: boolean;
   needsNewPassword: boolean;
-}
-
-function describeSession(session: ClerkSession): string {
-  const activity = session.latestActivity;
-  const browser = activity?.browserName ?? 'Unknown browser';
-  const os = activity?.deviceType ?? (activity?.isMobile ? 'Mobile' : 'Desktop');
-  return `${browser} · ${os}`;
 }
 
 @Injectable({
@@ -191,32 +173,6 @@ export class ClerkService {
       await previous?.destroy();
     }
     this.syncState();
-  }
-
-  async listSessions(): Promise<SessionInfo[]> {
-    const sessions = await this.clerk.user!.getSessions();
-    const currentId = this.clerk.session?.id;
-    // Current session first, the rest by recency
-    const sorted = [...sessions].sort((a, b) => {
-      if (a.id === currentId) {
-        return -1;
-      }
-      if (b.id === currentId) {
-        return 1;
-      }
-      return b.lastActiveAt.getTime() - a.lastActiveAt.getTime();
-    });
-    return sorted.map(session => ({
-      id: session.id,
-      isCurrent: session.id === currentId,
-      device: describeSession(session),
-      lastActive: session.lastActiveAt.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      }),
-    }));
   }
 
   extractError(e: unknown): string {

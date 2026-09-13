@@ -223,6 +223,42 @@ export async function requestMemberDetailsChange(
   }
 }
 
+export interface UserSession {
+  id: string;
+  isCurrent: boolean;
+  isMobile: boolean;
+  browserName: string | null;
+  deviceType: string | null;
+  lastActiveAt: number;
+}
+
+// Listed from the backend so devices signing in or out elsewhere show up
+// immediately; the client-side list is served from a cache
+export async function listMySessions(
+  req: Request,
+  res: Response<ApiResponse<UserSession[]>>,
+): Promise<void> {
+  try {
+    const sessions = await clerkClient.sessions.getSessionList({
+      userId: req.user.id,
+      status: 'active',
+      limit: 100,
+    });
+    res.status(200).json({
+      data: sessions.data.map(session => ({
+        id: session.id,
+        isCurrent: session.id === req.user.sessionId,
+        isMobile: session.latestActivity?.isMobile ?? false,
+        browserName: session.latestActivity?.browserName ?? null,
+        deviceType: session.latestActivity?.deviceType ?? null,
+        lastActiveAt: session.lastActiveAt,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to fetch sessions: ${error}` });
+  }
+}
+
 // Clerk treats session revocation as a step-up operation client-side, so
 // other sessions are revoked here with the backend key instead
 export async function revokeOtherSessions(
