@@ -6,6 +6,7 @@ import {
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
   SkeletonComponent,
+  TrophyIconComponent,
   UserIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
@@ -14,7 +15,7 @@ import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -23,6 +24,7 @@ import { FormatDatePipe } from '@app/pipes';
 import { MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
+import { isCityChampion } from '@app/utils';
 
 @Component({
   selector: 'lcc-member-profile-page',
@@ -38,12 +40,16 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
     ExternalLinkIconComponent,
     FormatDatePipe,
     PageHeaderComponent,
+    RouterLink,
     ShieldCheckIconComponent,
     TooltipDirective,
+    TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberProfilePageComponent implements OnInit {
+  protected readonly isCityChampion = isCityChampion;
+
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(Store);

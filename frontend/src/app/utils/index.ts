@@ -8,6 +8,7 @@ export { getPlayerName } from './chess/get-player-name.util';
 export { getPlyCount } from './chess/get-ply-count.util';
 export { getResultTallies } from './chess/get-result-tallies.util';
 export { getScore } from './chess/get-score.util';
+export { isCityChampion } from './chess/is-city-champion.util';
 
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';

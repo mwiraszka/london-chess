@@ -23,6 +23,7 @@
 
   .identity-text {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 8px;
     min-width: 0;
@@ -41,6 +42,23 @@
       min-width: 20px;
       color: var(--lcc-color--pageHeader-adminIcon);
     }
+
+    .champion-link {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .champion-icon {
+      @include icon-size(20px);
+
+      min-width: 20px;
+      color: var(--lcc-color--memberProfile-cityChampionIcon);
+      transition: color 1s ease;
+    }
+
+    .champion-link:hover .champion-icon {
+      color: var(--lcc-color--memberProfile-cityChampionIconHover);
+    }
   }
 
   .identity-badges {
@@ -53,53 +71,49 @@
     .status-badge.inactive {
       opacity: 0.65;
     }
-
-    .member-city {
-      font-size: 14px;
-    }
   }
-}
 
-.stats {
-  display: flex;
-  flex-flow: row wrap;
-  gap: 16px;
-  margin-top: 16px;
-
-  .stat {
+  .primary-rating {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
     padding: 8px 24px;
-
-    .stat-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-  }
-
-  .stat--primary {
     border-radius: var(--lcc-borderRadius--small);
     box-shadow: 0 1px 3px 0 var(--lcc-color--general-cardBoxShadow);
     background-color: var(--lcc-color--general-cardBackground);
-
-    .stat-value {
-      font-size: 32px;
-      font-weight: 600;
-    }
   }
 
-  .stat--secondary {
-    justify-content: center;
-    color: var(--color-text-secondary);
-
-    .stat-value {
-      font-size: 18px;
-      font-weight: 600;
-    }
+  .primary-rating__value {
+    font-size: 32px;
+    font-weight: 600;
   }
+}
+
+.secondary-stats {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 8px 48px;
+  margin-top: 16px;
+
+  .secondary-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .secondary-stat__value {
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
 }
 
 .external-profiles {

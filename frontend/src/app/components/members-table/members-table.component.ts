@@ -30,6 +30,7 @@ import {
 } from '@app/models';
 import { CamelCasePipe, FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
 import { DialogService } from '@app/services';
+import { isCityChampion } from '@app/utils';
 
 @UntilDestroy()
 @Component({
@@ -54,6 +55,8 @@ import { DialogService } from '@app/services';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersTableComponent {
+  public readonly isCityChampion = isCityChampion;
+
   public readonly DEFAULT_TABLE_HEADERS = [
     'Name',
     'Rating',
@@ -119,10 +122,6 @@ export class MembersTableComponent {
       itemName: `${member.firstName} ${member.lastName}`,
       deleteCb: () => this.onDeleteMember(member),
     };
-  }
-
-  public isCityChampion(member: Member): boolean {
-    return member.firstName === 'Rene' && member.lastName === 'Bartar';
   }
 
   private async onDeleteMember(member: Member): Promise<void> {

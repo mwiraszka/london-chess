@@ -67,10 +67,14 @@ describe('MemberProfilePageComponent', () => {
       `${member.firstName} ${member.lastName}`,
     );
 
-    const statValues = queryAll(fixture.debugElement, '.stat-value').map(el =>
-      el.nativeElement.textContent.trim(),
+    expect(queryTextContent(fixture.debugElement, '.primary-rating__value')).toBe(
+      member.rating,
     );
-    expect(statValues).toEqual([member.rating, member.peakRating]);
+
+    const secondaryValues = queryAll(fixture.debugElement, '.secondary-stat__value').map(
+      el => el.nativeElement.textContent.trim(),
+    );
+    expect(secondaryValues).toEqual([member.peakRating, member.city]);
   });
 
   it('should not render the admin icon for non-admin members', () => {

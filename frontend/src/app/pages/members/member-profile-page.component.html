@@ -22,6 +22,14 @@
                   class="admin-icon"
                   tooltip="Club admin" />
               }
+              @if (isCityChampion(member)) {
+                <a
+                  class="champion-link"
+                  routerLink="/city-champion"
+                  tooltip="2025 City Champion">
+                  <ea-icon-trophy class="champion-icon" />
+                </a>
+              }
             </h3>
             <div class="identity-badges">
               <ea-badge
@@ -30,22 +38,26 @@
                 [variant]="member.isActive ? 'success' : 'warning'">
                 {{ member.isActive ? 'Active member' : 'Inactive member' }}
               </ea-badge>
-              @if (member.city) {
-                <span class="member-city">{{ member.city }}</span>
-              }
             </div>
+          </div>
+
+          <div class="primary-rating">
+            <span class="primary-rating__value">{{ member.rating }}</span>
+            <span class="stat-label">Rating</span>
           </div>
         </div>
 
-        <div class="stats">
-          <div class="stat stat--primary">
-            <span class="stat-value">{{ member.rating }}</span>
-            <span class="stat-label">Rating</span>
-          </div>
-          <div class="stat stat--secondary">
-            <span class="stat-value">{{ member.peakRating }}</span>
+        <div class="secondary-stats">
+          <div class="secondary-stat">
             <span class="stat-label">Peak rating</span>
+            <span class="secondary-stat__value">{{ member.peakRating }}</span>
           </div>
+          @if (member.city) {
+            <div class="secondary-stat">
+              <span class="stat-label">City</span>
+              <span class="secondary-stat__value">{{ member.city }}</span>
+            </div>
+          }
         </div>
 
         @if (member.chessComUsername || member.lichessUsername) {
