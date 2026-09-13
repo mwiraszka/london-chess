@@ -97,6 +97,44 @@ describe('ImageViewerComponent', () => {
       );
     });
 
+    it('should dispatch fetchMainImageRequested when the stored main URL is expired', () => {
+      const expiredImage = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/stale.jpg',
+        urlExpirationDate: new Date(Date.now() - 60_000).toISOString(),
+      };
+      store.overrideSelector(ImagesSelectors.selectAllImages, [
+        expiredImage,
+        ...MOCK_IMAGES.slice(1),
+      ]);
+      vi.clearAllMocks();
+
+      // @ts-expect-error Private class member
+      component.fetchImage(0);
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.fetchMainImageRequested({ imageId: expiredImage.id }),
+      );
+    });
+
+    it('should not refetch when the stored main URL is still fresh', () => {
+      const freshImage = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/fresh.jpg',
+        urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
+      };
+      store.overrideSelector(ImagesSelectors.selectAllImages, [
+        freshImage,
+        ...MOCK_IMAGES.slice(1),
+      ]);
+      vi.clearAllMocks();
+
+      // @ts-expect-error Private class member
+      component.fetchImage(0);
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+
     it('should set up currentImage$ observable', () => {
       component.currentImage$.subscribe(image => {
         expect(image).toEqual(MOCK_IMAGES[0]);

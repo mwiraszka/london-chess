@@ -62,6 +62,17 @@ export const initialState: ImagesState = imagesAdapter.getInitialState({
   totalCount: 0,
 });
 
+// A shared expiration covers whichever of the two presigned URLs an entity
+// holds, so when a merge keeps one URL and refreshes the other, the recorded
+// expiration must be the earlier of the two (ISO strings compare
+// chronologically).
+function earlierIso(a: IsoDate | undefined, b: IsoDate | undefined): IsoDate | undefined {
+  if (!a || !b) {
+    return a ?? b;
+  }
+  return a < b ? a : b;
+}
+
 export const imagesReducer = createReducer(
   initialState,
 
@@ -152,8 +163,12 @@ export const imagesReducer = createReducer(
             image: {
               ...image,
               mainUrl: originalEntity?.image.mainUrl,
-              urlExpirationDate:
-                image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate,
+              urlExpirationDate: originalEntity?.image.mainUrl
+                ? earlierIso(
+                    image.urlExpirationDate,
+                    originalEntity.image.urlExpirationDate,
+                  )
+                : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
             },
             formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
           };
@@ -181,8 +196,12 @@ export const imagesReducer = createReducer(
             image: {
               ...image,
               mainUrl: originalEntity?.image.mainUrl,
-              urlExpirationDate:
-                image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate,
+              urlExpirationDate: originalEntity?.image.mainUrl
+                ? earlierIso(
+                    image.urlExpirationDate,
+                    originalEntity.image.urlExpirationDate,
+                  )
+                : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
             },
             formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
           };
@@ -204,6 +223,11 @@ export const imagesReducer = createReducer(
     lastFilteredThumbnailsFetch: null,
   })),
 
+  on(ImagesActions.fetchMainImageInBackgroundFailed, (state): ImagesState => ({
+    ...state,
+    callState: initialState.callState,
+  })),
+
   on(ImagesActions.fetchMainImageSucceeded, (state, { image }): ImagesState => {
     const originalEntity = image ? state.entities[image.id] : null;
 
@@ -212,8 +236,10 @@ export const imagesReducer = createReducer(
         image: {
           ...image,
           mainUrl: image.mainUrl ?? originalEntity?.image.mainUrl,
-          urlExpirationDate:
-            image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate,
+          thumbnailUrl: originalEntity?.image.thumbnailUrl,
+          urlExpirationDate: originalEntity?.image.thumbnailUrl
+            ? earlierIso(image.urlExpirationDate, originalEntity.image.urlExpirationDate)
+            : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
         },
         formData: originalEntity?.formData ?? pick(image, IMAGE_FORM_DATA_PROPERTIES),
       },

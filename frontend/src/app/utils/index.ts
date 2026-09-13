@@ -35,6 +35,7 @@ export { parseCsv } from './file/parse-csv.util';
 export { setPaginationParams } from './http/set-pagination-params.util';
 
 export { buildImagesFormData } from './image/build-images-form-data.util';
+export { isPresignedUrlExpired } from './image/is-presigned-url-expired.util';
 export {
   calculateAspectRatio,
   calculateDecimalAspectRatio,

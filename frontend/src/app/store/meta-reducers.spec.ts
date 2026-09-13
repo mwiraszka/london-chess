@@ -1,17 +1,22 @@
 import { Action, ActionReducer } from '@ngrx/store';
+import { pick } from 'lodash';
 
-import { CallState } from '@app/models';
+import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MOCK_IMAGES } from '@app/mocks/images.mock';
+import { CallState, Image } from '@app/models';
 
 import { version } from '../../../package.json';
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import { initialState as eventsInitialState } from './events/events.reducer';
-import { initialState as imagesInitialState } from './images/images.reducer';
+import { ImagesState, initialState as imagesInitialState } from './images/images.reducer';
 import { initialState as membersInitialState } from './members/members.reducer';
 import {
   MetaState,
   actionLogMetaReducer,
+  hydrationMetaReducer,
   loadingStateResetMetaReducer,
   metaReducers,
+  stripExpiredImageUrls,
   updateStateVersionsInLocalStorageMetaReducer,
   versionedStorage,
 } from './meta-reducers';
@@ -369,6 +374,93 @@ describe('Meta Reducers', () => {
       const result = wrappedLoadingStateResetMetaReducer(mockState, action);
 
       expect(result.articlesState?.callState).toEqual(loadingCallState);
+    });
+  });
+
+  describe('stripExpiredImageUrls', () => {
+    const stateWith = (image: Image): ImagesState => ({
+      ...imagesInitialState,
+      ids: [image.id],
+      entities: {
+        [image.id]: { image, formData: pick(image, IMAGE_FORM_DATA_PROPERTIES) },
+      },
+    });
+
+    it('should strip expired presigned URLs', () => {
+      const expiredImage: Image = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/stale.jpg',
+        thumbnailUrl: 'https://example.com/stale-thumb.jpg',
+        urlExpirationDate: new Date(Date.now() - 60_000).toISOString(),
+      };
+
+      const result = stripExpiredImageUrls(stateWith(expiredImage));
+
+      const image = result.entities[expiredImage.id]?.image;
+      expect(image?.mainUrl).toBeUndefined();
+      expect(image?.thumbnailUrl).toBeUndefined();
+      expect(image?.urlExpirationDate).toBeUndefined();
+    });
+
+    it('should strip URLs whose expiration date is missing', () => {
+      const undatedImage: Image = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/undated.jpg',
+        urlExpirationDate: undefined,
+      };
+
+      const result = stripExpiredImageUrls(stateWith(undatedImage));
+
+      expect(result.entities[undatedImage.id]?.image.mainUrl).toBeUndefined();
+    });
+
+    it('should strip retired-storage URLs even when the recorded expiration is fresh', () => {
+      const corruptedImage: Image = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://old-bucket.s3.us-east-2.amazonaws.com/stale',
+        thumbnailUrl: 'https://example.com/fresh-thumb.jpg',
+        urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
+      };
+
+      const result = stripExpiredImageUrls(stateWith(corruptedImage));
+
+      const image = result.entities[corruptedImage.id]?.image;
+      expect(image?.mainUrl).toBeUndefined();
+      expect(image?.thumbnailUrl).toBeUndefined();
+      expect(image?.urlExpirationDate).toBeUndefined();
+    });
+
+    it('should keep URLs that are still fresh', () => {
+      const freshImage: Image = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/fresh.jpg',
+        thumbnailUrl: 'https://example.com/fresh-thumb.jpg',
+        urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
+      };
+
+      const result = stripExpiredImageUrls(stateWith(freshImage));
+
+      const image = result.entities[freshImage.id]?.image;
+      expect(image?.mainUrl).toBe(freshImage.mainUrl);
+      expect(image?.thumbnailUrl).toBe(freshImage.thumbnailUrl);
+      expect(image?.urlExpirationDate).toBe(freshImage.urlExpirationDate);
+    });
+
+    it('should be applied when hydrating imagesState from local storage', () => {
+      const expiredImage: Image = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/stale.jpg',
+        urlExpirationDate: new Date(Date.now() - 60_000).toISOString(),
+      };
+      versionedStorage.setItem('imagesState', JSON.stringify(stateWith(expiredImage)));
+      mockReducer = vi.fn((state: MetaState | undefined) => state ?? {});
+      const wrappedReducer = hydrationMetaReducer(mockReducer);
+
+      const result = wrappedReducer(undefined, { type: '@ngrx/store/init' });
+
+      const image = result.imagesState?.entities[expiredImage.id]?.image;
+      expect(image).toBeDefined();
+      expect(image?.mainUrl).toBeUndefined();
     });
   });
 

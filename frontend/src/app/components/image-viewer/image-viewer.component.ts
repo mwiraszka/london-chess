@@ -32,6 +32,7 @@ import {
 } from '@app/models';
 import { DialogService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
+import { isPresignedUrlExpired } from '@app/utils';
 
 @UntilDestroy()
 @Component({
@@ -191,7 +192,7 @@ export class ImageViewerComponent
       .select(ImagesSelectors.selectImageById(imageId))
       .pipe(take(1))
       .subscribe(image => {
-        if (!image?.mainUrl) {
+        if (!image?.mainUrl || isPresignedUrlExpired(image.urlExpirationDate)) {
           if (isPrefetch) {
             this.store.dispatch(
               ImagesActions.fetchMainImageInBackgroundRequested({ imageId }),

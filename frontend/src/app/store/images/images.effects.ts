@@ -300,49 +300,33 @@ export class ImagesEffects {
     );
   });
 
+  // One pipeline for both foreground and background requests, grouped by image
+  // id so concurrent requests for the same image collapse into a single call.
+  // Background failures dispatch a separate action that never surfaces a toast.
   fetchMainImage$ = createEffect(() => {
     return this.actions$.pipe(
-      ofType(ImagesActions.fetchMainImageRequested),
-      groupBy(({ imageId }) => imageId),
-      mergeMap(group$ =>
-        group$.pipe(
-          exhaustMap(({ imageId }) =>
-            this.imagesApiService.getMainImage(imageId).pipe(
-              timeout(30000),
-              map(response =>
-                ImagesActions.fetchMainImageSucceeded({ image: response.data }),
-              ),
-              catchError(error =>
-                of(
-                  ImagesActions.fetchMainImageFailed({
-                    error: this.parseError(error),
-                  }),
-                ),
-              ),
-            ),
-          ),
-        ),
+      ofType(
+        ImagesActions.fetchMainImageRequested,
+        ImagesActions.fetchMainImageInBackgroundRequested,
       ),
-    );
-  });
-
-  fetchMainImageInBackground$ = createEffect(() => {
-    return this.actions$.pipe(
-      ofType(ImagesActions.fetchMainImageInBackgroundRequested),
       groupBy(({ imageId }) => imageId),
       mergeMap(group$ =>
         group$.pipe(
-          exhaustMap(({ imageId }) =>
-            this.imagesApiService.getMainImage(imageId, true).pipe(
+          exhaustMap(action =>
+            this.imagesApiService.getMainImage(action.imageId).pipe(
               timeout(30000),
               map(response =>
                 ImagesActions.fetchMainImageSucceeded({ image: response.data }),
               ),
               catchError(error =>
                 of(
-                  ImagesActions.fetchMainImageFailed({
-                    error: this.parseError(error),
-                  }),
+                  action.type === ImagesActions.fetchMainImageRequested.type
+                    ? ImagesActions.fetchMainImageFailed({
+                        error: this.parseError(error),
+                      })
+                    : ImagesActions.fetchMainImageInBackgroundFailed({
+                        error: this.parseError(error),
+                      }),
                 ),
               ),
             ),

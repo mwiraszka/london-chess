@@ -331,8 +331,8 @@ describe('ImagesEffects', () => {
       }));
   });
 
-  describe('fetchMainImageInBackground$', () => {
-    it('should fetch main image in background successfully', () =>
+  describe('fetchMainImage$ (background requests)', () => {
+    it('should fetch main image for a background request', () =>
       withDone(done => {
         const mockMainImageResponse: ApiResponse<Image> = { data: MOCK_IMAGES[0] };
         imagesApiService.getMainImage.mockReturnValue(of(mockMainImageResponse));
@@ -343,19 +343,16 @@ describe('ImagesEffects', () => {
           }),
         );
 
-        effects.fetchMainImageInBackground$.subscribe(action => {
+        effects.fetchMainImage$.subscribe(action => {
           expect(action).toEqual(
             ImagesActions.fetchMainImageSucceeded({ image: MOCK_IMAGES[0] }),
           );
-          expect(imagesApiService.getMainImage).toHaveBeenCalledWith(
-            MOCK_IMAGES[0].id,
-            true,
-          );
+          expect(imagesApiService.getMainImage).toHaveBeenCalledWith(MOCK_IMAGES[0].id);
           done();
         });
       }));
 
-    it('should handle fetch main image in background failure', () =>
+    it('should dispatch the silent background failure action on error', () =>
       withDone(done => {
         imagesApiService.getMainImage.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
@@ -364,9 +361,9 @@ describe('ImagesEffects', () => {
           ImagesActions.fetchMainImageInBackgroundRequested({ imageId: 'invalid-id' }),
         );
 
-        effects.fetchMainImageInBackground$.subscribe(action => {
+        effects.fetchMainImage$.subscribe(action => {
           expect(action).toEqual(
-            ImagesActions.fetchMainImageFailed({ error: mockError }),
+            ImagesActions.fetchMainImageInBackgroundFailed({ error: mockError }),
           );
           done();
         });

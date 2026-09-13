@@ -340,8 +340,43 @@ describe('Images Reducer', () => {
       const action = ImagesActions.fetchMainImageSucceeded({ image: MOCK_IMAGES[0] });
       const state = imagesReducer(initialState, action);
 
-      expect(state.entities['mock-id-1']?.image).toEqual(MOCK_IMAGES[0]);
+      expect(state.entities['mock-id-1']?.image).toEqual({
+        ...MOCK_IMAGES[0],
+        thumbnailUrl: undefined,
+      });
       expect(state.callState.status).toBe('idle');
+    });
+
+    it('should preserve an existing thumbnail URL and keep the earlier expiration', () => {
+      const existing = {
+        ...MOCK_IMAGES[0],
+        mainUrl: undefined,
+        thumbnailUrl: 'https://example.com/existing-thumb.jpg',
+        urlExpirationDate: '2026-01-01T00:00:00.000Z',
+      };
+      const previousState = imagesReducer(
+        initialState,
+        ImagesActions.fetchBatchThumbnailsSucceeded({
+          images: [existing],
+          context: 'album-covers',
+        }),
+      );
+      const incoming = {
+        ...MOCK_IMAGES[0],
+        mainUrl: 'https://example.com/fresh-main.jpg',
+        thumbnailUrl: undefined,
+        urlExpirationDate: '2026-01-02T00:00:00.000Z',
+      };
+
+      const state = imagesReducer(
+        previousState,
+        ImagesActions.fetchMainImageSucceeded({ image: incoming }),
+      );
+
+      const image = state.entities['mock-id-1']?.image;
+      expect(image?.mainUrl).toBe('https://example.com/fresh-main.jpg');
+      expect(image?.thumbnailUrl).toBe('https://example.com/existing-thumb.jpg');
+      expect(image?.urlExpirationDate).toBe('2026-01-01T00:00:00.000Z');
     });
 
     it('should update mainUrl but preserve formData', () => {
@@ -367,6 +402,26 @@ describe('Images Reducer', () => {
 
       expect(state.entities['mock-id-1']?.image.mainUrl).toBe(MOCK_IMAGES[0].mainUrl);
       expect(state.entities['mock-id-1']?.formData).toEqual(existingFormData);
+    });
+  });
+
+  describe('fetchMainImageInBackgroundFailed', () => {
+    it('should reset the call state without recording an error', () => {
+      const loadingState = {
+        ...initialState,
+        callState: {
+          status: 'loading' as const,
+          loadStart: new Date().toISOString(),
+          error: null,
+        },
+      };
+
+      const action = ImagesActions.fetchMainImageInBackgroundFailed({
+        error: { name: 'LCCError', message: 'Background fetch failed.' },
+      });
+      const state = imagesReducer(loadingState, action);
+
+      expect(state.callState).toEqual(initialState.callState);
     });
   });
 

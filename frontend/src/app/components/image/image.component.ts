@@ -93,6 +93,18 @@ export class ImageComponent {
     }
     this.hasLoaded.set(true);
     this.loaded.emit();
+
+    // The full-size upgrade starts only after the thumbnail has rendered, so
+    // the two loads never race and no in-flight request gets cancelled
+    const mainUrl = this.image()?.mainUrl;
+    if (
+      this.displayMode() === 'thumbnail' &&
+      mainUrl &&
+      !this.mainFailed &&
+      !this.currentPreloader
+    ) {
+      this.preloadMain(mainUrl);
+    }
   }
 
   protected onImgError(): void {
@@ -167,7 +179,6 @@ export class ImageComponent {
       this.displayMode.set('thumbnail');
       this.currentSrc.set(thumbnailUrl);
       this.blurred.set(true);
-      this.preloadMain(mainUrl);
       return;
     }
 

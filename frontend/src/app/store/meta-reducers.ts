@@ -3,7 +3,7 @@ import { Action, ActionReducer, MetaReducer } from '@ngrx/store';
 import { compact } from 'lodash';
 import { localStorageSync } from 'ngrx-store-localstorage';
 
-import { hasCallState } from '@app/utils';
+import { hasCallState, isPresignedUrlExpired } from '@app/utils';
 
 import { environment } from '@env';
 
@@ -158,7 +158,11 @@ export function hydrationMetaReducer(
   reducer: ActionReducer<MetaState>,
 ): ActionReducer<MetaState> {
   return localStorageSync({
-    keys: hydratedStates,
+    keys: hydratedStates.map(stateKey =>
+      stateKey === 'imagesState'
+        ? { imagesState: { deserialize: stripExpiredImageUrls } }
+        : stateKey,
+    ),
     rehydrate: true,
     restoreDates: false,
     storage: versionedStorage,
@@ -212,6 +216,51 @@ export function loadingStateResetMetaReducer(
 
     return nextState;
   };
+}
+
+// Image storage moved off AWS S3, so any persisted URL still pointing there is
+// dead regardless of its recorded expiration (older app versions could stamp a
+// fresh expiration onto an entity while keeping its old URL)
+const RETIRED_STORAGE_HOST = 'amazonaws.com';
+
+function pointsAtRetiredStorage(url: string | undefined): boolean {
+  return !!url && url.includes(RETIRED_STORAGE_HOST);
+}
+
+/**
+ * Drops persisted presigned URLs that are already expired (or inside the
+ * refresh buffer), or that point at retired storage, while rehydrating, so
+ * components render placeholders and wait for fresh URLs instead of loading
+ * doomed ones.
+ */
+export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
+  const entities = imagesState.entities ?? {};
+  const updatedEntities: typeof entities = {};
+
+  for (const id of Object.keys(entities)) {
+    const entity = entities[id];
+    const image = entity?.image;
+    const stale =
+      !!(image?.mainUrl || image?.thumbnailUrl) &&
+      (isPresignedUrlExpired(image?.urlExpirationDate) ||
+        pointsAtRetiredStorage(image?.mainUrl) ||
+        pointsAtRetiredStorage(image?.thumbnailUrl));
+
+    updatedEntities[id] =
+      entity && stale
+        ? {
+            ...entity,
+            image: {
+              ...entity.image,
+              mainUrl: undefined,
+              thumbnailUrl: undefined,
+              urlExpirationDate: undefined,
+            },
+          }
+        : entity;
+  }
+
+  return { ...imagesState, entities: updatedEntities };
 }
 
 export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compact([

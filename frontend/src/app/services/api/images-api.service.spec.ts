@@ -23,10 +23,6 @@ import { environment } from '@env';
 
 import { ImagesApiService } from './images-api.service';
 
-const mockFetch = vi.fn();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).fetch = mockFetch;
-
 describe('ImagesApiService', () => {
   let service: ImagesApiService;
   let httpMock: HttpTestingController;
@@ -48,8 +44,6 @@ describe('ImagesApiService', () => {
 
     service = TestBed.inject(ImagesApiService);
     httpMock = TestBed.inject(HttpTestingController);
-
-    mockFetch.mockClear();
   });
 
   afterEach(() => {
@@ -152,7 +146,7 @@ describe('ImagesApiService', () => {
   });
 
   describe('getMainImage', () => {
-    it('should get main image by id using HttpClient', () => {
+    it('should get main image by id', () => {
       const mockResponse: ApiResponse<Image> = {
         data: mockImage,
       };
@@ -165,72 +159,6 @@ describe('ImagesApiService', () => {
       expect(req.request.method).toBe('GET');
       req.flush(mockResponse);
     });
-
-    it('should use fetch API for prefetch with keepalive', () =>
-      withDone(done => {
-        const mockResponse: ApiResponse<Image> = {
-          data: mockImage,
-        };
-
-        const mockFetchResponse = {
-          ok: true,
-          json: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockFetch.mockResolvedValue(mockFetchResponse);
-
-        service.getMainImage(mockImage.id, true).subscribe(response => {
-          expect(response).toEqual(mockResponse);
-          expect(mockFetch).toHaveBeenCalledWith(`${apiBaseUrl}/${mockImage.id}`, {
-            method: 'GET',
-            keepalive: true,
-            credentials: 'include',
-          });
-          done();
-        });
-      }));
-
-    it('should handle fetch errors during prefetch', () =>
-      withDone(done => {
-        const mockFetchResponse = {
-          ok: false,
-          status: 404,
-        };
-
-        mockFetch.mockResolvedValue(mockFetchResponse);
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => undefined);
-
-        service.getMainImage(mockImage.id, true).subscribe({
-          next: () => fail('should have failed'),
-          error: error => {
-            expect(error).toBeDefined();
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-              `[LCC] Error prefetching image ${mockImage.id}:`,
-              expect.any(Error),
-            );
-            done();
-          },
-        });
-      }));
-
-    it('should handle network errors during prefetch', () =>
-      withDone(done => {
-        mockFetch.mockRejectedValue(new Error('Network error'));
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => undefined);
-
-        service.getMainImage('img-123', true).subscribe({
-          next: () => fail('should have failed'),
-          error: error => {
-            expect(error.message).toBe('Network error');
-            expect(consoleErrorSpy).toHaveBeenCalled();
-            done();
-          },
-        });
-      }));
   });
 
   describe('addImages', () => {

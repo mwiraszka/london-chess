@@ -51,34 +51,10 @@ export class ImagesApiService {
     );
   }
 
-  public getMainImage(id: Id, isPrefetch = false): Observable<ApiResponse<Image>> {
-    const url = `${this.API_BASE_URL}/${this.COLLECTION}/${id}`;
-
-    if (isPrefetch) {
-      // Use Fetch API with keepalive to prevent browser cancellation when image is not in viewport
-      return new Observable(observer => {
-        fetch(url, { method: 'GET', keepalive: true, credentials: 'include' })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(
-                `[LCC] HTTP error during prefetch! Status: ${response.status}`,
-              );
-            }
-            return response.json();
-          })
-          .then(data => {
-            observer.next(data);
-            observer.complete();
-          })
-          .catch(error => {
-            console.error(`[LCC] Error prefetching image ${id}:`, error);
-            observer.error(error);
-          });
-      });
-    }
-
-    // Use standard HttpClient if keepalive is not requested
-    return this.http.get<ApiResponse<Image>>(url);
+  public getMainImage(id: Id): Observable<ApiResponse<Image>> {
+    return this.http.get<ApiResponse<Image>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${id}`,
+    );
   }
 
   public addImages(imagesFormData: FormData): Observable<ApiResponse<Image[]>> {

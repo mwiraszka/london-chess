@@ -68,6 +68,11 @@ export const fetchMainImageFailed = createAction(
   props<{ error: LccError }>(),
 );
 
+export const fetchMainImageInBackgroundFailed = createAction(
+  '[Images] Fetch main image in background failed',
+  props<{ error: LccError }>(),
+);
+
 export const addAnImageSelected = createAction('[Images] Add an image selected');
 
 export const addImageRequested = createAction(
