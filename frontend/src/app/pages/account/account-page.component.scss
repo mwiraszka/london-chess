@@ -63,11 +63,13 @@
 }
 
 .settings-nav__item:hover {
-  background: var(--color-state-hover);
+  // The plain hover token is invisible against the light page background
+  background: var(--color-state-active);
   color: var(--color-text-primary);
 }
 
 .settings-nav__item--active {
+  font-weight: 600;
   background: var(--color-state-active);
   color: var(--color-text-primary);
 }
