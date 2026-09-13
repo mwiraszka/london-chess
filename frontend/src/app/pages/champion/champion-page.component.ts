@@ -71,7 +71,7 @@ export class ChampionPageComponent implements OnInit {
     { year: 2019, winners: [{ name: 'Kevin Gibson', peakRating: '2217*' }] },
     { year: 2018, winners: [{ name: 'Amir Docheshmeh', peakRating: '1771*' }] },
     { year: 2017, winners: [{ name: 'Steve Demmery', peakRating: '2166*' }] },
-    { year: 2016, winners: [{ name: 'Tony Bohan Bao', peakRating: '2007*' }] },
+    { year: 2016, winners: [{ name: 'Tony Bao', peakRating: '2007*' }] },
     {
       year: 2015,
       winners: [
@@ -150,7 +150,7 @@ export class ChampionPageComponent implements OnInit {
       year: 2014,
       winners: [
         { name: 'Steve Demmery', peakRating: '2188' },
-        { name: 'Carl Erhman', peakRating: '2174' },
+        { name: 'Carl Ehrman', peakRating: '2174' },
       ],
     },
     { year: 2013, winners: [{ name: 'Kevin Gibson', peakRating: '2244' }] },
