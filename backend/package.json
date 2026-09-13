@@ -23,18 +23,18 @@
     "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts'"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1117.0",
-    "@aws-sdk/s3-request-presigner": "3.1117.0",
-    "@clerk/backend": "3.17.1",
-    "@sentry/node": "10.71.0",
+    "@aws-sdk/client-s3": "3.1131.0",
+    "@aws-sdk/s3-request-presigner": "3.1131.0",
+    "@clerk/backend": "3.17.2",
+    "@sentry/node": "10.74.0",
     "cors": "2.8.6",
     "express": "5.2.1",
-    "mongodb": "7.5.0",
-    "mongoose": "9.9.3",
-    "multer": "2.2.0",
-    "nodemailer": "10.0.0",
-    "sharp": "0.35.3",
-    "svix": "2.3.0"
+    "mongodb": "7.6.0",
+    "mongoose": "9.10.0",
+    "multer": "2.3.0",
+    "nodemailer": "10.0.9",
+    "sharp": "0.35.4",
+    "svix": "2.5.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -42,20 +42,20 @@
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/multer": "2.2.0",
-    "@types/node": "26.3.0",
+    "@types/node": "26.5.1",
     "@types/nodemailer": "8.0.1",
-    "@typescript-eslint/eslint-plugin": "8.68.0",
-    "@typescript-eslint/parser": "8.68.0",
-    "@vitest/coverage-v8": "4.1.11",
-    "eslint": "10.9.1",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
+    "@vitest/coverage-v8": "5.0.0",
+    "eslint": "10.10.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.6",
     "prettier": "3.9.6",
     "prettier-eslint": "17.1.2",
-    "tsx": "4.23.12",
+    "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.68.0",
-    "vitest": "4.1.11"
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -66,7 +66,8 @@
       "brace-expansion@>=5.0.0 <5.0.6": ">=5.0.6",
       "fast-xml-builder@<1.1.7": ">=1.1.7",
       "minimatch@>=9.0.0 <9.0.7": ">=9.0.7",
-      "qs@>=6.11.1 <=6.15.1": ">=6.15.2"
+      "qs@<6.16.0": ">=6.16.0",
+      "@humanfs/node@<0.16.8": ">=0.16.8"
     }
   },
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
