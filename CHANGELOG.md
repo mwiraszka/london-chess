@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Correct two misspelled champion names on the City Champion page
 - Keep login and logout confirmation toasts visible by completing auth redirects inside the app
 - Refresh expired photo links at startup and stop duplicate or cancelled image requests
+- Align the page content with the navigation bar in Safari, with or without a scrollbar
+- Stop the link underline drifting upward when hovered in Safari
 
 ## [v5.13.8] - 2026-09-12
 
