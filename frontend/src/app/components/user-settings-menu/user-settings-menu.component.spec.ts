@@ -70,14 +70,14 @@ describe('UserSettingsMenuComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should show log in, site-updates, and view toggles but no account items when logged out', () => {
+  it('should show log in, whats-changed, and view toggles but no account items when logged out', () => {
     store.overrideSelector(AuthSelectors.selectUser, null);
     store.refreshState();
 
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.login')).toBeTruthy();
-    expect(query(fixture.debugElement, '.site-updates')).toBeTruthy();
+    expect(query(fixture.debugElement, '.whats-changed')).toBeTruthy();
     expect(query(fixture.debugElement, '.theme-toggle')).toBeTruthy();
     expect(query(fixture.debugElement, '.wide-view-toggle')).toBeTruthy();
     expect(query(fixture.debugElement, '.user-info')).toBeFalsy();
@@ -99,7 +99,7 @@ describe('UserSettingsMenuComponent', () => {
       'john.doe@example.com',
     );
     expect(query(fixture.debugElement, '.account')).toBeTruthy();
-    expect(query(fixture.debugElement, '.site-updates')).toBeTruthy();
+    expect(query(fixture.debugElement, '.whats-changed')).toBeTruthy();
     expect(query(fixture.debugElement, '.theme-toggle')).toBeTruthy();
     expect(query(fixture.debugElement, '.wide-view-toggle')).toBeTruthy();
     expect(query(fixture.debugElement, '.safe-mode-toggle')).toBeTruthy();
@@ -128,10 +128,10 @@ describe('UserSettingsMenuComponent', () => {
     expect(dispatchSpy).toHaveBeenCalledWith(AppActions.desktopViewToggled());
   });
 
-  it('should navigate to the site-updates page and close the menu', () => {
-    component.onSiteUpdates();
+  it('should navigate to the whats-changed page and close the menu', () => {
+    component.onWhatsChanged();
 
-    expect(routerSpy).toHaveBeenCalledWith(['site-updates']);
+    expect(routerSpy).toHaveBeenCalledWith(['whats-changed']);
     expect(closeSpy).toHaveBeenCalled();
   });
 

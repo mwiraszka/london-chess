@@ -16,4 +16,4 @@ export { ToastService } from './toast.service';
 export { TouchEventsService } from './touch-events.service';
 export { UserAvatarsService } from './user-avatars.service';
 export { UserService } from './user.service';
-export { SiteUpdatesService } from './site-updates.service';
+export { WhatsChangedService } from './whats-changed.service';

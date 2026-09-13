@@ -2,18 +2,18 @@ import moment from 'moment-timezone';
 
 import { Injectable, signal } from '@angular/core';
 
-import { SiteUpdatesRelease } from '@app/models';
-import { SITE_UPDATES_RELEASES } from '@app/pages/site-updates/site-updates.generated';
+import { WhatsChangedRelease } from '@app/models';
+import { WHATS_CHANGED_RELEASES } from '@app/pages/whats-changed/whats-changed.generated';
 import { isStorageSupported } from '@app/utils';
 
-const LAST_SEEN_STORAGE_KEY = 'siteUpdatesLastSeenVersion';
+const LAST_SEEN_STORAGE_KEY = 'whatsChangedLastSeenVersion';
 const RECENT_RELEASE_WINDOW_DAYS = 14;
 
 @Injectable({
   providedIn: 'root',
 })
-export class SiteUpdatesService {
-  public readonly releases: SiteUpdatesRelease[] = SITE_UPDATES_RELEASES;
+export class WhatsChangedService {
+  public readonly releases: WhatsChangedRelease[] = WHATS_CHANGED_RELEASES;
 
   public readonly hasRecentUnseenRelease = signal<boolean>(
     this.isLatestReleaseRecentAndUnseen(),

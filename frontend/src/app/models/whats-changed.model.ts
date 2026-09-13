@@ -1,16 +1,16 @@
 import { IsoDate } from './core.model';
 
-export interface SiteUpdateTag {
+export interface WhatsChangedTag {
   label: string;
   color: string;
 }
 
-export interface SiteUpdatesRelease {
+export interface WhatsChangedRelease {
   version: string;
   /** Release date, or null while the version is still in development. */
   date: IsoDate | null;
   added: string[];
   changed: string[];
   fixed: string[];
-  tags: SiteUpdateTag[];
+  tags: WhatsChangedTag[];
 }
