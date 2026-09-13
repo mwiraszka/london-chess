@@ -255,14 +255,23 @@ export async function getMe(
       res.status(404).json({ message: 'User not found.' });
       return;
     }
-    // An original stored under a retired storage location can no longer be
-    // served, so present it as absent rather than handing out a dead URL
+    // Older records store avatar URLs under a retired public prefix; the
+    // object keys are deterministic, so point them at the current location
+    // and persist the repair
     if (
       user.avatarOriginalUrl &&
       !user.avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)
     ) {
-      user.avatarOriginalUrl = null;
-      user.avatarCropState = null;
+      user.avatarOriginalUrl = avatarPublicUrl(user.id, 'original');
+      if (user.avatarUrl) {
+        user.avatarUrl = avatarPublicUrl(user.id, 'cropped');
+      }
+      await UserModel.updateOne(
+        { id: user.id },
+        {
+          $set: { avatarOriginalUrl: user.avatarOriginalUrl, avatarUrl: user.avatarUrl },
+        },
+      );
     }
     res.status(200).json({ data: user });
   } catch (error) {

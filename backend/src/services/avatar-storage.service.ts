@@ -16,6 +16,10 @@ function avatarKey(userId: string, variant: AvatarVariant): string {
   return `avatars/${userId}/${variant}`;
 }
 
+export function avatarPublicUrl(userId: string, variant: AvatarVariant): string {
+  return `${avatarPublicUrlPrefix()}/${avatarKey(userId, variant)}`;
+}
+
 export async function uploadAvatar(
   userId: string,
   file: Buffer | ArrayBuffer,
@@ -34,7 +38,7 @@ export async function uploadAvatar(
     }),
   );
 
-  return `${avatarPublicUrlPrefix()}/${key}`;
+  return avatarPublicUrl(userId, variant);
 }
 
 export async function deleteAvatar(userId: string): Promise<void> {
