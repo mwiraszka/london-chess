@@ -3,7 +3,6 @@ import {
   CardComponent,
   DividerComponent,
   ExternalLinkIconComponent,
-  PlusCircleIconComponent,
   SparklesIconComponent,
   ToolIconComponent,
   TrendingUpIconComponent,
@@ -63,7 +62,7 @@ export class SiteUpdatesPageComponent implements OnInit {
 
   protected sectionsOf(release: SiteUpdatesRelease): ReleaseSection[] {
     const sections: ReleaseSection[] = [
-      { label: 'New', icon: PlusCircleIconComponent, entries: release.added },
+      { label: 'New', icon: SparklesIconComponent, entries: release.added },
       { label: 'Improved', icon: TrendingUpIconComponent, entries: release.changed },
       { label: 'Fixed', icon: ToolIconComponent, entries: release.fixed },
     ];

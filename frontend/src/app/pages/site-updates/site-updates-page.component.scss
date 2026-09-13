@@ -14,6 +14,7 @@
   width: 100%;
   max-width: 800px;
   margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .release-header {
@@ -28,12 +29,16 @@
     flex-direction: column;
     gap: 2px;
 
+    // Integer line-heights keep the section dividers below on whole-pixel
+    // offsets, so every 1px rule paints at the same crisp thickness
     .release-version {
       font-size: 17px;
+      line-height: 20px;
     }
 
     .release-date {
       font-size: 13px;
+      line-height: 16px;
       color: var(--lcc-color--siteUpdatesPage-secondaryText);
     }
   }
@@ -64,7 +69,12 @@
     gap: 8px;
     font-size: 16px;
     font-weight: 600;
+    line-height: 20px;
     letter-spacing: 0.5px;
+
+    span {
+      line-height: inherit;
+    }
 
     .section-icon {
       display: inline-flex;
