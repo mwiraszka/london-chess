@@ -12,10 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduce a slide-in login drawer with email code verification and a guided password reset flow, replacing the standalone login and change-password pages
 - Build out an account page for managing your profile, avatar, email address, password, and active sessions, including an avatar editor that keeps the original photo for future re-cropping
 - Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
-- Let visitors request a member account from the login drawer, with requests emailed to the club for review
-- Add a Site Updates page listing each release's improvements, linked from the menu and the footer
+- Let visitors request a member account from the login drawer, with email-code verification before each request reaches the club for review
+- Add a What's Changed page listing each release's improvements, linked from the menu and the footer
 - Add member profile pages with ratings and activity status, linked from member names across the site
-- Let members edit their phone number and chess-site usernames from the account page
+- Let members review their personal details and request changes from the account page
+- Add a Support the site link to the footer
 - Show author avatars beside article bylines and edit history
 - Back up the database and photo storage weekly to encrypted off-site storage
 
