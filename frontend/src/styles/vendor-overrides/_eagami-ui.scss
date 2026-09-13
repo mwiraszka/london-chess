@@ -29,6 +29,14 @@ ea-drawer.lcc-auth-drawer {
   --ea-drawer-panel-background-color: var(--lcc-color--authDrawer-background);
 }
 
+// This app's dark surfaces recess below the page tone (footer, expansion
+// panels, auth drawer), so cards follow suit instead of using the library's
+// lighter elevated tier, with the border stepped down to stay subtle.
+body[data-theme='dark'] ea-card {
+  --color-bg-elevated: var(--color-neutral-800);
+  --color-border-default: var(--color-neutral-600);
+}
+
 // The library's dark skeleton fill (bg-muted, neutral-700) matches this app's
 // page tone; lift it one tier so loading placeholders read on both the page
 // and the recessed card surfaces.
