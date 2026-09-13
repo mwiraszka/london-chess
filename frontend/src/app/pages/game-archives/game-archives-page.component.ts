@@ -2,7 +2,7 @@ import { BarChartIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
 
 import {
   CdkFixedSizeVirtualScroll,
@@ -30,11 +30,13 @@ import {
 } from '@angular/forms';
 
 import { FormErrorIconComponent } from '@app/components/form-error-icon/form-error-icon.component';
+import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PgnViewerComponent } from '@app/components/pgn-viewer/pgn-viewer.component';
 import { FilterFormGroup, GameDetails } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
+import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
 import {
   getOpeningTallies,
@@ -42,6 +44,7 @@ import {
   getPlyCount,
   getResultTallies,
   getScore,
+  isExpired,
   isLccError,
 } from '@app/utils';
 
@@ -59,6 +62,7 @@ import { YEARS } from './years';
     CdkVirtualScrollViewport,
     CommonModule,
     FormErrorIconComponent,
+    MemberLinkComponent,
     PageHeaderComponent,
     PgnViewerComponent,
     ReactiveFormsModule,
@@ -164,6 +168,16 @@ export class GameArchivesPageComponent implements OnInit, OnDestroy {
     this.metaAndTitleService.updateDescription(
       'A collection of games played by London Chess Club members, going all the way back to 1974.',
     );
+
+    // The intro credit links to a member profile, which needs the members loaded
+    this.store
+      .select(MembersSelectors.selectLastFullFetch)
+      .pipe(take(1))
+      .subscribe(lastFullFetch => {
+        if (isExpired(lastFullFetch)) {
+          this.store.dispatch(MembersActions.fetchAllMembersRequested());
+        }
+      });
 
     this.initForm();
     this.initGames();

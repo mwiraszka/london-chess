@@ -5,6 +5,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { MetaAndTitleService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
+import { initialState as membersInitialState } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
 import { query } from '@app/utils';
 
@@ -47,6 +48,7 @@ describe('GameArchivesPageComponent', () => {
           },
         },
         provideMockStore({
+          initialState: { membersState: membersInitialState },
           selectors: [
             {
               selector: AppSelectors.selectIsDarkMode,
