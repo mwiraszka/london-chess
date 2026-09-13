@@ -135,7 +135,7 @@ describe('FooterComponent', () => {
         expect(eventsLinks.length).toBe(3);
         expect(archivesLinks.length).toBe(2);
         expect(documentsLinks.length).toBe(3);
-        expect(websiteLinks.length).toBe(3);
+        expect(websiteLinks.length).toBe(4);
       });
 
       it('should have correct router links for document links', () => {
