@@ -5,6 +5,8 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { ApiService } from '@app/services/api.service';
 import { ClerkService } from '@app/services/clerk.service';
 
+import { environment } from '@env';
+
 export interface UserRecord {
   id: string;
   firstName: string;
@@ -41,13 +43,15 @@ export class UserService {
     });
   }
 
-  // Direct R2 URL of the uncropped original, used by the avatar editor to
-  // re-crop. The key is stable so a cache-buster forces a reload after re-upload.
+  // Uncropped original for the avatar editor, served through the API rather
+  // than R2 directly: the editor draws into a canvas, so the image must come
+  // from a CORS-enabled origin, and R2's public dev domain sends no CORS
+  // headers. The key is stable so a cache-buster forces a reload after re-upload.
   readonly fullSizeAvatarUrl = computed((): string | undefined => {
     const user = this._user();
     if (user?.avatarOriginalUrl) {
       const cacheBuster = new Date(user.lastModifiedDate).getTime();
-      return `${user.avatarOriginalUrl}?t=${cacheBuster}`;
+      return `${environment.lccApiBaseUrl}/users/${user.id}/avatar?t=${cacheBuster}`;
     }
     return undefined;
   });
