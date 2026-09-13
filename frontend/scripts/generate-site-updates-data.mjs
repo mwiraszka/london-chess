@@ -13,6 +13,60 @@ const OUTPUT_PATH = join(
 );
 const MIN_MAJOR_VERSION = 6;
 
+// The definitive set of release tags. A release carries a tag when any of its
+// changelog entries matches, so the card keeps itself in sync as entries are
+// added and removed during development.
+const TAG_REGISTRY = [
+  {
+    label: 'New features',
+    color: '#4a6fa5',
+    matches: release => release.added.length > 0,
+  },
+  {
+    label: 'Styling',
+    color: '#7d6b9e',
+    pattern:
+      /\b(styl\w*|colou?r\w*|icons?|themes?|dark mode|layout|spacing|redesign\w*|placeholders?|fonts?|badges?|dividers?)\b/i,
+  },
+  { label: 'Bug fixes', color: '#b1683a', matches: release => release.fixed.length > 0 },
+  {
+    label: 'Performance',
+    color: '#3d8079',
+    pattern:
+      /\b(performance|faster|speeds?|cach\w*|optimi[sz]\w*|duplicate|cancelled)\b/i,
+  },
+  {
+    label: 'Security',
+    color: '#a94b4b',
+    pattern: /\b(update packages|encrypt\w*|security)\b/i,
+  },
+  {
+    label: 'Accessibility',
+    color: '#a58a3d',
+    pattern: /\b(accessib\w*|aria|screen readers?|keyboard|contrast)\b/i,
+  },
+  {
+    label: 'Mobile',
+    color: '#a85480',
+    pattern: /\b(mobile|touch|small screens?|phones?|responsive)\b/i,
+  },
+  { label: 'Admin tools', color: '#64748b', pattern: /\badmin\w*\b/i },
+  {
+    label: 'Infrastructure',
+    color: '#8a5a3b',
+    pattern:
+      /\b(repositor\w*|storage|serverless|hosting|infrastructur\w*|migrat\w*|cloudflare|aws|cognito|databases?|api|back(?:s|ed)? up|backups?)\b/i,
+  },
+  { label: 'Content', color: '#4d8a5f', pattern: /\b(wording|rewrit\w*|copy)\b/i },
+];
+
+function tagsFor(release) {
+  const allEntries = [...release.added, ...release.changed, ...release.fixed].join('\n');
+  return TAG_REGISTRY.filter(tag =>
+    tag.matches ? tag.matches(release) : tag.pattern.test(allEntries),
+  ).map(({ label, color }) => ({ label, color }));
+}
+
 const changelog = readFileSync(CHANGELOG_PATH, 'utf8');
 
 const releases = [];
@@ -45,7 +99,8 @@ for (const block of releaseBlocks) {
     }
   }
 
-  releases.push({ version, date, ...sections });
+  const release = { version, date, ...sections };
+  releases.push({ ...release, tags: tagsFor(release) });
 }
 
 const banner = `// Generated from CHANGELOG.md by scripts/generate-site-updates-data.mjs.

@@ -7,6 +7,7 @@
   @for (release of releases; track release.version) {
     <ea-card
       class="release-card"
+      headerAlign="start"
       [fullWidth]="true">
       <div
         slot="header"
@@ -15,7 +16,7 @@
           <h3 class="release-version">Version {{ displayVersion(release) }}</h3>
           @if (release.date) {
             <span class="release-date">
-              Released {{ release.date | formatDate: 'long no-time' }}
+              Released {{ release.date | formatDate: 'short month-day-year' }}
             </span>
           }
         </div>
@@ -25,11 +26,19 @@
             [href]="releaseUrl(release)"
             rel="noopener noreferrer"
             target="_blank">
-            <span>View release notes</span>
+            <span>More details</span>
             <ea-icon-external-link class="external-link-icon" />
           </a>
-        } @else {
-          <ea-badge variant="info">In development</ea-badge>
+        }
+      </div>
+
+      <div class="release-tags">
+        @for (tag of release.tags; track tag.label) {
+          <ea-tag
+            size="sm"
+            [color]="tag.color">
+            <span>{{ tag.label }}</span>
+          </ea-tag>
         }
       </div>
 
@@ -51,4 +60,79 @@
       }
     </ea-card>
   }
+</div>
+
+<div class="page-links">
+  <ea-divider class="page-links__divider" />
+  <ea-card [fullWidth]="true">
+    <div class="page-links__grid">
+      <a
+        class="page-link"
+        href="https://github.com/mwiraszka/london-chess/releases"
+        rel="noopener noreferrer"
+        target="_blank">
+        <ea-icon-tag class="page-link__icon" />
+        <span class="page-link__text">
+          <span class="page-link__title">
+            <span>All releases</span>
+            <ea-icon-external-link class="external-link-icon" />
+          </span>
+          <span class="page-link__desc">
+            Full version history and release notes for this website.
+          </span>
+        </span>
+      </a>
+      <a
+        class="page-link"
+        href="https://github.com/mwiraszka/london-chess#readme"
+        rel="noopener noreferrer"
+        target="_blank">
+        <ea-icon-github class="page-link__icon" />
+        <span class="page-link__text">
+          <span class="page-link__title">
+            <span>Source code</span>
+            <ea-icon-external-link class="external-link-icon" />
+          </span>
+          <span class="page-link__desc">
+            Browse this website's open-source code on GitHub.
+          </span>
+        </span>
+      </a>
+      <a
+        class="page-link"
+        href="mailto:michal@londonchess.ca?subject=LCC%20Website%20-%20Bug%20Report"
+        rel="noopener noreferrer"
+        target="_blank">
+        <ea-icon-bug class="page-link__icon" />
+        <span class="page-link__text">
+          <span class="page-link__title">
+            <span>Report a bug</span>
+            <ea-icon-external-link class="external-link-icon" />
+          </span>
+          <span class="page-link__desc">
+            Spotted a problem? Send a quick email with the details.
+          </span>
+        </span>
+      </a>
+      <a
+        class="page-link page-link--coffee"
+        href="https://buymeacoffee.com/michalwiraszka"
+        rel="noopener noreferrer"
+        target="_blank">
+        <ea-icon-coffee class="page-link__icon" />
+        <span class="page-link__text">
+          <span class="page-link__title">
+            <img
+              class="bmc-button"
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+              alt="Buy me a coffee" />
+            <ea-icon-external-link class="external-link-icon" />
+          </span>
+          <span class="page-link__desc">
+            Enjoying the site? Support its development.
+          </span>
+        </span>
+      </a>
+    </div>
+  </ea-card>
 </div>

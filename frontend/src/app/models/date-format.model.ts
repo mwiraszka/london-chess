@@ -7,5 +7,6 @@ export type DateFormat =
   | 'short no-time'
   | 'short day-of-week'
   | 'short month-day'
+  | 'short month-day-year'
   | 'time'
   | 'year';

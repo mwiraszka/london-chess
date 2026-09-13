@@ -1,9 +1,14 @@
 import {
-  BadgeComponent,
+  BugIconComponent,
   CardComponent,
+  CoffeeIconComponent,
   DividerComponent,
   ExternalLinkIconComponent,
+  GithubIconComponent,
+  LaptopIconComponent,
   SparklesIconComponent,
+  TagComponent,
+  TagIconComponent,
   ToolIconComponent,
   TrendingUpIconComponent,
 } from '@eagami/ui';
@@ -27,13 +32,17 @@ interface ReleaseSection {
   templateUrl: './site-updates-page.component.html',
   styleUrl: './site-updates-page.component.scss',
   imports: [
-    BadgeComponent,
     CardComponent,
     DividerComponent,
+    BugIconComponent,
+    CoffeeIconComponent,
     ExternalLinkIconComponent,
+    GithubIconComponent,
     FormatDatePipe,
     NgComponentOutlet,
     PageHeaderComponent,
+    TagComponent,
+    TagIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,7 +50,7 @@ export class SiteUpdatesPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly siteUpdatesService = inject(SiteUpdatesService);
 
-  protected readonly pageIcon = SparklesIconComponent;
+  protected readonly pageIcon = LaptopIconComponent;
   protected readonly releases = this.siteUpdatesService.releases;
 
   public ngOnInit(): void {

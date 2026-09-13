@@ -42,4 +42,4 @@ export type { NavPath } from './nav-path.model';
 export type { DataPaginationOptions, Filter } from './pagination.model';
 export type { Toast } from './toast.model';
 export type { User } from './user.model';
-export type { SiteUpdatesRelease } from './site-updates.model';
+export type { SiteUpdatesRelease, SiteUpdateTag } from './site-updates.model';

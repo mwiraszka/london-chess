@@ -12,6 +12,7 @@ import { DateFormat, IsoDate } from '@app/models';
  * * `short no-time`: Thu, Jan 1, 2024
  * * `short day-of-week`: Thu
  * * `short month-day`: Jan 1
+ * * `short month-day-year`: Jan 1, 2024
  * * `year`: 2024
  * * `time`: 6:00 PM
 
@@ -37,6 +38,8 @@ export function formatDate(date?: IsoDate, format: DateFormat = 'long'): string 
       return moment(date).format('ddd');
     case 'short month-day':
       return moment(date).format('MMM D');
+    case 'short month-day-year':
+      return moment(date).format('MMM D, YYYY');
     case 'year':
       return moment(date).format('YYYY');
     case 'time':
