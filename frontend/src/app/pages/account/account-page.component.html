@@ -38,8 +38,8 @@
     <div class="settings-content">
       @switch (activeSection()) {
         @case ('profile') {
-          <ea-card>
-            <h4 slot="header">Profile</h4>
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Profile</h3>
             <div class="avatar-section">
               <ea-avatar-editor
                 shape="circle"
@@ -96,6 +96,7 @@
 
               <div class="actions">
                 <ea-button
+                  size="sm"
                   [disabled]="!hasChanges() || !firstName().trim() || !lastName().trim()"
                   [loading]="saving()"
                   (clicked)="onSave()">
@@ -107,8 +108,8 @@
         }
 
         @case ('security') {
-          <ea-card>
-            <h4 slot="header">Email address</h4>
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Email address</h3>
 
             @if (emailStep() === 'idle') {
               <div class="fields">
@@ -121,6 +122,7 @@
               </div>
               <div class="actions">
                 <ea-button
+                  size="sm"
                   [disabled]="!canSubmitEmail()"
                   [loading]="emailBusy()"
                   (clicked)="onChangeEmail()">
@@ -138,11 +140,13 @@
               </div>
               <div class="actions actions--row">
                 <ea-button
+                  size="sm"
                   [loading]="emailBusy()"
                   (clicked)="onVerifyEmail()">
                   Verify
                 </ea-button>
                 <ea-button
+                  size="sm"
                   variant="secondary"
                   (clicked)="cancelEmailChange()">
                   Cancel
@@ -151,8 +155,8 @@
             }
           </ea-card>
 
-          <ea-card>
-            <h4 slot="header">Password</h4>
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Password</h3>
             <div class="fields">
               @if (hasPassword()) {
                 <ea-input
@@ -217,6 +221,7 @@
             </div>
             <div class="actions">
               <ea-button
+                size="sm"
                 [disabled]="!canChangePassword()"
                 [loading]="passwordBusy()"
                 (clicked)="onChangePassword()">
@@ -225,8 +230,8 @@
             </div>
           </ea-card>
 
-          <ea-card>
-            <h4 slot="header">Session management</h4>
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Session management</h3>
             <p class="card-desc">
               These are the devices and browsers signed in to your account, with when each
               was last active. Log out of any unfamiliar devices.
@@ -262,6 +267,7 @@
               @if (sessions().length > 1) {
                 <div class="actions">
                   <ea-button
+                    size="sm"
                     variant="secondary"
                     [loading]="revokingOthers()"
                     (clicked)="onRevokeOtherSessions()">
@@ -274,13 +280,14 @@
         }
 
         @case ('danger') {
-          <ea-card>
-            <h4 slot="header">Delete account</h4>
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Delete account</h3>
             <p class="card-desc">
               Permanently delete your account and profile. This cannot be undone.
             </p>
             <div class="actions">
               <ea-button
+                size="sm"
                 variant="danger"
                 [loading]="deleting()"
                 (clicked)="deleteDialogOpen.set(true)">
@@ -301,11 +308,13 @@
   <p>Are you sure you want to delete your account? This action cannot be undone.</p>
   <div slot="footer">
     <ea-button
+      size="sm"
       variant="secondary"
       (clicked)="deleteDialogOpen.set(false)">
       Cancel
     </ea-button>
     <ea-button
+      size="sm"
       variant="danger"
       [loading]="deleting()"
       (clicked)="onConfirmDelete()">
