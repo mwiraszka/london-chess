@@ -13,15 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build out an account page for managing your profile, avatar, email address, password, and active sessions, including an avatar editor that keeps the original photo for future re-cropping
 - Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
 - Let visitors request a member account from the login drawer, with requests emailed to the club for review
+- Add a What's New page listing each release's improvements, linked from the menu and the footer
+- Add member profile pages with ratings and activity status, linked from member names across the site
 - Back up the database and photo storage weekly to encrypted off-site storage
 
 ### Changed
 
 - Consolidate the website and API into a single repository
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 - Replace AWS Cognito with Clerk for admin authentication and user management
-- Require new users to set their own password on first login
-- Redesign the navigation bar with instant theme and wide view controls, a log in button, and an avatar account menu in place of the settings dropdown
+- Redesign the navigation bar around a single menu, shown as your avatar once logged in, holding log in, theme, view, and safe mode controls
 - Swap every Material icon for an Eagami UI icon across the site
 - Make the table paginator buttons uniform squares
 - Cap photo gallery album covers at 200px wide so wide view no longer stretches them
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Centre the footer logo above the club name
 - Keep login and logout confirmation toasts visible by completing auth redirects inside the app
+- Refresh expired photo links at startup and stop duplicate or cancelled image requests
 
 ## [v5.13.8] - 2026-09-12
 
@@ -48,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.13.6] - 2026-05-17
 
@@ -58,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.13.5] - 2026-05-03
 
@@ -75,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.13.3] - 2026-04-16
 
@@ -132,13 +134,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.12.11] - 2026-04-02
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.12.10] - 2026-03-22
 
@@ -1284,7 +1286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix some security vulnerabilities
+- Update packages
 
 ## [v3.0.10] - 2024-04-02
 
