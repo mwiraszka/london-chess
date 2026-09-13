@@ -15,4 +15,4 @@ export { RoutingService } from './routing.service';
 export { ToastService } from './toast.service';
 export { TouchEventsService } from './touch-events.service';
 export { UserService } from './user.service';
-export { WhatsNewService } from './whats-new.service';
+export { SiteUpdatesService } from './site-updates.service';

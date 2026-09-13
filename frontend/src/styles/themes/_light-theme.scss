@@ -96,11 +96,6 @@
 
   --lcc-color--clubLinks-boxShadow: #{clr(grayscale, white-85, 0.7)};
 
-  --lcc-color--contentPlaceholder-background: #{clr(grayscale, white-90)};
-  --lcc-color--contentPlaceholder-foreground1: #{clr(grayscale, white-95, 0.05)};
-  --lcc-color--contentPlaceholder-foreground2: #{clr(grayscale, white-95, 0.3)};
-  --lcc-color--contentPlaceholder-foreground3: #{clr(grayscale, white-95, 0.6)};
-
   --lcc-color--dataToolbar-background: #{clr(primary, base)};
   --lcc-color--dataToolbar-buttonBorder: #{clr(grayscale, gray-75)};
   --lcc-color--dataToolbar-selectedButtonBorder: #{clr(secondary, base)};
@@ -115,6 +110,10 @@
   --lcc-color--datePicker-headerText: #{clr(grayscale, black-10)};
   --lcc-color--datePicker-selectedDateText: #{clr(grayscale, black-20)};
 
+  --lcc-color--contentPlaceholder-background: #{clr(grayscale, white-90)};
+  --lcc-color--contentPlaceholder-foreground1: #{clr(grayscale, white-95, 0.05)};
+  --lcc-color--contentPlaceholder-foreground2: #{clr(grayscale, white-95, 0.3)};
+  --lcc-color--contentPlaceholder-foreground3: #{clr(grayscale, white-95, 0.6)};
   --lcc-color--dialog-background: #{clr(grayscale, white-90)};
   --lcc-color--dialog-closeIcon: #{clr(grayscale, gray-25)};
   --lcc-color--dialog-closeIconOnHover: #{clr(grayscale, black-5)};
@@ -269,7 +268,7 @@
   --lcc-color--nav-linkForeground: #{clr(grayscale, gray-25)};
   --lcc-color--nav-linkForegroundOnHover: #{clr(primary, light)};
   --lcc-color--nav-linkForegroundWhenActive: #{clr(grayscale, black-2)};
-  --lcc-color--whatsNewPage-secondaryText: #{clr(grayscale, gray-35)};
+  --lcc-color--siteUpdatesPage-secondaryText: #{clr(grayscale, gray-35)};
 
   --lcc-color--pgnViewer-board: #{clr(chessboard)};
   --lcc-color--pgnViewer-playerNameText: #{clr(grayscale, white-85)};

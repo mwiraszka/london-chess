@@ -1,13 +1,16 @@
-// Regenerates src/app/pages/whats-new/whats-new.generated.ts from the root
+// Regenerates src/app/pages/site-updates/site-updates.generated.ts from the root
 // CHANGELOG.md, keeping releases from v6.0.0 up. Runs automatically before
-// every serve and build so the What's New page always matches the changelog.
+// every serve and build so the Site Updates page always matches the changelog.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const FRONTEND_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHANGELOG_PATH = join(FRONTEND_ROOT, '..', 'CHANGELOG.md');
-const OUTPUT_PATH = join(FRONTEND_ROOT, 'src/app/pages/whats-new/whats-new.generated.ts');
+const OUTPUT_PATH = join(
+  FRONTEND_ROOT,
+  'src/app/pages/site-updates/site-updates.generated.ts',
+);
 const MIN_MAJOR_VERSION = 6;
 
 const changelog = readFileSync(CHANGELOG_PATH, 'utf8');
@@ -45,14 +48,14 @@ for (const block of releaseBlocks) {
   releases.push({ version, date, ...sections });
 }
 
-const banner = `// Generated from CHANGELOG.md by scripts/generate-whats-new-data.mjs.
+const banner = `// Generated from CHANGELOG.md by scripts/generate-site-updates-data.mjs.
 // Do not edit by hand; edit the changelog instead.`;
 
 const output = `${banner}
-import { WhatsNewRelease } from '@app/models';
+import { SiteUpdatesRelease } from '@app/models';
 
-export const WHATS_NEW_RELEASES: WhatsNewRelease[] = ${JSON.stringify(releases, null, 2)};
+export const SITE_UPDATES_RELEASES: SiteUpdatesRelease[] = ${JSON.stringify(releases, null, 2)};
 `;
 
 writeFileSync(OUTPUT_PATH, output);
-console.log(`whats-new.generated.ts written (${releases.length} releases)`);
+console.log(`site-updates.generated.ts written (${releases.length} releases)`);

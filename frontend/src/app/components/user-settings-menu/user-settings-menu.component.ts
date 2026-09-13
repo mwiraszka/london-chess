@@ -127,8 +127,8 @@ export class UserSettingsMenuComponent implements OnInit {
     this.store.dispatch(AppActions.desktopViewToggled());
   }
 
-  public onWhatsNew(): void {
-    this.router.navigate(['whats-new']);
+  public onSiteUpdates(): void {
+    this.router.navigate(['site-updates']);
     this.close.emit();
   }
 

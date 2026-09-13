@@ -96,11 +96,6 @@ body[data-theme='dark'] {
 
   --lcc-color--clubLinks-boxShadow: #{clr(grayscale, black-10, 0.7)};
 
-  --lcc-color--contentPlaceholder-background: #{clr(grayscale, gray-75)};
-  --lcc-color--contentPlaceholder-foreground1: #{clr(grayscale, gray-65, 0.02)};
-  --lcc-color--contentPlaceholder-foreground2: #{clr(grayscale, gray-65, 0.08)};
-  --lcc-color--contentPlaceholder-foreground3: #{clr(grayscale, gray-65, 0.18)};
-
   --lcc-color--dataToolbar-background: #{clr(primary, darker)};
   --lcc-color--dataToolbar-buttonBorder: #{clr(grayscale, gray-75)};
   --lcc-color--dataToolbar-selectedButtonBorder: #{clr(secondary, base)};
@@ -115,6 +110,10 @@ body[data-theme='dark'] {
   --lcc-color--datePicker-headerText: #{clr(grayscale, white-80)};
   --lcc-color--datePicker-selectedDateText: #{clr(grayscale, white-80)};
 
+  --lcc-color--contentPlaceholder-background: #{clr(grayscale, gray-75)};
+  --lcc-color--contentPlaceholder-foreground1: #{clr(grayscale, gray-65, 0.02)};
+  --lcc-color--contentPlaceholder-foreground2: #{clr(grayscale, gray-65, 0.08)};
+  --lcc-color--contentPlaceholder-foreground3: #{clr(grayscale, gray-65, 0.18)};
   --lcc-color--dialog-background: #{clr(grayscale, white-90)};
   --lcc-color--dialog-closeIcon: #{clr(grayscale, gray-25)};
   --lcc-color--dialog-closeIconOnHover: #{clr(grayscale, black-5)};
@@ -269,7 +268,7 @@ body[data-theme='dark'] {
   --lcc-color--nav-linkForeground: #{clr(grayscale, white-85)};
   --lcc-color--nav-linkForegroundOnHover: #{clr(primary, lighter)};
   --lcc-color--nav-linkForegroundWhenActive: #{clr(grayscale, white-98)};
-  --lcc-color--whatsNewPage-secondaryText: #{clr(grayscale, gray-65)};
+  --lcc-color--siteUpdatesPage-secondaryText: #{clr(grayscale, gray-65)};
 
   --lcc-color--pageHeader-adminIcon: #{clr(admin, base)};
   --lcc-color--pageHeader-asteriskText: #{clr(grayscale, gray-50)};

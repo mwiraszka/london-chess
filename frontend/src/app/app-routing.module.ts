@@ -22,10 +22,10 @@ const routes: Routes = [
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
   {
-    path: 'whats-new',
+    path: 'site-updates',
     loadComponent: () =>
-      import('./pages/whats-new/whats-new-page.component').then(
-        c => c.WhatsNewPageComponent,
+      import('./pages/site-updates/site-updates-page.component').then(
+        c => c.SiteUpdatesPageComponent,
       ),
   },
   {

@@ -13,9 +13,9 @@ import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, Type, inject } from '@angular/core';
 
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { WhatsNewRelease } from '@app/models';
+import { SiteUpdatesRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { MetaAndTitleService, WhatsNewService } from '@app/services';
+import { MetaAndTitleService, SiteUpdatesService } from '@app/services';
 
 interface ReleaseSection {
   label: string;
@@ -24,9 +24,9 @@ interface ReleaseSection {
 }
 
 @Component({
-  selector: 'lcc-whats-new-page',
-  templateUrl: './whats-new-page.component.html',
-  styleUrl: './whats-new-page.component.scss',
+  selector: 'lcc-site-updates-page',
+  templateUrl: './site-updates-page.component.html',
+  styleUrl: './site-updates-page.component.scss',
   imports: [
     BadgeComponent,
     CardComponent,
@@ -38,30 +38,30 @@ interface ReleaseSection {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WhatsNewPageComponent implements OnInit {
+export class SiteUpdatesPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
-  private readonly whatsNewService = inject(WhatsNewService);
+  private readonly siteUpdatesService = inject(SiteUpdatesService);
 
   protected readonly pageIcon = SparklesIconComponent;
-  protected readonly releases = this.whatsNewService.releases;
+  protected readonly releases = this.siteUpdatesService.releases;
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle("What's New");
+    this.metaAndTitleService.updateTitle('Site Updates');
     this.metaAndTitleService.updateDescription(
       'The latest improvements and features on the London Chess Club website.',
     );
-    this.whatsNewService.markLatestReleaseSeen();
+    this.siteUpdatesService.markLatestReleaseSeen();
   }
 
-  protected displayVersion(release: WhatsNewRelease): string {
+  protected displayVersion(release: SiteUpdatesRelease): string {
     return release.version.replace(/^v/, '');
   }
 
-  protected releaseUrl(release: WhatsNewRelease): string {
+  protected releaseUrl(release: SiteUpdatesRelease): string {
     return `https://github.com/mwiraszka/london-chess/releases/tag/${release.version}`;
   }
 
-  protected sectionsOf(release: WhatsNewRelease): ReleaseSection[] {
+  protected sectionsOf(release: SiteUpdatesRelease): ReleaseSection[] {
     const sections: ReleaseSection[] = [
       { label: 'New', icon: PlusCircleIconComponent, entries: release.added },
       { label: 'Improved', icon: TrendingUpIconComponent, entries: release.changed },

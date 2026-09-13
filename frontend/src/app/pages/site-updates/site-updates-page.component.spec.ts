@@ -1,37 +1,37 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MetaAndTitleService, WhatsNewService } from '@app/services';
+import { MetaAndTitleService, SiteUpdatesService } from '@app/services';
 import { queryAll, queryTextContent } from '@app/utils';
 
-import { WhatsNewPageComponent } from './whats-new-page.component';
-import { WHATS_NEW_RELEASES } from './whats-new.generated';
+import { SiteUpdatesPageComponent } from './site-updates-page.component';
+import { SITE_UPDATES_RELEASES } from './site-updates.generated';
 
-describe('WhatsNewPageComponent', () => {
-  let fixture: ComponentFixture<WhatsNewPageComponent>;
-  let component: WhatsNewPageComponent;
+describe('SiteUpdatesPageComponent', () => {
+  let fixture: ComponentFixture<SiteUpdatesPageComponent>;
+  let component: SiteUpdatesPageComponent;
   let markLatestReleaseSeenSpy: Mock;
 
   beforeEach(async () => {
     markLatestReleaseSeenSpy = vi.fn();
 
     await TestBed.configureTestingModule({
-      imports: [WhatsNewPageComponent],
+      imports: [SiteUpdatesPageComponent],
       providers: [
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
         {
-          provide: WhatsNewService,
+          provide: SiteUpdatesService,
           useValue: {
-            releases: WHATS_NEW_RELEASES,
+            releases: SITE_UPDATES_RELEASES,
             markLatestReleaseSeen: markLatestReleaseSeenSpy,
           },
         },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(WhatsNewPageComponent);
+    fixture = TestBed.createComponent(SiteUpdatesPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -42,12 +42,12 @@ describe('WhatsNewPageComponent', () => {
 
   it('should render one card per release', () => {
     expect(queryAll(fixture.debugElement, '.release-card').length).toBe(
-      WHATS_NEW_RELEASES.length,
+      SITE_UPDATES_RELEASES.length,
     );
   });
 
   it('should render the version without the v prefix', () => {
-    const firstVersion = WHATS_NEW_RELEASES[0].version.replace(/^v/, '');
+    const firstVersion = SITE_UPDATES_RELEASES[0].version.replace(/^v/, '');
 
     expect(queryTextContent(fixture.debugElement, '.release-version')).toBe(
       `Version ${firstVersion}`,
@@ -55,7 +55,7 @@ describe('WhatsNewPageComponent', () => {
   });
 
   it('should show an in-development badge instead of a release link for undated releases', () => {
-    const undatedIndex = WHATS_NEW_RELEASES.findIndex(release => !release.date);
+    const undatedIndex = SITE_UPDATES_RELEASES.findIndex(release => !release.date);
 
     if (undatedIndex === -1) {
       return;
@@ -67,7 +67,7 @@ describe('WhatsNewPageComponent', () => {
   });
 
   it('should link dated releases to their GitHub release', () => {
-    const datedIndex = WHATS_NEW_RELEASES.findIndex(release => release.date);
+    const datedIndex = SITE_UPDATES_RELEASES.findIndex(release => release.date);
 
     if (datedIndex === -1) {
       return;
@@ -76,12 +76,12 @@ describe('WhatsNewPageComponent', () => {
     const card = queryAll(fixture.debugElement, '.release-card')[datedIndex];
     const link = queryAll(card, '.release-link')[0];
     expect(link.attributes['href']).toBe(
-      `https://github.com/mwiraszka/london-chess/releases/tag/${WHATS_NEW_RELEASES[datedIndex].version}`,
+      `https://github.com/mwiraszka/london-chess/releases/tag/${SITE_UPDATES_RELEASES[datedIndex].version}`,
     );
   });
 
   it('should only render sections that have entries', () => {
-    const firstRelease = WHATS_NEW_RELEASES[0];
+    const firstRelease = SITE_UPDATES_RELEASES[0];
     const expectedSectionCount = [
       firstRelease.added,
       firstRelease.changed,

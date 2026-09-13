@@ -1,6 +1,6 @@
 import { IsoDate } from './core.model';
 
-export interface WhatsNewRelease {
+export interface SiteUpdatesRelease {
   version: string;
   /** Release date, or null while the version is still in development. */
   date: IsoDate | null;

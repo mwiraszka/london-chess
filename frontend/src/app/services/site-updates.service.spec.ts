@@ -1,17 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 
-import { WHATS_NEW_RELEASES } from '@app/pages/whats-new/whats-new.generated';
+import { SITE_UPDATES_RELEASES } from '@app/pages/site-updates/site-updates.generated';
 
-import { WhatsNewService } from './whats-new.service';
+import { SiteUpdatesService } from './site-updates.service';
 
-describe('WhatsNewService', () => {
-  let service: WhatsNewService;
+describe('SiteUpdatesService', () => {
+  let service: SiteUpdatesService;
 
   beforeEach(() => {
     localStorage.clear();
 
     TestBed.configureTestingModule({});
-    service = TestBed.inject(WhatsNewService);
+    service = TestBed.inject(SiteUpdatesService);
   });
 
   it('should be created', () => {
@@ -19,7 +19,7 @@ describe('WhatsNewService', () => {
   });
 
   it('should expose the generated releases', () => {
-    expect(service.releases).toBe(WHATS_NEW_RELEASES);
+    expect(service.releases).toBe(SITE_UPDATES_RELEASES);
   });
 
   it('should clear the recent-release indicator when marked seen', () => {
@@ -29,11 +29,11 @@ describe('WhatsNewService', () => {
   });
 
   it('should persist the latest released version when marked seen', () => {
-    const latestReleased = WHATS_NEW_RELEASES.find(release => release.date);
+    const latestReleased = SITE_UPDATES_RELEASES.find(release => release.date);
 
     service.markLatestReleaseSeen();
 
-    expect(localStorage.getItem('whatsNewLastSeenVersion')).toBe(
+    expect(localStorage.getItem('siteUpdatesLastSeenVersion')).toBe(
       latestReleased?.version ?? null,
     );
   });
