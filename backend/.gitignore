@@ -5,10 +5,7 @@
 .prod.env
 .env
 .dev-offline.env
-ecosystem.config.cjs
 
-# Backups
-/backups
 *.log
 
 # System files

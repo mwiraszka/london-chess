@@ -32,9 +32,6 @@ playwright-report
 # Logs
 *.log
 
-# Database backups
-backups
-
 # Internal/working docs are kept out of this public repo
 docs/
 
