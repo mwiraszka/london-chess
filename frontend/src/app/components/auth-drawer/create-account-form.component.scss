@@ -1,9 +1,29 @@
+@use '../../../styles/abstracts/mixins' as mixins;
+
 .name-row {
   display: flex;
   gap: 16px;
 
   ea-input {
     flex: 1;
+  }
+
+  // Paired columns get too tight for wrapped labels on phones
+  @include mixins.respond-to('lt-xs') {
+    flex-direction: column;
+  }
+}
+
+.email-year-row {
+  display: flex;
+  gap: 16px;
+
+  ea-input {
+    flex: 1;
+  }
+
+  @include mixins.respond-to('lt-xs') {
+    flex-direction: column;
   }
 }
 
@@ -23,8 +43,9 @@
   font-size: 14px;
   line-height: 20px;
   text-align: start;
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  background-color: var(--color-bg-subtle);
+  background-color: var(--color-bg-muted);
   color: var(--color-text-secondary);
 }
 
@@ -33,4 +54,46 @@
   margin-top: 2px;
   font-size: 16px;
   color: var(--color-success-default);
+}
+
+.fields-divider {
+  display: block;
+  // Composes with the 16px form gap either side for a 48px visual break
+  margin: 32px 0;
+}
+
+// The number control caps its own width to its digits; here the field should
+// fill its column like its label does
+.email-year-row ea-number-input ::ng-deep .ea-number-input-wrapper {
+  width: 100%;
+}
+
+.email-year-row ea-number-input ::ng-deep .ea-number-input {
+  flex: 1;
+  width: auto;
+}
+
+.labeled-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  // Mirrors the label-to-control gap ea-input uses internally
+  gap: 6px;
+}
+
+.labeled-field__row {
+  display: block;
+}
+
+.labeled-field__help {
+  vertical-align: -2px;
+  margin-left: 6px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: help;
+}
+
+.code-actions {
+  display: flex;
+  justify-content: space-between;
 }

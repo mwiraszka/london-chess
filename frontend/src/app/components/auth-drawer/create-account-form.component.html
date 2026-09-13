@@ -1,54 +1,156 @@
-<form
-  class="auth-form"
-  (ngSubmit)="onSubmit()">
-  <div class="name-row">
+@if (step() === 'form') {
+  <form
+    class="auth-form"
+    (ngSubmit)="onSubmit()">
+    <div class="name-row">
+      <ea-input
+        label="First name"
+        autocomplete="given-name"
+        [autofocus]="true"
+        [required]="true"
+        [(value)]="firstName" />
+
+      <ea-input
+        label="Last name"
+        autocomplete="family-name"
+        [required]="true"
+        [(value)]="lastName" />
+    </div>
+
+    <div class="email-year-row">
+      <ea-input
+        label="Email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        [required]="true"
+        [errorMsg]="emailError()"
+        (blurred)="onEmailBlur()"
+        [value]="email()"
+        (valueChange)="onEmailChange($event)" />
+
+      <ea-number-input
+        label="Year of birth"
+        placeholder="1990"
+        [required]="true"
+        [min]="minYearOfBirth"
+        [max]="currentYear"
+        [maxDigits]="4"
+        [(value)]="yearOfBirth" />
+    </div>
+
+    <div class="name-row">
+      <ea-input
+        label="City"
+        autocomplete="address-level2"
+        placeholder="London"
+        [required]="true"
+        [maxLength]="50"
+        [(value)]="city" />
+
+      <div class="labeled-field">
+        <lcc-field-label-with-help
+          text="Phone number"
+          forId="request-phone-input"
+          [helpTooltip]="phoneTooltip" />
+        <ea-input
+          id="request-phone-input"
+          type="tel"
+          autocomplete="tel"
+          placeholder="555-123-1234"
+          [maxLength]="20"
+          [errorMsg]="phoneError()"
+          [(value)]="phoneNumber" />
+      </div>
+    </div>
+
+    <ea-divider class="fields-divider" />
+
+    <div class="name-row">
+      <div class="labeled-field">
+        <lcc-field-label-with-help
+          text="Lichess username"
+          forId="request-lichess-input"
+          [icon]="lichessLogo"
+          [helpTooltip]="lichessTooltip" />
+        <ea-input
+          id="request-lichess-input"
+          [maxLength]="20"
+          [errorMsg]="lichessError()"
+          [(value)]="lichessUsername" />
+      </div>
+
+      <div class="labeled-field">
+        <lcc-field-label-with-help
+          text="Chess.com username"
+          forId="request-chesscom-input"
+          [icon]="chesscomLogo"
+          [helpTooltip]="chessComTooltip" />
+        <ea-input
+          id="request-chesscom-input"
+          [maxLength]="25"
+          [errorMsg]="chessComError()"
+          [(value)]="chessComUsername" />
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <ea-button
+      type="submit"
+      variant="primary"
+      [fullWidth]="true"
+      [disabled]="!canSubmit()"
+      [loading]="loading()">
+      Request account
+    </ea-button>
+  </form>
+} @else {
+  <form
+    class="auth-form"
+    (ngSubmit)="onVerifyAndSubmit()">
+    <p class="hint">Enter the six-digit code we sent to {{ email() }}.</p>
+
     <ea-input
-      label="First name"
-      autocomplete="given-name"
+      label="Verification code"
+      autocomplete="one-time-code"
       [autofocus]="true"
       [required]="true"
-      [(value)]="firstName" />
+      [maxLength]="6"
+      [errorMsg]="codeError()"
+      [(value)]="verificationCode" />
 
-    <ea-input
-      label="Last name"
-      autocomplete="family-name"
-      [required]="true"
-      [(value)]="lastName" />
-  </div>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
 
-  <ea-input
-    label="Email"
-    type="email"
-    autocomplete="email"
-    placeholder="you@example.com"
-    [required]="true"
-    [errorMsg]="emailError()"
-    (blurred)="onEmailBlur()"
-    [value]="email()"
-    (valueChange)="onEmailChange($event)" />
+    <ea-button
+      type="submit"
+      variant="primary"
+      [fullWidth]="true"
+      [disabled]="verificationCode().trim().length !== 6"
+      [loading]="loading()">
+      Verify and submit
+    </ea-button>
 
-  <ea-number-input
-    label="Year of birth"
-    placeholder="1990"
-    [required]="true"
-    [min]="minYearOfBirth"
-    [max]="currentYear"
-    [maxDigits]="4"
-    [(value)]="yearOfBirth" />
-
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
-
-  <ea-button
-    type="submit"
-    variant="primary"
-    [fullWidth]="true"
-    [disabled]="!canSubmit()"
-    [loading]="loading()">
-    Request account
-  </ea-button>
-</form>
+    <div class="code-actions">
+      <button
+        type="button"
+        class="auth-link__button lcc-link"
+        (click)="onResendCode()">
+        Resend code
+      </button>
+      <button
+        type="button"
+        class="auth-link__button lcc-link"
+        (click)="onBackToForm()">
+        Back
+      </button>
+    </div>
+  </form>
+}
 
 <div class="auth-footer">
   <p class="hint">
@@ -75,3 +177,26 @@
     </button>
   </p>
 </div>
+
+<ng-template #phoneTooltip>
+  <div class="field-tooltip">
+    <em>Optional.</em>
+    Your phone number is only visible to club admins and will never be shared with third
+    parties or used for marketing. It is only used to get in touch when we cannot reach
+    you by email.
+  </div>
+</ng-template>
+
+<ng-template #lichessTooltip>
+  <div class="field-tooltip">
+    <em>Optional.</em>
+    Your username is used to link to your profile page on Lichess.
+  </div>
+</ng-template>
+
+<ng-template #chessComTooltip>
+  <div class="field-tooltip">
+    <em>Optional.</em>
+    Your username is used to link to your profile page on Chess.com.
+  </div>
+</ng-template>

@@ -1,15 +1,18 @@
 import { Request, Response } from 'express';
+import { createHash, randomInt } from 'node:crypto';
 
 import { clerkClient } from '../middlewares/auth.middleware';
+import { AccountVerificationModel } from '../models/account-verification.model';
 import { ApiResponse } from '../models/api-response.model';
 import { Member, MemberModel } from '../models/member.model';
 import { AvatarCropState, User, UserModel } from '../models/user.model';
 import {
+  avatarPublicUrl,
   avatarPublicUrlPrefix,
   deleteAvatar,
   uploadAvatar,
 } from '../services/avatar-storage.service';
-import { sendAdminEmail } from '../services/email.service';
+import { sendAdminEmail, sendEmail } from '../services/email.service';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -106,6 +109,39 @@ export async function getMyMember(
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch member record: ${error}` });
   }
+}
+
+const OPTIONAL_TEXT_FIELDS = {
+  firstName: 'First name',
+  lastName: 'Last name',
+  yearOfBirth: 'Year of birth',
+  city: 'City',
+  phoneNumber: 'Phone number',
+  lichessUsername: 'Lichess username',
+  chessComUsername: 'Chess.com username',
+} as const;
+
+type DetailField = keyof typeof OPTIONAL_TEXT_FIELDS;
+
+function validateDetailField(field: DetailField, value: string): string | null {
+  if (!value) {
+    return null;
+  }
+  if (field === 'yearOfBirth' && !/^\d{4}$/.test(value)) {
+    return 'Year of birth must be a four-digit year.';
+  }
+  if (field === 'city' && value.length > 50) {
+    return 'City must be 50 characters or fewer.';
+  }
+  if ((field === 'firstName' || field === 'lastName') && value.length > 50) {
+    return 'Names must be 50 characters or fewer.';
+  }
+  const rule = MEMBER_DETAIL_RULES[field as MemberDetailField] as
+    { pattern: RegExp; message: string } | undefined;
+  if (rule && !rule.pattern.test(value)) {
+    return rule.message;
+  }
+  return null;
 }
 
 export async function updateMyMember(
@@ -538,16 +574,113 @@ function escapeHtml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+const VERIFICATION_TTL_MS = 10 * 60 * 1000;
+const VERIFICATION_RESEND_MS = 60 * 1000;
+const VERIFICATION_MAX_ATTEMPTS = 5;
+
+function hashVerificationCode(code: string): string {
+  return createHash('sha256').update(code).digest('hex');
+}
+
+// Proving inbox access before a request reaches the admin mailbox keeps the
+// form from being used to flood it
+export async function requestAccountVerification(
+  req: Request,
+  res: Response<ApiResponse<'success'>>,
+): Promise<void> {
+  try {
+    const { email } = req.body as { email?: unknown };
+    if (typeof email !== 'string' || !EMAIL_PATTERN.test(email)) {
+      res.status(400).json({ message: 'A valid email address is required.' });
+      return;
+    }
+    const normalized = email.trim().toLowerCase();
+
+    const existing = await AccountVerificationModel.findOne({ email: normalized });
+    if (existing && Date.now() - existing.lastSentAt.getTime() < VERIFICATION_RESEND_MS) {
+      res.status(429).json({
+        message:
+          'A code was sent moments ago – please wait a minute before requesting another.',
+      });
+      return;
+    }
+
+    const code = String(randomInt(100000, 1000000));
+    await AccountVerificationModel.findOneAndUpdate(
+      { email: normalized },
+      {
+        email: normalized,
+        codeHash: hashVerificationCode(code),
+        expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+        attempts: 0,
+        lastSentAt: new Date(),
+      },
+      { upsert: true },
+    );
+
+    await sendEmail(
+      email.trim(),
+      'Your London Chess Club verification code',
+      `Your verification code is ${code}. It expires in 10 minutes.`,
+      `
+      <div style="font-family: Arial, sans-serif; color: #222;">
+        <h2 style="margin: 0 0 8px;">London Chess Club</h2>
+        <p style="margin: 0 0 16px;">Use this code to verify your email address. It expires in 10 minutes.</p>
+        <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 0;">${code}</p>
+      </div>`,
+    );
+
+    res.status(200).json({ data: 'success' });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to send verification code: ${error}` });
+  }
+}
+
+async function consumeVerificationCode(
+  email: string,
+  code: string,
+): Promise<string | null> {
+  const record = await AccountVerificationModel.findOne({
+    email: email.trim().toLowerCase(),
+  });
+  if (!record || record.expiresAt.getTime() < Date.now()) {
+    return 'Your verification code has expired – please request a new one.';
+  }
+  if (record.attempts >= VERIFICATION_MAX_ATTEMPTS) {
+    return 'Too many incorrect attempts – please request a new code.';
+  }
+  if (record.codeHash !== hashVerificationCode(code)) {
+    record.attempts += 1;
+    await record.save();
+    return 'That verification code is incorrect.';
+  }
+  await record.deleteOne();
+  return null;
+}
+
 export async function requestAccount(
   req: Request,
   res: Response<ApiResponse<'success'>>,
 ): Promise<void> {
   try {
-    const { firstName, lastName, email, yearOfBirth } = req.body as {
+    const {
+      firstName,
+      lastName,
+      email,
+      yearOfBirth,
+      city,
+      phoneNumber,
+      lichessUsername,
+      chessComUsername,
+    } = req.body as {
       firstName?: unknown;
       lastName?: unknown;
       email?: unknown;
       yearOfBirth?: unknown;
+      city?: unknown;
+      phoneNumber?: unknown;
+      lichessUsername?: unknown;
+      chessComUsername?: unknown;
     };
 
     if (
@@ -567,12 +700,52 @@ export async function requestAccount(
       res.status(400).json({ message: 'A valid year of birth is required.' });
       return;
     }
+    const { verificationCode } = req.body as { verificationCode?: unknown };
+    if (
+      typeof verificationCode !== 'string' ||
+      !/^\d{6}$/.test(verificationCode.trim())
+    ) {
+      res.status(400).json({ message: 'A six-digit verification code is required.' });
+      return;
+    }
+    const codeProblem = await consumeVerificationCode(email, verificationCode.trim());
+    if (codeProblem) {
+      res.status(400).json({ message: codeProblem });
+      return;
+    }
+
+    const optional: Array<[DetailField, unknown, string]> = [
+      ['city', city, 'City'],
+      ['phoneNumber', phoneNumber, 'Phone number'],
+      ['lichessUsername', lichessUsername, 'Lichess username'],
+      ['chessComUsername', chessComUsername, 'Chess.com username'],
+    ];
+    const extras: Array<[string, string]> = [];
+    for (const [field, value, label] of optional) {
+      if (value === undefined || value === '') {
+        continue;
+      }
+      if (typeof value !== 'string') {
+        res.status(400).json({ message: `${label} must be text.` });
+        return;
+      }
+      const trimmed = value.trim();
+      const problem = validateDetailField(field, trimmed);
+      if (problem) {
+        res.status(400).json({ message: problem });
+        return;
+      }
+      if (trimmed) {
+        extras.push([label, escapeHtml(trimmed)]);
+      }
+    }
 
     const name = `${firstName.trim()} ${lastName.trim()}`;
     const rows: Array<[string, string]> = [
       ['Name', escapeHtml(name)],
       ['Email', escapeHtml(email)],
       ['Year of birth', String(yearOfBirth)],
+      ...extras,
     ];
     const html = `
       <div style="font-family: Arial, sans-serif; color: #222;">
@@ -593,7 +766,7 @@ export async function requestAccount(
           Create their account in the Clerk dashboard and email them once it is ready.
         </p>
       </div>`;
-    const text = `New account request\n\nName: ${name}\nEmail: ${email}\nYear of birth: ${yearOfBirth}`;
+    const text = `New account request\n\n${rows.map(([label, value]) => `${label}: ${value}`).join('\n')}`;
 
     await sendAdminEmail(`New account request from ${name}`, text, html);
 

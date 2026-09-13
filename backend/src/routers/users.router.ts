@@ -9,6 +9,7 @@ import {
   getUserAvatar,
   getUserAvatars,
   requestAccount,
+  requestAccountVerification,
   revokeOtherSessions,
   updateCroppedAvatar,
   updateMe,
@@ -20,6 +21,7 @@ import { avatarUpload } from '../middlewares/avatar-upload.middleware';
 
 export const usersRouter = Router()
   .post('/account-requests', requestAccount)
+  .post('/account-requests/verification', requestAccountVerification)
   .get('/avatars', getUserAvatars)
   .get('/me', auth, getMe)
   .get('/me/member', auth, getMyMember)

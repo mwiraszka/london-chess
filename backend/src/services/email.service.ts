@@ -5,14 +5,14 @@ const SMTP_PORT = 465;
 
 let transport: Transporter | null = null;
 
-// Sends a notification to the club admin mailbox over Zoho SMTP
-export async function sendAdminEmail(
+export async function sendEmail(
+  to: string,
   subject: string,
   text: string,
   html?: string,
 ): Promise<void> {
-  const { ZOHO_SMTP_USER, ZOHO_SMTP_PASSWORD, NOTIFY_EMAIL } = process.env;
-  if (!ZOHO_SMTP_USER || !ZOHO_SMTP_PASSWORD || !NOTIFY_EMAIL) {
+  const { ZOHO_SMTP_USER, ZOHO_SMTP_PASSWORD } = process.env;
+  if (!ZOHO_SMTP_USER || !ZOHO_SMTP_PASSWORD) {
     throw new Error('Unable to parse SMTP environment variables.');
   }
 
@@ -25,9 +25,22 @@ export async function sendAdminEmail(
 
   await transport.sendMail({
     from: ZOHO_SMTP_USER,
-    to: NOTIFY_EMAIL,
+    to,
     subject,
     text,
     html,
   });
+}
+
+// Sends a notification to the club admin mailbox over Zoho SMTP
+export async function sendAdminEmail(
+  subject: string,
+  text: string,
+  html?: string,
+): Promise<void> {
+  const { NOTIFY_EMAIL } = process.env;
+  if (!NOTIFY_EMAIL) {
+    throw new Error('Unable to parse SMTP environment variables.');
+  }
+  await sendEmail(NOTIFY_EMAIL, subject, text, html);
 }
