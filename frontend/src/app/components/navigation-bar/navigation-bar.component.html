@@ -24,63 +24,20 @@
 
   <div class="nav-controls">
     <button
-      aria-label="Toggle theme"
-      class="control-button lcc-icon-button"
-      [tooltip]="isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
-      (click)="onToggleTheme()">
-      @if (isDarkMode()) {
-        <ea-icon-sun class="control-icon" />
-      } @else {
-        <ea-icon-moon class="control-icon" />
-      }
-    </button>
-
-    <button
-      aria-label="Toggle wide view"
-      class="control-button wide-view-button lcc-icon-button"
-      [tooltip]="isWideView() ? 'Disable wide view' : 'Enable wide view'"
-      (click)="onToggleWideView()">
-      @if (isWideView()) {
-        <ea-icon-minimize class="control-icon" />
-      } @else {
-        <ea-icon-maximize class="control-icon" />
-      }
-    </button>
-
-    @if (isTouchDevice) {
-      <button
-        aria-label="Toggle desktop view"
-        class="control-button lcc-icon-button"
-        [tooltip]="isDesktopView() ? 'Disable desktop view' : 'Enable desktop view'"
-        (click)="onToggleDesktopView()">
-        @if (isDesktopView()) {
-          <ea-icon-smartphone class="control-icon" />
-        } @else {
-          <ea-icon-monitor class="control-icon" />
-        }
-      </button>
-    }
-
-    @if (user()) {
-      <button
-        aria-label="Account menu"
-        class="avatar-button"
-        dropdown
-        (isOpen)="isDropdownOpen = $event">
+      aria-label="Menu"
+      class="avatar-button"
+      dropdown
+      (isOpen)="isDropdownOpen = $event">
+      @if (user()) {
         <ea-avatar
           size="sm"
           alt="Your avatar"
           [src]="avatarSrc()"
           [initials]="initials()" />
-      </button>
-    } @else {
-      <button
-        aria-label="Log in"
-        class="login-button"
-        (click)="onLogin()">
-        Log in
-      </button>
-    }
+      } @else {
+        <ea-icon-settings class="menu-icon" />
+      }
+    </button>
   </div>
 </div>
 

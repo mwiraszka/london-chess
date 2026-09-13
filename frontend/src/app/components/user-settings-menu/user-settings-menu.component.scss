@@ -48,6 +48,9 @@
       }
     }
 
+    &.theme-toggle,
+    &.wide-view-toggle,
+    &.desktop-view-toggle,
     &.safe-mode-toggle {
       display: flex;
       justify-content: space-between;

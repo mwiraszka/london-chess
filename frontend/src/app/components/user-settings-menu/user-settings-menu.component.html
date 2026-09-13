@@ -1,6 +1,6 @@
 @if (viewModel$ | async; as vm) {
-  @if (vm.user) {
-    <ul class="menu-items">
+  <ul class="menu-items">
+    @if (vm.user) {
       <li class="menu-item user-info">
         <ea-avatar
           size="sm"
@@ -34,7 +34,51 @@
           <span>Account</span>
         </a>
       </li>
+    }
 
+    <li class="menu-item whats-new">
+      <a
+        aria-label="What's new"
+        class="lcc-dropdown-link"
+        (click)="onWhatsNew()">
+        <span>What's new</span>
+      </a>
+    </li>
+    <hr />
+
+    <li class="menu-item theme-toggle">
+      <span>Dark mode</span>
+      <lcc-toggle-switch
+        [switchedOn]="vm.isDarkMode"
+        tooltipWhenOff="Switch to dark mode"
+        tooltipWhenOn="Switch to light mode"
+        (toggle)="onToggleTheme()">
+      </lcc-toggle-switch>
+    </li>
+
+    <li class="menu-item wide-view-toggle">
+      <span>Wide view</span>
+      <lcc-toggle-switch
+        [switchedOn]="vm.isWideView"
+        tooltipWhenOff="Enable wide view"
+        tooltipWhenOn="Disable wide view"
+        (toggle)="onToggleWideView()">
+      </lcc-toggle-switch>
+    </li>
+
+    @if (isTouchDevice) {
+      <li class="menu-item desktop-view-toggle">
+        <span>Desktop view</span>
+        <lcc-toggle-switch
+          [switchedOn]="vm.isDesktopView"
+          tooltipWhenOff="Enable desktop view"
+          tooltipWhenOn="Disable desktop view"
+          (toggle)="onToggleDesktopView()">
+        </lcc-toggle-switch>
+      </li>
+    }
+
+    @if (vm.user) {
       <li class="menu-item safe-mode-toggle">
         <span>Safe mode</span>
         <lcc-toggle-switch
@@ -47,8 +91,10 @@
           (toggle)="onToggleSafeMode()">
         </lcc-toggle-switch>
       </li>
-      <hr />
+    }
+    <hr />
 
+    @if (vm.user) {
       <li class="menu-item admin-logout">
         <a
           aria-label="Log out"
@@ -57,8 +103,17 @@
           <span>Log out</span>
         </a>
       </li>
-    </ul>
-  }
+    } @else {
+      <li class="menu-item login">
+        <a
+          aria-label="Log in"
+          class="lcc-dropdown-link"
+          (click)="onLogin()">
+          <span>Log in</span>
+        </a>
+      </li>
+    }
+  </ul>
 }
 
 <ng-template #safeModeWarningTooltipContent>

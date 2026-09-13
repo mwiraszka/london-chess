@@ -6,12 +6,7 @@ import {
   HomeIconComponent,
   InfoIconComponent,
   MapIconComponent,
-  MaximizeIconComponent,
-  MinimizeIconComponent,
-  MonitorIconComponent,
-  MoonIconComponent,
-  SmartphoneIconComponent,
-  SunIconComponent,
+  SettingsIconComponent,
   TrophyIconComponent,
   UsersIconComponent,
 } from '@eagami/ui';
@@ -31,10 +26,8 @@ import { DropdownDirective } from '@app/directives/dropdown.directive';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { InternalLink } from '@app/models';
 import { RouterLinkPipe } from '@app/pipes';
-import { AuthDrawerService, ClerkService } from '@app/services';
-import { AppActions, AppSelectors } from '@app/store/app';
+import { ClerkService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
-import { isTouchDevice } from '@app/utils';
 
 @Component({
   selector: 'lcc-navigation-bar',
@@ -43,22 +36,16 @@ import { isTouchDevice } from '@app/utils';
   imports: [
     AvatarComponent,
     DropdownDirective,
-    MaximizeIconComponent,
-    MinimizeIconComponent,
-    MonitorIconComponent,
-    MoonIconComponent,
     NgComponentOutlet,
     RouterLink,
     RouterLinkActive,
     RouterLinkPipe,
-    SmartphoneIconComponent,
-    SunIconComponent,
+    SettingsIconComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavigationBarComponent {
-  private readonly authDrawerService = inject(AuthDrawerService);
   private readonly clerkService = inject(ClerkService);
   private readonly store = inject(Store);
 
@@ -105,11 +92,6 @@ export class NavigationBarComponent {
     },
   ];
 
-  public readonly isDarkMode = this.store.selectSignal(AppSelectors.selectIsDarkMode);
-  public readonly isDesktopView = this.store.selectSignal(
-    AppSelectors.selectIsDesktopView,
-  );
-  public readonly isWideView = this.store.selectSignal(AppSelectors.selectIsWideView);
   public readonly user = this.store.selectSignal(AuthSelectors.selectUser);
 
   // Clerk serves the cropped display avatar; the R2 original is editor-only
@@ -125,28 +107,11 @@ export class NavigationBarComponent {
     return (first + last).toUpperCase() || undefined;
   });
 
-  public isTouchDevice = isTouchDevice();
   public isDropdownOpen = false;
   public screenWidth = window.innerWidth;
 
   @HostListener('window:resize')
   onResize(): void {
     this.screenWidth = window.innerWidth;
-  }
-
-  public onToggleTheme(): void {
-    this.store.dispatch(AppActions.themeToggled());
-  }
-
-  public onToggleWideView(): void {
-    this.store.dispatch(AppActions.wideViewToggled());
-  }
-
-  public onToggleDesktopView(): void {
-    this.store.dispatch(AppActions.desktopViewToggled());
-  }
-
-  public onLogin(): void {
-    this.authDrawerService.openLogin();
   }
 }
