@@ -25,8 +25,7 @@
       <b>Rene Bartar (2027)</b> went on to win the match convincingly with two wins and a
       draw, and an impressive performance rating of 2374. With that, London crowned its
       new chess champion!
-    </p>
-  </div>
+    </p>  </div>
 
   <lcc-photo-carousel [photos]="photos"></lcc-photo-carousel>
 </section>
@@ -59,9 +58,9 @@
               }
               @for (winner of championship.winners; track winner.name; let last = $last) {
                 <span class="winner-name">
-                  <lcc-member-link [name]="winner.name">{{
-                    winner.name
-                  }}</lcc-member-link>
+                  <lcc-member-link [name]="winner.name">
+                    <span>{{ winner.name }}</span>
+                  </lcc-member-link>
                   @if (winner.peakRating) {
                     <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                   }
@@ -129,9 +128,9 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      <lcc-member-link [name]="winner.name">{{
-                        winner.name
-                      }}</lcc-member-link>
+                      <lcc-member-link [name]="winner.name">
+                        <span>{{ winner.name }}</span>
+                      </lcc-member-link>
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                       }
@@ -193,13 +192,11 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      <lcc-member-link [name]="winner.name">{{
-                        winner.name
-                      }}</lcc-member-link>
+                      <lcc-member-link [name]="winner.name">
+                        <span>{{ winner.name }}</span>
+                      </lcc-member-link>
                       @if (winner.peakRating) {
-                        <span class="winner-peak-rating">
-                          ({{ winner.peakRating }})
-                        </span>
+                        <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                       }
                       @if (!last) {
                         <span>, </span>
@@ -259,13 +256,11 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      <lcc-member-link [name]="winner.name">{{
-                        winner.name
-                      }}</lcc-member-link>
+                      <lcc-member-link [name]="winner.name">
+                        <span>{{ winner.name }}</span>
+                      </lcc-member-link>
                       @if (winner.peakRating) {
-                        <span class="winner-peak-rating">
-                          ({{ winner.peakRating }}*)
-                        </span>
+                        <span class="winner-peak-rating">({{ winner.peakRating }}*)</span>
                       }
                       @if (!last) {
                         <span>, </span>

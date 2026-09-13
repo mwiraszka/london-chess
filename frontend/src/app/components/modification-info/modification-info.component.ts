@@ -16,9 +16,9 @@ import { FormatDatePipe } from '@app/pipes';
         <div class="create-text">
           <span>created by</span>
           <span class="name">
-            <lcc-member-link [name]="info.createdBy">{{
-              info.createdBy
-            }}</lcc-member-link>
+            <lcc-member-link [name]="info.createdBy">
+              <span>{{ info.createdBy }}</span>
+            </lcc-member-link>
           </span>
           <span class="vertical-spacer">|</span>
           <span class="date">{{ info.dateCreated | formatDate: 'short' }}</span>
@@ -32,9 +32,9 @@ import { FormatDatePipe } from '@app/pipes';
           <div class="edit-text">
             <span>last edited by</span>
             <span class="name">
-              <lcc-member-link [name]="info.lastEditedBy">{{
-                info.lastEditedBy
-              }}</lcc-member-link>
+              <lcc-member-link [name]="info.lastEditedBy">
+                <span>{{ info.lastEditedBy }}</span>
+              </lcc-member-link>
             </span>
             <span class="vertical-spacer">|</span>
             <span class="date">{{ info.dateLastEdited | formatDate: 'short' }}</span>

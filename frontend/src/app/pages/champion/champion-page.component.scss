@@ -126,7 +126,10 @@ section {
     }
 
     .winner-peak-rating {
+      position: relative;
+      top: 2px;
       vertical-align: text-bottom;
+      margin-left: 4px;
       font-size: 80%;
       color: var(--lcc-color--championPage-secondaryText);
     }
