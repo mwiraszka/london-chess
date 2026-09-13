@@ -34,8 +34,8 @@ export class LoginFormComponent implements OnDestroy {
 
   private readonly codeInput = viewChild<ElementRef>('codeInput');
 
-  email = signal('');
-  password = signal('');
+  email = this.authDrawer.loginDraft.email;
+  password = this.authDrawer.loginDraft.password;
 
   verificationCode = signal('');
   newPassword = signal('');
@@ -162,6 +162,7 @@ export class LoginFormComponent implements OnDestroy {
 
     try {
       await this.clerk.verifyLoginCode(this.verificationCode());
+      this.authDrawer.clearDrafts();
       this.authDrawer.close();
       this.showWelcomeToast();
     } catch (e: unknown) {
@@ -181,6 +182,7 @@ export class LoginFormComponent implements OnDestroy {
 
     try {
       await this.clerk.completeNewPassword(this.newPassword());
+      this.authDrawer.clearDrafts();
       this.authDrawer.close();
       this.showWelcomeToast();
     } catch (e: unknown) {
@@ -210,6 +212,7 @@ export class LoginFormComponent implements OnDestroy {
       } else if (needsNewPassword) {
         this.pendingNewPassword.set(true);
       } else {
+        this.authDrawer.clearDrafts();
         this.authDrawer.close();
         this.showWelcomeToast();
       }

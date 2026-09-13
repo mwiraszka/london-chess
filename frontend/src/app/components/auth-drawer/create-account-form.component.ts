@@ -50,14 +50,14 @@ export class CreateAccountFormComponent {
   protected readonly lichessLogo = LichessLogoComponent;
   protected readonly chesscomLogo = ChesscomLogoComponent;
 
-  firstName = signal('');
-  lastName = signal('');
-  email = signal('');
-  yearOfBirth = signal<number | null>(null);
-  city = signal('');
-  phoneNumber = signal('');
-  lichessUsername = signal('');
-  chessComUsername = signal('');
+  firstName = this.authDrawer.createAccountDraft.firstName;
+  lastName = this.authDrawer.createAccountDraft.lastName;
+  email = this.authDrawer.createAccountDraft.email;
+  yearOfBirth = this.authDrawer.createAccountDraft.yearOfBirth;
+  city = this.authDrawer.createAccountDraft.city;
+  phoneNumber = this.authDrawer.createAccountDraft.phoneNumber;
+  lichessUsername = this.authDrawer.createAccountDraft.lichessUsername;
+  chessComUsername = this.authDrawer.createAccountDraft.chessComUsername;
 
   protected readonly phoneError = computed(() => {
     const value = this.phoneNumber().trim();
@@ -183,9 +183,12 @@ export class CreateAccountFormComponent {
         verificationCode: this.verificationCode().trim(),
       });
 
+      const submittedFirstName = this.firstName().trim();
+      const submittedEmail = this.email().trim();
+      this.authDrawer.clearDrafts();
       this.authDrawer.close();
       this.toast.show(
-        `Thanks ${this.firstName().trim()} – your information has been sent for review. We will email you at ${this.email().trim()} once your account is confirmed.`,
+        `Thanks ${submittedFirstName} – your information has been sent for review. We will email you at ${submittedEmail} once your account is confirmed.`,
         { title: 'Request sent', variant: 'info' },
       );
     } catch (e: unknown) {

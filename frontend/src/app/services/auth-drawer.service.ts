@@ -9,6 +9,37 @@ export class AuthDrawerService {
   readonly open = signal(false);
   readonly mode = signal<AuthMode>('login');
 
+  // Field drafts live here rather than in the form components, so switching
+  // between the forms and back keeps whatever was typed
+  readonly loginDraft = {
+    email: signal(''),
+    password: signal(''),
+  };
+
+  readonly createAccountDraft = {
+    firstName: signal(''),
+    lastName: signal(''),
+    email: signal(''),
+    yearOfBirth: signal<number | null>(null),
+    city: signal(''),
+    phoneNumber: signal(''),
+    lichessUsername: signal(''),
+    chessComUsername: signal(''),
+  };
+
+  clearDrafts(): void {
+    this.loginDraft.email.set('');
+    this.loginDraft.password.set('');
+    this.createAccountDraft.firstName.set('');
+    this.createAccountDraft.lastName.set('');
+    this.createAccountDraft.email.set('');
+    this.createAccountDraft.yearOfBirth.set(null);
+    this.createAccountDraft.city.set('');
+    this.createAccountDraft.phoneNumber.set('');
+    this.createAccountDraft.lichessUsername.set('');
+    this.createAccountDraft.chessComUsername.set('');
+  }
+
   openLogin(): void {
     this.mode.set('login');
     this.open.set(true);
