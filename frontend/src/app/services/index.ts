@@ -14,5 +14,6 @@ export { RefreshService } from './refresh.service';
 export { RoutingService } from './routing.service';
 export { ToastService } from './toast.service';
 export { TouchEventsService } from './touch-events.service';
+export { UserAvatarsService } from './user-avatars.service';
 export { UserService } from './user.service';
 export { SiteUpdatesService } from './site-updates.service';

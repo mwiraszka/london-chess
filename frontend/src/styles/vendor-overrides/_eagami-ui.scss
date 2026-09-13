@@ -25,6 +25,12 @@
   --ea-avatar-size: 28px;
 }
 
+// Compact author avatars beside small byline text
+lcc-modification-info ea-avatar .ea-avatar,
+lcc-article ea-avatar.editor-avatar .ea-avatar {
+  --ea-avatar-size: 18px;
+}
+
 ea-drawer.lcc-auth-drawer {
   --ea-drawer-panel-background-color: var(--lcc-color--authDrawer-background);
 }

@@ -41,6 +41,27 @@ function clerkErrorMessage(error: unknown, fallback: string): string {
   return /[.!?]$/.test(message) ? message : `${message}.`;
 }
 
+export interface UserAvatarEntry {
+  name: string;
+  imageUrl: string | null;
+}
+
+export async function getUserAvatars(
+  _req: Request,
+  res: Response<ApiResponse<UserAvatarEntry[]>>,
+): Promise<void> {
+  try {
+    const users = await UserModel.find({}, 'firstName lastName clerkImageUrl').lean();
+    const data = users.map(user => ({
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      imageUrl: user.clerkImageUrl ?? null,
+    }));
+    res.status(200).json({ data });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to fetch user avatars: ${error}` });
+  }
+}
+
 export async function getMe(
   req: Request,
   res: Response<ApiResponse<User>>,

@@ -1,15 +1,20 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { AvatarComponent } from '@eagami/ui';
+
+import { ChangeDetectionStrategy, Component, Input, OnInit, inject } from '@angular/core';
 
 import { ImageComponent } from '@app/components/image/image.component';
 import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
 import { Article, Image } from '@app/models';
 import { FormatDatePipe, TruncateByCharsPipe, WasEditedPipe } from '@app/pipes';
+import { UserAvatarsService } from '@app/services';
+import { getInitials } from '@app/utils';
 
 @Component({
   selector: 'lcc-article',
   templateUrl: './article.component.html',
   styleUrl: './article.component.scss',
   imports: [
+    AvatarComponent,
     FormatDatePipe,
     ImageComponent,
     MarkdownRendererComponent,
@@ -18,9 +23,23 @@ import { FormatDatePipe, TruncateByCharsPipe, WasEditedPipe } from '@app/pipes';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArticleComponent {
+export class ArticleComponent implements OnInit {
   @Input({ required: true }) article!: Article;
   @Input({ required: true }) bannerImage!: Image | null;
   @Input({ required: true }) isWideView!: boolean;
   @Input() bodyImages: Image[] = [];
+
+  private readonly userAvatarsService = inject(UserAvatarsService);
+
+  public ngOnInit(): void {
+    void this.userAvatarsService.load();
+  }
+
+  protected avatarUrlFor(name: string): string | undefined {
+    return this.userAvatarsService.urlFor(name);
+  }
+
+  protected initialsFor(name: string): string | undefined {
+    return getInitials(name);
+  }
 }

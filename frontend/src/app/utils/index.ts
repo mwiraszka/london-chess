@@ -12,6 +12,7 @@ export { getScore } from './chess/get-score.util';
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';
 export { customSort } from './common/custom-sort.util';
+export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';
 export { takeRandomly } from './common/take-randomly.util';
 

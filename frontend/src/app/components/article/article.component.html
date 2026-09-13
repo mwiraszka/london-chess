@@ -7,9 +7,16 @@
 
 <div class="modification-info-container">
   <div class="author-container">
-    <span class="author-name">
-      {{ article.modificationInfo.createdBy }}
-    </span>
+    <div class="author-row">
+      <ea-avatar
+        size="xs"
+        [alt]="article.modificationInfo.createdBy"
+        [src]="avatarUrlFor(article.modificationInfo.createdBy)"
+        [initials]="initialsFor(article.modificationInfo.createdBy)" />
+      <span class="author-name">
+        {{ article.modificationInfo.createdBy }}
+      </span>
+    </div>
     <span class="date-created">
       {{ article.modificationInfo.dateCreated | formatDate: 'short' }}
     </span>
@@ -19,6 +26,12 @@
     @if (article.modificationInfo | wasEdited) {
       <span class="updated">last updated</span>
       <div class="modification-details">
+        <ea-avatar
+          class="editor-avatar"
+          size="xs"
+          [alt]="article.modificationInfo.lastEditedBy"
+          [src]="avatarUrlFor(article.modificationInfo.lastEditedBy)"
+          [initials]="initialsFor(article.modificationInfo.lastEditedBy)" />
         <span class="editor-name">
           {{ article.modificationInfo.lastEditedBy }}
         </span>

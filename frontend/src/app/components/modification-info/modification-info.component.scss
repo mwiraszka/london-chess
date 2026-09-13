@@ -38,6 +38,10 @@
         white-space: nowrap;
       }
 
+      .author-avatar {
+        vertical-align: middle;
+      }
+
       .name {
         padding: 0 1em 0 0.5em;
         color: var(--lcc-color--modificationInfo-primaryText);

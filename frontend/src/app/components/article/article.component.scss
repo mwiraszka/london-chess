@@ -55,6 +55,12 @@
     font-size: 18px;
     color: var(--lcc-color--article-authorText);
 
+    .author-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .date-created {
       font-size: 14px;
       white-space: nowrap;
@@ -73,6 +79,10 @@
     }
 
     .modification-details {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
       .vertical-spacer {
         padding: 0 0.4em;
         color: var(--lcc-color--general-editorTextSpacer);
