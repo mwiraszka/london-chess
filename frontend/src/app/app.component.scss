@@ -9,14 +9,19 @@
 
   main {
     overflow-x: hidden;
-    overflow-y: auto;
+    // A permanent scrollbar track keeps the width constant, so content never
+    // jumps when a page grows past the fold
+    overflow-y: scroll;
     display: flex;
     flex: 1;
     flex-direction: column;
     align-items: center;
     height: 100%;
     background-color: var(--lcc-color--app-mainBackground);
-    scrollbar-gutter: stable both-edges;
+    // The classic scrollbar consumes the right edge; mirroring its measured
+    // width on the left keeps content centred, and the nav shares the same
+    // variable so its links line up with the content below in every browser
+    padding: 0 8px 0 calc(8px + var(--lcc-scrollbar-inset, 0px));
 
     &::ng-deep > *:not(router-outlet):not(lcc-footer) {
       position: relative;

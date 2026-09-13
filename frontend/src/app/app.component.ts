@@ -158,6 +158,20 @@ export class AppComponent implements OnInit, AfterViewInit {
   public ngAfterViewInit(): void {
     this.refreshService.initialize(this.mainElement.nativeElement);
     this.initNavigationListenerForScrollingBackToTop();
+    this.measureScrollbarInset();
+    window.addEventListener('resize', () => this.measureScrollbarInset());
+  }
+
+  // The classic scrollbar's width varies by browser; publishing it as a
+  // variable lets the scroller mirror it on its left edge and the nav apply
+  // the same inset, keeping everything on one centre line
+  private measureScrollbarInset(): void {
+    const main = this.mainElement.nativeElement;
+    const inset = main.offsetWidth - main.clientWidth;
+    this._document.documentElement.style.setProperty(
+      '--lcc-scrollbar-inset',
+      `${inset}px`,
+    );
   }
 
   public onClearBanner(): void {

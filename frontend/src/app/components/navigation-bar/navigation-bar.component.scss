@@ -136,5 +136,7 @@ $nav-collapse-width: 800px;
 
 .nav-left,
 .nav-right {
-  min-width: 8px;
+  // Matches the scroller's side insets so links line up with page content
+  // while these fillers keep the border line running to the edges
+  min-width: calc(8px + var(--lcc-scrollbar-inset, 0px));
 }
