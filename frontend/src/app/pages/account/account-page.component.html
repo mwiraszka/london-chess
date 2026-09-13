@@ -38,8 +38,8 @@
     <div class="settings-content">
       @switch (activeSection()) {
         @case ('profile') {
-          <ea-card variant="outlined">
-            <h2 slot="header">Profile</h2>
+          <ea-card>
+            <h4 slot="header">Profile</h4>
             <div class="avatar-section">
               <ea-avatar-editor
                 shape="circle"
@@ -107,8 +107,8 @@
         }
 
         @case ('security') {
-          <ea-card variant="outlined">
-            <h2 slot="header">Email address</h2>
+          <ea-card>
+            <h4 slot="header">Email address</h4>
 
             @if (emailStep() === 'idle') {
               <div class="fields">
@@ -151,8 +151,8 @@
             }
           </ea-card>
 
-          <ea-card variant="outlined">
-            <h2 slot="header">Password</h2>
+          <ea-card>
+            <h4 slot="header">Password</h4>
             <div class="fields">
               @if (hasPassword()) {
                 <ea-input
@@ -225,8 +225,8 @@
             </div>
           </ea-card>
 
-          <ea-card variant="outlined">
-            <h2 slot="header">Session management</h2>
+          <ea-card>
+            <h4 slot="header">Session management</h4>
             <p class="card-desc">
               These are the devices and browsers signed in to your account, with when each
               was last active. Log out of any unfamiliar devices.
@@ -274,8 +274,8 @@
         }
 
         @case ('danger') {
-          <ea-card variant="outlined">
-            <h2 slot="header">Delete account</h2>
+          <ea-card>
+            <h4 slot="header">Delete account</h4>
             <p class="card-desc">
               Permanently delete your account and profile. This cannot be undone.
             </p>
