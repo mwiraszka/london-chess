@@ -47,6 +47,11 @@
     align-items: center;
     gap: 8px;
 
+    // Inactive keeps a hint of the warning colour but reads muted
+    .status-badge.inactive {
+      opacity: 0.65;
+    }
+
     .member-city {
       font-size: 14px;
     }

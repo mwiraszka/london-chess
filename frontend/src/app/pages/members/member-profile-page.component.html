@@ -24,7 +24,10 @@
               }
             </h3>
             <div class="identity-badges">
-              <ea-badge [variant]="member.isActive ? 'success' : 'default'">
+              <ea-badge
+                class="status-badge"
+                [class.inactive]="!member.isActive"
+                [variant]="member.isActive ? 'success' : 'warning'">
                 {{ member.isActive ? 'Active member' : 'Inactive member' }}
               </ea-badge>
               @if (member.city) {
