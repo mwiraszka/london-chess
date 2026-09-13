@@ -22,6 +22,13 @@ const routes: Routes = [
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
   {
+    path: 'whats-new',
+    loadComponent: () =>
+      import('./pages/whats-new/whats-new-page.component').then(
+        c => c.WhatsNewPageComponent,
+      ),
+  },
+  {
     path: 'about',
     loadChildren: () =>
       import('./pages/about/about-page-routing.module').then(

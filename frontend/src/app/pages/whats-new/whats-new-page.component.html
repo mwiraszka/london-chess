@@ -1,0 +1,54 @@
+<lcc-page-header
+  heading="What's New"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+<div class="releases">
+  @for (release of releases; track release.version) {
+    <ea-card
+      class="release-card"
+      [fullWidth]="true">
+      <div
+        slot="header"
+        class="release-header">
+        <div class="release-title">
+          <h3 class="release-version">Version {{ displayVersion(release) }}</h3>
+          @if (release.date) {
+            <span class="release-date">
+              Released {{ release.date | formatDate: 'long no-time' }}
+            </span>
+          }
+        </div>
+        @if (release.date) {
+          <a
+            class="release-link lcc-link"
+            [href]="releaseUrl(release)"
+            rel="noopener noreferrer"
+            target="_blank">
+            <span>View release notes</span>
+            <ea-icon-external-link class="external-link-icon" />
+          </a>
+        } @else {
+          <ea-badge variant="info">In development</ea-badge>
+        }
+      </div>
+
+      @for (section of sectionsOf(release); track section.label) {
+        <section class="release-section">
+          <h4 class="section-heading">
+            <span class="section-icon">
+              <ng-container *ngComponentOutlet="section.icon" />
+            </span>
+            <span>{{ section.label }}</span>
+          </h4>
+          <ea-divider class="section-divider" />
+          <ul class="section-entries">
+            @for (entry of section.entries; track entry) {
+              <li>{{ entry }}</li>
+            }
+          </ul>
+        </section>
+      }
+    </ea-card>
+  }
+</div>

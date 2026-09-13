@@ -13,4 +13,5 @@ export type NavPath =
   | 'members'
   | 'news'
   | 'photo-gallery'
-  | 'schedule';
+  | 'schedule'
+  | 'whats-new';
