@@ -1,7 +1,7 @@
 # Dependencies
 node_modules
 
-# Environment variables (never commit secrets)
+# Environment variables
 *.env
 .env
 .env.local
@@ -20,7 +20,6 @@ out-tsc
 # Generated from CHANGELOG.md on every serve/build/test
 frontend/src/app/pages/whats-changed/whats-changed.generated.ts
 
-
 # Test coverage
 coverage
 test-results
@@ -32,13 +31,13 @@ playwright-report
 # Logs
 *.log
 
-# Internal/working docs are kept out of this public repo
-docs/
+# Internal/working docs
+docs
 
 # Claude
 .claude/settings.local.json
 
-# IDE - VSCode
+# VS Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
