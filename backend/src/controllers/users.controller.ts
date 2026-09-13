@@ -269,6 +269,7 @@ export async function revokeOtherSessions(
     const sessions = await clerkClient.sessions.getSessionList({
       userId: req.user.id,
       status: 'active',
+      limit: 100,
     });
     await Promise.all(
       sessions.data
