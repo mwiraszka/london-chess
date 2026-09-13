@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 
 import { clerkClient } from '../middlewares/auth.middleware';
 import { ApiResponse } from '../models/api-response.model';
+import { Member, MemberModel } from '../models/member.model';
 import { AvatarCropState, User, UserModel } from '../models/user.model';
 import {
   avatarPublicUrlPrefix,
@@ -59,6 +60,102 @@ export async function getUserAvatars(
     res.status(200).json({ data });
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch user avatars: ${error}` });
+  }
+}
+
+const MEMBER_DETAIL_RULES = {
+  phoneNumber: {
+    pattern: /^[0-9()+\-. ]{7,20}$/,
+    message:
+      'Phone number must be 7 to 20 characters using digits, spaces, and ()+-. only.',
+  },
+  lichessUsername: {
+    pattern: /^[a-zA-Z0-9_-]{2,20}$/,
+    message:
+      'Lichess username must be 2 to 20 letters, numbers, hyphens, or underscores.',
+  },
+  chessComUsername: {
+    pattern: /^[a-zA-Z0-9_-]{3,25}$/,
+    message:
+      'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores.',
+  },
+} as const;
+
+type MemberDetailField = keyof typeof MEMBER_DETAIL_RULES;
+
+async function findOwnMember(clerkId: string) {
+  const user = (await UserModel.findOne({ id: clerkId }))?.toObject();
+  if (!user?.email) {
+    return null;
+  }
+  return MemberModel.findOne({ email: user.email });
+}
+
+export async function getMyMember(
+  req: Request,
+  res: Response<ApiResponse<Member>>,
+): Promise<void> {
+  try {
+    const member = await findOwnMember(req.user.id);
+    if (!member) {
+      res.status(404).json({ message: 'No member record is linked to this account.' });
+      return;
+    }
+    const { _id, ...rest } = member.toObject();
+    res.status(200).json({ data: { ...rest, id: _id.toString() } });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to fetch member record: ${error}` });
+  }
+}
+
+export async function updateMyMember(
+  req: Request,
+  res: Response<ApiResponse<Member>>,
+): Promise<void> {
+  try {
+    const updates: Partial<Record<MemberDetailField, string>> = {};
+    for (const field of Object.keys(MEMBER_DETAIL_RULES) as MemberDetailField[]) {
+      const value = (req.body as Record<string, unknown>)[field];
+      if (value === undefined) {
+        continue;
+      }
+      if (typeof value !== 'string') {
+        res.status(400).json({ message: `${field} must be a string.` });
+        return;
+      }
+      const trimmed = value.trim();
+      if (trimmed && !MEMBER_DETAIL_RULES[field].pattern.test(trimmed)) {
+        res.status(400).json({ message: MEMBER_DETAIL_RULES[field].message });
+        return;
+      }
+      updates[field] = trimmed;
+    }
+    if (!Object.keys(updates).length) {
+      res.status(400).json({ message: 'No editable member fields were provided.' });
+      return;
+    }
+
+    const member = await findOwnMember(req.user.id);
+    if (!member) {
+      res.status(404).json({ message: 'No member record is linked to this account.' });
+      return;
+    }
+
+    const user = (await UserModel.findOne({ id: req.user.id }))?.toObject();
+    member.set({
+      ...updates,
+      modificationInfo: {
+        ...member.modificationInfo,
+        dateLastEdited: new Date().toISOString(),
+        lastEditedBy: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+      },
+    });
+    await member.save();
+
+    const { _id, ...rest } = member.toObject();
+    res.status(200).json({ data: { ...rest, id: _id.toString() } });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to update member record: ${error}` });
   }
 }
 

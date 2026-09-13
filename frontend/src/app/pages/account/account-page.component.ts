@@ -6,6 +6,8 @@ import {
   CardComponent,
   CheckIconComponent,
   DialogComponent,
+  FieldLabelComponent,
+  HelpCircleIconComponent,
   InputComponent,
   MonitorIconComponent,
   SettingsIconComponent,
@@ -31,6 +33,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { Member } from '@app/models';
 import { ApiError, ApiService, MetaAndTitleService } from '@app/services';
 import { ClerkService, type SessionInfo } from '@app/services/clerk.service';
 import { type UserRecord, UserService } from '@app/services/user.service';
@@ -50,6 +54,9 @@ function isAccountSection(value: string | null): value is AccountSection {
   styleUrl: './account-page.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
+    TooltipDirective,
+    FieldLabelComponent,
+    HelpCircleIconComponent,
     AlertTriangleIconComponent,
     AvatarEditorComponent,
     ButtonComponent,
@@ -188,6 +195,46 @@ export class AccountPageComponent implements OnInit {
   private readonly originalLastName = signal('');
   readonly firstNameError = signal('');
   readonly lastNameError = signal('');
+  readonly memberRecord = signal<Member | null>(null);
+  readonly memberPhone = signal('');
+  readonly memberLichess = signal('');
+  readonly memberChessCom = signal('');
+  private readonly originalMemberPhone = signal('');
+  private readonly originalMemberLichess = signal('');
+  private readonly originalMemberChessCom = signal('');
+  readonly memberSaving = signal(false);
+
+  protected readonly memberPhoneError = computed(() => {
+    const value = this.memberPhone().trim();
+    return !value || /^[0-9()+\-. ]{7,20}$/.test(value)
+      ? ''
+      : 'Phone number must be 7 to 20 characters using digits, spaces, and ()+-. only.';
+  });
+
+  protected readonly memberLichessError = computed(() => {
+    const value = this.memberLichess().trim();
+    return !value || /^[a-zA-Z0-9_-]{2,20}$/.test(value)
+      ? ''
+      : 'Lichess username must be 2 to 20 letters, numbers, hyphens, or underscores.';
+  });
+
+  protected readonly memberChessComError = computed(() => {
+    const value = this.memberChessCom().trim();
+    return !value || /^[a-zA-Z0-9_-]{3,25}$/.test(value)
+      ? ''
+      : 'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores.';
+  });
+
+  protected readonly canSaveMemberDetails = computed(
+    () =>
+      (this.memberPhone().trim() !== this.originalMemberPhone() ||
+        this.memberLichess().trim() !== this.originalMemberLichess() ||
+        this.memberChessCom().trim() !== this.originalMemberChessCom()) &&
+      !this.memberPhoneError() &&
+      !this.memberLichessError() &&
+      !this.memberChessComError(),
+  );
+
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly deleting = signal(false);
@@ -235,6 +282,8 @@ export class AccountPageComponent implements OnInit {
 
     this.lastClerkImageUrl.set(user?.hasImage ? user.imageUrl : undefined);
     this.avatarLoading.set(!this.editorSrc() && !!user?.hasImage);
+
+    void this.loadMemberRecord();
 
     this.refreshFromClerk().then(() => {
       this.avatarLoading.set(false);
@@ -313,6 +362,53 @@ export class AccountPageComponent implements OnInit {
     this.avatarDirty.set(true);
     this.removeAvatar.set(true);
     this.originalFile = null;
+  }
+
+  private applyMemberRecord(member: Member): void {
+    this.memberRecord.set(member);
+    this.memberPhone.set(member.phoneNumber);
+    this.memberLichess.set(member.lichessUsername);
+    this.memberChessCom.set(member.chessComUsername);
+    this.originalMemberPhone.set(member.phoneNumber);
+    this.originalMemberLichess.set(member.lichessUsername);
+    this.originalMemberChessCom.set(member.chessComUsername);
+  }
+
+  private async loadMemberRecord(): Promise<void> {
+    try {
+      this.applyMemberRecord(await this.api.get<Member>('/users/me/member'));
+    } catch {
+      // Not every account is linked to a club member record
+      this.memberRecord.set(null);
+    }
+  }
+
+  async onSaveMemberDetails(): Promise<void> {
+    this.memberSaving.set(true);
+    try {
+      const member = await this.api.patch<Member>('/users/me/member', {
+        phoneNumber: this.memberPhone().trim(),
+        lichessUsername: this.memberLichess().trim(),
+        chessComUsername: this.memberChessCom().trim(),
+      });
+      this.applyMemberRecord(member);
+      this.toast.show('Your member details have been updated.', {
+        title: 'Details updated',
+        variant: 'success',
+      });
+    } catch (e: unknown) {
+      this.toast.show(
+        e instanceof ApiError
+          ? asSentence(e.message)
+          : 'Unable to update your member details – please try again.',
+        {
+          title: 'Update failed',
+          variant: 'error',
+        },
+      );
+    } finally {
+      this.memberSaving.set(false);
+    }
   }
 
   async onSave(): Promise<void> {

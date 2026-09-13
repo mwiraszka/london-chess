@@ -18,11 +18,15 @@
 .account-page__body {
   display: grid;
   gap: 32px;
-  grid-template-columns: 200px 1fr;
-  // Nav column + gap + 600px content column, centred like other narrow pages
+  grid-template-columns: 200px minmax(0, 600px);
+  justify-content: center;
   width: 100%;
-  max-width: 832px;
-  margin: 0 auto;
+
+  // Only when both side columns fit does the card itself centre on the page,
+  // nav hugging its left edge; narrower screens centre the nav-plus-card block
+  @include mixins.respond-to('gt-xl') {
+    grid-template-columns: 1fr minmax(0, 600px) 1fr;
+  }
 
   @include mixins.respond-to('lt-md') {
     grid-template-columns: 1fr;
@@ -30,9 +34,16 @@
 }
 
 .settings-nav {
+  justify-self: end;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 200px;
+
+  @include mixins.respond-to('lt-md') {
+    justify-self: stretch;
+    width: 100%;
+  }
 }
 
 .settings-nav__item {
@@ -73,6 +84,25 @@
   max-width: 600px;
 }
 
+.labeled-field {
+  display: flex;
+  flex-direction: column;
+  // Mirrors the label-to-control gap ea-input uses internally
+  gap: 6px;
+}
+
+.labeled-field__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.labeled-field__help {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: help;
+}
+
 .card-desc {
   margin: 0 0 16px;
   font-size: 14px;
@@ -82,7 +112,11 @@
 
 .avatar-section {
   display: flex;
+  align-items: center;
   justify-content: center;
+  // The editor grows a controls row once a photo is in; reserving its loaded
+  // footprint keeps the card height steady through the fetch
+  min-height: 216px;
   margin-bottom: 24px;
 }
 
@@ -182,4 +216,17 @@
 .session__meta {
   font-size: 14px;
   color: var(--color-text-secondary);
+}
+
+.phone-privacy-tooltip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  .shield-icon {
+    display: inline-flex;
+    font-size: 20px;
+    color: var(--color-success-default);
+  }
 }

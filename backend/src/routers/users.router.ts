@@ -5,11 +5,13 @@ import {
   deleteMe,
   deleteUserAvatar,
   getMe,
+  getMyMember,
   getUserAvatar,
   getUserAvatars,
   requestAccount,
   updateCroppedAvatar,
   updateMe,
+  updateMyMember,
   uploadUserAvatar,
 } from '../controllers/users.controller';
 import { auth } from '../middlewares/auth.index';
@@ -19,6 +21,8 @@ export const usersRouter = Router()
   .post('/account-requests', requestAccount)
   .get('/avatars', getUserAvatars)
   .get('/me', auth, getMe)
+  .get('/me/member', auth, getMyMember)
+  .patch('/me/member', auth, updateMyMember)
   .patch('/me', auth, updateMe)
   .post('/me/password', auth, changePassword)
   .post('/me/avatar', auth, avatarUpload, uploadUserAvatar)

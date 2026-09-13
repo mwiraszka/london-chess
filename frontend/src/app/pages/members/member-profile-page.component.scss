@@ -92,8 +92,18 @@
 .external-profiles {
   display: flex;
   flex-flow: row wrap;
-  gap: 16px;
+  gap: 8px 24px;
   margin-top: 16px;
+
+  .external-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .platform {
+    color: var(--color-text-secondary);
+  }
 
   a {
     display: inline-flex;

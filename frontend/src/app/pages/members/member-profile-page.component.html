@@ -51,24 +51,30 @@
         @if (member.chessComUsername || member.lichessUsername) {
           <div class="external-profiles">
             @if (member.chessComUsername) {
-              <a
-                class="lcc-link"
-                [href]="chessComUrl(member)"
-                rel="noopener noreferrer"
-                target="_blank">
-                <span>Chess.com</span>
-                <ea-icon-external-link class="external-link-icon" />
-              </a>
+              <div class="external-profile">
+                <span class="platform">Chess.com</span>
+                <a
+                  class="lcc-link"
+                  [href]="chessComUrl(member)"
+                  rel="noopener noreferrer"
+                  target="_blank">
+                  <span>{{ member.chessComUsername }}</span>
+                  <ea-icon-external-link class="external-link-icon" />
+                </a>
+              </div>
             }
             @if (member.lichessUsername) {
-              <a
-                class="lcc-link"
-                [href]="lichessUrl(member)"
-                rel="noopener noreferrer"
-                target="_blank">
-                <span>Lichess</span>
-                <ea-icon-external-link class="external-link-icon" />
-              </a>
+              <div class="external-profile">
+                <span class="platform">Lichess</span>
+                <a
+                  class="lcc-link"
+                  [href]="lichessUrl(member)"
+                  rel="noopener noreferrer"
+                  target="_blank">
+                  <span>{{ member.lichessUsername }}</span>
+                  <ea-icon-external-link class="external-link-icon" />
+                </a>
+              </div>
             }
           </div>
         }

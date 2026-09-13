@@ -59,7 +59,7 @@
                   <ea-skeleton
                     variant="text"
                     width="72px"
-                    height="14px" />
+                    height="18px" />
                   <ea-skeleton
                     variant="rect"
                     height="40px" />
@@ -68,7 +68,7 @@
                   <ea-skeleton
                     variant="text"
                     width="72px"
-                    height="14px" />
+                    height="18px" />
                   <ea-skeleton
                     variant="rect"
                     height="40px" />
@@ -77,8 +77,8 @@
               <div class="actions">
                 <ea-skeleton
                   variant="rect"
-                  width="128px"
-                  height="40px" />
+                  width="112px"
+                  height="35px" />
               </div>
             } @else {
               <div class="fields">
@@ -105,6 +105,49 @@
               </div>
             }
           </ea-card>
+
+          @if (memberRecord()) {
+            <ea-card [fullWidth]="true">
+              <h3 slot="header">Member details</h3>
+              <div class="fields">
+                <div class="labeled-field">
+                  <span class="labeled-field__row">
+                    <ea-field-label
+                      text="Phone number"
+                      forId="member-phone-input" />
+                    <ea-icon-help-circle
+                      class="labeled-field__help"
+                      [tooltip]="phonePrivacyTooltip" />
+                  </span>
+                  <ea-input
+                    id="member-phone-input"
+                    type="tel"
+                    [maxLength]="20"
+                    [errorMsg]="memberPhoneError()"
+                    [(value)]="memberPhone" />
+                </div>
+                <ea-input
+                  label="Lichess username"
+                  [maxLength]="20"
+                  [errorMsg]="memberLichessError()"
+                  [(value)]="memberLichess" />
+                <ea-input
+                  label="Chess.com username"
+                  [maxLength]="25"
+                  [errorMsg]="memberChessComError()"
+                  [(value)]="memberChessCom" />
+              </div>
+              <div class="actions">
+                <ea-button
+                  size="sm"
+                  [disabled]="!canSaveMemberDetails()"
+                  [loading]="memberSaving()"
+                  (clicked)="onSaveMemberDetails()">
+                  Save changes
+                </ea-button>
+              </div>
+            </ea-card>
+          }
         }
 
         @case ('security') {
@@ -239,7 +282,7 @@
             @if (sessionsLoading()) {
               <ea-skeleton
                 variant="rect"
-                height="80px" />
+                height="75px" />
             } @else {
               <ul class="sessions">
                 @for (session of sessions(); track session.id) {
@@ -322,3 +365,16 @@
     </ea-button>
   </div>
 </ea-dialog>
+
+<ng-template #phonePrivacyTooltip>
+  <div class="phone-privacy-tooltip">
+    <ea-icon-shield
+      class="shield-icon"
+      aria-hidden="true" />
+    <span>
+      Your phone number is only visible to club admins and will never be shared with third
+      parties or used for marketing. It is only used to get in touch when we cannot reach
+      you by email.
+    </span>
+  </div>
+</ng-template>
