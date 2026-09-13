@@ -1,24 +1,35 @@
-import { ButtonComponent, InputComponent } from '@eagami/ui';
+import { ButtonComponent, CodeInputComponent, InputComponent } from '@eagami/ui';
 
 import {
   ChangeDetectionStrategy,
   Component,
   type OnDestroy,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { PasswordRequirementsComponent } from '@app/components/password-requirements/password-requirements.component';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
 import { ClerkService } from '@app/services/clerk.service';
 import { EMAIL_REGEX } from '@app/utils/email.util';
+import { meetsPasswordRequirements } from '@app/utils/password.util';
+
+const RESET_CODE_LENGTH = 6;
 
 @Component({
   selector: 'lcc-forgot-password-form',
   templateUrl: './forgot-password-form.component.html',
   styleUrl: './auth-form.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
-  imports: [FormsModule, ButtonComponent, InputComponent],
+  imports: [
+    FormsModule,
+    ButtonComponent,
+    CodeInputComponent,
+    InputComponent,
+    PasswordRequirementsComponent,
+  ],
 })
 export class ForgotPasswordFormComponent implements OnDestroy {
   private readonly clerk = inject(ClerkService);
@@ -30,12 +41,23 @@ export class ForgotPasswordFormComponent implements OnDestroy {
   confirmPassword = signal('');
 
   emailError = signal('');
-  codeError = signal('');
-  newPasswordError = signal('');
-  confirmPasswordError = signal('');
   error = signal('');
   loading = signal(false);
   codeSent = signal(false);
+
+  protected readonly canSendCode = computed(() => EMAIL_REGEX.test(this.email().trim()));
+
+  protected readonly confirmMismatch = computed(
+    () =>
+      this.confirmPassword().length > 0 && this.confirmPassword() !== this.newPassword(),
+  );
+
+  protected readonly canReset = computed(
+    () =>
+      this.code().length === RESET_CODE_LENGTH &&
+      meetsPasswordRequirements(this.newPassword()) &&
+      this.newPassword() === this.confirmPassword(),
+  );
 
   ngOnDestroy(): void {
     this.newPassword.set('');
@@ -49,56 +71,12 @@ export class ForgotPasswordFormComponent implements OnDestroy {
     }
   }
 
-  onCodeChange(value: string): void {
-    this.code.set(value);
-    if (this.codeError() && value) {
-      this.codeError.set('');
-    }
-  }
-
-  onNewPasswordChange(value: string): void {
-    this.newPassword.set(value);
-    if (this.newPasswordError() && value.length >= 8) {
-      this.newPasswordError.set('');
-    }
-    if (this.confirmPasswordError() && this.confirmPassword() === value) {
-      this.confirmPasswordError.set('');
-    }
-  }
-
-  onConfirmPasswordChange(value: string): void {
-    this.confirmPassword.set(value);
-    if (this.confirmPasswordError() && value === this.newPassword()) {
-      this.confirmPasswordError.set('');
-    }
-  }
-
   onEmailBlur(): void {
     if (!this.email()) {
       return;
     }
     this.emailError.set(
       EMAIL_REGEX.test(this.email()) ? '' : 'Please enter a valid email address',
-    );
-  }
-
-  onNewPasswordBlur(): void {
-    if (!this.newPassword()) {
-      return;
-    }
-    this.newPasswordError.set(
-      this.newPassword().length >= 8 ? '' : 'Must be at least 8 characters',
-    );
-  }
-
-  onConfirmPasswordBlur(): void {
-    if (!this.confirmPassword()) {
-      return;
-    }
-    this.confirmPasswordError.set(
-      !this.newPassword() || this.confirmPassword() === this.newPassword()
-        ? ''
-        : 'Passwords do not match',
     );
   }
 
@@ -126,34 +104,8 @@ export class ForgotPasswordFormComponent implements OnDestroy {
     }
   }
 
-  private validateReset(): boolean {
-    if (!this.code()) {
-      this.codeError.set('Reset code is required');
-    } else {
-      this.codeError.set('');
-    }
-
-    if (!this.newPassword()) {
-      this.newPasswordError.set('Password is required');
-    } else if (this.newPassword().length < 8) {
-      this.newPasswordError.set('Must be at least 8 characters');
-    } else {
-      this.newPasswordError.set('');
-    }
-
-    if (!this.confirmPassword()) {
-      this.confirmPasswordError.set('Please confirm your password');
-    } else if (this.newPassword() && this.confirmPassword() !== this.newPassword()) {
-      this.confirmPasswordError.set('Passwords do not match');
-    } else {
-      this.confirmPasswordError.set('');
-    }
-
-    return !this.codeError() && !this.newPasswordError() && !this.confirmPasswordError();
-  }
-
   async onResetPassword(): Promise<void> {
-    if (!this.validateReset()) {
+    if (!this.canReset()) {
       return;
     }
 

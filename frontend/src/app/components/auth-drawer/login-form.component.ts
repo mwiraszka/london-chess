@@ -10,6 +10,7 @@ import {
   Component,
   type ElementRef,
   type OnDestroy,
+  computed,
   inject,
   signal,
   viewChild,
@@ -40,6 +41,10 @@ export class LoginFormComponent implements OnDestroy {
   verificationCode = signal('');
   newPassword = signal('');
   confirmNewPassword = signal('');
+
+  protected readonly canLogIn = computed(
+    () => EMAIL_REGEX.test(this.email().trim()) && !!this.password(),
+  );
 
   ngOnDestroy(): void {
     this.password.set('');

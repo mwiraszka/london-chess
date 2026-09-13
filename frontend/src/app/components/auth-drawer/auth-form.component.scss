@@ -32,6 +32,12 @@
   justify-content: center;
 }
 
+.pw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .error {
   font-size: 14px;
   line-height: 20px;

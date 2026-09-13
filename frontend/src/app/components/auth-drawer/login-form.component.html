@@ -30,7 +30,6 @@
       type="password"
       autocomplete="new-password"
       [autofocus]="true"
-      [required]="true"
       [errorMsg]="newPasswordError()"
       (blurred)="onNewPasswordBlur()"
       [value]="newPassword()"
@@ -40,7 +39,6 @@
       label="Confirm new password"
       type="password"
       autocomplete="new-password"
-      [required]="true"
       [errorMsg]="confirmNewPasswordError()"
       (blurred)="onConfirmNewPasswordBlur()"
       [value]="confirmNewPassword()"
@@ -69,7 +67,6 @@
         autocomplete="email"
         placeholder="you@example.com"
         [autofocus]="true"
-        [required]="true"
         [errorMsg]="emailError()"
         (blurred)="onEmailBlur()"
         [value]="email()"
@@ -79,7 +76,6 @@
         label="Password"
         type="password"
         autocomplete="current-password"
-        [required]="true"
         [errorMsg]="passwordError()"
         [value]="password()"
         (valueChange)="onPasswordChange($event)" />
@@ -92,6 +88,7 @@
         type="submit"
         variant="primary"
         [fullWidth]="true"
+        [disabled]="!canLogIn()"
         [loading]="loading()">
         Log in
       </ea-button>
