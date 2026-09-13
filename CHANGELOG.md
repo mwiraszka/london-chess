@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build out an account page for managing your profile, avatar, email address, password, and active sessions, including an avatar editor that keeps the original photo for future re-cropping
 - Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
 - Let visitors request a member account from the login drawer, with requests emailed to the club for review
-- Add a What's New page listing each release's improvements, linked from the menu and the footer
+- Add a Site Updates page listing each release's improvements, linked from the menu and the footer
 - Add member profile pages with ratings and activity status, linked from member names across the site
 - Back up the database and photo storage weekly to encrypted off-site storage
 
@@ -25,12 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redesign the navigation bar around a single menu, shown as your avatar once logged in, holding log in, theme, view, and safe mode controls
 - Swap every Material icon for an Eagami UI icon across the site
 - Make the table paginator buttons uniform squares
+- Unify loading placeholders across the site with a consistent pulsing style
 - Cap photo gallery album covers at 200px wide so wide view no longer stretches them
 - Move photo storage from AWS S3 to Cloudflare R2
 
 ### Fixed
 
-- Centre the footer logo above the club name
+- Correct two misspelled champion names on the City Champion page
 - Keep login and logout confirmation toasts visible by completing auth redirects inside the app
 - Refresh expired photo links at startup and stop duplicate or cancelled image requests
 
