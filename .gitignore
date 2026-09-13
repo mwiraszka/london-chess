@@ -17,8 +17,11 @@ out-tsc
 # Angular
 .angular
 
+
 # Test coverage
 coverage
+test-results
+playwright-report
 
 # Vercel
 .vercel
