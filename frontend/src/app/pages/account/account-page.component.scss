@@ -4,27 +4,15 @@
   display: block;
 }
 
-ea-divider.page-divider {
-  display: block;
-  margin: 0 0 16px;
-}
-
 .account-page {
   display: flex;
   flex-direction: column;
+  // Match the 8px page-header-to-content spacing the app shell gives other pages
+  gap: 8px;
   width: 100%;
   // Shell horizontal padding subtracted so wide view cannot shift this page
   max-width: calc(var(--lcc-width--appContent) - 8px);
   margin: 0 auto;
-}
-
-.account-page__title {
-  padding-top: 16px;
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 32px;
-  color: var(--color-text-primary);
 }
 
 .account-page__body {

@@ -9,6 +9,7 @@ import {
   DividerComponent,
   InputComponent,
   MonitorIconComponent,
+  SettingsIconComponent,
   ShieldIconComponent,
   SkeletonComponent,
   ToastService,
@@ -30,6 +31,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { ApiError, ApiService, MetaAndTitleService } from '@app/services';
 import { ClerkService, type SessionInfo } from '@app/services/clerk.service';
 import { type UserRecord, UserService } from '@app/services/user.service';
@@ -62,9 +64,12 @@ function isAccountSection(value: string | null): value is AccountSection {
     ShieldIconComponent,
     SkeletonComponent,
     UserIconComponent,
+    PageHeaderComponent,
   ],
 })
 export class AccountPageComponent implements OnInit {
+  protected readonly pageIcon = SettingsIconComponent;
+
   private readonly api = inject(ApiService);
   private readonly clerk = inject(ClerkService);
   private readonly destroyRef = inject(DestroyRef);
