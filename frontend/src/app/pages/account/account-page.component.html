@@ -363,9 +363,15 @@
                   <li>
                     <ea-card variant="elevated">
                       <div class="session">
-                        <ea-icon-monitor
-                          class="session__icon"
-                          aria-hidden="true" />
+                        @if (session.isMobile) {
+                          <ea-icon-smartphone
+                            class="session__icon"
+                            aria-hidden="true" />
+                        } @else {
+                          <ea-icon-monitor
+                            class="session__icon"
+                            aria-hidden="true" />
+                        }
                         <div class="session__info">
                           <span class="session__device">{{ session.device }}</span>
                           <span class="session__meta">

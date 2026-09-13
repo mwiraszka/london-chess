@@ -13,6 +13,7 @@ import {
   SettingsIconComponent,
   ShieldIconComponent,
   SkeletonComponent,
+  SmartphoneIconComponent,
   ToastService,
   UserIconComponent,
 } from '@eagami/ui';
@@ -57,6 +58,7 @@ interface UserSessionRecord {
 interface SessionInfo {
   id: string;
   isCurrent: boolean;
+  isMobile: boolean;
   device: string;
   lastActive: string;
 }
@@ -94,6 +96,7 @@ function isAccountSection(value: string | null): value is AccountSection {
     RouterLink,
     ShieldIconComponent,
     SkeletonComponent,
+    SmartphoneIconComponent,
     UserIconComponent,
     PageHeaderComponent,
   ],
@@ -777,6 +780,7 @@ export class AccountPageComponent implements OnInit {
         sorted.map(record => ({
           id: record.id,
           isCurrent: record.isCurrent,
+          isMobile: record.isMobile,
           device: describeSession(record),
           lastActive: new Date(record.lastActiveAt).toLocaleString(undefined, {
             month: 'short',
