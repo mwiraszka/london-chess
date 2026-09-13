@@ -10,6 +10,7 @@ import {
 } from '../models/article.model';
 import { Id } from '../models/core.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
+import { isCollectionId } from '../util/is-collection-id.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -65,7 +66,7 @@ export async function getArticle(
 ): Promise<void> {
   try {
     const { id } = req.params;
-    const findResult = await ArticleModel.findById(id).lean();
+    const findResult = isCollectionId(id) ? await ArticleModel.findById(id).lean() : null;
 
     if (!findResult) {
       res.status(404).json({ message: `Unable to find article [${id}]` });

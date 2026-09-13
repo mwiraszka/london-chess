@@ -5,6 +5,7 @@ import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model'
 import { Id } from '../models/core.model';
 import { Event, EventModel, eventSortingConfig, eventTypes } from '../models/event.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
+import { isCollectionId } from '../util/is-collection-id.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -60,7 +61,7 @@ export async function getEvent(
 ): Promise<void> {
   try {
     const { id } = req.params;
-    const findResult = await EventModel.findById(id).lean();
+    const findResult = isCollectionId(id) ? await EventModel.findById(id).lean() : null;
 
     if (!findResult) {
       res.status(404).json({

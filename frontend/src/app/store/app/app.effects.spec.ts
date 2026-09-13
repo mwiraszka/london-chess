@@ -511,6 +511,48 @@ describe('AppEffects', () => {
         }));
     });
 
+    describe('missing records', () => {
+      const notFound: LccError = { name: 'LCCError', message: 'Not found', status: 404 };
+
+      it('should not toast a fetchMemberFailed for a record that does not exist', () =>
+        withDone(done => {
+          actions$.next(MembersActions.fetchMemberFailed({ error: notFound }));
+
+          setTimeout(() => {
+            expect(toastService.displayToast).not.toHaveBeenCalled();
+            done();
+          }, 10);
+        }));
+
+      it('should still toast a fetchMemberFailed for any other failure', () =>
+        withDone(done => {
+          actions$.next(MembersActions.fetchMemberFailed({ error: mockError }));
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.displayToast).toHaveBeenCalledWith({
+              title: 'Load member',
+              message: '[500] Test error message',
+              type: 'warning',
+            });
+            done();
+          });
+        }));
+
+      it('should still toast a 404 from an action that is not a record fetch', () =>
+        withDone(done => {
+          actions$.next(ArticlesActions.deleteArticleFailed({ error: notFound }));
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.displayToast).toHaveBeenCalledWith({
+              title: 'Article deletion',
+              message: '[404] Not found',
+              type: 'warning',
+            });
+            done();
+          });
+        }));
+    });
+
     it('should log error to console when action has error property', () =>
       withDone(done => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);

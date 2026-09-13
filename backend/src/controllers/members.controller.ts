@@ -11,6 +11,7 @@ import {
 } from '../models/member.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
 import { UserModel } from '../models/user.model';
+import { isCollectionId } from '../util/is-collection-id.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -172,7 +173,9 @@ export function getMember(scope: 'public' | 'admin') {
         scope === 'public'
           ? { dateJoined: 0, email: 0, phoneNumber: 0, yearOfBirth: 0 }
           : {};
-      const findResult = await MemberModel.findById(id, projection).lean();
+      const findResult = isCollectionId(id)
+        ? await MemberModel.findById(id, projection).lean()
+        : null;
 
       if (!findResult) {
         res.status(404).json({ message: `Unable to find member [${id}]` });

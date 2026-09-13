@@ -17,6 +17,16 @@ import { isCollectionId, isDefined, isEntity, isString } from '@app/utils';
 
 import { NavActions, NavSelectors } from '.';
 
+const RECORD_FETCH_FAILURES = [
+  ArticlesActions.fetchArticleFailed,
+  EventsActions.fetchEventFailed,
+  MembersActions.fetchMemberFailed,
+] as const;
+
+function isMissingRecord(action: ReturnType<(typeof RECORD_FETCH_FAILURES)[number]>) {
+  return action.error.status === 404;
+}
+
 @Injectable()
 export class NavEffects {
   appendPathToHistory$ = createEffect(() =>
@@ -72,7 +82,6 @@ export class NavEffects {
         MembersActions.cancelSelected,
         MembersActions.addMemberSucceeded,
         MembersActions.updateMemberSucceeded,
-        MembersActions.fetchMemberFailed,
       ),
       map(() => NavActions.navigationRequested({ path: 'members' })),
     ),
@@ -84,7 +93,6 @@ export class NavEffects {
         EventsActions.cancelSelected,
         EventsActions.addEventSucceeded,
         EventsActions.updateEventSucceeded,
-        EventsActions.fetchEventFailed,
       ),
       map(() => NavActions.navigationRequested({ path: 'schedule' })),
     ),
@@ -94,11 +102,29 @@ export class NavEffects {
     this.actions$.pipe(
       ofType(
         ArticlesActions.cancelSelected,
-        ArticlesActions.fetchArticleFailed,
         ArticlesActions.publishArticleSucceeded,
         ArticlesActions.updateArticleSucceeded,
       ),
       map(() => NavActions.navigationRequested({ path: 'news' })),
+    ),
+  );
+
+  leaveMissingRecord$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(...RECORD_FETCH_FAILURES),
+      map(action => {
+        if (isMissingRecord(action)) {
+          return NavActions.navigationRequested({ path: '/' });
+        }
+        switch (action.type) {
+          case ArticlesActions.fetchArticleFailed.type:
+            return NavActions.navigationRequested({ path: 'news' });
+          case EventsActions.fetchEventFailed.type:
+            return NavActions.navigationRequested({ path: 'schedule' });
+          default:
+            return NavActions.navigationRequested({ path: 'members' });
+        }
+      }),
     ),
   );
 

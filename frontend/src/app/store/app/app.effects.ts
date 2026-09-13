@@ -119,9 +119,16 @@ export class AppEffects {
     MembersActions.fetchMemberFailed,
   ] as const;
 
+  readonly MISSING_RECORD_FAILURES = [
+    ArticlesActions.fetchArticleFailed,
+    EventsActions.fetchEventFailed,
+    MembersActions.fetchMemberFailed,
+  ] as const;
+
   notify$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(...this.ACTIONS_TO_NOTIFY),
+      filter(action => !this.isMissingRecord(action)),
       tap(action => {
         if ('error' in action) {
           console.error('[LCC]', action.error);
@@ -158,6 +165,17 @@ export class AppEffects {
     private readonly store: Store,
     private readonly toastService: ToastService,
   ) {}
+
+  // A 404 on a single record is handled by sending the visitor home, not by a toast
+  private isMissingRecord(action: NotifyAction): boolean {
+    return (
+      'error' in action &&
+      action.error.status === 404 &&
+      this.MISSING_RECORD_FAILURES.some(
+        actionCreator => actionCreator.type === action.type,
+      )
+    );
+  }
 
   private getErrorMessage(error: LccError): string {
     return error.status ? `[${error.status}] ${error.message}` : error.message;

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AuthGuard } from '@app/guards/auth.guard';
+import { collectionIdGuard } from '@app/guards/collection-id.guard';
 import { UnsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
 
 import { MemberEditorPageComponent } from './member-editor-page.component';
@@ -16,12 +17,12 @@ const routes: Routes = [
   {
     path: 'edit/:member_id',
     component: MemberEditorPageComponent,
-    canActivate: [AuthGuard],
+    canActivate: [collectionIdGuard('member_id'), AuthGuard],
     canDeactivate: [UnsavedChangesGuard],
   },
   {
     path: '**',
-    redirectTo: 'add',
+    redirectTo: '/',
   },
 ];
 

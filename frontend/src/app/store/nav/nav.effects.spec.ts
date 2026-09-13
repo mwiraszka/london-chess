@@ -218,17 +218,48 @@ describe('NavEffects', () => {
           done();
         });
       }));
+  });
 
-    it('should navigate to members on fetchMemberFailed', () =>
+  describe('leaveMissingRecord$', () => {
+    const failed = { name: 'LCCError' as const, message: 'Failed' };
+    const notFound = { name: 'LCCError' as const, message: 'Not found', status: 404 };
+
+    it('should navigate to members when a member fails to load', () =>
       withDone(done => {
-        actions$.next(
-          MembersActions.fetchMemberFailed({
-            error: { name: 'LCCError', message: 'Failed' },
-          }),
-        );
+        actions$.next(MembersActions.fetchMemberFailed({ error: failed }));
 
-        effects.navigateToMembers$.subscribe(action => {
+        effects.leaveMissingRecord$.subscribe(action => {
           expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
+          done();
+        });
+      }));
+
+    it('should navigate to schedule when an event fails to load', () =>
+      withDone(done => {
+        actions$.next(EventsActions.fetchEventFailed({ error: failed }));
+
+        effects.leaveMissingRecord$.subscribe(action => {
+          expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
+          done();
+        });
+      }));
+
+    it('should navigate to news when an article fails to load', () =>
+      withDone(done => {
+        actions$.next(ArticlesActions.fetchArticleFailed({ error: failed }));
+
+        effects.leaveMissingRecord$.subscribe(action => {
+          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+          done();
+        });
+      }));
+
+    it('should navigate home when the record does not exist', () =>
+      withDone(done => {
+        actions$.next(MembersActions.fetchMemberFailed({ error: notFound }));
+
+        effects.leaveMissingRecord$.subscribe(action => {
+          expect(action).toEqual(NavActions.navigationRequested({ path: '/' }));
           done();
         });
       }));
@@ -269,40 +300,12 @@ describe('NavEffects', () => {
           done();
         });
       }));
-
-    it('should navigate to schedule on fetchEventFailed', () =>
-      withDone(done => {
-        actions$.next(
-          EventsActions.fetchEventFailed({
-            error: { name: 'LCCError', message: 'Failed' },
-          }),
-        );
-
-        effects.navigateToSchedule$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
-          done();
-        });
-      }));
   });
 
   describe('navigateToNews$', () => {
     it('should navigate to news on cancelSelected', () =>
       withDone(done => {
         actions$.next(ArticlesActions.cancelSelected());
-
-        effects.navigateToNews$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
-          done();
-        });
-      }));
-
-    it('should navigate to news on fetchArticleFailed', () =>
-      withDone(done => {
-        actions$.next(
-          ArticlesActions.fetchArticleFailed({
-            error: { name: 'LCCError', message: 'Failed' },
-          }),
-        );
 
         effects.navigateToNews$.subscribe(action => {
           expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
