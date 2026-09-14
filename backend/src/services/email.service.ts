@@ -1,6 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer';
 
-const SMTP_HOST = 'smtp.zoho.com';
+const SMTP_HOST = 'smtppro.zoho.com';
 const SMTP_PORT = 465;
 const SENDER = 'London Chess <noreply@londonchess.ca>';
 
