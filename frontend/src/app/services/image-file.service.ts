@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 
+import {
+  IMAGES_DB_NAME,
+  IMAGES_DB_STORE,
+  IMAGES_DB_VERSION,
+} from '@app/constants/images';
 import { Id, IndexedDbImageData, LccError, Url } from '@app/models';
 import { dataUrlToFile, formatBytes, isLccError } from '@app/utils';
-
-const DB_NAME = 'LccImagesDB';
-const DB_VERSION = 1;
-const IMAGES_STORE = 'images';
 
 @Injectable({
   providedIn: 'root',
@@ -42,8 +43,8 @@ export class ImageFileService {
       const db = await this.getDbConnection();
 
       return new Promise<IndexedDbImageData | LccError>(resolve => {
-        const transaction = db.transaction([IMAGES_STORE], 'readwrite');
-        const store = transaction.objectStore(IMAGES_STORE);
+        const transaction = db.transaction([IMAGES_DB_STORE], 'readwrite');
+        const store = transaction.objectStore(IMAGES_DB_STORE);
 
         const request = store.put({ id, filename, dataUrl });
 
@@ -80,8 +81,8 @@ export class ImageFileService {
       const db = await this.getDbConnection();
 
       return new Promise<IndexedDbImageData | LccError>(resolve => {
-        const transaction = db.transaction([IMAGES_STORE], 'readonly');
-        const store = transaction.objectStore(IMAGES_STORE);
+        const transaction = db.transaction([IMAGES_DB_STORE], 'readonly');
+        const store = transaction.objectStore(IMAGES_DB_STORE);
 
         const request = store.get(id);
 
@@ -118,8 +119,8 @@ export class ImageFileService {
       const db = await this.getDbConnection();
 
       return new Promise<IndexedDbImageData[] | LccError>(resolve => {
-        const transaction = db.transaction([IMAGES_STORE], 'readonly');
-        const store = transaction.objectStore(IMAGES_STORE);
+        const transaction = db.transaction([IMAGES_DB_STORE], 'readonly');
+        const store = transaction.objectStore(IMAGES_DB_STORE);
 
         const request = store.openCursor();
 
@@ -168,8 +169,8 @@ export class ImageFileService {
       const db = await this.getDbConnection();
 
       return new Promise<'success' | LccError>(resolve => {
-        const transaction = db.transaction([IMAGES_STORE], 'readwrite');
-        const store = transaction.objectStore(IMAGES_STORE);
+        const transaction = db.transaction([IMAGES_DB_STORE], 'readwrite');
+        const store = transaction.objectStore(IMAGES_DB_STORE);
 
         const request = store.delete(id);
 
@@ -203,8 +204,8 @@ export class ImageFileService {
       const db = await this.getDbConnection();
 
       return new Promise<'success' | LccError>(resolve => {
-        const transaction = db.transaction([IMAGES_STORE], 'readwrite');
-        const store = transaction.objectStore(IMAGES_STORE);
+        const transaction = db.transaction([IMAGES_DB_STORE], 'readwrite');
+        const store = transaction.objectStore(IMAGES_DB_STORE);
 
         const request = store.clear();
 
@@ -236,13 +237,13 @@ export class ImageFileService {
   }
 
   private initDb(): void {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(IMAGES_DB_NAME, IMAGES_DB_VERSION);
 
     request.onupgradeneeded = event => {
       const db = (event.target as IDBOpenDBRequest).result;
 
-      if (!db.objectStoreNames.contains(IMAGES_STORE)) {
-        db.createObjectStore(IMAGES_STORE, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(IMAGES_DB_STORE)) {
+        db.createObjectStore(IMAGES_DB_STORE, { keyPath: 'id' });
       }
     };
 
@@ -263,7 +264,7 @@ export class ImageFileService {
     }
 
     return new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(IMAGES_DB_NAME, IMAGES_DB_VERSION);
 
       request.onsuccess = event => {
         this.db = (event.target as IDBOpenDBRequest).result;

@@ -30,6 +30,8 @@ export interface Image extends BaseImage {
   articleAppearances?: number;
 }
 
+export type ImageDisplayMode = 'none' | 'thumbnail' | 'main' | 'fallback';
+
 export type IndexedDbImageData = Pick<BaseImage, 'id' | 'filename'> & { dataUrl: Url };
 
 export type ImageFormData = Pick<BaseImage, (typeof IMAGE_FORM_DATA_PROPERTIES)[number]>;

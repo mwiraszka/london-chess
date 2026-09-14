@@ -33,6 +33,7 @@ export type {
   AlbumFormGroup,
   BaseImage,
   Image,
+  ImageDisplayMode,
   ImageFormData,
   ImageFormGroup,
   IndexedDbImageData,
@@ -49,6 +50,7 @@ export type {
 export type { ModificationInfo } from './modification-info.model';
 export type { NavPath } from './nav-path.model';
 export type { DataPaginationOptions, Filter } from './pagination.model';
+export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';
 export type { WhatsChangedRelease, WhatsChangedTag } from './whats-changed.model';

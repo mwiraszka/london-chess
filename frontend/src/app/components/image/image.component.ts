@@ -12,14 +12,9 @@ import {
   signal,
 } from '@angular/core';
 
-import { Image, Url } from '@app/models';
+import { IMAGE_FALLBACK_SRC, TRANSPARENT_PIXEL_SRC } from '@app/constants/images';
+import { Image, ImageDisplayMode, Url } from '@app/models';
 import { calculateAspectRatio } from '@app/utils';
-
-type DisplayMode = 'none' | 'thumbnail' | 'main' | 'fallback';
-
-const FALLBACK_SRC: Url = 'assets/fallback-image.png';
-const TRANSPARENT_PIXEL: Url =
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 /**
  * Renders an image with progressive loading, blur-up transition, shimmer
@@ -44,9 +39,9 @@ export class ImageComponent {
 
   public readonly loaded = output<void>();
 
-  public readonly currentSrc = signal<Url>(TRANSPARENT_PIXEL);
+  public readonly currentSrc = signal<Url>(TRANSPARENT_PIXEL_SRC);
   public readonly blurred = signal<boolean>(false);
-  public readonly displayMode = signal<DisplayMode>('none');
+  public readonly displayMode = signal<ImageDisplayMode>('none');
   public readonly hasLoaded = signal<boolean>(false);
 
   public readonly aspectRatio = computed<string | null>(() => {
@@ -114,7 +109,7 @@ export class ImageComponent {
     const img = this.image();
     if (!img) {
       this.displayMode.set('fallback');
-      this.currentSrc.set(FALLBACK_SRC);
+      this.currentSrc.set(IMAGE_FALLBACK_SRC);
       this.blurred.set(false);
       this.hasLoaded.set(false);
       return;
@@ -143,7 +138,7 @@ export class ImageComponent {
     }
 
     this.displayMode.set('fallback');
-    this.currentSrc.set(FALLBACK_SRC);
+    this.currentSrc.set(IMAGE_FALLBACK_SRC);
     this.blurred.set(false);
     this.hasLoaded.set(false);
   }
@@ -156,7 +151,7 @@ export class ImageComponent {
     if (!img) {
       this.hasLoaded.set(false);
       this.displayMode.set('fallback');
-      this.currentSrc.set(FALLBACK_SRC);
+      this.currentSrc.set(IMAGE_FALLBACK_SRC);
       this.blurred.set(false);
       return;
     }
@@ -164,7 +159,7 @@ export class ImageComponent {
     if (!img.mainUrl && !img.thumbnailUrl) {
       this.hasLoaded.set(false);
       this.displayMode.set('none');
-      this.currentSrc.set(TRANSPARENT_PIXEL);
+      this.currentSrc.set(TRANSPARENT_PIXEL_SRC);
       this.blurred.set(false);
       return;
     }
