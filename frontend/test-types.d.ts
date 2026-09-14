@@ -3,9 +3,9 @@
 
 export {};
 
-type DoneFn = (() => void) & { fail: (reason?: string | Error) => void };
-
 declare global {
+  type DoneFn = (() => void) & { fail: (reason?: string | Error) => void };
+
   // eslint-disable-next-line no-var
   var fail: (reason?: string | Error) => never;
   // Bridges the jest `done`-callback style onto Vitest's promise-based tests.

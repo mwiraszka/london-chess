@@ -6,6 +6,6 @@
     "moduleResolution": "bundler",
     "isolatedModules": true
   },
-  "files": ["src/window-global-fix.ts", "test-types.d.ts"],
-  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+  "files": ["src/test-setup.ts", "src/window-global-fix.ts", "test-types.d.ts"],
+  "include": ["__mocks__/**/*.ts", "src/**/*.spec.ts", "src/**/*.d.ts"]
 }
