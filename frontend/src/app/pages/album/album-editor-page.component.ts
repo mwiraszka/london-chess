@@ -44,7 +44,7 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
       <lcc-link-list [links]="[photoGalleryLink]"></lcc-link-list>
     }
   `,
-  imports: [CommonModule, AlbumFormComponent, LinkListComponent, PageHeaderComponent],
+  imports: [AlbumFormComponent, CommonModule, LinkListComponent, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlbumEditorPageComponent implements EditorPage, OnInit {

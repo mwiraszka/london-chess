@@ -41,10 +41,10 @@ import { isPresignedUrlExpired } from '@app/utils';
   styleUrl: './image-viewer.component.scss',
   imports: [
     AdminControlsDirective,
-    CommonModule,
-    ImageComponent,
     ChevronLeftIconComponent,
     ChevronRightIconComponent,
+    CommonModule,
+    ImageComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

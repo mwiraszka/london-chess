@@ -38,10 +38,10 @@ import { customSort } from '@app/utils';
   templateUrl: './photo-grid.component.html',
   styleUrl: './photo-grid.component.scss',
   imports: [
-    SkeletonComponent,
     AdminControlsDirective,
     AdminToolbarComponent,
     ImageComponent,
+    SkeletonComponent,
     UpperCasePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

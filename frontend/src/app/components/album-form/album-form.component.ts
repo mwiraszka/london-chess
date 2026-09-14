@@ -54,14 +54,14 @@ import { ordinalityValidator, textValidator } from '@app/validators';
   styleUrl: './album-form.component.scss',
   imports: [
     FormErrorIconComponent,
-    ImageComponent,
     HistoryIconComponent,
+    ImageComponent,
     ImageIconComponent,
     ImagePlusIconComponent,
     ModificationInfoComponent,
-    XCircleIconComponent,
     ReactiveFormsModule,
     TooltipDirective,
+    XCircleIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

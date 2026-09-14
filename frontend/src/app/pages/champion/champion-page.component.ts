@@ -22,9 +22,9 @@ import { isExpired } from '@app/utils';
     ExpansionPanelComponent,
     MemberLinkComponent,
     PageHeaderComponent,
-    TrophyIconComponent,
     PhotoCarouselComponent,
     TooltipDirective,
+    TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

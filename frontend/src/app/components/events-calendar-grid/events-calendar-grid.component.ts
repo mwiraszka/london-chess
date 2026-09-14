@@ -40,11 +40,11 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   styleUrl: './events-calendar-grid.component.scss',
   imports: [
     AdminControlsDirective,
+    CalendarDaysIconComponent,
     CommonModule,
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
-    CalendarDaysIconComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],

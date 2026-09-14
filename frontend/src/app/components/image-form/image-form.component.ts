@@ -47,8 +47,8 @@ import { textValidator } from '@app/validators';
   styleUrl: './image-form.component.scss',
   imports: [
     FormErrorIconComponent,
-    ImageComponent,
     HistoryIconComponent,
+    ImageComponent,
     ImageIconComponent,
     ModificationInfoComponent,
     ReactiveFormsModule,

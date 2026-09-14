@@ -14,7 +14,7 @@ import { MetaAndTitleService } from '@app/services';
   selector: 'lcc-about-page',
   templateUrl: './about-page.component.html',
   styleUrl: './about-page.component.scss',
-  imports: [PageHeaderComponent, RouterLink, ClubCardComponent, ExpansionPanelComponent],
+  imports: [ClubCardComponent, ExpansionPanelComponent, PageHeaderComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AboutPageComponent implements OnInit {
