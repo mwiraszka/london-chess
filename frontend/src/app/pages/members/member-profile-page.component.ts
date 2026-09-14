@@ -15,7 +15,16 @@ import { Observable, combineLatest } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnInit,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -59,6 +68,9 @@ export class MemberProfilePageComponent implements OnInit {
 
   private readonly userRecord$ = toObservable(inject(UserService).user);
 
+  private readonly memberName = viewChild<ElementRef<HTMLElement>>('memberName');
+
+  protected readonly isNameTruncated = signal(false);
   protected readonly pageIcon = UserIconComponent;
 
   public viewModel$?: Observable<{
@@ -67,6 +79,24 @@ export class MemberProfilePageComponent implements OnInit {
     isOwnProfile: boolean;
     hasError: boolean;
   }>;
+
+  constructor() {
+    // Truncation depends on the rendered width of each name part, which changes
+    // with the card's size and with the name itself
+    effect(onCleanup => {
+      const name = this.memberName()?.nativeElement;
+      if (!name) {
+        return;
+      }
+
+      const parts = Array.from(name.children);
+      const observer = new ResizeObserver(() =>
+        this.isNameTruncated.set(parts.some(part => part.scrollWidth > part.clientWidth)),
+      );
+      parts.forEach(part => observer.observe(part));
+      onCleanup(() => observer.disconnect());
+    });
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Member Profile');

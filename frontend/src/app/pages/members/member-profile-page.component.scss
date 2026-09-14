@@ -12,7 +12,11 @@
   width: 100%;
   // Same card width as the What's Changed page
   max-width: 800px;
-  margin: 8px auto 0;
+  margin: 8px auto;
+}
+
+.summary {
+  container-type: inline-size;
 }
 
 .identity {
@@ -21,11 +25,29 @@
   align-items: center;
   gap: 16px;
 
+  // Once the stats pair up, everything else centres with them
+  @container (width < 560px) {
+    flex-direction: column;
+  }
+
+  // The avatar and name always share a line, so the rating moves below once they fill it
+  .member-summary {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: center;
+    gap: 16px;
+    max-width: 100%;
+
+    ea-avatar {
+      flex-shrink: 0;
+    }
+  }
+
   .identity-text {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     min-width: 0;
   }
 
@@ -34,7 +56,7 @@
     align-items: center;
     gap: 8px;
     font-size: 20px;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
 
     .admin-icon {
       @include icon-size(20px);
@@ -45,6 +67,7 @@
 
     .champion-link {
       display: inline-flex;
+      flex-shrink: 0;
       align-items: center;
     }
 
@@ -61,6 +84,24 @@
     }
   }
 
+  .member-name__text {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .member-name__first,
+  .member-name__last {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  // Far more willing to shrink than the first name, so the last name truncates first
+  .member-name__last {
+    flex-shrink: 1000000;
+  }
+
   .identity-badges {
     display: flex;
     flex-flow: row wrap;
@@ -73,7 +114,7 @@
     }
   }
 
-  .primary-rating {
+  .rating {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -82,51 +123,76 @@
     border-radius: var(--lcc-borderRadius--small);
     box-shadow: 0 1px 3px 0 var(--lcc-color--general-cardBoxShadow);
     background-color: var(--lcc-color--general-cardBackground);
+
+    @container (width < 560px) {
+      align-self: stretch;
+    }
   }
 
-  .primary-rating__value {
+  .rating__label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+  }
+
+  .rating__value {
     font-size: 32px;
     font-weight: 600;
   }
 }
 
-.secondary-stats {
+.facts {
   display: flex;
   flex-flow: row wrap;
-  gap: 8px 48px;
+  justify-content: space-between;
+  gap: 16px 48px;
   margin-top: 16px;
 
-  .secondary-stat {
+  @container (width < 560px) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.stats {
+  display: grid;
+  gap: 8px 48px;
+  grid-auto-flow: column;
+
+  // The stats sit in one row or pair up two by two, never three over one
+  @container (width < 560px) {
+    gap: 16px 48px;
+    grid-template-columns: repeat(2, auto);
+    grid-auto-flow: row;
+  }
+
+  .stat {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
   }
 
-  .secondary-stat__value {
-    font-size: 14px;
+  .stat__label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+  }
+
+  .stat__value {
+    font-size: 16px;
     overflow-wrap: anywhere;
   }
 }
 
-.stat-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-secondary);
-}
-
-.external-profiles {
-  display: flex;
-  flex-flow: row wrap;
-  gap: 8px 24px;
-  margin-top: 16px;
-
-  .external-profile {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+.chess-accounts {
+  display: grid;
+  align-items: center;
+  align-content: start;
+  gap: 8px 12px;
+  grid-template-columns: auto auto;
 
   .platform {
     display: inline-flex;

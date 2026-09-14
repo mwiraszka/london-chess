@@ -72,18 +72,19 @@ describe('MemberProfilePageComponent', () => {
   });
 
   it('should render the member name and ratings', () => {
-    expect(queryTextContent(fixture.debugElement, '.member-name')).toContain(
-      `${member.firstName} ${member.lastName}`,
+    expect(queryTextContent(fixture.debugElement, '.member-name__first')).toBe(
+      member.firstName,
+    );
+    expect(queryTextContent(fixture.debugElement, '.member-name__last')).toBe(
+      member.lastName,
     );
 
-    expect(queryTextContent(fixture.debugElement, '.primary-rating__value')).toBe(
-      member.rating,
-    );
+    expect(queryTextContent(fixture.debugElement, '.rating__value')).toBe(member.rating);
 
-    const secondaryValues = queryAll(fixture.debugElement, '.secondary-stat__value').map(
-      el => el.nativeElement.textContent.trim(),
+    const statValues = queryAll(fixture.debugElement, '.stat__value').map(el =>
+      el.nativeElement.textContent.trim(),
     );
-    expect(secondaryValues).toEqual([member.peakRating, member.city]);
+    expect(statValues).toEqual([member.peakRating, member.city, member.yearOfBirth]);
   });
 
   it('should not render the admin icon for non-admin members', () => {
