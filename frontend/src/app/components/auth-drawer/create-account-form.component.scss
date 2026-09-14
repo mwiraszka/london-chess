@@ -1,5 +1,13 @@
 @use '../../../styles/abstracts/mixins' as mixins;
 
+:host {
+  gap: 32px;
+}
+
+.auth-form {
+  gap: 24px;
+}
+
 .name-row {
   display: flex;
   gap: 16px;
@@ -31,14 +39,10 @@
   gap: 24px;
 
   .hint {
+    font-size: 16px;
+    line-height: 24px;
     text-align: start;
   }
-}
-
-.fields-divider {
-  display: block;
-  // Composes with the 16px form gap either side for a 32px visual break
-  margin: 16px 0;
 }
 
 // The library caps the number box at its digit count; the label sets the floor here
