@@ -2,8 +2,11 @@ import { Router } from 'express';
 
 import {
   addMember,
+  createMemberAccount,
   deleteMember,
-  getMember,
+  getMemberById,
+  getMemberByNumber,
+  getMemberProfiles,
   getMembers,
   updateMember,
   updateMembers,
@@ -12,12 +15,15 @@ import { adminAuth } from '../middlewares/auth.index';
 
 export const publicMembersRouter = Router()
   .get('/', getMembers('public'))
-  .get('/:id', getMember('public'));
+  .get('/profiles', getMemberProfiles)
+  .get('/:number', getMemberByNumber('public'));
 
 export const adminMembersRouter = Router()
   .get('/', adminAuth, getMembers('admin'))
-  .get('/:id', adminAuth, getMember('admin'))
+  .get('/number/:number', adminAuth, getMemberByNumber('admin'))
+  .get('/:id', adminAuth, getMemberById)
   .post('/', adminAuth, addMember)
+  .post('/:id/account', adminAuth, createMemberAccount)
   .put('/', adminAuth, updateMembers)
   .put('/:id', adminAuth, updateMember)
   .delete('/:id', adminAuth, deleteMember);

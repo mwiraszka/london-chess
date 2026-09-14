@@ -1,18 +1,34 @@
 import { Request, Response } from 'express';
 import { createHash, randomInt } from 'node:crypto';
 
-import { clerkClient } from '../middlewares/auth.middleware';
 import { AccountVerificationModel } from '../models/account-verification.model';
 import { ApiResponse } from '../models/api-response.model';
-import { Member, MemberModel } from '../models/member.model';
-import { AvatarCropState, User, UserModel } from '../models/user.model';
+import { AvatarCropState, MemberModel } from '../models/member.model';
 import {
   avatarPublicUrl,
   avatarPublicUrlPrefix,
   deleteAvatar,
   uploadAvatar,
 } from '../services/avatar-storage.service';
+import { clerkClient } from '../services/clerk.service';
 import { sendAdminEmail, sendEmail } from '../services/email.service';
+import {
+  findLinkedMember,
+  updateLinkedMember,
+} from '../services/member-accounts.service';
+import {
+  DETAIL_FIELDS,
+  DetailField,
+  EMAIL_PATTERN,
+  isValidYearOfBirth,
+  validateDetailField,
+} from '../util/member-details.util';
+import {
+  AccountRecord,
+  AdminMember,
+  toAccountRecord,
+  toAdminMember,
+} from '../util/member-responses.util';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -45,112 +61,20 @@ function clerkErrorMessage(error: unknown, fallback: string): string {
   return /[.!?]$/.test(message) ? message : `${message}.`;
 }
 
-export interface UserAvatarEntry {
-  name: string;
-  imageUrl: string | null;
-}
-
-export async function getUserAvatars(
-  _req: Request,
-  res: Response<ApiResponse<UserAvatarEntry[]>>,
-): Promise<void> {
-  try {
-    const users = await UserModel.find({}, 'firstName lastName clerkImageUrl').lean();
-    const data = users.map(user => ({
-      name: `${user.firstName} ${user.lastName}`.trim(),
-      imageUrl: user.clerkImageUrl ?? null,
-    }));
-    res.status(200).json({ data });
-  } catch (error) {
-    res.status(500).json({ message: `Unable to fetch user avatars: ${error}` });
-  }
-}
-
-const MEMBER_DETAIL_RULES = {
-  phoneNumber: {
-    pattern: /^[0-9()+\-. ]{7,20}$/,
-    message:
-      'Phone number must be 7 to 20 characters using digits, spaces, and ()+-. only.',
-  },
-  lichessUsername: {
-    pattern: /^[a-zA-Z0-9_-]{2,20}$/,
-    message:
-      'Lichess username must be 2 to 20 letters, numbers, hyphens, or underscores.',
-  },
-  chessComUsername: {
-    pattern: /^[a-zA-Z0-9_-]{3,25}$/,
-    message:
-      'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores.',
-  },
-} as const;
-
-type MemberDetailField = keyof typeof MEMBER_DETAIL_RULES;
-
-async function findOwnMember(clerkId: string) {
-  const user = (await UserModel.findOne({ id: clerkId }))?.toObject();
-  if (!user?.email) {
-    return null;
-  }
-  return MemberModel.findOne({ email: user.email });
-}
-
 export async function getMyMember(
   req: Request,
-  res: Response<ApiResponse<Member>>,
+  res: Response<ApiResponse<AdminMember>>,
 ): Promise<void> {
   try {
-    const member = await findOwnMember(req.user.id);
+    const member = await findLinkedMember(req.user.id);
     if (!member) {
       res.status(404).json({ message: 'No member record is linked to this account.' });
       return;
     }
-    const { _id, ...rest } = member.toObject();
-    res.status(200).json({ data: { ...rest, id: _id.toString() } });
+    res.status(200).json({ data: toAdminMember(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch member record: ${error}` });
   }
-}
-
-const DETAIL_FIELDS = {
-  firstName: 'First name',
-  lastName: 'Last name',
-  yearOfBirth: 'Year of birth',
-  city: 'City',
-  phoneNumber: 'Phone number',
-  lichessUsername: 'Lichess username',
-  chessComUsername: 'Chess.com username',
-} as const;
-
-type DetailField = keyof typeof DETAIL_FIELDS;
-
-const REQUIRED_DETAIL_FIELDS: readonly DetailField[] = [
-  'firstName',
-  'lastName',
-  'yearOfBirth',
-  'city',
-];
-
-function validateDetailField(field: DetailField, value: string): string | null {
-  if (!value) {
-    return REQUIRED_DETAIL_FIELDS.includes(field)
-      ? `${DETAIL_FIELDS[field]} is required.`
-      : null;
-  }
-  if (field === 'yearOfBirth' && !/^\d{4}$/.test(value)) {
-    return 'Year of birth must be a four-digit year.';
-  }
-  if (field === 'city' && value.length > 50) {
-    return 'City must be 50 characters or fewer.';
-  }
-  if ((field === 'firstName' || field === 'lastName') && value.length > 50) {
-    return 'Names must be 50 characters or fewer.';
-  }
-  const rule = MEMBER_DETAIL_RULES[field as MemberDetailField] as
-    { pattern: RegExp; message: string } | undefined;
-  if (rule && !rule.pattern.test(value)) {
-    return rule.message;
-  }
-  return null;
 }
 
 export async function requestMemberDetailsChange(
@@ -177,13 +101,12 @@ export async function requestMemberDetailsChange(
       requested[field] = trimmed;
     }
 
-    const member = await findOwnMember(req.user.id);
-    if (!member) {
+    const current = await findLinkedMember(req.user.id);
+    if (!current) {
       res.status(404).json({ message: 'No member record is linked to this account.' });
       return;
     }
 
-    const current = member.toObject();
     const rows: Array<[string, string, string]> = [];
     for (const field of Object.keys(requested) as DetailField[]) {
       const before = String(current[field] ?? '');
@@ -293,33 +216,29 @@ export async function revokeOtherSessions(
 
 export async function getMe(
   req: Request,
-  res: Response<ApiResponse<User>>,
+  res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
-    const user = (await UserModel.findOne({ id: req.user.id }))?.toObject();
-    if (!user) {
-      res.status(404).json({ message: 'User not found.' });
+    let member = await findLinkedMember(req.user.id);
+    if (!member) {
+      res.status(404).json({ message: 'Account not found.' });
       return;
     }
     // Older records store avatar URLs under a retired public prefix; the
     // object keys are deterministic, so point them at the current location
     // and persist the repair
+    const { avatarOriginalUrl, avatarUrl } = member.account;
     if (
-      user.avatarOriginalUrl &&
-      !user.avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)
+      avatarOriginalUrl &&
+      !avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)
     ) {
-      user.avatarOriginalUrl = avatarPublicUrl(user.id, 'original');
-      if (user.avatarUrl) {
-        user.avatarUrl = avatarPublicUrl(user.id, 'cropped');
-      }
-      await UserModel.updateOne(
-        { id: user.id },
-        {
-          $set: { avatarOriginalUrl: user.avatarOriginalUrl, avatarUrl: user.avatarUrl },
-        },
-      );
+      member =
+        (await updateLinkedMember(req.user.id, {
+          'account.avatarOriginalUrl': avatarPublicUrl(req.user.id, 'original'),
+          'account.avatarUrl': avatarUrl ? avatarPublicUrl(req.user.id, 'cropped') : null,
+        })) ?? member;
     }
-    res.status(200).json({ data: user });
+    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch user: ${error}` });
   }
@@ -327,33 +246,17 @@ export async function getMe(
 
 export async function updateMe(
   req: Request,
-  res: Response<ApiResponse<User>>,
+  res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
-    const { firstName, lastName, avatarCropState, clerkImageUrl } = req.body as {
-      firstName?: unknown;
-      lastName?: unknown;
+    const { avatarCropState, clerkImageUrl } = req.body as {
       avatarCropState?: unknown;
       clerkImageUrl?: unknown;
     };
 
-    const updates: Partial<User> = {};
-    if (firstName !== undefined) {
-      if (typeof firstName !== 'string' || !firstName.trim()) {
-        res.status(400).json({ message: 'First name must be a non-empty string.' });
-        return;
-      }
-      updates.firstName = firstName;
-    }
-    if (lastName !== undefined) {
-      if (typeof lastName !== 'string') {
-        res.status(400).json({ message: 'Last name must be a string.' });
-        return;
-      }
-      updates.lastName = lastName;
-    }
+    const updates: Record<string, unknown> = {};
     if (avatarCropState !== undefined) {
-      updates.avatarCropState =
+      updates['account.avatarCropState'] =
         avatarCropState === null ? null : parseCropState(JSON.stringify(avatarCropState));
     }
     if (clerkImageUrl !== undefined) {
@@ -361,22 +264,15 @@ export async function updateMe(
         res.status(400).json({ message: 'Clerk image URL must be a string or null.' });
         return;
       }
-      updates.clerkImageUrl = clerkImageUrl;
+      updates['account.clerkImageUrl'] = clerkImageUrl;
     }
 
-    const user = (
-      await UserModel.findOneAndUpdate(
-        { id: req.user.id },
-        { $set: updates },
-        { new: true },
-      )
-    )?.toObject();
-
-    if (!user) {
-      res.status(404).json({ message: 'User not found.' });
+    const member = await updateLinkedMember(req.user.id, updates);
+    if (!member) {
+      res.status(404).json({ message: 'Account not found.' });
       return;
     }
-    res.status(200).json({ data: user });
+    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to update user: ${error}` });
   }
@@ -436,7 +332,7 @@ export async function changePassword(
 
 export async function uploadUserAvatar(
   req: Request,
-  res: Response<ApiResponse<User>>,
+  res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
     const files = req.files as UploadedFiles;
@@ -471,27 +367,20 @@ export async function uploadUserAvatar(
       file: new Blob([new Uint8Array(cropped.buffer)], { type: cropped.mimetype }),
     });
 
-    const user = (
-      await UserModel.findOneAndUpdate(
-        { id: req.user.id },
-        {
-          $set: {
-            avatarUrl: croppedUrl,
-            avatarOriginalUrl: originalUrl,
-            avatarCropState: cropState,
-            avatarManagedByApp: true,
-            clerkImageUrl: clerkUser.imageUrl,
-          },
-        },
-        { new: true },
-      )
-    )?.toObject();
+    const member = await updateLinkedMember(req.user.id, {
+      'account.avatarUrl': croppedUrl,
+      'account.avatarOriginalUrl': originalUrl,
+      'account.avatarCropState': cropState,
+      'account.avatarManagedByApp': true,
+      'account.clerkImageUrl': clerkUser.imageUrl,
+      'account.avatarUpdatedAt': new Date().toISOString(),
+    });
 
-    if (!user) {
-      res.status(404).json({ message: 'User not found.' });
+    if (!member) {
+      res.status(404).json({ message: 'Account not found.' });
       return;
     }
-    res.status(200).json({ data: user });
+    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to upload avatar: ${error}` });
   }
@@ -499,7 +388,7 @@ export async function uploadUserAvatar(
 
 export async function updateCroppedAvatar(
   req: Request,
-  res: Response<ApiResponse<User>>,
+  res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
     const files = req.files as UploadedFiles;
@@ -522,25 +411,18 @@ export async function updateCroppedAvatar(
       file: new Blob([new Uint8Array(cropped.buffer)], { type: cropped.mimetype }),
     });
 
-    const user = (
-      await UserModel.findOneAndUpdate(
-        { id: req.user.id },
-        {
-          $set: {
-            avatarUrl: croppedUrl,
-            avatarCropState: cropState,
-            clerkImageUrl: clerkUser.imageUrl,
-          },
-        },
-        { new: true },
-      )
-    )?.toObject();
+    const member = await updateLinkedMember(req.user.id, {
+      'account.avatarUrl': croppedUrl,
+      'account.avatarCropState': cropState,
+      'account.clerkImageUrl': clerkUser.imageUrl,
+      'account.avatarUpdatedAt': new Date().toISOString(),
+    });
 
-    if (!user) {
-      res.status(404).json({ message: 'User not found.' });
+    if (!member) {
+      res.status(404).json({ message: 'Account not found.' });
       return;
     }
-    res.status(200).json({ data: user });
+    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to update avatar: ${error}` });
   }
@@ -548,38 +430,30 @@ export async function updateCroppedAvatar(
 
 export async function deleteUserAvatar(
   req: Request,
-  res: Response<ApiResponse<User>>,
+  res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
     await deleteAvatar(req.user.id);
 
     await clerkClient.users.deleteUserProfileImage(req.user.id);
     const clerkUser = await clerkClient.users.getUser(req.user.id);
-    // Without a photo, Clerk reports a placeholder imageUrl; store null so
-    // clients fall back to initials
-    const clerkImageUrl = clerkUser.hasImage ? clerkUser.imageUrl : null;
 
-    const user = (
-      await UserModel.findOneAndUpdate(
-        { id: req.user.id },
-        {
-          $set: {
-            avatarUrl: null,
-            avatarOriginalUrl: null,
-            avatarCropState: null,
-            avatarManagedByApp: false,
-            clerkImageUrl,
-          },
-        },
-        { new: true },
-      )
-    )?.toObject();
+    const member = await updateLinkedMember(req.user.id, {
+      'account.avatarUrl': null,
+      'account.avatarOriginalUrl': null,
+      'account.avatarCropState': null,
+      'account.avatarManagedByApp': false,
+      // Without a photo, Clerk reports a placeholder imageUrl; store null so
+      // clients fall back to initials
+      'account.clerkImageUrl': clerkUser.hasImage ? clerkUser.imageUrl : null,
+      'account.avatarUpdatedAt': new Date().toISOString(),
+    });
 
-    if (!user) {
-      res.status(404).json({ message: 'User not found.' });
+    if (!member) {
+      res.status(404).json({ message: 'Account not found.' });
       return;
     }
-    res.status(200).json({ data: user });
+    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to delete avatar: ${error}` });
   }
@@ -591,8 +465,8 @@ export async function deleteMe(
 ): Promise<void> {
   try {
     // Delete from Clerk first: once it succeeds the user's tokens are invalid,
-    // so the auth middleware can't lazy-recreate the document mid-deletion. If
-    // a later step fails, the user.deleted webhook reconciles the leftovers.
+    // so the auth middleware can't relink the account mid-deletion. If a later
+    // step fails, the user.deleted webhook reconciles the leftovers.
     await clerkClient.users.deleteUser(req.user.id);
 
     try {
@@ -601,7 +475,10 @@ export async function deleteMe(
       // avatar may not exist in R2
     }
 
-    await UserModel.deleteOne({ id: req.user.id });
+    await MemberModel.updateOne(
+      { 'account.clerkUserId': req.user.id },
+      { $set: { account: null } },
+    );
 
     res.status(200).json({ data: 'success' });
   } catch (error) {
@@ -609,24 +486,26 @@ export async function deleteMe(
   }
 }
 
-export async function getUserAvatar(req: Request, res: Response): Promise<void> {
+export async function getUserAvatar(
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> {
   try {
-    const user = await UserModel.findOne({ id: req.params['id'] }).select(
-      'avatarOriginalUrl',
-    );
-    if (!user?.avatarOriginalUrl) {
+    const member = await findLinkedMember(req.params.id);
+    const avatarOriginalUrl = member?.account.avatarOriginalUrl;
+    if (!avatarOriginalUrl) {
       res.status(404).json({ message: 'No avatar found.' });
       return;
     }
 
     // Only ever proxy objects from our own R2 bucket; never fetch an arbitrary
     // stored URL, so a poisoned field can't turn this into an SSRF vector
-    if (!user.avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)) {
+    if (!avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)) {
       res.status(404).json({ message: 'No avatar found.' });
       return;
     }
 
-    const r2Response = await fetch(user.avatarOriginalUrl);
+    const r2Response = await fetch(avatarOriginalUrl);
     if (!r2Response.ok) {
       res.status(502).json({ message: 'Failed to fetch avatar.' });
       return;
@@ -640,17 +519,6 @@ export async function getUserAvatar(req: Request, res: Response): Promise<void> 
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch avatar: ${error}` });
   }
-}
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function isValidYearOfBirth(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value >= 1900 &&
-    value <= new Date().getFullYear()
-  );
 }
 
 function escapeHtml(value: string): string {
@@ -683,7 +551,7 @@ export async function requestAccountVerification(
     if (existing && Date.now() - existing.lastSentAt.getTime() < VERIFICATION_RESEND_MS) {
       res.status(429).json({
         message:
-          'A code was sent moments ago – please wait a minute before requesting another.',
+          'A code was sent moments ago. Please wait a minute before requesting another.',
       });
       return;
     }
@@ -703,11 +571,11 @@ export async function requestAccountVerification(
 
     await sendEmail(
       email.trim(),
-      'Your London Chess Club verification code',
+      'Your London Chess verification code',
       `Your verification code is ${code}. It expires in 10 minutes.`,
       `
       <div style="font-family: Arial, sans-serif; color: #222;">
-        <h2 style="margin: 0 0 8px;">London Chess Club</h2>
+        <h2 style="margin: 0 0 8px;">London Chess</h2>
         <p style="margin: 0 0 16px;">Use this code to verify your email address. It expires in 10 minutes.</p>
         <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 0;">${code}</p>
       </div>`,
@@ -843,7 +711,7 @@ export async function requestAccount(
     const html = `
       <div style="font-family: Arial, sans-serif; color: #222;">
         <h2 style="margin: 0 0 4px;">New account request</h2>
-        <p style="margin: 0 0 16px;">Someone has requested a London Chess Club account.</p>
+        <p style="margin: 0 0 16px;">Someone has requested a London Chess account.</p>
         <table style="border-collapse: collapse;">
           ${rows
             .map(
@@ -855,9 +723,6 @@ export async function requestAccount(
             )
             .join('')}
         </table>
-        <p style="margin: 16px 0 0;">
-          Create their account in the Clerk dashboard and email them once it is ready.
-        </p>
       </div>`;
     const text = `New account request\n\n${rows.map(([label, value]) => `${label}: ${value}`).join('\n')}`;
 

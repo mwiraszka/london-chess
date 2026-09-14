@@ -12,6 +12,7 @@ import { adminMembersRouter, publicMembersRouter } from './routers/members.route
 import { usersRouter } from './routers/users.router';
 import { webhooksRouter } from './routers/webhooks.router';
 import { connectToDatabase } from './services/mongo-db.service';
+import { isAllowedOrigin } from './util/allowed-origins.util';
 
 Sentry.init({
   dsn: process.env['SENTRY_DSN'],
@@ -40,13 +41,8 @@ const corsOptions: CorsOptions = {
    */
   optionsSuccessStatus: 200,
   origin: (origin, callback) => {
-    const allowed = [
-      'http://localhost:4200',
-      'https://londonchess.ca',
-      'https://www.londonchess.ca',
-    ];
     // Allow same-origin/non-browser requests (no Origin header) and Vercel previews.
-    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) {
+    if (!origin || isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`Origin ${origin} not allowed by CORS`));

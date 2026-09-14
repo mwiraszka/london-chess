@@ -1,11 +1,35 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 
 import { Id, IsoDate } from './core.model';
 import { ModificationInfo } from './modification-info.model';
 import { SortingConfig } from './pagination.model';
 
+export interface AvatarCropState {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export type AccountStatus = 'invited' | 'active';
+
+export interface MemberAccount {
+  status: AccountStatus;
+  // Null until the invitation is accepted and the Clerk user exists
+  clerkUserId: string | null;
+  invitationId: string | null;
+  isAdmin: boolean;
+  clerkImageUrl: string | null;
+  avatarUrl: string | null;
+  avatarOriginalUrl: string | null;
+  avatarManagedByApp: boolean;
+  avatarCropState: AvatarCropState | null;
+  avatarUpdatedAt: IsoDate | null;
+}
+
 export interface Member {
   id: Id;
+  // Assigned when the member's account first becomes active
+  number?: number;
   firstName: string;
   lastName: string;
   rating: string;
@@ -17,14 +41,39 @@ export interface Member {
   chessComUsername: string;
   lichessUsername: string;
   isActive: boolean;
-  // Derived from the users collection when serving responses; never stored
-  isAdmin?: boolean;
   dateJoined: IsoDate;
   modificationInfo: ModificationInfo;
+  account: MemberAccount | null;
 }
+
+export type MemberRecord = Omit<Member, 'id'> & { _id: Types.ObjectId };
+
+// The number and account belong to the server, so admins never write them
+export type EditableMemberFields = Omit<Member, 'id' | 'number' | 'account'>;
+
+const accountSchema = new Schema<MemberAccount>(
+  {
+    status: { type: String, enum: ['invited', 'active'], required: true },
+    clerkUserId: { type: String, default: null },
+    invitationId: { type: String, default: null },
+    isAdmin: { type: Boolean, default: false },
+    clerkImageUrl: { type: String, default: null },
+    avatarUrl: { type: String, default: null },
+    avatarOriginalUrl: { type: String, default: null },
+    avatarManagedByApp: { type: Boolean, default: false },
+    avatarCropState: {
+      type: { zoom: Number, offsetX: Number, offsetY: Number },
+      default: null,
+      _id: false,
+    },
+    avatarUpdatedAt: { type: String, default: null },
+  },
+  { _id: false },
+);
 
 const memberSchema = new Schema<Member>(
   {
+    number: { type: Number },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     rating: { type: String, required: true },
@@ -38,28 +87,42 @@ const memberSchema = new Schema<Member>(
     isActive: { type: Boolean, required: true },
     dateJoined: { type: String, required: true },
     modificationInfo: { type: Object, required: true },
+    account: { type: accountSchema, default: null },
   },
   { versionKey: false },
 );
 
+// Partial, since most members never have an account and so never get a number
+memberSchema.index(
+  { number: 1 },
+  { unique: true, partialFilterExpression: { number: { $type: 'number' } } },
+);
+memberSchema.index(
+  { 'account.clerkUserId': 1 },
+  {
+    unique: true,
+    partialFilterExpression: { 'account.clerkUserId': { $type: 'string' } },
+  },
+);
+
 export const MemberModel = model<Member>('Member', memberSchema);
 
-export const memberTypes: Record<keyof Omit<Member, 'isAdmin'>, string | string[]> = {
-  id: 'string',
-  firstName: 'string',
-  lastName: 'string',
-  rating: 'string',
-  peakRating: 'string',
-  email: 'string',
-  phoneNumber: 'string',
-  city: 'string',
-  yearOfBirth: 'string',
-  chessComUsername: 'string',
-  lichessUsername: 'string',
-  isActive: 'boolean',
-  dateJoined: 'string',
-  modificationInfo: 'object',
-};
+export const editableMemberTypes: Record<keyof EditableMemberFields, string | string[]> =
+  {
+    firstName: 'string',
+    lastName: 'string',
+    rating: 'string',
+    peakRating: 'string',
+    email: 'string',
+    phoneNumber: 'string',
+    city: 'string',
+    yearOfBirth: 'string',
+    chessComUsername: 'string',
+    lichessUsername: 'string',
+    isActive: 'boolean',
+    dateJoined: 'string',
+    modificationInfo: 'object',
+  };
 
 export const memberSortingConfig: SortingConfig = {
   fieldMappings: {

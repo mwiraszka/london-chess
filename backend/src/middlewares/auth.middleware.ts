@@ -1,20 +1,13 @@
-import { createClerkClient, verifyToken } from '@clerk/backend';
+import { verifyToken } from '@clerk/backend';
 import { NextFunction, Request, Response } from 'express';
 
 import { ApiErrorResponse } from '../models/api-response.model';
-import { User, UserModel } from '../models/user.model';
-import { ensureUser } from '../services/users.service';
-
-const { CLERK_SECRET_KEY } = process.env;
-if (!CLERK_SECRET_KEY) {
-  throw new Error('Unable to parse Clerk environment variables.');
-}
-
-export const clerkClient = createClerkClient({ secretKey: CLERK_SECRET_KEY });
-
-export function isClerkAdmin(publicMetadata: Readonly<Record<string, unknown>>): boolean {
-  return publicMetadata['isAdmin'] === true;
-}
+import { clerkClient, clerkSecretKey } from '../services/clerk.service';
+import {
+  findLinkedMember,
+  linkClerkUser,
+  toClerkProfile,
+} from '../services/member-accounts.service';
 
 export const authenticate = async (
   req: Request,
@@ -32,7 +25,7 @@ export const authenticate = async (
   let sessionId: string;
   try {
     const payload = await verifyToken(authorization.slice('Bearer '.length), {
-      secretKey: CLERK_SECRET_KEY,
+      secretKey: clerkSecretKey,
     });
     clerkId = payload.sub;
     sessionId = payload.sid;
@@ -41,27 +34,20 @@ export const authenticate = async (
     return;
   }
 
-  let user: User | null = (await UserModel.findOne({ id: clerkId }))?.toObject() ?? null;
+  let member = await findLinkedMember(clerkId);
 
-  // Webhook race: lazy-create if not yet synced
-  if (!user) {
+  // Webhook race: link the account from its invitation metadata if not yet synced
+  if (!member) {
     try {
-      const clerkUser = await clerkClient.users.getUser(clerkId);
-      user = await ensureUser({
-        id: clerkId,
-        email: clerkUser.primaryEmailAddress?.emailAddress ?? '',
-        firstName: clerkUser.firstName ?? '',
-        lastName: clerkUser.lastName ?? '',
-        imageUrl: clerkUser.imageUrl,
-        hasImage: clerkUser.hasImage,
-        isAdmin: isClerkAdmin(clerkUser.publicMetadata),
-      });
+      member = await linkClerkUser(
+        toClerkProfile(await clerkClient.users.getUser(clerkId)),
+      );
     } catch {
-      // Lazy-create failed; continue with an unprivileged user
+      // Linking failed; continue with an unprivileged user
     }
   }
 
-  req.user = { id: clerkId, sessionId, isAdmin: user?.isAdmin ?? false };
+  req.user = { id: clerkId, sessionId, isAdmin: member?.account.isAdmin ?? false };
   next();
 };
 

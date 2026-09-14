@@ -1,40 +1,59 @@
 import { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import { PipelineStage } from 'mongoose';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import {
+  EditableMemberFields,
   Member,
+  MemberAccount,
   MemberModel,
+  MemberRecord,
+  editableMemberTypes,
   memberSortingConfig,
-  memberTypes,
 } from '../models/member.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
-import { UserModel } from '../models/user.model';
+import { clerkClient } from '../services/clerk.service';
+import { findEditor } from '../services/member-accounts.service';
+import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { isCollectionId } from '../util/is-collection-id.util';
+import { EMAIL_PATTERN, validateDetailField } from '../util/member-details.util';
+import {
+  AdminMember,
+  MEMBER_PROFILE_PROJECTION,
+  MemberProfile,
+  PUBLIC_MEMBER_PROJECTION,
+  PublicMember,
+  toAdminMember,
+  toMemberProfiles,
+  toPublicMember,
+} from '../util/member-responses.util';
+import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
-// The admin badge on member profiles comes from matching members to admin
-// users by email, the only field the two collections share
-async function findAdminMemberIds(): Promise<Set<string>> {
-  const adminUsers = await UserModel.find({ isAdmin: true }, { email: 1 }).lean();
-  const emails = adminUsers.map(user => user.email).filter(Boolean);
-  if (!emails.length) {
-    return new Set();
-  }
+type Scope = 'public' | 'admin';
 
-  const adminMembers = await MemberModel.find(
-    { email: { $in: emails } },
-    { _id: 1 },
-  ).lean();
-  return new Set(adminMembers.map(member => member._id.toString()));
+const ACCOUNT_DETAIL_FIELDS = [
+  'firstName',
+  'lastName',
+  'city',
+  'yearOfBirth',
+  'phoneNumber',
+  'lichessUsername',
+  'chessComUsername',
+] as const;
+
+type AccountDetails = Record<(typeof ACCOUNT_DETAIL_FIELDS)[number] | 'email', string>;
+
+function toResponse(scope: Scope): (record: MemberRecord) => PublicMember | AdminMember {
+  return scope === 'public' ? toPublicMember : toAdminMember;
 }
 
-export function getMembers(scope: 'public' | 'admin') {
+export function getMembers(scope: Scope) {
   return async (
     req: Request,
-    res: Response<ApiPaginatedResponse<Member>>,
+    res: Response<ApiPaginatedResponse<PublicMember | AdminMember>>,
   ): Promise<void> => {
     try {
       const query = buildPaginationQuery<Member>(
@@ -42,32 +61,21 @@ export function getMembers(scope: 'public' | 'admin') {
         memberSortingConfig,
       );
 
-      const projection =
-        scope === 'public'
-          ? {
-              dateJoined: 0,
-              email: 0,
-              phoneNumber: 0,
-              yearOfBirth: 0,
-            }
-          : {};
-
       // Check if we're sorting by rating or peakRating - use aggregation for proper numeric sorting
       const sortField = Object.keys(query.sort)[0];
       const isRatingSort = ['rating', 'peakRating'].includes(sortField);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let findResults: any[];
+      let records: MemberRecord[];
       let filteredCount: number;
 
       if (isRatingSort) {
-        // Use aggregation pipeline for rating sorting
         const sortOrder = query.sort[sortField];
-        const pipeline = [
+        const numericField = `${sortField}Numeric`;
+        const pipeline: PipelineStage[] = [
           { $match: query.filter },
           {
             $addFields: {
-              [`${sortField}Numeric`]: {
+              [numericField]: {
                 $let: {
                   vars: {
                     parts: { $split: [`$${sortField}`, '/'] },
@@ -99,59 +107,41 @@ export function getMembers(scope: 'public' | 'admin') {
               },
             },
           },
-          { $sort: { [`${sortField}Numeric`]: sortOrder } },
-          { $project: { ...projection, [`${sortField}Numeric`]: 0 } },
+          { $sort: { [numericField]: sortOrder } },
+          {
+            $project:
+              scope === 'public' ? PUBLIC_MEMBER_PROJECTION : { [numericField]: 0 },
+          },
           { $skip: query.skip },
         ];
 
         if (query.limit !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pipeline.push({ $limit: query.limit } as any);
+          pipeline.push({ $limit: query.limit });
         }
 
-        const [aggregationResults, countResults] = await Promise.all([
-          MemberModel.aggregate(pipeline),
+        [records, filteredCount] = await Promise.all([
+          MemberModel.aggregate<MemberRecord>(pipeline),
           MemberModel.countDocuments(query.filter),
         ]);
-
-        findResults = aggregationResults;
-        filteredCount = countResults;
       } else {
-        // Use regular find for non-rating fields
-        const [queryResults, countResults] = await Promise.all([
-          query.limit !== undefined
-            ? MemberModel.find(query.filter, projection)
-                .sort(query.sort)
-                .skip(query.skip)
-                .limit(query.limit)
-                .lean()
-            : MemberModel.find(query.filter, projection)
-                .sort(query.sort)
-                .skip(query.skip)
-                .lean(),
+        const projection = scope === 'public' ? PUBLIC_MEMBER_PROJECTION : null;
+        const find = MemberModel.find(query.filter, projection)
+          .sort(query.sort)
+          .skip(query.skip);
+
+        [records, filteredCount] = await Promise.all([
+          (query.limit !== undefined ? find.limit(query.limit) : find).lean<
+            MemberRecord[]
+          >(),
           MemberModel.countDocuments(query.filter),
         ]);
-
-        findResults = queryResults;
-        filteredCount = countResults;
       }
 
       const totalCount = await MemberModel.countDocuments({});
 
-      const adminMemberIds = await findAdminMemberIds();
-      const members: Member[] = findResults.map(result => {
-        const { _id, ...baseMember } = result;
-        const id = result._id.toString();
-        return {
-          ...baseMember,
-          id,
-          isAdmin: adminMemberIds.has(id),
-        };
-      });
-
       res.status(200).json({
         data: {
-          items: members,
+          items: records.map(toResponse(scope)),
           filteredCount,
           totalCount,
         },
@@ -162,65 +152,93 @@ export function getMembers(scope: 'public' | 'admin') {
   };
 }
 
-export function getMember(scope: 'public' | 'admin') {
+export function getMemberByNumber(scope: Scope) {
   return async (
-    req: Request<{ id: Id }>,
-    res: Response<ApiResponse<Member>>,
+    req: Request<{ number: string }>,
+    res: Response<ApiResponse<PublicMember | AdminMember>>,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
-      const projection =
-        scope === 'public'
-          ? { dateJoined: 0, email: 0, phoneNumber: 0, yearOfBirth: 0 }
-          : {};
-      const findResult = isCollectionId(id)
-        ? await MemberModel.findById(id, projection).lean()
+      const { number } = req.params;
+      const record = /^\d+$/.test(number)
+        ? await MemberModel.findOne(
+            { number: Number(number), 'account.status': 'active' },
+            scope === 'public' ? PUBLIC_MEMBER_PROJECTION : null,
+          ).lean<MemberRecord>()
         : null;
 
-      if (!findResult) {
-        res.status(404).json({ message: `Unable to find member [${id}]` });
+      if (!record) {
+        res.status(404).json({ message: `Unable to find member [${number}]` });
         return;
       }
 
-      const adminMemberIds = await findAdminMemberIds();
-      const { _id, ...baseMember } = findResult;
-      const member: Member = { ...baseMember, id, isAdmin: adminMemberIds.has(id) };
-
-      res.status(200).json({ data: member });
+      res.status(200).json({ data: toResponse(scope)(record) });
     } catch (error) {
       res.status(500).json({ message: `Unknown error: ${error}` });
     }
   };
 }
 
-export async function addMember(
-  req: Request,
-  res: Response<ApiResponse<Id>>,
+export async function getMemberProfiles(
+  _req: Request,
+  res: Response<ApiResponse<MemberProfile[]>>,
 ): Promise<void> {
   try {
-    const memberValidationResult = validateObjectByTypes(req.body, memberTypes);
-    if (memberValidationResult !== 'valid') {
-      res
-        .status(400)
-        .json({ message: `Invalid member: ${memberValidationResult.message}` });
+    const records = await MemberModel.find(
+      { 'account.status': 'active', number: { $exists: true } },
+      MEMBER_PROFILE_PROJECTION,
+    ).lean<MemberRecord[]>();
+
+    res.status(200).json({ data: toMemberProfiles(records) });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+export async function getMemberById(
+  req: Request<{ id: Id }>,
+  res: Response<ApiResponse<AdminMember>>,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const record = isCollectionId(id)
+      ? await MemberModel.findById(id).lean<MemberRecord>()
+      : null;
+
+    if (!record) {
+      res.status(404).json({ message: `Unable to find member [${id}]` });
       return;
     }
 
-    const modInfoValidationResult = validateObjectByTypes(
-      (req.body as Member).modificationInfo,
-      modificationInfoTypes,
+    res.status(200).json({ data: toAdminMember(record) });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+export async function addMember(
+  req: Request,
+  res: Response<ApiResponse<AdminMember>>,
+): Promise<void> {
+  try {
+    const validationProblem = validateEditableMember(req.body);
+    if (validationProblem) {
+      res.status(400).json({ message: validationProblem });
+      return;
+    }
+
+    const created = await MemberModel.create(
+      prepareMemberForDB(
+        req.body as EditableMemberFields,
+        await findEditor(req.user.id),
+        true,
+      ),
     );
-    if (modInfoValidationResult !== 'valid') {
-      res.status(400).json({
-        message: `Invalid member modification info: ${modInfoValidationResult.message}`,
-      });
-      return;
+    const record = await MemberModel.findById(created._id).lean<MemberRecord>();
+    if (!record) {
+      throw new Error('The new member could not be read back.');
     }
 
-    const preparedMember = prepareMemberForDB(req.body);
-    const result = await MemberModel.create(preparedMember);
-
-    res.status(201).json({ data: result._id.toString() });
+    res.status(201).json({ data: toAdminMember(record) });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }
@@ -233,30 +251,38 @@ export async function updateMember(
   try {
     const { id } = req.params;
 
-    const memberValidationResult = validateObjectByTypes(req.body, memberTypes);
-    if (memberValidationResult !== 'valid') {
-      res
-        .status(400)
-        .json({ message: `Invalid member: ${memberValidationResult.message}` });
+    const validationProblem = validateEditableMember(req.body);
+    if (validationProblem) {
+      res.status(400).json({ message: validationProblem });
       return;
     }
 
-    const modInfoValidationResult = validateObjectByTypes(
-      (req.body as Member).modificationInfo,
-      modificationInfoTypes,
-    );
-    if (modInfoValidationResult !== 'valid') {
-      res.status(400).json({
-        message: `Invalid member modification info: ${modInfoValidationResult.message}`,
+    const existing = isCollectionId(id)
+      ? await MemberModel.findById(id, { email: 1, account: 1 }).lean<MemberRecord>()
+      : null;
+    if (!existing) {
+      res.status(404).json({
+        message: `Unable to update member [${id}] - member not found`,
       });
       return;
     }
 
-    const preparedMember = prepareMemberForDB(req.body);
-    const result = await MemberModel.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: preparedMember },
+    const preparedMember = prepareMemberForDB(
+      req.body as EditableMemberFields,
+      await findEditor(req.user.id),
+      false,
     );
+    if (
+      existing.account?.status === 'active' &&
+      preparedMember.email !== existing.email
+    ) {
+      res.status(400).json({
+        message: "This member's email address is managed by their account.",
+      });
+      return;
+    }
+
+    const result = await MemberModel.updateOne({ _id: id }, { $set: preparedMember });
 
     if (result.matchedCount === 0 || result.modifiedCount === 0) {
       res.status(404).json({
@@ -276,49 +302,40 @@ export async function updateMembers(
   res: Response<ApiResponse<Id[]>>,
 ): Promise<void> {
   try {
-    const members = req.body as Member[];
+    const members = req.body as Array<EditableMemberFields & { id: Id }>;
     if (!Array.isArray(members) || members.length === 0) {
       res.status(400).json({ message: 'Invalid request body: expected non-empty array' });
       return;
     }
 
-    for (const member of members) {
-      const memberValidationResult = validateObjectByTypes(member, memberTypes);
-      if (memberValidationResult !== 'valid') {
-        res
-          .status(400)
-          .json({ message: `Invalid member: ${memberValidationResult.message}` });
+    for (const { id, ...member } of members) {
+      if (!isCollectionId(id)) {
+        res.status(400).json({ message: `Invalid member id [${id}]` });
         return;
       }
-
-      const modInfoValidationResult = validateObjectByTypes(
-        member.modificationInfo,
-        modificationInfoTypes,
-      );
-      if (modInfoValidationResult !== 'valid') {
-        res.status(400).json({
-          message: `Invalid member modification info: ${modInfoValidationResult.message}`,
-        });
+      const validationProblem = validateEditableMember(member);
+      if (validationProblem) {
+        res.status(400).json({ message: validationProblem });
         return;
       }
     }
 
+    const editor = await findEditor(req.user.id);
     const session = await MemberModel.startSession();
     const updatedIds: Id[] = [];
     try {
       await session.withTransaction(async () => {
-        for (const member of members) {
-          const preparedMember = prepareMemberForDB(member);
+        for (const { id, ...member } of members) {
           const result = await MemberModel.updateOne(
-            { _id: new ObjectId(member.id) },
-            { $set: preparedMember },
+            { _id: id },
+            { $set: prepareMemberForDB(member, editor, false) },
             { session },
           );
 
           if (result.matchedCount === 0) {
-            throw new Error(`NOT_FOUND:${member.id}`);
+            throw new Error(`NOT_FOUND:${id}`);
           }
-          updatedIds.push(member.id);
+          updatedIds.push(id);
         }
       });
     } catch (error) {
@@ -349,16 +366,23 @@ export async function deleteMember(
   try {
     const { id } = req.params;
 
-    const result = await MemberModel.deleteOne({
-      _id: new ObjectId(id),
-    });
-
-    if (result.deletedCount === 0) {
+    const existing = isCollectionId(id)
+      ? await MemberModel.findById(id, { account: 1 }).lean<MemberRecord>()
+      : null;
+    if (!existing) {
       res.status(404).json({
         message: `Unable to delete member [${id}] - member not found`,
       });
       return;
     }
+    if (existing.account?.status === 'active') {
+      res.status(409).json({
+        message: 'This member has an account, so their record cannot be deleted.',
+      });
+      return;
+    }
+
+    await MemberModel.deleteOne({ _id: id });
 
     res.status(200).json({ data: id });
   } catch (error) {
@@ -366,8 +390,173 @@ export async function deleteMember(
   }
 }
 
+// Sends a Clerk invitation for the member, first saving the details the admin
+// confirmed. The member ID travels in the invitation's metadata, which links
+// the account to this member once the invitation is accepted
+export async function createMemberAccount(
+  req: Request<{ id: Id }>,
+  res: Response<ApiResponse<AdminMember>>,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const origin = req.header('origin');
+    if (!origin || !isAllowedOrigin(origin)) {
+      res.status(400).json({
+        message: 'Account invitations can only be sent from the London Chess website.',
+      });
+      return;
+    }
+
+    const details = parseAccountDetails(req.body);
+    if (typeof details === 'string') {
+      res.status(400).json({ message: details });
+      return;
+    }
+
+    const member = isCollectionId(id)
+      ? await MemberModel.findById(id).lean<MemberRecord>()
+      : null;
+    if (!member) {
+      res.status(404).json({ message: `Unable to find member [${id}]` });
+      return;
+    }
+    if (member.account?.status === 'active') {
+      res.status(409).json({ message: 'This member already has an account.' });
+      return;
+    }
+
+    // The invitee's browser has nothing but this link, so it carries the name the
+    // admin confirmed for their new account
+    const acceptUrl = new URL('/accept-invitation', origin);
+    acceptUrl.searchParams.set('firstName', details.firstName);
+    acceptUrl.searchParams.set('lastName', details.lastName);
+
+    let invitationId: string;
+    try {
+      const invitation = await clerkClient.invitations.createInvitation({
+        emailAddress: details.email,
+        publicMetadata: { memberId: id },
+        redirectUrl: acceptUrl.toString(),
+        notify: true,
+        ignoreExisting: member.account?.status === 'invited',
+      });
+      invitationId = invitation.id;
+    } catch (error) {
+      res.status(400).json({
+        message: clerkErrorMessage(error, 'Unable to send the account invitation.'),
+      });
+      return;
+    }
+
+    const editor = await findEditor(req.user.id);
+    const account: MemberAccount = {
+      status: 'invited',
+      clerkUserId: null,
+      invitationId,
+      isAdmin: false,
+      clerkImageUrl: null,
+      avatarUrl: null,
+      avatarOriginalUrl: null,
+      avatarManagedByApp: false,
+      avatarCropState: null,
+      avatarUpdatedAt: null,
+    };
+
+    const updated = await MemberModel.findOneAndUpdate(
+      { _id: id, 'account.clerkUserId': null },
+      {
+        $set: {
+          ...details,
+          account,
+          'modificationInfo.lastEditedBy': editor.name,
+          'modificationInfo.lastEditedByNumber': editor.number,
+          'modificationInfo.dateLastEdited': new Date().toISOString(),
+        },
+      },
+      { new: true },
+    ).lean<MemberRecord>();
+
+    if (!updated) {
+      res.status(409).json({ message: 'This member already has an account.' });
+      return;
+    }
+
+    res.status(200).json({ data: toAdminMember(updated) });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to create account: ${error}` });
+  }
+}
+
+function validateEditableMember(body: unknown): string | null {
+  const memberValidationResult = validateObjectByTypes(body, editableMemberTypes);
+  if (memberValidationResult !== 'valid') {
+    return `Invalid member: ${memberValidationResult.message}`;
+  }
+
+  const modInfoValidationResult = validateObjectByTypes(
+    (body as EditableMemberFields).modificationInfo,
+    modificationInfoTypes,
+  );
+  if (modInfoValidationResult !== 'valid') {
+    return `Invalid member modification info: ${modInfoValidationResult.message}`;
+  }
+
+  return null;
+}
+
+function parseAccountDetails(body: unknown): AccountDetails | string {
+  if (typeof body !== 'object' || body === null) {
+    return 'Account details are required.';
+  }
+  const input = body as Record<string, unknown>;
+
+  const email = input['email'];
+  if (typeof email !== 'string' || !EMAIL_PATTERN.test(email.trim())) {
+    return 'A valid email address is required.';
+  }
+
+  const details: AccountDetails = {
+    email: email.trim(),
+    firstName: '',
+    lastName: '',
+    city: '',
+    yearOfBirth: '',
+    phoneNumber: '',
+    lichessUsername: '',
+    chessComUsername: '',
+  };
+
+  for (const field of ACCOUNT_DETAIL_FIELDS) {
+    const value = input[field];
+    if (typeof value !== 'string') {
+      return 'Every account detail must be text.';
+    }
+    const trimmed = value.trim();
+    // Many members have no year of birth on file, and an account does not need one
+    const problem =
+      field === 'yearOfBirth' && !trimmed ? null : validateDetailField(field, trimmed);
+    if (problem) {
+      return problem;
+    }
+    details[field] = trimmed;
+  }
+
+  return details;
+}
+
+function clerkErrorMessage(error: unknown, fallback: string): string {
+  const clerkError = error as { errors?: Array<{ longMessage?: string }> };
+  const message = clerkError.errors?.[0]?.longMessage ?? fallback;
+  return /[.!?]$/.test(message) ? message : `${message}.`;
+}
+
 // Remove id property and order remaining properties alphabetically
-function prepareMemberForDB(member: Member): Omit<Member, 'id'> {
+function prepareMemberForDB(
+  member: EditableMemberFields,
+  editor: Editor,
+  isNew: boolean,
+): EditableMemberFields {
   return {
     chessComUsername: member.chessComUsername,
     city: member.city,
@@ -377,12 +566,7 @@ function prepareMemberForDB(member: Member): Omit<Member, 'id'> {
     isActive: member.isActive,
     lastName: member.lastName,
     lichessUsername: member.lichessUsername,
-    modificationInfo: {
-      createdBy: member.modificationInfo.createdBy,
-      dateCreated: member.modificationInfo.dateCreated,
-      dateLastEdited: member.modificationInfo.dateLastEdited,
-      lastEditedBy: member.modificationInfo.lastEditedBy,
-    },
+    modificationInfo: creditEditor(member.modificationInfo, editor, isNew),
     peakRating: member.peakRating,
     phoneNumber: member.phoneNumber,
     rating: member.rating,

@@ -26,7 +26,25 @@ describe('toProfile', () => {
       imageUrl: 'https://img.clerk.com/photo',
       hasImage: true,
       isAdmin: true,
+      memberId: null,
     });
+  });
+
+  it('should carry the member id from the invitation metadata', () => {
+    const data: ClerkUserEventData = {
+      ...baseData,
+      public_metadata: { memberId: '507f1f77bcf86cd799439011' },
+    };
+
+    const profile = toProfile(data);
+
+    expect(profile.memberId).toBe('507f1f77bcf86cd799439011');
+  });
+
+  it('should ignore a member id that is not a string', () => {
+    const profile = toProfile({ ...baseData, public_metadata: { memberId: 42 } });
+
+    expect(profile.memberId).toBeNull();
   });
 
   it('should fall back to the first email address when the primary id does not match', () => {
@@ -58,6 +76,7 @@ describe('toProfile', () => {
       imageUrl: '',
       hasImage: false,
       isAdmin: false,
+      memberId: null,
     });
   });
 });
