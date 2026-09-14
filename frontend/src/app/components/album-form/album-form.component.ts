@@ -66,24 +66,24 @@ import { ordinalityValidator, textValidator } from '@app/validators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlbumFormComponent implements OnInit {
-  @Input({ required: true }) album!: string | null;
-  @Input({ required: true }) existingAlbums!: string[];
-  @Input({ required: true }) hasUnsavedChanges!: boolean | null;
-  @Input({ required: true }) imageEntities!: {
+  @Input({ required: true }) public album!: string | null;
+  @Input({ required: true }) public existingAlbums!: string[];
+  @Input({ required: true }) public hasUnsavedChanges!: boolean | null;
+  @Input({ required: true }) public imageEntities!: {
     image: Image;
     formData: ImageFormData;
   }[];
-  @Input({ required: true }) newImagesFormData!: Record<string, ImageFormData>;
+  @Input({ required: true }) public newImagesFormData!: Record<string, ImageFormData>;
 
-  @Output() cancel = new EventEmitter<void>();
-  @Output() change = new EventEmitter<{
+  @Output() public readonly cancel = new EventEmitter<void>();
+  @Output() public readonly change = new EventEmitter<{
     multipleFormData: (Partial<ImageFormData> & { id: Id })[];
   }>();
-  @Output() fileActionFail = new EventEmitter<LccError>();
-  @Output() removeNewImage = new EventEmitter<Id>();
-  @Output() requestAddImages = new EventEmitter<void>();
-  @Output() requestUpdateAlbum = new EventEmitter<string>();
-  @Output() restore = new EventEmitter<string | null>();
+  @Output() public readonly fileActionFail = new EventEmitter<LccError>();
+  @Output() public readonly removeNewImage = new EventEmitter<Id>();
+  @Output() public readonly requestAddImages = new EventEmitter<void>();
+  @Output() public readonly requestUpdateAlbum = new EventEmitter<string>();
+  @Output() public readonly restore = new EventEmitter<string | null>();
 
   public form!: FormGroup<AlbumFormGroup>;
   public newImageDataUrls: Record<string, Url> = {};

@@ -96,22 +96,22 @@ export class MembersPageComponent implements OnInit {
   protected readonly pageIcon = UsersIconComponent;
 
   @ViewChild('memberRatingChangesFileInput')
-  memberRatingChangesFileInput?: ElementRef<HTMLInputElement>;
+  public memberRatingChangesFileInput?: ElementRef<HTMLInputElement>;
 
-  public addMemberLink: InternalLink = {
+  public readonly addMemberLink: InternalLink = {
     internalPath: ['member', 'add'],
     text: 'Add a member',
     icon: PlusCircleIconComponent,
   };
 
-  public updateRatingsFromCsvButton: AdminButton = {
+  public readonly updateRatingsFromCsvButton: AdminButton = {
     id: 'update-ratings-from-csv',
     tooltip: 'Update member ratings from CSV',
     icon: UploadIconComponent,
     action: () => this.memberRatingChangesFileInput?.nativeElement.click(),
   };
 
-  public exportToCsvButton: AdminButton = {
+  public readonly exportToCsvButton: AdminButton = {
     id: 'export-to-csv',
     tooltip: 'Export to CSV',
     icon: DownloadIconComponent,

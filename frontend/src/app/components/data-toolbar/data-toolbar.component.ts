@@ -48,8 +48,10 @@ export class DataToolbarComponent<T = EntityType> implements OnInit {
 
   @Input() public searchPlaceholder: string = 'Search';
 
-  @Output() public optionsChange = new EventEmitter<DataPaginationOptions<T>>();
-  @Output() public optionsChangeNoFetch = new EventEmitter<DataPaginationOptions<T>>();
+  @Output() public readonly optionsChange = new EventEmitter<DataPaginationOptions<T>>();
+  @Output() public readonly optionsChangeNoFetch = new EventEmitter<
+    DataPaginationOptions<T>
+  >();
 
   public isSearchFocused = false;
 

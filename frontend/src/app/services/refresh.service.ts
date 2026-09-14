@@ -8,7 +8,7 @@ import { IS_TOUCH_DEVICE } from '@app/tokens';
   providedIn: 'root',
 })
 export class RefreshService {
-  public isRefreshing$ = new BehaviorSubject<boolean>(false);
+  public readonly isRefreshing$ = new BehaviorSubject<boolean>(false);
 
   private readonly MAX_PULL_DISTANCE_PX = 120;
   private readonly PULL_THRESHOLD_PX = 80;
@@ -18,9 +18,9 @@ export class RefreshService {
   private mainElement: HTMLElement | null = null;
   private touchStartY = 0;
 
-  private boundOnTouchStart = this.onTouchStart.bind(this);
-  private boundOnTouchMove = this.onTouchMove.bind(this);
-  private boundOnTouchEnd = this.onTouchEnd.bind(this);
+  private readonly boundOnTouchStart = this.onTouchStart.bind(this);
+  private readonly boundOnTouchMove = this.onTouchMove.bind(this);
+  private readonly boundOnTouchEnd = this.onTouchEnd.bind(this);
 
   private readonly isTouchDevice = inject(IS_TOUCH_DEVICE);
 

@@ -57,23 +57,23 @@ import { textValidator } from '@app/validators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageFormComponent implements OnInit {
-  @Input({ required: true }) existingAlbums!: string[];
-  @Input({ required: true }) hasUnsavedChanges!: boolean;
-  @Input({ required: true }) imageEntity!: {
+  @Input({ required: true }) public existingAlbums!: string[];
+  @Input({ required: true }) public hasUnsavedChanges!: boolean;
+  @Input({ required: true }) public imageEntity!: {
     image: Image;
     formData: ImageFormData;
   } | null;
-  @Input({ required: true }) newImageFormData!: ImageFormData | null;
+  @Input({ required: true }) public newImageFormData!: ImageFormData | null;
 
-  @Output() cancel = new EventEmitter<void>();
-  @Output() change = new EventEmitter<{
+  @Output() public readonly cancel = new EventEmitter<void>();
+  @Output() public readonly change = new EventEmitter<{
     multipleFormData: (Partial<ImageFormData> & { id: Id })[];
   }>();
-  @Output() fileActionFail = new EventEmitter<LccError>();
-  @Output() requestAddImage = new EventEmitter<Id>();
-  @Output() requestFetchMainImage = new EventEmitter<Id>();
-  @Output() requestUpdateImage = new EventEmitter<Id>();
-  @Output() restore = new EventEmitter<Id>();
+  @Output() public readonly fileActionFail = new EventEmitter<LccError>();
+  @Output() public readonly requestAddImage = new EventEmitter<Id>();
+  @Output() public readonly requestFetchMainImage = new EventEmitter<Id>();
+  @Output() public readonly requestUpdateImage = new EventEmitter<Id>();
+  @Output() public readonly restore = new EventEmitter<Id>();
 
   public form!: FormGroup<ImageFormGroup>;
   public newAlbumValue!: string;

@@ -38,10 +38,10 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
   };
 
   @ViewChild('bannerMessage', { read: ElementRef })
-  bannerMessageRef!: ElementRef<HTMLElement>;
+  private bannerMessageRef!: ElementRef<HTMLElement>;
 
   @ViewChild('marqueeContent', { read: ElementRef })
-  marqueeContentRef!: ElementRef<HTMLElement>;
+  private marqueeContentRef!: ElementRef<HTMLElement>;
 
   @Input({ required: true }) public nextEvents!: Event[];
 

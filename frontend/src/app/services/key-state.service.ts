@@ -14,10 +14,10 @@ import { IS_MAC } from '@app/tokens';
   providedIn: 'root',
 })
 export class KeyStateService implements OnDestroy {
-  private isCtrlMetaKeyPressed = new BehaviorSubject<boolean>(false);
+  private readonly isCtrlMetaKeyPressed = new BehaviorSubject<boolean>(false);
   private keydownListener?: () => void;
   private keyupListener?: () => void;
-  private renderer: Renderer2;
+  private readonly renderer: Renderer2;
 
   private readonly isMac = inject(IS_MAC);
 

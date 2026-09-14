@@ -56,7 +56,7 @@ export class EventsCalendarGridComponent implements OnInit, OnChanges {
 
   @Input() public options?: DataPaginationOptions<Event>;
 
-  @Output() public requestDeleteEvent = new EventEmitter<Event>();
+  @Output() public readonly requestDeleteEvent = new EventEmitter<Event>();
 
   // Cache computed values to avoid recalculation
   public calendarMonths: CalendarMonth[] = [];

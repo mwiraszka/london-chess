@@ -122,7 +122,7 @@ export class SchedulePageComponent implements OnInit {
     icon: PlusCircleIconComponent,
   };
 
-  public exportToCsvButton: AdminButton = {
+  public readonly exportToCsvButton: AdminButton = {
     id: 'export-to-csv',
     tooltip: 'Export to CSV',
     icon: DownloadIconComponent,

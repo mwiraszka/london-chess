@@ -56,11 +56,11 @@ import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScheduleToolbarComponent {
-  @Input({ required: true }) filteredEvents!: Event[];
-  @Input({ required: true }) scheduleView!: 'list' | 'calendar';
-  @Input({ required: true }) totalCount!: number;
+  @Input({ required: true }) public filteredEvents!: Event[];
+  @Input({ required: true }) public scheduleView!: 'list' | 'calendar';
+  @Input({ required: true }) public totalCount!: number;
 
-  @Output() toggleScheduleView = new EventEmitter<void>();
+  @Output() public readonly toggleScheduleView = new EventEmitter<void>();
 
   protected readonly calendarViewIcon = GridIconComponent;
   protected readonly listViewIcon = RowsIconComponent;
