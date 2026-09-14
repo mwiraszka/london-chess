@@ -19,8 +19,10 @@ import {
   ImageModel,
   imagesSortingConfig,
 } from '../models/image.model';
+import { findEditor } from '../services/member-accounts.service';
 import { imagesBucket, r2Client } from '../services/storage.service';
 import { isDefined } from '../util/is-defined.util';
+import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 
 const URL_EXPIRY_SECONDS = 12 * 3600;
@@ -330,8 +332,9 @@ export async function addImages(
       return;
     }
 
+    const editor = await findEditor(req.user.id);
     const combinedImages = await withTransactionTimeout(async session => {
-      return await _processNewImages(files, parsedImageMetadataArray, session);
+      return await _processNewImages(files, parsedImageMetadataArray, editor, session);
     });
 
     res.status(201).json({ data: combinedImages });
@@ -375,13 +378,14 @@ export async function updateImages(
     }
 
     const imageMetadata = req.body.imageMetadata as string | string[] | undefined;
+    const editor = await findEditor(req.user.id);
 
     const { newImages, updatedImages } = await withTransactionTimeout(async session => {
       const updatedImages: Image[] = [];
       for (const image of existingImages) {
         const result = await ImageModel.updateOne(
           { _id: new ObjectId(image.id) },
-          { $set: prepareImageForDB(image) },
+          { $set: prepareImageForDB(image, editor, false) },
           { session },
         );
 
@@ -400,7 +404,7 @@ export async function updateImages(
           throw new Error('[IM-6.1] Image metadata mismatch');
         }
 
-        newImages = await _processNewImages(files, parsedImageMetadata, session);
+        newImages = await _processNewImages(files, parsedImageMetadata, editor, session);
       }
 
       return { newImages, updatedImages };
@@ -613,6 +617,7 @@ async function _getCombinedImage(
 async function _processNewImages(
   files: Express.Multer.File[],
   metadataArray: Image[],
+  editor: Editor,
   session: ClientSession,
 ): Promise<CombinedImage[]> {
   const processedBuffers = await Promise.all(
@@ -633,6 +638,8 @@ async function _processNewImages(
 
       const mongoDBImage = prepareImageForDB(
         metadataArray[i],
+        editor,
+        true,
         mainMetadata,
         thumbnailMetadata,
       );
@@ -722,6 +729,8 @@ async function _processNewImages(
 // Remove all S3-specific properties and order remaining properties alphabetically
 function prepareImageForDB(
   image: Image,
+  editor: Editor,
+  isNew: boolean,
   mainMetadata?: sharp.Metadata,
   thumbnailMetadata?: sharp.Metadata,
 ): Omit<Image, 'id'> {
@@ -734,12 +743,7 @@ function prepareImageForDB(
     mainFileSize: mainMetadata?.size,
     mainHeight: mainMetadata?.height,
     mainWidth: mainMetadata?.width,
-    modificationInfo: {
-      createdBy: image.modificationInfo.createdBy,
-      dateCreated: image.modificationInfo.dateCreated,
-      dateLastEdited: image.modificationInfo.dateLastEdited,
-      lastEditedBy: image.modificationInfo.lastEditedBy,
-    },
+    modificationInfo: creditEditor(image.modificationInfo, editor, isNew),
     thumbnailFileSize: thumbnailMetadata?.size,
     thumbnailHeight: thumbnailMetadata?.height,
     thumbnailWidth: thumbnailMetadata?.width,

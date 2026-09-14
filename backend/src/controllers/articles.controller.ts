@@ -10,7 +10,9 @@ import {
 } from '../models/article.model';
 import { Id } from '../models/core.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
+import { findEditor } from '../services/member-accounts.service';
 import { isCollectionId } from '../util/is-collection-id.util';
+import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -106,7 +108,11 @@ export async function addArticle(
       return;
     }
 
-    const preparedArticle = prepareArticleForDB(req.body);
+    const preparedArticle = prepareArticleForDB(
+      req.body,
+      await findEditor(req.user.id),
+      true,
+    );
     const result = await ArticleModel.create(preparedArticle);
 
     res.status(201).json({ data: result._id.toString() });
@@ -141,7 +147,11 @@ export async function updateArticle(
       return;
     }
 
-    const preparedArticle = prepareArticleForDB(req.body);
+    const preparedArticle = prepareArticleForDB(
+      req.body,
+      await findEditor(req.user.id),
+      false,
+    );
     const result = await ArticleModel.updateOne(
       { _id: new ObjectId(id) },
       { $set: preparedArticle },
@@ -185,17 +195,16 @@ export async function deleteArticle(
 }
 
 // Remove id property and order remaining properties alphabetically
-function prepareArticleForDB(article: Article): Omit<Article, 'id'> {
+function prepareArticleForDB(
+  article: Article,
+  editor: Editor,
+  isNew: boolean,
+): Omit<Article, 'id'> {
   return {
     bannerImageId: article.bannerImageId,
     body: article.body,
     bookmarkDate: article.bookmarkDate,
-    modificationInfo: {
-      createdBy: article.modificationInfo.createdBy,
-      dateCreated: article.modificationInfo.dateCreated,
-      dateLastEdited: article.modificationInfo.dateLastEdited,
-      lastEditedBy: article.modificationInfo.lastEditedBy,
-    },
+    modificationInfo: creditEditor(article.modificationInfo, editor, isNew),
     title: article.title,
   };
 }

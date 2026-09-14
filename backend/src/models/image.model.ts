@@ -44,8 +44,10 @@ const imageSchema = new Schema<Image>(
     modificationInfo: {
       dateCreated: { type: String, required: true },
       createdBy: { type: String, required: true },
+      createdByNumber: { type: Number, default: null },
       dateLastEdited: { type: String, required: true },
       lastEditedBy: { type: String, required: true },
+      lastEditedByNumber: { type: Number, default: null },
     },
   },
   { versionKey: false },
