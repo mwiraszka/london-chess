@@ -172,9 +172,6 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": {
-            "prebundle": { "exclude": ["ng2-pdf-viewer"] }
-          },
           "configurations": {
             "production": {
               "buildTarget": "lcc-angular:build:production"
