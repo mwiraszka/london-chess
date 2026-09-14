@@ -115,7 +115,7 @@
   h3 {
     width: 100%;
     text-align: left;
-    color: var(--lcc-color--behindTheScenesPage-headerText);
+    color: var(--lcc-color--whatsNewPage-headerText);
   }
 
   // The LCC divider token is near-black in dark mode, so the library's own
@@ -165,7 +165,7 @@
       margin-bottom: 16px;
       font-size: 16px;
       line-height: 24px;
-      color: var(--lcc-color--behindTheScenesPage-secondaryText);
+      color: var(--lcc-color--whatsNewPage-secondaryText);
 
       &:last-child {
         margin-bottom: 0;
@@ -181,6 +181,10 @@
   width: 100%;
   max-width: 800px;
   margin-bottom: 8px;
+}
+
+.release-card--collapsed {
+  cursor: pointer;
 }
 
 .release-version-row {
@@ -228,7 +232,7 @@
     flex-shrink: 0;
     @include icon-size(18px);
 
-    color: var(--lcc-color--behindTheScenesPage-secondaryText);
+    color: var(--lcc-color--whatsNewPage-secondaryText);
     transition: transform 150ms ease;
   }
 
@@ -251,7 +255,7 @@
     .release-date {
       font-size: 13px;
       line-height: 16px;
-      color: var(--lcc-color--behindTheScenesPage-secondaryText);
+      color: var(--lcc-color--whatsNewPage-secondaryText);
     }
   }
 

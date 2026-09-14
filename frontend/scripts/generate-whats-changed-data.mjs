@@ -1,6 +1,6 @@
-// Regenerates src/app/pages/behind-the-scenes/whats-changed.generated.ts from the root
+// Regenerates src/app/pages/whats-new/whats-changed.generated.ts from the root
 // CHANGELOG.md, keeping releases from v5.13.0 up. Runs automatically before
-// every serve and build so the What's Changed page always matches the changelog.
+// every serve and build so the What's New page always matches the changelog.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +9,7 @@ const FRONTEND_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHANGELOG_PATH = join(FRONTEND_ROOT, '..', 'CHANGELOG.md');
 const OUTPUT_PATH = join(
   FRONTEND_ROOT,
-  'src/app/pages/behind-the-scenes/whats-changed.generated.ts',
+  'src/app/pages/whats-new/whats-changed.generated.ts',
 );
 const MIN_VERSION = [5, 13, 0];
 

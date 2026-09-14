@@ -276,8 +276,8 @@ body[data-theme='dark'] {
   --lcc-color--techRing-secondaryText: #{clr(grayscale, gray-65)};
   --lcc-color--techRing-iconGlow: #{clr(primary, light, 0.6)};
 
-  --lcc-color--behindTheScenesPage-headerText: #{clr(grayscale, white-95)};
-  --lcc-color--behindTheScenesPage-secondaryText: #{clr(grayscale, gray-65)};
+  --lcc-color--whatsNewPage-headerText: #{clr(grayscale, white-95)};
+  --lcc-color--whatsNewPage-secondaryText: #{clr(grayscale, gray-65)};
 
   --lcc-color--pageHeader-adminIcon: #{clr(admin, base)};
   --lcc-color--pageHeader-asteriskText: #{clr(grayscale, gray-50)};
@@ -358,14 +358,6 @@ body[data-theme='dark'] {
   --lcc-color--table-rowBackgroundEven: #{clr(grayscale, gray-30)};
   --lcc-color--table-rowBackgroundOdd: #{clr(grayscale, gray-32)};
   --lcc-color--table-rowForeground: #{clr(grayscale, white-90)};
-
-  --lcc-color--toast-boxShadow: #{clr(grayscale, gray-35, 0.7)};
-  --lcc-color--toast-icon: #{clr(grayscale, black-2)};
-  --lcc-color--toast-infoBackground: #{clr(info, light)};
-  --lcc-color--toast-primaryText: #{clr(grayscale, black-2)};
-  --lcc-color--toast-secondaryText: #{clr(grayscale, black-15)};
-  --lcc-color--toast-successBackground: #{clr(success, light)};
-  --lcc-color--toast-warningBackground: #{clr(warning, lightest)};
 
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOn: #{clr(grayscale, gray-35)};
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOff: #{clr(grayscale, gray-25)};

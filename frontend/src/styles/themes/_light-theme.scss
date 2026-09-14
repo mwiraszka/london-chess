@@ -276,8 +276,8 @@
   --lcc-color--techRing-secondaryText: #{clr(grayscale, gray-35)};
   --lcc-color--techRing-iconGlow: #{clr(primary, base, 0.55)};
 
-  --lcc-color--behindTheScenesPage-headerText: #{clr(grayscale, black-10)};
-  --lcc-color--behindTheScenesPage-secondaryText: #{clr(grayscale, gray-35)};
+  --lcc-color--whatsNewPage-headerText: #{clr(grayscale, black-10)};
+  --lcc-color--whatsNewPage-secondaryText: #{clr(grayscale, gray-35)};
 
   --lcc-color--pgnViewer-board: #{clr(chessboard)};
   --lcc-color--pgnViewer-playerNameText: #{clr(grayscale, white-85)};
@@ -358,14 +358,6 @@
   --lcc-color--table-rowBackgroundEven: #{clr(grayscale, white-92)};
   --lcc-color--table-rowBackgroundOdd: #{clr(grayscale, white-95)};
   --lcc-color--table-rowForeground: #{clr(grayscale, black-10)};
-
-  --lcc-color--toast-boxShadow: #{clr(grayscale, gray-65, 0.7)};
-  --lcc-color--toast-icon: #{clr(grayscale, black-2)};
-  --lcc-color--toast-infoBackground: #{clr(info, light)};
-  --lcc-color--toast-primaryText: #{clr(grayscale, black-2)};
-  --lcc-color--toast-secondaryText: #{clr(grayscale, black-15)};
-  --lcc-color--toast-successBackground: #{clr(success, light)};
-  --lcc-color--toast-warningBackground: #{clr(warning, lightest)};
 
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOn: #{clr(grayscale, gray-35)};
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOff: #{clr(grayscale, gray-25)};

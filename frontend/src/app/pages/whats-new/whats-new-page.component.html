@@ -1,11 +1,11 @@
 <lcc-page-header
-  heading="Behind the Scenes"
+  heading="Website – What's New"
   [icon]="pageIcon">
 </lcc-page-header>
 
 <div class="page-body">
   <div class="section-title section-title--intro">
-    <h3>Under the hood</h3>
+    <h3>Behind the scenes</h3>
     <ea-divider class="section-title__rule" />
   </div>
 
@@ -33,9 +33,9 @@
     <div class="text-container">
       <p>
         The London Chess Club website is built and maintained by
-        <lcc-member-link name="Michal Wiraszka">
-          <span>Michal Wiraszka</span>
-        </lcc-member-link>
+        <lcc-member-link
+          name="Michal Wiraszka"
+          [memberNumber]="0" />
         and is entirely open source. Anyone is free to read and use the code behind it.
       </p>
       <p>
@@ -47,7 +47,7 @@
   </section>
 
   <div class="section-title section-title--releases">
-    <h3>What's new</h3>
+    <h3>Releases</h3>
     <ea-divider class="section-title__rule" />
   </div>
 
@@ -57,8 +57,10 @@
         <ea-card
           class="release-card"
           headerAlign="start"
+          [class.release-card--collapsed]="!isExpanded(release)"
           [attr.id]="releaseId(release)"
-          [fullWidth]="true">
+          [fullWidth]="true"
+          (click)="onCardClick(release)">
           <div
             slot="header"
             class="release-header">
@@ -68,7 +70,7 @@
                 class="release-toggle"
                 [attr.aria-controls]="releaseId(release) + '-details'"
                 [attr.aria-expanded]="isExpanded(release)"
-                (click)="onToggleRelease(release)">
+                (click)="$event.stopPropagation(); onToggleRelease(release)">
                 <ea-icon-chevron-down
                   class="release-chevron"
                   aria-hidden="true"
@@ -100,7 +102,8 @@
                 class="release-link lcc-link"
                 [href]="releaseUrl(release)"
                 rel="noopener noreferrer"
-                target="_blank">
+                target="_blank"
+                (click)="$event.stopPropagation()">
                 <span>More details</span>
                 <ea-icon-external-link class="external-link-icon" />
               </a>

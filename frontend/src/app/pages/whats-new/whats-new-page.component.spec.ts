@@ -7,19 +7,19 @@ import { initialState as membersInitialState } from '@app/store/members/members.
 import { queryAll, queryTextContent } from '@app/utils';
 
 import packageJson from '../../../../package.json';
-import { BehindTheScenesPageComponent } from './behind-the-scenes-page.component';
 import { WHATS_CHANGED_RELEASES } from './whats-changed.generated';
+import { WhatsNewPageComponent } from './whats-new-page.component';
 
-describe('BehindTheScenesPageComponent', () => {
-  let fixture: ComponentFixture<BehindTheScenesPageComponent>;
-  let component: BehindTheScenesPageComponent;
+describe('WhatsNewPageComponent', () => {
+  let fixture: ComponentFixture<WhatsNewPageComponent>;
+  let component: WhatsNewPageComponent;
   let markLatestReleaseSeenSpy: Mock;
 
   beforeEach(async () => {
     markLatestReleaseSeenSpy = vi.fn();
 
     await TestBed.configureTestingModule({
-      imports: [BehindTheScenesPageComponent],
+      imports: [WhatsNewPageComponent],
       providers: [
         {
           provide: MetaAndTitleService,
@@ -36,7 +36,7 @@ describe('BehindTheScenesPageComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(BehindTheScenesPageComponent);
+    fixture = TestBed.createComponent(WhatsNewPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

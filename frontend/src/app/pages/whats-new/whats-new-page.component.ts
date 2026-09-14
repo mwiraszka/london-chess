@@ -47,9 +47,9 @@ interface ReleaseSection {
 }
 
 @Component({
-  selector: 'lcc-behind-the-scenes-page',
-  templateUrl: './behind-the-scenes-page.component.html',
-  styleUrl: './behind-the-scenes-page.component.scss',
+  selector: 'lcc-whats-new-page',
+  templateUrl: './whats-new-page.component.html',
+  styleUrl: './whats-new-page.component.scss',
   imports: [
     BadgeComponent,
     BugIconComponent,
@@ -69,7 +69,7 @@ interface ReleaseSection {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BehindTheScenesPageComponent implements OnInit {
+export class WhatsNewPageComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
@@ -85,7 +85,7 @@ export class BehindTheScenesPageComponent implements OnInit {
   private readonly selectedVersion = signal<string | null>(null);
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle('Behind the Scenes');
+    this.metaAndTitleService.updateTitle("What's New");
     this.metaAndTitleService.updateDescription(
       'How the London Chess Club website is built, and what has changed in each release.',
     );
@@ -117,6 +117,14 @@ export class BehindTheScenesPageComponent implements OnInit {
 
   protected isExpanded(release: WhatsChangedRelease): boolean {
     return this.selectedVersion() === release.version;
+  }
+
+  // Only a collapsed card opens from anywhere on it; an open card leaves its
+  // contents free to select, closing only from the header toggle
+  protected onCardClick(release: WhatsChangedRelease): void {
+    if (!this.isExpanded(release)) {
+      this.onToggleRelease(release);
+    }
   }
 
   protected onToggleRelease(release: WhatsChangedRelease): void {

@@ -127,8 +127,8 @@ export class UserSettingsMenuComponent implements OnInit {
     this.store.dispatch(AppActions.desktopViewToggled());
   }
 
-  public onBehindTheScenes(): void {
-    this.router.navigate(['behind-the-scenes']);
+  public onWhatsNew(): void {
+    this.router.navigate(['whats-new']);
     this.close.emit();
   }
 

@@ -22,10 +22,10 @@ const routes: Routes = [
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
   {
-    path: 'behind-the-scenes',
+    path: 'accept-invitation',
     loadComponent: () =>
-      import('./pages/behind-the-scenes/behind-the-scenes-page.component').then(
-        c => c.BehindTheScenesPageComponent,
+      import('./pages/accept-invitation/accept-invitation-page.component').then(
+        c => c.AcceptInvitationPageComponent,
       ),
   },
   {
@@ -139,6 +139,13 @@ const routes: Routes = [
     loadComponent: () =>
       import('./pages/reset-password-task/reset-password-task-page.component').then(
         c => c.ResetPasswordTaskPageComponent,
+      ),
+  },
+  {
+    path: 'whats-new',
+    loadComponent: () =>
+      import('./pages/whats-new/whats-new-page.component').then(
+        c => c.WhatsNewPageComponent,
       ),
   },
   {

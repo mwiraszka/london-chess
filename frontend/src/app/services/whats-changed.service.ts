@@ -7,7 +7,7 @@ import {
   WHATS_CHANGED_RECENT_RELEASE_WINDOW_DAYS,
 } from '@app/constants/whats-changed';
 import { WhatsChangedRelease } from '@app/models';
-import { WHATS_CHANGED_RELEASES } from '@app/pages/behind-the-scenes/whats-changed.generated';
+import { WHATS_CHANGED_RELEASES } from '@app/pages/whats-new/whats-changed.generated';
 import { isStorageSupported } from '@app/utils';
 
 @Injectable({
