@@ -47,9 +47,10 @@
     }
 
     &::ng-deep lcc-footer {
-      // Manually push footer background to edge of page
-      width: calc(100% + 16px);
-      margin-top: auto;
+      // Reaches back through the scroller's side paddings, the left one widened
+      // by the scrollbar inset, so the background meets both edges
+      align-self: stretch;
+      margin: auto -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
 
       // Add padding when on Safari on mobile to keep footer visible
       @media screen and (max-width: 767px) {
