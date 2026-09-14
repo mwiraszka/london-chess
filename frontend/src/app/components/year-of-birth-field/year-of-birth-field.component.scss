@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+// The library caps the number box at its digit count; the label sets the floor here
+ea-number-input {
+  ::ng-deep .ea-number-input-wrapper {
+    min-width: 100%;
+  }
+
+  ::ng-deep .ea-number-input {
+    flex-grow: 1;
+  }
+}

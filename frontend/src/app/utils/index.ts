@@ -34,6 +34,11 @@ export { exportEventsToIcal } from './file/export-events-to-ical.util';
 export { formatBytes } from './file/format-bytes.util';
 export { parseCsv } from './file/parse-csv.util';
 
+export { createEmailControl } from './forms/create-email-control.util';
+export { createMemberDetailsControls } from './forms/create-member-details-controls.util';
+export { createNewPasswordGroup } from './forms/create-new-password-group.util';
+export { createVerificationCodeControl } from './forms/create-verification-code-control.util';
+
 export { setPaginationParams } from './http/set-pagination-params.util';
 
 export { buildImagesFormData } from './image/build-images-form-data.util';
@@ -48,6 +53,7 @@ export { actionSanitizer } from './store/action-sanitizer.util';
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
 
 export { hasCallState } from './type-guards/has-call-state.util';
+export { isAccountSection } from './type-guards/is-account-section.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';

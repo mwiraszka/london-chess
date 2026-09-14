@@ -1,6 +1,8 @@
 export { emailValidator } from './email.validator';
 export { idValidator } from './id.validator';
 export { ordinalityValidator } from './ordinality.validator';
+export { passwordValidator } from './password.validator';
+export { passwordsMatchValidator } from './passwords-match.validator';
 export { phoneNumberValidator } from './phone-number.validator';
 export { ratingValidator } from './rating.validator';
 export { textValidator } from './text.validator';

@@ -6,15 +6,10 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { AuthGuard, loggedInGuard } from '@app/guards/auth.guard';
-import { User } from '@app/models';
+import { LoginResult, User } from '@app/models';
 import { AuthActions } from '@app/store/auth';
 
 import { environment } from '@env';
-
-export interface LoginResult {
-  needsSecondFactor: boolean;
-  needsNewPassword: boolean;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -30,7 +25,7 @@ export class ClerkService {
   readonly isLoggedIn = signal(false);
   readonly user = signal<Clerk['user']>(null, { equal: () => false });
 
-  private _sessionEndExpected = false;
+  private sessionEndExpected = false;
 
   async load(): Promise<void> {
     this.clerk = new Clerk(environment.clerkPublishableKey);
@@ -104,11 +99,11 @@ export class ClerkService {
   }
 
   expectSessionEnd(): void {
-    this._sessionEndExpected = true;
+    this.sessionEndExpected = true;
   }
 
   async logOut(): Promise<void> {
-    this._sessionEndExpected = true;
+    this.sessionEndExpected = true;
     await this.clerk.signOut();
   }
 
@@ -121,7 +116,7 @@ export class ClerkService {
         identifier: email,
       });
     } catch (e: unknown) {
-      const code = this.errorCode(e);
+      const code = this.firstClerkError(e)?.code;
       if (code !== 'form_identifier_not_found' && code !== 'strategy_for_user_invalid') {
         throw e;
       }
@@ -178,18 +173,15 @@ export class ClerkService {
   }
 
   extractError(e: unknown): string {
-    if (e && typeof e === 'object' && 'errors' in e) {
-      const errors = (e as { errors: Array<{ code?: string; longMessage?: string }> })
-        .errors;
-      const error = errors[0];
-      return this.friendlyMessage(error?.code, error?.longMessage);
-    }
-    return 'Something went wrong, please try again';
+    const error = this.firstClerkError(e);
+    return this.friendlyMessage(error?.code, error?.longMessage);
   }
 
-  private errorCode(e: unknown): string | undefined {
-    if (e && typeof e === 'object' && 'errors' in e) {
-      return (e as { errors: Array<{ code?: string }> }).errors[0]?.code;
+  private firstClerkError(
+    e: unknown,
+  ): { code?: string; longMessage?: string } | undefined {
+    if (e && typeof e === 'object' && 'errors' in e && Array.isArray(e.errors)) {
+      return e.errors[0];
     }
     return undefined;
   }
@@ -233,8 +225,8 @@ export class ClerkService {
     );
 
     if (wasLoggedIn && !clerkUser) {
-      const expected = this._sessionEndExpected;
-      this._sessionEndExpected = false;
+      const expected = this.sessionEndExpected;
+      this.sessionEndExpected = false;
       if (!expected) {
         this.handleRemoteLogout();
       }

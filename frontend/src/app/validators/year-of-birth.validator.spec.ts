@@ -10,7 +10,8 @@ describe('yearOfBirthValidator', () => {
   it('returns `null` if valid', () => {
     expect(getErrorForValue('2024')).toBeFalsy();
     expect(getErrorForValue('1999')).toBeFalsy();
-    expect(getErrorForValue('1890')).toBeFalsy();
+    expect(getErrorForValue('1900')).toBeFalsy();
+    expect(getErrorForValue(String(new Date().getFullYear()))).toBeFalsy();
   });
 
   it('returns `invalidYearOfBirth` error if invalid', () => {
@@ -19,8 +20,8 @@ describe('yearOfBirthValidator', () => {
     expect(getErrorForValue('a')).toEqual(error);
     expect(getErrorForValue('Abc123$')).toEqual(error);
     expect(getErrorForValue('100')).toEqual(error);
-    expect(getErrorForValue('1874')).toEqual(error);
-    expect(getErrorForValue('2050')).toEqual(error);
+    expect(getErrorForValue('1899')).toEqual(error);
+    expect(getErrorForValue(String(new Date().getFullYear() + 1))).toEqual(error);
   });
 });
 

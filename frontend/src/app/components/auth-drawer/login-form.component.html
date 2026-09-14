@@ -1,85 +1,33 @@
-@if (pendingSecondFactor()) {
-  <div class="auth-form">
-    <p class="hint">We sent a verification code to {{ email() }}.</p>
+@switch (step()) {
+  @case ('second-factor') {
+    <div class="auth-form">
+      <p class="hint">We sent a verification code to {{ form.controls.email.value }}.</p>
 
-    <div
-      class="code-input"
-      #codeInput>
-      <ea-code-input
-        label="Verification code"
-        [errorMsg]="verificationCodeError()"
-        (completed)="onVerify()"
-        [(value)]="verificationCode" />
+      <div class="code-input">
+        <ea-code-input
+          label="Verification code"
+          (completed)="onVerify($event)" />
+      </div>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
     </div>
+  }
 
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-  </div>
-} @else if (pendingNewPassword()) {
-  <form
-    class="auth-form"
-    (ngSubmit)="onSetNewPassword()">
-    <p class="hint">
-      Your temporary password must be changed before continuing. Choose a new password
-      below.
-    </p>
-
-    <ea-input
-      label="New password"
-      type="password"
-      autocomplete="new-password"
-      [autofocus]="true"
-      [errorMsg]="newPasswordError()"
-      (blurred)="onNewPasswordBlur()"
-      [value]="newPassword()"
-      (valueChange)="onNewPasswordChange($event)" />
-
-    <ea-input
-      label="Confirm new password"
-      type="password"
-      autocomplete="new-password"
-      [errorMsg]="confirmNewPasswordError()"
-      (blurred)="onConfirmNewPasswordBlur()"
-      [value]="confirmNewPassword()"
-      (valueChange)="onConfirmNewPasswordChange($event)" />
-
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-
-    <ea-button
-      type="submit"
-      size="sm"
-      variant="primary"
-      [fullWidth]="true"
-      [loading]="loading()">
-      Set new password
-    </ea-button>
-  </form>
-} @else {
-  <div class="auth-form">
+  @case ('new-password') {
     <form
       class="auth-form"
-      (ngSubmit)="onSubmit()">
-      <ea-input
-        label="Email"
-        type="email"
-        autocomplete="email"
-        placeholder="you@example.com"
-        [autofocus]="true"
-        [errorMsg]="emailError()"
-        (blurred)="onEmailBlur()"
-        [value]="email()"
-        (valueChange)="onEmailChange($event)" />
+      [formGroup]="newPasswordForm"
+      (ngSubmit)="onSetNewPassword()">
+      <p class="hint">
+        Your temporary password must be changed before continuing. Choose a new password
+        below.
+      </p>
 
-      <ea-input
-        label="Password"
-        type="password"
-        autocomplete="current-password"
-        [errorMsg]="passwordError()"
-        [value]="password()"
-        (valueChange)="onPasswordChange($event)" />
+      <lcc-new-password-fields
+        [autofocus]="true"
+        [group]="newPasswordForm" />
 
       @if (error()) {
         <p class="error">{{ error() }}</p>
@@ -90,30 +38,65 @@
         size="sm"
         variant="primary"
         [fullWidth]="true"
-        [disabled]="!canLogIn()"
+        [disabled]="newPasswordForm.invalid"
+        [loading]="loading()">
+        Set new password
+      </ea-button>
+    </form>
+  }
+
+  @default {
+    <form
+      class="auth-form"
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()">
+      <ea-input
+        label="Email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        formControlName="email"
+        [autofocus]="true" />
+
+      <ea-input
+        label="Password"
+        type="password"
+        autocomplete="current-password"
+        formControlName="password" />
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <ea-button
+        type="submit"
+        size="sm"
+        variant="primary"
+        [fullWidth]="true"
+        [disabled]="form.invalid"
         [loading]="loading()">
         Log in
       </ea-button>
     </form>
-  </div>
 
-  <div class="auth-footer">
-    <p class="auth-link">
-      Don't have an account?
-      <button
-        type="button"
-        class="auth-link__button lcc-link"
-        (click)="authDrawer.setMode('create-account')">
-        Create account
-      </button>
-    </p>
-    <p class="auth-link">
-      <button
-        type="button"
-        class="auth-link__button lcc-link"
-        (click)="authDrawer.setMode('forgot-password')">
-        Forgot password?
-      </button>
-    </p>
-  </div>
+    <div class="auth-footer">
+      <p class="auth-link">
+        Don't have an account?
+        <button
+          type="button"
+          class="auth-link__button lcc-link"
+          (click)="authDrawer.setMode('create-account')">
+          Create account
+        </button>
+      </p>
+      <p class="auth-link">
+        <button
+          type="button"
+          class="auth-link__button lcc-link"
+          (click)="authDrawer.setMode('forgot-password')">
+          Forgot password?
+        </button>
+      </p>
+    </div>
+  }
 }

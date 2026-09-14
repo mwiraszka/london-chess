@@ -1,10 +1,17 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 
-export function yearOfBirthValidator(control: AbstractControl): ValidationErrors | null {
-  const isValidYear = /^[1-2]\d{3}$/.test(control.value);
-  const yearsToNow = new Date().getFullYear() - control.value;
+import { MIN_YEAR_OF_BIRTH } from '@app/constants/member-details';
 
-  return control.value === '' || (isValidYear && yearsToNow > 0 && yearsToNow < 150)
+export function yearOfBirthValidator(control: AbstractControl): ValidationErrors | null {
+  if (control.value === '') {
+    return null;
+  }
+
+  const year = Number(control.value);
+
+  return /^\d{4}$/.test(control.value) &&
+    year >= MIN_YEAR_OF_BIRTH &&
+    year <= new Date().getFullYear()
     ? null
     : { invalidYearOfBirth: true };
 }

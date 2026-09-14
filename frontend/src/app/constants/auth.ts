@@ -1,0 +1,3 @@
+export const AUTH_DRAWER_BOTTOM_SHEET_MAX_WIDTH = 640;
+
+export const VERIFICATION_CODE_LENGTH = 6;

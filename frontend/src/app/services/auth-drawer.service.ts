@@ -1,6 +1,8 @@
 import { Injectable, signal } from '@angular/core';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 
-export type AuthMode = 'login' | 'create-account' | 'forgot-password';
+import { AuthMode } from '@app/models';
+import { createEmailControl, createMemberDetailsControls } from '@app/utils';
 
 // Drives the right-side auth drawer so logging in overlays the current page
 // instead of a full-page takeover.
@@ -9,35 +11,21 @@ export class AuthDrawerService {
   readonly open = signal(false);
   readonly mode = signal<AuthMode>('login');
 
-  // Field drafts live here rather than in the form components, so switching
+  // The forms live here rather than in the form components, so switching
   // between the forms and back keeps whatever was typed
-  readonly loginDraft = {
-    email: signal(''),
-    password: signal(''),
-  };
+  readonly loginForm = new FormGroup({
+    email: createEmailControl(),
+    password: new FormControl('', { nonNullable: true, validators: Validators.required }),
+  });
 
-  readonly createAccountDraft = {
-    firstName: signal(''),
-    lastName: signal(''),
-    email: signal(''),
-    yearOfBirth: signal<number | null>(null),
-    city: signal(''),
-    phoneNumber: signal(''),
-    lichessUsername: signal(''),
-    chessComUsername: signal(''),
-  };
+  readonly createAccountForm = new FormGroup({
+    ...createMemberDetailsControls(),
+    email: createEmailControl(),
+  });
 
-  clearDrafts(): void {
-    this.loginDraft.email.set('');
-    this.loginDraft.password.set('');
-    this.createAccountDraft.firstName.set('');
-    this.createAccountDraft.lastName.set('');
-    this.createAccountDraft.email.set('');
-    this.createAccountDraft.yearOfBirth.set(null);
-    this.createAccountDraft.city.set('');
-    this.createAccountDraft.phoneNumber.set('');
-    this.createAccountDraft.lichessUsername.set('');
-    this.createAccountDraft.chessComUsername.set('');
+  resetForms(): void {
+    this.loginForm.reset();
+    this.createAccountForm.reset();
   }
 
   openLogin(): void {

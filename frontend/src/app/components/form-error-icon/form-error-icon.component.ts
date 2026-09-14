@@ -1,6 +1,8 @@
 import { AlertTriangleIconComponent } from '@eagami/ui';
+import { switchMap } from 'rxjs';
 
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl } from '@angular/forms';
 
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -9,43 +11,54 @@ import { TooltipDirective } from '@app/directives/tooltip.directive';
   selector: 'lcc-form-error-icon',
   template: `
     <ea-icon-alert-triangle
-      [style.visibility]="hasError ? 'visible' : 'hidden'"
-      [tooltip]="errorMessage" />
+      [class.form-error-icon--hidden]="!hasError()"
+      [tooltip]="errorMessage()" />
   `,
   styleUrl: './form-error-icon.component.scss',
   imports: [AlertTriangleIconComponent, TooltipDirective],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormErrorIconComponent {
-  @Input({ required: true }) control!: AbstractControl;
+  readonly control = input.required<AbstractControl>();
 
-  public get hasError(): boolean {
-    return this.control.touched && this.control.invalid;
-  }
+  // Touched and validity changes happen inside the control rather than through
+  // the input, so its events are what trigger a re-read
+  private readonly controlEvent = toSignal(
+    toObservable(this.control).pipe(switchMap(control => control.events)),
+  );
 
-  public get errorMessage(): string {
-    if (this.control.hasError('required')) {
+  protected readonly hasError = computed(() => {
+    this.controlEvent();
+    const control = this.control();
+    return control.touched && control.invalid;
+  });
+
+  protected readonly errorMessage = computed(() => {
+    this.controlEvent();
+    const control = this.control();
+
+    if (control.hasError('required')) {
       return 'This field is required';
-    } else if (this.control.hasError('pattern') || this.control.hasError('invalidText')) {
+    } else if (control.hasError('pattern') || control.hasError('invalidText')) {
       return 'Text contains invalid characters';
-    } else if (this.control.hasError('invalidOrdinal')) {
+    } else if (control.hasError('invalidOrdinal')) {
       return 'Invalid ordinal number - please input a number between 1 and 99';
-    } else if (this.control.hasError('invalidEmailFormat')) {
+    } else if (control.hasError('email')) {
       return 'Invalid email';
-    } else if (this.control.hasError('invalidPhoneNumberFormat')) {
+    } else if (control.hasError('invalidPhoneNumberFormat')) {
       return 'Invalid phone number format - please input as XXX-XXX-XXXX';
-    } else if (this.control.hasError('invalidRating')) {
+    } else if (control.hasError('invalidRating')) {
       return 'Invalid rating';
-    } else if (this.control.hasError('invalidYearOfBirth')) {
+    } else if (control.hasError('invalidYearOfBirth')) {
       return 'Invalid year';
-    } else if (this.control.hasError('invalidId')) {
+    } else if (control.hasError('invalidId')) {
       return 'Invalid ID';
-    } else if (this.control.hasError('minlength')) {
+    } else if (control.hasError('minlength')) {
       return 'Input is too short';
-    } else if (this.control.hasError('maxlength')) {
+    } else if (control.hasError('maxlength')) {
       return 'Input is too long';
     } else {
       return 'Unknown error';
     }
-  }
+  });
 }

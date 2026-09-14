@@ -1,0 +1,7 @@
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  // Mirrors the label-to-control gap ea-input uses internally
+  gap: 6px;
+}

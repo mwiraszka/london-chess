@@ -5,11 +5,9 @@ import {
   ButtonComponent,
   CardComponent,
   DialogComponent,
-  DividerComponent,
   InputComponent,
   LockIconComponent,
   MonitorIconComponent,
-  NumberInputComponent,
   SettingsIconComponent,
   ShieldIconComponent,
   SkeletonComponent,
@@ -31,96 +29,79 @@ import {
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { FieldLabelWithHelpComponent } from '@app/components/field-label-with-help/field-label-with-help.component';
+import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
+import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { PasswordRequirementsComponent } from '@app/components/password-requirements/password-requirements.component';
-import { ChesscomLogoComponent } from '@app/components/platform-logos/chesscom-logo.component';
-import { LichessLogoComponent } from '@app/components/platform-logos/lichess-logo.component';
-import { Member } from '@app/models';
-import { ApiError, ApiService, MetaAndTitleService } from '@app/services';
-import { ClerkService } from '@app/services/clerk.service';
-import { type UserRecord, UserService } from '@app/services/user.service';
-import { isValidEmail } from '@app/utils/email.util';
-import { meetsPasswordRequirements } from '@app/utils/password.util';
+import { PhoneNumberFieldComponent } from '@app/components/phone-number-field/phone-number-field.component';
+import { YearOfBirthFieldComponent } from '@app/components/year-of-birth-field/year-of-birth-field.component';
+import { ACCOUNT_SECTIONS, SESSION_REFRESH_INTERVAL_MS } from '@app/constants/account';
+import {
+  AccountSection,
+  Member,
+  MemberDetailsFormData,
+  SessionInfo,
+  UserRecord,
+  UserSessionRecord,
+} from '@app/models';
+import {
+  ApiError,
+  ApiService,
+  ClerkService,
+  MetaAndTitleService,
+  UserService,
+} from '@app/services';
+import {
+  createEmailControl,
+  createMemberDetailsControls,
+  createNewPasswordGroup,
+  isAccountSection,
+} from '@app/utils';
 import { asSentence } from '@app/utils/sentence.util';
-
-const SESSION_REFRESH_INTERVAL_MS = 30_000;
-
-interface UserSessionRecord {
-  id: string;
-  isCurrent: boolean;
-  isMobile: boolean;
-  browserName: string | null;
-  deviceType: string | null;
-  lastActiveAt: number;
-}
-
-interface SessionInfo {
-  id: string;
-  isCurrent: boolean;
-  isMobile: boolean;
-  device: string;
-  lastActive: string;
-}
-
-function describeSession(record: UserSessionRecord): string {
-  const browser = record.browserName ?? 'Unknown browser';
-  const os = record.deviceType ?? (record.isMobile ? 'Mobile' : 'Desktop');
-  return `${browser} · ${os}`;
-}
-
-const ACCOUNT_SECTIONS = ['profile', 'security', 'danger'] as const;
-type AccountSection = (typeof ACCOUNT_SECTIONS)[number];
-
-function isAccountSection(value: string | null): value is AccountSection {
-  return ACCOUNT_SECTIONS.some(section => section === value);
-}
 
 @Component({
   selector: 'lcc-account-page',
   templateUrl: './account-page.component.html',
   styleUrl: './account-page.component.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FieldLabelWithHelpComponent,
-    NumberInputComponent,
-    DividerComponent,
     AlertTriangleIconComponent,
     AvatarEditorComponent,
     ButtonComponent,
     CardComponent,
+    ChessUsernameFieldsComponent,
     DialogComponent,
     InputComponent,
     LockIconComponent,
     MonitorIconComponent,
+    NewPasswordFieldsComponent,
+    PageHeaderComponent,
+    PhoneNumberFieldComponent,
+    ReactiveFormsModule,
     RouterLink,
     ShieldIconComponent,
     SkeletonComponent,
     SmartphoneIconComponent,
     UserIconComponent,
-    PageHeaderComponent,
-    PasswordRequirementsComponent,
+    YearOfBirthFieldComponent,
   ],
 })
 export class AccountPageComponent implements OnInit {
-  protected readonly pageIcon = SettingsIconComponent;
-
   private readonly api = inject(ApiService);
   private readonly clerk = inject(ClerkService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-  private readonly userService = inject(UserService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly userService = inject(UserService);
 
-  protected readonly navItems = [
-    { id: 'profile' as const, label: 'Profile' },
-    { id: 'security' as const, label: 'Security' },
-    { id: 'danger' as const, label: 'Danger zone' },
-  ];
+  private readonly avatarEditor = viewChild(AvatarEditorComponent);
+
+  protected readonly navItems = ACCOUNT_SECTIONS;
+  protected readonly pageIcon = SettingsIconComponent;
 
   private readonly sectionParam = toSignal(
     this.route.paramMap.pipe(map(params => params.get('section'))),
@@ -131,7 +112,107 @@ export class AccountPageComponent implements OnInit {
     return isAccountSection(section) ? section : 'profile';
   });
 
+  protected readonly avatarLoading = signal(false);
+  protected readonly editorSrc = signal<string | undefined>(undefined);
+  protected readonly loading = signal(true);
+  protected readonly savedCropState = signal<AvatarEditorCropState | null>(null);
+  protected readonly saving = signal(false);
+  private readonly avatarDirty = signal(false);
+  private readonly lastClerkImageUrl = signal<string | undefined>(undefined);
+  private readonly liveCropState = signal<AvatarEditorCropState | null>(null);
+  private readonly removeAvatar = signal(false);
+  private readonly selectedFile = signal<File | null>(null);
+
+  private readonly isCropChanged = computed(() => {
+    const saved = this.savedCropState();
+    const live = this.liveCropState();
+    if (!live) {
+      return false;
+    }
+    if (!saved) {
+      return live.zoom !== 1 || live.offsetX !== 0 || live.offsetY !== 0;
+    }
+    return (
+      live.zoom !== saved.zoom ||
+      live.offsetX !== saved.offsetX ||
+      live.offsetY !== saved.offsetY
+    );
+  });
+
+  private readonly pendingPhotoChange = computed(
+    (): 'upload' | 'remove' | 'crop' | null => {
+      if (this.avatarDirty()) {
+        if (this.removeAvatar()) {
+          return this.userService.hasAvatar() ? 'remove' : null;
+        }
+        return this.selectedFile() ? 'upload' : null;
+      }
+      return this.isCropChanged() ? 'crop' : null;
+    },
+  );
+
+  protected readonly hasPhotoChanges = computed(() => this.pendingPhotoChange() !== null);
+
+  protected readonly detailsForm = new FormGroup(createMemberDetailsControls());
+  protected readonly requestingChanges = signal(false);
+  private readonly detailsValue = toSignal(
+    this.detailsForm.valueChanges.pipe(map(() => this.detailsForm.getRawValue())),
+    { initialValue: this.detailsForm.getRawValue() },
+  );
+  private readonly savedDetails = signal<MemberDetailsFormData>(
+    this.detailsForm.getRawValue(),
+  );
+
+  protected readonly hasDetailChanges = computed(() => {
+    const current = this.detailsValue();
+    const saved = this.savedDetails();
+    return (
+      current.firstName.trim() !== saved.firstName ||
+      current.lastName.trim() !== saved.lastName ||
+      current.yearOfBirth !== saved.yearOfBirth ||
+      current.city.trim() !== saved.city ||
+      current.phoneNumber.trim() !== saved.phoneNumber ||
+      current.lichessUsername.trim() !== saved.lichessUsername ||
+      current.chessComUsername.trim() !== saved.chessComUsername
+    );
+  });
+
+  protected readonly emailBusy = signal(false);
+  protected readonly emailCode = new FormControl('', { nonNullable: true });
+  protected readonly emailCodeError = signal('');
+  protected readonly emailError = signal('');
+  protected readonly emailStep = signal<'idle' | 'verify'>('idle');
+  protected readonly newEmail = createEmailControl();
+  private readonly email = signal('');
+  private readonly newEmailValue = toSignal(this.newEmail.valueChanges, {
+    initialValue: this.newEmail.value,
+  });
+  private pendingEmailId: string | null = null;
+
+  protected readonly canSubmitEmail = computed(() => {
+    const newEmail = this.newEmailValue().trim();
+    const currentEmail = this.email();
+    return newEmail !== currentEmail && this.newEmail.valid;
+  });
+
+  protected readonly currentPasswordError = signal('');
+  protected readonly hasPassword = computed(() => !!this.clerk.user()?.passwordEnabled);
+  protected readonly passwordBusy = signal(false);
+  protected readonly passwordForm = new FormGroup({
+    currentPassword: new FormControl('', {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+    passwords: createNewPasswordGroup(),
+  });
+
+  protected readonly revokingOthers = signal(false);
+  protected readonly sessions = signal<SessionInfo[]>([]);
+  protected readonly sessionsLoading = signal(false);
   private sessionsRequested = false;
+
+  protected readonly deleteDialogOpen = signal(false);
+  protected readonly deleting = signal(false);
 
   constructor() {
     // A section nobody recognises would otherwise sit on the profile pane while
@@ -169,151 +250,24 @@ export class AccountPageComponent implements OnInit {
     // offer to upload the abandoned file
     effect(() => {
       if (this.avatarEditor()?.isAtOriginal()) {
-        this.originalFile = null;
+        this.selectedFile.set(null);
         this.avatarDirty.set(false);
         this.removeAvatar.set(false);
         this.liveCropState.set(this.savedCropState());
       }
     });
+
+    // Accounts without a password (social log in only) have no current password
+    // to confirm, so the field drops out of the form's validity
+    effect(() => {
+      const currentPassword = this.passwordForm.controls.currentPassword;
+      if (this.hasPassword()) {
+        currentPassword.enable();
+      } else {
+        currentPassword.disable();
+      }
+    });
   }
-
-  readonly newEmail = signal('');
-  readonly emailError = signal('');
-  readonly emailStep = signal<'idle' | 'verify'>('idle');
-  readonly emailCode = signal('');
-  readonly emailCodeError = signal('');
-  readonly emailBusy = signal(false);
-  private pendingEmailId: string | null = null;
-
-  protected readonly emailInputError = computed(() => {
-    const email = this.newEmail().trim();
-    if (!email || email === this.email()) {
-      return '';
-    }
-    return isValidEmail(email) ? '' : 'Please enter a valid email address';
-  });
-  protected readonly canSubmitEmail = computed(() => {
-    const email = this.newEmail().trim();
-    return email.length > 0 && email !== this.email() && isValidEmail(email);
-  });
-
-  readonly currentPassword = signal('');
-  readonly currentPasswordError = signal('');
-  readonly newPassword = signal('');
-  readonly confirmPassword = signal('');
-  readonly passwordBusy = signal(false);
-
-  protected readonly hasPassword = computed(() => !!this.clerk.user()?.passwordEnabled);
-
-  protected readonly isPasswordStrong = computed(() =>
-    meetsPasswordRequirements(this.newPassword()),
-  );
-  protected readonly confirmMismatch = computed(
-    () =>
-      this.confirmPassword().length > 0 && this.confirmPassword() !== this.newPassword(),
-  );
-  protected readonly canChangePassword = computed(
-    () =>
-      this.isPasswordStrong() &&
-      this.newPassword() === this.confirmPassword() &&
-      (!this.hasPassword() || this.currentPassword().length > 0),
-  );
-
-  readonly sessions = signal<SessionInfo[]>([]);
-  readonly sessionsLoading = signal(false);
-  readonly revokingOthers = signal(false);
-
-  private readonly avatarEditor = viewChild(AvatarEditorComponent);
-
-  readonly firstName = signal('');
-  readonly lastName = signal('');
-  readonly email = signal('');
-  private readonly originalFirstName = signal('');
-  private readonly originalLastName = signal('');
-  protected readonly lichessLogo = LichessLogoComponent;
-  protected readonly chesscomLogo = ChesscomLogoComponent;
-  protected readonly minYearOfBirth = 1900;
-  protected readonly currentYear = new Date().getFullYear();
-
-  readonly memberRecord = signal<Member | null>(null);
-  readonly memberPhone = signal('');
-  readonly memberLichess = signal('');
-  readonly memberChessCom = signal('');
-  readonly memberYearOfBirth = signal<number | null>(null);
-  readonly memberCity = signal('');
-  private readonly originalMemberPhone = signal('');
-  private readonly originalMemberLichess = signal('');
-  private readonly originalMemberChessCom = signal('');
-  private readonly originalMemberYearOfBirth = signal<number | null>(null);
-  private readonly originalMemberCity = signal('');
-  readonly requestingChanges = signal(false);
-
-  protected readonly memberPhoneError = computed(() => {
-    const value = this.memberPhone().trim();
-    return !value || /^[0-9()+\-. ]{7,20}$/.test(value)
-      ? ''
-      : 'Phone number must be 7 to 20 characters using digits, spaces, and ()+-. only.';
-  });
-
-  protected readonly memberLichessError = computed(() => {
-    const value = this.memberLichess().trim();
-    return !value || /^[a-zA-Z0-9_-]{2,20}$/.test(value)
-      ? ''
-      : 'Lichess username must be 2 to 20 letters, numbers, hyphens, or underscores.';
-  });
-
-  protected readonly memberChessComError = computed(() => {
-    const value = this.memberChessCom().trim();
-    return !value || /^[a-zA-Z0-9_-]{3,25}$/.test(value)
-      ? ''
-      : 'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores.';
-  });
-
-  protected readonly canRequestChanges = computed(() => {
-    const year = this.memberYearOfBirth();
-    const yearValid =
-      year !== null && year >= this.minYearOfBirth && year <= this.currentYear;
-    const changed =
-      this.firstName().trim() !== this.originalFirstName() ||
-      this.lastName().trim() !== this.originalLastName() ||
-      this.memberYearOfBirth() !== this.originalMemberYearOfBirth() ||
-      this.memberCity().trim() !== this.originalMemberCity() ||
-      this.memberPhone().trim() !== this.originalMemberPhone() ||
-      this.memberLichess().trim() !== this.originalMemberLichess() ||
-      this.memberChessCom().trim() !== this.originalMemberChessCom();
-    return (
-      changed &&
-      !!this.firstName().trim() &&
-      !!this.lastName().trim() &&
-      yearValid &&
-      !!this.memberCity().trim() &&
-      !this.memberPhoneError() &&
-      !this.memberLichessError() &&
-      !this.memberChessComError()
-    );
-  });
-
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly deleting = signal(false);
-  readonly deleteDialogOpen = signal(false);
-  readonly avatarDirty = signal(false);
-  readonly avatarLoading = signal(false);
-
-  readonly editorSrc = signal<string | undefined>(undefined);
-  private readonly lastClerkImageUrl = signal<string | undefined>(undefined);
-  readonly removeAvatar = signal(false);
-  readonly savedCropState = signal<AvatarEditorCropState | null>(null);
-  readonly liveCropState = signal<AvatarEditorCropState | null>(null);
-  originalFile: File | null = null;
-
-  readonly hasChanges = computed(() => {
-    const photoChanged =
-      this.avatarDirty() && !this.removeAvatar() && !!this.originalFile;
-    const photoRemoved =
-      this.avatarDirty() && this.removeAvatar() && this.userService.hasAvatar();
-    return photoChanged || photoRemoved || this.isCropChanged();
-  });
 
   ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Account');
@@ -322,25 +276,21 @@ export class AccountPageComponent implements OnInit {
     );
 
     const user = this.clerk.user();
-    this.firstName.set(user?.firstName ?? '');
-    this.lastName.set(user?.lastName ?? '');
+    this.applySavedDetails({
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
+    });
     this.email.set(user?.primaryEmailAddress?.emailAddress ?? '');
-    this.newEmail.set(user?.primaryEmailAddress?.emailAddress ?? '');
-    this.originalFirstName.set(user?.firstName ?? '');
-    this.originalLastName.set(user?.lastName ?? '');
+    this.newEmail.reset(this.email());
 
-    const cropState = this.userService.avatarCropState();
-    this.savedCropState.set(cropState);
-    this.liveCropState.set(cropState);
-
+    this.setCropState(this.userService.avatarCropState());
     this.editorSrc.set(this.userService.avatarUrl());
-
-    this.lastClerkImageUrl.set(user?.hasImage ? user.imageUrl : undefined);
+    this.syncClerkImageUrl();
     this.avatarLoading.set(!this.editorSrc() && !!user?.hasImage);
 
-    void this.loadMemberRecord();
+    void this.loadMemberDetails();
 
-    this.refreshFromClerk().then(() => {
+    void this.refreshFromClerk().then(() => {
       this.avatarLoading.set(false);
       this.loading.set(false);
     });
@@ -356,309 +306,115 @@ export class AccountPageComponent implements OnInit {
     });
   }
 
-  private async refreshFromClerk(): Promise<void> {
-    const previousClerkImageUrl = this.lastClerkImageUrl();
-
-    await this.clerk.reloadUser();
-    await this.userService.load();
-
-    const user = this.userService.user();
-    if (user) {
-      if (user.firstName !== this.originalFirstName()) {
-        this.firstName.set(user.firstName);
-        this.originalFirstName.set(user.firstName);
-      }
-      if (user.lastName !== this.originalLastName()) {
-        this.lastName.set(user.lastName);
-        this.originalLastName.set(user.lastName);
-      }
-    }
-
-    const clerkUser = this.clerk.user();
-    this.email.set(clerkUser?.primaryEmailAddress?.emailAddress ?? '');
-    const newClerkImageUrl = clerkUser?.hasImage ? clerkUser.imageUrl : undefined;
-
-    if (newClerkImageUrl !== previousClerkImageUrl) {
-      this.lastClerkImageUrl.set(newClerkImageUrl);
-      this.editorSrc.set(this.userService.avatarUrl());
-
-      const cropState = this.userService.avatarCropState();
-      this.savedCropState.set(cropState);
-      this.liveCropState.set(cropState);
-    } else if (!this.avatarDirty() && this.editorSrc() !== this.userService.avatarUrl()) {
-      // Before the account record loads, the editor may have been seeded with
-      // the Clerk fallback (the small circular crop); once the record is in,
-      // upgrade to the stored full-size original so re-cropping can reclaim
-      // the whole photo
-      this.editorSrc.set(this.userService.avatarUrl());
-
-      const cropState = this.userService.avatarCropState();
-      this.savedCropState.set(cropState);
-      this.liveCropState.set(cropState);
-    }
-  }
-
-  onAvatarRejected(message: string): void {
+  protected onAvatarRejected(message: string): void {
     this.toast.show(asSentence(message), { title: 'Invalid image', variant: 'error' });
   }
 
-  onFileSelected(file: File): void {
-    this.originalFile = file;
+  protected onFileSelected(file: File): void {
+    this.selectedFile.set(file);
     this.avatarDirty.set(true);
     this.removeAvatar.set(false);
     this.liveCropState.set(null);
   }
 
-  onCropStateChange(state: AvatarEditorCropState): void {
+  protected onCropStateChange(state: AvatarEditorCropState): void {
     this.liveCropState.set(state);
   }
 
-  onRemoveAvatar(): void {
+  protected onRemoveAvatar(): void {
     this.avatarDirty.set(true);
     this.removeAvatar.set(true);
-    this.originalFile = null;
+    this.selectedFile.set(null);
   }
 
-  private applyMemberRecord(member: Member): void {
-    const year = /^\d{4}$/.test(member.yearOfBirth) ? Number(member.yearOfBirth) : null;
-    this.memberRecord.set(member);
-    this.memberPhone.set(member.phoneNumber);
-    this.memberLichess.set(member.lichessUsername);
-    this.memberChessCom.set(member.chessComUsername);
-    this.memberYearOfBirth.set(year);
-    this.memberCity.set(member.city);
-    this.originalMemberPhone.set(member.phoneNumber);
-    this.originalMemberLichess.set(member.lichessUsername);
-    this.originalMemberChessCom.set(member.chessComUsername);
-    this.originalMemberYearOfBirth.set(year);
-    this.originalMemberCity.set(member.city);
-  }
+  protected async onSavePhoto(): Promise<void> {
+    const change = this.pendingPhotoChange();
+    if (!change) {
+      return;
+    }
 
-  private async loadMemberRecord(): Promise<void> {
+    this.saving.set(true);
+
     try {
-      this.applyMemberRecord(await this.api.get<Member>('/users/me/member'));
-    } catch {
-      // Not every account is linked to a club member record
-      this.memberRecord.set(null);
+      if (change === 'upload') {
+        await this.uploadPhoto();
+      } else if (change === 'remove') {
+        await this.removePhoto();
+      } else {
+        await this.saveCropState();
+      }
+
+      this.toast.show('Successfully updated your photo.', {
+        title: 'Profile updated',
+        variant: 'success',
+      });
+
+      const { firstName, lastName } = this.detailsForm.getRawValue();
+      this.savedDetails.update(saved => ({ ...saved, firstName, lastName }));
+      this.avatarDirty.set(false);
+      this.removeAvatar.set(false);
+      this.selectedFile.set(null);
+      this.avatarEditor()?.captureOriginal();
+    } catch (e: unknown) {
+      this.showClerkErrorToast('Profile update failed', e);
+    } finally {
+      this.saving.set(false);
     }
   }
 
-  async onRequestChanges(): Promise<void> {
+  protected async onRequestChanges(): Promise<void> {
+    if (this.detailsForm.invalid) {
+      return;
+    }
+
+    const {
+      firstName,
+      lastName,
+      yearOfBirth,
+      city,
+      phoneNumber,
+      lichessUsername,
+      chessComUsername,
+    } = this.detailsForm.getRawValue();
+
     this.requestingChanges.set(true);
+
     try {
-      const year = this.memberYearOfBirth();
       await this.api.post('/users/me/member/change-request', {
-        firstName: this.firstName().trim(),
-        lastName: this.lastName().trim(),
-        yearOfBirth: year === null ? '' : String(year),
-        city: this.memberCity().trim(),
-        phoneNumber: this.memberPhone().trim(),
-        lichessUsername: this.memberLichess().trim(),
-        chessComUsername: this.memberChessCom().trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
+        city: city.trim(),
+        phoneNumber: phoneNumber.trim(),
+        lichessUsername: lichessUsername.trim(),
+        chessComUsername: chessComUsername.trim(),
       });
       this.toast.show(
         'Your requested changes have been sent for review – an admin will email you once they are made.',
-        {
-          title: 'Request sent',
-          variant: 'info',
-        },
+        { title: 'Request sent', variant: 'info' },
       );
     } catch (e: unknown) {
       this.toast.show(
         e instanceof ApiError
           ? asSentence(e.message)
           : 'Unable to send your request – please try again.',
-        {
-          title: 'Request failed',
-          variant: 'error',
-        },
+        { title: 'Request failed', variant: 'error' },
       );
     } finally {
       this.requestingChanges.set(false);
     }
   }
 
-  async onSave(): Promise<void> {
-    this.saving.set(true);
-
-    try {
-      const changes = await this.applyChanges();
-
-      if (changes.length) {
-        this.toast.show(`Successfully updated your ${this.buildChangeList(changes)}.`, {
-          title: 'Profile updated',
-          variant: 'success',
-        });
-      }
-
-      this.originalFirstName.set(this.firstName());
-      this.originalLastName.set(this.lastName());
-      this.avatarDirty.set(false);
-      this.removeAvatar.set(false);
-      this.originalFile = null;
-      this.avatarEditor()?.captureOriginal();
-    } catch (e: unknown) {
-      this.toast.show(asSentence(this.clerk.extractError(e)), {
-        title: 'Profile update failed',
-        variant: 'error',
-      });
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  private async applyChanges(): Promise<string[]> {
-    const changes: string[] = [];
-
-    const photoChanged =
-      this.avatarDirty() && !this.removeAvatar() && !!this.originalFile;
-    const photoRemoved =
-      this.avatarDirty() && this.removeAvatar() && this.userService.hasAvatar();
-    const cropChanged = this.isCropChanged();
-
-    if (photoChanged) {
-      await this.savePhoto();
-      changes.push('photo');
-    } else if (photoRemoved) {
-      await this.removePhoto();
-      changes.push('photo');
-    } else if (cropChanged) {
-      await this.saveCropState();
-      changes.push('photo');
-    }
-
-    return changes;
-  }
-
-  private async savePhoto(): Promise<void> {
-    const blob = await this.exportCrop();
-    const cropState = this.liveCropState();
-
-    if (this.originalFile) {
-      await this.uploadOriginalAvatar(this.originalFile, blob, cropState);
-      await this.clerk.reloadUser();
-      const user = this.clerk.user();
-      this.lastClerkImageUrl.set(user?.hasImage ? user.imageUrl : undefined);
-    }
-  }
-
-  private async removePhoto(): Promise<void> {
-    await this.deleteOriginalAvatar();
-    await this.clerk.reloadUser();
-    const user = this.clerk.user();
-    this.lastClerkImageUrl.set(user?.hasImage ? user.imageUrl : undefined);
-  }
-
-  private async saveCropState(): Promise<void> {
-    const cropState = this.liveCropState();
-    if (!cropState) {
+  protected async onChangeEmail(): Promise<void> {
+    if (!this.canSubmitEmail()) {
       return;
     }
-    const blob = await this.exportCrop();
-    const formData = new FormData();
-    formData.append('cropped', blob, 'cropped.png');
-    formData.append('cropState', JSON.stringify(cropState));
-    const user = await this.api.patch<UserRecord>('/users/me/avatar', formData);
-    this.userService.setUser(user);
-    this.lastClerkImageUrl.set(user.clerkImageUrl ?? undefined);
-    this.savedCropState.set(cropState);
-    await this.clerk.reloadUser();
-  }
 
-  private buildChangeList(changes: string[]): string {
-    return changes.length <= 2
-      ? changes.join(' and ')
-      : `${changes.slice(0, -1).join(', ')} and ${changes.at(-1)}`;
-  }
-
-  private isCropChanged(): boolean {
-    if (this.avatarDirty()) {
-      return false;
-    }
-    const saved = this.savedCropState();
-    const live = this.liveCropState();
-    if (!live) {
-      return false;
-    }
-    if (!saved) {
-      return live.zoom !== 1 || live.offsetX !== 0 || live.offsetY !== 0;
-    }
-    return (
-      live.zoom !== saved.zoom ||
-      live.offsetX !== saved.offsetX ||
-      live.offsetY !== saved.offsetY
-    );
-  }
-
-  private async uploadOriginalAvatar(
-    file: File,
-    cropped: Blob,
-    cropState: AvatarEditorCropState | null,
-  ): Promise<void> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('cropped', cropped, 'cropped.png');
-    if (cropState) {
-      formData.append('cropState', JSON.stringify(cropState));
-    }
-    const user = await this.api.post<UserRecord>('/users/me/avatar', formData);
-    this.userService.setUser(user);
-    this.lastClerkImageUrl.set(user.clerkImageUrl ?? undefined);
-    this.savedCropState.set(cropState);
-    this.liveCropState.set(cropState);
-  }
-
-  private async deleteOriginalAvatar(): Promise<void> {
-    await this.api.delete('/users/me/avatar');
-    this.userService.clearAvatar();
-    this.editorSrc.set(undefined);
-    this.savedCropState.set(null);
-    this.liveCropState.set(null);
-  }
-
-  async onConfirmDelete(): Promise<void> {
-    this.deleting.set(true);
-
-    try {
-      this.clerk.expectSessionEnd();
-      await this.api.delete('/users/me');
-      this.deleteDialogOpen.set(false);
-
-      try {
-        await this.clerk.logOut();
-      } catch {
-        // session may already be invalidated
-      }
-
-      await this.router.navigate(['/']);
-    } catch (e: unknown) {
-      this.toast.show(asSentence(this.clerk.extractError(e)), {
-        title: 'Deletion failed',
-        variant: 'error',
-      });
-    } finally {
-      this.deleting.set(false);
-    }
-  }
-
-  exportCrop(): Promise<Blob> {
-    return this.avatarEditor()!.exportCrop();
-  }
-
-  async onChangeEmail(): Promise<void> {
-    const email = this.newEmail().trim();
     this.emailError.set('');
-    if (!isValidEmail(email)) {
-      this.emailError.set('Please enter a valid email address');
-      return;
-    }
-    if (email === this.email()) {
-      this.emailError.set('Enter a different email address');
-      return;
-    }
     this.emailBusy.set(true);
+
     try {
-      this.pendingEmailId = await this.clerk.createEmail(email);
+      this.pendingEmailId = await this.clerk.createEmail(this.newEmail.value.trim());
       this.emailStep.set('verify');
     } catch (e: unknown) {
       this.emailError.set(this.clerk.extractError(e));
@@ -667,16 +423,18 @@ export class AccountPageComponent implements OnInit {
     }
   }
 
-  async onVerifyEmail(): Promise<void> {
+  protected async onVerifyEmail(): Promise<void> {
     if (!this.pendingEmailId) {
       return;
     }
+
     this.emailCodeError.set('');
     this.emailBusy.set(true);
+
     try {
       await this.clerk.verifyAndSetPrimaryEmail(
         this.pendingEmailId,
-        this.emailCode().trim(),
+        this.emailCode.value.trim(),
       );
       await this.clerk.reloadUser();
       await this.userService.load();
@@ -693,40 +451,37 @@ export class AccountPageComponent implements OnInit {
     }
   }
 
-  cancelEmailChange(): void {
-    this.resetEmailChange();
-  }
-
-  private resetEmailChange(): void {
+  protected resetEmailChange(): void {
     this.pendingEmailId = null;
     this.emailStep.set('idle');
-    this.newEmail.set(this.email());
-    this.emailCode.set('');
+    this.newEmail.reset(this.email());
+    this.emailCode.reset();
     this.emailError.set('');
     this.emailCodeError.set('');
   }
 
-  async onChangePassword(): Promise<void> {
-    if (!this.canChangePassword()) {
+  protected async onChangePassword(): Promise<void> {
+    if (this.passwordForm.invalid) {
       return;
     }
+
+    const { currentPassword, passwords } = this.passwordForm.getRawValue();
     this.currentPasswordError.set('');
     this.passwordBusy.set(true);
+
     try {
       await this.api.post('/users/me/password', {
-        currentPassword: this.hasPassword() ? this.currentPassword() : undefined,
-        newPassword: this.newPassword(),
+        currentPassword: this.hasPassword() ? currentPassword : undefined,
+        newPassword: passwords.newPassword,
       });
 
       try {
-        await this.api.post('/users/me/sessions/revoke-others', {});
+        await this.revokeOtherSessions();
       } catch {
         // non-critical; the password itself changed
       }
 
-      this.currentPassword.set('');
-      this.newPassword.set('');
-      this.confirmPassword.set('');
+      this.passwordForm.reset();
       if (this.sessions().length) {
         void this.loadSessions();
       }
@@ -748,7 +503,164 @@ export class AccountPageComponent implements OnInit {
     }
   }
 
-  async loadSessions(): Promise<void> {
+  protected async onRevokeOtherSessions(): Promise<void> {
+    this.revokingOthers.set(true);
+
+    try {
+      await this.revokeOtherSessions();
+      await this.loadSessions();
+      this.toast.show('Successfully logged out of all your other devices.', {
+        title: 'Logout',
+        variant: 'success',
+      });
+    } catch (e: unknown) {
+      this.showClerkErrorToast('Logout failed', e);
+    } finally {
+      this.revokingOthers.set(false);
+    }
+  }
+
+  protected async onConfirmDelete(): Promise<void> {
+    this.deleting.set(true);
+
+    try {
+      this.clerk.expectSessionEnd();
+      await this.api.delete('/users/me');
+      this.deleteDialogOpen.set(false);
+
+      try {
+        await this.clerk.logOut();
+      } catch {
+        // session may already be invalidated
+      }
+
+      await this.router.navigate(['/']);
+    } catch (e: unknown) {
+      this.showClerkErrorToast('Deletion failed', e);
+    } finally {
+      this.deleting.set(false);
+    }
+  }
+
+  private applySavedDetails(details: Partial<MemberDetailsFormData>): void {
+    this.detailsForm.patchValue(details);
+    this.savedDetails.update(saved => ({ ...saved, ...details }));
+  }
+
+  private async loadMemberDetails(): Promise<void> {
+    try {
+      const member = await this.api.get<Member>('/users/me/member');
+      this.applySavedDetails({
+        yearOfBirth: /^\d{4}$/.test(member.yearOfBirth)
+          ? Number(member.yearOfBirth)
+          : null,
+        city: member.city,
+        phoneNumber: member.phoneNumber,
+        lichessUsername: member.lichessUsername,
+        chessComUsername: member.chessComUsername,
+      });
+    } catch {
+      // Not every account is linked to a club member record
+    }
+  }
+
+  private async refreshFromClerk(): Promise<void> {
+    const previousClerkImageUrl = this.lastClerkImageUrl();
+
+    await this.clerk.reloadUser();
+    await this.userService.load();
+
+    const user = this.userService.user();
+    if (user) {
+      const saved = this.savedDetails();
+      if (user.firstName !== saved.firstName) {
+        this.applySavedDetails({ firstName: user.firstName });
+      }
+      if (user.lastName !== saved.lastName) {
+        this.applySavedDetails({ lastName: user.lastName });
+      }
+    }
+
+    this.email.set(this.clerk.user()?.primaryEmailAddress?.emailAddress ?? '');
+    this.syncClerkImageUrl();
+
+    // Before the account record loads, the editor may have been seeded with the
+    // Clerk fallback (the small circular crop); once the record is in, upgrade to
+    // the stored full-size original so re-cropping can reclaim the whole photo
+    if (
+      this.lastClerkImageUrl() !== previousClerkImageUrl ||
+      (!this.avatarDirty() && this.editorSrc() !== this.userService.avatarUrl())
+    ) {
+      this.editorSrc.set(this.userService.avatarUrl());
+      this.setCropState(this.userService.avatarCropState());
+    }
+  }
+
+  private async uploadPhoto(): Promise<void> {
+    const file = this.selectedFile();
+    if (!file) {
+      return;
+    }
+
+    const cropped = await this.exportCrop();
+    const cropState = this.liveCropState();
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('cropped', cropped, 'cropped.png');
+    if (cropState) {
+      formData.append('cropState', JSON.stringify(cropState));
+    }
+
+    this.userService.setUser(
+      await this.api.post<UserRecord>('/users/me/avatar', formData),
+    );
+    this.setCropState(cropState);
+    await this.clerk.reloadUser();
+    this.syncClerkImageUrl();
+  }
+
+  private async removePhoto(): Promise<void> {
+    await this.api.delete('/users/me/avatar');
+    this.userService.clearAvatar();
+    this.editorSrc.set(undefined);
+    this.setCropState(null);
+    await this.clerk.reloadUser();
+    this.syncClerkImageUrl();
+  }
+
+  private async saveCropState(): Promise<void> {
+    const cropState = this.liveCropState();
+    if (!cropState) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('cropped', await this.exportCrop(), 'cropped.png');
+    formData.append('cropState', JSON.stringify(cropState));
+
+    const user = await this.api.patch<UserRecord>('/users/me/avatar', formData);
+    this.userService.setUser(user);
+    this.lastClerkImageUrl.set(user.clerkImageUrl ?? undefined);
+    this.savedCropState.set(cropState);
+    await this.clerk.reloadUser();
+  }
+
+  private exportCrop(): Promise<Blob> {
+    return this.avatarEditor()!.exportCrop();
+  }
+
+  private setCropState(cropState: AvatarEditorCropState | null): void {
+    this.savedCropState.set(cropState);
+    this.liveCropState.set(cropState);
+  }
+
+  private syncClerkImageUrl(): void {
+    const user = this.clerk.user();
+    this.lastClerkImageUrl.set(user?.hasImage ? user.imageUrl : undefined);
+  }
+
+  private async loadSessions(): Promise<void> {
     this.sessionsLoading.set(true);
     try {
       await this.refreshSessions();
@@ -775,7 +687,7 @@ export class AccountPageComponent implements OnInit {
           id: record.id,
           isCurrent: record.isCurrent,
           isMobile: record.isMobile,
-          device: describeSession(record),
+          device: `${record.browserName ?? 'Unknown browser'} · ${record.deviceType ?? (record.isMobile ? 'Mobile' : 'Desktop')}`,
           lastActive: new Date(record.lastActiveAt).toLocaleString(undefined, {
             month: 'short',
             day: 'numeric',
@@ -789,22 +701,11 @@ export class AccountPageComponent implements OnInit {
     }
   }
 
-  async onRevokeOtherSessions(): Promise<void> {
-    this.revokingOthers.set(true);
-    try {
-      await this.api.post('/users/me/sessions/revoke-others', {});
-      await this.loadSessions();
-      this.toast.show('Successfully logged out of all your other devices.', {
-        title: 'Logout',
-        variant: 'success',
-      });
-    } catch (e: unknown) {
-      this.toast.show(asSentence(this.clerk.extractError(e)), {
-        title: 'Logout failed',
-        variant: 'error',
-      });
-    } finally {
-      this.revokingOthers.set(false);
-    }
+  private revokeOtherSessions(): Promise<void> {
+    return this.api.post<void>('/users/me/sessions/revoke-others', {});
+  }
+
+  private showClerkErrorToast(title: string, e: unknown): void {
+    this.toast.show(asSentence(this.clerk.extractError(e)), { title, variant: 'error' });
   }
 }

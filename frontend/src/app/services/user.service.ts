@@ -1,24 +1,10 @@
-import { type AvatarEditorCropState } from '@eagami/ui';
-
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
+import { UserRecord } from '@app/models';
 import { ApiService } from '@app/services/api.service';
 import { ClerkService } from '@app/services/clerk.service';
 
 import { environment } from '@env';
-
-export interface UserRecord {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  isAdmin: boolean;
-  clerkImageUrl: string | null;
-  avatarUrl: string | null;
-  avatarOriginalUrl: string | null;
-  avatarCropState: AvatarEditorCropState | null;
-  lastModifiedDate: string;
-}
 
 @Injectable({
   providedIn: 'root',

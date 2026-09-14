@@ -57,9 +57,9 @@
             <div class="actions">
               <ea-button
                 size="sm"
-                [disabled]="!hasChanges()"
+                [disabled]="!hasPhotoChanges()"
                 [loading]="saving()"
-                (clicked)="onSave()">
+                (clicked)="onSavePhoto()">
                 Update photo
               </ea-button>
             </div>
@@ -121,85 +121,42 @@
                 </div>
               </div>
             } @else {
-              <div class="details-form">
+              <div
+                class="details-form"
+                [formGroup]="detailsForm">
                 <div class="name-row">
                   <ea-input
                     label="First name"
-                    [required]="true"
-                    [(value)]="firstName" />
+                    formControlName="firstName"
+                    [required]="true" />
                   <ea-input
                     label="Last name"
-                    [required]="true"
-                    [(value)]="lastName" />
+                    formControlName="lastName"
+                    [required]="true" />
                 </div>
 
                 <div class="name-row">
-                  <ea-number-input
-                    label="Year of birth"
-                    placeholder="1990"
-                    [required]="true"
-                    [min]="minYearOfBirth"
-                    [max]="currentYear"
-                    [maxDigits]="4"
-                    [(value)]="memberYearOfBirth" />
+                  <lcc-year-of-birth-field [control]="detailsForm.controls.yearOfBirth" />
                   <ea-input
                     label="City"
                     autocomplete="address-level2"
                     placeholder="London"
+                    formControlName="city"
                     [required]="true"
-                    [maxLength]="50"
-                    [(value)]="memberCity" />
-
-                  <div class="labeled-field">
-                    <lcc-field-label-with-help
-                      text="Phone number"
-                      forId="member-phone-input"
-                      [helpTooltip]="phoneTooltip" />
-                    <ea-input
-                      id="member-phone-input"
-                      type="tel"
-                      autocomplete="tel"
-                      placeholder="555-123-1234"
-                      [maxLength]="20"
-                      [errorMsg]="memberPhoneError()"
-                      [(value)]="memberPhone" />
-                  </div>
+                    [maxLength]="50" />
+                  <lcc-phone-number-field [control]="detailsForm.controls.phoneNumber" />
                 </div>
 
-                <div class="name-row">
-                  <div class="labeled-field">
-                    <lcc-field-label-with-help
-                      text="Lichess username"
-                      forId="member-lichess-input"
-                      [icon]="lichessLogo"
-                      [helpTooltip]="lichessTooltip" />
-                    <ea-input
-                      id="member-lichess-input"
-                      [maxLength]="20"
-                      [errorMsg]="memberLichessError()"
-                      [(value)]="memberLichess" />
-                  </div>
-
-                  <div class="labeled-field">
-                    <lcc-field-label-with-help
-                      text="Chess.com username"
-                      forId="member-chesscom-input"
-                      [icon]="chesscomLogo"
-                      [helpTooltip]="chessComTooltip" />
-                    <ea-input
-                      id="member-chesscom-input"
-                      [maxLength]="25"
-                      [errorMsg]="memberChessComError()"
-                      [(value)]="memberChessCom" />
-                  </div>
-                </div>
+                <lcc-chess-username-fields
+                  [chessComUsername]="detailsForm.controls.chessComUsername"
+                  [lichessUsername]="detailsForm.controls.lichessUsername" />
               </div>
             }
 
             <div class="actions">
               <ea-button
                 size="sm"
-                [disabled]="!canRequestChanges()"
+                [disabled]="detailsForm.invalid || !hasDetailChanges()"
                 [loading]="requestingChanges()"
                 (clicked)="onRequestChanges()">
                 Request changes
@@ -236,8 +193,8 @@
                   label="Email"
                   type="email"
                   autocomplete="email"
-                  [errorMsg]="emailError() || emailInputError()"
-                  [(value)]="newEmail" />
+                  [errorMsg]="emailError()"
+                  [formControl]="newEmail" />
               </div>
               <div class="actions">
                 <ea-button
@@ -249,13 +206,13 @@
                 </ea-button>
               </div>
             } @else {
-              <p class="card-desc">Enter the code we sent to {{ newEmail() }}.</p>
+              <p class="card-desc">Enter the code we sent to {{ newEmail.value }}.</p>
               <div class="fields">
                 <ea-input
                   label="Verification code"
                   autocomplete="one-time-code"
                   [errorMsg]="emailCodeError()"
-                  [(value)]="emailCode" />
+                  [formControl]="emailCode" />
               </div>
               <div class="actions actions--row">
                 <ea-button
@@ -267,7 +224,7 @@
                 <ea-button
                   size="sm"
                   variant="secondary"
-                  (clicked)="cancelEmailChange()">
+                  (clicked)="resetEmailChange()">
                   Cancel
                 </ea-button>
               </div>
@@ -283,29 +240,14 @@
                   type="password"
                   autocomplete="current-password"
                   [errorMsg]="currentPasswordError()"
-                  [(value)]="currentPassword" />
+                  [formControl]="passwordForm.controls.currentPassword" />
               }
-              <div class="pw-field">
-                <ea-input
-                  label="New password"
-                  type="password"
-                  autocomplete="new-password"
-                  [(value)]="newPassword" />
-                @if (newPassword()) {
-                  <lcc-password-requirements [password]="newPassword()" />
-                }
-              </div>
-              <ea-input
-                label="Confirm new password"
-                type="password"
-                autocomplete="new-password"
-                [errorMsg]="confirmMismatch() ? 'Passwords do not match' : ''"
-                [(value)]="confirmPassword" />
+              <lcc-new-password-fields [group]="passwordForm.controls.passwords" />
             </div>
             <div class="actions">
               <ea-button
                 size="sm"
-                [disabled]="!canChangePassword()"
+                [disabled]="passwordForm.invalid"
                 [loading]="passwordBusy()"
                 (clicked)="onChangePassword()">
                 Change password
@@ -423,26 +365,3 @@
     </ea-button>
   </div>
 </ea-dialog>
-
-<ng-template #phoneTooltip>
-  <div class="field-tooltip">
-    <em>Optional.</em>
-    Your phone number is only visible to club admins and will never be shared with third
-    parties or used for marketing. It is only used to get in touch when we cannot reach
-    you by email.
-  </div>
-</ng-template>
-
-<ng-template #lichessTooltip>
-  <div class="field-tooltip">
-    <em>Optional.</em>
-    Your username is used to link to your profile page on Lichess.
-  </div>
-</ng-template>
-
-<ng-template #chessComTooltip>
-  <div class="field-tooltip">
-    <em>Optional.</em>
-    Your username is used to link to your profile page on Chess.com.
-  </div>
-</ng-template>

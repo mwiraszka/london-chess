@@ -30,13 +30,15 @@ describe('FormErrorIconComponent', () => {
         'control',
         new FormControl('', { validators: Validators.required }),
       );
-      component.control.markAsTouched();
+      component.control().markAsTouched();
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, 'ea-icon-alert-triangle')).toBeTruthy();
       expect(
-        fixture.nativeElement.querySelector('ea-icon-alert-triangle').style.visibility,
-      ).toBe('visible');
+        fixture.nativeElement
+          .querySelector('ea-icon-alert-triangle')
+          .classList.contains('form-error-icon--hidden'),
+      ).toBe(false);
     });
 
     it('should render hidden icon if control is invalid but not touched', () => {
@@ -48,8 +50,10 @@ describe('FormErrorIconComponent', () => {
 
       expect(query(fixture.debugElement, 'ea-icon-alert-triangle')).toBeTruthy();
       expect(
-        fixture.nativeElement.querySelector('ea-icon-alert-triangle').style.visibility,
-      ).toBe('hidden');
+        fixture.nativeElement
+          .querySelector('ea-icon-alert-triangle')
+          .classList.contains('form-error-icon--hidden'),
+      ).toBe(true);
     });
 
     it('should render hidden icon if control is touched but not invalid', () => {
@@ -57,13 +61,15 @@ describe('FormErrorIconComponent', () => {
         'control',
         new FormControl('hello world', { validators: Validators.required }),
       );
-      component.control.markAsTouched();
+      component.control().markAsTouched();
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, 'ea-icon-alert-triangle')).toBeTruthy();
       expect(
-        fixture.nativeElement.querySelector('ea-icon-alert-triangle').style.visibility,
-      ).toBe('hidden');
+        fixture.nativeElement
+          .querySelector('ea-icon-alert-triangle')
+          .classList.contains('form-error-icon--hidden'),
+      ).toBe(true);
     });
 
     it('should display first listed error message in tooltip if control has multiple errors', () => {

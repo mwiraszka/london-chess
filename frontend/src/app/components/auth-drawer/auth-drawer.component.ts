@@ -8,14 +8,12 @@ import {
   signal,
 } from '@angular/core';
 
+import { AUTH_DRAWER_BOTTOM_SHEET_MAX_WIDTH } from '@app/constants/auth';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
 
 import { CreateAccountFormComponent } from './create-account-form.component';
 import { ForgotPasswordFormComponent } from './forgot-password-form.component';
 import { LoginFormComponent } from './login-form.component';
-
-// At or below this viewport width the drawer becomes a bottom sheet.
-const MOBILE_BREAKPOINT = 640;
 
 @Component({
   selector: 'lcc-auth-drawer',
@@ -23,17 +21,19 @@ const MOBILE_BREAKPOINT = 640;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:resize)': 'onResize()' },
   imports: [
-    DrawerComponent,
-    LoginFormComponent,
     CreateAccountFormComponent,
+    DrawerComponent,
     ForgotPasswordFormComponent,
+    LoginFormComponent,
   ],
 })
 export class AuthDrawerComponent {
   protected readonly authDrawer = inject(AuthDrawerService);
 
   private readonly viewportWidth = signal(window.innerWidth);
-  private readonly isMobile = computed(() => this.viewportWidth() <= MOBILE_BREAKPOINT);
+  private readonly isMobile = computed(
+    () => this.viewportWidth() <= AUTH_DRAWER_BOTTOM_SHEET_MAX_WIDTH,
+  );
 
   // On phones the drawer rises from the bottom as a near full-height sheet, the
   // native mobile pattern; on wider screens it stays a right-hand side panel.

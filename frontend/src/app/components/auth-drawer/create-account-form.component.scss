@@ -22,19 +22,6 @@
   }
 }
 
-.email-year-row {
-  display: flex;
-  gap: 16px;
-
-  ea-input {
-    flex: 1;
-  }
-
-  @include mixins.respond-to('lt-xs') {
-    flex-direction: column;
-  }
-}
-
 .auth-footer {
   gap: 24px;
 
@@ -43,37 +30,6 @@
     line-height: 24px;
     text-align: start;
   }
-}
-
-// The library caps the number box at its digit count; the label sets the floor here
-.email-year-row ea-number-input {
-  ::ng-deep .ea-number-input-wrapper {
-    min-width: 100%;
-  }
-
-  ::ng-deep .ea-number-input {
-    flex-grow: 1;
-  }
-}
-
-.labeled-field {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  // Mirrors the label-to-control gap ea-input uses internally
-  gap: 6px;
-}
-
-.labeled-field__row {
-  display: block;
-}
-
-.labeled-field__help {
-  vertical-align: -2px;
-  margin-left: 6px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  cursor: help;
 }
 
 .code-actions {

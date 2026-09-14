@@ -86,31 +86,6 @@
   max-width: 800px;
 }
 
-.labeled-field {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  // Mirrors the label-to-control gap ea-input uses internally
-  gap: 6px;
-}
-
-.labeled-field__row {
-  display: block;
-}
-
-.labeled-field__help {
-  vertical-align: -2px;
-  margin-left: 6px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  cursor: help;
-}
-
-.card-divider {
-  display: block;
-  margin: 24px 0;
-}
-
 .details-form {
   display: flex;
   flex-direction: column;
@@ -216,12 +191,6 @@
   gap: 12px;
 }
 
-.pw-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .sessions {
   display: flex;
   flex-direction: column;
@@ -257,30 +226,6 @@
 .session__meta {
   font-size: 14px;
   color: var(--color-text-secondary);
-}
-
-.phone-privacy-tooltip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-
-  .shield-icon {
-    display: inline-flex;
-    font-size: 20px;
-    color: var(--color-success-default);
-  }
-}
-
-// The library caps the number box at its digit count; the label sets the floor here
-.details-form ea-number-input {
-  ::ng-deep .ea-number-input-wrapper {
-    min-width: 100%;
-  }
-
-  ::ng-deep .ea-number-input {
-    flex-grow: 1;
-  }
 }
 
 // On phones every action button spans the row

@@ -23,6 +23,20 @@ export interface Member {
   modificationInfo: ModificationInfo;
 }
 
+export interface MemberDetailsFormData {
+  firstName: string;
+  lastName: string;
+  yearOfBirth: number | null;
+  city: string;
+  phoneNumber: string;
+  lichessUsername: string;
+  chessComUsername: string;
+}
+
+export type MemberDetailsFormGroup = {
+  [Property in keyof MemberDetailsFormData]: FormControl<MemberDetailsFormData[Property]>;
+};
+
 export type MemberFormData = Pick<Member, (typeof MEMBER_FORM_DATA_PROPERTIES)[number]>;
 
 export type MemberFormGroup = {
