@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 
 import { AuthMode } from '@app/models';
-import { createEmailControl, createMemberDetailsControls } from '@app/utils';
+import { createEmailControl, createMemberAccountGroup } from '@app/utils';
 
 // Drives the right-side auth drawer so logging in overlays the current page
 // instead of a full-page takeover.
@@ -18,10 +18,7 @@ export class AuthDrawerService {
     password: new FormControl('', { nonNullable: true, validators: Validators.required }),
   });
 
-  readonly createAccountForm = new FormGroup({
-    ...createMemberDetailsControls(),
-    email: createEmailControl(),
-  });
+  readonly createAccountForm = createMemberAccountGroup();
 
   resetForms(): void {
     this.loginForm.reset();

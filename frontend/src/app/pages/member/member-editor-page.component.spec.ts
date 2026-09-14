@@ -1,6 +1,7 @@
+import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
-import { BehaviorSubject, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -15,7 +16,7 @@ import {
   MembersState,
   initialState as membersInitialState,
 } from '@app/store/members';
-import { query } from '@app/utils';
+import { query, queryTextContent } from '@app/utils';
 
 import { MemberEditorPageComponent } from './member-editor-page.component';
 
@@ -54,6 +55,7 @@ describe('MemberEditorPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [MemberEditorPageComponent],
       providers: [
+        provideMockActions(() => EMPTY),
         {
           provide: ActivatedRoute,
           useValue: { params: mockParamsSubject.asObservable() },
@@ -231,6 +233,40 @@ describe('MemberEditorPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-member-form')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
       });
+
+      it('should not offer account creation for a new member', () => {
+        expect(query(fixture.debugElement, '.account-actions')).toBeFalsy();
+      });
+    });
+  });
+
+  describe('account invitation', () => {
+    it('should offer account creation for a member without an account', () => {
+      mockParamsSubject.next({ member_id: MOCK_MEMBERS[2].id });
+
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.account-actions')).toContain(
+        'Create account',
+      );
+    });
+
+    it('should offer to resend the invitation to an invited member', () => {
+      mockParamsSubject.next({ member_id: MOCK_MEMBERS[1].id });
+
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.account-actions')).toContain(
+        'Resend invitation',
+      );
+    });
+
+    it('should not offer account creation once the account is active', () => {
+      mockParamsSubject.next({ member_id: MOCK_MEMBERS[0].id });
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.account-actions')).toBeFalsy();
     });
   });
 });

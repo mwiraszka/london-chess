@@ -1,0 +1,47 @@
+<lcc-page-header
+  heading="Accept Invitation"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+<div class="invitation">
+  @if (alreadyHasAccount) {
+    <p class="hint">You already have a London Chess account. Log in to continue.</p>
+    <ea-button
+      size="sm"
+      variant="primary"
+      (clicked)="onLogIn()">
+      Log in
+    </ea-button>
+  } @else if (isLinkIncomplete) {
+    <p class="hint">
+      This invitation link is incomplete. Please open it again from your invitation email.
+    </p>
+  } @else {
+    <form
+      class="auth-form"
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()">
+      <p class="hint">
+        Welcome, {{ firstName }}. Choose a password to finish creating your account.
+      </p>
+
+      <lcc-new-password-fields [group]="form.controls.passwords" />
+
+      <div id="clerk-captcha"></div>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <ea-button
+        type="submit"
+        size="sm"
+        variant="primary"
+        [fullWidth]="true"
+        [disabled]="form.invalid"
+        [loading]="loading()">
+        Create account
+      </ea-button>
+    </form>
+  }
+</div>

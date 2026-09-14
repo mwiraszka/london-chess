@@ -14,6 +14,7 @@ import { MIN_YEAR_OF_BIRTH } from '@app/constants/member-details';
 })
 export class YearOfBirthFieldComponent {
   readonly control = input.required<FormControl<number | null>>();
+  readonly required = input(true);
 
   protected readonly maxYear = new Date().getFullYear();
   protected readonly minYear = MIN_YEAR_OF_BIRTH;

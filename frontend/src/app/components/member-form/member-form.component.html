@@ -74,7 +74,12 @@
         type="text"
         name="email"
         formControlName="email"
-        maxlength="50" />
+        maxlength="50"
+        [tooltip]="
+          isEmailManagedByAccount
+            ? 'This email address is managed by the member\'s account.'
+            : null
+        " />
       <lcc-form-error-icon [control]="form.controls.email"></lcc-form-error-icon>
 
       <label for="phone-number-input">Phone number:</label>

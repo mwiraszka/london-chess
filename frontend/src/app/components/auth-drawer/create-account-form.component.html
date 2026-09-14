@@ -3,48 +3,9 @@
     class="auth-form"
     [formGroup]="form"
     (ngSubmit)="onSubmit()">
-    <div class="name-row">
-      <ea-input
-        label="First name"
-        autocomplete="given-name"
-        formControlName="firstName"
-        [autofocus]="true"
-        [required]="true" />
-
-      <ea-input
-        label="Last name"
-        autocomplete="family-name"
-        formControlName="lastName"
-        [required]="true" />
-    </div>
-
-    <div class="name-row">
-      <ea-input
-        label="Email"
-        type="email"
-        autocomplete="email"
-        placeholder="you@example.com"
-        formControlName="email"
-        [required]="true" />
-
-      <lcc-year-of-birth-field [control]="form.controls.yearOfBirth" />
-    </div>
-
-    <div class="name-row">
-      <ea-input
-        label="City"
-        autocomplete="address-level2"
-        placeholder="London"
-        formControlName="city"
-        [required]="true"
-        [maxLength]="50" />
-
-      <lcc-phone-number-field [control]="form.controls.phoneNumber" />
-    </div>
-
-    <lcc-chess-username-fields
-      [chessComUsername]="form.controls.chessComUsername"
-      [lichessUsername]="form.controls.lichessUsername" />
+    <lcc-member-account-fields
+      [autofocus]="true"
+      [group]="form" />
 
     @if (error()) {
       <p class="error">{{ error() }}</p>
@@ -60,6 +21,37 @@
       Request account
     </ea-button>
   </form>
+
+  <div class="auth-footer">
+    <p class="hint">
+      An LCC admin will review your request and set up your member account. You will
+      receive a confirmation at the email address provided as soon as your account is
+      ready. Please note that an account is entirely optional and not required to attend
+      any club events.
+    </p>
+    <p class="privacy-note">
+      <span class="privacy-note__heading">
+        <ea-icon-lock
+          class="privacy-note__icon"
+          aria-hidden="true" />
+        <strong>Privacy</strong>
+      </span>
+      <span>
+        Your details stay within the club and are only used to keep in touch with you. We
+        never pass them to anyone else, and never use them for marketing.
+      </span>
+    </p>
+    <p class="auth-link">
+      Already have an account?
+      <button
+        type="button"
+        class="auth-link__button lcc-link"
+        keepFocus
+        (click)="authDrawer.setMode('login')">
+        Log in
+      </button>
+    </p>
+  </div>
 } @else {
   <form
     class="auth-form"
@@ -69,13 +61,11 @@
       Enter the six-digit code we sent to {{ form.controls.email.value }}.
     </p>
 
-    <ea-input
+    <ea-code-input
       label="Verification code"
-      autocomplete="one-time-code"
       formControlName="code"
-      [autofocus]="true"
       [required]="true"
-      [maxLength]="codeLength"
+      [length]="codeLength"
       [errorMsg]="codeError()" />
 
     @if (error()) {
@@ -96,44 +86,17 @@
       <button
         type="button"
         class="auth-link__button lcc-link"
+        keepFocus
         (click)="onResendCode()">
         Resend code
       </button>
       <button
         type="button"
         class="auth-link__button lcc-link"
+        keepFocus
         (click)="onBackToForm()">
         Back
       </button>
     </div>
   </form>
 }
-
-<div class="auth-footer">
-  <p class="hint">
-    An LCC admin will review your request and set up your member account. You will receive
-    a confirmation at the email address provided as soon as your account is ready. Please
-    note that an account is entirely optional and not required to attend any club events.
-  </p>
-  <p class="privacy-note">
-    <span class="privacy-note__heading">
-      <ea-icon-lock
-        class="privacy-note__icon"
-        aria-hidden="true" />
-      <strong>Privacy</strong>
-    </span>
-    <span>
-      Your details stay within the club and are only used to keep in touch with you. We
-      never pass them to anyone else, and never use them for marketing.
-    </span>
-  </p>
-  <p class="auth-link">
-    Already have an account?
-    <button
-      type="button"
-      class="auth-link__button lcc-link"
-      (click)="authDrawer.setMode('login')">
-      Log in
-    </button>
-  </p>
-</div>

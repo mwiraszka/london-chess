@@ -1,17 +1,24 @@
 import {
   ButtonComponent,
-  InputComponent,
+  CodeInputComponent,
   LockIconComponent,
   ToastService,
 } from '@eagami/ui';
 
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Injector,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
-import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
-import { PhoneNumberFieldComponent } from '@app/components/phone-number-field/phone-number-field.component';
-import { YearOfBirthFieldComponent } from '@app/components/year-of-birth-field/year-of-birth-field.component';
+import { MemberAccountFieldsComponent } from '@app/components/member-account-fields/member-account-fields.component';
 import { VERIFICATION_CODE_LENGTH } from '@app/constants/auth';
+import { KeepFocusDirective } from '@app/directives/keep-focus.directive';
 import { ApiError, ApiService, AuthDrawerService } from '@app/services';
 import { createVerificationCodeControl } from '@app/utils';
 
@@ -22,18 +29,20 @@ import { createVerificationCodeControl } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ButtonComponent,
-    ChessUsernameFieldsComponent,
-    InputComponent,
+    CodeInputComponent,
+    KeepFocusDirective,
     LockIconComponent,
-    PhoneNumberFieldComponent,
+    MemberAccountFieldsComponent,
     ReactiveFormsModule,
-    YearOfBirthFieldComponent,
   ],
 })
 export class CreateAccountFormComponent {
   private readonly api = inject(ApiService);
   protected readonly authDrawer = inject(AuthDrawerService);
+  private readonly injector = inject(Injector);
   private readonly toast = inject(ToastService);
+
+  private readonly codeInput = viewChild(CodeInputComponent);
 
   protected readonly codeLength = VERIFICATION_CODE_LENGTH;
   protected readonly form = this.authDrawer.createAccountForm;
@@ -99,10 +108,11 @@ export class CreateAccountFormComponent {
 
       this.authDrawer.resetForms();
       this.authDrawer.close();
-      this.toast.show(
-        `Thanks ${firstName.trim()} – your information has been sent for review. We will email you at ${email.trim()} once your account is confirmed.`,
-        { title: 'Request sent', variant: 'info' },
-      );
+      this.toast.show(`We'll email ${email.trim()} once your account is ready.`, {
+        title: 'Request sent',
+        variant: 'success',
+        duration: 0,
+      });
     } catch (e: unknown) {
       this.codeError.set(this.toErrorMessage(e));
     } finally {
@@ -119,12 +129,23 @@ export class CreateAccountFormComponent {
       await this.api.post('/users/account-requests/verification', {
         email: this.form.controls.email.value.trim(),
       });
-      this.step.set('code');
+      this.showCodeStep();
     } catch (e: unknown) {
-      this.error.set(this.toErrorMessage(e));
+      // A code already sent to this address is still valid, so the visitor can enter it
+      if (e instanceof ApiError && e.status === 429) {
+        this.showCodeStep();
+        this.toast.show(e.message, { title: 'Code already sent', variant: 'info' });
+      } else {
+        this.error.set(this.toErrorMessage(e));
+      }
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private showCodeStep(): void {
+    this.step.set('code');
+    afterNextRender(() => this.codeInput()?.focus(), { injector: this.injector });
   }
 
   private toErrorMessage(e: unknown): string {

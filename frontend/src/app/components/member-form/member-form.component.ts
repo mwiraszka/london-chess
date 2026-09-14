@@ -74,6 +74,11 @@ export class MemberFormComponent implements OnInit {
 
   public form!: FormGroup<MemberFormGroup>;
 
+  // A member with an account changes their email address from the account page
+  protected get isEmailManagedByAccount(): boolean {
+    return this.originalMember?.accountStatus === 'active';
+  }
+
   constructor(
     private readonly dialogService: DialogService,
     private readonly formBuilder: FormBuilder,
@@ -173,10 +178,10 @@ export class MemberFormComponent implements OnInit {
         nonNullable: true,
         validators: [Validators.required],
       }),
-      email: new FormControl(this.formData.email, {
-        nonNullable: true,
-        validators: emailValidator,
-      }),
+      email: new FormControl(
+        { value: this.formData.email, disabled: this.isEmailManagedByAccount },
+        { nonNullable: true, validators: emailValidator },
+      ),
       phoneNumber: new FormControl(this.formData.phoneNumber, {
         nonNullable: true,
         validators: phoneNumberValidator,

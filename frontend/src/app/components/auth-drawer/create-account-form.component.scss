@@ -1,25 +1,9 @@
-@use '../../../styles/abstracts/mixins' as mixins;
-
 :host {
   gap: 32px;
 }
 
 .auth-form {
   gap: 24px;
-}
-
-.name-row {
-  display: flex;
-  gap: 16px;
-
-  ea-input {
-    flex: 1;
-  }
-
-  // Paired columns get too tight for wrapped labels on phones
-  @include mixins.respond-to('lt-xs') {
-    flex-direction: column;
-  }
 }
 
 .auth-footer {
