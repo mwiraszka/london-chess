@@ -1,3 +1,4 @@
+import { ToastService } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -11,7 +12,6 @@ import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { LccError } from '@app/models';
-import { ToastService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions } from '@app/store/events';
@@ -38,7 +38,7 @@ describe('AppEffects', () => {
 
   beforeEach(() => {
     const toastServiceMock = {
-      displayToast: vi.fn(),
+      show: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -70,10 +70,9 @@ describe('AppEffects', () => {
           actions$.next(AppActions.unexpectedErrorOccurred({ error: mockError }));
 
           effects.notify$.subscribe(action => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
+            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
               title: 'Unexpected error',
-              message: '[500] Test error message',
-              type: 'warning',
+              variant: 'warning',
             });
             expect(action).toEqual(
               AppActions.toastDisplayed({
@@ -95,10 +94,9 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.deleteArticleFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
+            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
               title: 'Article deletion',
-              message: '[500] Test error message',
-              type: 'warning',
+              variant: 'warning',
             });
             done();
           });
@@ -114,11 +112,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Article deletion',
-              message: 'Successfully deleted Test Article',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully deleted Test Article',
+              { title: 'Article deletion', variant: 'success' },
+            );
             done();
           });
         }));
@@ -128,10 +125,9 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.fetchArticleFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
+            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
               title: 'Load article',
-              message: '[500] Test error message',
-              type: 'warning',
+              variant: 'warning',
             });
             done();
           });
@@ -143,11 +139,10 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.publishArticleSucceeded({ article }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'New article',
-              message: 'Successfully published New Article',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully published New Article',
+              { title: 'New article', variant: 'success' },
+            );
             done();
           });
         }));
@@ -162,11 +157,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Article update',
-              message: 'Successfully updated Original Title',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated Original Title',
+              { title: 'Article update', variant: 'success' },
+            );
             done();
           });
         }));
@@ -176,10 +170,9 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.requestTimedOut());
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
+            expect(toastService.show).toHaveBeenCalledWith('Request timed out', {
               title: 'Articles request',
-              message: 'Request timed out',
-              type: 'warning',
+              variant: 'warning',
             });
             done();
           });
@@ -193,11 +186,10 @@ describe('AppEffects', () => {
           actions$.next(EventsActions.addEventSucceeded({ event }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'New event',
-              message: 'Successfully added New Event',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully added New Event',
+              { title: 'New event', variant: 'success' },
+            );
             done();
           });
         }));
@@ -212,11 +204,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Event deletion',
-              message: 'Successfully deleted Test Event',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully deleted Test Event',
+              { title: 'Event deletion', variant: 'success' },
+            );
             done();
           });
         }));
@@ -226,11 +217,10 @@ describe('AppEffects', () => {
           actions$.next(EventsActions.exportEventsToCsvSucceeded({ exportedCount: 25 }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'CSV export',
-              message: 'Successfully exported 25 events to CSV',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully exported 25 events to CSV',
+              { title: 'CSV export', variant: 'success' },
+            );
             done();
           });
         }));
@@ -245,11 +235,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Event update',
-              message: 'Successfully updated Original Event',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated Original Event',
+              { title: 'Event update', variant: 'success' },
+            );
             done();
           });
         }));
@@ -262,11 +251,10 @@ describe('AppEffects', () => {
           actions$.next(ImagesActions.addImageSucceeded({ image }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Add image',
-              message: 'Successfully uploaded test.jpg',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully uploaded test.jpg',
+              { title: 'Add image', variant: 'success' },
+            );
             done();
           });
         }));
@@ -276,11 +264,10 @@ describe('AppEffects', () => {
           actions$.next(ImagesActions.addImagesSucceeded({ images: [MOCK_IMAGES[0]] }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Add images',
-              message: 'Successfully uploaded 1 image',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully uploaded 1 image',
+              { title: 'Add images', variant: 'success' },
+            );
             done();
           });
         }));
@@ -294,11 +281,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Add images',
-              message: 'Successfully uploaded 2 images',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully uploaded 2 images',
+              { title: 'Add images', variant: 'success' },
+            );
             done();
           });
         }));
@@ -313,11 +299,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Album deletion',
-              message: 'Successfully deleted Test Album and all 2 of its images',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully deleted Test Album and all 2 of its images',
+              { title: 'Album deletion', variant: 'success' },
+            );
             done();
           });
         }));
@@ -328,11 +313,10 @@ describe('AppEffects', () => {
           actions$.next(ImagesActions.deleteImageSucceeded({ image }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Image deletion',
-              message: 'Successfully deleted test.jpg',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully deleted test.jpg',
+              { title: 'Image deletion', variant: 'success' },
+            );
             done();
           });
         }));
@@ -348,11 +332,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Album update',
-              message: 'Successfully updated Test Album',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated Test Album',
+              { title: 'Album update', variant: 'success' },
+            );
             done();
           });
         }));
@@ -363,11 +346,10 @@ describe('AppEffects', () => {
           actions$.next(ImagesActions.updateImageSucceeded({ baseImage }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Image update',
-              message: 'Successfully updated updated.jpg',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated updated.jpg',
+              { title: 'Image update', variant: 'success' },
+            );
             done();
           });
         }));
@@ -380,11 +362,10 @@ describe('AppEffects', () => {
           actions$.next(MembersActions.addMemberSucceeded({ member }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'New member',
-              message: 'Successfully added John Doe',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully added John Doe',
+              { title: 'New member', variant: 'success' },
+            );
             done();
           });
         }));
@@ -399,11 +380,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Member deletion',
-              message: 'Successfully deleted Jane Smith',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully deleted Jane Smith',
+              { title: 'Member deletion', variant: 'success' },
+            );
             done();
           });
         }));
@@ -415,11 +395,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'CSV export',
-              message: 'Successfully exported 50 members to CSV',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully exported 50 members to CSV',
+              { title: 'CSV export', variant: 'success' },
+            );
             done();
           });
         }));
@@ -434,11 +413,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Member update',
-              message: 'Successfully updated Old Name',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated Old Name',
+              { title: 'Member update', variant: 'success' },
+            );
             done();
           });
         }));
@@ -452,11 +430,10 @@ describe('AppEffects', () => {
           );
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Members update',
-              message: 'Successfully updated 2 members',
-              type: 'success',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated 2 members',
+              { title: 'Members update', variant: 'success' },
+            );
             done();
           });
         }));
@@ -468,11 +445,10 @@ describe('AppEffects', () => {
           actions$.next(NavActions.pageAccessDenied({ pageHeading: 'Admin Panel' }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
-              title: 'Access denied',
-              message: 'Please log in as admin to access Admin Panel page',
-              type: 'info',
-            });
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Please log in as admin to access Admin Panel page',
+              { title: 'Access denied', variant: 'info' },
+            );
             done();
           });
         }));
@@ -495,7 +471,7 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.fetchArticleFailed({ error: mockError }));
 
           setTimeout(() => {
-            expect(toastService.displayToast).not.toHaveBeenCalled();
+            expect(toastService.show).not.toHaveBeenCalled();
             done();
           }, 10);
         }));
@@ -505,7 +481,7 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.deleteArticleFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalled();
+            expect(toastService.show).toHaveBeenCalled();
             done();
           });
         }));
@@ -519,7 +495,7 @@ describe('AppEffects', () => {
           actions$.next(MembersActions.fetchMemberFailed({ error: notFound }));
 
           setTimeout(() => {
-            expect(toastService.displayToast).not.toHaveBeenCalled();
+            expect(toastService.show).not.toHaveBeenCalled();
             done();
           }, 10);
         }));
@@ -529,10 +505,9 @@ describe('AppEffects', () => {
           actions$.next(MembersActions.fetchMemberFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
+            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
               title: 'Load member',
-              message: '[500] Test error message',
-              type: 'warning',
+              variant: 'warning',
             });
             done();
           });
@@ -543,10 +518,9 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.deleteArticleFailed({ error: notFound }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.displayToast).toHaveBeenCalledWith({
+            expect(toastService.show).toHaveBeenCalledWith('[404] Not found', {
               title: 'Article deletion',
-              message: '[404] Not found',
-              type: 'warning',
+              variant: 'warning',
             });
             done();
           });

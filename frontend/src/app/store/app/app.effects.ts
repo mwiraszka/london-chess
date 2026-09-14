@@ -1,3 +1,4 @@
+import { ToastService } from '@eagami/ui';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { Store } from '@ngrx/store';
@@ -7,7 +8,6 @@ import { filter, map, tap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 
 import { LccError, Toast } from '@app/models';
-import { ToastService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions } from '@app/store/events';
@@ -82,6 +82,8 @@ export class AppEffects {
 
     MembersActions.addMemberFailed,
     MembersActions.addMemberSucceeded,
+    MembersActions.createMemberAccountFailed,
+    MembersActions.createMemberAccountSucceeded,
     MembersActions.deleteMemberFailed,
     MembersActions.deleteMemberSucceeded,
     MembersActions.exportMembersToCsvFailed,
@@ -145,7 +147,12 @@ export class AppEffects {
       ),
       map(([action]) => this.mapActionToToast(action)),
       filter(isDefined),
-      tap(toast => this.toastService.displayToast(toast)),
+      tap(toast =>
+        this.toastService.show(toast.message, {
+          title: toast.title,
+          variant: toast.type,
+        }),
+      ),
       map(toast => AppActions.toastDisplayed({ toast })),
     );
   });
@@ -457,6 +464,18 @@ export class AppEffects {
         return {
           title: 'New member',
           message: `Successfully added ${action.member.firstName} ${action.member.lastName}`,
+          type: 'success',
+        };
+      case MembersActions.createMemberAccountFailed.type:
+        return {
+          title: 'Account invitation',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case MembersActions.createMemberAccountSucceeded.type:
+        return {
+          title: 'Account invitation',
+          message: `An account invitation was sent to ${action.member.email}.`,
           type: 'success',
         };
       case MembersActions.deleteMemberFailed.type:
