@@ -23,10 +23,10 @@ import { MemberProfilesService } from '@app/services/member-profiles.service';
       <a
         class="lcc-link"
         [routerLink]="['/members', profile.number]">
-        {{ displayName() }}
+        <span>{{ displayName() }}</span>
       </a>
     } @else {
-      {{ displayName() }}
+      <span>{{ displayName() }}</span>
     }
   `,
   imports: [RouterLink],
