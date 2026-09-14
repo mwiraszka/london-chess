@@ -14,7 +14,7 @@ import { Club } from '@app/models';
   selector: 'lcc-club-card',
   templateUrl: './club-card.component.html',
   styleUrls: ['./club-card.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ClubMapComponent,
     ExternalLinkIconComponent,

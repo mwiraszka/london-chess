@@ -16,7 +16,7 @@ describe('ClubCardComponent', () => {
 
     fixture = TestBed.createComponent(ClubCardComponent);
     component = fixture.componentInstance;
-    component.club = LCC;
+    fixture.componentRef.setInput('club', LCC);
   });
 
   it('should create', () => {
@@ -56,7 +56,10 @@ describe('ClubCardComponent', () => {
     });
 
     it('should not render email section when email is not provided', () => {
-      component.club = REGIONAL_CLUBS.find(club => !club.email)!;
+      fixture.componentRef.setInput(
+        'club',
+        REGIONAL_CLUBS.find(club => !club.email),
+      );
       fixture.detectChanges();
 
       const emailSection = query(fixture.debugElement, '.email');
