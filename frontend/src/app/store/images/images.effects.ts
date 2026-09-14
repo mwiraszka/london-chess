@@ -20,7 +20,7 @@ import {
 import { Injectable, inject } from '@angular/core';
 
 import { Article, BaseImage, Image, IndexedDbImageData, LccError } from '@app/models';
-import { ImageFileService, ImagesApiService } from '@app/services';
+import { ImageFileService, ImagesApiService, UserService } from '@app/services';
 import { AppActions } from '@app/store/app';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
@@ -43,6 +43,7 @@ export class ImagesEffects {
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly isLccError = inject(IS_LCC_ERROR);
   private readonly parseError = inject(PARSE_ERROR);
+  private readonly userService = inject(UserService);
 
   // Serverless functions cap the request body (~4.5MB), so images are uploaded one
   // file per request with a small concurrency pool rather than one large batch.
@@ -515,8 +516,10 @@ export class ImagesEffects {
           albumOrdinality: formData.albumOrdinality,
           modificationInfo: {
             createdBy: `${user.firstName} ${user.lastName}`,
+            createdByNumber: this.userService.memberNumber(),
             dateCreated: moment().toISOString(),
             lastEditedBy: `${user.firstName} ${user.lastName}`,
+            lastEditedByNumber: this.userService.memberNumber(),
             dateLastEdited: moment().toISOString(),
           },
         };
@@ -579,8 +582,10 @@ export class ImagesEffects {
             albumOrdinality: formData.albumOrdinality,
             modificationInfo: {
               createdBy: `${user.firstName} ${user.lastName}`,
+              createdByNumber: this.userService.memberNumber(),
               dateCreated: moment().toISOString(),
               lastEditedBy: `${user.firstName} ${user.lastName}`,
+              lastEditedByNumber: this.userService.memberNumber(),
               dateLastEdited: moment().toISOString(),
             },
           });
@@ -631,6 +636,7 @@ export class ImagesEffects {
           modificationInfo: {
             ...image.modificationInfo,
             lastEditedBy: `${user.firstName} ${user.lastName}`,
+            lastEditedByNumber: this.userService.memberNumber(),
             dateLastEdited: moment().toISOString(),
           },
         };
@@ -698,6 +704,7 @@ export class ImagesEffects {
             modificationInfo: {
               ...image.modificationInfo,
               lastEditedBy: `${user.firstName} ${user.lastName}`,
+              lastEditedByNumber: this.userService.memberNumber(),
               dateLastEdited: moment().toISOString(),
             },
           }));
@@ -729,8 +736,10 @@ export class ImagesEffects {
                 albumOrdinality: formData.albumOrdinality,
                 modificationInfo: {
                   createdBy: `${user.firstName} ${user.lastName}`,
+                  createdByNumber: this.userService.memberNumber(),
                   dateCreated: moment().toISOString(),
                   lastEditedBy: `${user.firstName} ${user.lastName}`,
+                  lastEditedByNumber: this.userService.memberNumber(),
                   dateLastEdited: moment().toISOString(),
                 },
               });

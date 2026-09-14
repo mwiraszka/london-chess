@@ -17,7 +17,7 @@ import {
 import { Injectable, inject } from '@angular/core';
 
 import { DataPaginationOptions, Event } from '@app/models';
-import { EventsApiService } from '@app/services';
+import { EventsApiService, UserService } from '@app/services';
 import { AppActions } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
@@ -31,6 +31,7 @@ export class EventsEffects {
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
+  private readonly userService = inject(UserService);
 
   fetchAllEvents$ = createEffect(() => {
     return this.actions$.pipe(
@@ -213,8 +214,10 @@ export class EventsEffects {
           id: '',
           modificationInfo: {
             createdBy: `${user.firstName} ${user.lastName}`,
+            createdByNumber: this.userService.memberNumber(),
             dateCreated: moment().toISOString(),
             lastEditedBy: `${user.firstName} ${user.lastName}`,
+            lastEditedByNumber: this.userService.memberNumber(),
             dateLastEdited: moment().toISOString(),
           },
         };
@@ -250,6 +253,7 @@ export class EventsEffects {
           modificationInfo: {
             ...event.modificationInfo,
             lastEditedBy: `${user.firstName} ${user.lastName}`,
+            lastEditedByNumber: this.userService.memberNumber(),
             dateLastEdited: moment().toISOString(),
           },
         };

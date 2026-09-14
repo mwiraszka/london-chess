@@ -15,8 +15,10 @@ export const MOCK_EVENTS: Event[] = [
     articleId: '',
     modificationInfo: {
       createdBy: 'Billy Bob',
+      createdByNumber: null,
       dateCreated: moment('2049-01-01').toISOString(),
       lastEditedBy: 'Jim Jones',
+      lastEditedByNumber: null,
       dateLastEdited: moment('2049-01-15').toISOString(),
     },
   },

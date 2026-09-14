@@ -21,8 +21,10 @@ const makeImage = (overrides: Partial<Image> = {}): Image => ({
   albumOrdinality: '1',
   modificationInfo: {
     createdBy: 'Tester',
+    createdByNumber: null,
     dateCreated: '2025-01-01T00:00:00Z',
     lastEditedBy: 'Tester',
+    lastEditedByNumber: null,
     dateLastEdited: '2025-01-01T00:00:00Z',
   },
   ...overrides,

@@ -4,12 +4,13 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
 import { ReplaySubject, of, throwError } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { ApiResponse, Event, LccError, PaginatedItems, User } from '@app/models';
-import { EventsApiService } from '@app/services';
+import { EventsApiService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
 import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
@@ -94,6 +95,7 @@ describe('EventsEffects', () => {
         { provide: PARSE_ERROR, useValue: mockParseError },
         provideMockActions(() => actions$),
         { provide: EventsApiService, useValue: eventsApiServiceMock },
+        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockStore({
           initialState: {
             eventsState: mockEventsState,

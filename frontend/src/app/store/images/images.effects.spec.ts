@@ -4,6 +4,7 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
 import { ReplaySubject, of, throwError } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_IMAGE_FORM_DATA } from '@app/constants';
@@ -17,7 +18,7 @@ import {
   PaginatedItems,
   User,
 } from '@app/models';
-import { ImageFileService, ImagesApiService } from '@app/services';
+import { ImageFileService, ImagesApiService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import {
   BUILD_IMAGES_FORM_DATA,
@@ -132,6 +133,7 @@ describe('ImagesEffects', () => {
         provideMockActions(() => actions$),
         { provide: ImagesApiService, useValue: imagesApiServiceMock },
         { provide: ImageFileService, useValue: imageFileServiceMock },
+        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockStore({
           initialState: {
             imagesState: mockImagesState,

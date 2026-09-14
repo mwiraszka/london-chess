@@ -1,10 +1,10 @@
-import { provideMockStore } from '@ngrx/store/testing';
-
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { MOCK_MODIFICATION_INFOS } from '@app/mocks/modification-info.mock';
+import { MemberProfile } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { initialState as membersInitialState } from '@app/store/members/members.reducer';
+import { ApiService, MemberProfilesService } from '@app/services';
 import { formatDate, query, queryTextContent } from '@app/utils';
 
 import { ModificationInfoComponent } from './modification-info.component';
@@ -13,12 +13,14 @@ describe('ModificationInfoComponent', () => {
   let fixture: ComponentFixture<ModificationInfoComponent>;
   let component: ModificationInfoComponent;
 
+  const api = { get: vi.fn(() => Promise.resolve<MemberProfile[]>([])) };
+
   beforeEach(async () => {
+    api.get.mockClear();
+
     await TestBed.configureTestingModule({
       imports: [FormatDatePipe, ModificationInfoComponent],
-      providers: [
-        provideMockStore({ initialState: { membersState: membersInitialState } }),
-      ],
+      providers: [provideRouter([]), { provide: ApiService, useValue: api }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ModificationInfoComponent);
@@ -62,6 +64,19 @@ describe('ModificationInfoComponent', () => {
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, '.edit-details-container')).toBeFalsy();
+    });
+
+    it("should show a credited editor's current name, linked to their profile", async () => {
+      api.get.mockResolvedValue([
+        { number: 0, firstName: 'Johnny', lastName: 'Doe', avatarUrl: null },
+      ]);
+
+      await TestBed.inject(MemberProfilesService).reload();
+      fixture.detectChanges();
+
+      const createDetails = query(fixture.debugElement, '.create-details-container');
+      expect(queryTextContent(createDetails, '.name')).toBe('Johnny Doe');
+      expect(query(createDetails, '.name a.lcc-link')).toBeTruthy();
     });
   });
 });

@@ -5,7 +5,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit, inject } from '@angu
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { ModificationInfo } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { UserAvatarsService } from '@app/services';
+import { MemberProfilesService } from '@app/services';
 import { getInitials } from '@app/utils';
 
 @Component({
@@ -16,17 +16,18 @@ import { getInitials } from '@app/utils';
         <ea-icon-file-plus />
 
         <div class="create-text">
+          @let creator = memberProfiles.nameFor(info.createdByNumber, info.createdBy);
           <span>created by</span>
           <ea-avatar
             class="author-avatar"
             size="xs"
-            [alt]="info.createdBy"
-            [src]="avatarUrlFor(info.createdBy)"
-            [initials]="initialsFor(info.createdBy)" />
+            [alt]="creator"
+            [src]="memberProfiles.avatarUrlFor(info.createdByNumber)"
+            [initials]="initialsFor(creator)" />
           <span class="name">
-            <lcc-member-link [name]="info.createdBy">
-              <span>{{ info.createdBy }}</span>
-            </lcc-member-link>
+            <lcc-member-link
+              [memberNumber]="info.createdByNumber"
+              [name]="info.createdBy" />
           </span>
           <span class="vertical-spacer">|</span>
           <span class="date">{{ info.dateCreated | formatDate: 'short' }}</span>
@@ -40,9 +41,9 @@ import { getInitials } from '@app/utils';
           <div class="edit-text">
             <span>last edited by</span>
             <span class="name">
-              <lcc-member-link [name]="info.lastEditedBy">
-                <span>{{ info.lastEditedBy }}</span>
-              </lcc-member-link>
+              <lcc-member-link
+                [memberNumber]="info.lastEditedByNumber"
+                [name]="info.lastEditedBy" />
             </span>
             <span class="vertical-spacer">|</span>
             <span class="date">{{ info.dateLastEdited | formatDate: 'short' }}</span>
@@ -64,14 +65,10 @@ import { getInitials } from '@app/utils';
 export class ModificationInfoComponent implements OnInit {
   @Input({ required: true }) info!: ModificationInfo;
 
-  private readonly userAvatarsService = inject(UserAvatarsService);
+  protected readonly memberProfiles = inject(MemberProfilesService);
 
   public ngOnInit(): void {
-    void this.userAvatarsService.load();
-  }
-
-  protected avatarUrlFor(name: string): string | undefined {
-    return this.userAvatarsService.urlFor(name);
+    void this.memberProfiles.load();
   }
 
   protected initialsFor(name: string): string | undefined {

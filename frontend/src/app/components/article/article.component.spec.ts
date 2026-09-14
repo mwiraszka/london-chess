@@ -5,7 +5,7 @@ import { MarkdownRendererComponent } from '@app/components/markdown-renderer/mar
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image } from '@app/models';
-import { UserAvatarsService } from '@app/services';
+import { ApiService } from '@app/services';
 import { query, queryTextContent } from '@app/utils';
 
 import { ArticleComponent } from './article.component';
@@ -27,14 +27,13 @@ describe('ArticleComponent', () => {
   let component: ArticleComponent;
 
   beforeEach(async () => {
-    const mockUserAvatarsService: Pick<UserAvatarsService, 'load' | 'urlFor'> = {
-      load: () => Promise.resolve(),
-      urlFor: () => undefined,
+    const mockApiService: Pick<ApiService, 'get'> = {
+      get: <T>() => Promise.resolve([] as T),
     };
 
     await TestBed.configureTestingModule({
       imports: [ArticleComponent],
-      providers: [{ provide: UserAvatarsService, useValue: mockUserAvatarsService }],
+      providers: [{ provide: ApiService, useValue: mockApiService }],
     })
       .overrideComponent(ArticleComponent, {
         remove: { imports: [MarkdownRendererComponent] },

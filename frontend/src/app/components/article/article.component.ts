@@ -6,7 +6,7 @@ import { ImageComponent } from '@app/components/image/image.component';
 import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
 import { Article, Image } from '@app/models';
 import { FormatDatePipe, TruncateByCharsPipe, WasEditedPipe } from '@app/pipes';
-import { UserAvatarsService } from '@app/services';
+import { MemberProfilesService } from '@app/services';
 import { getInitials } from '@app/utils';
 
 @Component({
@@ -29,14 +29,10 @@ export class ArticleComponent implements OnInit {
   @Input({ required: true }) isWideView!: boolean;
   @Input() bodyImages: Image[] = [];
 
-  private readonly userAvatarsService = inject(UserAvatarsService);
+  protected readonly memberProfiles = inject(MemberProfilesService);
 
   public ngOnInit(): void {
-    void this.userAvatarsService.load();
-  }
-
-  protected avatarUrlFor(name: string): string | undefined {
-    return this.userAvatarsService.urlFor(name);
+    void this.memberProfiles.load();
   }
 
   protected initialsFor(name: string): string | undefined {

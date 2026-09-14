@@ -4,12 +4,13 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
 import { ReplaySubject, of, throwError } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_ARTICLE_FORM_DATA, MAX_ARTICLE_BODY_IMAGES } from '@app/constants';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { ApiResponse, Article, LccError, PaginatedItems, User } from '@app/models';
-import { ArticlesApiService } from '@app/services';
+import { ArticlesApiService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
@@ -90,6 +91,7 @@ describe('ArticlesEffects', () => {
         { provide: PARSE_ERROR, useValue: mockParseError },
         provideMockActions(() => actions$),
         { provide: ArticlesApiService, useValue: articlesApiServiceMock },
+        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockStore({
           initialState: {
             articlesState: mockArticlesState,

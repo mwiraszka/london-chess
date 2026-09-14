@@ -129,6 +129,7 @@ describe('exportDataToCsv', () => {
   it('should handle large datasets', () => {
     const mockMembers: Member[] = Array.from({ length: 1000 }, (_, i) => ({
       id: `${i + 1}`,
+      number: i,
       firstName: `User${i + 1}`,
       lastName: `Lastname${i + 1}`,
       rating: `${1500 + (i % 500)}`,
@@ -143,10 +144,13 @@ describe('exportDataToCsv', () => {
       dateJoined: new Date(2020, i % 12, (i % 28) + 1).toISOString(),
       modificationInfo: {
         createdBy: 'admin',
+        createdByNumber: null,
         dateCreated: new Date(2020, i % 12, (i % 28) + 1).toISOString(),
         lastEditedBy: 'admin',
+        lastEditedByNumber: null,
         dateLastEdited: new Date(2020, i % 12, (i % 28) + 1).toISOString(),
       },
+      avatarUrl: null,
     }));
 
     const result = exportDataToCsv(mockMembers, 'large-dataset.csv');
@@ -174,8 +178,10 @@ describe('exportDataToCsv', () => {
         articleAppearances: 0,
         modificationInfo: {
           createdBy: 'user',
+          createdByNumber: null,
           dateCreated: '2024-01-01T00:00:00.000Z',
           lastEditedBy: 'user',
+          lastEditedByNumber: null,
           dateLastEdited: '2024-01-01T00:00:00.000Z',
         },
       },

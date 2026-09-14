@@ -14,8 +14,10 @@ const mockNewImageMetadata: Omit<BaseImage, 'fileSize'> = {
   albumOrdinality: '1',
   modificationInfo: {
     createdBy: 'Test User',
+    createdByNumber: null,
     dateCreated: '2024-01-01T00:00:00.000Z',
     lastEditedBy: 'Test User',
+    lastEditedByNumber: null,
     dateLastEdited: '2024-01-01T00:00:00.000Z',
   },
 };
@@ -35,8 +37,10 @@ const mockExistingImage: BaseImage = {
   albumOrdinality: '0',
   modificationInfo: {
     createdBy: 'Test User',
+    createdByNumber: null,
     dateCreated: '2023-01-01T00:00:00.000Z',
     lastEditedBy: 'Test User',
+    lastEditedByNumber: null,
     dateLastEdited: '2024-01-01T00:00:00.000Z',
   },
 };
