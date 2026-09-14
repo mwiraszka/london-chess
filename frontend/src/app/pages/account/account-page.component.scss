@@ -18,7 +18,7 @@
 .account-page__body {
   display: grid;
   gap: 32px;
-  grid-template-columns: 200px minmax(0, 800px);
+  grid-template-columns: auto minmax(0, 800px);
   justify-content: center;
   width: 100%;
 
@@ -38,7 +38,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  width: 200px;
+  width: fit-content;
 
   @include mixins.respond-to('lt-md') {
     justify-self: stretch;
@@ -114,7 +114,7 @@
 .details-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .name-row {
@@ -139,16 +139,10 @@
   }
 }
 
-.fields-divider {
-  display: block;
-  // Composes with the 16px form gap either side for a 48px visual break
-  margin: 32px 0;
-}
-
 .request-hint {
   margin: 24px 0 0;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 16px;
+  line-height: 24px;
   color: var(--color-text-secondary);
 }
 
@@ -156,10 +150,37 @@
   margin-top: 24px;
 }
 
+.warning-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.warning-heading__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--lcc-color--accountPage-danger);
+}
+
+// The library paints danger buttons with its own error red; the club's red
+// keeps them in step with the safe mode controls
+.danger-button {
+  --ea-button-background-color: var(--lcc-color--accountPage-danger);
+  --ea-button-border-color: var(--lcc-color--accountPage-danger);
+  --ea-button-background-color-hover: var(--lcc-color--accountPage-dangerHover);
+  --ea-button-border-color-hover: var(--lcc-color--accountPage-dangerHover);
+  --ea-button-background-color-active: var(--lcc-color--accountPage-dangerHover);
+  --ea-button-border-color-active: var(--lcc-color--accountPage-dangerHover);
+}
+
 .card-desc {
   margin: 0 0 16px;
-  font-size: 14px;
-  line-height: 21px;
+  font-size: 16px;
+  line-height: 24px;
   color: var(--color-text-secondary);
 }
 
@@ -219,7 +240,7 @@
 .session__icon {
   flex-shrink: 0;
   font-size: 20px;
-  color: var(--color-text-secondary);
+  color: var(--lcc-color--general-accentIcon);
 }
 
 .session__info {

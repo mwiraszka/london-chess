@@ -27,6 +27,9 @@
 
   --lcc-color--authDrawer-background: #{clr(grayscale, white-98)};
 
+  --lcc-color--accountPage-danger: #{clr(warning, light)};
+  --lcc-color--accountPage-dangerHover: #{clr(warning, base)};
+
   --lcc-color--adminToolbar-adminIcon: #{clr(admin, dark, 0.15)};
   --lcc-color--adminToolbar-boxShadow: #{clr(grayscale, black-20, 0.7)};
   --lcc-color--adminToolbar-innerBackground: #{clr(grayscale, white-90)};
@@ -177,6 +180,7 @@
   --lcc-color--gameArchivesPage-loadingText: #{clr(grayscale, white-85)};
   --lcc-color--gameArchivesPage-text: #{clr(grayscale, gray-25)};
 
+  --lcc-color--general-accentIcon: #{clr(secondary, base)};
   --lcc-color--general-cardBackground: #{clr(grayscale, white-95)};
   --lcc-color--general-cardBoxShadow: #{clr(grayscale, white-85, 0.7)};
   --lcc-color--general-dividerLine: #{clr(grayscale, gray-75, 0.5)};

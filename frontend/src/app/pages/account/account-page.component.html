@@ -106,7 +106,6 @@
                     </div>
                   }
                 </div>
-                <ea-divider class="fields-divider" />
                 <div class="name-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
@@ -167,8 +166,6 @@
                   </div>
                 </div>
 
-                <ea-divider class="fields-divider" />
-
                 <div class="name-row">
                   <div class="labeled-field">
                     <lcc-field-label-with-help
@@ -215,11 +212,13 @@
               been made.
             </p>
             <p class="privacy-note">
-              <ea-icon-shield
-                class="privacy-note__icon"
-                aria-hidden="true" />
-              <span>
+              <span class="privacy-note__heading">
+                <ea-icon-lock
+                  class="privacy-note__icon"
+                  aria-hidden="true" />
                 <strong>Privacy</strong>
+              </span>
+              <span>
                 Your details stay within the club and are only used to keep in touch with
                 you. We never pass them to anyone else, and never use them for marketing.
               </span>
@@ -372,11 +371,22 @@
         @case ('danger') {
           <ea-card [fullWidth]="true">
             <h3 slot="header">Delete account</h3>
+            <h4 class="warning-heading">
+              <ea-icon-alert-triangle
+                class="warning-heading__icon"
+                aria-hidden="true" />
+              Warning
+            </h4>
             <p class="card-desc">
-              Permanently delete your account and profile. This cannot be undone.
+              Deleting your account removes your profile and personal details from our
+              database. This is done immediately and cannot be undone. Note that this does
+              not cover your listing on the club's member page, which remains public
+              information by default. If you would like that removed as well, please reach
+              out to an LCC admin, either at the club or via email.
             </p>
             <div class="actions">
               <ea-button
+                class="danger-button"
                 size="sm"
                 variant="danger"
                 [loading]="deleting()"
@@ -404,6 +414,7 @@
       Cancel
     </ea-button>
     <ea-button
+      class="danger-button"
       size="sm"
       variant="danger"
       [loading]="deleting()"
