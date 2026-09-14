@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
+import { KeepFocusDirective } from '@app/directives/keep-focus.directive';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
 import { ClerkService } from '@app/services/clerk.service';
 import {
@@ -21,6 +22,7 @@ import {
     ButtonComponent,
     CodeInputComponent,
     InputComponent,
+    KeepFocusDirective,
     NewPasswordFieldsComponent,
     ReactiveFormsModule,
   ],

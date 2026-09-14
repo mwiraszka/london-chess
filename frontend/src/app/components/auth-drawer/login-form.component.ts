@@ -18,6 +18,7 @@ import {
 import { ReactiveFormsModule } from '@angular/forms';
 
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
+import { KeepFocusDirective } from '@app/directives/keep-focus.directive';
 import { LoginStep } from '@app/models';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
 import { ClerkService } from '@app/services/clerk.service';
@@ -32,6 +33,7 @@ import { createNewPasswordGroup } from '@app/utils';
     ButtonComponent,
     CodeInputComponent,
     InputComponent,
+    KeepFocusDirective,
     NewPasswordFieldsComponent,
     ReactiveFormsModule,
   ],
