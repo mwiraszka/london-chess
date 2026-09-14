@@ -5,6 +5,7 @@ import {
   CardComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
+  ShieldIconComponent,
   SkeletonComponent,
   TrophyIconComponent,
   UserIconComponent,
@@ -42,6 +43,7 @@ import { isCityChampion } from '@app/utils';
     PageHeaderComponent,
     RouterLink,
     ShieldCheckIconComponent,
+    ShieldIconComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -59,6 +61,7 @@ export class MemberProfilePageComponent implements OnInit {
   public viewModel$?: Observable<{
     member: Member | null;
     isAdminViewer: boolean;
+    isOwnProfile: boolean;
     hasError: boolean;
   }>;
 
@@ -77,11 +80,15 @@ export class MemberProfilePageComponent implements OnInit {
         combineLatest([
           this.store.select(MembersSelectors.selectMemberById(memberId)),
           this.store.select(AuthSelectors.selectIsAdmin),
+          this.store.select(AuthSelectors.selectUser),
           this.store.select(MembersSelectors.selectCallState),
         ]).pipe(
-          map(([member, isAdminViewer, callState]) => ({
+          map(([member, isAdminViewer, user, callState]) => ({
             member: member ?? null,
             isAdminViewer,
+            isOwnProfile:
+              !!member?.email &&
+              member.email.toLowerCase() === user?.email?.toLowerCase(),
             hasError: !member && callState.status === 'error',
           })),
         ),

@@ -7,6 +7,7 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
+import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { initialState } from '@app/store/members/members.reducer';
 import { query, queryAll, queryTextContent } from '@app/utils';
@@ -29,7 +30,7 @@ describe('MemberProfilePageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [MemberProfilePageComponent],
       providers: [
-        provideMockStore(),
+        provideMockStore({ initialState: { authState: authInitialState } }),
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ id: member.id })) },
@@ -103,9 +104,28 @@ describe('MemberProfilePageComponent', () => {
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.details-card')).toBeTruthy();
-    expect(queryTextContent(fixture.debugElement, '.details-card dd a')).toBe(
-      member.email,
-    );
+    expect(queryTextContent(fixture.debugElement, '.details-card dd')).toBe(member.email);
+    expect(query(fixture.debugElement, '.details-card .privacy-note')).toBeTruthy();
+  });
+
+  it('should only offer the account page link on your own profile', () => {
+    store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+    store.refreshState();
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, '.details-card .privacy-note a')).toBeFalsy();
+
+    store.overrideSelector(AuthSelectors.selectUser, {
+      id: 'user_1',
+      firstName: member.firstName,
+      lastName: member.lastName,
+      email: member.email,
+      isAdmin: true,
+    });
+    store.refreshState();
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, '.details-card .privacy-note a')).toBeTruthy();
   });
 
   it('should render the rating progression placeholder', () => {

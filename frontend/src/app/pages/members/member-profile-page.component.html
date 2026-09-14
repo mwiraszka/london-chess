@@ -124,17 +124,7 @@
           <dl class="details">
             <div class="detail">
               <dt>Email</dt>
-              <dd>
-                @if (member.email) {
-                  <a
-                    class="lcc-link"
-                    [href]="'mailto:' + member.email">
-                    {{ member.email }}
-                  </a>
-                } @else {
-                  <span>Not on file</span>
-                }
-              </dd>
+              <dd>{{ member.email || 'Not on file' }}</dd>
             </div>
             <div class="detail">
               <dt>Phone number</dt>
@@ -155,6 +145,24 @@
               </dd>
             </div>
           </dl>
+
+          <p class="privacy-note">
+            <ea-icon-shield
+              class="privacy-note__icon"
+              aria-hidden="true" />
+            <span>
+              <strong>Privacy</strong>
+              These details are only visible to you and to club admins, and never appear
+              on the public member list.
+              @if (vm.isOwnProfile) {
+                <a
+                  class="lcc-link"
+                  routerLink="/account/profile">
+                  Request a change from your account page.
+                </a>
+              }
+            </span>
+          </p>
         </ea-card>
       }
     </div>

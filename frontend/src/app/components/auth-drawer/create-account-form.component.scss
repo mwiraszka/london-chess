@@ -35,26 +35,6 @@
   }
 }
 
-.privacy-note {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  font-size: 14px;
-  line-height: 20px;
-  text-align: start;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-muted);
-  color: var(--color-text-secondary);
-}
-
-.privacy-note__icon {
-  flex-shrink: 0;
-  font-size: 16px;
-  color: var(--color-success-default);
-}
-
 .fields-divider {
   display: block;
   // Composes with the 16px form gap either side for a 32px visual break
