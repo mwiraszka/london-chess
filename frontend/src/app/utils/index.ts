@@ -35,6 +35,7 @@ export { formatBytes } from './file/format-bytes.util';
 export { parseCsv } from './file/parse-csv.util';
 
 export { createEmailControl } from './forms/create-email-control.util';
+export { createMemberAccountGroup } from './forms/create-member-account-group.util';
 export { createMemberDetailsControls } from './forms/create-member-details-controls.util';
 export { createNewPasswordGroup } from './forms/create-new-password-group.util';
 export { createVerificationCodeControl } from './forms/create-verification-code-control.util';
@@ -58,4 +59,5 @@ export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';
 export { isGameScore } from './type-guards/is-game-score.util';
+export { isMemberNumber } from './type-guards/is-member-number.util';
 export { isString } from './type-guards/is-string.util';

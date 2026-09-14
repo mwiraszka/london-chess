@@ -16,13 +16,14 @@ import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { Member } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { MetaAndTitleService } from '@app/services';
+import { MetaAndTitleService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { isCityChampion } from '@app/utils';
@@ -56,6 +57,8 @@ export class MemberProfilePageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(Store);
 
+  private readonly userRecord$ = toObservable(inject(UserService).user);
+
   protected readonly pageIcon = UserIconComponent;
 
   public viewModel$?: Observable<{
@@ -70,25 +73,23 @@ export class MemberProfilePageComponent implements OnInit {
     this.metaAndTitleService.updateDescription('Profile of a London Chess Club member.');
 
     this.viewModel$ = this.route.paramMap.pipe(
-      map(params => params.get('id')),
-      tap(memberId => {
-        if (memberId) {
-          this.store.dispatch(MembersActions.fetchMemberRequested({ memberId }));
-        }
-      }),
-      switchMap(memberId =>
+      map(params => Number(params.get('number'))),
+      tap(memberNumber =>
+        this.store.dispatch(
+          MembersActions.fetchMemberByNumberRequested({ memberNumber }),
+        ),
+      ),
+      switchMap(memberNumber =>
         combineLatest([
-          this.store.select(MembersSelectors.selectMemberById(memberId)),
+          this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
           this.store.select(AuthSelectors.selectIsAdmin),
-          this.store.select(AuthSelectors.selectUser),
+          this.userRecord$,
           this.store.select(MembersSelectors.selectCallState),
         ]).pipe(
-          map(([member, isAdminViewer, user, callState]) => ({
-            member: member ?? null,
+          map(([member, isAdminViewer, userRecord, callState]) => ({
+            member,
             isAdminViewer,
-            isOwnProfile:
-              !!member?.email &&
-              member.email.toLowerCase() === user?.email?.toLowerCase(),
+            isOwnProfile: !!member && userRecord?.memberNumber === member.number,
             hasError: !member && callState.status === 'error',
           })),
         ),

@@ -50,26 +50,34 @@
                     <ea-icon-trophy class="city-champion-icon" />
                   </a>
                 }
-                <lcc-member-link [memberId]="member.id">
-                  <span [innerHTML]="member.firstName | highlight: options.search"></span>
-                </lcc-member-link>
+                <ng-container
+                  [ngTemplateOutlet]="memberName"
+                  [ngTemplateOutletContext]="{
+                    number: member.number,
+                    text: member.firstName,
+                  }">
+                </ng-container>
               </td>
               <td class="last-name lcc-truncate">
-                <lcc-member-link [memberId]="member.id">
-                  <span [innerHTML]="member.lastName | highlight: options.search"></span>
-                </lcc-member-link>
+                <ng-container
+                  [ngTemplateOutlet]="memberName"
+                  [ngTemplateOutletContext]="{
+                    number: member.number,
+                    text: member.lastName,
+                  }">
+                </ng-container>
               </td>
             } @else {
               <td
                 class="name lcc-truncate"
                 [tooltip]="member.isActive ? null : 'Inactive member'">
-                <lcc-member-link [memberId]="member.id">
-                  <span
-                    [innerHTML]="
-                      member.firstName + ' ' + member.lastName | highlight: options.search
-                    ">
-                  </span>
-                </lcc-member-link>
+                <ng-container
+                  [ngTemplateOutlet]="memberName"
+                  [ngTemplateOutletContext]="{
+                    number: member.number,
+                    text: member.firstName + ' ' + member.lastName,
+                  }">
+                </ng-container>
                 @if (isCityChampion(member)) {
                   <a
                     class="city-champion-link after-name"
@@ -116,3 +124,18 @@
 @if (isAdmin && isSafeMode) {
   <lcc-safe-mode-notice entity="members'"></lcc-safe-mode-notice>
 }
+
+<ng-template
+  #memberName
+  let-number="number"
+  let-text="text">
+  @if (number !== null) {
+    <a
+      class="lcc-link"
+      [routerLink]="['/members', number]"
+      [innerHTML]="text | highlight: options.search">
+    </a>
+  } @else {
+    <span [innerHTML]="text | highlight: options.search"></span>
+  }
+</ng-template>

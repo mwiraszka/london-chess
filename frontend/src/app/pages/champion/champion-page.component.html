@@ -10,7 +10,7 @@
       compete for the title of <b>London Chess Champion</b>.
     </p>
     <p>
-      <lcc-member-link name="Peter Murray"><span>Peter Murray</span></lcc-member-link>
+      <lcc-member-link name="Peter Murray" />
       won the inaugural tournament in 1967, and defended his title the following year.
       Since then, the trophy has changed hands over 20 times, with 18 different players
       crowned champion to date.
@@ -19,21 +19,19 @@
       The 2025 London Chess Championship took place between September and December 2025.
       Group A1 ended in a three-way tie for first place, resulting in a tiebreak playoff
       between
-      <lcc-member-link name="Mike Harris"><span>Mike Harris</span></lcc-member-link>
+      <lcc-member-link name="Mike Harris" />
       (1917),
-      <lcc-member-link name="Rene Bartar"><span>Rene Bartar</span></lcc-member-link>
+      <lcc-member-link name="Rene Bartar" />
       (2027) and defending champion
-      <lcc-member-link name="Serhii Ivanchuk"
-        ><span>Serhii Ivanchuk</span></lcc-member-link
-      >
+      <lcc-member-link name="Serhii Ivanchuk" />
       (2216). Ultimately it was Bartar who came out ahead to qualify for the final match
       against the winner from Group A2,
-      <lcc-member-link name="Emilio Ramirez"><span>Emilio Ramirez</span></lcc-member-link>
+      <lcc-member-link name="Emilio Ramirez" />
       (2107).
     </p>
     <p>
       <b>
-        <lcc-member-link name="Rene Bartar"><span>Rene Bartar</span></lcc-member-link>
+        <lcc-member-link name="Rene Bartar" />
         (2027)
       </b>
       went on to win the match convincingly with two wins and a draw, and an impressive
@@ -72,9 +70,7 @@
               }
               @for (winner of championship.winners; track winner.name; let last = $last) {
                 <span class="winner-name">
-                  <lcc-member-link [name]="winner.name">
-                    <span>{{ winner.name }}</span>
-                  </lcc-member-link>
+                  <lcc-member-link [name]="winner.name" />
                   @if (winner.peakRating) {
                     <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                   }
@@ -142,9 +138,7 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      <lcc-member-link [name]="winner.name">
-                        <span>{{ winner.name }}</span>
-                      </lcc-member-link>
+                      <lcc-member-link [name]="winner.name" />
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                       }
@@ -206,9 +200,7 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      <lcc-member-link [name]="winner.name">
-                        <span>{{ winner.name }}</span>
-                      </lcc-member-link>
+                      <lcc-member-link [name]="winner.name" />
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">({{ winner.peakRating }})</span>
                       }
@@ -270,9 +262,7 @@
                     let last = $last
                   ) {
                     <span class="winner-name">
-                      <lcc-member-link [name]="winner.name">
-                        <span>{{ winner.name }}</span>
-                      </lcc-member-link>
+                      <lcc-member-link [name]="winner.name" />
                       @if (winner.peakRating) {
                         <span class="winner-peak-rating">({{ winner.peakRating }}*)</span>
                       }

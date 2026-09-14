@@ -2,6 +2,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
+import { pick } from 'lodash';
 import moment from 'moment-timezone';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
@@ -12,12 +13,14 @@ import {
   mergeMap,
   switchMap,
   take,
+  tap,
 } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 
-import { Member } from '@app/models';
-import { MembersApiService } from '@app/services';
+import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { EditableMember, Member } from '@app/models';
+import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
 import { AppActions } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
@@ -37,6 +40,20 @@ export class MembersEffects {
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly getNewPeakRating = inject(GET_NEW_PEAK_RATING);
+  private readonly memberProfiles = inject(MemberProfilesService);
+  private readonly userService = inject(UserService);
+
+  // A saved member may have a new name, and names shown by member number come
+  // from the profiles
+  reloadMemberProfiles$ = createEffect(
+    () => {
+      return this.actions$.pipe(
+        ofType(MembersActions.updateMemberSucceeded, AppActions.refreshAppRequested),
+        tap(() => void this.memberProfiles.reload()),
+      );
+    },
+    { dispatch: false },
+  );
 
   fetchAllMembers$ = createEffect(() => {
     return this.actions$.pipe(
@@ -132,15 +149,29 @@ export class MembersEffects {
   fetchMember$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(MembersActions.fetchMemberRequested),
-      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
-      switchMap(([{ memberId }, isAdmin]) => {
-        return this.membersApiService.getMember(memberId, isAdmin).pipe(
+      switchMap(({ memberId }) =>
+        this.membersApiService.getMember(memberId).pipe(
           map(response => MembersActions.fetchMemberSucceeded({ member: response.data })),
           catchError(error =>
             of(MembersActions.fetchMemberFailed({ error: this.parseError(error) })),
           ),
-        );
-      }),
+        ),
+      ),
+    );
+  });
+
+  fetchMemberByNumber$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(MembersActions.fetchMemberByNumberRequested),
+      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
+      switchMap(([{ memberNumber }, isAdmin]) =>
+        this.membersApiService.getMemberByNumber(memberNumber, isAdmin).pipe(
+          map(response => MembersActions.fetchMemberSucceeded({ member: response.data })),
+          catchError(error =>
+            of(MembersActions.fetchMemberFailed({ error: this.parseError(error) })),
+          ),
+        ),
+      ),
     );
   });
 
@@ -152,24 +183,21 @@ export class MembersEffects {
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
       ]),
       concatMap(([, formData, user]) => {
-        const member: Member = {
+        const member: EditableMember = {
           ...formData,
-          id: '',
           peakRating: formData.rating,
           modificationInfo: {
             createdBy: `${user.firstName} ${user.lastName}`,
+            createdByNumber: this.userService.memberNumber(),
             dateCreated: moment().toISOString(),
             lastEditedBy: `${user.firstName} ${user.lastName}`,
+            lastEditedByNumber: this.userService.memberNumber(),
             dateLastEdited: moment().toISOString(),
           },
         };
 
         return this.membersApiService.addMember(member).pipe(
-          map(response =>
-            MembersActions.addMemberSucceeded({
-              member: { ...member, id: response.data },
-            }),
-          ),
+          map(response => MembersActions.addMemberSucceeded({ member: response.data })),
           catchError(error =>
             of(MembersActions.addMemberFailed({ error: this.parseError(error) })),
           ),
@@ -189,22 +217,22 @@ export class MembersEffects {
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
       ]),
       concatMap(([, member, formData, user]) => {
-        const updatedMember: Member = {
-          ...member,
+        const editableMember: EditableMember = {
           ...formData,
           peakRating: this.getNewPeakRating(formData.rating, formData.peakRating),
           modificationInfo: {
             ...member.modificationInfo,
             lastEditedBy: `${user.firstName} ${user.lastName}`,
+            lastEditedByNumber: this.userService.memberNumber(),
             dateLastEdited: moment().toISOString(),
           },
         };
 
-        return this.membersApiService.updateMember(updatedMember).pipe(
-          filter(response => response.data === updatedMember.id),
+        return this.membersApiService.updateMember(member.id, editableMember).pipe(
+          filter(response => response.data === member.id),
           map(() =>
             MembersActions.updateMemberSucceeded({
-              member: updatedMember,
+              member: { ...member, ...editableMember },
               originalMemberName: `${member.firstName} ${member.lastName}`,
             }),
           ),
@@ -213,6 +241,24 @@ export class MembersEffects {
           ),
         );
       }),
+    );
+  });
+
+  createMemberAccount$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(MembersActions.createMemberAccountRequested),
+      concatMap(({ memberId, details }) =>
+        this.membersApiService.createMemberAccount(memberId, details).pipe(
+          map(response =>
+            MembersActions.createMemberAccountSucceeded({ member: response.data }),
+          ),
+          catchError(error =>
+            of(
+              MembersActions.createMemberAccountFailed({ error: this.parseError(error) }),
+            ),
+          ),
+        ),
+      ),
     );
   });
 
@@ -278,13 +324,20 @@ export class MembersEffects {
               modificationInfo: {
                 ...member.modificationInfo,
                 lastEditedBy: `${user.firstName} ${user.lastName}`,
+                lastEditedByNumber: this.userService.memberNumber(),
                 dateLastEdited: moment().toISOString(),
               },
             };
           },
         );
 
-        return this.membersApiService.updateMembers(updatedMembers).pipe(
+        const editableMembers = updatedMembers.map(member => ({
+          id: member.id,
+          ...pick(member, MEMBER_FORM_DATA_PROPERTIES),
+          modificationInfo: member.modificationInfo,
+        }));
+
+        return this.membersApiService.updateMembers(editableMembers).pipe(
           map(() =>
             MembersActions.updateMemberRatingsSucceeded({ members: updatedMembers }),
           ),

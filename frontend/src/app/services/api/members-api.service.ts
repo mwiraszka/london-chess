@@ -8,8 +8,10 @@ import {
   ApiScope,
   DataPaginationOptions,
   DbCollection,
+  EditableMember,
   Id,
   Member,
+  MemberAccountDetails,
   PaginatedItems,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
@@ -50,32 +52,53 @@ export class MembersApiService {
     );
   }
 
-  public getMember(id: Id, isAdmin: boolean): Observable<ApiResponse<Member>> {
-    const scope: ApiScope = isAdmin ? 'admin' : 'public';
-
+  public getMember(id: Id): Observable<ApiResponse<Member>> {
     return this.http.get<ApiResponse<Member>>(
-      `${this.API_BASE_URL}/${scope}/${this.COLLECTION}/${id}`,
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}`,
     );
   }
 
-  public addMember(member: Member): Observable<ApiResponse<Id>> {
-    return this.http.post<ApiResponse<Id>>(
+  public getMemberByNumber(
+    number: number,
+    isAdmin: boolean,
+  ): Observable<ApiResponse<Member>> {
+    const url = isAdmin
+      ? `${this.API_BASE_URL}/admin/${this.COLLECTION}/number/${number}`
+      : `${this.API_BASE_URL}/public/${this.COLLECTION}/${number}`;
+
+    return this.http.get<ApiResponse<Member>>(url);
+  }
+
+  public addMember(member: EditableMember): Observable<ApiResponse<Member>> {
+    return this.http.post<ApiResponse<Member>>(
       `${this.API_BASE_URL}/admin/${this.COLLECTION}`,
       member,
     );
   }
 
-  public updateMembers(members: Member[]): Observable<ApiResponse<Member[]>> {
-    return this.http.put<ApiResponse<Member[]>>(
+  public updateMembers(
+    members: Array<EditableMember & { id: Id }>,
+  ): Observable<ApiResponse<Id[]>> {
+    return this.http.put<ApiResponse<Id[]>>(
       `${this.API_BASE_URL}/admin/${this.COLLECTION}`,
       members,
     );
   }
 
-  public updateMember(member: Member): Observable<ApiResponse<Id>> {
+  public updateMember(id: Id, member: EditableMember): Observable<ApiResponse<Id>> {
     return this.http.put<ApiResponse<Id>>(
-      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${member.id}`,
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}`,
       member,
+    );
+  }
+
+  public createMemberAccount(
+    id: Id,
+    details: MemberAccountDetails,
+  ): Observable<ApiResponse<Member>> {
+    return this.http.post<ApiResponse<Member>>(
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}/account`,
+      details,
     );
   }
 

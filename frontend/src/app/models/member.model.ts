@@ -2,11 +2,15 @@ import { FormControl } from '@angular/forms';
 
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 
-import { Id, IsoDate } from './core.model';
+import { Id, IsoDate, Url } from './core.model';
 import { ModificationInfo } from './modification-info.model';
+
+export type AccountStatus = 'invited' | 'active';
 
 export interface Member {
   id: Id;
+  // Null for members without an active account, who have no profile page
+  number: number | null;
   firstName: string;
   lastName: string;
   rating: string;
@@ -21,6 +25,30 @@ export interface Member {
   isAdmin?: boolean;
   dateJoined: IsoDate;
   modificationInfo: ModificationInfo;
+  avatarUrl: Url | null;
+  // Only admins receive a member's account status
+  accountStatus?: AccountStatus | 'none';
+}
+
+// The number, avatar and account belong to the server, so admins never write them
+export type EditableMember = MemberFormData & Pick<Member, 'modificationInfo'>;
+
+export interface MemberProfile {
+  number: number;
+  firstName: string;
+  lastName: string;
+  avatarUrl: Url | null;
+}
+
+export interface MemberAccountDetails {
+  firstName: string;
+  lastName: string;
+  email: string;
+  city: string;
+  yearOfBirth: string;
+  phoneNumber: string;
+  lichessUsername: string;
+  chessComUsername: string;
 }
 
 export interface MemberDetailsFormData {
@@ -35,6 +63,10 @@ export interface MemberDetailsFormData {
 
 export type MemberDetailsFormGroup = {
   [Property in keyof MemberDetailsFormData]: FormControl<MemberDetailsFormData[Property]>;
+};
+
+export type MemberAccountFormGroup = MemberDetailsFormGroup & {
+  email: FormControl<string>;
 };
 
 export type MemberFormData = Pick<Member, (typeof MEMBER_FORM_DATA_PROPERTIES)[number]>;

@@ -36,7 +36,9 @@ export class UserService {
   readonly fullSizeAvatarUrl = computed((): string | undefined => {
     const user = this._user();
     if (user?.avatarOriginalUrl) {
-      const cacheBuster = new Date(user.lastModifiedDate).getTime();
+      const cacheBuster = user.avatarUpdatedAt
+        ? new Date(user.avatarUpdatedAt).getTime()
+        : 0;
       return `${environment.lccApiBaseUrl}/users/${user.id}/avatar?t=${cacheBuster}`;
     }
     return undefined;
@@ -52,6 +54,8 @@ export class UserService {
   });
 
   readonly avatarCropState = computed(() => this._user()?.avatarCropState ?? null);
+
+  readonly memberNumber = computed(() => this._user()?.memberNumber ?? null);
 
   readonly hasAvatar = computed(() => !!this.avatarUrl());
 

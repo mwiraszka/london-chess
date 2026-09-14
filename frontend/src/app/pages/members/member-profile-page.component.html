@@ -13,7 +13,8 @@
           <ea-avatar
             size="lg"
             [alt]="fullName(member) + '\'s avatar'"
-            [initials]="initials(member)" />
+            [initials]="initials(member)"
+            [src]="member.avatarUrl ?? undefined" />
           <div class="identity-text">
             <h3 class="member-name">
               <span>{{ fullName(member) }}</span>

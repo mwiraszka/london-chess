@@ -1,67 +1,53 @@
-import { Store } from '@ngrx/store';
-
-import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   inject,
   input,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { Id } from '@app/models';
-import { MembersSelectors } from '@app/store/members';
+import { MemberProfilesService } from '@app/services/member-profiles.service';
 
 /**
- * Wraps a member's name with a link to their profile page. Pass `memberId`
- * when known; otherwise pass `name` ("First Last") and the member is resolved
- * from the loaded members, falling back to plain text when no match exists.
+ * Shows a member's current name, linked to their profile page, for a member
+ * referenced by number. Falls back to the given name, unlinked, when there is no
+ * number or the member has no profile.
  */
 @Component({
   selector: 'lcc-member-link',
   template: `
-    <ng-template #content>
-      <ng-content></ng-content>
-    </ng-template>
-
-    @if (profileId(); as id) {
+    @let profile = memberProfile();
+    @if (profile) {
       <a
         class="lcc-link"
-        [routerLink]="['/members', id]">
-        <ng-template [ngTemplateOutlet]="content"></ng-template>
+        [routerLink]="['/members', profile.number]">
+        {{ displayName() }}
       </a>
     } @else {
-      <ng-template [ngTemplateOutlet]="content"></ng-template>
+      {{ displayName() }}
     }
   `,
-  imports: [NgTemplateOutlet, RouterLink],
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MemberLinkComponent {
-  public readonly memberId = input<Id | null>(null);
-  public readonly name = input<string | null>(null);
+export class MemberLinkComponent implements OnInit {
+  public readonly memberNumber = input<number | null>(null);
+  public readonly name = input.required<string>();
 
-  private readonly store = inject(Store);
+  private readonly memberProfiles = inject(MemberProfilesService);
 
-  private readonly allMembers = this.store.selectSignal(
-    MembersSelectors.selectAllMembers,
+  protected readonly memberProfile = computed(() =>
+    this.memberProfiles.profileFor(this.memberNumber()),
+  );
+  protected readonly displayName = computed(() =>
+    this.memberProfiles.nameFor(this.memberNumber(), this.name()),
   );
 
-  public readonly profileId = computed<Id | null>(() => {
-    const id = this.memberId();
-    if (id) {
-      return id;
+  public ngOnInit(): void {
+    if (this.memberNumber() !== null) {
+      void this.memberProfiles.load();
     }
-
-    const name = this.name()?.trim().toLowerCase();
-    if (!name) {
-      return null;
-    }
-    return (
-      this.allMembers().find(
-        member => `${member.firstName} ${member.lastName}`.trim().toLowerCase() === name,
-      )?.id ?? null
-    );
-  });
+  }
 }

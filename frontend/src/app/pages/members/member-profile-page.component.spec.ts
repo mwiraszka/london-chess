@@ -1,11 +1,13 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { MetaAndTitleService } from '@app/services';
+import { UserRecord } from '@app/models';
+import { MetaAndTitleService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -25,20 +27,26 @@ describe('MemberProfilePageComponent', () => {
     isActive: true,
     isAdmin: false,
   };
+  const userRecord = signal<UserRecord | null>(null);
 
   beforeEach(async () => {
+    userRecord.set(null);
+
     await TestBed.configureTestingModule({
       imports: [MemberProfilePageComponent],
       providers: [
         provideMockStore({ initialState: { authState: authInitialState } }),
         {
           provide: ActivatedRoute,
-          useValue: { paramMap: of(convertToParamMap({ id: member.id })) },
+          useValue: {
+            paramMap: of(convertToParamMap({ number: String(member.number) })),
+          },
         },
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
+        { provide: UserService, useValue: { user: userRecord.asReadonly() } },
       ],
     }).compileComponents();
 
@@ -57,9 +65,9 @@ describe('MemberProfilePageComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should request the member on init', () => {
+  it('should request the member by number on init', () => {
     expect(dispatchSpy).toHaveBeenCalledWith(
-      MembersActions.fetchMemberRequested({ memberId: member.id }),
+      MembersActions.fetchMemberByNumberRequested({ memberNumber: 0 }),
     );
   });
 
@@ -115,14 +123,20 @@ describe('MemberProfilePageComponent', () => {
 
     expect(query(fixture.debugElement, '.details-card .privacy-note a')).toBeFalsy();
 
-    store.overrideSelector(AuthSelectors.selectUser, {
+    userRecord.set({
       id: 'user_1',
+      memberNumber: member.number,
       firstName: member.firstName,
       lastName: member.lastName,
       email: member.email,
       isAdmin: true,
+      clerkImageUrl: null,
+      avatarUrl: null,
+      avatarOriginalUrl: null,
+      avatarCropState: null,
+      avatarUpdatedAt: null,
     });
-    store.refreshState();
+    TestBed.tick();
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.details-card .privacy-note a')).toBeTruthy();

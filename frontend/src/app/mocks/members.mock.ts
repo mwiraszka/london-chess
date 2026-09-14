@@ -7,6 +7,7 @@ import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';
 export const MOCK_MEMBERS: Member[] = [
   {
     id: 'a1b2c3d4e5f6a7b8',
+    number: 0,
     firstName: 'Magnus',
     lastName: 'Carlsen',
     rating: '2850',
@@ -20,9 +21,12 @@ export const MOCK_MEMBERS: Member[] = [
     isActive: true,
     dateJoined: moment('2018-05-10').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
+    avatarUrl: null,
+    accountStatus: 'active',
   },
   {
     id: 'b2c3d4e5f6a7b8c9',
+    number: null,
     firstName: 'Hikaru',
     lastName: 'Nakamura',
     rating: '2775',
@@ -36,9 +40,12 @@ export const MOCK_MEMBERS: Member[] = [
     isActive: true,
     dateJoined: moment('2019-02-15').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[1],
+    avatarUrl: null,
+    accountStatus: 'invited',
   },
   {
     id: 'c3d4e5f6a7b8c9d0',
+    number: null,
     firstName: 'Judit',
     lastName: 'Polgar',
     rating: '2735',
@@ -52,9 +59,12 @@ export const MOCK_MEMBERS: Member[] = [
     isActive: false,
     dateJoined: moment('2020-07-20').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[2],
+    avatarUrl: null,
+    accountStatus: 'none',
   },
   {
     id: 'd4e5f6a7b8c9d0e1',
+    number: null,
     firstName: 'Billy',
     lastName: 'McChesserton',
     rating: '900/5',
@@ -68,9 +78,12 @@ export const MOCK_MEMBERS: Member[] = [
     isActive: true,
     dateJoined: moment('2021-09-12').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[3],
+    avatarUrl: null,
+    accountStatus: 'none',
   },
   {
     id: 'e5f6a7b8c9d0e1f2',
+    number: null,
     firstName: 'Ding',
     lastName: 'Liren',
     rating: '2810',
@@ -84,5 +97,7 @@ export const MOCK_MEMBERS: Member[] = [
     isActive: false,
     dateJoined: moment('2022-03-25').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[4],
+    avatarUrl: null,
+    accountStatus: 'none',
   },
 ];

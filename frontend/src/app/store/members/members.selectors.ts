@@ -55,6 +55,12 @@ export const selectMemberById = (id: Id | null) =>
     allMembers => allMembers.find(member => member.id === id) ?? null,
   );
 
+export const selectMemberByNumber = (number: number) =>
+  createSelector(
+    selectAllMembers,
+    allMembers => allMembers.find(member => member.number === number) ?? null,
+  );
+
 export const selectMemberFormDataById = (id: Id | null) =>
   createSelector(
     selectMembersState,

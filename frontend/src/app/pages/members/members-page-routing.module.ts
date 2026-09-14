@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { collectionIdGuard } from '@app/guards/collection-id.guard';
+import { memberNumberGuard } from '@app/guards/member-number.guard';
 
 import { MembersPageComponent } from './members-page.component';
 
@@ -11,8 +11,8 @@ const routes: Routes = [
     component: MembersPageComponent,
   },
   {
-    path: ':id',
-    canActivate: [collectionIdGuard('id')],
+    path: ':number',
+    canActivate: [memberNumberGuard('number')],
     loadComponent: () =>
       import('./member-profile-page.component').then(c => c.MemberProfilePageComponent),
   },

@@ -1,3 +1,5 @@
+import { pick } from 'lodash';
+
 import { HttpParams } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -5,12 +7,15 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   ApiResponse,
   DataPaginationOptions,
+  EditableMember,
   Id,
   Member,
+  MemberAccountDetails,
   PaginatedItems,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
@@ -25,6 +30,10 @@ describe('MembersApiService', () => {
 
   const apiBaseUrl = `${environment.lccApiBaseUrl}/admin/members`;
   const mockMember = MOCK_MEMBERS[0];
+  const editableMember: EditableMember = {
+    ...pick(mockMember, MEMBER_FORM_DATA_PROPERTIES),
+    modificationInfo: mockMember.modificationInfo,
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -118,7 +127,7 @@ describe('MembersApiService', () => {
         data: mockMember,
       };
 
-      service.getMember(mockMember.id, true).subscribe(response => {
+      service.getMember(mockMember.id).subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 
@@ -128,20 +137,43 @@ describe('MembersApiService', () => {
     });
   });
 
+  describe('getMemberByNumber', () => {
+    it('should get member by number from the admin endpoint for admins', () => {
+      const mockResponse: ApiResponse<Member> = { data: mockMember };
+
+      service.getMemberByNumber(0, true).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${apiBaseUrl}/number/0`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
+    });
+
+    it('should get member by number from the public endpoint for everyone else', () => {
+      const mockResponse: ApiResponse<Member> = { data: mockMember };
+
+      service.getMemberByNumber(0, false).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${environment.lccApiBaseUrl}/public/members/0`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
+    });
+  });
+
   describe('addMember', () => {
     it('should add new member', () => {
-      const newMember: Member = { ...mockMember, id: '' };
-      const mockResponse: ApiResponse<Id> = {
-        data: mockMember.id,
-      };
+      const mockResponse: ApiResponse<Member> = { data: mockMember };
 
-      service.addMember(newMember).subscribe(response => {
+      service.addMember(editableMember).subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 
       const req = httpMock.expectOne(apiBaseUrl);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(newMember);
+      expect(req.request.body).toEqual(editableMember);
       req.flush(mockResponse);
     });
   });
@@ -152,13 +184,40 @@ describe('MembersApiService', () => {
         data: mockMember.id,
       };
 
-      service.updateMember(mockMember).subscribe(response => {
+      service.updateMember(mockMember.id, editableMember).subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 
       const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}`);
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual(mockMember);
+      expect(req.request.body).toEqual(editableMember);
+      req.flush(mockResponse);
+    });
+  });
+
+  describe('createMemberAccount', () => {
+    it('should post the account details for the member', () => {
+      const details: MemberAccountDetails = {
+        firstName: mockMember.firstName,
+        lastName: mockMember.lastName,
+        email: mockMember.email,
+        city: mockMember.city,
+        yearOfBirth: mockMember.yearOfBirth,
+        phoneNumber: mockMember.phoneNumber,
+        lichessUsername: mockMember.lichessUsername,
+        chessComUsername: mockMember.chessComUsername,
+      };
+      const mockResponse: ApiResponse<Member> = {
+        data: { ...mockMember, accountStatus: 'invited' },
+      };
+
+      service.createMemberAccount(mockMember.id, details).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}/account`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(details);
       req.flush(mockResponse);
     });
   });

@@ -12,6 +12,7 @@ export interface User {
 
 export interface UserRecord {
   id: string;
+  memberNumber: number | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -20,7 +21,7 @@ export interface UserRecord {
   avatarUrl: string | null;
   avatarOriginalUrl: string | null;
   avatarCropState: AvatarEditorCropState | null;
-  lastModifiedDate: string;
+  avatarUpdatedAt: string | null;
 }
 
 export interface UserSessionRecord {

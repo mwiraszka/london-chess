@@ -40,11 +40,16 @@ export type {
 } from './image.model';
 export type { ExternalLink, InternalLink, InternalPath } from './link.model';
 export type {
+  AccountStatus,
+  EditableMember,
   Member,
+  MemberAccountDetails,
+  MemberAccountFormGroup,
   MemberDetailsFormData,
   MemberDetailsFormGroup,
   MemberFormData,
   MemberFormGroup,
+  MemberProfile,
   MemberWithNewRatings,
 } from './member.model';
 export type { ModificationInfo } from './modification-info.model';

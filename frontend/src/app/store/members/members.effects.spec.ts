@@ -4,12 +4,13 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
 import { ReplaySubject, of, throwError } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_MEMBER_FORM_DATA } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { ApiResponse, LccError, Member, PaginatedItems, User } from '@app/models';
-import { MembersApiService } from '@app/services';
+import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
 import {
@@ -59,9 +60,11 @@ describe('MembersEffects', () => {
       getAllMembers: vi.fn(),
       getFilteredMembers: vi.fn(),
       getMember: vi.fn(),
+      getMemberByNumber: vi.fn(),
       addMember: vi.fn(),
       updateMember: vi.fn(),
       updateMembers: vi.fn(),
+      createMemberAccount: vi.fn(),
       deleteMember: vi.fn(),
     };
 
@@ -103,6 +106,8 @@ describe('MembersEffects', () => {
         { provide: IS_EXPIRED, useValue: mockIsExpired },
         { provide: EXPORT_DATA_TO_CSV, useValue: mockExportDataToCsv },
         { provide: GET_NEW_PEAK_RATING, useValue: mockGetNewPeakRating },
+        { provide: MemberProfilesService, useValue: { reload: vi.fn() } },
+        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockActions(() => actions$),
         { provide: MembersApiService, useValue: membersApiServiceMock },
         provideMockStore({
@@ -363,7 +368,6 @@ describe('MembersEffects', () => {
   describe('fetchMember$', () => {
     it('should fetch a single member successfully', () =>
       withDone(done => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
         const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
         membersApiService.getMember.mockReturnValue(of(mockResponse));
 
@@ -375,23 +379,54 @@ describe('MembersEffects', () => {
           expect(action).toEqual(
             MembersActions.fetchMemberSucceeded({ member: MOCK_MEMBERS[0] }),
           );
-          expect(membersApiService.getMember).toHaveBeenCalledWith(
-            MOCK_MEMBERS[0].id,
-            false,
-          );
+          expect(membersApiService.getMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
           done();
         });
       }));
 
     it('should handle fetch member failure', () =>
       withDone(done => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
         membersApiService.getMember.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
 
         actions$.next(MembersActions.fetchMemberRequested({ memberId: 'invalid-id' }));
 
         effects.fetchMember$.subscribe(action => {
+          expect(action).toEqual(MembersActions.fetchMemberFailed({ error: mockError }));
+          done();
+        });
+      }));
+  });
+
+  describe('fetchMemberByNumber$', () => {
+    it('should fetch a member by number in the viewer scope', () =>
+      withDone(done => {
+        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+        store.refreshState();
+        const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
+        membersApiService.getMemberByNumber.mockReturnValue(of(mockResponse));
+
+        actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 0 }));
+
+        effects.fetchMemberByNumber$.subscribe(action => {
+          expect(action).toEqual(
+            MembersActions.fetchMemberSucceeded({ member: MOCK_MEMBERS[0] }),
+          );
+          expect(membersApiService.getMemberByNumber).toHaveBeenCalledWith(0, true);
+          done();
+        });
+      }));
+
+    it('should handle fetch member by number failure', () =>
+      withDone(done => {
+        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
+        store.refreshState();
+        membersApiService.getMemberByNumber.mockReturnValue(throwError(() => mockError));
+        mockParseError.mockReturnValue(mockError);
+
+        actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 999 }));
+
+        effects.fetchMemberByNumber$.subscribe(action => {
           expect(action).toEqual(MembersActions.fetchMemberFailed({ error: mockError }));
           done();
         });
@@ -406,20 +441,24 @@ describe('MembersEffects', () => {
 
     it('should add member successfully', () =>
       withDone(done => {
-        const mockAddResponse: ApiResponse<string> = { data: 'new-member-id' };
+        const mockAddResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
 
         membersApiService.addMember.mockReturnValue(of(mockAddResponse));
 
         actions$.next(MembersActions.addMemberRequested());
 
         effects.addMember$.subscribe(action => {
-          expect(action.type).toBe(MembersActions.addMemberSucceeded.type);
-          const payload = (action as ReturnType<typeof MembersActions.addMemberSucceeded>)
-            .member;
-          expect(payload.id).toBe('new-member-id');
-          expect(payload.modificationInfo.createdBy).toBe('Test User');
-          expect(payload.modificationInfo.lastEditedBy).toBe('Test User');
-          expect(membersApiService.addMember).toHaveBeenCalled();
+          expect(action).toEqual(
+            MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0] }),
+          );
+          expect(membersApiService.addMember).toHaveBeenCalledWith(
+            expect.objectContaining({
+              modificationInfo: expect.objectContaining({
+                createdBy: 'Test User',
+                lastEditedBy: 'Test User',
+              }),
+            }),
+          );
           done();
         });
       }));
@@ -464,7 +503,10 @@ describe('MembersEffects', () => {
           expect(payload.originalMemberName).toBe(
             `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
           );
-          expect(membersApiService.updateMember).toHaveBeenCalled();
+          expect(membersApiService.updateMember).toHaveBeenCalledWith(
+            memberId,
+            expect.not.objectContaining({ id: memberId }),
+          );
           done();
         });
       }));
@@ -501,6 +543,70 @@ describe('MembersEffects', () => {
           subscription.unsubscribe();
           done();
         }, 100);
+      }));
+  });
+
+  describe('createMemberAccount$', () => {
+    const { firstName, lastName, email, city, yearOfBirth, phoneNumber } =
+      MOCK_MEMBERS[2];
+    const { lichessUsername, chessComUsername } = MOCK_MEMBERS[2];
+    const details = {
+      firstName,
+      lastName,
+      email,
+      city,
+      yearOfBirth,
+      phoneNumber,
+      lichessUsername,
+      chessComUsername,
+    };
+
+    it('should send the invitation and return the invited member', () =>
+      withDone(done => {
+        const invitedMember: Member = { ...MOCK_MEMBERS[2], accountStatus: 'invited' };
+        membersApiService.createMemberAccount.mockReturnValue(
+          of({ data: invitedMember }),
+        );
+
+        actions$.next(
+          MembersActions.createMemberAccountRequested({
+            memberId: invitedMember.id,
+            details,
+          }),
+        );
+
+        effects.createMemberAccount$.subscribe(action => {
+          expect(action).toEqual(
+            MembersActions.createMemberAccountSucceeded({ member: invitedMember }),
+          );
+          expect(membersApiService.createMemberAccount).toHaveBeenCalledWith(
+            invitedMember.id,
+            details,
+          );
+          done();
+        });
+      }));
+
+    it('should handle create member account failure', () =>
+      withDone(done => {
+        membersApiService.createMemberAccount.mockReturnValue(
+          throwError(() => mockError),
+        );
+        mockParseError.mockReturnValue(mockError);
+
+        actions$.next(
+          MembersActions.createMemberAccountRequested({
+            memberId: MOCK_MEMBERS[2].id,
+            details,
+          }),
+        );
+
+        effects.createMemberAccount$.subscribe(action => {
+          expect(action).toEqual(
+            MembersActions.createMemberAccountFailed({ error: mockError }),
+          );
+          done();
+        });
       }));
   });
 
@@ -629,12 +735,8 @@ describe('MembersEffects', () => {
           { ...MOCK_MEMBERS[0], newRating: '2900', newPeakRating: '2900' },
           { ...MOCK_MEMBERS[1], newRating: '2800', newPeakRating: '2850' },
         ];
-        const updatedMembers = [
-          { ...MOCK_MEMBERS[0], rating: '2900', peakRating: '2900' },
-          { ...MOCK_MEMBERS[1], rating: '2800', peakRating: '2850' },
-        ];
-        const mockUpdateResponse: ApiResponse<Member[]> = {
-          data: updatedMembers,
+        const mockUpdateResponse: ApiResponse<string[]> = {
+          data: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
         };
 
         membersApiService.updateMembers.mockReturnValue(of(mockUpdateResponse));
@@ -651,7 +753,13 @@ describe('MembersEffects', () => {
           expect(payload.members).toHaveLength(2);
           expect(payload.members[0].rating).toBe('2900');
           expect(payload.members[1].rating).toBe('2800');
-          expect(membersApiService.updateMembers).toHaveBeenCalled();
+          expect(membersApiService.updateMembers).toHaveBeenCalledWith([
+            expect.objectContaining({ id: MOCK_MEMBERS[0].id, rating: '2900' }),
+            expect.objectContaining({ id: MOCK_MEMBERS[1].id, rating: '2800' }),
+          ]);
+          expect(membersApiService.updateMembers.mock.calls[0][0][0]).not.toHaveProperty(
+            'number',
+          );
           done();
         });
       }));
