@@ -3,7 +3,7 @@ import moment from 'moment-timezone';
 import { Injectable, signal } from '@angular/core';
 
 import { WhatsChangedRelease } from '@app/models';
-import { WHATS_CHANGED_RELEASES } from '@app/pages/whats-changed/whats-changed.generated';
+import { WHATS_CHANGED_RELEASES } from '@app/pages/behind-the-scenes/whats-changed.generated';
 import { isStorageSupported } from '@app/utils';
 
 const LAST_SEEN_STORAGE_KEY = 'whatsChangedLastSeenVersion';

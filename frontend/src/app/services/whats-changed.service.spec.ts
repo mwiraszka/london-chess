@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { WHATS_CHANGED_RELEASES } from '@app/pages/whats-changed/whats-changed.generated';
+import { WHATS_CHANGED_RELEASES } from '@app/pages/behind-the-scenes/whats-changed.generated';
 
 import { WhatsChangedService } from './whats-changed.service';
 

@@ -35,6 +35,14 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// jsdom implements no scrolling, so a component that scrolls an element into
+// view would throw rather than simply do nothing.
+Object.defineProperty(Element.prototype, 'scrollIntoView', {
+  configurable: true,
+  writable: true,
+  value: vi.fn(),
+});
+
 globalThis.fail = (reason?: string | Error): never => {
   throw reason instanceof Error ? reason : new Error(reason ?? 'fail() called');
 };

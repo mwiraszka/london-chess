@@ -1,0 +1,405 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.page-body {
+  display: grid;
+  justify-content: center;
+  gap: 0 32px;
+  grid-template-columns: 120px minmax(0, 800px);
+  // The intro takes a row of its own so the rail starts level with the first card
+  grid-template-areas:
+    '.    introTitle'
+    '.    intro'
+    '.    listTitle'
+    'rail main';
+  width: 100%;
+
+  // Only when both side columns fit does the card column centre on the page,
+  // the rail hugging its left edge; narrower screens centre the whole block
+  @include respond-to('gt-xxl') {
+    grid-template-columns: 1fr minmax(0, 800px) 1fr;
+    grid-template-areas:
+      '.    introTitle .'
+      '.    intro      .'
+      '.    listTitle  .'
+      'rail main       .';
+  }
+
+  @include respond-to('lt-md') {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'introTitle'
+      'intro'
+      'listTitle'
+      'rail'
+      'main';
+  }
+}
+
+.page-main {
+  display: flex;
+  flex-direction: column;
+  grid-area: main;
+  min-width: 0;
+}
+
+.version-nav {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-self: end;
+  align-self: start;
+  flex-direction: column;
+  gap: 4px;
+  grid-area: rail;
+  width: 120px;
+
+  // A full-height column of versions would bury the releases on a phone
+  @include respond-to('lt-md') {
+    position: static;
+    display: grid;
+    justify-self: stretch;
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+  }
+}
+
+.version-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  text-align: left;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    // The plain hover token is invisible against the light page background
+    background: var(--color-state-active);
+    color: var(--color-text-primary);
+  }
+
+  // Three columns leave little room on a narrow phone, so the chip tightens up
+  @include respond-to('lt-md') {
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+.version-nav__item--active {
+  font-weight: 600;
+  background: var(--color-state-active);
+  color: var(--color-text-primary);
+}
+
+.version-nav__icon {
+  flex-shrink: 0;
+  @include icon-size(16px);
+}
+
+// Mirrors the section headings on the City Champion page
+.section-title {
+  h3 {
+    width: 100%;
+    text-align: left;
+    color: var(--lcc-color--behindTheScenesPage-headerText);
+  }
+
+  // The LCC divider token is near-black in dark mode, so the library's own
+  // divider is what stays visible on the page background
+  .section-title__rule {
+    display: block;
+    width: 100%;
+    margin: 4px 0 8px;
+  }
+}
+
+.section-title--intro {
+  grid-area: introTitle;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.section-title--releases {
+  grid-area: listTitle;
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  grid-area: intro;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 8px;
+
+  // The ring leaves too little room for the text below this width
+  @include respond-to('gt-md') {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 32px;
+  }
+
+  .image-container {
+    flex-shrink: 0;
+  }
+
+  .text-container {
+    p {
+      margin-bottom: 16px;
+      font-size: 16px;
+      line-height: 24px;
+      color: var(--lcc-color--behindTheScenesPage-secondaryText);
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+.releases {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 8px;
+}
+
+.release-version-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-badge {
+  --ea-badge-border-width: 1px;
+  --ea-badge-border-color: var(--color-success-default);
+
+  // Centring on the line box leaves the badge looking low, since the version's
+  // capitals sit above the centre of their own line
+  position: relative;
+  top: -1px;
+}
+
+.release-header {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+
+  .release-heading {
+    min-width: 0;
+  }
+
+  .release-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0;
+    font: inherit;
+    text-align: start;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .release-chevron {
+    flex-shrink: 0;
+    @include icon-size(18px);
+
+    color: var(--lcc-color--behindTheScenesPage-secondaryText);
+    transition: transform 150ms ease;
+  }
+
+  .release-chevron--expanded {
+    transform: rotate(180deg);
+  }
+
+  .release-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    // Integer line-heights keep the section dividers below on whole-pixel
+    // offsets, so every 1px rule paints at the same crisp thickness
+    .release-version {
+      font-size: 17px;
+      line-height: 20px;
+    }
+
+    .release-date {
+      font-size: 13px;
+      line-height: 16px;
+      color: var(--lcc-color--behindTheScenesPage-secondaryText);
+    }
+  }
+
+  .release-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+
+    .external-link-icon {
+      display: inline-flex;
+      @include icon-size(13px);
+    }
+  }
+}
+
+.release-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.release-tags--collapsed {
+  margin-bottom: 0;
+}
+
+.release-section {
+  &:not(:last-child) {
+    margin-bottom: 32px;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: 0.5px;
+
+    span {
+      line-height: inherit;
+    }
+
+    .section-icon {
+      display: inline-flex;
+      @include icon-size(18px);
+
+      color: var(--lcc-color--pageHeader-icon);
+    }
+  }
+
+  .section-divider {
+    display: block;
+    margin: 4px 0 12px;
+  }
+
+  .section-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+}
+
+.page-links {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 32px;
+  margin-bottom: 8px;
+
+  .page-links__divider {
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  .page-links__grid {
+    display: grid;
+    gap: 8px 16px;
+    grid-template-columns: repeat(2, 1fr);
+
+    @include respond-to('lt-md') {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .page-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    color: inherit;
+
+    &:hover {
+      background-color: var(--color-state-hover);
+    }
+  }
+
+  .page-link__icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    @include icon-size(20px);
+
+    color: var(--lcc-color--pageHeader-icon);
+  }
+
+  .page-link__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .page-link__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 600;
+
+    .external-link-icon {
+      display: inline-flex;
+      @include icon-size(13px);
+    }
+  }
+
+  .page-link__desc {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+  }
+
+  .page-link--coffee .page-link__title {
+    align-items: flex-start;
+  }
+
+  .bmc-button {
+    // Width-driven with auto height so narrow columns scale it down without
+    // distorting it
+    width: 150px;
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 2px;
+  }
+}

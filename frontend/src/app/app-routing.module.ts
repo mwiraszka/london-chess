@@ -22,10 +22,10 @@ const routes: Routes = [
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
   {
-    path: 'whats-changed',
+    path: 'behind-the-scenes',
     loadComponent: () =>
-      import('./pages/whats-changed/whats-changed-page.component').then(
-        c => c.WhatsChangedPageComponent,
+      import('./pages/behind-the-scenes/behind-the-scenes-page.component').then(
+        c => c.BehindTheScenesPageComponent,
       ),
   },
   {

@@ -1,5 +1,5 @@
-// Regenerates src/app/pages/whats-changed/whats-changed.generated.ts from the root
-// CHANGELOG.md, keeping releases from v6.0.0 up. Runs automatically before
+// Regenerates src/app/pages/behind-the-scenes/whats-changed.generated.ts from the root
+// CHANGELOG.md, keeping releases from v5.13.0 up. Runs automatically before
 // every serve and build so the What's Changed page always matches the changelog.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -9,9 +9,22 @@ const FRONTEND_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHANGELOG_PATH = join(FRONTEND_ROOT, '..', 'CHANGELOG.md');
 const OUTPUT_PATH = join(
   FRONTEND_ROOT,
-  'src/app/pages/whats-changed/whats-changed.generated.ts',
+  'src/app/pages/behind-the-scenes/whats-changed.generated.ts',
 );
-const MIN_MAJOR_VERSION = 6;
+const MIN_VERSION = [5, 13, 0];
+
+function meetsMinVersion(version) {
+  const parts = version.slice(1).split('.').map(Number);
+  if (parts.length !== MIN_VERSION.length || parts.some(Number.isNaN)) {
+    return false;
+  }
+  for (const [i, min] of MIN_VERSION.entries()) {
+    if (parts[i] !== min) {
+      return parts[i] > min;
+    }
+  }
+  return true;
+}
 
 // The definitive set of release tags. A release carries a tag when any of its
 // changelog entries matches, so the card keeps itself in sync as entries are
@@ -19,45 +32,57 @@ const MIN_MAJOR_VERSION = 6;
 const TAG_REGISTRY = [
   {
     label: 'New features',
-    color: '#4a6fa5',
+    color: '#30553d',
     matches: release => release.added.length > 0,
   },
   {
     label: 'Styling',
-    color: '#7d6b9e',
+    color: '#583e60',
     pattern:
       /\b(styl\w*|colou?r\w*|icons?|themes?|dark mode|layout|spacing|redesign\w*|placeholders?|fonts?|badges?|dividers?)\b/i,
   },
-  { label: 'Bug fixes', color: '#b1683a', matches: release => release.fixed.length > 0 },
+  {
+    label: 'Photos',
+    color: '#5f5535',
+    pattern: /\b(photos?|images?|thumbnails?|albums?|galler\w*|avatars?)\b/i,
+  },
+  {
+    label: 'Navigation',
+    color: '#40647d',
+    pattern:
+      /\b(navigation bar|menus?|footers?|links?|linked|routes?|breadcrumbs?|page headers?)\b/i,
+  },
+  { label: 'Bug fixes', color: '#976e4e', matches: release => release.fixed.length > 0 },
   {
     label: 'Performance',
-    color: '#3d8079',
+    color: '#487a75',
     pattern:
-      /\b(performance|faster|speeds?|cach\w*|optimi[sz]\w*|duplicate|cancelled)\b/i,
+      /\b(performance|faster|speeds?|cach\w*|optimi[sz]\w*|duplicate|cancelled|prefetch\w*|poll\w*|weight|lazy)\b/i,
   },
   {
     label: 'Security',
-    color: '#a94b4b',
+    color: '#7a4849',
     pattern: /\b(update packages|encrypt\w*|security)\b/i,
   },
   {
     label: 'Accessibility',
-    color: '#a58a3d',
+    color: '#596197',
     pattern: /\b(accessib\w*|aria|screen readers?|keyboard|contrast)\b/i,
   },
   {
     label: 'Mobile',
-    color: '#a85480',
-    pattern: /\b(mobile|touch|small screens?|phones?|responsive)\b/i,
+    color: '#8e577a',
+    pattern:
+      /\b(mobile|touch|small screens?|phones?|responsive|narrow viewports?|viewports?)\b/i,
   },
-  { label: 'Admin tools', color: '#64748b', pattern: /\badmin\w*\b/i },
+  { label: 'Admin tools', color: '#797267', pattern: /\badmin\w*\b/i },
   {
     label: 'Infrastructure',
-    color: '#8a5a3b',
+    color: '#383d42',
     pattern:
       /\b(repositor\w*|storage|serverless|hosting|infrastructur\w*|migrat\w*|cloudflare|aws|cognito|databases?|api|back(?:s|ed)? up|backups?)\b/i,
   },
-  { label: 'Content', color: '#4d8a5f', pattern: /\b(wording|rewrit\w*|copy)\b/i },
+  { label: 'Content', color: '#657b4c', pattern: /\b(wording|rewrit\w*|copy)\b/i },
 ];
 
 function tagsFor(release) {
@@ -79,8 +104,7 @@ for (const block of releaseBlocks) {
   }
 
   const [, version, rawDate] = headingMatch;
-  const major = Number(version.slice(1).split('.')[0]);
-  if (Number.isNaN(major) || major < MIN_MAJOR_VERSION) {
+  if (!meetsMinVersion(version)) {
     continue;
   }
 

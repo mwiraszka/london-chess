@@ -1,0 +1,221 @@
+<lcc-page-header
+  heading="Behind the Scenes"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+<div class="page-body">
+  <div class="section-title section-title--intro">
+    <h3>Under the hood</h3>
+    <ea-divider class="section-title__rule" />
+  </div>
+
+  <nav
+    class="version-nav"
+    aria-label="Jump to a release">
+    @for (release of releases; track release.version) {
+      <button
+        type="button"
+        class="version-nav__item"
+        [class.version-nav__item--active]="isExpanded(release)"
+        (click)="onJumpToRelease(release)">
+        <ea-icon-tag
+          class="version-nav__icon"
+          aria-hidden="true" />
+        v{{ displayVersion(release) }}
+      </button>
+    }
+  </nav>
+
+  <section class="intro">
+    <div class="image-container">
+      <lcc-tech-ring />
+    </div>
+    <div class="text-container">
+      <p>
+        The London Chess Club website is built and maintained by
+        <lcc-member-link name="Michal Wiraszka">
+          <span>Michal Wiraszka</span>
+        </lcc-member-link>
+        and is entirely open source. Anyone is free to read and use the code behind it.
+      </p>
+      <p>
+        Below you'll find a list of some of the latest changes. The newest releases are
+        listed first, and updates are grouped into what is new, what has been improved and
+        what has been fixed. Every version links through to its full release notes.
+      </p>
+    </div>
+  </section>
+
+  <div class="section-title section-title--releases">
+    <h3>What's new</h3>
+    <ea-divider class="section-title__rule" />
+  </div>
+
+  <div class="page-main">
+    <div class="releases">
+      @for (release of releases; track release.version) {
+        <ea-card
+          class="release-card"
+          headerAlign="start"
+          [attr.id]="releaseId(release)"
+          [fullWidth]="true">
+          <div
+            slot="header"
+            class="release-header">
+            <h3 class="release-heading">
+              <button
+                type="button"
+                class="release-toggle"
+                [attr.aria-controls]="releaseId(release) + '-details'"
+                [attr.aria-expanded]="isExpanded(release)"
+                (click)="onToggleRelease(release)">
+                <ea-icon-chevron-down
+                  class="release-chevron"
+                  aria-hidden="true"
+                  [class.release-chevron--expanded]="isExpanded(release)" />
+                <span class="release-title">
+                  <span class="release-version-row">
+                    <span class="release-version">
+                      Version {{ displayVersion(release) }}
+                    </span>
+                    @if (isCurrent(release)) {
+                      <ea-badge
+                        class="current-badge"
+                        size="sm"
+                        variant="success">
+                        Current
+                      </ea-badge>
+                    }
+                  </span>
+                  @if (release.date) {
+                    <span class="release-date">
+                      Released {{ release.date | formatDate: 'short month-day-year' }}
+                    </span>
+                  }
+                </span>
+              </button>
+            </h3>
+            @if (release.date) {
+              <a
+                class="release-link lcc-link"
+                [href]="releaseUrl(release)"
+                rel="noopener noreferrer"
+                target="_blank">
+                <span>More details</span>
+                <ea-icon-external-link class="external-link-icon" />
+              </a>
+            }
+          </div>
+
+          <div
+            class="release-tags"
+            [class.release-tags--collapsed]="!isExpanded(release)">
+            @for (tag of release.tags; track tag.label) {
+              <ea-tag
+                size="sm"
+                [color]="tag.color">
+                <span>{{ tag.label }}</span>
+              </ea-tag>
+            }
+          </div>
+
+          @if (isExpanded(release)) {
+            <div [attr.id]="releaseId(release) + '-details'">
+              @for (section of sectionsOf(release); track section.label) {
+                <section class="release-section">
+                  <h4 class="section-heading">
+                    <span class="section-icon">
+                      <ng-container *ngComponentOutlet="section.icon" />
+                    </span>
+                    <span>{{ section.label }}</span>
+                  </h4>
+                  <ea-divider class="section-divider" />
+                  <ul class="section-entries">
+                    @for (entry of section.entries; track entry) {
+                      <li>{{ entry }}</li>
+                    }
+                  </ul>
+                </section>
+              }
+            </div>
+          }
+        </ea-card>
+      }
+    </div>
+
+    <div class="page-links">
+      <ea-divider class="page-links__divider" />
+      <ea-card [fullWidth]="true">
+        <div class="page-links__grid">
+          <a
+            class="page-link"
+            href="https://github.com/mwiraszka/london-chess/releases"
+            rel="noopener noreferrer"
+            target="_blank">
+            <ea-icon-tag class="page-link__icon" />
+            <span class="page-link__text">
+              <span class="page-link__title">
+                <span>All releases</span>
+                <ea-icon-external-link class="external-link-icon" />
+              </span>
+              <span class="page-link__desc">
+                Full version history and release notes for this website.
+              </span>
+            </span>
+          </a>
+          <a
+            class="page-link"
+            href="https://github.com/mwiraszka/london-chess#readme"
+            rel="noopener noreferrer"
+            target="_blank">
+            <ea-icon-github class="page-link__icon" />
+            <span class="page-link__text">
+              <span class="page-link__title">
+                <span>Source code</span>
+                <ea-icon-external-link class="external-link-icon" />
+              </span>
+              <span class="page-link__desc">
+                Browse this website's open-source code on GitHub.
+              </span>
+            </span>
+          </a>
+          <a
+            class="page-link"
+            href="mailto:michal@londonchess.ca?subject=LCC%20Website%20-%20Bug%20Report"
+            rel="noopener noreferrer"
+            target="_blank">
+            <ea-icon-bug class="page-link__icon" />
+            <span class="page-link__text">
+              <span class="page-link__title">
+                <span>Report a bug</span>
+                <ea-icon-external-link class="external-link-icon" />
+              </span>
+              <span class="page-link__desc">
+                Spotted a problem? Send a quick email with the details.
+              </span>
+            </span>
+          </a>
+          <a
+            class="page-link page-link--coffee"
+            href="https://buymeacoffee.com/michalwiraszka"
+            rel="noopener noreferrer"
+            target="_blank">
+            <ea-icon-coffee class="page-link__icon" />
+            <span class="page-link__text">
+              <span class="page-link__title">
+                <img
+                  class="bmc-button"
+                  src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+                  alt="Buy me a coffee" />
+                <ea-icon-external-link class="external-link-icon" />
+              </span>
+              <span class="page-link__desc">
+                Enjoying the site? Support its development.
+              </span>
+            </span>
+          </a>
+        </div>
+      </ea-card>
+    </div>
+  </div>
+</div>

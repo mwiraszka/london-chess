@@ -246,6 +246,9 @@ body[data-theme='dark'] {
   --lcc-color--markdownRenderer-primaryText: #{clr(grayscale, white-95)};
   --lcc-color--markdownRenderer-secondaryText: #{clr(grayscale, gray-75)};
 
+  --lcc-color--memberProfile-cityChampionIcon: #{clr(secondary, base)};
+  --lcc-color--memberProfile-cityChampionIconHover: #{clr(secondary, lighter)};
+
   --lcc-color--membersTable-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--membersTable-cityChampionIconHover: #{clr(secondary, lighter)};
   --lcc-color--membersTable-headerBackgroundOnHover: #{clr(primary, dark)};
@@ -265,7 +268,12 @@ body[data-theme='dark'] {
   --lcc-color--nav-linkForeground: #{clr(grayscale, white-85)};
   --lcc-color--nav-linkForegroundOnHover: #{clr(primary, lighter)};
   --lcc-color--nav-linkForegroundWhenActive: #{clr(grayscale, white-98)};
-  --lcc-color--whatsChangedPage-secondaryText: #{clr(grayscale, gray-65)};
+  --lcc-color--techRing-primaryText: #{clr(grayscale, white-95)};
+  --lcc-color--techRing-secondaryText: #{clr(grayscale, gray-65)};
+  --lcc-color--techRing-iconGlow: #{clr(primary, light, 0.6)};
+
+  --lcc-color--behindTheScenesPage-headerText: #{clr(grayscale, white-95)};
+  --lcc-color--behindTheScenesPage-secondaryText: #{clr(grayscale, gray-65)};
 
   --lcc-color--pageHeader-adminIcon: #{clr(admin, base)};
   --lcc-color--pageHeader-asteriskText: #{clr(grayscale, gray-50)};
