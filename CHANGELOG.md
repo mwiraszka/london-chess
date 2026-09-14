@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.0.0] - 2026-09-14
+## [v6.0.0] - 2026-09-15
 
 ### Added
 
@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build out an account page for managing your profile, avatar, email address, password, and active sessions, including an avatar editor that keeps the original photo for future re-cropping
 - Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
 - Let visitors request a member account from the login drawer, with email-code verification before each request reaches the club for review
-- Add a Behind the Scenes page covering how the site is built and what has changed, with the tools behind it named as you hover them and every release listed as an expandable card
-- Add member profile pages with ratings, activity status, and a trophy beside the reigning city champion, linked from member names across the site
+- Let admins invite a member to create an account from the member editor, with a page for accepting the invitation and choosing a password
+- Add a What's New page covering how the site is built and what has changed, with the tools behind it named as you hover them and every release listed as a card that opens with a click anywhere on it
+- Add profile pages for members with an account, with ratings, activity status, and a trophy beside the reigning city champion, linked from their names across the site and always showing their current name
 - Let members review their personal details and request changes from the account page, with the private details on their profile marked as such
 - Add a Support the site link to the footer
 - Show author avatars beside article bylines and edit history
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace AWS Cognito with Clerk for admin authentication and user management
 - Redesign the navigation bar around a single menu, shown as your avatar once logged in, holding log in, theme, view, and safe mode controls
 - Swap every Material icon for an Eagami UI icon across the site
+- Switch site notifications to Eagami UI toasts
 - Make the table paginator buttons uniform squares
 - Unify loading placeholders across the site with a consistent pulsing style
 - Cap photo gallery album covers at 200px wide so wide view no longer stretches them
