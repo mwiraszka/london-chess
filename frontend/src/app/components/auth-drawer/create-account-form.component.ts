@@ -2,8 +2,8 @@ import {
   ButtonComponent,
   DividerComponent,
   InputComponent,
+  LockIconComponent,
   NumberInputComponent,
-  ShieldIconComponent,
   ToastService,
 } from '@eagami/ui';
 
@@ -35,8 +35,8 @@ const MIN_YEAR_OF_BIRTH = 1900;
     DividerComponent,
     FormsModule,
     InputComponent,
+    LockIconComponent,
     NumberInputComponent,
-    ShieldIconComponent,
   ],
 })
 export class CreateAccountFormComponent {
