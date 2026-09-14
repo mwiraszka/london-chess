@@ -2,6 +2,7 @@ import nodemailer, { Transporter } from 'nodemailer';
 
 const SMTP_HOST = 'smtp.zoho.com';
 const SMTP_PORT = 465;
+const SENDER = 'London Chess <noreply@londonchess.ca>';
 
 let transport: Transporter | null = null;
 
@@ -24,7 +25,7 @@ export async function sendEmail(
   });
 
   await transport.sendMail({
-    from: ZOHO_SMTP_USER,
+    from: SENDER,
     to,
     subject,
     text,
