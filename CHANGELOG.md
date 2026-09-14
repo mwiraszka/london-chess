@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
 - Let visitors request a member account from the login drawer, with email-code verification before each request reaches the club for review
 - Let admins invite a member to create an account from the member editor, with a page for accepting the invitation and choosing a password
-- Add a What's New page covering how the site is built and what has changed, with the tools behind it named as you hover them and every release listed as a card that opens with a click anywhere on it
+- Add a Website Changelog page covering how the site is built and what has changed, with the tools behind it named as you hover them and every release listed as a card that opens with a click anywhere on it
 - Add profile pages for members with an account, with ratings, activity status, and a trophy beside the reigning city champion, linked from their names across the site and always showing their current name
 - Let members review their personal details and request changes from the account page, with the private details on their profile marked as such
 - Add a Support the site link to the footer
