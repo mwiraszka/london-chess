@@ -27,7 +27,7 @@ describe('TechRingComponent', () => {
     expect(icons().length).toBe(14);
   });
 
-  it('should taper the lift over the two icons either side', () => {
+  it('should taper the lift over the three icons either side', () => {
     hover(5);
 
     expect(icons()[5].classes['tech--active']).toBe(true);
@@ -35,8 +35,10 @@ describe('TechRingComponent', () => {
     expect(icons()[6].classes['tech--neighbour']).toBe(true);
     expect(icons()[3].classes['tech--outer-neighbour']).toBe(true);
     expect(icons()[7].classes['tech--outer-neighbour']).toBe(true);
-    expect(icons()[2].classes['tech--outer-neighbour']).toBeFalsy();
-    expect(icons()[8].classes['tech--outer-neighbour']).toBeFalsy();
+    expect(icons()[2].classes['tech--far-neighbour']).toBe(true);
+    expect(icons()[8].classes['tech--far-neighbour']).toBe(true);
+    expect(icons()[1].classes['tech--far-neighbour']).toBeFalsy();
+    expect(icons()[9].classes['tech--far-neighbour']).toBeFalsy();
   });
 
   it('should measure the lift around the ring rather than along the list', () => {

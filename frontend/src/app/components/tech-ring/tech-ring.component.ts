@@ -4,8 +4,8 @@ import { TECHNOLOGIES } from '@app/constants/technologies';
 import { Technology } from '@app/models';
 
 /**
- * The tools this site is built with, arranged in a ring around the club logo.
- * Hovering or tapping one names it below and lifts its neighbours with it.
+ * The tools this site is built with, arranged in a ring. Hovering or tapping one
+ * names it in the middle of the ring and lifts its neighbours with it.
  */
 @Component({
   selector: 'lcc-tech-ring',
@@ -27,6 +27,10 @@ export class TechRingComponent {
 
   protected isOuterNeighbour(index: number): boolean {
     return this.ringDistance(index) === 2;
+  }
+
+  protected isFarNeighbour(index: number): boolean {
+    return this.ringDistance(index) === 3;
   }
 
   // Steps around the ring rather than along the list, so the first and last
