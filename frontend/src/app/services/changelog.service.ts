@@ -3,18 +3,18 @@ import moment from 'moment-timezone';
 import { Injectable, signal } from '@angular/core';
 
 import {
-  WHATS_CHANGED_LAST_SEEN_STORAGE_KEY,
-  WHATS_CHANGED_RECENT_RELEASE_WINDOW_DAYS,
-} from '@app/constants/whats-changed';
-import { WhatsChangedRelease } from '@app/models';
-import { WHATS_CHANGED_RELEASES } from '@app/pages/whats-new/whats-changed.generated';
+  CHANGELOG_LAST_SEEN_STORAGE_KEY,
+  CHANGELOG_RECENT_RELEASE_WINDOW_DAYS,
+} from '@app/constants/changelog';
+import { ChangelogRelease } from '@app/models';
+import { CHANGELOG_RELEASES } from '@app/pages/website-changelog/changelog.generated';
 import { isStorageSupported } from '@app/utils';
 
 @Injectable({
   providedIn: 'root',
 })
-export class WhatsChangedService {
-  public readonly releases: WhatsChangedRelease[] = WHATS_CHANGED_RELEASES;
+export class ChangelogService {
+  public readonly releases: ChangelogRelease[] = CHANGELOG_RELEASES;
 
   public readonly hasRecentUnseenRelease = signal<boolean>(
     this.isLatestReleaseRecentAndUnseen(),
@@ -23,7 +23,7 @@ export class WhatsChangedService {
   public markLatestReleaseSeen(): void {
     const latestReleased = this.latestReleasedVersion();
     if (latestReleased && isStorageSupported()) {
-      localStorage.setItem(WHATS_CHANGED_LAST_SEEN_STORAGE_KEY, latestReleased);
+      localStorage.setItem(CHANGELOG_LAST_SEEN_STORAGE_KEY, latestReleased);
     }
     this.hasRecentUnseenRelease.set(false);
   }
@@ -39,14 +39,14 @@ export class WhatsChangedService {
     }
 
     const isRecent = moment(latest.date).isAfter(
-      moment().subtract(WHATS_CHANGED_RECENT_RELEASE_WINDOW_DAYS, 'days'),
+      moment().subtract(CHANGELOG_RECENT_RELEASE_WINDOW_DAYS, 'days'),
     );
     if (!isRecent) {
       return false;
     }
 
     const lastSeen = isStorageSupported()
-      ? localStorage.getItem(WHATS_CHANGED_LAST_SEEN_STORAGE_KEY)
+      ? localStorage.getItem(CHANGELOG_LAST_SEEN_STORAGE_KEY)
       : null;
     return lastSeen !== latest.version;
   }

@@ -18,7 +18,7 @@ out-tsc
 .angular
 
 # Generated from CHANGELOG.md on every serve/build/test
-frontend/src/app/pages/whats-new/whats-changed.generated.ts
+frontend/src/app/pages/website-changelog/changelog.generated.ts
 
 # Test coverage
 coverage

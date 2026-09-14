@@ -142,10 +142,10 @@ const routes: Routes = [
       ),
   },
   {
-    path: 'whats-new',
+    path: 'website-changelog',
     loadComponent: () =>
-      import('./pages/whats-new/whats-new-page.component').then(
-        c => c.WhatsNewPageComponent,
+      import('./pages/website-changelog/website-changelog-page.component').then(
+        c => c.WebsiteChangelogPageComponent,
       ),
   },
   {

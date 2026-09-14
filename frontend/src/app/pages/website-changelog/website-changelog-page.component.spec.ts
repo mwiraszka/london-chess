@@ -2,33 +2,33 @@ import { provideMockStore } from '@ngrx/store/testing';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MetaAndTitleService, WhatsChangedService } from '@app/services';
+import { ChangelogService, MetaAndTitleService } from '@app/services';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { queryAll, queryTextContent } from '@app/utils';
 
 import packageJson from '../../../../package.json';
-import { WHATS_CHANGED_RELEASES } from './whats-changed.generated';
-import { WhatsNewPageComponent } from './whats-new-page.component';
+import { CHANGELOG_RELEASES } from './changelog.generated';
+import { WebsiteChangelogPageComponent } from './website-changelog-page.component';
 
-describe('WhatsNewPageComponent', () => {
-  let fixture: ComponentFixture<WhatsNewPageComponent>;
-  let component: WhatsNewPageComponent;
+describe('WebsiteChangelogPageComponent', () => {
+  let fixture: ComponentFixture<WebsiteChangelogPageComponent>;
+  let component: WebsiteChangelogPageComponent;
   let markLatestReleaseSeenSpy: Mock;
 
   beforeEach(async () => {
     markLatestReleaseSeenSpy = vi.fn();
 
     await TestBed.configureTestingModule({
-      imports: [WhatsNewPageComponent],
+      imports: [WebsiteChangelogPageComponent],
       providers: [
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
         {
-          provide: WhatsChangedService,
+          provide: ChangelogService,
           useValue: {
-            releases: WHATS_CHANGED_RELEASES,
+            releases: CHANGELOG_RELEASES,
             markLatestReleaseSeen: markLatestReleaseSeenSpy,
           },
         },
@@ -36,7 +36,7 @@ describe('WhatsNewPageComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(WhatsNewPageComponent);
+    fixture = TestBed.createComponent(WebsiteChangelogPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -47,12 +47,12 @@ describe('WhatsNewPageComponent', () => {
 
   it('should render one card per release', () => {
     expect(queryAll(fixture.debugElement, '.release-card').length).toBe(
-      WHATS_CHANGED_RELEASES.length,
+      CHANGELOG_RELEASES.length,
     );
   });
 
   it('should render the version without the v prefix', () => {
-    const firstVersion = WHATS_CHANGED_RELEASES[0].version.replace(/^v/, '');
+    const firstVersion = CHANGELOG_RELEASES[0].version.replace(/^v/, '');
 
     expect(queryTextContent(fixture.debugElement, '.release-version')).toBe(
       `Version ${firstVersion}`,
@@ -60,7 +60,7 @@ describe('WhatsNewPageComponent', () => {
   });
 
   it('should show an in-development badge instead of a release link for undated releases', () => {
-    const undatedIndex = WHATS_CHANGED_RELEASES.findIndex(release => !release.date);
+    const undatedIndex = CHANGELOG_RELEASES.findIndex(release => !release.date);
 
     if (undatedIndex === -1) {
       return;
@@ -72,7 +72,7 @@ describe('WhatsNewPageComponent', () => {
   });
 
   it('should link dated releases to their GitHub release', () => {
-    const datedIndex = WHATS_CHANGED_RELEASES.findIndex(release => release.date);
+    const datedIndex = CHANGELOG_RELEASES.findIndex(release => release.date);
 
     if (datedIndex === -1) {
       return;
@@ -81,7 +81,7 @@ describe('WhatsNewPageComponent', () => {
     const card = queryAll(fixture.debugElement, '.release-card')[datedIndex];
     const link = queryAll(card, '.release-link')[0];
     expect(link.attributes['href']).toBe(
-      `https://github.com/mwiraszka/london-chess/releases/tag/${WHATS_CHANGED_RELEASES[datedIndex].version}`,
+      `https://github.com/mwiraszka/london-chess/releases/tag/${CHANGELOG_RELEASES[datedIndex].version}`,
     );
   });
 
@@ -98,7 +98,7 @@ describe('WhatsNewPageComponent', () => {
   it('should collapse every release by default', () => {
     expect(queryAll(fixture.debugElement, '.release-section').length).toBe(0);
     expect(queryAll(fixture.debugElement, '.release-tags').length).toBe(
-      WHATS_CHANGED_RELEASES.length,
+      CHANGELOG_RELEASES.length,
     );
   });
 
@@ -124,7 +124,7 @@ describe('WhatsNewPageComponent', () => {
   });
 
   it('should only render sections that have entries', () => {
-    const firstRelease = WHATS_CHANGED_RELEASES[0];
+    const firstRelease = CHANGELOG_RELEASES[0];
     const expectedSectionCount = [
       firstRelease.added,
       firstRelease.changed,
@@ -140,7 +140,7 @@ describe('WhatsNewPageComponent', () => {
 
   it('should render one quick find button per release', () => {
     expect(queryAll(fixture.debugElement, '.version-nav__item').length).toBe(
-      WHATS_CHANGED_RELEASES.length,
+      CHANGELOG_RELEASES.length,
     );
   });
 

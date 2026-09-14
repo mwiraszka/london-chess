@@ -10,6 +10,7 @@ export type {
   NewPasswordFormGroup,
 } from './auth.model';
 export type { CalendarDay, CalendarMonth } from './calendar.model';
+export type { ChangelogRelease, ChangelogTag } from './changelog.model';
 export type { CallState } from './call-state.model';
 export type { ChampionshipTableRowData } from './championship-data.model';
 export type { Club, ClubDocument } from './club.model';
@@ -58,4 +59,3 @@ export type { DataPaginationOptions, Filter } from './pagination.model';
 export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';
-export type { WhatsChangedRelease, WhatsChangedTag } from './whats-changed.model';

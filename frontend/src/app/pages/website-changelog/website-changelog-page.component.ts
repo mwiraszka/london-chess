@@ -32,9 +32,9 @@ import {
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TechRingComponent } from '@app/components/tech-ring/tech-ring.component';
-import { WhatsChangedRelease } from '@app/models';
+import { ChangelogRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { MetaAndTitleService, WhatsChangedService } from '@app/services';
+import { ChangelogService, MetaAndTitleService } from '@app/services';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { isExpired } from '@app/utils';
 
@@ -47,9 +47,9 @@ interface ReleaseSection {
 }
 
 @Component({
-  selector: 'lcc-whats-new-page',
-  templateUrl: './whats-new-page.component.html',
-  styleUrl: './whats-new-page.component.scss',
+  selector: 'lcc-website-changelog-page',
+  templateUrl: './website-changelog-page.component.html',
+  styleUrl: './website-changelog-page.component.scss',
   imports: [
     BadgeComponent,
     BugIconComponent,
@@ -69,27 +69,27 @@ interface ReleaseSection {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WhatsNewPageComponent implements OnInit {
+export class WebsiteChangelogPageComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
-  private readonly whatsChangedService = inject(WhatsChangedService);
+  private readonly changelogService = inject(ChangelogService);
 
   // The badge follows the version the site is actually running, so a version
   // bump moves it to that release's card on its own
   private readonly currentVersion = `v${packageJson.version}`;
 
   protected readonly pageIcon = LaptopIconComponent;
-  protected readonly releases = this.whatsChangedService.releases;
+  protected readonly releases = this.changelogService.releases;
 
   private readonly selectedVersion = signal<string | null>(null);
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle("What's New");
+    this.metaAndTitleService.updateTitle('Website Changelog');
     this.metaAndTitleService.updateDescription(
       'How the London Chess Club website is built, and what has changed in each release.',
     );
-    this.whatsChangedService.markLatestReleaseSeen();
+    this.changelogService.markLatestReleaseSeen();
 
     // The maintainer's name links to their member profile, which needs the
     // members loaded
@@ -103,37 +103,37 @@ export class WhatsNewPageComponent implements OnInit {
       });
   }
 
-  protected displayVersion(release: WhatsChangedRelease): string {
+  protected displayVersion(release: ChangelogRelease): string {
     return release.version.replace(/^v/, '');
   }
 
-  protected releaseId(release: WhatsChangedRelease): string {
+  protected releaseId(release: ChangelogRelease): string {
     return `release-${release.version}`;
   }
 
-  protected isCurrent(release: WhatsChangedRelease): boolean {
+  protected isCurrent(release: ChangelogRelease): boolean {
     return release.version === this.currentVersion;
   }
 
-  protected isExpanded(release: WhatsChangedRelease): boolean {
+  protected isExpanded(release: ChangelogRelease): boolean {
     return this.selectedVersion() === release.version;
   }
 
   // Only a collapsed card opens from anywhere on it; an open card leaves its
   // contents free to select, closing only from the header toggle
-  protected onCardClick(release: WhatsChangedRelease): void {
+  protected onCardClick(release: ChangelogRelease): void {
     if (!this.isExpanded(release)) {
       this.onToggleRelease(release);
     }
   }
 
-  protected onToggleRelease(release: WhatsChangedRelease): void {
+  protected onToggleRelease(release: ChangelogRelease): void {
     this.selectedVersion.update(selected =>
       selected === release.version ? null : release.version,
     );
   }
 
-  protected onJumpToRelease(release: WhatsChangedRelease): void {
+  protected onJumpToRelease(release: ChangelogRelease): void {
     this.selectedVersion.set(release.version);
 
     // Selecting collapses whichever release was open, so the card only lands at
@@ -147,11 +147,11 @@ export class WhatsNewPageComponent implements OnInit {
     );
   }
 
-  protected releaseUrl(release: WhatsChangedRelease): string {
+  protected releaseUrl(release: ChangelogRelease): string {
     return `https://github.com/mwiraszka/london-chess/releases/tag/${release.version}`;
   }
 
-  protected sectionsOf(release: WhatsChangedRelease): ReleaseSection[] {
+  protected sectionsOf(release: ChangelogRelease): ReleaseSection[] {
     const sections: ReleaseSection[] = [
       { label: 'New', icon: SparklesIconComponent, entries: release.added },
       { label: 'Improved', icon: TrendingUpIconComponent, entries: release.changed },
