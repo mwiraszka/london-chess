@@ -123,7 +123,8 @@ export const membersReducer = createReducer(
             !areSame(existingEntity.formData, pick(member, MEMBER_FORM_DATA_PROPERTIES));
 
           return {
-            member,
+            // Profile lookups carry fields the public list leaves out
+            member: { ...existingEntity?.member, ...member },
             // Preserve existing formData if there are unsaved changes
             formData: hasUnsavedChanges
               ? existingEntity.formData
@@ -150,7 +151,8 @@ export const membersReducer = createReducer(
             !areSame(existingEntity.formData, pick(member, MEMBER_FORM_DATA_PROPERTIES));
 
           return {
-            member,
+            // Profile lookups carry fields the public list leaves out
+            member: { ...existingEntity?.member, ...member },
             // Preserve existing formData if there are unsaved changes
             formData: hasUnsavedChanges
               ? existingEntity.formData

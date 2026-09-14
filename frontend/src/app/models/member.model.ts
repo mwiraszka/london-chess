@@ -24,6 +24,8 @@ export interface Member {
   isActive: boolean;
   isAdmin?: boolean;
   dateJoined: IsoDate;
+  // Sent only with a profile page lookup or to admins
+  yearJoined?: string;
   modificationInfo: ModificationInfo;
   avatarUrl: Url | null;
   // Only admins receive a member's account status

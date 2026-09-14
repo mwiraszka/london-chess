@@ -23,10 +23,13 @@ import {
   MEMBER_PROFILE_PROJECTION,
   MemberProfile,
   PUBLIC_MEMBER_PROJECTION,
+  PUBLIC_PROFILE_PROJECTION,
   PublicMember,
+  PublicProfile,
   toAdminMember,
   toMemberProfiles,
   toPublicMember,
+  toPublicProfile,
 } from '../util/member-responses.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
@@ -155,14 +158,14 @@ export function getMembers(scope: Scope) {
 export function getMemberByNumber(scope: Scope) {
   return async (
     req: Request<{ number: string }>,
-    res: Response<ApiResponse<PublicMember | AdminMember>>,
+    res: Response<ApiResponse<PublicProfile | AdminMember>>,
   ): Promise<void> => {
     try {
       const { number } = req.params;
       const record = /^\d+$/.test(number)
         ? await MemberModel.findOne(
             { number: Number(number), 'account.status': 'active' },
-            scope === 'public' ? PUBLIC_MEMBER_PROJECTION : null,
+            scope === 'public' ? PUBLIC_PROFILE_PROJECTION : null,
           ).lean<MemberRecord>()
         : null;
 
@@ -171,7 +174,9 @@ export function getMemberByNumber(scope: Scope) {
         return;
       }
 
-      res.status(200).json({ data: toResponse(scope)(record) });
+      res.status(200).json({
+        data: scope === 'public' ? toPublicProfile(record) : toAdminMember(record),
+      });
     } catch (error) {
       res.status(500).json({ message: `Unknown error: ${error}` });
     }

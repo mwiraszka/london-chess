@@ -3,10 +3,12 @@ import { Types } from 'mongoose';
 import { MemberRecord } from '../models/member.model';
 import {
   PUBLIC_MEMBER_PROJECTION,
+  PUBLIC_PROFILE_PROJECTION,
   toAccountRecord,
   toAdminMember,
   toMemberProfiles,
   toPublicMember,
+  toPublicProfile,
 } from './member-responses.util';
 
 const PRIVATE_MEMBER_FIELDS = [
@@ -77,6 +79,28 @@ describe('PUBLIC_MEMBER_PROJECTION', () => {
       'account.isAdmin',
       'account.status',
     ]);
+  });
+});
+
+describe('PUBLIC_PROFILE_PROJECTION', () => {
+  it('should read only the year of birth and join date beyond the public member fields', () => {
+    const extraFields = Object.keys(PUBLIC_PROFILE_PROJECTION).filter(
+      field => !(field in PUBLIC_MEMBER_PROJECTION),
+    );
+
+    expect(extraFields.sort()).toEqual(['dateJoined', 'yearOfBirth']);
+  });
+});
+
+describe('toPublicProfile', () => {
+  it('should add only the year of birth and the year joined to the public member', () => {
+    const profile = toPublicProfile(buildRecord());
+
+    expect(profile.yearOfBirth).toBe('1990');
+    expect(profile.yearJoined).toBe('2022');
+    expect(Object.keys(profile)).not.toContain('dateJoined');
+    expect(JSON.stringify(profile)).not.toContain('jane@example.com');
+    expect(JSON.stringify(profile)).not.toContain('555-123-4567');
   });
 });
 

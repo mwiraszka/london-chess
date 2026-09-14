@@ -28,7 +28,14 @@ export interface AdminMember extends PublicMember {
   phoneNumber: string;
   yearOfBirth: string;
   dateJoined: IsoDate;
+  yearJoined: string;
   accountStatus: AccountStatus | 'none';
+}
+
+// A profile page is public, so it shows years rather than full dates
+export interface PublicProfile extends PublicMember {
+  yearOfBirth: string;
+  yearJoined: string;
 }
 
 export interface AccountRecord {
@@ -73,6 +80,12 @@ export const PUBLIC_MEMBER_PROJECTION = {
   'account.status': 1,
   'account.isAdmin': 1,
   'account.avatarUrl': 1,
+} as const;
+
+export const PUBLIC_PROFILE_PROJECTION = {
+  ...PUBLIC_MEMBER_PROJECTION,
+  yearOfBirth: 1,
+  dateJoined: 1,
 } as const;
 
 export const MEMBER_PROFILE_PROJECTION = {
@@ -126,6 +139,14 @@ export function toPublicMember(record: MemberRecord): PublicMember {
   };
 }
 
+export function toPublicProfile(record: MemberRecord): PublicProfile {
+  return {
+    ...toPublicMember(record),
+    yearOfBirth: record.yearOfBirth,
+    yearJoined: yearOf(record.dateJoined),
+  };
+}
+
 export function toAdminMember(record: MemberRecord): AdminMember {
   return {
     ...toPublicMember(record),
@@ -133,8 +154,13 @@ export function toAdminMember(record: MemberRecord): AdminMember {
     phoneNumber: record.phoneNumber,
     yearOfBirth: record.yearOfBirth,
     dateJoined: record.dateJoined,
+    yearJoined: yearOf(record.dateJoined),
     accountStatus: record.account?.status ?? 'none',
   };
+}
+
+function yearOf(date: IsoDate): string {
+  return date.slice(0, 4);
 }
 
 export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
