@@ -349,8 +349,6 @@ export class AccountPageComponent implements OnInit {
         variant: 'success',
       });
 
-      const { firstName, lastName } = this.detailsForm.getRawValue();
-      this.savedDetails.update(saved => ({ ...saved, firstName, lastName }));
       this.avatarDirty.set(false);
       this.removeAvatar.set(false);
       this.selectedFile.set(null);
