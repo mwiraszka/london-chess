@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.0.1] - 2026-09-16
 
+### Changed
+
+- Collapse an open release on the website changelog page by clicking anywhere on its header
+
 ### Fixed
 
 - Fix issues with loading photos and editing/deleting articles and events

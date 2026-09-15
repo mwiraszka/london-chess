@@ -57,20 +57,18 @@
         <ea-card
           class="release-card"
           headerAlign="start"
-          [class.release-card--collapsed]="!isExpanded(release)"
           [attr.id]="releaseId(release)"
-          [fullWidth]="true"
-          (click)="onCardClick(release)">
+          [fullWidth]="true">
           <div
             slot="header"
-            class="release-header">
+            class="release-header"
+            (click)="onToggleRelease(release)">
             <h3 class="release-heading">
               <button
                 type="button"
                 class="release-toggle"
                 [attr.aria-controls]="releaseId(release) + '-details'"
-                [attr.aria-expanded]="isExpanded(release)"
-                (click)="$event.stopPropagation(); onToggleRelease(release)">
+                [attr.aria-expanded]="isExpanded(release)">
                 <ea-icon-chevron-down
                   class="release-chevron"
                   aria-hidden="true"
@@ -112,7 +110,8 @@
 
           <div
             class="release-tags"
-            [class.release-tags--collapsed]="!isExpanded(release)">
+            [class.release-tags--collapsed]="!isExpanded(release)"
+            (click)="onToggleRelease(release)">
             @for (tag of release.tags; track tag.label) {
               <ea-tag
                 size="sm"
@@ -123,7 +122,9 @@
           </div>
 
           @if (isExpanded(release)) {
-            <div [attr.id]="releaseId(release) + '-details'">
+            <div
+              class="release-details"
+              [attr.id]="releaseId(release) + '-details'">
               @for (section of sectionsOf(release); track section.label) {
                 <section class="release-section">
                   <h4 class="section-heading">

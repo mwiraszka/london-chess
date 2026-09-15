@@ -119,14 +119,6 @@ export class WebsiteChangelogPageComponent implements OnInit {
     return this.selectedVersion() === release.version;
   }
 
-  // Only a collapsed card opens from anywhere on it; an open card leaves its
-  // contents free to select, closing only from the header toggle
-  protected onCardClick(release: ChangelogRelease): void {
-    if (!this.isExpanded(release)) {
-      this.onToggleRelease(release);
-    }
-  }
-
   protected onToggleRelease(release: ChangelogRelease): void {
     this.selectedVersion.update(selected =>
       selected === release.version ? null : release.version,
