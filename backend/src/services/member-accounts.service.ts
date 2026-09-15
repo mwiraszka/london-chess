@@ -1,10 +1,12 @@
 import { type User } from '@clerk/backend';
+import { isClerkAPIResponseError } from '@clerk/backend/errors';
 import { Types } from 'mongoose';
 
 import { MemberAccount, MemberModel, MemberRecord } from '../models/member.model';
 import { LinkedMemberRecord } from '../util/member-responses.util';
 import { Editor } from '../util/modification-info.util';
 import { deleteAvatar, uploadAvatar } from './avatar-storage.service';
+import { clerkClient } from './clerk.service';
 import { assignMemberNumber } from './member-numbers.service';
 
 export interface ClerkProfile {
@@ -88,6 +90,26 @@ async function uploadClerkImage(clerkUserId: string, imageUrl: string): Promise<
   return uploadAvatar(clerkUserId, buffer, contentType);
 }
 
+// A webhook can describe a user the site has since deleted, so a new link is kept only
+// once Clerk confirms the user still exists. Checking after the link is written means
+// a later deletion sends its own user.deleted event to undo it, and any other failure
+// drops the link so a retried webhook starts over
+async function confirmLink(clerkUserId: string, memberId: string): Promise<boolean> {
+  try {
+    await clerkClient.users.getUser(clerkUserId);
+    return true;
+  } catch (error) {
+    await MemberModel.updateOne(
+      { _id: memberId, 'account.clerkUserId': clerkUserId },
+      { $set: { account: null } },
+    );
+    if (isClerkAPIResponseError(error) && error.status === 404) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 // Attaches a Clerk user to the member named in its public metadata. The
 // user.created webhook and the auth middleware's fallback can race here: the
 // filter only matches a member with no linked user and the unique index on the
@@ -125,6 +147,10 @@ export async function linkClerkUser(
     if (!isDuplicateKeyError(error)) {
       throw error;
     }
+  }
+
+  if (linkedNow && !(await confirmLink(profile.id, profile.memberId))) {
+    return null;
   }
 
   // Only the call that made the link numbers the member, so a race never skips a number

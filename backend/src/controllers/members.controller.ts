@@ -346,8 +346,12 @@ export async function updateMember(
         siteUrl,
         status: 200,
         save: async account => {
+          // The user.created webhook may have linked this member to the new account first
           const result = await MemberModel.updateOne(
-            { _id: existing._id, account: null },
+            {
+              _id: existing._id,
+              $or: [{ account: null }, { 'account.clerkUserId': account.clerkUserId }],
+            },
             { $set: { ...member, account } },
           );
           if (result.matchedCount === 0) {
@@ -551,6 +555,7 @@ async function saveWithNewAccount({
       firstName: member.firstName,
       lastName: member.lastName,
       password: temporaryPassword,
+      publicMetadata: { memberId: memberId.toString() },
     });
     clerkUserId = clerkUser.id;
   } catch (error) {
@@ -676,10 +681,16 @@ async function failSave(
   error: unknown,
   undoSteps: UndoStep[],
 ): Promise<void> {
-  const results = await Promise.allSettled(undoSteps.map(([, undo]) => undo()));
-  const leftovers = undoSteps
-    .filter((_, index) => results[index].status === 'rejected')
-    .map(([description]) => description);
+  // One at a time and in order, so a new Clerk account is gone before the member record
+  // is restored and a late webhook for it finds no account to link
+  const leftovers: string[] = [];
+  for (const [description, undo] of undoSteps) {
+    try {
+      await undo();
+    } catch {
+      leftovers.push(description);
+    }
+  }
   const reason = clerkErrorMessage(
     error,
     error instanceof Error ? error.message : String(error),

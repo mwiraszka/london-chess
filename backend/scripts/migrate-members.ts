@@ -7,8 +7,10 @@ import { MemberAccount, MemberModel, MemberRecord } from '../src/models/member.m
 // Gives the reserved members their numbers (everyone else is numbered when their
 // account becomes active), credits editors by member number on existing records,
 // and with --link-accounts moves each Clerk account in the retired users
-// collection onto its member record. Safe to re-run: members that already have a
-// number or a linked account, and records already credited, are left alone.
+// collection onto its member record and gives every linked Clerk account its member
+// id in public metadata. Safe to re-run: members that already have a number or a
+// linked account, accounts that already carry their member id, and records already
+// credited, are left alone.
 //
 //   pnpm migrate:members --database <name> [--link-accounts] [--dry-run]
 
@@ -25,6 +27,8 @@ interface RetiredUserRecord {
   avatarCropState: MemberAccount['avatarCropState'];
   lastModifiedDate?: Date;
 }
+
+type ClerkClient = ReturnType<typeof createClerkClient>;
 
 const RESERVED_NUMBERS: ReadonlyArray<[number, string, string]> = [
   [0, 'Michal', 'Wiraszka'],
@@ -179,12 +183,7 @@ async function creditEditorsByNumber(numberByName: Map<string, number>): Promise
   }
 }
 
-async function linkRetiredAccounts(): Promise<void> {
-  if (!CLERK_SECRET_KEY) {
-    throw new Error('CLERK_SECRET_KEY is required to link accounts.');
-  }
-  const clerkClient = createClerkClient({ secretKey: CLERK_SECRET_KEY });
-
+async function linkRetiredAccounts(clerkClient: ClerkClient): Promise<void> {
   const users = await mongoose.connection
     .collection<RetiredUserRecord>('users')
     .find({ id: /^user_/ })
@@ -230,6 +229,36 @@ async function linkRetiredAccounts(): Promise<void> {
   }
 }
 
+async function setMissingMemberIds(clerkClient: ClerkClient): Promise<void> {
+  const linkedMembers = await MemberModel.find(
+    { 'account.clerkUserId': { $ne: null } },
+    { account: 1 },
+  ).lean<MemberRecord[]>();
+
+  let missingCount = 0;
+  for (const member of linkedMembers) {
+    const clerkUserId = member.account?.clerkUserId;
+    if (!clerkUserId) {
+      continue;
+    }
+
+    const memberId = member._id.toString();
+    const user = await clerkClient.users.getUser(clerkUserId);
+    if (user.publicMetadata['memberId'] === memberId) {
+      continue;
+    }
+
+    missingCount++;
+    if (!dryRun) {
+      await clerkClient.users.updateUserMetadata(clerkUserId, {
+        publicMetadata: { memberId },
+      });
+    }
+  }
+
+  console.log(`Set the member id on ${missingCount} Clerk account(s).`);
+}
+
 async function main(): Promise<void> {
   if (!MONGODB_URI || !database) {
     throw new Error(
@@ -250,7 +279,12 @@ async function main(): Promise<void> {
     const numberByName = await assignReservedNumbers();
     await creditEditorsByNumber(numberByName);
     if (linkAccounts) {
-      await linkRetiredAccounts();
+      if (!CLERK_SECRET_KEY) {
+        throw new Error('CLERK_SECRET_KEY is required to link accounts.');
+      }
+      const clerkClient = createClerkClient({ secretKey: CLERK_SECRET_KEY });
+      await linkRetiredAccounts(clerkClient);
+      await setMissingMemberIds(clerkClient);
     }
   } finally {
     await mongoose.disconnect();
