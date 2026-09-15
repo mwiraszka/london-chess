@@ -6,6 +6,7 @@ import {
 } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -53,6 +54,16 @@ export class ForgotPasswordFormComponent {
   protected readonly codeSent = signal(false);
   protected readonly error = signal('');
   protected readonly loading = signal(false);
+
+  constructor() {
+    // Log in and Forgot password share one email address, so switching between them
+    // keeps whatever was typed
+    const loginEmail = this.authDrawer.loginForm.controls.email;
+    this.emailForm.controls.email.setValue(loginEmail.value);
+    this.emailForm.controls.email.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(email => loginEmail.setValue(email));
+  }
 
   protected async onSendCode(): Promise<void> {
     if (this.emailForm.invalid) {
