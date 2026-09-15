@@ -464,7 +464,7 @@ export async function deleteImage(
 
       if (result.deletedCount === 0) {
         res.status(404).json({
-          message: `[IM-7.1] Image object deleted, but unable to delete additional image data from database - image [${id}] could not be found`,
+          message: `[IM-7.1] Image object deleted, but unable to delete additional image data from database because image [${id}] could not be found.`,
         });
         return;
       }

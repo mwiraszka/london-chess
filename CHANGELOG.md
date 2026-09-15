@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace AWS Cognito with Clerk for admin authentication and user management
 - Redesign the navigation bar around a single menu, shown as your avatar once logged in, holding log in, theme, view, and safe mode controls
 - Swap every Material icon for an Eagami UI icon across the site
-- Switch site notifications to Eagami UI toasts
+- Switch site notifications to Eagami UI toasts, with clearer and friendlier wording throughout
 - Make the table paginator buttons uniform squares
 - Unify loading placeholders across the site with a consistent pulsing style
 - Cap photo gallery album covers at 200px wide so wide view no longer stretches them

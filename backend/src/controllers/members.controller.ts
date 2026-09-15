@@ -267,7 +267,7 @@ export async function updateMember(
       : null;
     if (!existing) {
       res.status(404).json({
-        message: `Unable to update member [${id}] - member not found`,
+        message: `Unable to update member [${id}] because it could not be found.`,
       });
       return;
     }
@@ -291,7 +291,7 @@ export async function updateMember(
 
     if (result.matchedCount === 0 || result.modifiedCount === 0) {
       res.status(404).json({
-        message: `Unable to update member [${id}] - member not found`,
+        message: `Unable to update member [${id}] because it could not be found.`,
       });
       return;
     }
@@ -347,7 +347,7 @@ export async function updateMembers(
       if (error instanceof Error && error.message.startsWith('NOT_FOUND:')) {
         const id = error.message.split(':')[1];
         res.status(404).json({
-          message: `Unable to update members - member [${id}] not found`,
+          message: `Unable to update members because member [${id}] could not be found.`,
         });
         return;
       }
@@ -376,7 +376,7 @@ export async function deleteMember(
       : null;
     if (!existing) {
       res.status(404).json({
-        message: `Unable to delete member [${id}] - member not found`,
+        message: `Unable to delete member [${id}] because it could not be found.`,
       });
       return;
     }

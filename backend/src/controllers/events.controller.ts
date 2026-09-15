@@ -156,7 +156,7 @@ export async function updateEvent(
 
     if (result.matchedCount === 0 || result.modifiedCount === 0) {
       res.status(404).json({
-        data: `Unable to update event [${id}] - event not found`,
+        data: `Unable to update event [${id}] because it could not be found.`,
       });
       return;
     }
@@ -178,7 +178,7 @@ export async function deleteEvent(
 
     if (result.deletedCount === 0) {
       res.status(404).json({
-        message: `Unable to delete event [${id}] - event not found`,
+        message: `Unable to delete event [${id}] because it could not be found.`,
       });
       return;
     }

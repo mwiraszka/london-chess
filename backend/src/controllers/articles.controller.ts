@@ -159,7 +159,7 @@ export async function updateArticle(
 
     if (result.matchedCount === 0 || result.modifiedCount === 0) {
       res.status(404).json({
-        message: `Unable to update article [${id}] - article not found`,
+        message: `Unable to update article [${id}] because it could not be found.`,
       });
       return;
     }
@@ -183,7 +183,7 @@ export async function deleteArticle(
 
     if (result.deletedCount === 0) {
       res.status(404).json({
-        message: `Unable to delete article [${id}] - article not found`,
+        message: `Unable to delete article [${id}] because it could not be found.`,
       });
       return;
     }

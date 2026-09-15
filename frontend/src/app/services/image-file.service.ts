@@ -314,7 +314,7 @@ export class ImageFileService {
         } else if (processedFile.size > 2_621_440) {
           resolve({
             name: 'LCCError',
-            message: `Image is too large (${formatBytes(processedFile.size)}) - please reduce to below 2.5 MB`,
+            message: `Image is too large (${formatBytes(processedFile.size)}). Please reduce it to below 2.5 MB.`,
           });
         } else {
           resolve({ dataUrl, filename: processedFile.name });
