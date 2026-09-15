@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix issues with loading photos and editing/deleting articles and events
+- Redirect to the home page straight away when a member profile doesn't exist
 
 ## [v6.0.0] - 2026-09-15
 

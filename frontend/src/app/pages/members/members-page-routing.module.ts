@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { memberNumberGuard } from '@app/guards/member-number.guard';
+import { memberProfileGuard } from '@app/guards/member-profile.guard';
 
 import { MembersPageComponent } from './members-page.component';
 
@@ -12,7 +12,7 @@ const routes: Routes = [
   },
   {
     path: ':number',
-    canActivate: [memberNumberGuard('number')],
+    canActivate: [memberProfileGuard('number')],
     loadComponent: () =>
       import('./member-profile-page.component').then(c => c.MemberProfilePageComponent),
   },
