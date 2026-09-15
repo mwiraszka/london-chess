@@ -1,21 +1,35 @@
 import { Request, Response } from 'express';
-import { PipelineStage } from 'mongoose';
+import { PipelineStage, Types } from 'mongoose';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import {
   EditableMemberFields,
   Member,
+  MemberAccount,
   MemberModel,
   MemberRecord,
   editableMemberTypes,
   memberSortingConfig,
 } from '../models/member.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
-import { findEditor } from '../services/member-accounts.service';
+import { clerkClient } from '../services/clerk.service';
+import { sendEmail } from '../services/email.service';
+import { findEditor, isLinkedMember } from '../services/member-accounts.service';
+import { assignMemberNumber } from '../services/member-numbers.service';
+import { isAllowedOrigin } from '../util/allowed-origins.util';
+import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { isCollectionId } from '../util/is-collection-id.util';
 import {
+  MemberChange,
+  RATING_FIELDS,
+  describeMemberChanges,
+} from '../util/member-changes.util';
+import { EMAIL_PATTERN, validateDetailField } from '../util/member-details.util';
+import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/member-emails.util';
+import {
   AdminMember,
+  LinkedMemberRecord,
   MEMBER_PROFILE_PROJECTION,
   MemberProfile,
   PUBLIC_MEMBER_PROJECTION,
@@ -29,9 +43,35 @@ import {
 } from '../util/member-responses.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
+import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 type Scope = 'public' | 'admin';
+
+type UndoStep = [description: string, undo: () => Promise<unknown>];
+
+interface NewAccountSave {
+  res: Response<ApiResponse<AdminMember>>;
+  member: EditableMemberFields;
+  memberId: Types.ObjectId;
+  siteUrl: string;
+  status: 200 | 201;
+  save: (account: MemberAccount) => Promise<unknown>;
+  undoSave: UndoStep;
+}
+
+interface RatingNotice {
+  record: MemberRecord;
+  changes: MemberChange[];
+}
+
+interface RatingsUpdateResult {
+  updatedIds: Id[];
+  unnotifiedMemberNames: string[];
+}
+
+const EMAILS_FROM_SITE_ONLY =
+  'Member emails can only be sent from the London Chess website.';
 
 function toResponse(scope: Scope): (record: MemberRecord) => PublicMember | AdminMember {
   return scope === 'public' ? toPublicMember : toAdminMember;
@@ -204,6 +244,7 @@ export async function getMemberById(
   }
 }
 
+// With ?notify=true, the new member also gets an account and a welcome email
 export async function addMember(
   req: Request,
   res: Response<ApiResponse<AdminMember>>,
@@ -215,27 +256,47 @@ export async function addMember(
       return;
     }
 
-    const created = await MemberModel.create(
-      prepareMemberForDB(
-        req.body as EditableMemberFields,
-        await findEditor(req.user.id),
-        true,
-      ),
+    const member = prepareMemberForDB(
+      req.body as EditableMemberFields,
+      await findEditor(req.user.id),
+      true,
     );
-    const record = await MemberModel.findById(created._id).lean<MemberRecord>();
-    if (!record) {
-      throw new Error('The new member could not be read back.');
+
+    if (req.query['notify'] !== 'true') {
+      const created = await MemberModel.create(member);
+      res.status(201).json({ data: toAdminMember(await readMember(created._id)) });
+      return;
     }
 
-    res.status(201).json({ data: toAdminMember(record) });
+    const siteUrl = siteUrlFor(req);
+    if (!siteUrl) {
+      res.status(400).json({ message: EMAILS_FROM_SITE_ONLY });
+      return;
+    }
+
+    const memberId = new Types.ObjectId();
+    await saveWithNewAccount({
+      res,
+      member,
+      memberId,
+      siteUrl,
+      status: 201,
+      save: account => MemberModel.create({ ...member, _id: memberId, account }),
+      undoSave: [
+        'remove the new member record',
+        () => MemberModel.deleteOne({ _id: memberId }),
+      ],
+    });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }
 }
 
+// With ?notify=true, a member without an account gets one and a welcome email, and a
+// member with an account is emailed the changes
 export async function updateMember(
   req: Request<{ id: Id }>,
-  res: Response<ApiResponse<Id>>,
+  res: Response<ApiResponse<AdminMember>>,
 ): Promise<void> {
   try {
     const { id } = req.params;
@@ -247,7 +308,7 @@ export async function updateMember(
     }
 
     const existing = isCollectionId(id)
-      ? await MemberModel.findById(id, { email: 1, account: 1 }).lean<MemberRecord>()
+      ? await MemberModel.findById(id).lean<MemberRecord>()
       : null;
     if (!existing) {
       res.status(404).json({
@@ -256,36 +317,63 @@ export async function updateMember(
       return;
     }
 
-    const preparedMember = prepareMemberForDB(
+    const member = prepareMemberForDB(
       req.body as EditableMemberFields,
       await findEditor(req.user.id),
       false,
     );
-    if (existing.account && preparedMember.email !== existing.email) {
+    if (existing.account && member.email !== existing.email) {
       res.status(400).json({
         message: "This member's email address is managed by their account.",
       });
       return;
     }
 
-    const result = await MemberModel.updateOne({ _id: id }, { $set: preparedMember });
-
-    if (result.matchedCount === 0 || result.modifiedCount === 0) {
-      res.status(404).json({
-        message: `Unable to update member [${id}] because it could not be found.`,
-      });
+    const notify = req.query['notify'] === 'true';
+    const siteUrl = notify ? siteUrlFor(req) : null;
+    if (notify && !siteUrl) {
+      res.status(400).json({ message: EMAILS_FROM_SITE_ONLY });
       return;
     }
 
-    res.status(200).json({ data: id });
+    if (isLinkedMember(existing)) {
+      await saveForAccountHolder(res, existing, member, siteUrl);
+    } else if (siteUrl) {
+      await saveWithNewAccount({
+        res,
+        member,
+        memberId: existing._id,
+        siteUrl,
+        status: 200,
+        save: async account => {
+          const result = await MemberModel.updateOne(
+            { _id: existing._id, account: null },
+            { $set: { ...member, account } },
+          );
+          if (result.matchedCount === 0) {
+            throw new Error(
+              'Another account was linked to this member at the same time.',
+            );
+          }
+        },
+        undoSave: [
+          'restore the member record',
+          () => MemberModel.replaceOne({ _id: existing._id }, existing),
+        ],
+      });
+    } else {
+      await MemberModel.updateOne({ _id: existing._id }, { $set: member });
+      res.status(200).json({ data: toAdminMember(await readMember(existing._id)) });
+    }
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }
 }
 
+// Members with an account are emailed their new rating
 export async function updateMembers(
   req: Request,
-  res: Response<ApiResponse<Id[]>>,
+  res: Response<ApiResponse<RatingsUpdateResult>>,
 ): Promise<void> {
   try {
     const members = req.body as Array<EditableMemberFields & { id: Id }>;
@@ -304,6 +392,23 @@ export async function updateMembers(
         res.status(400).json({ message: validationProblem });
         return;
       }
+    }
+
+    const updates = new Map(members.map(member => [member.id, member]));
+    const accountHolders = await MemberModel.find({
+      _id: { $in: [...updates.keys()] },
+      'account.clerkUserId': { $ne: null },
+    }).lean<MemberRecord[]>();
+    const notices: RatingNotice[] = accountHolders.flatMap(record => {
+      const update = updates.get(record._id.toString());
+      const changes = update ? describeMemberChanges(record, update, RATING_FIELDS) : [];
+      return changes.length ? [{ record, changes }] : [];
+    });
+
+    const siteUrl = siteUrlFor(req);
+    if (notices.length && !siteUrl) {
+      res.status(400).json({ message: EMAILS_FROM_SITE_ONLY });
+      return;
     }
 
     const editor = await findEditor(req.user.id);
@@ -335,11 +440,15 @@ export async function updateMembers(
       res.status(500).json({
         message: `Unable to update members: ${error}`,
       });
+      return;
     } finally {
       await session.endSession();
     }
 
-    res.status(200).json({ data: updatedIds });
+    const unnotifiedMemberNames = siteUrl
+      ? await emailRatingChanges(notices, siteUrl)
+      : [];
+    res.status(200).json({ data: { updatedIds, unnotifiedMemberNames } });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }
@@ -414,4 +523,212 @@ function prepareMemberForDB(
     rating: member.rating,
     yearOfBirth: member.yearOfBirth,
   };
+}
+
+// Creates the member's Clerk account, saves their record with it and emails them their
+// login details. A failure at any step undoes the rest, so Clerk and the database
+// never disagree about who has an account
+async function saveWithNewAccount({
+  res,
+  member,
+  memberId,
+  siteUrl,
+  status,
+  save,
+  undoSave,
+}: NewAccountSave): Promise<void> {
+  const accountProblem = accountDetailsProblem(member);
+  if (accountProblem) {
+    res.status(400).json({ message: accountProblem });
+    return;
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  let clerkUserId: string;
+  try {
+    const clerkUser = await clerkClient.users.createUser({
+      emailAddress: [member.email],
+      firstName: member.firstName,
+      lastName: member.lastName,
+      password: temporaryPassword,
+    });
+    clerkUserId = clerkUser.id;
+  } catch (error) {
+    res.status(400).json({
+      message:
+        clerkErrorCode(error) === 'form_identifier_exists'
+          ? 'That email address is taken. Please check the email and try again.'
+          : clerkErrorMessage(error, "Unable to create the member's account."),
+    });
+    return;
+  }
+
+  const undoSteps: UndoStep[] = [
+    ['remove their new Clerk account', () => clerkClient.users.deleteUser(clerkUserId)],
+  ];
+  let failedStep = 'require a new password at their first login';
+  try {
+    await clerkClient.users.setPasswordCompromised(clerkUserId);
+
+    failedStep = 'save the member';
+    await save(newAccount(clerkUserId));
+    undoSteps.push(undoSave);
+
+    failedStep = 'assign a member number';
+    await assignMemberNumber(memberId.toString());
+    const record = await readMember(memberId);
+
+    failedStep = 'send the welcome email';
+    const email = buildWelcomeEmail(
+      record,
+      temporaryPassword,
+      siteUrl,
+      profileUrlFor(siteUrl, record),
+    );
+    await sendEmail(record.email, email.subject, email.text, email.html);
+
+    res.status(status).json({ data: toAdminMember(record) });
+  } catch (error) {
+    await failSave(res, failedStep, error, undoSteps);
+  }
+}
+
+// Keeps the member's name in Clerk in step with their record, and emails them the
+// changes when a site URL is given. A failure puts both back as they were
+async function saveForAccountHolder(
+  res: Response<ApiResponse<AdminMember>>,
+  existing: LinkedMemberRecord,
+  member: EditableMemberFields,
+  siteUrl: string | null,
+): Promise<void> {
+  const { clerkUserId } = existing.account;
+  const isNameChanged =
+    member.firstName !== existing.firstName || member.lastName !== existing.lastName;
+
+  const undoSteps: UndoStep[] = [];
+  let failedStep = "update the member's name in Clerk";
+  try {
+    if (isNameChanged) {
+      await clerkClient.users.updateUser(clerkUserId, {
+        firstName: member.firstName,
+        lastName: member.lastName,
+      });
+      undoSteps.push([
+        "restore the member's name in Clerk",
+        () =>
+          clerkClient.users.updateUser(clerkUserId, {
+            firstName: existing.firstName,
+            lastName: existing.lastName,
+          }),
+      ]);
+    }
+
+    failedStep = 'save the member';
+    await MemberModel.updateOne({ _id: existing._id }, { $set: member });
+    undoSteps.push([
+      'restore the member record',
+      () => MemberModel.replaceOne({ _id: existing._id }, existing),
+    ]);
+    const record = await readMember(existing._id);
+
+    const changes = describeMemberChanges(existing, member);
+    if (siteUrl && changes.length) {
+      failedStep = 'email the member about the changes';
+      const email = buildMemberChangesEmail(
+        record,
+        changes,
+        profileUrlFor(siteUrl, record),
+      );
+      await sendEmail(record.email, email.subject, email.text, email.html);
+    }
+
+    res.status(200).json({ data: toAdminMember(record) });
+  } catch (error) {
+    await failSave(res, failedStep, error, undoSteps);
+  }
+}
+
+// Ratings are already saved when these go out, so a failed email is reported back
+// rather than undoing everyone's new rating
+async function emailRatingChanges(
+  notices: RatingNotice[],
+  siteUrl: string,
+): Promise<string[]> {
+  const results = await Promise.allSettled(
+    notices.map(async ({ record, changes }) => {
+      const email = buildMemberChangesEmail(
+        record,
+        changes,
+        profileUrlFor(siteUrl, record),
+      );
+      await sendEmail(record.email, email.subject, email.text, email.html);
+    }),
+  );
+
+  return notices
+    .filter((_, index) => results[index].status === 'rejected')
+    .map(({ record }) => `${record.firstName} ${record.lastName}`);
+}
+
+async function failSave(
+  res: Response<ApiResponse<AdminMember>>,
+  failedStep: string,
+  error: unknown,
+  undoSteps: UndoStep[],
+): Promise<void> {
+  const results = await Promise.allSettled(undoSteps.map(([, undo]) => undo()));
+  const leftovers = undoSteps
+    .filter((_, index) => results[index].status === 'rejected')
+    .map(([description]) => description);
+  const reason = clerkErrorMessage(
+    error,
+    error instanceof Error ? error.message : String(error),
+  );
+
+  res.status(500).json({
+    message: leftovers.length
+      ? `Unable to ${failedStep}, and the site could not ${leftovers.join(' or ')}. Please fix this before trying again. ${reason}`
+      : `Unable to ${failedStep}, so nothing was saved. ${reason}`,
+  });
+}
+
+function accountDetailsProblem(member: EditableMemberFields): string | null {
+  if (!EMAIL_PATTERN.test(member.email)) {
+    return 'A valid email address is needed to create an account.';
+  }
+  return validateDetailField('yearOfBirth', member.yearOfBirth);
+}
+
+function newAccount(clerkUserId: string): MemberAccount {
+  return {
+    clerkUserId,
+    isAdmin: false,
+    clerkImageUrl: null,
+    avatarUrl: null,
+    avatarOriginalUrl: null,
+    avatarManagedByApp: false,
+    avatarCropState: null,
+    avatarUpdatedAt: null,
+  };
+}
+
+async function readMember(id: Types.ObjectId): Promise<MemberRecord> {
+  const record = await MemberModel.findById(id).lean<MemberRecord>();
+  if (!record) {
+    throw new Error('The saved member could not be read back.');
+  }
+  return record;
+}
+
+// Links in member emails lead back to the site the admin saved from
+function siteUrlFor(req: Pick<Request, 'header'>): string | null {
+  const origin = req.header('origin');
+  return origin && isAllowedOrigin(origin) ? origin : null;
+}
+
+function profileUrlFor(siteUrl: string, record: MemberRecord): string {
+  if (typeof record.number !== 'number') {
+    throw new Error('The member has no member number.');
+  }
+  return `${siteUrl}/members/${record.number}`;
 }
