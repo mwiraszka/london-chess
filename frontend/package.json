@@ -24,6 +24,7 @@
     "test:watch": "node scripts/generate-changelog-data.mjs && ng test --watch",
     "test:coverage": "node scripts/generate-changelog-data.mjs && ng test --coverage",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "e2e": "playwright test",
     "lint": "eslint 'src/**'"
   },

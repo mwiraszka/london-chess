@@ -21,7 +21,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint 'src/**' 'api/**'",
-    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts'"
+    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1131.0",
