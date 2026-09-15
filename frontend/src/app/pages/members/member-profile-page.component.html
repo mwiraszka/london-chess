@@ -73,10 +73,10 @@
                   <dd class="stat__value">{{ member.city }}</dd>
                 </div>
               }
-              @if (member.yearJoined) {
+              @if (yearJoined(member); as year) {
                 <div class="stat">
                   <dt class="stat__label">Member since</dt>
-                  <dd class="stat__value">{{ member.yearJoined }}</dd>
+                  <dd class="stat__value">{{ year }}</dd>
                 </div>
               }
               @if (member.yearOfBirth) {
@@ -165,13 +165,7 @@
             </div>
             <div class="detail">
               <dt>Date joined</dt>
-              <dd>
-                {{
-                  member.dateJoined
-                    ? (member.dateJoined | formatDate: 'long no-time')
-                    : 'Not on file'
-                }}
-              </dd>
+              <dd>{{ dateJoined(member) }}</dd>
             </div>
           </dl>
 

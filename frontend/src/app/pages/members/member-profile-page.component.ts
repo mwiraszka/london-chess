@@ -31,11 +31,10 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { Member } from '@app/models';
-import { FormatDatePipe } from '@app/pipes';
 import { MetaAndTitleService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
-import { isCityChampion } from '@app/utils';
+import { formatDate, isCityChampion } from '@app/utils';
 
 @Component({
   selector: 'lcc-member-profile-page',
@@ -48,7 +47,6 @@ import { isCityChampion } from '@app/utils';
     CardComponent,
     CommonModule,
     ExternalLinkIconComponent,
-    FormatDatePipe,
     LockIconComponent,
     PageHeaderComponent,
     RouterLink,
@@ -129,6 +127,20 @@ export class MemberProfilePageComponent implements OnInit {
 
   protected fullName(member: Member): string {
     return `${member.firstName} ${member.lastName}`;
+  }
+
+  // Member 2's join date is shown as 105 BC, a year the stored ISO join date cannot hold
+  protected yearJoined(member: Member): string | undefined {
+    return member.number === 2 ? '105 B.C.' : member.yearJoined;
+  }
+
+  protected dateJoined(member: Member): string {
+    if (member.number === 2) {
+      return 'January 1st 105 B.C.';
+    }
+    return member.dateJoined
+      ? formatDate(member.dateJoined, 'long no-time')
+      : 'Not on file';
   }
 
   protected initials(member: Member): string {
