@@ -20,8 +20,10 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
 import { KeepFocusDirective } from '@app/directives/keep-focus.directive';
 import { LoginStep } from '@app/models';
+import { ApiError, ApiService } from '@app/services/api.service';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
 import { ClerkService } from '@app/services/clerk.service';
+import { UserService } from '@app/services/user.service';
 import { createNewPasswordGroup } from '@app/utils';
 
 @Component({
@@ -40,9 +42,11 @@ import { createNewPasswordGroup } from '@app/utils';
 })
 export class LoginFormComponent implements OnDestroy {
   protected readonly authDrawer = inject(AuthDrawerService);
+  private readonly api = inject(ApiService);
   private readonly clerk = inject(ClerkService);
   private readonly injector = inject(Injector);
   private readonly toast = inject(ToastService);
+  private readonly userService = inject(UserService);
 
   private readonly codeInput = viewChild(CodeInputComponent);
 
@@ -55,6 +59,15 @@ export class LoginFormComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.form.controls.password.reset();
+
+    // Closing the drawer partway through a log in ends the session it started, so the
+    // site is never used with the password the site emailed
+    if (this.authDrawer.isCompletingLogin()) {
+      this.authDrawer.isCompletingLogin.set(false);
+      if (this.clerk.isLoggedIn()) {
+        void this.clerk.logOut();
+      }
+    }
   }
 
   protected async onSubmit(): Promise<void> {
@@ -65,6 +78,7 @@ export class LoginFormComponent implements OnDestroy {
     const { email, password } = this.form.getRawValue();
     this.error.set('');
     this.loading.set(true);
+    this.authDrawer.isCompletingLogin.set(true);
 
     try {
       const { needsSecondFactor, needsNewPassword } = await this.clerk.logIn(
@@ -78,9 +92,10 @@ export class LoginFormComponent implements OnDestroy {
       } else if (needsNewPassword) {
         this.step.set('new-password');
       } else {
-        this.completeLogin();
+        await this.finishLogin();
       }
     } catch (e: unknown) {
+      this.authDrawer.isCompletingLogin.set(false);
       this.error.set(this.clerk.extractError(e));
     } finally {
       this.loading.set(false);
@@ -92,8 +107,12 @@ export class LoginFormComponent implements OnDestroy {
     this.loading.set(true);
 
     try {
-      await this.clerk.verifyLoginCode(code);
-      this.completeLogin();
+      const { needsNewPassword } = await this.clerk.verifyLoginCode(code);
+      if (needsNewPassword) {
+        this.step.set('new-password');
+      } else {
+        await this.finishLogin();
+      }
     } catch (e: unknown) {
       this.error.set(this.clerk.extractError(e));
     } finally {
@@ -110,18 +129,36 @@ export class LoginFormComponent implements OnDestroy {
     this.loading.set(true);
 
     try {
-      await this.clerk.completeNewPassword(
-        this.newPasswordForm.controls.newPassword.value,
-      );
+      const newPassword = this.newPasswordForm.controls.newPassword.value;
+      if (this.userService.user()?.hasTemporaryPassword) {
+        await this.api.post('/users/me/password', {
+          currentPassword: this.form.controls.password.value,
+          newPassword,
+        });
+        await this.userService.load();
+      } else {
+        await this.clerk.completeNewPassword(newPassword);
+      }
       this.completeLogin();
     } catch (e: unknown) {
-      this.error.set(this.clerk.extractError(e));
+      this.error.set(e instanceof ApiError ? e.message : this.clerk.extractError(e));
     } finally {
       this.loading.set(false);
     }
   }
 
+  // A member still on the password the site emailed sets their own before finishing
+  private async finishLogin(): Promise<void> {
+    await this.userService.load();
+    if (this.userService.user()?.hasTemporaryPassword) {
+      this.step.set('new-password');
+    } else {
+      this.completeLogin();
+    }
+  }
+
   private completeLogin(): void {
+    this.authDrawer.isCompletingLogin.set(false);
     this.authDrawer.resetForms();
     this.authDrawer.close();
 

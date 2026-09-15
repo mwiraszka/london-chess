@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { UserRecord } from '@app/models';
 import { ApiService } from '@app/services/api.service';
+import { AuthDrawerService } from '@app/services/auth-drawer.service';
 import { ClerkService } from '@app/services/clerk.service';
 
 import { environment } from '@env';
@@ -11,9 +12,11 @@ import { environment } from '@env';
 })
 export class UserService {
   private readonly api = inject(ApiService);
+  private readonly authDrawer = inject(AuthDrawerService);
   private readonly clerk = inject(ClerkService);
 
   private readonly _user = signal<UserRecord | null>(null);
+  private loadPromise: Promise<void> | null = null;
 
   readonly user = this._user.asReadonly();
 
@@ -59,12 +62,27 @@ export class UserService {
 
   readonly hasAvatar = computed(() => !!this.avatarUrl());
 
-  async load(): Promise<void> {
+  // Calls made while a load is in flight share it, so a record fetched at log in can
+  // never land after a newer one
+  load(): Promise<void> {
+    this.loadPromise ??= this.fetchUser().finally(() => {
+      this.loadPromise = null;
+    });
+    return this.loadPromise;
+  }
+
+  private async fetchUser(): Promise<void> {
     if (!this.clerk.isLoggedIn()) {
       return;
     }
     try {
       const user = await this.api.get<UserRecord>('/users/me');
+      // The password the site emailed is replaced in the log in drawer before the site
+      // can be used, so a session that skipped that step is ended
+      if (user.hasTemporaryPassword && !this.authDrawer.isCompletingLogin()) {
+        await this.clerk.logOut();
+        return;
+      }
       this._user.set(user);
       await this.syncClerkImage(user);
     } catch {

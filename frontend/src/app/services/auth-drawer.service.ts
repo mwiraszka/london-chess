@@ -10,6 +10,9 @@ import { createEmailControl, createMemberAccountGroup } from '@app/utils';
 export class AuthDrawerService {
   readonly open = signal(false);
   readonly mode = signal<AuthMode>('login');
+  // True while the drawer finishes a log in, which can include replacing the password
+  // the site emailed before the member may use the site
+  readonly isCompletingLogin = signal(false);
 
   // The forms live here rather than in the form components, so switching
   // between the forms and back keeps whatever was typed

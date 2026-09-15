@@ -128,13 +128,6 @@ const routes: Routes = [
       ),
   },
   {
-    path: 'session-tasks/reset-password',
-    loadComponent: () =>
-      import('./pages/reset-password-task/reset-password-task-page.component').then(
-        c => c.ResetPasswordTaskPageComponent,
-      ),
-  },
-  {
     path: 'website-changelog',
     loadComponent: () =>
       import('./pages/website-changelog/website-changelog-page.component').then(

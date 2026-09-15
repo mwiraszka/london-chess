@@ -29,18 +29,18 @@ export class ClerkService {
 
   async load(): Promise<void> {
     this.clerk = new Clerk(environment.clerkPublishableKey);
-    // A password flagged as compromised turns the next sign-in into a pending
-    // session with a reset-password task, hosted on its own route.
-    // Angular router navigation so Clerk redirects (after sign-out, session
-    // tasks) stay in the SPA instead of forcing a full page load
+    // Angular router navigation so Clerk redirects (after sign-out) stay in the SPA
+    // instead of forcing a full page load
     await this.clerk.load({
       routerPush: (to: string) => void this.router.navigateByUrl(to),
       routerReplace: (to: string) =>
         void this.router.navigateByUrl(to, { replaceUrl: true }),
-      taskUrls: {
-        'reset-password': '/session-tasks/reset-password',
-      },
     });
+    // A session left waiting on a new password is dropped, so the next log in asks
+    // for the new password in the drawer again
+    if (this.clerk.session?.status === 'pending') {
+      await this.clerk.signOut();
+    }
     this.syncState();
 
     this.clerk.addListener(() => this.syncState());
@@ -67,34 +67,40 @@ export class ClerkService {
     }
 
     if (result.status === 'complete') {
-      await this.clerk.setActive({ session: result.createdSessionId });
+      await this.activateSession(result.createdSessionId);
     }
 
-    return { needsSecondFactor: false, needsNewPassword: false };
+    return { needsSecondFactor: false, needsNewPassword: this.hasResetPasswordTask() };
   }
 
-  async verifyLoginCode(code: string): Promise<void> {
+  async verifyLoginCode(code: string): Promise<{ needsNewPassword: boolean }> {
     const result = await this.clerk.client!.signIn.attemptSecondFactor({
       strategy: 'email_code',
       code,
     });
 
     if (result.status === 'complete') {
-      await this.clerk.setActive({ session: result.createdSessionId });
+      await this.activateSession(result.createdSessionId);
     }
+
+    return { needsNewPassword: this.hasResetPasswordTask() };
   }
 
-  // Completes a sign-in that Clerk flagged with needs_new_password (a
-  // temporary or compromised password that must be replaced before the
-  // session is created).
+  // Replaces a temporary or compromised password before the session becomes active,
+  // whether Clerk asked for it during sign-in or left the session pending on it
   async completeNewPassword(password: string): Promise<void> {
+    if (this.hasResetPasswordTask()) {
+      await this.resolveResetPasswordTask(password);
+      return;
+    }
+
     const result = await this.clerk.client!.signIn.resetPassword({
       password,
       signOutOfOtherSessions: true,
     });
 
     if (result.status === 'complete') {
-      await this.clerk.setActive({ session: result.createdSessionId });
+      await this.activateSession(result.createdSessionId);
     }
   }
 
@@ -123,16 +129,29 @@ export class ClerkService {
     }
   }
 
-  async resetPassword(code: string, password: string): Promise<void> {
-    const result = await this.clerk.client!.signIn.attemptFirstFactor({
+  // A normal reset asks for the new password once the code is accepted. An account
+  // whose password is flagged as temporary is signed in pending a reset-password task
+  // instead, and the same new password resolves that task, so it is only ever chosen
+  // once. Resolves whether the member ends up logged in
+  async resetPassword(code: string, password: string): Promise<boolean> {
+    const signIn = this.clerk.client!.signIn;
+    let result = await signIn.attemptFirstFactor({
       strategy: 'reset_password_email_code',
       code,
-      password,
     });
-
-    if (result.status === 'complete') {
-      await this.clerk.setActive({ session: result.createdSessionId });
+    if (result.status === 'needs_new_password') {
+      result = await signIn.resetPassword({ password, signOutOfOtherSessions: true });
     }
+
+    if (result.status !== 'complete') {
+      return false;
+    }
+
+    await this.activateSession(result.createdSessionId);
+    if (this.hasResetPasswordTask()) {
+      await this.resolveResetPasswordTask(password);
+    }
+    return this.clerk.session?.status === 'active';
   }
 
   async reloadUser(): Promise<void> {
@@ -177,6 +196,27 @@ export class ClerkService {
     return this.friendlyMessage(error?.code, error?.longMessage);
   }
 
+  // The drawer shows whatever comes next, so Clerk is never left to navigate on its own.
+  // Callers read the logged in state straight after, so it is synced here as well
+  private async activateSession(sessionId: string | null): Promise<void> {
+    await this.clerk.setActive({ session: sessionId, navigate: () => Promise.resolve() });
+    this.syncState();
+  }
+
+  private hasResetPasswordTask(): boolean {
+    return this.clerk.session?.currentTask?.key === 'reset-password';
+  }
+
+  // Setting the password resolves the task, and activating the session again picks up
+  // its updated task list
+  private async resolveResetPasswordTask(password: string): Promise<void> {
+    await this.clerk.user!.updatePassword({
+      newPassword: password,
+      signOutOfOtherSessions: true,
+    });
+    await this.activateSession(this.clerk.session?.id ?? null);
+  }
+
   private firstClerkError(
     e: unknown,
   ): { code?: string; longMessage?: string } | undefined {
@@ -214,7 +254,9 @@ export class ClerkService {
 
   private syncState(): void {
     const wasLoggedIn = this.isLoggedIn();
-    const clerkUser = this.clerk.user ?? null;
+    // A pending session is still waiting on a new password, so it counts as logged out
+    const clerkUser =
+      this.clerk.session?.status === 'pending' ? null : (this.clerk.user ?? null);
 
     this.isLoaded.set(true);
     this.isLoggedIn.set(!!clerkUser);

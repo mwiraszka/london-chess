@@ -22,6 +22,7 @@ export interface UserRecord {
   avatarOriginalUrl: string | null;
   avatarCropState: AvatarEditorCropState | null;
   avatarUpdatedAt: string | null;
+  hasTemporaryPassword: boolean;
 }
 
 export interface UserSessionRecord {
