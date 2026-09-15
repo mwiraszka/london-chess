@@ -153,11 +153,23 @@ describe('Members Selectors', () => {
   describe('selectMemberFormDataById', () => {
     it('should select form data for existing member', () => {
       const allMemberEntities = [
-        { member: MOCK_MEMBERS[0], formData: mockMemberFormData },
+        { member: MOCK_MEMBERS[1], formData: mockMemberFormData },
       ];
-      const selector = MembersSelectors.selectMemberFormDataById(MOCK_MEMBERS[0].id);
+      const selector = MembersSelectors.selectMemberFormDataById(MOCK_MEMBERS[1].id);
       const result = selector.projector(mockMembersState, allMemberEntities);
       expect(result).toEqual(mockMemberFormData);
+    });
+
+    it("should keep an account holder's email from the member rather than the draft", () => {
+      const member: Member = { ...MOCK_MEMBERS[0], email: 'account@example.com' };
+      const allMemberEntities = [
+        { member, formData: { ...mockMemberFormData, email: '' } },
+      ];
+      const selector = MembersSelectors.selectMemberFormDataById(member.id);
+
+      const result = selector.projector(mockMembersState, allMemberEntities);
+
+      expect(result).toEqual({ ...mockMemberFormData, email: 'account@example.com' });
     });
 
     it('should return newMemberFormData when member id is null', () => {

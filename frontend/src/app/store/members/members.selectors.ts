@@ -65,9 +65,17 @@ export const selectMemberFormDataById = (id: Id | null) =>
   createSelector(
     selectMembersState,
     selectAllMemberEntities,
-    (state, allMemberEntities) =>
-      allMemberEntities.find(entity => entity.member.id === id)?.formData ??
-      state.newMemberFormData,
+    (state, allMemberEntities) => {
+      const entity = allMemberEntities.find(entity => entity.member.id === id);
+      if (!entity) {
+        return state.newMemberFormData;
+      }
+
+      // An account holder's email belongs to their account, so a draft never overrides it
+      return entity.member.hasAccount
+        ? { ...entity.formData, email: entity.member.email }
+        : entity.formData;
+    },
   );
 
 export const selectHasUnsavedChanges = (id: Id | null) =>
