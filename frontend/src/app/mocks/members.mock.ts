@@ -22,7 +22,7 @@ export const MOCK_MEMBERS: Member[] = [
     dateJoined: moment('2018-05-10').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
     avatarUrl: null,
-    accountStatus: 'active',
+    hasAccount: true,
   },
   {
     id: 'b2c3d4e5f6a7b8c9',
@@ -41,7 +41,7 @@ export const MOCK_MEMBERS: Member[] = [
     dateJoined: moment('2019-02-15').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[1],
     avatarUrl: null,
-    accountStatus: 'invited',
+    hasAccount: false,
   },
   {
     id: 'c3d4e5f6a7b8c9d0',
@@ -60,7 +60,7 @@ export const MOCK_MEMBERS: Member[] = [
     dateJoined: moment('2020-07-20').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[2],
     avatarUrl: null,
-    accountStatus: 'none',
+    hasAccount: false,
   },
   {
     id: 'd4e5f6a7b8c9d0e1',
@@ -79,7 +79,7 @@ export const MOCK_MEMBERS: Member[] = [
     dateJoined: moment('2021-09-12').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[3],
     avatarUrl: null,
-    accountStatus: 'none',
+    hasAccount: false,
   },
   {
     id: 'e5f6a7b8c9d0e1f2',
@@ -98,6 +98,6 @@ export const MOCK_MEMBERS: Member[] = [
     dateJoined: moment('2022-03-25').toISOString(),
     modificationInfo: MOCK_MODIFICATION_INFOS[4],
     avatarUrl: null,
-    accountStatus: 'none',
+    hasAccount: false,
   },
 ];

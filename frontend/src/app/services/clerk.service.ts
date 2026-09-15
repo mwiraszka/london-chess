@@ -135,27 +135,6 @@ export class ClerkService {
     }
   }
 
-  // The invitation ticket carries the verified email address and the member link
-  async acceptInvitation(
-    ticket: string,
-    password: string,
-    firstName: string,
-    lastName: string,
-  ): Promise<void> {
-    const result = await this.clerk.client!.signUp.create({
-      strategy: 'ticket',
-      ticket,
-      password,
-      firstName,
-      lastName,
-    });
-
-    if (result.status !== 'complete') {
-      throw new Error('Unable to finish creating your account.');
-    }
-    await this.clerk.setActive({ session: result.createdSessionId });
-  }
-
   async reloadUser(): Promise<void> {
     await this.clerk.user?.reload();
     this.syncState();

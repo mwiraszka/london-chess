@@ -73,7 +73,6 @@ export const membersReducer = createReducer(
     MembersActions.updateMemberRequested,
     MembersActions.deleteMemberRequested,
     MembersActions.updateMemberRatingsRequested,
-    MembersActions.createMemberAccountRequested,
     (state): MembersState => ({
       ...state,
       callState: {
@@ -101,7 +100,6 @@ export const membersReducer = createReducer(
     MembersActions.updateMemberFailed,
     MembersActions.deleteMemberFailed,
     MembersActions.updateMemberRatingsFailed,
-    MembersActions.createMemberAccountFailed,
     (state, { error }): MembersState => ({
       ...state,
       callState: {
@@ -201,21 +199,18 @@ export const membersReducer = createReducer(
     ),
   ),
 
-  on(
-    MembersActions.updateMemberSucceeded,
-    MembersActions.createMemberAccountSucceeded,
-    (state, { member }): MembersState =>
-      membersAdapter.upsertOne(
-        {
-          member,
-          formData: pick(member, MEMBER_FORM_DATA_PROPERTIES),
-        },
-        {
-          ...state,
-          callState: initialState.callState,
-          lastFilteredFetch: null,
-        },
-      ),
+  on(MembersActions.updateMemberSucceeded, (state, { member }): MembersState =>
+    membersAdapter.upsertOne(
+      {
+        member,
+        formData: pick(member, MEMBER_FORM_DATA_PROPERTIES),
+      },
+      {
+        ...state,
+        callState: initialState.callState,
+        lastFilteredFetch: null,
+      },
+    ),
   ),
 
   on(MembersActions.updateMemberRatingsSucceeded, (state, { members }): MembersState =>

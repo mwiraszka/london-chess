@@ -41,10 +41,8 @@ export type {
 } from './image.model';
 export type { ExternalLink, InternalLink, InternalPath } from './link.model';
 export type {
-  AccountStatus,
   EditableMember,
   Member,
-  MemberAccountDetails,
   MemberAccountFormGroup,
   MemberDetailsFormData,
   MemberDetailsFormGroup,

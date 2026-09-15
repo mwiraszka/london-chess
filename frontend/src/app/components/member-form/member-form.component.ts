@@ -76,7 +76,7 @@ export class MemberFormComponent implements OnInit {
 
   // A member with an account changes their email address from the account page
   protected get isEmailManagedByAccount(): boolean {
-    return this.originalMember?.accountStatus === 'active';
+    return this.originalMember?.hasAccount === true;
   }
 
   constructor(

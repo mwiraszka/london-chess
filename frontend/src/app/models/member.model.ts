@@ -5,8 +5,6 @@ import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { Id, IsoDate, Url } from './core.model';
 import { ModificationInfo } from './modification-info.model';
 
-export type AccountStatus = 'invited' | 'active';
-
 export interface Member {
   id: Id;
   // Null for members without an active account, who have no profile page
@@ -28,8 +26,8 @@ export interface Member {
   yearJoined?: string;
   modificationInfo: ModificationInfo;
   avatarUrl: Url | null;
-  // Only admins receive a member's account status
-  accountStatus?: AccountStatus | 'none';
+  // Only admins learn whether a member has an account
+  hasAccount?: boolean;
 }
 
 // The number, avatar and account belong to the server, so admins never write them
@@ -40,17 +38,6 @@ export interface MemberProfile {
   firstName: string;
   lastName: string;
   avatarUrl: Url | null;
-}
-
-export interface MemberAccountDetails {
-  firstName: string;
-  lastName: string;
-  email: string;
-  city: string;
-  yearOfBirth: string;
-  phoneNumber: string;
-  lichessUsername: string;
-  chessComUsername: string;
 }
 
 export interface MemberDetailsFormData {

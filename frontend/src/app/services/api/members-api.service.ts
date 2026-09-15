@@ -11,7 +11,6 @@ import {
   EditableMember,
   Id,
   Member,
-  MemberAccountDetails,
   PaginatedItems,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
@@ -89,16 +88,6 @@ export class MembersApiService {
     return this.http.put<ApiResponse<Id>>(
       `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}`,
       member,
-    );
-  }
-
-  public createMemberAccount(
-    id: Id,
-    details: MemberAccountDetails,
-  ): Observable<ApiResponse<Member>> {
-    return this.http.post<ApiResponse<Member>>(
-      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}/account`,
-      details,
     );
   }
 

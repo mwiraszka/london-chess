@@ -244,24 +244,6 @@ export class MembersEffects {
     );
   });
 
-  createMemberAccount$ = createEffect(() => {
-    return this.actions$.pipe(
-      ofType(MembersActions.createMemberAccountRequested),
-      concatMap(({ memberId, details }) =>
-        this.membersApiService.createMemberAccount(memberId, details).pipe(
-          map(response =>
-            MembersActions.createMemberAccountSucceeded({ member: response.data }),
-          ),
-          catchError(error =>
-            of(
-              MembersActions.createMemberAccountFailed({ error: this.parseError(error) }),
-            ),
-          ),
-        ),
-      ),
-    );
-  });
-
   deleteMember$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(MembersActions.deleteMemberRequested),

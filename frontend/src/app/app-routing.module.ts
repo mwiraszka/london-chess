@@ -22,13 +22,6 @@ const routes: Routes = [
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
   {
-    path: 'accept-invitation',
-    loadComponent: () =>
-      import('./pages/accept-invitation/accept-invitation-page.component').then(
-        c => c.AcceptInvitationPageComponent,
-      ),
-  },
-  {
     path: 'about',
     loadChildren: () =>
       import('./pages/about/about-page-routing.module').then(

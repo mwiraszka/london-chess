@@ -1,18 +1,16 @@
-import { ButtonComponent, ShieldCheckIconComponent } from '@eagami/ui';
+import { ShieldCheckIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-import { CreateMemberAccountDialogComponent } from '@app/components/create-member-account-dialog/create-member-account-dialog.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { MemberFormComponent } from '@app/components/member-form/member-form.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { EditorPage, Id, InternalLink, Member, MemberFormData } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
@@ -41,51 +39,13 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
         (restore)="onRestore($event)">
       </lcc-member-form>
 
-      @if (vm.originalMember; as member) {
-        @if (member.accountStatus !== 'active' && !vm.isSafeMode) {
-          <div
-            class="account-actions"
-            [tooltip]="
-              vm.hasUnsavedChanges
-                ? 'Save or restore your changes before sending an invitation.'
-                : null
-            ">
-            <ea-button
-              size="sm"
-              variant="primary"
-              [disabled]="vm.hasUnsavedChanges"
-              (clicked)="accountDialogOpen.set(true)">
-              {{
-                member.accountStatus === 'invited'
-                  ? 'Resend invitation'
-                  : 'Create account'
-              }}
-            </ea-button>
-          </div>
-
-          <lcc-create-member-account-dialog
-            [member]="member"
-            [(open)]="accountDialogOpen" />
-        }
-      }
-
       <lcc-link-list [links]="[membersPageLink]"></lcc-link-list>
     }
   `,
-  styleUrl: './member-editor-page.component.scss',
-  imports: [
-    ButtonComponent,
-    CommonModule,
-    CreateMemberAccountDialogComponent,
-    LinkListComponent,
-    MemberFormComponent,
-    PageHeaderComponent,
-    TooltipDirective,
-  ],
+  imports: [CommonModule, LinkListComponent, MemberFormComponent, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberEditorPageComponent implements EditorPage, OnInit {
-  protected readonly accountDialogOpen = signal(false);
   protected readonly adminIcon = ShieldCheckIconComponent;
 
   public readonly entity = 'member';

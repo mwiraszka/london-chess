@@ -64,7 +64,6 @@ describe('MembersEffects', () => {
       addMember: vi.fn(),
       updateMember: vi.fn(),
       updateMembers: vi.fn(),
-      createMemberAccount: vi.fn(),
       deleteMember: vi.fn(),
     };
 
@@ -543,70 +542,6 @@ describe('MembersEffects', () => {
           subscription.unsubscribe();
           done();
         }, 100);
-      }));
-  });
-
-  describe('createMemberAccount$', () => {
-    const { firstName, lastName, email, city, yearOfBirth, phoneNumber } =
-      MOCK_MEMBERS[2];
-    const { lichessUsername, chessComUsername } = MOCK_MEMBERS[2];
-    const details = {
-      firstName,
-      lastName,
-      email,
-      city,
-      yearOfBirth,
-      phoneNumber,
-      lichessUsername,
-      chessComUsername,
-    };
-
-    it('should send the invitation and return the invited member', () =>
-      withDone(done => {
-        const invitedMember: Member = { ...MOCK_MEMBERS[2], accountStatus: 'invited' };
-        membersApiService.createMemberAccount.mockReturnValue(
-          of({ data: invitedMember }),
-        );
-
-        actions$.next(
-          MembersActions.createMemberAccountRequested({
-            memberId: invitedMember.id,
-            details,
-          }),
-        );
-
-        effects.createMemberAccount$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.createMemberAccountSucceeded({ member: invitedMember }),
-          );
-          expect(membersApiService.createMemberAccount).toHaveBeenCalledWith(
-            invitedMember.id,
-            details,
-          );
-          done();
-        });
-      }));
-
-    it('should handle create member account failure', () =>
-      withDone(done => {
-        membersApiService.createMemberAccount.mockReturnValue(
-          throwError(() => mockError),
-        );
-        mockParseError.mockReturnValue(mockError);
-
-        actions$.next(
-          MembersActions.createMemberAccountRequested({
-            memberId: MOCK_MEMBERS[2].id,
-            details,
-          }),
-        );
-
-        effects.createMemberAccount$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.createMemberAccountFailed({ error: mockError }),
-          );
-          done();
-        });
       }));
   });
 

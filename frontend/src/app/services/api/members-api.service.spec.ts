@@ -15,7 +15,6 @@ import {
   EditableMember,
   Id,
   Member,
-  MemberAccountDetails,
   PaginatedItems,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
@@ -191,33 +190,6 @@ describe('MembersApiService', () => {
       const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(editableMember);
-      req.flush(mockResponse);
-    });
-  });
-
-  describe('createMemberAccount', () => {
-    it('should post the account details for the member', () => {
-      const details: MemberAccountDetails = {
-        firstName: mockMember.firstName,
-        lastName: mockMember.lastName,
-        email: mockMember.email,
-        city: mockMember.city,
-        yearOfBirth: mockMember.yearOfBirth,
-        phoneNumber: mockMember.phoneNumber,
-        lichessUsername: mockMember.lichessUsername,
-        chessComUsername: mockMember.chessComUsername,
-      };
-      const mockResponse: ApiResponse<Member> = {
-        data: { ...mockMember, accountStatus: 'invited' },
-      };
-
-      service.createMemberAccount(mockMember.id, details).subscribe(response => {
-        expect(response).toEqual(mockResponse);
-      });
-
-      const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}/account`);
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(details);
       req.flush(mockResponse);
     });
   });

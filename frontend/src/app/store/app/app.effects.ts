@@ -82,8 +82,6 @@ export class AppEffects {
 
     MembersActions.addMemberFailed,
     MembersActions.addMemberSucceeded,
-    MembersActions.createMemberAccountFailed,
-    MembersActions.createMemberAccountSucceeded,
     MembersActions.deleteMemberFailed,
     MembersActions.deleteMemberSucceeded,
     MembersActions.exportMembersToCsvFailed,
@@ -464,18 +462,6 @@ export class AppEffects {
         return {
           title: 'New member',
           message: `Successfully added ${action.member.firstName} ${action.member.lastName}`,
-          type: 'success',
-        };
-      case MembersActions.createMemberAccountFailed.type:
-        return {
-          title: 'Account invitation',
-          message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case MembersActions.createMemberAccountSucceeded.type:
-        return {
-          title: 'Account invitation',
-          message: `An account invitation was sent to ${action.member.email}.`,
           type: 'success',
         };
       case MembersActions.deleteMemberFailed.type:

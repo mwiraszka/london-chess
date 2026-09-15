@@ -5,7 +5,6 @@ import {
   Id,
   LccError,
   Member,
-  MemberAccountDetails,
   MemberFormData,
   MemberWithNewRatings,
 } from '@app/models';
@@ -137,19 +136,6 @@ export const exportMembersToCsvSucceeded = createAction(
 );
 export const exportMembersToCsvFailed = createAction(
   '[Members] Export members to CSV failed',
-  props<{ error: LccError }>(),
-);
-
-export const createMemberAccountRequested = createAction(
-  '[Members] Create member account requested',
-  props<{ memberId: Id; details: MemberAccountDetails }>(),
-);
-export const createMemberAccountSucceeded = createAction(
-  '[Members] Create member account succeeded',
-  props<{ member: Member }>(),
-);
-export const createMemberAccountFailed = createAction(
-  '[Members] Create member account failed',
   props<{ error: LccError }>(),
 );
 
