@@ -10,13 +10,8 @@ export interface AvatarCropState {
   offsetY: number;
 }
 
-export type AccountStatus = 'invited' | 'active';
-
 export interface MemberAccount {
-  status: AccountStatus;
-  // Null until the invitation is accepted and the Clerk user exists
-  clerkUserId: string | null;
-  invitationId: string | null;
+  clerkUserId: string;
   isAdmin: boolean;
   clerkImageUrl: string | null;
   avatarUrl: string | null;
@@ -28,7 +23,7 @@ export interface MemberAccount {
 
 export interface Member {
   id: Id;
-  // Assigned when the member's account first becomes active
+  // Assigned when the member is first linked to an account
   number?: number;
   firstName: string;
   lastName: string;
@@ -53,9 +48,7 @@ export type EditableMemberFields = Omit<Member, 'id' | 'number' | 'account'>;
 
 const accountSchema = new Schema<MemberAccount>(
   {
-    status: { type: String, enum: ['invited', 'active'], required: true },
-    clerkUserId: { type: String, default: null },
-    invitationId: { type: String, default: null },
+    clerkUserId: { type: String, required: true },
     isAdmin: { type: Boolean, default: false },
     clerkImageUrl: { type: String, default: null },
     avatarUrl: { type: String, default: null },

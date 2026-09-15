@@ -17,7 +17,7 @@ const PRIVATE_MEMBER_FIELDS = [
   'yearOfBirth',
   'dateJoined',
   'account',
-  'accountStatus',
+  'hasAccount',
 ];
 
 function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
@@ -45,9 +45,7 @@ function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
       dateLastEdited: '2024-01-01T00:00:00.000Z',
     },
     account: {
-      status: 'active',
       clerkUserId: 'user_123',
-      invitationId: 'inv_123',
       isAdmin: true,
       clerkImageUrl: 'https://img.clerk.com/photo',
       avatarUrl: 'https://avatars.example.com/cropped',
@@ -78,7 +76,6 @@ describe('PUBLIC_MEMBER_PROJECTION', () => {
       'account.avatarUpdatedAt',
       'account.avatarUrl',
       'account.isAdmin',
-      'account.status',
     ]);
   });
 });
@@ -129,7 +126,6 @@ describe('toPublicMember', () => {
     expect(JSON.stringify(member)).not.toContain('jane@example.com');
     expect(JSON.stringify(member)).not.toContain('555-123-4567');
     expect(JSON.stringify(member)).not.toContain('user_123');
-    expect(JSON.stringify(member)).not.toContain('inv_123');
     expect(JSON.stringify(member)).not.toContain('original');
   });
 
@@ -141,7 +137,7 @@ describe('toPublicMember', () => {
     expect(JSON.stringify(member)).not.toContain('do not share');
   });
 
-  it('should give the profile number for an active account', () => {
+  it('should give the profile number for a member with an account', () => {
     const member = toPublicMember(buildRecord());
 
     expect(member.number).toBe(7);
@@ -169,18 +165,6 @@ describe('toPublicMember', () => {
     expect(member.modificationInfo.lastEditedByNumber).toBeNull();
   });
 
-  it('should show a profile number, avatar and admin badge only for an active account', () => {
-    const invited = buildRecord({
-      account: { ...buildRecord().account!, status: 'invited' },
-    });
-
-    const member = toPublicMember(invited);
-
-    expect(member.number).toBeNull();
-    expect(member.avatarUrl).toBeNull();
-    expect(member.isAdmin).toBe(false);
-  });
-
   it('should handle a member without an account', () => {
     const member = toPublicMember(buildRecord({ account: null }));
 
@@ -191,30 +175,27 @@ describe('toPublicMember', () => {
 });
 
 describe('toAdminMember', () => {
-  it('should add the private member details and account status, but no account internals', () => {
+  it('should add the private member details and whether they have an account, but no account internals', () => {
     const member = toAdminMember(buildRecord());
 
     expect(member.email).toBe('jane@example.com');
     expect(member.phoneNumber).toBe('555-123-4567');
-    expect(member.accountStatus).toBe('active');
+    expect(member.hasAccount).toBe(true);
     expect(JSON.stringify(member)).not.toContain('user_123');
-    expect(JSON.stringify(member)).not.toContain('inv_123');
     expect(JSON.stringify(member)).not.toContain('original');
   });
 
-  it("should report 'none' for a member without an account", () => {
+  it('should report when a member has no account', () => {
     const member = toAdminMember(buildRecord({ account: null }));
 
-    expect(member.accountStatus).toBe('none');
+    expect(member.hasAccount).toBe(false);
   });
 });
 
 describe('toMemberProfiles', () => {
-  it('should list only members with an active account and a number', () => {
-    const account = buildRecord().account!;
+  it('should list only members with an account and a number', () => {
     const records = [
       buildRecord(),
-      buildRecord({ number: 8, account: { ...account, status: 'invited' } }),
       buildRecord({ number: undefined }),
       buildRecord({ number: 9, account: null }),
     ];

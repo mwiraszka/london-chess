@@ -2,7 +2,6 @@ import { Router } from 'express';
 
 import {
   addMember,
-  createMemberAccount,
   deleteMember,
   getMemberById,
   getMemberByNumber,
@@ -23,7 +22,6 @@ export const adminMembersRouter = Router()
   .get('/number/:number', adminAuth, getMemberByNumber('admin'))
   .get('/:id', adminAuth, getMemberById)
   .post('/', adminAuth, addMember)
-  .post('/:id/account', adminAuth, createMemberAccount)
   .put('/', adminAuth, updateMembers)
   .put('/:id', adminAuth, updateMember)
   .delete('/:id', adminAuth, deleteMember);

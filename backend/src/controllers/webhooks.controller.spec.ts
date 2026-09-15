@@ -30,7 +30,7 @@ describe('toProfile', () => {
     });
   });
 
-  it('should carry the member id from the invitation metadata', () => {
+  it('should carry the member id from the public metadata', () => {
     const data: ClerkUserEventData = {
       ...baseData,
       public_metadata: { memberId: '507f1f77bcf86cd799439011' },

@@ -15,8 +15,7 @@ export interface ClerkProfile {
   imageUrl: string;
   hasImage: boolean;
   isAdmin: boolean;
-  // The member an invitation was sent for, which Clerk carries into the new
-  // user's public metadata
+  // The member this user belongs to, set in the user's Clerk public metadata
   memberId: string | null;
 }
 
@@ -89,7 +88,7 @@ async function uploadClerkImage(clerkUserId: string, imageUrl: string): Promise<
   return uploadAvatar(clerkUserId, buffer, contentType);
 }
 
-// Attaches a Clerk user to the member its invitation was sent for. The
+// Attaches a Clerk user to the member named in its public metadata. The
 // user.created webhook and the auth middleware's fallback can race here: the
 // filter only matches a member with no linked user and the unique index on the
 // Clerk user id settles the rest, so whichever call lands second finds the link
@@ -103,9 +102,7 @@ export async function linkClerkUser(
   }
 
   const account: MemberAccount = {
-    status: 'active',
     clerkUserId: profile.id,
-    invitationId: null,
     isAdmin: profile.isAdmin,
     // Without a photo, Clerk reports a placeholder imageUrl; store null so it is
     // never mistaken for a real avatar

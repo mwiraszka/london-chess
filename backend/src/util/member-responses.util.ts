@@ -1,10 +1,5 @@
 import { IsoDate } from '../models/core.model';
-import {
-  AccountStatus,
-  AvatarCropState,
-  MemberAccount,
-  MemberRecord,
-} from '../models/member.model';
+import { AvatarCropState, MemberAccount, MemberRecord } from '../models/member.model';
 import { ModificationInfo } from '../models/modification-info.model';
 
 export interface PublicMember {
@@ -29,7 +24,7 @@ export interface AdminMember extends PublicMember {
   yearOfBirth: string;
   dateJoined: IsoDate;
   yearJoined: string;
-  accountStatus: AccountStatus | 'none';
+  hasAccount: boolean;
 }
 
 // A profile page is public, so it shows years rather than full dates
@@ -59,9 +54,7 @@ export interface MemberProfile {
   avatarUrl: string | null;
 }
 
-export type LinkedMemberRecord = MemberRecord & {
-  account: MemberAccount & { clerkUserId: string };
-};
+export type LinkedMemberRecord = MemberRecord & { account: MemberAccount };
 
 // The only fields a public request reads from the database. Responses are then
 // rebuilt field by field, so a field added to members later stays private until
@@ -77,7 +70,6 @@ export const PUBLIC_MEMBER_PROJECTION = {
   lichessUsername: 1,
   isActive: 1,
   modificationInfo: 1,
-  'account.status': 1,
   'account.isAdmin': 1,
   'account.avatarUrl': 1,
   'account.avatarUpdatedAt': 1,
@@ -93,14 +85,13 @@ export const MEMBER_PROFILE_PROJECTION = {
   number: 1,
   firstName: 1,
   lastName: 1,
-  'account.status': 1,
   'account.avatarUrl': 1,
   'account.avatarUpdatedAt': 1,
 } as const;
 
 export function toMemberProfiles(records: MemberRecord[]): MemberProfile[] {
   return records.flatMap(record =>
-    typeof record.number === 'number' && record.account?.status === 'active'
+    typeof record.number === 'number' && record.account
       ? [
           {
             number: record.number,
@@ -114,11 +105,11 @@ export function toMemberProfiles(records: MemberRecord[]): MemberProfile[] {
 }
 
 export function toPublicMember(record: MemberRecord): PublicMember {
-  const account = record.account?.status === 'active' ? record.account : null;
+  const { account } = record;
 
   return {
     id: record._id.toString(),
-    // A profile page exists only while the account is active
+    // Only members with an account have a profile page
     number: account ? (record.number ?? null) : null,
     firstName: record.firstName,
     lastName: record.lastName,
@@ -157,7 +148,7 @@ export function toAdminMember(record: MemberRecord): AdminMember {
     yearOfBirth: record.yearOfBirth,
     dateJoined: record.dateJoined,
     yearJoined: yearOf(record.dateJoined),
-    accountStatus: record.account?.status ?? 'none',
+    hasAccount: !!record.account,
   };
 }
 

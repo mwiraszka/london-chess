@@ -205,9 +205,7 @@ async function linkRetiredAccounts(): Promise<void> {
     }
 
     const account: MemberAccount = {
-      status: 'active',
       clerkUserId: user.id,
-      invitationId: null,
       isAdmin: user.isAdmin,
       clerkImageUrl: user.clerkImageUrl,
       avatarUrl: user.avatarUrl,

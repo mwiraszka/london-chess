@@ -36,7 +36,7 @@ export const authenticate = async (
 
   let member = await findLinkedMember(clerkId);
 
-  // Webhook race: link the account from its invitation metadata if not yet synced
+  // Webhook race: link the account from its Clerk metadata if not yet synced
   if (!member) {
     try {
       member = await linkClerkUser(

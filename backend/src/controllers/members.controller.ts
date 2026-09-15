@@ -6,18 +6,14 @@ import { Id } from '../models/core.model';
 import {
   EditableMemberFields,
   Member,
-  MemberAccount,
   MemberModel,
   MemberRecord,
   editableMemberTypes,
   memberSortingConfig,
 } from '../models/member.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
-import { clerkClient } from '../services/clerk.service';
 import { findEditor } from '../services/member-accounts.service';
-import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { isCollectionId } from '../util/is-collection-id.util';
-import { EMAIL_PATTERN, validateDetailField } from '../util/member-details.util';
 import {
   AdminMember,
   MEMBER_PROFILE_PROJECTION,
@@ -36,18 +32,6 @@ import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 type Scope = 'public' | 'admin';
-
-const ACCOUNT_DETAIL_FIELDS = [
-  'firstName',
-  'lastName',
-  'city',
-  'yearOfBirth',
-  'phoneNumber',
-  'lichessUsername',
-  'chessComUsername',
-] as const;
-
-type AccountDetails = Record<(typeof ACCOUNT_DETAIL_FIELDS)[number] | 'email', string>;
 
 function toResponse(scope: Scope): (record: MemberRecord) => PublicMember | AdminMember {
   return scope === 'public' ? toPublicMember : toAdminMember;
@@ -164,7 +148,7 @@ export function getMemberByNumber(scope: Scope) {
       const { number } = req.params;
       const record = /^\d+$/.test(number)
         ? await MemberModel.findOne(
-            { number: Number(number), 'account.status': 'active' },
+            { number: Number(number), 'account.clerkUserId': { $ne: null } },
             scope === 'public' ? PUBLIC_PROFILE_PROJECTION : null,
           ).lean<MemberRecord>()
         : null;
@@ -189,7 +173,7 @@ export async function getMemberProfiles(
 ): Promise<void> {
   try {
     const records = await MemberModel.find(
-      { 'account.status': 'active', number: { $exists: true } },
+      { 'account.clerkUserId': { $ne: null }, number: { $exists: true } },
       MEMBER_PROFILE_PROJECTION,
     ).lean<MemberRecord[]>();
 
@@ -277,10 +261,7 @@ export async function updateMember(
       await findEditor(req.user.id),
       false,
     );
-    if (
-      existing.account?.status === 'active' &&
-      preparedMember.email !== existing.email
-    ) {
+    if (existing.account && preparedMember.email !== existing.email) {
       res.status(400).json({
         message: "This member's email address is managed by their account.",
       });
@@ -380,7 +361,7 @@ export async function deleteMember(
       });
       return;
     }
-    if (existing.account?.status === 'active') {
+    if (existing.account) {
       res.status(409).json({
         message: 'This member has an account, so their record cannot be deleted.',
       });
@@ -392,104 +373,6 @@ export async function deleteMember(
     res.status(200).json({ data: id });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
-  }
-}
-
-// Sends a Clerk invitation for the member, first saving the details the admin
-// confirmed. The member ID travels in the invitation's metadata, which links
-// the account to this member once the invitation is accepted
-export async function createMemberAccount(
-  req: Request<{ id: Id }>,
-  res: Response<ApiResponse<AdminMember>>,
-): Promise<void> {
-  try {
-    const { id } = req.params;
-
-    const origin = req.header('origin');
-    if (!origin || !isAllowedOrigin(origin)) {
-      res.status(400).json({
-        message: 'Account invitations can only be sent from the London Chess website.',
-      });
-      return;
-    }
-
-    const details = parseAccountDetails(req.body);
-    if (typeof details === 'string') {
-      res.status(400).json({ message: details });
-      return;
-    }
-
-    const member = isCollectionId(id)
-      ? await MemberModel.findById(id).lean<MemberRecord>()
-      : null;
-    if (!member) {
-      res.status(404).json({ message: `Unable to find member [${id}]` });
-      return;
-    }
-    if (member.account?.status === 'active') {
-      res.status(409).json({ message: 'This member already has an account.' });
-      return;
-    }
-
-    // The invitee's browser has nothing but this link, so it carries the name the
-    // admin confirmed for their new account
-    const acceptUrl = new URL('/accept-invitation', origin);
-    acceptUrl.searchParams.set('firstName', details.firstName);
-    acceptUrl.searchParams.set('lastName', details.lastName);
-
-    let invitationId: string;
-    try {
-      const invitation = await clerkClient.invitations.createInvitation({
-        emailAddress: details.email,
-        publicMetadata: { memberId: id },
-        redirectUrl: acceptUrl.toString(),
-        notify: true,
-        ignoreExisting: member.account?.status === 'invited',
-      });
-      invitationId = invitation.id;
-    } catch (error) {
-      res.status(400).json({
-        message: clerkErrorMessage(error, 'Unable to send the account invitation.'),
-      });
-      return;
-    }
-
-    const editor = await findEditor(req.user.id);
-    const account: MemberAccount = {
-      status: 'invited',
-      clerkUserId: null,
-      invitationId,
-      isAdmin: false,
-      clerkImageUrl: null,
-      avatarUrl: null,
-      avatarOriginalUrl: null,
-      avatarManagedByApp: false,
-      avatarCropState: null,
-      avatarUpdatedAt: null,
-    };
-
-    const updated = await MemberModel.findOneAndUpdate(
-      { _id: id, 'account.clerkUserId': null },
-      {
-        $set: {
-          ...details,
-          account,
-          'modificationInfo.lastEditedBy': editor.name,
-          'modificationInfo.lastEditedByNumber': editor.number,
-          'modificationInfo.dateLastEdited': new Date().toISOString(),
-        },
-      },
-      { new: true },
-    ).lean<MemberRecord>();
-
-    if (!updated) {
-      res.status(409).json({ message: 'This member already has an account.' });
-      return;
-    }
-
-    res.status(200).json({ data: toAdminMember(updated) });
-  } catch (error) {
-    res.status(500).json({ message: `Unable to create account: ${error}` });
   }
 }
 
@@ -508,52 +391,6 @@ function validateEditableMember(body: unknown): string | null {
   }
 
   return null;
-}
-
-function parseAccountDetails(body: unknown): AccountDetails | string {
-  if (typeof body !== 'object' || body === null) {
-    return 'Account details are required.';
-  }
-  const input = body as Record<string, unknown>;
-
-  const email = input['email'];
-  if (typeof email !== 'string' || !EMAIL_PATTERN.test(email.trim())) {
-    return 'A valid email address is required.';
-  }
-
-  const details: AccountDetails = {
-    email: email.trim(),
-    firstName: '',
-    lastName: '',
-    city: '',
-    yearOfBirth: '',
-    phoneNumber: '',
-    lichessUsername: '',
-    chessComUsername: '',
-  };
-
-  for (const field of ACCOUNT_DETAIL_FIELDS) {
-    const value = input[field];
-    if (typeof value !== 'string') {
-      return 'Every account detail must be text.';
-    }
-    const trimmed = value.trim();
-    // Many members have no year of birth on file, and an account does not need one
-    const problem =
-      field === 'yearOfBirth' && !trimmed ? null : validateDetailField(field, trimmed);
-    if (problem) {
-      return problem;
-    }
-    details[field] = trimmed;
-  }
-
-  return details;
-}
-
-function clerkErrorMessage(error: unknown, fallback: string): string {
-  const clerkError = error as { errors?: Array<{ longMessage?: string }> };
-  const message = clerkError.errors?.[0]?.longMessage ?? fallback;
-  return /[.!?]$/.test(message) ? message : `${message}.`;
 }
 
 // Remove id property and order remaining properties alphabetically
