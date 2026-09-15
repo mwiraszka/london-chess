@@ -15,9 +15,6 @@ on:
 
 jobs:
   Deploy-Production:
-    # Set the repository variable ENABLE_VERCEL to 'true' once the Vercel project
-    # and secrets are configured (see docs/deployment.md).
-    if: ${{ vars.ENABLE_VERCEL == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
