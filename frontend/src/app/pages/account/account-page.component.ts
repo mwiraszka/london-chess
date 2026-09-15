@@ -387,15 +387,15 @@ export class AccountPageComponent implements OnInit {
         lichessUsername: lichessUsername.trim(),
         chessComUsername: chessComUsername.trim(),
       });
-      this.toast.show(
-        'Your requested changes have been sent for review – an admin will email you once they are made.',
-        { title: 'Request sent', variant: 'info' },
-      );
+      this.toast.show('An admin will email you once your changes are made.', {
+        title: 'Request sent',
+        variant: 'success',
+      });
     } catch (e: unknown) {
       this.toast.show(
         e instanceof ApiError
           ? asSentence(e.message)
-          : 'Unable to send your request – please try again.',
+          : 'Unable to send your request. Please try again.',
         { title: 'Request failed', variant: 'error' },
       );
     } finally {
