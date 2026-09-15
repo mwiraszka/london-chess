@@ -2,6 +2,7 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4200',
   'https://londonchess.ca',
   'https://www.londonchess.ca',
+  'https://preview.londonchess.ca',
 ];
 
 export function isAllowedOrigin(origin: string): boolean {
