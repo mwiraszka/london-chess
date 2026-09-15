@@ -7,8 +7,7 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
-import { MembersActions, MembersSelectors } from '@app/store/members';
-import { initialState } from '@app/store/members/members.reducer';
+import { MembersSelectors } from '@app/store/members';
 import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { MemberProfilePageComponent } from './member-profile-page.component';
@@ -17,7 +16,6 @@ describe('MemberProfilePageComponent', () => {
   let fixture: ComponentFixture<MemberProfilePageComponent>;
   let component: MemberProfilePageComponent;
   let store: MockStore;
-  let dispatchSpy: MockInstance;
 
   const member = {
     ...MOCK_MEMBERS[0],
@@ -45,8 +43,6 @@ describe('MemberProfilePageComponent', () => {
 
     store = TestBed.inject(MockStore);
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
-    store.overrideSelector(MembersSelectors.selectCallState, initialState.callState);
-    dispatchSpy = vi.spyOn(store, 'dispatch');
 
     fixture = TestBed.createComponent(MemberProfilePageComponent);
     component = fixture.componentInstance;
@@ -55,12 +51,6 @@ describe('MemberProfilePageComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
-  });
-
-  it('should request the member by number on init', () => {
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      MembersActions.fetchMemberByNumberRequested({ memberNumber: 0 }),
-    );
   });
 
   it('should render the member name and ratings', () => {

@@ -233,17 +233,6 @@
   }
 }
 
-.not-found {
-  margin-top: 16px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.loading-placeholder {
-  width: 100%;
-  height: 180px;
-}
-
 // The saved logo is solid black; the app theme decides when to flip it
 :host-context(body[data-theme='dark']) .platform-logo--lichess {
   filter: invert(1);

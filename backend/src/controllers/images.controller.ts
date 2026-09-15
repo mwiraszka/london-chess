@@ -6,8 +6,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request, Response } from 'express';
-import { ClientSession, ObjectId } from 'mongodb';
-import { startSession } from 'mongoose';
+import type { ClientSession } from 'mongodb';
+import { Types, startSession } from 'mongoose';
 import sharp from 'sharp';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
@@ -213,7 +213,7 @@ export async function getBatchThumbnailImages(
       return;
     }
 
-    const invalidIds = imageIds.filter(id => !ObjectId.isValid(id));
+    const invalidIds = imageIds.filter(id => !Types.ObjectId.isValid(id));
     if (invalidIds.length > 0) {
       res.status(400).json({
         message: `[IM-3.3] Invalid image ID(s): ${invalidIds.join(', ')}`,
@@ -222,7 +222,9 @@ export async function getBatchThumbnailImages(
     }
 
     const [mongoResults, articleCounts] = await Promise.all([
-      ImageModel.find({ _id: { $in: imageIds.map(id => new ObjectId(id)) } }).lean(),
+      ImageModel.find({
+        _id: { $in: imageIds.map(id => new Types.ObjectId(id)) },
+      }).lean(),
       ArticleModel.aggregate<{ _id: string; count: number }>([
         { $match: { bannerImageId: { $in: imageIds } } },
         { $group: { _id: '$bannerImageId', count: { $sum: 1 } } },
@@ -281,7 +283,7 @@ export async function getMainImage(
   try {
     const { id } = req.params;
 
-    if (!ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(id)) {
       res.status(400).json({ message: `[IM-4.0] Invalid image ID: ${id}` });
       return;
     }
@@ -384,7 +386,7 @@ export async function updateImages(
       const updatedImages: Image[] = [];
       for (const image of existingImages) {
         const result = await ImageModel.updateOne(
-          { _id: new ObjectId(image.id) },
+          { _id: new Types.ObjectId(image.id) },
           { $set: prepareImageForDB(image, editor, false) },
           { session },
         );
@@ -460,7 +462,7 @@ export async function deleteImage(
       mainResponse.$metadata.httpStatusCode === 204 &&
       thumbnailResponse.$metadata.httpStatusCode === 204
     ) {
-      const result = await ImageModel.deleteOne({ _id: new ObjectId(id) });
+      const result = await ImageModel.deleteOne({ _id: new Types.ObjectId(id) });
 
       if (result.deletedCount === 0) {
         res.status(404).json({
@@ -523,7 +525,7 @@ export async function deleteAlbum(
             ),
           ]);
 
-          const result = await ImageModel.deleteOne({ _id: new ObjectId(id) });
+          const result = await ImageModel.deleteOne({ _id: new Types.ObjectId(id) });
 
           if (result.deletedCount > 0) {
             deletedImageIds.push(id);

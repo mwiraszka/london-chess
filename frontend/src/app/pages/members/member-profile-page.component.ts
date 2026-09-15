@@ -5,13 +5,12 @@ import {
   CardComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
-  SkeletonComponent,
   TrophyIconComponent,
   UserIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { Observable, combineLatest } from 'rxjs';
-import { map, switchMap, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -30,7 +29,7 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
-import { MembersActions, MembersSelectors } from '@app/store/members';
+import { MembersSelectors } from '@app/store/members';
 import { isCityChampion } from '@app/utils';
 
 @Component({
@@ -47,7 +46,6 @@ import { isCityChampion } from '@app/utils';
     PageHeaderComponent,
     RouterLink,
     ShieldCheckIconComponent,
-    SkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -67,7 +65,6 @@ export class MemberProfilePageComponent implements OnInit {
 
   public viewModel$?: Observable<{
     member: Member | null;
-    hasError: boolean;
   }>;
 
   constructor() {
@@ -92,24 +89,13 @@ export class MemberProfilePageComponent implements OnInit {
     this.metaAndTitleService.updateTitle('Member Profile');
     this.metaAndTitleService.updateDescription('Profile of a London Chess Club member.');
 
+    // The route guard has already loaded the member for every number this page shows
     this.viewModel$ = this.route.paramMap.pipe(
       map(params => Number(params.get('number'))),
-      tap(memberNumber =>
-        this.store.dispatch(
-          MembersActions.fetchMemberByNumberRequested({ memberNumber }),
-        ),
-      ),
       switchMap(memberNumber =>
-        combineLatest([
-          this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
-          this.store.select(MembersSelectors.selectCallState),
-        ]).pipe(
-          map(([member, callState]) => ({
-            member,
-            hasError: !member && callState.status === 'error',
-          })),
-        ),
+        this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
       ),
+      map(member => ({ member })),
     );
   }
 

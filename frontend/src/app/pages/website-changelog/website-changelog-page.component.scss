@@ -186,8 +186,11 @@
   margin-bottom: 8px;
 }
 
-.release-card--collapsed {
-  cursor: pointer;
+// The header, tags and entries carry the card's spacing themselves, so the part that stays
+// visible when a card is collapsed toggles it edge to edge while the entries do not
+.release-card {
+  --ea-card-header-padding: 0;
+  --ea-card-body-padding: 0;
 }
 
 .release-version-row {
@@ -212,6 +215,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px 16px;
+  padding: var(--space-4) var(--space-4) 0;
+  cursor: pointer;
 
   .release-heading {
     min-width: 0;
@@ -281,11 +286,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  padding: var(--space-4) var(--space-4) 0;
   margin-bottom: 24px;
+  cursor: pointer;
 }
 
 .release-tags--collapsed {
+  padding-bottom: var(--space-4);
   margin-bottom: 0;
+}
+
+.release-details {
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .release-section {
