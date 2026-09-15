@@ -183,7 +183,7 @@ export class AppEffects {
   }
 
   private getErrorMessage(error: LccError): string {
-    return error.status ? `[${error.status}] ${error.message}` : error.message;
+    return error.message;
   }
 
   private getMemberUpdateMessage(name: string, emailSent: MemberEmail | null): string {

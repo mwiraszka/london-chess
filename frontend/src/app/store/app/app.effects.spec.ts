@@ -70,7 +70,7 @@ describe('AppEffects', () => {
           actions$.next(AppActions.unexpectedErrorOccurred({ error: mockError }));
 
           effects.notify$.subscribe(action => {
-            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
+            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
               title: 'Unexpected error',
               variant: 'warning',
             });
@@ -78,7 +78,7 @@ describe('AppEffects', () => {
               AppActions.toastDisplayed({
                 toast: {
                   title: 'Unexpected error',
-                  message: '[500] Test error message',
+                  message: 'Test error message',
                   type: 'warning',
                 },
               }),
@@ -94,7 +94,7 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.deleteArticleFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
+            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
               title: 'Article deletion',
               variant: 'warning',
             });
@@ -125,7 +125,7 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.fetchArticleFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
+            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
               title: 'Load article',
               variant: 'warning',
             });
@@ -579,7 +579,7 @@ describe('AppEffects', () => {
           actions$.next(MembersActions.fetchMemberFailed({ error: mockError }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('[500] Test error message', {
+            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
               title: 'Load member',
               variant: 'warning',
             });
@@ -592,7 +592,7 @@ describe('AppEffects', () => {
           actions$.next(ArticlesActions.deleteArticleFailed({ error: notFound }));
 
           effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('[404] Not found', {
+            expect(toastService.show).toHaveBeenCalledWith('Not found', {
               title: 'Article deletion',
               variant: 'warning',
             });
