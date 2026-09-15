@@ -109,6 +109,13 @@
         height: 100%;
       }
     }
+
+    // The portrait already shows who it is, so the profile link keeps the plain card look
+    .recipient--linked {
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
   }
 
   @include respond-to('gt-md') {

@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
-import { MetaAndTitleService } from '@app/services';
+import { MemberProfile } from '@app/models';
+import { MemberProfilesService, MetaAndTitleService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
 import { LifetimePageComponent } from './lifetime-page.component';
@@ -14,10 +16,23 @@ describe('LifetimePageComponent', () => {
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
+  const profile: MemberProfile = {
+    number: 2,
+    firstName: 'Gerry',
+    lastName: 'Litchfield',
+    avatarUrl: null,
+  };
+  const memberProfiles: Pick<MemberProfilesService, 'load' | 'profileFor'> = {
+    load: () => Promise.resolve(),
+    profileFor: (number: number | null) => (number === 2 ? profile : null),
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [LifetimePageComponent],
       providers: [
+        provideRouter([]),
+        { provide: MemberProfilesService, useValue: memberProfiles },
         {
           provide: MetaAndTitleService,
           useValue: {
@@ -101,6 +116,13 @@ describe('LifetimePageComponent', () => {
         component.RECIPIENTS_MAP.get(2023)!.length;
 
       expect(recipients).toHaveLength(expectedTotal);
+    });
+
+    it('should link only a recipient with a profile to their profile page', () => {
+      const links = queryAll(fixture.debugElement, 'a.recipient');
+
+      expect(links).toHaveLength(1);
+      expect(links[0].attributes['href']).toBe('/members/2');
     });
   });
 });

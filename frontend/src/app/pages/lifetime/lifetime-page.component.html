@@ -52,9 +52,7 @@
 
     <div class="recipients">
       @for (name of group.value; track name) {
-        <div
-          [id]="name | kebabCase"
-          class="recipient">
+        <ng-template #recipientContent>
           <div class="image-container">
             <img
               [src]="IMAGE_PATH + (name | kebabCase) + '.png'"
@@ -63,7 +61,24 @@
               [alt]="name" />
           </div>
           <label class="lcc-truncate">{{ name }}</label>
-        </div>
+        </ng-template>
+
+        @let profile =
+          memberProfiles.profileFor(RECIPIENT_MEMBER_NUMBERS.get(name) ?? null);
+        @if (profile) {
+          <a
+            [id]="name | kebabCase"
+            class="recipient recipient--linked"
+            [routerLink]="['/members', profile.number]">
+            <ng-container [ngTemplateOutlet]="recipientContent" />
+          </a>
+        } @else {
+          <div
+            [id]="name | kebabCase"
+            class="recipient">
+            <ng-container [ngTemplateOutlet]="recipientContent" />
+          </div>
+        }
       }
     </div>
   </section>
