@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { MetaAndTitleService } from '@app/services';
+import { ApiService, MetaAndTitleService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
 import { AboutPageComponent } from './about-page.component';
@@ -16,9 +16,14 @@ describe('AboutPageComponent', () => {
   let updateTitleSpy: MockInstance;
 
   beforeEach(async () => {
+    const mockApiService: Pick<ApiService, 'get'> = {
+      get: <T>() => Promise.resolve([] as T),
+    };
+
     await TestBed.configureTestingModule({
       imports: [AboutPageComponent],
       providers: [
+        { provide: ApiService, useValue: mockApiService },
         {
           provide: MetaAndTitleService,
           useValue: {

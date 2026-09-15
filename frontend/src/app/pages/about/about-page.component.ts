@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { ClubCardComponent } from '@app/components/club-card/club-card.component';
 import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
+import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { LCC } from '@app/constants/clubs';
 import { Club } from '@app/models';
@@ -14,7 +15,13 @@ import { MetaAndTitleService } from '@app/services';
   selector: 'lcc-about-page',
   templateUrl: './about-page.component.html',
   styleUrl: './about-page.component.scss',
-  imports: [ClubCardComponent, ExpansionPanelComponent, PageHeaderComponent, RouterLink],
+  imports: [
+    ClubCardComponent,
+    ExpansionPanelComponent,
+    MemberLinkComponent,
+    PageHeaderComponent,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AboutPageComponent implements OnInit {
