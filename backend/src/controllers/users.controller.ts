@@ -16,6 +16,8 @@ import {
   findLinkedMember,
   updateLinkedMember,
 } from '../services/member-accounts.service';
+import { clerkErrorMessage } from '../util/clerk-error.util';
+import { escapeHtml } from '../util/html.util';
 import {
   DETAIL_FIELDS,
   DetailField,
@@ -53,12 +55,6 @@ function parseCropState(raw: unknown): AvatarCropState | null {
     // fall through to null
   }
   return null;
-}
-
-function clerkErrorMessage(error: unknown, fallback: string): string {
-  const clerkError = error as { errors?: Array<{ longMessage?: string }> };
-  const message = clerkError.errors?.[0]?.longMessage ?? fallback;
-  return /[.!?]$/.test(message) ? message : `${message}.`;
 }
 
 export async function getMyMember(
@@ -519,10 +515,6 @@ export async function getUserAvatar(
   } catch (error) {
     res.status(500).json({ message: `Unable to fetch avatar: ${error}` });
   }
-}
-
-function escapeHtml(value: string): string {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 const VERIFICATION_TTL_MS = 10 * 60 * 1000;
