@@ -9,7 +9,14 @@ import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_MEMBER_FORM_DATA } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { ApiResponse, LccError, Member, PaginatedItems, User } from '@app/models';
+import {
+  ApiResponse,
+  LccError,
+  Member,
+  MemberRatingsUpdate,
+  PaginatedItems,
+  User,
+} from '@app/models';
 import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
@@ -249,7 +256,9 @@ describe('MembersEffects', () => {
   describe('refetchFilteredMembers$', () => {
     it('should trigger refetch after addMemberSucceeded', () =>
       withDone(done => {
-        actions$.next(MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0] }));
+        actions$.next(
+          MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0], emailSent: null }),
+        );
 
         effects.refetchFilteredMembers$.subscribe(action => {
           expect(action).toEqual(
@@ -265,6 +274,7 @@ describe('MembersEffects', () => {
           MembersActions.updateMemberSucceeded({
             member: MOCK_MEMBERS[0],
             originalMemberName: 'Old Name',
+            emailSent: null,
           }),
         );
 
@@ -444,11 +454,14 @@ describe('MembersEffects', () => {
 
         membersApiService.addMember.mockReturnValue(of(mockAddResponse));
 
-        actions$.next(MembersActions.addMemberRequested());
+        actions$.next(MembersActions.addMemberRequested({ notifyMember: false }));
 
         effects.addMember$.subscribe(action => {
           expect(action).toEqual(
-            MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0] }),
+            MembersActions.addMemberSucceeded({
+              member: MOCK_MEMBERS[0],
+              emailSent: null,
+            }),
           );
           expect(membersApiService.addMember).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -457,6 +470,28 @@ describe('MembersEffects', () => {
                 lastEditedBy: 'Test User',
               }),
             }),
+            false,
+          );
+          done();
+        });
+      }));
+
+    it('should report the welcome email when the new member is emailed', () =>
+      withDone(done => {
+        membersApiService.addMember.mockReturnValue(of({ data: MOCK_MEMBERS[0] }));
+
+        actions$.next(MembersActions.addMemberRequested({ notifyMember: true }));
+
+        effects.addMember$.subscribe(action => {
+          expect(action).toEqual(
+            MembersActions.addMemberSucceeded({
+              member: MOCK_MEMBERS[0],
+              emailSent: 'welcome',
+            }),
+          );
+          expect(membersApiService.addMember).toHaveBeenCalledWith(
+            expect.anything(),
+            true,
           );
           done();
         });
@@ -467,7 +502,7 @@ describe('MembersEffects', () => {
         membersApiService.addMember.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.addMemberRequested());
+        actions$.next(MembersActions.addMemberRequested({ notifyMember: false }));
 
         effects.addMember$.subscribe(action => {
           expect(action).toEqual(MembersActions.addMemberFailed({ error: mockError }));
@@ -486,25 +521,69 @@ describe('MembersEffects', () => {
     it('should update member successfully', () =>
       withDone(done => {
         const memberId = MOCK_MEMBERS[0].id;
-        const mockUpdateResponse: ApiResponse<string> = { data: memberId };
+        const mockUpdateResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
 
         membersApiService.updateMember.mockReturnValue(of(mockUpdateResponse));
 
-        actions$.next(MembersActions.updateMemberRequested({ memberId }));
+        actions$.next(
+          MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
+        );
 
         effects.updateMember$.subscribe(action => {
-          expect(action.type).toBe(MembersActions.updateMemberSucceeded.type);
-          const payload = action as ReturnType<
-            typeof MembersActions.updateMemberSucceeded
-          >;
-          expect(payload.member.id).toBe(memberId);
-          expect(payload.member.modificationInfo.lastEditedBy).toBe('Test User');
-          expect(payload.originalMemberName).toBe(
-            `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
+          expect(action).toEqual(
+            MembersActions.updateMemberSucceeded({
+              member: MOCK_MEMBERS[0],
+              originalMemberName: `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
+              emailSent: null,
+            }),
           );
           expect(membersApiService.updateMember).toHaveBeenCalledWith(
             memberId,
-            expect.not.objectContaining({ id: memberId }),
+            expect.objectContaining({
+              modificationInfo: expect.objectContaining({ lastEditedBy: 'Test User' }),
+            }),
+            false,
+          );
+          expect(membersApiService.updateMember.mock.calls[0][1]).not.toHaveProperty(
+            'id',
+          );
+          done();
+        });
+      }));
+
+    it('should report the changes email for a member with an account', () =>
+      withDone(done => {
+        const memberId = MOCK_MEMBERS[0].id;
+        membersApiService.updateMember.mockReturnValue(of({ data: MOCK_MEMBERS[0] }));
+
+        actions$.next(
+          MembersActions.updateMemberRequested({ memberId, notifyMember: true }),
+        );
+
+        effects.updateMember$.subscribe(action => {
+          expect(action).toEqual(expect.objectContaining({ emailSent: 'changes' }));
+          expect(membersApiService.updateMember).toHaveBeenCalledWith(
+            memberId,
+            expect.anything(),
+            true,
+          );
+          done();
+        });
+      }));
+
+    it('should report the welcome email for a member given an account', () =>
+      withDone(done => {
+        const memberId = MOCK_MEMBERS[2].id;
+        const savedMember: Member = { ...MOCK_MEMBERS[2], hasAccount: true };
+        membersApiService.updateMember.mockReturnValue(of({ data: savedMember }));
+
+        actions$.next(
+          MembersActions.updateMemberRequested({ memberId, notifyMember: true }),
+        );
+
+        effects.updateMember$.subscribe(action => {
+          expect(action).toEqual(
+            expect.objectContaining({ member: savedMember, emailSent: 'welcome' }),
           );
           done();
         });
@@ -517,7 +596,9 @@ describe('MembersEffects', () => {
         membersApiService.updateMember.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.updateMemberRequested({ memberId }));
+        actions$.next(
+          MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
+        );
 
         effects.updateMember$.subscribe(action => {
           expect(action).toEqual(MembersActions.updateMemberFailed({ error: mockError }));
@@ -528,11 +609,15 @@ describe('MembersEffects', () => {
     it('should not dispatch success if response ID does not match', () =>
       withDone(done => {
         const memberId = MOCK_MEMBERS[0].id;
-        const mockUpdateResponse: ApiResponse<string> = { data: 'different-id' };
+        const mockUpdateResponse: ApiResponse<Member> = {
+          data: { ...MOCK_MEMBERS[0], id: 'different-id' },
+        };
 
         membersApiService.updateMember.mockReturnValue(of(mockUpdateResponse));
 
-        actions$.next(MembersActions.updateMemberRequested({ memberId }));
+        actions$.next(
+          MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
+        );
 
         const subscription = effects.updateMember$.subscribe(() => {
           done.fail('Should not dispatch action when IDs do not match');
@@ -670,8 +755,11 @@ describe('MembersEffects', () => {
           { ...MOCK_MEMBERS[0], newRating: '2900', newPeakRating: '2900' },
           { ...MOCK_MEMBERS[1], newRating: '2800', newPeakRating: '2850' },
         ];
-        const mockUpdateResponse: ApiResponse<string[]> = {
-          data: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
+        const mockUpdateResponse: ApiResponse<MemberRatingsUpdate> = {
+          data: {
+            updatedIds: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
+            unnotifiedMemberNames: ['Magnus Carlsen'],
+          },
         };
 
         membersApiService.updateMembers.mockReturnValue(of(mockUpdateResponse));
@@ -688,6 +776,7 @@ describe('MembersEffects', () => {
           expect(payload.members).toHaveLength(2);
           expect(payload.members[0].rating).toBe('2900');
           expect(payload.members[1].rating).toBe('2800');
+          expect(payload.unnotifiedMemberNames).toEqual(['Magnus Carlsen']);
           expect(membersApiService.updateMembers).toHaveBeenCalledWith([
             expect.objectContaining({ id: MOCK_MEMBERS[0].id, rating: '2900' }),
             expect.objectContaining({ id: MOCK_MEMBERS[1].id, rating: '2800' }),

@@ -359,11 +359,27 @@ describe('AppEffects', () => {
       it('should display toast for addMemberSucceeded', () =>
         withDone(done => {
           const member = { ...MOCK_MEMBERS[0], firstName: 'John', lastName: 'Doe' };
-          actions$.next(MembersActions.addMemberSucceeded({ member }));
+          actions$.next(MembersActions.addMemberSucceeded({ member, emailSent: null }));
 
           effects.notify$.subscribe(() => {
             expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully added John Doe',
+              'Successfully added John Doe.',
+              { title: 'New member', variant: 'success' },
+            );
+            done();
+          });
+        }));
+
+      it('should mention the welcome email for a member added with an account', () =>
+        withDone(done => {
+          const member = { ...MOCK_MEMBERS[0], firstName: 'John', lastName: 'Doe' };
+          actions$.next(
+            MembersActions.addMemberSucceeded({ member, emailSent: 'welcome' }),
+          );
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully added John Doe and emailed them their login details.',
               { title: 'New member', variant: 'success' },
             );
             done();
@@ -409,12 +425,51 @@ describe('AppEffects', () => {
             MembersActions.updateMemberSucceeded({
               member: MOCK_MEMBERS[0],
               originalMemberName: 'Old Name',
+              emailSent: null,
             }),
           );
 
           effects.notify$.subscribe(() => {
             expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Old Name',
+              'Successfully updated Old Name.',
+              { title: 'Member update', variant: 'success' },
+            );
+            done();
+          });
+        }));
+
+      it('should mention the changes email for a member with an account', () =>
+        withDone(done => {
+          actions$.next(
+            MembersActions.updateMemberSucceeded({
+              member: MOCK_MEMBERS[0],
+              originalMemberName: 'Old Name',
+              emailSent: 'changes',
+            }),
+          );
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated Old Name and emailed them the changes.',
+              { title: 'Member update', variant: 'success' },
+            );
+            done();
+          });
+        }));
+
+      it('should mention the welcome email for a member given an account', () =>
+        withDone(done => {
+          actions$.next(
+            MembersActions.updateMemberSucceeded({
+              member: MOCK_MEMBERS[2],
+              originalMemberName: 'Old Name',
+              emailSent: 'welcome',
+            }),
+          );
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Successfully updated Old Name and emailed them their login details.',
               { title: 'Member update', variant: 'success' },
             );
             done();
@@ -426,13 +481,32 @@ describe('AppEffects', () => {
           actions$.next(
             MembersActions.updateMemberRatingsSucceeded({
               members: [MOCK_MEMBERS[0], MOCK_MEMBERS[1]],
+              unnotifiedMemberNames: [],
             }),
           );
 
           effects.notify$.subscribe(() => {
             expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated 2 members',
+              'Successfully updated 2 members.',
               { title: 'Members update', variant: 'success' },
+            );
+            done();
+          });
+        }));
+
+      it('should warn about members who could not be emailed their new rating', () =>
+        withDone(done => {
+          actions$.next(
+            MembersActions.updateMemberRatingsSucceeded({
+              members: [MOCK_MEMBERS[0], MOCK_MEMBERS[1]],
+              unnotifiedMemberNames: ['Magnus Carlsen'],
+            }),
+          );
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.show).toHaveBeenCalledWith(
+              'Updated 2 members, but Magnus Carlsen could not be emailed about their new rating.',
+              { title: 'Members update', variant: 'warning' },
             );
             done();
           });

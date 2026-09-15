@@ -85,7 +85,7 @@ describe('Members Reducer', () => {
     });
 
     it('should set loading state on addMemberRequested', () => {
-      const action = MembersActions.addMemberRequested();
+      const action = MembersActions.addMemberRequested({ notifyMember: false });
       const state = membersReducer(initialState, action);
 
       expect(state.callState.status).toBe('loading');
@@ -94,6 +94,7 @@ describe('Members Reducer', () => {
     it('should set loading state on updateMemberRequested', () => {
       const action = MembersActions.updateMemberRequested({
         memberId: MOCK_MEMBERS[0].id,
+        notifyMember: false,
       });
       const state = membersReducer(initialState, action);
 
@@ -282,7 +283,10 @@ describe('Members Reducer', () => {
 
   describe('addMemberSucceeded', () => {
     it('should add new member to state', () => {
-      const action = MembersActions.addMemberSucceeded({ member: mockMember });
+      const action = MembersActions.addMemberSucceeded({
+        member: mockMember,
+        emailSent: null,
+      });
       const state = membersReducer(initialState, action);
 
       expect(state.entities['a1b2c3d4e5f6a7b8']?.member).toEqual(mockMember);
@@ -318,6 +322,7 @@ describe('Members Reducer', () => {
       const action = MembersActions.updateMemberSucceeded({
         member: updatedMember,
         originalMemberName: 'John Doe',
+        emailSent: null,
       });
       const state = membersReducer(previousState, action);
 
@@ -345,6 +350,7 @@ describe('Members Reducer', () => {
 
       const action = MembersActions.updateMemberRatingsSucceeded({
         members: [updatedMember1, updatedMember2],
+        unnotifiedMemberNames: [],
       });
       const state = membersReducer(previousState, action);
 

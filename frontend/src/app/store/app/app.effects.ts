@@ -7,7 +7,7 @@ import { filter, map, tap } from 'rxjs/operators';
 
 import { Injectable } from '@angular/core';
 
-import { LccError, Toast } from '@app/models';
+import { LccError, MemberEmail, Toast } from '@app/models';
 import { ArticlesActions } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions } from '@app/store/events';
@@ -184,6 +184,16 @@ export class AppEffects {
 
   private getErrorMessage(error: LccError): string {
     return error.status ? `[${error.status}] ${error.message}` : error.message;
+  }
+
+  private getMemberUpdateMessage(name: string, emailSent: MemberEmail | null): string {
+    if (emailSent === 'welcome') {
+      return `Successfully updated ${name} and emailed them their login details.`;
+    }
+    if (emailSent === 'changes') {
+      return `Successfully updated ${name} and emailed them the changes.`;
+    }
+    return `Successfully updated ${name}.`;
   }
 
   private mapActionToToast(action: NotifyAction): Toast | null {
@@ -461,7 +471,10 @@ export class AppEffects {
       case MembersActions.addMemberSucceeded.type:
         return {
           title: 'New member',
-          message: `Successfully added ${action.member.firstName} ${action.member.lastName}`,
+          message:
+            action.emailSent === 'welcome'
+              ? `Successfully added ${action.member.firstName} ${action.member.lastName} and emailed them their login details.`
+              : `Successfully added ${action.member.firstName} ${action.member.lastName}.`,
           type: 'success',
         };
       case MembersActions.deleteMemberFailed.type:
@@ -531,15 +544,24 @@ export class AppEffects {
           type: 'warning',
         };
       case MembersActions.updateMemberRatingsSucceeded.type:
-        return {
-          title: 'Members update',
-          message: `Successfully updated ${action.members.length} members`,
-          type: 'success',
-        };
+        return action.unnotifiedMemberNames.length
+          ? {
+              title: 'Members update',
+              message: `Updated ${action.members.length} members, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about their new rating.`,
+              type: 'warning',
+            }
+          : {
+              title: 'Members update',
+              message: `Successfully updated ${action.members.length} members.`,
+              type: 'success',
+            };
       case MembersActions.updateMemberSucceeded.type:
         return {
           title: 'Member update',
-          message: `Successfully updated ${action.originalMemberName}`,
+          message: this.getMemberUpdateMessage(
+            action.originalMemberName,
+            action.emailSent,
+          ),
           type: 'success',
         };
 

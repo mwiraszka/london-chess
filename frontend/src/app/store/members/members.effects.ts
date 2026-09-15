@@ -19,7 +19,7 @@ import {
 import { Injectable, inject } from '@angular/core';
 
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
-import { EditableMember, Member } from '@app/models';
+import { EditableMember, Member, MemberEmail } from '@app/models';
 import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
 import { AppActions } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
@@ -43,12 +43,16 @@ export class MembersEffects {
   private readonly memberProfiles = inject(MemberProfilesService);
   private readonly userService = inject(UserService);
 
-  // A saved member may have a new name, and names shown by member number come
-  // from the profiles
+  // A saved member may have a new name or a new profile, and names shown by member
+  // number come from the profiles
   reloadMemberProfiles$ = createEffect(
     () => {
       return this.actions$.pipe(
-        ofType(MembersActions.updateMemberSucceeded, AppActions.refreshAppRequested),
+        ofType(
+          MembersActions.addMemberSucceeded,
+          MembersActions.updateMemberSucceeded,
+          AppActions.refreshAppRequested,
+        ),
         tap(() => void this.memberProfiles.reload()),
       );
     },
@@ -182,7 +186,7 @@ export class MembersEffects {
         this.store.select(MembersSelectors.selectMemberFormDataById(null)),
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
       ]),
-      concatMap(([, formData, user]) => {
+      concatMap(([{ notifyMember }, formData, user]) => {
         const member: EditableMember = {
           ...formData,
           peakRating: formData.rating,
@@ -196,8 +200,13 @@ export class MembersEffects {
           },
         };
 
-        return this.membersApiService.addMember(member).pipe(
-          map(response => MembersActions.addMemberSucceeded({ member: response.data })),
+        return this.membersApiService.addMember(member, notifyMember).pipe(
+          map(response =>
+            MembersActions.addMemberSucceeded({
+              member: response.data,
+              emailSent: notifyMember ? 'welcome' : null,
+            }),
+          ),
           catchError(error =>
             of(MembersActions.addMemberFailed({ error: this.parseError(error) })),
           ),
@@ -216,7 +225,7 @@ export class MembersEffects {
         this.store.select(MembersSelectors.selectMemberFormDataById(memberId)),
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
       ]),
-      concatMap(([, member, formData, user]) => {
+      concatMap(([{ notifyMember }, member, formData, user]) => {
         const editableMember: EditableMember = {
           ...formData,
           peakRating: this.getNewPeakRating(formData.rating, formData.peakRating),
@@ -228,18 +237,21 @@ export class MembersEffects {
           },
         };
 
-        return this.membersApiService.updateMember(member.id, editableMember).pipe(
-          filter(response => response.data === member.id),
-          map(() =>
-            MembersActions.updateMemberSucceeded({
-              member: { ...member, ...editableMember },
-              originalMemberName: `${member.firstName} ${member.lastName}`,
-            }),
-          ),
-          catchError(error =>
-            of(MembersActions.updateMemberFailed({ error: this.parseError(error) })),
-          ),
-        );
+        return this.membersApiService
+          .updateMember(member.id, editableMember, notifyMember)
+          .pipe(
+            filter(response => response.data.id === member.id),
+            map(response =>
+              MembersActions.updateMemberSucceeded({
+                member: response.data,
+                originalMemberName: `${member.firstName} ${member.lastName}`,
+                emailSent: this.emailSentOnUpdate(member, notifyMember),
+              }),
+            ),
+            catchError(error =>
+              of(MembersActions.updateMemberFailed({ error: this.parseError(error) })),
+            ),
+          );
       }),
     );
   });
@@ -320,8 +332,11 @@ export class MembersEffects {
         }));
 
         return this.membersApiService.updateMembers(editableMembers).pipe(
-          map(() =>
-            MembersActions.updateMemberRatingsSucceeded({ members: updatedMembers }),
+          map(response =>
+            MembersActions.updateMemberRatingsSucceeded({
+              members: updatedMembers,
+              unnotifiedMemberNames: response.data.unnotifiedMemberNames,
+            }),
           ),
           catchError(error =>
             of(
@@ -338,4 +353,12 @@ export class MembersEffects {
     private readonly membersApiService: MembersApiService,
     private readonly store: Store,
   ) {}
+
+  // A member without an account gets one along with their welcome email
+  private emailSentOnUpdate(member: Member, notifyMember: boolean): MemberEmail | null {
+    if (!notifyMember) {
+      return null;
+    }
+    return member.hasAccount ? 'changes' : 'welcome';
+  }
 }

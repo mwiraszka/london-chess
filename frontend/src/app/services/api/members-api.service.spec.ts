@@ -15,6 +15,7 @@ import {
   EditableMember,
   Id,
   Member,
+  MemberRatingsUpdate,
   PaginatedItems,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
@@ -166,7 +167,7 @@ describe('MembersApiService', () => {
     it('should add new member', () => {
       const mockResponse: ApiResponse<Member> = { data: mockMember };
 
-      service.addMember(editableMember).subscribe(response => {
+      service.addMember(editableMember, false).subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 
@@ -175,21 +176,61 @@ describe('MembersApiService', () => {
       expect(req.request.body).toEqual(editableMember);
       req.flush(mockResponse);
     });
+
+    it('should ask for the member to be emailed when notifying them', () => {
+      const mockResponse: ApiResponse<Member> = { data: mockMember };
+
+      service.addMember(editableMember, true).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${apiBaseUrl}?notify=true`);
+      expect(req.request.method).toBe('POST');
+      req.flush(mockResponse);
+    });
+  });
+
+  describe('updateMembers', () => {
+    it('should update several members at once', () => {
+      const members = [{ ...editableMember, id: mockMember.id }];
+      const mockResponse: ApiResponse<MemberRatingsUpdate> = {
+        data: { updatedIds: [mockMember.id], unnotifiedMemberNames: [] },
+      };
+
+      service.updateMembers(members).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(apiBaseUrl);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(members);
+      req.flush(mockResponse);
+    });
   });
 
   describe('updateMember', () => {
     it('should update existing member', () => {
-      const mockResponse: ApiResponse<Id> = {
-        data: mockMember.id,
-      };
+      const mockResponse: ApiResponse<Member> = { data: mockMember };
 
-      service.updateMember(mockMember.id, editableMember).subscribe(response => {
+      service.updateMember(mockMember.id, editableMember, false).subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 
       const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(editableMember);
+      req.flush(mockResponse);
+    });
+
+    it('should ask for the member to be emailed when notifying them', () => {
+      const mockResponse: ApiResponse<Member> = { data: mockMember };
+
+      service.updateMember(mockMember.id, editableMember, true).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}?notify=true`);
+      expect(req.request.method).toBe('PUT');
       req.flush(mockResponse);
     });
   });

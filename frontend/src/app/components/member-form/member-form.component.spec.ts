@@ -9,7 +9,7 @@ import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DialogService } from '@app/services';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { query } from '@app/utils';
+import { query, queryTextContent } from '@app/utils';
 
 import { MemberFormComponent } from './member-form.component';
 
@@ -253,12 +253,12 @@ describe('MemberFormComponent', () => {
         inputs: {
           dialog: {
             title: 'Confirm',
-            body: `Add ${component.formData.firstName} ${component.formData.lastName}?`,
+            body: `Add ${component.formData.firstName} ${component.formData.lastName} and email them their login details?`,
             confirmButtonText: 'Add',
           },
         },
       });
-      expect(requestAddMemberSpy).toHaveBeenCalledTimes(1);
+      expect(requestAddMemberSpy).toHaveBeenCalledWith({ notifyMember: true });
     });
 
     it('should open confirmation dialog with correct data and emit request update member event if updating a member', async () => {
@@ -277,12 +277,15 @@ describe('MemberFormComponent', () => {
         inputs: {
           dialog: {
             title: 'Confirm',
-            body: `Update ${component.originalMember!.firstName} ${component.originalMember!.lastName}?`,
+            body: `Update ${component.originalMember!.firstName} ${component.originalMember!.lastName}, create their account and email them their login details?`,
             confirmButtonText: 'Update',
           },
         },
       });
-      expect(requestUpdateMemberSpy).toHaveBeenCalledWith(MOCK_MEMBERS[2].id);
+      expect(requestUpdateMemberSpy).toHaveBeenCalledWith({
+        memberId: MOCK_MEMBERS[2].id,
+        notifyMember: true,
+      });
     });
 
     it('should not emit add or update events or re-initialize form if dialog is cancelled', async () => {
@@ -298,6 +301,94 @@ describe('MemberFormComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
       expect(requestAddMemberSpy).not.toHaveBeenCalled();
       expect(requestUpdateMemberSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('notify member checkbox', () => {
+    it('should be enabled and checked when the member has an email address and year of birth', () => {
+      expect(component.notifyMember.enabled).toBe(true);
+      expect(component.notifyMember.value).toBe(true);
+    });
+
+    it('should be disabled and unchecked without an email address', () => {
+      component.form.controls.email.setValue('');
+
+      expect(component.notifyMember.disabled).toBe(true);
+      expect(component.notifyMember.value).toBe(false);
+    });
+
+    it('should be disabled and unchecked with an invalid year of birth', () => {
+      component.form.controls.yearOfBirth.setValue('19');
+
+      expect(component.notifyMember.disabled).toBe(true);
+      expect(component.notifyMember.value).toBe(false);
+    });
+
+    it('should be checked again once the missing details are filled in', () => {
+      component.form.controls.email.setValue('');
+
+      component.form.controls.email.setValue('magnus@example.com');
+
+      expect(component.notifyMember.enabled).toBe(true);
+      expect(component.notifyMember.value).toBe(true);
+    });
+
+    it("should keep the admin's choice not to email while the details stay valid", () => {
+      component.notifyMember.setValue(false);
+
+      component.form.controls.yearOfBirth.setValue('1991');
+
+      expect(component.notifyMember.value).toBe(false);
+    });
+
+    it('should emit the choice not to email an edited member', async () => {
+      dialogOpenSpy.mockResolvedValue('confirm');
+      fixture.componentRef.setInput('originalMember', MOCK_MEMBERS[0]);
+      component.notifyMember.setValue(false);
+
+      await component.onSubmit();
+
+      expect(requestUpdateMemberSpy).toHaveBeenCalledWith({
+        memberId: MOCK_MEMBERS[0].id,
+        notifyMember: false,
+      });
+    });
+
+    it('should not be shown when adding a member', () => {
+      fixture.componentRef.setInput('originalMember', null);
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.notify-member')).toBeFalsy();
+    });
+
+    it('should not email a new member without an email address', async () => {
+      dialogOpenSpy.mockResolvedValue('confirm');
+      component.form.controls.email.setValue('');
+
+      await component.onSubmit();
+
+      expect(requestAddMemberSpy).toHaveBeenCalledWith({ notifyMember: false });
+    });
+
+    it('should offer to email the changes to a member with an account', () => {
+      fixture.componentRef.setInput('originalMember', MOCK_MEMBERS[0]);
+
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.notify-member')).toBe(
+        'Email the member about these changes',
+      );
+    });
+
+    it('should offer to create the account for a member without one', () => {
+      fixture.componentRef.setInput('originalMember', MOCK_MEMBERS[2]);
+
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.notify-member')).toBe(
+        "Create the member's account and email them their login details",
+      );
     });
   });
 

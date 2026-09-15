@@ -32,3 +32,18 @@ hr {
   margin: 1em 0;
   border-top: 1px solid var(--lcc-color--general-dividerLine);
 }
+
+.notify-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  text-align: left;
+  color: var(--lcc-color--form-labelText);
+  cursor: pointer;
+
+  &:has(input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

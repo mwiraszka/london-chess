@@ -149,6 +149,23 @@
     <lcc-modification-info [info]="info"></lcc-modification-info>
   }
 
+  @if (originalMember) {
+    <label
+      class="notify-member"
+      [tooltip]="
+        notifyMember.disabled
+          ? 'Add a valid email address and year of birth to email the member.'
+          : null
+      ">
+      <input
+        id="notify-member-input"
+        type="checkbox"
+        name="notify-member"
+        [formControl]="notifyMember" />
+      <span>{{ notifyMemberLabel }}</span>
+    </label>
+  }
+
   <div class="lcc-form-buttons-container">
     <button
       class="cancel-button lcc-secondary-button"

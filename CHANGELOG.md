@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build out an account page for managing your profile, avatar, email address, password, and active sessions, including an avatar editor that keeps the original photo for future re-cropping
 - Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
 - Let visitors request a member account from the login drawer, with email-code verification before each request reaches the club for review
+- Create a member's account and email them their login details when an admin saves them with an email address and year of birth, and email account holders whenever their details or rating change
 - Add a Website Changelog page covering how the site is built and what has changed, with the tools behind it named as you hover them and every release listed as a card that opens with a click anywhere on it
 - Add profile pages for members with an account, with ratings, activity status, and a trophy beside the reigning city champion, linked from their names across the site and always showing their current name
 - Let members review their personal details and request changes from the account page, with the private details on their profile marked as such

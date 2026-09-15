@@ -34,8 +34,10 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
         [originalMember]="vm.originalMember"
         (cancel)="onCancel()"
         (change)="onChange($event.memberId, $event.formData)"
-        (requestAddMember)="onRequestAddMember()"
-        (requestUpdateMember)="onRequestUpdateMember($event)"
+        (requestAddMember)="onRequestAddMember($event.notifyMember)"
+        (requestUpdateMember)="
+          onRequestUpdateMember($event.memberId, $event.notifyMember)
+        "
         (restore)="onRestore($event)">
       </lcc-member-form>
 
@@ -105,12 +107,12 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
     this.store.dispatch(MembersActions.formDataChanged({ memberId, formData }));
   }
 
-  public onRequestAddMember(): void {
-    this.store.dispatch(MembersActions.addMemberRequested());
+  public onRequestAddMember(notifyMember: boolean): void {
+    this.store.dispatch(MembersActions.addMemberRequested({ notifyMember }));
   }
 
-  public onRequestUpdateMember(memberId: Id): void {
-    this.store.dispatch(MembersActions.updateMemberRequested({ memberId }));
+  public onRequestUpdateMember(memberId: Id, notifyMember: boolean): void {
+    this.store.dispatch(MembersActions.updateMemberRequested({ memberId, notifyMember }));
   }
 
   public onRestore(memberId: Id | null): void {

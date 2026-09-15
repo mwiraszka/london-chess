@@ -183,21 +183,26 @@ describe('MemberEditorPageComponent', () => {
 
   describe('onRequestAddMember', () => {
     it('should dispatch addMemberRequested action', () => {
-      component.onRequestAddMember();
+      component.onRequestAddMember(true);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(MembersActions.addMemberRequested());
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        MembersActions.addMemberRequested({ notifyMember: true }),
+      );
     });
   });
 
   describe('onRequestUpdateMember', () => {
     it('should dispatch updateMemberRequested action', () => {
       const mockMemberId = 'abc123abc123';
-      component.onRequestUpdateMember(mockMemberId);
+      component.onRequestUpdateMember(mockMemberId, false);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.updateMemberRequested({ memberId: mockMemberId }),
+        MembersActions.updateMemberRequested({
+          memberId: mockMemberId,
+          notifyMember: false,
+        }),
       );
     });
   });

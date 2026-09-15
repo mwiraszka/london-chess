@@ -195,6 +195,7 @@ describe('NavEffects', () => {
         actions$.next(
           MembersActions.addMemberSucceeded({
             member: MOCK_MEMBERS[0],
+            emailSent: null,
           }),
         );
 
@@ -210,6 +211,7 @@ describe('NavEffects', () => {
           MembersActions.updateMemberSucceeded({
             member: MOCK_MEMBERS[0],
             originalMemberName: 'John Doe',
+            emailSent: null,
           }),
         );
 

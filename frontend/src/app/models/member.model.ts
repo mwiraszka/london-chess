@@ -40,6 +40,15 @@ export interface MemberProfile {
   avatarUrl: Url | null;
 }
 
+// The email a member was sent when an admin saved their details
+export type MemberEmail = 'welcome' | 'changes';
+
+export interface MemberRatingsUpdate {
+  updatedIds: Id[];
+  // Members with an account who could not be emailed their new rating
+  unnotifiedMemberNames: string[];
+}
+
 export interface MemberDetailsFormData {
   firstName: string;
   lastName: string;

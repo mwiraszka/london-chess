@@ -46,9 +46,11 @@ export type {
   MemberAccountFormGroup,
   MemberDetailsFormData,
   MemberDetailsFormGroup,
+  MemberEmail,
   MemberFormData,
   MemberFormGroup,
   MemberProfile,
+  MemberRatingsUpdate,
   MemberWithNewRatings,
 } from './member.model';
 export type { ModificationInfo } from './modification-info.model';

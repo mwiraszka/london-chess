@@ -5,6 +5,7 @@ import {
   Id,
   LccError,
   Member,
+  MemberEmail,
   MemberFormData,
   MemberWithNewRatings,
 } from '@app/models';
@@ -56,10 +57,13 @@ export const fetchMemberByNumberRequested = createAction(
 
 export const addAMemberSelected = createAction('[Members] Add a member selected');
 
-export const addMemberRequested = createAction('[Members] Add member requested');
+export const addMemberRequested = createAction(
+  '[Members] Add member requested',
+  props<{ notifyMember: boolean }>(),
+);
 export const addMemberSucceeded = createAction(
   '[Members] Add member succeeded',
-  props<{ member: Member }>(),
+  props<{ member: Member; emailSent: MemberEmail | null }>(),
 );
 export const addMemberFailed = createAction(
   '[Members] Add member failed',
@@ -72,7 +76,7 @@ export const updateMemberRatingsRequested = createAction(
 );
 export const updateMemberRatingsSucceeded = createAction(
   '[Members] Update member ratings succeeded',
-  props<{ members: Member[] }>(),
+  props<{ members: Member[]; unnotifiedMemberNames: string[] }>(),
 );
 export const updateMemberRatingsFailed = createAction(
   '[Members] Update member ratings failed',
@@ -81,11 +85,11 @@ export const updateMemberRatingsFailed = createAction(
 
 export const updateMemberRequested = createAction(
   '[Members] Update member requested',
-  props<{ memberId: Id }>(),
+  props<{ memberId: Id; notifyMember: boolean }>(),
 );
 export const updateMemberSucceeded = createAction(
   '[Members] Update member succeeded',
-  props<{ member: Member; originalMemberName: string }>(),
+  props<{ member: Member; originalMemberName: string; emailSent: MemberEmail | null }>(),
 );
 export const updateMemberFailed = createAction(
   '[Members] Update member failed',
