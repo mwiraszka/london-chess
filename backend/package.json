@@ -1,0 +1,75 @@
+{
+  "name": "lcc-server",
+  "version": "6.0.0",
+  "description": "REST API for the London Chess Club website, built with Node and Express",
+  "author": "Michal Wiraszka",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mwiraszka/lcc-backend.git"
+  },
+  "private": true,
+  "main": "src/server.ts",
+  "scripts": {
+    "backup": "npx tsx --env-file=.env scripts/backup.ts",
+    "migrate:members": "npx tsx --env-file=.env scripts/migrate-members.ts",
+    "start": "npx tsx watch --env-file=.env src/server.ts",
+    "start:dev-offline": "npx tsx watch --env-file=.dev-offline.env src/server.ts",
+    "start:prod": "npx tsx src/server.ts",
+    "tunnel": "ngrok http 3000 --log stdout --log-level warn",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint 'src/**' 'api/**'",
+    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1132.0",
+    "@aws-sdk/s3-request-presigner": "3.1132.0",
+    "@clerk/backend": "3.18.0",
+    "@sentry/node": "10.74.0",
+    "cors": "2.8.6",
+    "express": "5.2.1",
+    "mongodb": "7.6.0",
+    "mongoose": "9.10.1",
+    "multer": "2.4.0",
+    "nodemailer": "10.0.10",
+    "sharp": "0.35.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@trivago/prettier-plugin-sort-imports": "6.0.2",
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/multer": "2.2.0",
+    "@types/node": "26.6.0",
+    "@types/nodemailer": "8.0.1",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
+    "@vitest/coverage-v8": "5.0.1",
+    "eslint": "10.10.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.6",
+    "prettier": "3.9.6",
+    "prettier-eslint": "17.1.2",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ],
+    "overrides": {
+      "brace-expansion@>=5.0.0 <5.0.6": ">=5.0.6",
+      "fast-xml-builder@<1.1.7": ">=1.1.7",
+      "minimatch@>=9.0.0 <9.0.7": ">=9.0.7",
+      "qs@<6.16.0": ">=6.16.0",
+      "@humanfs/node@<0.16.8": ">=0.16.8"
+    }
+  },
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
+}

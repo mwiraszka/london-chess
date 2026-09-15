@@ -1,0 +1,17 @@
+// Names read as plain text unless styled as a link, so a profile link otherwise
+// shows only through the pointer
+.member-link:not(.lcc-link) {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.member-link {
+  cursor: pointer;
+}
+
+.member-link--with-avatar {
+  display: inline-flex;
+  vertical-align: middle;
+  align-items: center;
+  gap: var(--lcc-member-link-avatar-gap, 6px);
+}

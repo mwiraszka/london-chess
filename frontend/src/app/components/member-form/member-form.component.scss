@@ -1,0 +1,49 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: var(--lcc-borderRadius--small);
+  box-shadow: 1px 1px 5px 2px var(--lcc-color--form-boxShadow);
+  background-color: var(--lcc-color--form-background);
+}
+
+form {
+  max-width: var(--lcc-width--smallForm);
+}
+
+.restore-button {
+  display: flex;
+  justify-self: end;
+  align-items: center;
+  justify-content: center;
+  grid-column: 2 / 3;
+  padding: 4px;
+
+  &:not(:disabled) {
+    color: var(--lcc-color--general-warning);
+  }
+}
+
+hr {
+  width: 100%;
+  margin: 1em 0;
+  border-top: 1px solid var(--lcc-color--general-dividerLine);
+}
+
+.notify-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  text-align: left;
+  color: var(--lcc-color--form-labelText);
+  cursor: pointer;
+
+  &:has(input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

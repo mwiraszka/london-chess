@@ -1,0 +1,11 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+ea-icon-alert-triangle {
+  @include icon-size(18px);
+
+  color: var(--lcc-color--formErrorIcon);
+}
+
+.form-error-icon--hidden {
+  visibility: hidden;
+}

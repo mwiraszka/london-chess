@@ -1,0 +1,130 @@
+@if (viewModel$ | async; as vm) {
+  <ul class="menu-items">
+    @if (vm.user) {
+      <li class="menu-item user-info">
+        <ea-avatar
+          size="sm"
+          alt="Your avatar"
+          [src]="avatarSrc()"
+          [initials]="initials()" />
+        <div class="user-text">
+          <span
+            #nameEl
+            class="user-name lcc-truncate"
+            [tooltip]="
+              nameTruncated() ? vm.user.firstName + ' ' + vm.user.lastName : null
+            ">
+            {{ vm.user.firstName }} {{ vm.user.lastName }}
+          </span>
+          <span
+            #emailEl
+            class="user-email lcc-truncate"
+            [tooltip]="emailTruncated() ? vm.user.email : null">
+            {{ vm.user.email }}
+          </span>
+        </div>
+      </li>
+      <hr />
+
+      <li class="menu-item account">
+        <a
+          aria-label="Account"
+          class="lcc-dropdown-link"
+          (click)="onAccount()">
+          <span>Account</span>
+        </a>
+      </li>
+    }
+
+    <li class="menu-item website-changelog">
+      <a
+        aria-label="Website Changelog"
+        class="lcc-dropdown-link"
+        (click)="onWebsiteChangelog()">
+        <span>Website Changelog</span>
+      </a>
+    </li>
+    <hr />
+
+    <li class="menu-item theme-toggle">
+      <span>Dark mode</span>
+      <lcc-toggle-switch
+        [switchedOn]="vm.isDarkMode"
+        tooltipWhenOff="Switch to dark mode"
+        tooltipWhenOn="Switch to light mode"
+        (toggle)="onToggleTheme()">
+      </lcc-toggle-switch>
+    </li>
+
+    <li class="menu-item wide-view-toggle">
+      <span>Wide view</span>
+      <lcc-toggle-switch
+        [switchedOn]="vm.isWideView"
+        tooltipWhenOff="Enable wide view"
+        tooltipWhenOn="Disable wide view"
+        (toggle)="onToggleWideView()">
+      </lcc-toggle-switch>
+    </li>
+
+    @if (isTouchDevice) {
+      <li class="menu-item desktop-view-toggle">
+        <span>Desktop view</span>
+        <lcc-toggle-switch
+          [switchedOn]="vm.isDesktopView"
+          tooltipWhenOff="Enable desktop view"
+          tooltipWhenOn="Disable desktop view"
+          (toggle)="onToggleDesktopView()">
+        </lcc-toggle-switch>
+      </li>
+    }
+
+    @if (vm.user) {
+      <li class="menu-item safe-mode-toggle">
+        <span>Safe mode</span>
+        <lcc-toggle-switch
+          [iconWhenOff]="warningIcon"
+          [iconTooltipWhenOff]="safeModeWarningTooltipContent"
+          [switchedOn]="vm.isSafeMode"
+          tooltipWhenOff="Enable safe mode"
+          tooltipWhenOn="Disable safe mode"
+          [warningWhenOff]="true"
+          (toggle)="onToggleSafeMode()">
+        </lcc-toggle-switch>
+      </li>
+    }
+    <hr />
+
+    @if (vm.user) {
+      <li class="menu-item admin-logout">
+        <a
+          aria-label="Log out"
+          class="lcc-dropdown-link"
+          (click)="onLogout()">
+          <span>Log out</span>
+        </a>
+      </li>
+    } @else {
+      <li class="menu-item login">
+        <a
+          aria-label="Log in"
+          class="lcc-dropdown-link"
+          (click)="onLogin()">
+          <span>Log in</span>
+        </a>
+      </li>
+    }
+  </ul>
+}
+
+<ng-template #safeModeWarningTooltipContent>
+  <div class="safe-mode-warning-tooltip">
+    <header>
+      <ea-icon-alert-triangle class="warning-icon" />
+      <div>Safe mode is currently disabled</div>
+    </header>
+
+    <div class="warning-message">
+      Users' personal information such as emails and phone numbers are visible on screen
+    </div>
+  </div>
+</ng-template>

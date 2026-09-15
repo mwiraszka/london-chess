@@ -1,0 +1,43 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px;
+
+  h3 {
+    color: var(--lcc-color--linkList-headerText);
+  }
+
+  ul {
+    columns: 1;
+
+    @include respond-to('gt-md') {
+      &:not(.single-column) {
+        columns: 2;
+      }
+    }
+
+    li {
+      list-style: none;
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 4px;
+        text-align: center;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .link-icon,
+  .external-link-icon {
+    display: inline-flex;
+    @include icon-size(16px);
+  }
+}

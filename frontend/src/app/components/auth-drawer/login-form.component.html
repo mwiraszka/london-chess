@@ -1,0 +1,104 @@
+@switch (step()) {
+  @case ('second-factor') {
+    <div class="auth-form">
+      <p class="hint">We sent a verification code to {{ form.controls.email.value }}.</p>
+
+      <div class="code-input">
+        <ea-code-input
+          label="Verification code"
+          (completed)="onVerify($event)" />
+      </div>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+    </div>
+  }
+
+  @case ('new-password') {
+    <form
+      class="auth-form"
+      [formGroup]="newPasswordForm"
+      (ngSubmit)="onSetNewPassword()">
+      <p class="hint">
+        Your temporary password must be changed before continuing. Choose a new password
+        below.
+      </p>
+
+      <lcc-new-password-fields
+        [autofocus]="true"
+        [group]="newPasswordForm" />
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <ea-button
+        type="submit"
+        size="sm"
+        variant="primary"
+        [fullWidth]="true"
+        [disabled]="newPasswordForm.invalid"
+        [loading]="loading()">
+        Set new password
+      </ea-button>
+    </form>
+  }
+
+  @default {
+    <form
+      class="auth-form"
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()">
+      <ea-input
+        label="Email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        formControlName="email"
+        [autofocus]="true" />
+
+      <ea-input
+        label="Password"
+        type="password"
+        autocomplete="current-password"
+        formControlName="password" />
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <ea-button
+        type="submit"
+        size="sm"
+        variant="primary"
+        [fullWidth]="true"
+        [disabled]="form.invalid"
+        [loading]="loading()">
+        Log in
+      </ea-button>
+    </form>
+
+    <div class="auth-footer">
+      <p class="auth-link">
+        Don't have an account?
+        <button
+          type="button"
+          class="auth-link__button lcc-link"
+          keepFocus
+          (click)="authDrawer.setMode('create-account')">
+          Create account
+        </button>
+      </p>
+      <p class="auth-link">
+        <button
+          type="button"
+          class="auth-link__button lcc-link"
+          keepFocus
+          (click)="authDrawer.setMode('forgot-password')">
+          Forgot password?
+        </button>
+      </p>
+    </div>
+  }
+}

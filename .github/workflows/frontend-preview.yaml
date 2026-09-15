@@ -1,0 +1,62 @@
+name: Frontend Preview Deployment
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - frontend/**
+      - .github/workflows/frontend-preview.yaml
+
+jobs:
+  Deploy-Preview:
+    # Set the repository variable ENABLE_VERCEL to 'true' once the Vercel projects
+    # and secrets are configured (see docs/deployment.md).
+    if: ${{ vars.ENABLE_VERCEL == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Use the preview build configuration
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('.vercel/project.json', 'utf8'));
+            p.settings = p.settings || {};
+            p.settings.buildCommand = 'pnpm build:preview';
+            fs.writeFileSync('.vercel/project.json', JSON.stringify(p, null, 2));
+          "
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --meta githubCommitSha=${{ github.sha }} \
+            --meta githubCommitRef=${{ github.ref_name }})
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Alias to Preview Domain
+        run: >
+          vercel alias set ${{ steps.deploy.outputs.url }} preview.londonchess.ca
+          --token=${{ secrets.VERCEL_TOKEN }} --scope=eagami

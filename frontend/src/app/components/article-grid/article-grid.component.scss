@@ -1,0 +1,224 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+$card-min-width: 205px;
+$card-max-width: 312px; // Large enough to allow smooth transition between 2 and 3 in grid layout
+$grid-gap: 8px;
+
+:host {
+  display: flex;
+  container-type: inline-size;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+
+  &.is-home-page {
+    overflow-x: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-bottom: 4px;
+
+    @include respond-to('lt-xs') {
+      scroll-snap-type: x mandatory;
+    }
+  }
+}
+
+.article-grid {
+  display: flex;
+  flex: 1;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
+  gap: $grid-gap;
+
+  // Below the 2-column grid threshold, force a single column so skeleton
+  // cards (which have no natural minimum width) don't collapse 4-6 per row.
+  @container (width < calc(2 * #{$card-min-width} + #{$grid-gap})) {
+    &:not(.is-home-page) {
+      flex-flow: column nowrap;
+
+      .article {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  }
+
+  @container (width >= calc(2 * #{$card-min-width} + #{$grid-gap})) {
+    &:not([card-count='1']):not(.is-home-page) {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax($card-min-width, 1fr));
+    }
+  }
+
+  &.is-home-page {
+    flex-flow: row nowrap;
+    justify-content: center;
+
+    .article {
+      flex-shrink: 0;
+      min-width: $card-min-width;
+      max-width: $card-min-width;
+
+      @include respond-to('lt-xs') {
+        min-width: 100cqi;
+        max-width: 100cqi;
+        scroll-snap-align: center;
+      }
+    }
+  }
+
+  @for $n from 2 through 4 {
+    @container (width >= calc(#{$n} * #{$card-max-width} + #{($n - 1)} * #{$grid-gap})) {
+      &[card-count='#{$n}'] {
+        display: flex;
+      }
+    }
+  }
+
+  .article {
+    display: flex;
+    flex-flow: column nowrap;
+    flex-grow: 1;
+    gap: 4px;
+    max-width: $card-max-width;
+    height: auto;
+    border-radius: var(--lcc-borderRadius--large);
+    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
+    background-color: var(--lcc-color--articleGrid-cardBackground);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      background-color 0.3s ease;
+
+    &.skeleton {
+      opacity: 0;
+      animation: fade-in-over 0.6s ease-out forwards;
+    }
+
+    &:not(.skeleton):hover {
+      background-color: var(--lcc-color--articleGrid-cardBackgroundOnHover);
+      cursor: pointer;
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+      transform: scale(1.005);
+    }
+
+    .image-container {
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      border-top-left-radius: var(--lcc-borderRadius--large);
+      border-top-right-radius: var(--lcc-borderRadius--large);
+
+      // The vignette fades only the loaded photo; the skeleton shown while it
+      // loads stays a plain rectangle
+      &:not(.skeleton-image) ::ng-deep img {
+        mask-image: radial-gradient(
+          ellipse 95% 95% at 50% 45%,
+          black 30%,
+          transparent 100%
+        );
+        -webkit-mask-image: radial-gradient(
+          ellipse 95% 95% at 50% 45%,
+          black 30%,
+          transparent 100%
+        );
+      }
+    }
+
+    lcc-image {
+      width: 100%;
+      height: 100%;
+      // Slightly scale up images to avoid tiny gaps around them
+      transform: scale(1.02);
+
+      ::ng-deep img {
+        object-fit: contain;
+        width: 100%;
+        height: 100%;
+      }
+    }
+
+    .bookmark-icon {
+      z-index: 10;
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      margin: 4px;
+      color: var(--lcc-color--articleGrid-bookmarkIcon);
+    }
+
+    .article-summary-container {
+      display: flex;
+      flex-flow: column nowrap;
+      justify-content: space-between;
+      height: 100%;
+      padding: 8px 12px;
+
+      .article-title-wrapper {
+        // Hardcode height to ensure title sections align between cards
+        // regardless of how many lines of text
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 62px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.025);
+        padding: 4px 8px;
+      }
+
+      .article-title {
+        font-weight: 400;
+        text-align: center;
+        color: var(--lcc-color--articleGrid-articleHeaderText);
+      }
+
+      hr {
+        width: 100%;
+        margin: 8px 0;
+        border-top: 1px solid var(--lcc-color--articleGrid-cardDividerLine);
+      }
+
+      .article-preview {
+        // Hardcode to keep alignment in case there are fewer than 5 lines of text
+        height: 94px;
+        font-size: 14px;
+        line-height: 1.3em !important;
+        color: var(--lcc-color--articleGrid-articleSummaryText);
+
+        ::ng-deep .result-preview-rating {
+          font-size: 13px;
+          color: var(--lcc-color--articleGrid-articleSummarySecondaryText);
+        }
+      }
+
+      .article-creation-date {
+        margin-top: 16px;
+        font-size: 11px;
+        text-align: center;
+        color: var(--lcc-color--articleGrid-articleCreationDateText);
+      }
+
+      .skeleton-date {
+        width: 40%;
+        height: 11px;
+        margin: 16px auto 0;
+      }
+    }
+  }
+}
+
+@keyframes fade-in-over {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

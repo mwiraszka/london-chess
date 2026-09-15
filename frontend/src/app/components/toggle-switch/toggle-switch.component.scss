@@ -1,0 +1,79 @@
+@use 'sass:math';
+@use '../../../styles/abstracts/mixins';
+
+$switch-height: 22px;
+$switch-width: 42px;
+$slider-diameter: 16px;
+
+:host {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: $switch-height;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: $switch-width;
+  height: $switch-height;
+
+  input {
+    display: none;
+  }
+}
+
+.slider {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: var(--lcc-color--toggleSwitch-sliderBackgroundDefaultOff);
+  cursor: pointer;
+  transition: 0.4s;
+
+  &.warning {
+    background-color: var(--lcc-color--toggleSwitch-warning);
+  }
+
+  &:before {
+    position: absolute;
+    bottom: math.div($switch-height - $slider-diameter, 2);
+    left: math.div($switch-height - $slider-diameter, 2);
+    width: $slider-diameter;
+    height: $slider-diameter;
+    background-color: var(--lcc-color--toggleSwitch-sliderThumb);
+    transition: 0.4s;
+    content: '';
+  }
+}
+
+input:checked + .slider {
+  background-color: var(--lcc-color--toggleSwitch-sliderBackgroundDefaultOn);
+
+  &:before {
+    transform: translateX(
+      calc($switch-width - $slider-diameter) - ($switch-height - $slider-diameter)
+    );
+  }
+}
+
+.slider.round {
+  border-radius: $switch-height;
+
+  &:before {
+    border-radius: 50%;
+  }
+}
+
+.toggle-icon {
+  display: inline-flex;
+  @include mixins.icon-size(20px);
+
+  &.warning {
+    color: var(--lcc-color--toggleSwitch-warning);
+  }
+}

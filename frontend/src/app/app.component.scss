@@ -1,0 +1,64 @@
+:host {
+  overflow: hidden;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  height: 100dvh;
+  background-color: var(--lcc-color--app-mainBackground);
+
+  main {
+    overflow-x: hidden;
+    // A permanent scrollbar track keeps the width constant, so content never
+    // jumps when a page grows past the fold
+    overflow-y: scroll;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    background-color: var(--lcc-color--app-mainBackground);
+    // The classic scrollbar consumes the right edge; mirroring its measured
+    // width on the left keeps content centred, and the nav shares the same
+    // variable so its links line up with the content below in every browser
+    padding: 0 8px 0 calc(8px + var(--lcc-scrollbar-inset, 0px));
+
+    &::ng-deep > *:not(router-outlet):not(lcc-footer) {
+      position: relative;
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+
+      align-items: center;
+
+      gap: 8px;
+      width: 100%;
+      max-width: var(--lcc-width--appContent);
+      // 6px top + 2px at bottom of Nav component = 8px;
+      padding: 6px 4px 8px;
+
+      // Margin needed to prevent scrollbar-gutter style
+      // from cutting off page content
+      margin: 0 4px;
+
+      body[data-wide-view='true'] & {
+        max-width: none;
+      }
+    }
+
+    &::ng-deep lcc-footer {
+      // Reaches back through the scroller's side paddings, the left one widened
+      // by the scrollbar inset, so the background meets both edges
+      align-self: stretch;
+      margin: auto -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
+
+      // Add padding when on Safari on mobile to keep footer visible
+      @media screen and (max-width: 767px) {
+        _::-webkit-full-page-media,
+        _:future {
+          padding-bottom: 65px;
+        }
+      }
+    }
+  }
+}

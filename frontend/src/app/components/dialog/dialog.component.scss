@@ -1,0 +1,47 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+$header-height: 30px;
+$header-border-bottom-thickness: 2px;
+
+:host {
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  max-width: min(90vw, var(--lcc-width--appContent));
+  border-radius: var(--lcc-borderRadius--small);
+  box-shadow: 1px 1px 8px var(--lcc-color--general-cardBoxShadow);
+
+  header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: $header-height;
+    border-bottom: $header-border-bottom-thickness solid
+      var(--lcc-color--dialog-headerBorderBottom);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    background-color: var(--lcc-color--dialog-headerBackground);
+
+    .close-button {
+      margin: 0 4px 0 auto;
+      color: var(--lcc-color--dialog-closeIcon);
+
+      ea-icon-x {
+        @include icon-size(18px);
+      }
+
+      &:hover {
+        color: var(--lcc-color--dialog-closeIconOnHover);
+      }
+    }
+  }
+
+  ::ng-deep > *:not(header) {
+    width: 100%;
+    max-width: inherit !important;
+    max-height: calc(90vh - $header-height - $header-border-bottom-thickness);
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+    background-color: var(--lcc-color--dialog-background);
+  }
+}

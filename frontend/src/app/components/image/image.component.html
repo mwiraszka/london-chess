@@ -1,0 +1,23 @@
+<img
+  [src]="currentSrc()"
+  [alt]="caption()"
+  [attr.width]="image()?.mainWidth ?? null"
+  [attr.height]="image()?.mainHeight ?? null"
+  [attr.fetchpriority]="priority() ? 'high' : null"
+  [attr.loading]="priority() ? 'eager' : 'lazy'"
+  [attr.decoding]="priority() ? 'auto' : 'async'"
+  [class.blurred]="blurred()"
+  [style.aspect-ratio]="aspectRatio()"
+  (load)="onImgLoad()"
+  (error)="onImgError()" />
+
+@if (showShimmer()) {
+  <div
+    class="shimmer-overlay"
+    aria-hidden="true">
+    <ea-skeleton
+      variant="rect"
+      width="100%"
+      height="100%" />
+  </div>
+}

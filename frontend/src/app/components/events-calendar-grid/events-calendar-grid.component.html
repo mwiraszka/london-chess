@@ -1,0 +1,85 @@
+<div
+  class="months-grid"
+  [attr.month-count]="calendarMonths.length">
+  @for (calendarMonth of calendarMonths; track calendarMonth.monthYear) {
+    <div
+      class="month"
+      [class.no-events]="!calendarMonth.hasEvents"
+      [class.today-scroll-point]="calendarMonth.isCurrentMonth">
+      <h3 class="month-title">{{ calendarMonth.monthYear }}</h3>
+      <div class="calendar-grid">
+        @for (
+          dayOfWeek of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          track dayOfWeek
+        ) {
+          <div class="day-header">{{ dayOfWeek }}</div>
+        }
+
+        @for (week of calendarMonth.weeks; track $index) {
+          @for (day of week; track day.dateKey) {
+            <div
+              class="calendar-day"
+              [class.other-month]="!day.isCurrentMonth"
+              [class.today]="day.isCurrentMonth && day.isToday">
+              <div class="day-number">{{ day.day }}</div>
+
+              @if (day.events.length) {
+                <div class="event-indicators">
+                  @for (event of day.events; track event.id) {
+                    <a
+                      [adminControls]="isAdmin ? getAdminControlsConfig(event) : null"
+                      class="event-indicator"
+                      [class]="event.type | kebabCase"
+                      [class.no-events]="!calendarMonth.hasEvents"
+                      [class.other-month]="!day.isCurrentMonth"
+                      [tooltip]="
+                        day.isCurrentMonth && calendarMonth.hasEvents && !isTouchDevice
+                          ? eventTooltipContent
+                          : null
+                      "
+                      [tooltipContext]="event"
+                      (click)="onEventIndicator(event)">
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<ng-template
+  #eventTooltipContent
+  let-event>
+  <div class="event-tooltip">
+    <div class="event-date-and-time">
+      <ea-icon-calendar-days class="calendar-icon" />
+      <span>{{ event.eventDate | formatDate: 'short no-time' }}</span>
+    </div>
+
+    <div class="event-title-and-type">
+      <div
+        class="event-title"
+        [innerHTML]="event.title | highlight: $safeNavigationMigration(options?.search)">
+      </div>
+
+      <div
+        class="event-type-wrapper"
+        [ngClass]="event.type | kebabCase">
+        <span
+          class="event-type"
+          [innerHTML]="event.type | highlight: $safeNavigationMigration(options?.search)">
+        </span>
+
+        @if ((event.type | kebabCase) === 'championship') {
+          <ea-icon-trophy class="championship-icon" />
+        }
+      </div>
+    </div>
+
+    <div class="more-details">Click for more details</div>
+  </div>
+</ng-template>

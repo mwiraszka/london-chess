@@ -1,0 +1,242 @@
+@use '../../../styles/abstracts/mixins' as mixins;
+
+:host {
+  display: block;
+}
+
+.account-page {
+  display: flex;
+  flex-direction: column;
+  // Match the 8px page-header-to-content spacing the app shell gives other pages
+  gap: 8px;
+  width: 100%;
+  // Shell horizontal padding subtracted so wide view cannot shift this page
+  max-width: calc(var(--lcc-width--appContent) - 8px);
+  margin: 0 auto;
+}
+
+.account-page__body {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: auto minmax(0, 800px);
+  justify-content: center;
+  width: 100%;
+
+  // Only when both side columns fit does the card itself centre on the page,
+  // nav hugging its left edge; narrower screens centre the nav-plus-card block
+  @include mixins.respond-to('gt-xxl') {
+    grid-template-columns: 1fr minmax(0, 800px) 1fr;
+  }
+
+  @include mixins.respond-to('lt-md') {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-nav {
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: fit-content;
+
+  @include mixins.respond-to('lt-md') {
+    justify-self: stretch;
+    width: 100%;
+  }
+}
+
+.settings-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.settings-nav__item:hover {
+  // The plain hover token is invisible against the light page background
+  background: var(--color-state-active);
+  color: var(--color-text-primary);
+}
+
+.settings-nav__item--active {
+  font-weight: 600;
+  background: var(--color-state-active);
+  color: var(--color-text-primary);
+}
+
+.settings-nav__icon {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 800px;
+}
+
+.details-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.name-row {
+  display: flex;
+  gap: 16px;
+
+  ea-input {
+    flex: 1;
+  }
+
+  .field-skeleton {
+    flex: 1;
+  }
+
+  .field-skeleton--narrow {
+    flex: 0 0 84px;
+  }
+
+  // Paired columns get too tight for wrapped labels on phones
+  @include mixins.respond-to('lt-xs') {
+    flex-direction: column;
+  }
+}
+
+.request-hint {
+  margin: 24px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-text-secondary);
+}
+
+.privacy-note {
+  margin-top: 24px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.warning-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.warning-heading__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--lcc-color--accountPage-danger);
+}
+
+// The library paints danger buttons with its own error red; the club's red
+// keeps them in step with the safe mode controls
+.danger-button {
+  --ea-button-background-color: var(--lcc-color--accountPage-danger);
+  --ea-button-border-color: var(--lcc-color--accountPage-danger);
+  --ea-button-background-color-hover: var(--lcc-color--accountPage-dangerHover);
+  --ea-button-border-color-hover: var(--lcc-color--accountPage-dangerHover);
+  --ea-button-background-color-active: var(--lcc-color--accountPage-dangerHover);
+  --ea-button-border-color-active: var(--lcc-color--accountPage-dangerHover);
+}
+
+.card-desc {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-text-secondary);
+}
+
+.avatar-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // The editor grows a controls row once a photo is in; reserving its loaded
+  // footprint keeps the card height steady through the fetch
+  min-height: 216px;
+  margin-bottom: 24px;
+}
+
+.field-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+
+.actions--row {
+  gap: 12px;
+}
+
+.sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.session__icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--lcc-color--general-accentIcon);
+}
+
+.session__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session__device {
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.session__meta {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+// On phones every action button spans the row
+@include mixins.respond-to('lt-xs') {
+  .settings-content .actions ea-button {
+    width: 100%;
+
+    ::ng-deep .ea-button {
+      width: 100%;
+    }
+  }
+}

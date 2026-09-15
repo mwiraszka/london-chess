@@ -1,0 +1,84 @@
+<div class="data-toolbar-controls">
+  <section class="paginator">
+    <button
+      class="first-page-button page-navigation-button lcc-secondary-button lcc-light-button"
+      [disabled]="options.page === 1"
+      [tooltip]="options.page === 1 ? null : 'First page'"
+      (click)="onFirstPage()">
+      <ea-icon-chevrons-left class="first-page-icon" />
+    </button>
+
+    <button
+      class="previous-page-button page-navigation-button lcc-secondary-button lcc-light-button"
+      [disabled]="options.page === 1"
+      [tooltip]="options.page === 1 ? null : 'Previous page'"
+      (click)="onPreviousPage()">
+      <ea-icon-chevron-left class="previous-page-icon" />
+    </button>
+
+    <section class="page-control-section">
+      <div class="page-counter">Page: {{ options.page }} / {{ lastPage }}</div>
+      <div class="page-size-buttons">
+        @for (size of STANDARD_PAGE_SIZES; track size) {
+          <button
+            class="page-size-button lcc-secondary-button"
+            [class.selected]="options.pageSize === size"
+            [tooltip]="'Show ' + size + ' ' + entity + 's per page'"
+            (click)="onPageSizeChange(size)">
+            {{ size }}
+          </button>
+        }
+        <button
+          class="page-size-button all-button lcc-secondary-button"
+          [class.selected]="options.pageSize === -1"
+          [tooltip]="allPageSizeTooltip"
+          (click)="onPageSizeChange(-1)">
+          all
+        </button>
+      </div>
+    </section>
+
+    <button
+      class="next-page-button page-navigation-button lcc-secondary-button lcc-light-button"
+      [disabled]="options.page === lastPage"
+      [tooltip]="options.page === lastPage ? null : 'Next page'"
+      (click)="onNextPage()">
+      <ea-icon-chevron-right class="next-page-icon" />
+    </button>
+
+    <button
+      class="last-page-button page-navigation-button lcc-secondary-button lcc-light-button"
+      [disabled]="options.page === lastPage"
+      [tooltip]="options.page === lastPage ? null : 'Last page'"
+      (click)="onLastPage()">
+      <ea-icon-chevrons-right class="last-page-icon" />
+    </button>
+  </section>
+
+  @if (options.filters) {
+    <ul class="filters">
+      @for (filter of options.filters | keyvalue: originalOrder; track filter.key) {
+        <li class="filter">
+          <label [for]="filter.key">{{ filter.value.label }}</label>
+          <input
+            [id]="filter.key"
+            type="checkbox"
+            [checked]="filter.value.value"
+            (change)="onToggleFilter(filter)" />
+        </li>
+      }
+    </ul>
+  }
+
+  <input
+    class="search-input"
+    id="search"
+    type="text"
+    [placeholder]="isSearchFocused ? '' : searchPlaceholder"
+    [value]="options.search"
+    (focus)="isSearchFocused = true"
+    (blur)="isSearchFocused = false"
+    (input)="onSearchQueryChange($event)" />
+</div>
+
+<aside class="pagination-summary">{{ paginationSummary }}</aside>

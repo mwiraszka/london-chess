@@ -1,0 +1,63 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+// Space the form block from the footer links below it.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.auth-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  ea-button {
+    margin-top: 16px;
+    --ea-button-font-weight: 400;
+  }
+}
+
+.code-input {
+  display: flex;
+  justify-content: center;
+}
+
+.error {
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--color-error-default);
+}
+
+.hint {
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.auth-link {
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+// A real button since inside the drawer it switches mode rather than
+// navigating; lcc-link provides the visual style
+.auth-link__button {
+  padding: 0;
+  font: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}

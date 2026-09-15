@@ -1,7 +1,0 @@
-@use '../../../styles/abstracts/mixins' as *;
-
-mat-icon {
-  @include icon-size(18px);
-
-  color: var(--lcc-color--formErrorIcon);
-}

@@ -1,0 +1,17 @@
+export type NavPath =
+  | ''
+  | 'about'
+  | 'album'
+  | 'article'
+  | 'city-champion'
+  | 'documents'
+  | 'event'
+  | 'game-archives'
+  | 'image'
+  | 'lifetime-achievement-awards'
+  | 'member'
+  | 'members'
+  | 'news'
+  | 'photo-gallery'
+  | 'schedule'
+  | 'website-changelog';

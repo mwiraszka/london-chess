@@ -19,3 +19,16 @@ jobs:
             echo "::error::CHANGELOG.md is missing an entry for [$version]. Add a '## [$version]' section before merging."
             exit 1
           fi
+
+      - name: Check Changelog Date Is Current
+        run: |
+          version="${GITHUB_HEAD_REF}"
+          entry_date=$(grep -m1 -oP "^## \[\Q${version}\E\] - \K\d{4}-\d{2}-\d{2}" CHANGELOG.md || true)
+          # Today's date in any timezone falls within a day of the UTC date
+          for offset in -1 0 1; do
+            if [ "$entry_date" = "$(date -u -d "$offset day" +%F)" ]; then
+              exit 0
+            fi
+          done
+          echo "::error::The CHANGELOG.md entry for [$version] is dated ${entry_date:-nothing}. Set it to the date this PR merges."
+          exit 1

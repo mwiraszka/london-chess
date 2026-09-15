@@ -1,0 +1,46 @@
+name: Backend Production Deployment
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - .github/workflows/backend-production.yaml
+
+jobs:
+  Deploy-Production:
+    # Set the repository variable ENABLE_VERCEL to 'true' once the Vercel projects
+    # and secrets are configured (see docs/deployment.md).
+    if: ${{ vars.ENABLE_VERCEL == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts
+        run: >
+          vercel deploy --prebuilt --prod --yes
+          --token=${{ secrets.VERCEL_TOKEN }}
+          --meta githubCommitSha=${{ github.sha }}
+          --meta githubCommitRef=${{ github.ref_name }}

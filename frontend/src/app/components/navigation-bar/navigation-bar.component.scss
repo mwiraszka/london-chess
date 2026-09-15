@@ -1,0 +1,142 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+$border-thickness: 2px;
+$nav-collapse-width: 800px;
+
+:host {
+  z-index: 1000;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  height: 40px;
+  padding-top: 2px;
+  margin-bottom: 2px;
+  background-color: var(--lcc-color--nav-background);
+}
+
+.content-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  max-width: var(--lcc-width--appContent);
+}
+
+.nav-links {
+  display: flex;
+
+  .nav-link {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: auto;
+    // Add border thickness to side padding for non-active links to prevent layout shifts
+    // when a link becomes active and a border is added
+    padding: 3px calc(2px + #{$border-thickness});
+    font-size: 14px;
+
+    font-weight: 400;
+    white-space: nowrap;
+    border-top: $border-thickness solid transparent;
+    border-bottom: $border-thickness solid var(--lcc-color--nav-border);
+    border-top-left-radius: var(--lcc-borderRadius--large);
+    border-top-right-radius: var(--lcc-borderRadius--large);
+    color: var(--lcc-color--nav-linkForeground);
+
+    &:hover {
+      text-decoration: none;
+      color: var(--lcc-color--nav-linkForegroundOnHover);
+
+      .link-icon {
+        color: var(--lcc-color--nav-linkForegroundOnHover);
+      }
+    }
+
+    &.link-active {
+      padding: 3px 2px;
+      border-right: $border-thickness solid var(--lcc-color--nav-border);
+      border-left: $border-thickness solid var(--lcc-color--nav-border);
+      background-color: var(--lcc-color--app-mainBackground);
+      color: var(--lcc-color--nav-linkForegroundWhenActive);
+      cursor: default;
+      pointer-events: none;
+      border-top-color: var(--lcc-color--nav-border);
+      border-bottom-color: transparent;
+    }
+
+    .link-text {
+      visibility: hidden;
+      display: none;
+    }
+
+    .link-icon {
+      display: inline-flex;
+      @include icon-size(24px);
+
+      color: var(--lcc-color--nav-linkForeground);
+    }
+
+    @include respond-to('gt-xs') {
+      padding-left: calc(5px + #{$border-thickness});
+      padding-right: calc(5px + #{$border-thickness});
+
+      &.link-active {
+        padding-right: 5px;
+        padding-left: 5px;
+      }
+    }
+
+    @media (min-width: $nav-collapse-width) {
+      .link-text {
+        visibility: unset;
+        display: block;
+      }
+
+      .link-icon {
+        visibility: hidden;
+        display: none;
+      }
+    }
+  }
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  border-bottom: $border-thickness solid var(--lcc-color--nav-border);
+
+  .avatar-button {
+    // Full control-row height so the menu anchors to the nav bottom edge
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    margin: 0 4px;
+    border: none;
+    background: none;
+    color: var(--lcc-color--nav-linkForeground);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--lcc-color--nav-linkForegroundOnHover);
+    }
+
+    .menu-icon {
+      @include icon-size(22px);
+    }
+  }
+}
+
+.nav-left,
+.nav-right,
+.nav-mid {
+  flex: 1;
+  border-bottom: $border-thickness solid var(--lcc-color--nav-border);
+}
+
+.nav-left,
+.nav-right {
+  // Matches the scroller's side insets so links line up with page content
+  // while these fillers keep the border line running to the edges
+  min-width: calc(8px + var(--lcc-scrollbar-inset, 0px));
+}

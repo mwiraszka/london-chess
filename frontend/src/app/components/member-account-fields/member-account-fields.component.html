@@ -1,0 +1,44 @@
+<div class="name-row">
+  <ea-input
+    label="First name"
+    autocomplete="given-name"
+    [autofocus]="autofocus()"
+    [required]="true"
+    [formControl]="group().controls.firstName" />
+
+  <ea-input
+    label="Last name"
+    autocomplete="family-name"
+    [required]="true"
+    [formControl]="group().controls.lastName" />
+</div>
+
+<div class="name-row">
+  <ea-input
+    label="Email"
+    type="email"
+    autocomplete="email"
+    placeholder="you@example.com"
+    [required]="true"
+    [formControl]="group().controls.email" />
+
+  <lcc-year-of-birth-field
+    [control]="group().controls.yearOfBirth"
+    [required]="yearOfBirthRequired()" />
+</div>
+
+<div class="name-row">
+  <ea-input
+    label="City"
+    autocomplete="address-level2"
+    placeholder="London"
+    [required]="true"
+    [maxLength]="50"
+    [formControl]="group().controls.city" />
+
+  <lcc-phone-number-field [control]="group().controls.phoneNumber" />
+</div>
+
+<lcc-chess-username-fields
+  [chessComUsername]="group().controls.chessComUsername"
+  [lichessUsername]="group().controls.lichessUsername" />

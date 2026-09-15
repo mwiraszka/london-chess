@@ -1,0 +1,164 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  width: 100%;
+}
+
+.events-table {
+  width: 100%;
+  max-width: 800px;
+  margin: auto;
+
+  :host-context(body[data-wide-view='true']) & {
+    max-width: none;
+  }
+
+  tbody {
+    .skeleton-main-content {
+      width: 100%;
+    }
+
+    .skeleton-line {
+      height: 14px;
+      margin: 4px 0;
+
+      &.wide {
+        width: 80%;
+      }
+
+      &.narrow {
+        width: 50%;
+      }
+    }
+
+    .today-line {
+      width: 100%;
+      border-top: 2px solid var(--lcc-color--schedule-today) !important;
+    }
+
+    .event-date-cell {
+      vertical-align: top;
+      padding: 12px;
+
+      .event-date-widget {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        width: 65px;
+        height: 65px;
+        font-size: 13px;
+        text-align: center;
+        border-radius: 50%;
+        background-color: var(--lcc-color--schedule-dateBackground);
+      }
+    }
+
+    .event-details-cell {
+      width: 100%;
+
+      // Make the date widget appear centered
+      padding-left: 0 !important;
+
+      .event-entry {
+        display: flex;
+        flex-flow: row wrap;
+        gap: 16px;
+
+        &:not(:last-child) {
+          padding-bottom: 8px;
+        }
+
+        & + .event-entry {
+          border-top: 2px solid var(--lcc-color--general-dividerLine);
+          padding-top: 8px;
+        }
+
+        .main-content {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+
+          .title {
+            display: inline;
+            margin-right: 8px;
+            font-size: 15px !important;
+            line-height: normal;
+            color: var(--lcc-color--schedule-titleText);
+          }
+
+          .type-container {
+            display: inline-flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 4px;
+            width: auto;
+            margin: 2px 0;
+            padding: 2px 8px;
+            border-radius: var(--lcc-borderRadius--large);
+            color: var(--lcc-color--schedule-eventType);
+
+            &.blitz-tournament-10-mins {
+              background-color: var(--lcc-color--schedule-blitz10TournamentBackground);
+            }
+
+            &.rapid-tournament-25-mins {
+              background-color: var(--lcc-color--schedule-rapid25TournamentBackground);
+            }
+
+            &.rapid-tournament-40-mins {
+              background-color: var(--lcc-color--schedule-rapid40TournamentBackground);
+            }
+
+            &.lecture {
+              background-color: var(--lcc-color--schedule-lectureBackground);
+            }
+
+            &.simul {
+              background-color: var(--lcc-color--schedule-simulBackground);
+            }
+
+            &.championship {
+              background-color: var(--lcc-color--schedule-championshipBackground);
+            }
+
+            &.other {
+              background-color: var(--lcc-color--schedule-otherBackground);
+            }
+
+            &.closed {
+              background-color: var(--lcc-color--schedule-closedBackground);
+            }
+
+            .championship-icon {
+              @include icon-size(16px);
+
+              color: var(--lcc-color--schedule-championshipMedalIcon);
+            }
+          }
+
+          .event-details {
+            font-size: 14px;
+            font-weight: 200;
+            color: var(--lcc-color--schedule-eventDetailsText);
+          }
+        }
+
+        .created-and-edited {
+          display: flex;
+          align-self: flex-end;
+          flex: 1;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+          font-size: 11px;
+          font-weight: 100;
+          white-space: nowrap;
+          color: var(--lcc-color--schedule-createdAndEditedText);
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+// Shared by the create-account drawer, the account page, and member profiles
+.privacy-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: start;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+}
+
+.privacy-note__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.privacy-note__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--lcc-color--general-accentIcon);
+}

@@ -1,0 +1,99 @@
+name: Backup
+
+on:
+  schedule:
+    # Fridays at noon Eastern (16:00 UTC; an hour earlier by the clock in winter)
+    - cron: "0 16 * * 5"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        # GitHub's default shell omits pipefail
+        shell: bash
+    env:
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      RCLONE_CONFIG_B2_TYPE: b2
+      RCLONE_CONFIG_B2_ACCOUNT: ${{ secrets.B2_APPLICATION_KEY_ID }}
+      RCLONE_CONFIG_B2_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      # Everything leaves the runner already encrypted, names included, so the
+      # backup provider only ever holds ciphertext
+      RCLONE_CONFIG_CRYPT_TYPE: crypt
+      RCLONE_CONFIG_CRYPT_REMOTE: b2:${{ secrets.B2_BUCKET_NAME }}
+      IMAGES_BUCKET: ${{ secrets.R2_IMAGES_BUCKET_NAME }}
+      AVATARS_BUCKET: ${{ secrets.R2_AVATARS_BUCKET_NAME }}
+    steps:
+      # Ubuntu's rclone package lags years behind, and mongodump is not in
+      # Ubuntu's repositories at all
+      - name: Install tools
+        run: |
+          curl -fsSLo rclone.deb \
+            "https://github.com/rclone/rclone/releases/download/v$RCLONE_VERSION/rclone-v$RCLONE_VERSION-linux-amd64.deb"
+          echo "$RCLONE_SHA256  rclone.deb" | sha256sum -c
+          sudo dpkg -i rclone.deb
+          sudo curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc \
+            -o /usr/share/keyrings/mongodb-server.asc
+          echo "deb [signed-by=/usr/share/keyrings/mongodb-server.asc] \
+            https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/8.0 multiverse" \
+            | sudo tee /etc/apt/sources.list.d/mongodb-org.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mongodb-database-tools
+          # The day is stamped once, since steps can straddle midnight UTC
+          echo "DUMP_REMOTE=crypt:db/$(date -u +%Y-%m-%d)/london-chess.archive.gz" \
+            >> "$GITHUB_ENV"
+        env:
+          RCLONE_VERSION: 1.75.0
+          RCLONE_SHA256: 266598b5c66a42b821571332013cc85a88ffcff8939cf0643861c8d033dd3a4a
+
+      # rclone takes its passwords pre-obscured, so the passphrase is turned
+      # into that form here rather than stored twice in two encodings
+      - name: Unlock the encrypted remote
+        run: |
+          OBSCURED="$(rclone obscure "$BACKUP_PASSPHRASE")"
+          echo "::add-mask::$OBSCURED"
+          echo "RCLONE_CONFIG_CRYPT_PASSWORD=$OBSCURED" >> "$GITHUB_ENV"
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+
+      # Reading the archive back decompressed proves the dump is whole
+      - name: Dump the database
+        run: |
+          mongodump --uri "$MONGODB_URI" --db "$MONGODB_DATABASE" \
+            --archive=db.archive.gz --gzip --quiet
+          zcat db.archive.gz > /dev/null
+          test "$(stat -c %s db.archive.gz)" -gt 1024
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+
+      - name: Keep the dump, dated
+        run: rclone copyto db.archive.gz "$DUMP_REMOTE"
+
+      # Mirrors rather than dated copies, so only what changed moves each
+      # week; the bucket's own file versioning keeps history of what did.
+      # An empty source listing is a broken remote, not a library to mirror
+      - name: Mirror the image buckets
+        run: |
+          test -n "$(rclone lsf "r2:$IMAGES_BUCKET" --max-depth 1)"
+          rclone sync "r2:$IMAGES_BUCKET" crypt:images \
+            --fast-list --transfers 16 --checkers 32 --stats-one-line --stats 60s
+          test -n "$(rclone lsf "r2:$AVATARS_BUCKET" --max-depth 1)"
+          rclone sync "r2:$AVATARS_BUCKET" crypt:avatars \
+            --fast-list --transfers 16 --checkers 32 --stats-one-line --stats 60s
+
+      # Reading the dump back end to end proves the stored copy restores; the
+      # mirror checks settle for sizes, since hashes cannot cross the crypt layer
+      - name: Verify what landed
+        run: |
+          rclone cat "$DUMP_REMOTE" | zcat > /dev/null
+          rclone check "r2:$IMAGES_BUCKET" crypt:images --one-way --size-only \
+            --fast-list --checkers 32
+          rclone check "r2:$AVATARS_BUCKET" crypt:avatars --one-way --size-only \
+            --fast-list --checkers 32

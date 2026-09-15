@@ -1,0 +1,101 @@
+@if (step() === 'form') {
+  <form
+    class="auth-form"
+    [formGroup]="form"
+    (ngSubmit)="onSubmit()">
+    <lcc-member-account-fields
+      [autofocus]="true"
+      [group]="form" />
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <ea-button
+      type="submit"
+      size="sm"
+      variant="primary"
+      [fullWidth]="true"
+      [disabled]="form.invalid"
+      [loading]="loading()">
+      Request account
+    </ea-button>
+  </form>
+
+  <div class="auth-footer">
+    <p class="hint">
+      An LCC admin will review your request and set up your member account. You will
+      receive a confirmation email as soon as your account is ready. Please note that an
+      account is not required to attend any club events.
+    </p>
+    <p class="privacy-note">
+      <span class="privacy-note__heading">
+        <ea-icon-lock
+          class="privacy-note__icon"
+          aria-hidden="true" />
+        <strong>Privacy</strong>
+      </span>
+      <span>
+        We don't share your information with anyone. Your details are only used by the
+        club.
+      </span>
+    </p>
+    <p class="auth-link">
+      Already have an account?
+      <button
+        type="button"
+        class="auth-link__button lcc-link"
+        keepFocus
+        (click)="authDrawer.setMode('login')">
+        Log in
+      </button>
+    </p>
+  </div>
+} @else {
+  <form
+    class="auth-form"
+    [formGroup]="verificationForm"
+    (ngSubmit)="onVerifyAndSubmit()">
+    <p class="hint">
+      Enter the six-digit code we sent to {{ form.controls.email.value }}.
+    </p>
+
+    <ea-code-input
+      label="Verification code"
+      formControlName="code"
+      [required]="true"
+      [length]="codeLength"
+      [errorMsg]="codeError()" />
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <ea-button
+      type="submit"
+      size="sm"
+      variant="primary"
+      [fullWidth]="true"
+      [disabled]="verificationForm.invalid"
+      [loading]="loading()">
+      Verify and submit
+    </ea-button>
+
+    <div class="code-actions">
+      <button
+        type="button"
+        class="auth-link__button lcc-link"
+        keepFocus
+        (click)="onResendCode()">
+        Resend code
+      </button>
+      <button
+        type="button"
+        class="auth-link__button lcc-link"
+        keepFocus
+        (click)="onBackToForm()">
+        Back
+      </button>
+    </div>
+  </form>
+}

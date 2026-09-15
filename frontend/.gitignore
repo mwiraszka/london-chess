@@ -1,0 +1,22 @@
+# Generated code
+node_modules
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Compiled output
+dist
+out-tsc
+
+# Angular
+.angular
+
+# Test coverage data
+coverage
+
+# GitHub Copilot instructions
+.github/copilot-instructions.md
+
+# IDE - VS Code
+.vscode

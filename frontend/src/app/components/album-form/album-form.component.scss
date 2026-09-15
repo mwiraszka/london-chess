@@ -1,0 +1,125 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: var(--lcc-borderRadius--small);
+  box-shadow: 1px 1px 5px 2px var(--lcc-color--form-boxShadow);
+  background-color: var(--lcc-color--form-background);
+}
+
+.images-grid {
+  display: grid;
+  row-gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  width: 100%;
+  column-gap: 8px;
+
+  .image-container {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 180px;
+    border-radius: var(--lcc-borderRadius--large);
+    background-color: var(--lcc-color--general-imageBackdrop);
+
+    img {
+      object-fit: contain;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: 180px;
+    }
+
+    lcc-image {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: 180px;
+
+      ::ng-deep img {
+        object-fit: contain;
+        max-height: 180px;
+      }
+    }
+
+    &:hover .remove-image-button {
+      display: flex;
+    }
+
+    .remove-image-button {
+      @include icon-size(24px);
+
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: none;
+      cursor: pointer;
+    }
+  }
+
+  .full-span {
+    grid-column: 1 / -1;
+  }
+
+  @include respond-to('gt-md') {
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  }
+
+  @include respond-to('gt-lg') {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+}
+
+.cover-image-input-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  grid-column: 2 / 3;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.album-ordinality-input {
+  width: 40px;
+}
+
+.new-images-header {
+  align-self: start;
+  color: var(--lcc-color--albumForm-headerText);
+}
+
+.control-buttons-container {
+  display: flex;
+  align-self: end;
+  flex-direction: row;
+  gap: 8px;
+
+  .choose-files-button,
+  .restore-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+
+    &:not(:disabled) {
+      color: var(--lcc-color--general-warning);
+    }
+
+    & > input {
+      display: none;
+    }
+  }
+}
+
+hr {
+  width: 100%;
+  margin: 1em 0;
+  border-top: 1px solid var(--lcc-color--general-dividerLine);
+}

@@ -1,0 +1,120 @@
+<form
+  class="lcc-form"
+  [formGroup]="form"
+  (ngSubmit)="onSubmit()">
+  <div class="lcc-form-fields">
+    <label class="lcc-required-field">Banner Image:</label>
+    <div class="image-section-container">
+      <div class="image-container">
+        <lcc-image [image]="bannerImage" />
+      </div>
+
+      <div class="image-controls-container">
+        <button
+          class="select-banner-image-button lcc-secondary-button"
+          type="button"
+          tooltip="Select a new banner image"
+          (click)="onSelectBannerImage()">
+          <ea-icon-image />
+        </button>
+        <button
+          class="revert-banner-image-button lcc-secondary-button"
+          type="button"
+          tooltip="Revert banner to original image"
+          [disabled]="
+            (originalArticle?.bannerImageId ?? '') === form.controls.bannerImageId.value
+          "
+          (click)="onRevertBannerImage()">
+          <ea-icon-rotate-ccw />
+        </button>
+
+        <hr />
+
+        <button
+          class="insert-image-button lcc-secondary-button"
+          type="button"
+          [tooltip]="
+            canInsertImage
+              ? 'Insert image into article body'
+              : 'Maximum of ' + maxBodyImages + ' body images reached'
+          "
+          [disabled]="!canInsertImage"
+          (click)="onInsertImage()">
+          <ea-icon-image />
+        </button>
+      </div>
+    </div>
+    <lcc-form-error-icon [control]="form.controls.bannerImageId"></lcc-form-error-icon>
+
+    <label
+      for="title-input"
+      class="lcc-required-field">
+      Title:
+    </label>
+    <input
+      id="title-input"
+      type="text"
+      name="title"
+      formControlName="title"
+      maxlength="120" />
+    <lcc-form-error-icon [control]="form.controls.title"></lcc-form-error-icon>
+
+    <label
+      for="body-input"
+      class="lcc-required-field">
+      Content:
+    </label>
+    <textarea
+      id="body-input"
+      name="body"
+      formControlName="body"
+      maxlength="50000"
+      (click)="onBodyTextareaInteraction($event)"
+      (keyup)="onBodyTextareaInteraction($event)"
+      (select)="onBodyTextareaInteraction($event)">
+    </textarea>
+    <lcc-form-error-icon [control]="form.controls.body"></lcc-form-error-icon>
+
+    <button
+      class="restore-button lcc-secondary-button"
+      [disabled]="!hasUnsavedChanges"
+      tooltip="Restore article to its original state"
+      (click)="onRestore()">
+      <ea-icon-history />
+    </button>
+  </div>
+
+  <aside class="lcc-required-fields-legend">Required fields</aside>
+
+  <div class="preview-section-container">
+    @if (!!form.controls.body.value) {
+      <h3>Article preview:</h3>
+      <hr />
+      <div class="markdown-container">
+        <lcc-markdown-renderer
+          [data]="form.controls.body.value"
+          [images]="bodyImages">
+        </lcc-markdown-renderer>
+      </div>
+    }
+  </div>
+
+  @if (originalArticle?.modificationInfo; as info) {
+    <lcc-modification-info [info]="info"></lcc-modification-info>
+  }
+
+  <div class="lcc-form-buttons-container">
+    <button
+      class="cancel-button lcc-secondary-button"
+      type="button"
+      (click)="onCancel()">
+      Cancel
+    </button>
+    <button
+      class="submit-button lcc-primary-button"
+      type="submit"
+      [disabled]="form.invalid || !hasUnsavedChanges">
+      {{ originalArticle ? 'Update article' : 'Publish article' }}
+    </button>
+  </div>
+</form>

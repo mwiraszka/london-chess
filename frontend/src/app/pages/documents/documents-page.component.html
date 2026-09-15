@@ -1,0 +1,51 @@
+<lcc-page-header
+  heading="Documents"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+<div class="lcc-table-wrapper">
+  <table class="lcc-table documents-table">
+    <thead>
+      <th class="document">Document</th>
+      <th class="published">Published</th>
+      <th class="last-modified">Last Modified</th>
+    </thead>
+    <tbody>
+      @for (document of documents; track document.title) {
+        <tr>
+          <td class="document">
+            <div
+              class="document-label-container"
+              [fragment]="document.fileName"
+              [routerLink]="currentPath">
+              <ea-icon-file-text class="file-icon" />
+              <span class="document-title">{{ document.title }}</span>
+            </div>
+
+            <a
+              [href]="'assets/documents/' + document.fileName"
+              class="download-link"
+              [download]="document.title"
+              [tooltip]="tooltipContent"
+              (click)="$event.stopPropagation()">
+              <ea-icon-download class="download-icon" />
+            </a>
+
+            <ng-template #tooltipContent>
+              <span>Download</span>
+              <i class="tooltip-item-name">{{ document.title }}</i>
+            </ng-template>
+          </td>
+
+          <td class="published">
+            {{ document.datePublished | formatDate: 'short no-time' }}
+          </td>
+
+          <td class="last-modified">
+            {{ document.dateLastModified | formatDate: 'short no-time' }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

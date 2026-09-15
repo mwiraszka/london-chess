@@ -1,0 +1,250 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  width: 100%;
+  max-width: var(--lcc-width--smallForm);
+}
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  // Same card width as the Website Changelog page
+  max-width: 800px;
+  margin: 8px auto;
+}
+
+.summary {
+  container-type: inline-size;
+}
+
+.identity {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 16px;
+
+  // Once the stats pair up, everything else centres with them
+  @container (width < 560px) {
+    flex-direction: column;
+  }
+
+  // The avatar and name always share a line, so the rating moves below once they fill it
+  .member-summary {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: center;
+    gap: 16px;
+    max-width: 100%;
+
+    ea-avatar {
+      flex-shrink: 0;
+    }
+  }
+
+  .identity-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .member-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    white-space: nowrap;
+
+    .admin-icon {
+      @include icon-size(20px);
+
+      min-width: 20px;
+      color: var(--lcc-color--pageHeader-adminIcon);
+    }
+
+    .champion-link {
+      display: inline-flex;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    .champion-icon {
+      @include icon-size(20px);
+
+      min-width: 20px;
+      color: var(--lcc-color--memberProfile-cityChampionIcon);
+      transition: color 1s ease;
+    }
+
+    .champion-link:hover .champion-icon {
+      color: var(--lcc-color--memberProfile-cityChampionIconHover);
+    }
+  }
+
+  .member-name__text {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .member-name__first,
+  .member-name__last {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  // Far more willing to shrink than the first name, so the last name truncates first
+  .member-name__last {
+    flex-shrink: 1000000;
+  }
+
+  .identity-badges {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 8px;
+
+    // Inactive keeps a hint of the warning colour but reads muted
+    .status-badge.inactive {
+      opacity: 0.65;
+    }
+  }
+
+  .rating {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 24px;
+    border-radius: var(--lcc-borderRadius--small);
+    box-shadow: 0 1px 3px 0 var(--lcc-color--general-cardBoxShadow);
+    background-color: var(--lcc-color--general-cardBackground);
+
+    @container (width < 560px) {
+      align-self: stretch;
+    }
+  }
+
+  .rating__label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+  }
+
+  .rating__value {
+    font-size: 32px;
+    font-weight: 600;
+  }
+}
+
+.facts {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  gap: 16px 48px;
+  margin-top: 16px;
+
+  @container (width < 560px) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.stats {
+  display: grid;
+  gap: 8px 48px;
+  grid-auto-flow: column;
+
+  // The stats sit in one row or pair up two by two, never three over one
+  @container (width < 560px) {
+    gap: 16px 48px;
+    grid-template-columns: repeat(2, auto);
+    grid-auto-flow: row;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .stat__label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+  }
+
+  .stat__value {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.chess-accounts {
+  display: grid;
+  align-items: center;
+  align-content: start;
+  gap: 8px 12px;
+  grid-template-columns: auto auto;
+
+  .platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-secondary);
+  }
+
+  .platform-logo {
+    width: auto;
+    height: 16px;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    .external-link-icon {
+      @include icon-size(14px);
+    }
+  }
+}
+
+.rating-progression-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  font-size: 14px;
+  text-align: center;
+
+  .placeholder-icon {
+    @include icon-size(32px);
+
+    color: var(--lcc-color--pageHeader-icon);
+  }
+}
+
+.not-found {
+  margin-top: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.loading-placeholder {
+  width: 100%;
+  height: 180px;
+}
+
+// The saved logo is solid black; the app theme decides when to flip it
+:host-context(body[data-theme='dark']) .platform-logo--lichess {
+  filter: invert(1);
+}

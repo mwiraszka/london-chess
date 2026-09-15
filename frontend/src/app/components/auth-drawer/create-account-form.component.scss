@@ -1,0 +1,29 @@
+:host {
+  gap: 32px;
+}
+
+.auth-form {
+  gap: 24px;
+}
+
+.auth-footer {
+  gap: 24px;
+
+  .hint {
+    font-size: 14px;
+    line-height: 20px;
+    text-align: start;
+  }
+
+  .privacy-note {
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+.code-actions {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  line-height: 20px;
+}

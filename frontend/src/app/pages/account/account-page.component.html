@@ -1,0 +1,367 @@
+<div class="account-page">
+  <lcc-page-header
+    heading="Account"
+    [icon]="pageIcon">
+  </lcc-page-header>
+
+  <div class="account-page__body">
+    <nav
+      class="settings-nav"
+      aria-label="Account settings">
+      @for (item of navItems; track item.id) {
+        <a
+          class="settings-nav__item"
+          [class.settings-nav__item--active]="activeSection() === item.id"
+          [routerLink]="['/account', item.id]">
+          @switch (item.id) {
+            @case ('profile') {
+              <ea-icon-user
+                class="settings-nav__icon"
+                aria-hidden="true" />
+            }
+
+            @case ('security') {
+              <ea-icon-shield
+                class="settings-nav__icon"
+                aria-hidden="true" />
+            }
+            @case ('danger') {
+              <ea-icon-alert-triangle
+                class="settings-nav__icon"
+                aria-hidden="true" />
+            }
+          }
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="settings-content">
+      @switch (activeSection()) {
+        @case ('profile') {
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Profile photo</h3>
+            <div class="avatar-section">
+              <ea-avatar-editor
+                shape="circle"
+                [canvasSize]="180"
+                [loading]="avatarLoading() || loading()"
+                [currentSrc]="editorSrc()"
+                [cropState]="savedCropState()"
+                (fileSelected)="onFileSelected($event)"
+                (cropStateChanged)="onCropStateChange($event)"
+                (removed)="onRemoveAvatar()"
+                (errored)="onAvatarRejected($event)" />
+            </div>
+
+            <div class="actions">
+              <ea-button
+                size="sm"
+                [disabled]="!hasPhotoChanges()"
+                [loading]="saving()"
+                (clicked)="onSavePhoto()">
+                Update photo
+              </ea-button>
+            </div>
+          </ea-card>
+
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Personal information</h3>
+
+            @if (loading()) {
+              <div class="details-form">
+                <div class="name-row">
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="72px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
+                </div>
+                <div class="name-row">
+                  <div class="field-skeleton field-skeleton--narrow">
+                    <ea-skeleton
+                      variant="text"
+                      width="90px"
+                      height="17.5px" />
+                    <ea-skeleton
+                      variant="rect"
+                      width="84px"
+                      height="42px" />
+                  </div>
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="72px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
+                </div>
+                <div class="name-row">
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="110px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div
+                class="details-form"
+                [formGroup]="detailsForm">
+                <div class="name-row">
+                  <ea-input
+                    label="First name"
+                    formControlName="firstName"
+                    [required]="true" />
+                  <ea-input
+                    label="Last name"
+                    formControlName="lastName"
+                    [required]="true" />
+                </div>
+
+                <div class="name-row">
+                  <lcc-year-of-birth-field [control]="detailsForm.controls.yearOfBirth" />
+                  <ea-input
+                    label="City"
+                    autocomplete="address-level2"
+                    placeholder="London"
+                    formControlName="city"
+                    [required]="true"
+                    [maxLength]="50" />
+                  <lcc-phone-number-field [control]="detailsForm.controls.phoneNumber" />
+                </div>
+
+                <lcc-chess-username-fields
+                  [chessComUsername]="detailsForm.controls.chessComUsername"
+                  [lichessUsername]="detailsForm.controls.lichessUsername" />
+              </div>
+            }
+
+            <div class="actions">
+              <ea-button
+                size="sm"
+                [disabled]="detailsForm.invalid || !hasDetailChanges()"
+                [loading]="requestingChanges()"
+                (clicked)="onRequestChanges()">
+                Request changes
+              </ea-button>
+            </div>
+
+            <p class="request-hint">
+              An LCC admin will review your request and update your details. You will
+              receive a confirmation at your email address as soon as the changes have
+              been made.
+            </p>
+            <p class="privacy-note">
+              <span class="privacy-note__heading">
+                <ea-icon-lock
+                  class="privacy-note__icon"
+                  aria-hidden="true" />
+                <strong>Privacy</strong>
+              </span>
+              <span>
+                We don't share your information with anyone. Your details are only used by
+                the club.
+              </span>
+            </p>
+          </ea-card>
+        }
+
+        @case ('security') {
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Email address</h3>
+
+            @if (emailStep() === 'idle') {
+              <div class="fields">
+                <ea-input
+                  label="Email"
+                  type="email"
+                  autocomplete="email"
+                  [errorMsg]="emailError()"
+                  [formControl]="newEmail" />
+              </div>
+              <div class="actions">
+                <ea-button
+                  size="sm"
+                  [disabled]="!canSubmitEmail()"
+                  [loading]="emailBusy()"
+                  (clicked)="onChangeEmail()">
+                  Change email
+                </ea-button>
+              </div>
+            } @else {
+              <p class="card-desc">Enter the code we sent to {{ newEmail.value }}.</p>
+              <div class="fields">
+                <ea-input
+                  label="Verification code"
+                  autocomplete="one-time-code"
+                  [errorMsg]="emailCodeError()"
+                  [formControl]="emailCode" />
+              </div>
+              <div class="actions actions--row">
+                <ea-button
+                  size="sm"
+                  [loading]="emailBusy()"
+                  (clicked)="onVerifyEmail()">
+                  Verify
+                </ea-button>
+                <ea-button
+                  size="sm"
+                  variant="secondary"
+                  (clicked)="resetEmailChange()">
+                  Cancel
+                </ea-button>
+              </div>
+            }
+          </ea-card>
+
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Password</h3>
+            <div class="fields">
+              @if (hasPassword()) {
+                <ea-input
+                  label="Current password"
+                  type="password"
+                  autocomplete="current-password"
+                  [errorMsg]="currentPasswordError()"
+                  [formControl]="passwordForm.controls.currentPassword" />
+              }
+              <lcc-new-password-fields [group]="passwordForm.controls.passwords" />
+            </div>
+            <div class="actions">
+              <ea-button
+                size="sm"
+                [disabled]="passwordForm.invalid"
+                [loading]="passwordBusy()"
+                (clicked)="onChangePassword()">
+                Change password
+              </ea-button>
+            </div>
+          </ea-card>
+
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Session management</h3>
+            <p class="card-desc">
+              These are the devices and browsers signed in to your account, with when each
+              was last active. Log out of any unfamiliar devices.
+            </p>
+            @if (sessionsLoading()) {
+              <ea-skeleton
+                variant="rect"
+                height="75px" />
+            } @else {
+              <ul class="sessions">
+                @for (session of sessions(); track session.id) {
+                  <li>
+                    <ea-card variant="elevated">
+                      <div class="session">
+                        @if (session.isMobile) {
+                          <ea-icon-smartphone
+                            class="session__icon"
+                            aria-hidden="true" />
+                        } @else {
+                          <ea-icon-monitor
+                            class="session__icon"
+                            aria-hidden="true" />
+                        }
+                        <div class="session__info">
+                          <span class="session__device">{{ session.device }}</span>
+                          <span class="session__meta">
+                            @if (session.isCurrent) {
+                              Current session
+                            } @else {
+                              Last active {{ session.lastActive }}
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </ea-card>
+                  </li>
+                }
+              </ul>
+              @if (sessions().length > 1) {
+                <div class="actions">
+                  <ea-button
+                    size="sm"
+                    variant="secondary"
+                    [loading]="revokingOthers()"
+                    (clicked)="onRevokeOtherSessions()">
+                    Log out other devices
+                  </ea-button>
+                </div>
+              }
+            }
+          </ea-card>
+        }
+
+        @case ('danger') {
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Delete account</h3>
+            <h4 class="warning-heading">
+              <ea-icon-alert-triangle
+                class="warning-heading__icon"
+                aria-hidden="true" />
+              Warning
+            </h4>
+            <p class="card-desc">
+              Deleting your account removes your profile and personal details from our
+              database. This is done immediately and cannot be undone. Note that this does
+              not cover your listing on the club's member page, which remains public
+              information by default. If you would like that removed as well, please reach
+              out to an LCC admin, either at the club or via email.
+            </p>
+            <div class="actions">
+              <ea-button
+                class="danger-button"
+                size="sm"
+                variant="danger"
+                [loading]="deleting()"
+                (clicked)="deleteDialogOpen.set(true)">
+                Delete account
+              </ea-button>
+            </div>
+          </ea-card>
+        }
+      }
+    </div>
+  </div>
+</div>
+
+<ea-dialog
+  [(open)]="deleteDialogOpen"
+  width="md">
+  <span slot="header">Delete account</span>
+  <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+  <div slot="footer">
+    <ea-button
+      size="sm"
+      variant="secondary"
+      (clicked)="deleteDialogOpen.set(false)">
+      Cancel
+    </ea-button>
+    <ea-button
+      class="danger-button"
+      size="sm"
+      variant="danger"
+      [loading]="deleting()"
+      (clicked)="onConfirmDelete()">
+      Confirm
+    </ea-button>
+  </div>
+</ea-dialog>

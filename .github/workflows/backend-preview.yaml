@@ -1,0 +1,46 @@
+name: Backend Preview Deployment
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - backend/**
+      - .github/workflows/backend-preview.yaml
+
+jobs:
+  Deploy-Preview:
+    # Set the repository variable ENABLE_VERCEL to 'true' once the Vercel projects
+    # and secrets are configured (see docs/deployment.md).
+    if: ${{ vars.ENABLE_VERCEL == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel
+
+      - name: Deploy Project
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --meta githubCommitSha=${{ github.sha }} \
+            --meta githubCommitRef=${{ github.ref_name }})
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Alias to Preview Domain
+        run: >
+          vercel alias set ${{ steps.deploy.outputs.url }} api-preview.londonchess.ca
+          --token=${{ secrets.VERCEL_TOKEN }} --scope=eagami

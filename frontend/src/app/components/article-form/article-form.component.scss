@@ -1,0 +1,119 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: var(--lcc-borderRadius--small);
+  box-shadow: 1px 1px 5px 2px var(--lcc-color--form-boxShadow);
+  background-color: var(--lcc-color--form-background);
+
+  .image-section-container {
+    $button-size: 34px;
+    $button-gap: 8px;
+    $banner-image-aspect-ratio: 1.5;
+    $banner-image-height: 300px;
+
+    display: flex;
+    flex-direction: row;
+    gap: $button-gap;
+    width: 100%;
+    height: $banner-image-height;
+
+    // To keep the image at a 3:2 aspect ratio on larger screen sizes
+    max-width: calc(
+      $banner-image-height * $banner-image-aspect-ratio + $button-gap + $button-size
+    );
+
+    .image-container {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--lcc-borderRadius--large);
+      background-color: var(--lcc-color--general-imageBackdrop);
+
+      lcc-image {
+        width: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: var(--lcc-borderRadius--large);
+
+        ::ng-deep img {
+          object-fit: contain;
+          max-height: 100%;
+        }
+      }
+    }
+
+    .image-controls-container {
+      display: flex;
+      align-self: flex-end;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      .select-banner-image-button,
+      .revert-banner-image-button,
+      .insert-image-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+      }
+
+      hr {
+        width: 24px;
+        margin: 16px 0;
+        border-bottom: 2px solid var(--lcc-color--articleForm-buttonsDivider);
+      }
+    }
+  }
+
+  textarea {
+    height: 320px;
+  }
+
+  .restore-button {
+    display: flex;
+    justify-self: end;
+    align-items: center;
+    justify-content: center;
+    grid-column: 2 / 3;
+    padding: 4px;
+
+    &:not(:disabled) {
+      color: var(--lcc-color--general-warning);
+    }
+  }
+
+  .preview-section-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+    width: 100%;
+    text-align: left;
+
+    h3 {
+      align-self: flex-start;
+      font-weight: 400;
+      color: var(--lcc-color--articleForm-previewHeaderText);
+    }
+
+    hr {
+      width: 100%;
+      margin: 4px 0 16px;
+      border-top: 1px solid var(--lcc-color--general-dividerLine);
+    }
+
+    .markdown-container {
+      overflow: hidden;
+      width: 100%;
+      padding: 8px;
+      border-radius: var(--lcc-borderRadius--large);
+      box-shadow: 1px 1px 8px 1px var(--lcc-color--articleForm-markdownPreviewBoxShadow);
+    }
+  }
+}

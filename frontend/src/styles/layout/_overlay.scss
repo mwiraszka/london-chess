@@ -1,0 +1,24 @@
+.cdk-overlay-container {
+  z-index: 1100;
+}
+
+.cdk-global-overlay-wrapper {
+  // Ensure overlay component in Overlay Service is rendered already centred
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // For some reason Overlay CDK's 'hasBackdrop' config property prevents scrolling when set
+  // to true, so manually set overlay backdrop for non-modal dialogs, where scrolling is enabled
+  background-color: var(--lcc-color--general-overlayLightBackdrop);
+
+  .cdk-overlay-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.lcc-modal-backdrop {
+  // This is added on top of the 'base' overlayDialogBackdrop background color above
+  background-color: var(--lcc-color--general-overlayHeavyBackdrop);
+}

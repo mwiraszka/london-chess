@@ -1,0 +1,59 @@
+// @eagami/ui's stock neutral ramp is blue-tinted (Tailwind gray), which reads
+// as dark blue on field and card surfaces. Repaint it as pure grayscale at the
+// same lightness ladder; every semantic surface, border, and text token
+// derives from these, so the whole component set follows in both themes.
+:root {
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f4f4f4;
+  --color-neutral-200: #e7e7e7;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a1a1a1;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+}
+
+// The avatar's size classes define --ea-avatar-size on an internal element,
+// so the override must target that element (only reachable from global styles).
+// 28px sits between the library's xs (24px) and sm (32px) sizes.
+.avatar-button ea-avatar .ea-avatar,
+.user-info ea-avatar .ea-avatar {
+  --ea-avatar-size: 28px;
+}
+
+// Compact author avatars beside small byline text
+lcc-modification-info ea-avatar .ea-avatar,
+lcc-article ea-avatar.editor-avatar .ea-avatar {
+  --ea-avatar-size: 18px;
+}
+
+ea-drawer.lcc-auth-drawer {
+  --ea-drawer-panel-background-color: var(--lcc-color--authDrawer-background);
+}
+
+// This app's dark surfaces recess below the page tone (footer, expansion
+// panels, auth drawer), so cards follow suit instead of using the library's
+// lighter elevated tier, with the border stepped down to stay subtle.
+body[data-theme='dark'] ea-card {
+  --color-bg-elevated: var(--color-neutral-800);
+  --color-border-default: var(--color-neutral-600);
+}
+
+// The library's dark skeleton fill (bg-muted, neutral-700) matches this app's
+// page tone; lift it one tier so loading placeholders read on both the page
+// and the recessed card surfaces.
+body[data-theme='dark'] ea-skeleton .ea-skeleton {
+  background-color: var(--color-bg-emphasis);
+}
+
+// The skeleton host is inline by default, which collapses to nothing inside
+// flex containers; block + full-size lets the sized wrapper drive dimensions
+ea-skeleton {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

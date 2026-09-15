@@ -1,0 +1,52 @@
+<header>
+  <button
+    class="previous-month-button lcc-primary-button"
+    type="button"
+    (click)="onPreviousMonth()">
+    <ea-icon-chevron-left />
+  </button>
+  <h3 class="title">
+    {{ currentMonth.format(screenWidth < 400 ? 'MMM YYYY' : 'MMMM YYYY') }}
+  </h3>
+  <button
+    class="next-month-button lcc-primary-button"
+    type="button"
+    (click)="onNextMonth()">
+    <ea-icon-chevron-right />
+  </button>
+</header>
+
+<table class="calendar-table lcc-table">
+  <thead>
+    @for (dayOfWeek of DAYS_OF_WEEK; track dayOfWeek) {
+      <th>{{ dayOfWeek }}</th>
+    }
+  </thead>
+  <tbody>
+    @for (week of calendarDays; track rowIndex; let rowIndex = $index) {
+      <tr>
+        @for (day of week; track colIndex; let colIndex = $index) {
+          <td
+            (click)="onSelectCell(rowIndex, colIndex)"
+            [attr.disabled]="day.disabled ? 'disabled' : null"
+            [class.selected-day]="day.selected">
+            {{ day.date.format('D') }}
+          </td>
+        }
+      </tr>
+    }
+  </tbody>
+  <tfoot>
+    <tr>
+      <td
+        colspan="7"
+        class="selected-date">
+        {{
+          selectedDate.format(
+            screenWidth < 400 ? 'ddd, MMM Do YYYY' : 'dddd, MMMM Do YYYY'
+          )
+        }}
+      </td>
+    </tr>
+  </tfoot>
+</table>

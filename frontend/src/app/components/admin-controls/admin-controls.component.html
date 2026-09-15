@@ -1,0 +1,53 @@
+@if (config.bookmarkCb && (config.bookmarked | isDefined)) {
+  <button
+    class="admin-control-button bookmark-button"
+    [tooltip]="bookmarkTooltipContent"
+    (click)="config.bookmarkCb()">
+    <ea-icon-bookmark class="bookmark-icon" />
+  </button>
+}
+
+@if (config.editPath) {
+  <a
+    class="admin-control-button edit-button"
+    [class.disabled]="config.isEditDisabled"
+    [tooltip]="editTooltipContent"
+    [rel]="config.editInNewTab ? 'noopener noreferrer' : undefined"
+    [target]="config.editInNewTab ? '_blank' : undefined"
+    [routerLink]="config.isEditDisabled ? undefined : (config.editPath | routerLink)">
+    <ea-icon-edit class="edit-icon" />
+  </a>
+}
+
+@if (showDeleteButton) {
+  <button
+    class="admin-control-button delete-button"
+    [disabled]="config.isDeleteDisabled"
+    [tooltip]="deleteTooltipContent"
+    (click)="config.isDeleteDisabled ? undefined : config.deleteCb()">
+    <ea-icon-trash class="delete-icon" />
+  </button>
+}
+
+<ng-template #bookmarkTooltipContent>
+  <span>{{ config.bookmarked ? 'Remove bookmark from' : 'Bookmark' }}</span>
+  <i class="tooltip-item-name">{{ config.itemName }}</i>
+</ng-template>
+
+<ng-template #editTooltipContent>
+  @if (config.isEditDisabled) {
+    <i>{{ config.editDisabledReason }}</i>
+  } @else {
+    <span>Edit</span>
+    <i class="tooltip-item-name">{{ config.itemName }}</i>
+  }
+</ng-template>
+
+<ng-template #deleteTooltipContent>
+  @if (config.isDeleteDisabled) {
+    <i>{{ config.deleteDisabledReason }}</i>
+  } @else {
+    <span>Delete</span>
+    <i class="tooltip-item-name">{{ config.itemName }}</i>
+  }
+</ng-template>

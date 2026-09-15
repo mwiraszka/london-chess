@@ -1,0 +1,44 @@
+<div class="nav-left"></div>
+
+<div class="content-container">
+  <div class="nav-links">
+    @for (link of links; track link.internalPath) {
+      <a
+        [attr.aria-label]="link.text"
+        class="nav-link"
+        routerLinkActive="link-active"
+        [routerLink]="link.internalPath | routerLink"
+        [routerLinkActiveOptions]="{ exact: true }"
+        [tooltip]="screenWidth > 800 ? null : link.text">
+        <span class="link-text">{{ link.text }}</span>
+        @if (link.icon) {
+          <span class="link-icon">
+            <ng-container *ngComponentOutlet="link.icon" />
+          </span>
+        }
+      </a>
+    }
+  </div>
+
+  <div class="nav-mid"></div>
+
+  <div class="nav-controls">
+    <button
+      aria-label="Menu"
+      class="avatar-button"
+      dropdown
+      (isOpen)="isDropdownOpen = $event">
+      @if (user()) {
+        <ea-avatar
+          size="sm"
+          alt="Your avatar"
+          [src]="avatarSrc()"
+          [initials]="initials()" />
+      } @else {
+        <ea-icon-settings class="menu-icon" />
+      }
+    </button>
+  </div>
+</div>
+
+<div class="nav-right"></div>

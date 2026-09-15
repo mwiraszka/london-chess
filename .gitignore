@@ -1,22 +1,47 @@
-# Generated code
+# Dependencies
 node_modules
+
+# Environment variables
+*.env
+.env
+.env.local
 
 # System files
 .DS_Store
 Thumbs.db
 
-# Compiled output
+# Build output
 dist
 out-tsc
 
 # Angular
 .angular
 
-# Test coverage data
+# Generated on every serve/build/test
+frontend/src/app/pages/website-changelog/changelog.generated.ts
+frontend/src/app/constants/git-branch.generated.ts
+
+# Test coverage
 coverage
+test-results
+playwright-report
 
-# GitHub Copilot instructions
-.github/copilot-instructions.md
+# Vercel
+.vercel
 
-# IDE - VS Code
-.vscode
+# Logs
+*.log
+
+# Internal/working docs
+docs
+
+# Claude
+.claude/settings.local.json
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*

@@ -1,0 +1,148 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+section {
+  display: flex;
+  place-self: stretch;
+  flex-flow: row wrap;
+  justify-content: center;
+  padding: 16px;
+  border: 1px solid var(--lcc-color--championPage-cellBorder);
+  background-color: var(--lcc-color--championPage-cellBackground);
+
+  &.history-and-photos-section {
+    align-items: center;
+    gap: 8px 32px;
+
+    .history {
+      flex: 1;
+      min-width: 300px;
+      max-width: 700px;
+      // Compensate for increased spacing on right side of photo carousel
+      margin-left: 8px;
+
+      p {
+        opacity: 0;
+        margin-bottom: 2em;
+        color: var(--lcc-color--championPage-primaryText);
+        animation: fade-in-up 1s ease-out forwards;
+
+        &:nth-child(2) {
+          animation-delay: 0.5s;
+        }
+
+        &:nth-child(3) {
+          animation-delay: 1s;
+        }
+
+        &:nth-child(4) {
+          animation-delay: 1.5s;
+        }
+
+        b {
+          color: var(--lcc-color--championPage-primaryTextBold);
+        }
+      }
+    }
+
+    lcc-photo-carousel {
+      max-width: 600px;
+      border-radius: var(--lcc-borderRadius--small);
+      box-shadow: var(--lcc-boxShadow--standard);
+    }
+  }
+
+  &.past-champions-section {
+    align-items: flex-start;
+    gap: 32px;
+
+    .other-championships {
+      display: flex;
+      flex-direction: column;
+
+      ::ng-deep lcc-expansion-panel .expansion-content {
+        padding: 2px 0 0;
+      }
+
+      .tables-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+    }
+
+    .standard-championship,
+    .other-championships {
+      width: 100%;
+
+      @include respond-to('gt-md') {
+        flex: 1;
+        min-width: 400px;
+        max-width: 600px;
+      }
+
+      h3 {
+        width: 100%;
+        text-align: left;
+        color: var(--lcc-color--championPage-headerText);
+      }
+
+      hr {
+        width: 100%;
+        margin: 4px 0 8px;
+        border-bottom: 1px solid var(--lcc-color--general-dividerLine);
+      }
+
+      table {
+        width: 100%;
+
+        tbody tr .winner-cell {
+          width: 100%;
+        }
+
+        tfoot tr td {
+          text-align: center;
+
+          &.clickable {
+            color: var(--lcc-color--championPage-linkText);
+            cursor: pointer;
+          }
+        }
+
+        .championship-icon {
+          @include icon-size(16px);
+
+          margin-right: 4px;
+          color: var(--lcc-color--championPage-championshipIcon);
+        }
+      }
+    }
+
+    .winner-peak-rating {
+      position: relative;
+      top: 2px;
+      vertical-align: text-bottom;
+      margin-left: 4px;
+      font-size: 80%;
+      color: var(--lcc-color--championPage-secondaryText);
+    }
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

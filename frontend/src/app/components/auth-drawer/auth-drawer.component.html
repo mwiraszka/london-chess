@@ -1,0 +1,22 @@
+<ea-drawer
+  class="lcc-auth-drawer"
+  [position]="position()"
+  [size]="size()"
+  [open]="authDrawer.open()"
+  (openChange)="onOpenChange($event)">
+  <h2 slot="header">{{ title() }}</h2>
+
+  @if (authDrawer.open()) {
+    @switch (authDrawer.mode()) {
+      @case ('create-account') {
+        <lcc-create-account-form />
+      }
+      @case ('forgot-password') {
+        <lcc-forgot-password-form />
+      }
+      @default {
+        <lcc-login-form />
+      }
+    }
+  }
+</ea-drawer>

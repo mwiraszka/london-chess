@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.0.0] - 2026-09-15
+
+### Added
+
+- Introduce a slide-in login drawer with email code verification and a guided password reset flow, replacing the standalone login and change-password pages
+- Build out an account page for managing your profile, avatar, email address, password, and active sessions, including an avatar editor that keeps the original photo for future re-cropping
+- Support admin and non-admin user roles, with admin-only editing controls enforced across the site and API
+- Let visitors request a member account from the login drawer, with email-code verification before each request reaches the club for review
+- Email members when their details or rating change
+- Add a Website Changelog page covering how the site is built and what has changed, with the tools behind it named as you hover them and every release listed as a card that opens with a click anywhere on it
+- Add profile pages for members with an account, with ratings, activity status, and a trophy beside the reigning city champion, linked from their names across the site and always showing their current name
+- Let members review their personal details and request changes from the account page, with the private details on their profile marked as such
+- Add a Support the site link to the footer
+- Show author avatars beside article bylines and edit history
+- Back up the database and photo storage weekly to encrypted off-site storage
+
+### Changed
+
+- Consolidate the website and API into a single repository
+- Update packages
+- Replace AWS Cognito with Clerk for admin authentication and user management
+- Redesign the navigation bar around a single menu, shown as your avatar once logged in, holding log in, theme, view, and safe mode controls
+- Swap every Material icon for an Eagami UI icon across the site
+- Switch site notifications to Eagami UI toasts, with clearer and friendlier wording throughout
+- Make the table paginator buttons uniform squares
+- Unify loading placeholders across the site with a consistent pulsing style
+- Cap photo gallery album covers at 200px wide so wide view no longer stretches them
+- Move photo storage from AWS S3 to Cloudflare R2
+
+### Fixed
+
+- Send unknown and malformed page addresses home instead of leaving an error on screen
+- Correct two misspelled champion names on the City Champion page
+- Keep login and logout confirmation toasts visible by completing auth redirects inside the app
+- Refresh expired photo links at startup and stop duplicate or cancelled image requests
+- Align the page content with the navigation bar in Safari, with or without a scrollbar
+- Stop the link underline drifting upward when hovered in Safari
+
 ## [v5.13.8] - 2026-09-12
 
 ### Fixed
@@ -21,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.13.6] - 2026-05-17
 
@@ -31,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.13.5] - 2026-05-03
 
@@ -48,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.13.3] - 2026-04-16
 
@@ -105,13 +143,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.12.11] - 2026-04-02
 
 ### Changed
 
-- Update packages and resolve dependency security vulnerabilities
+- Update packages
 
 ## [v5.12.10] - 2026-03-22
 
@@ -1257,7 +1295,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix some security vulnerabilities
+- Update packages
 
 ## [v3.0.10] - 2024-04-02
 
@@ -1759,187 +1797,188 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
-[v5.13.8]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.7...v5.13.8
-[v5.13.7]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.6...v5.13.7
-[v5.13.6]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.5...v5.13.6
-[v5.13.5]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.4...v5.13.5
-[v5.13.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.3...v5.13.4
-[v5.13.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.2...v5.13.3
-[v5.13.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.1...v5.13.2
-[v5.13.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.13.0...v5.13.1
-[v5.13.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.13...v5.13.0
-[v5.12.13]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.12...v5.12.13
-[v5.12.12]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.11...v5.12.12
-[v5.12.11]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.10...v5.12.11
-[v5.12.10]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.9...v5.12.10
-[v5.12.9]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.8...v5.12.9
-[v5.12.8]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.7...v5.12.8
-[v5.12.7]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.6...v5.12.7
-[v5.12.6]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.5...v5.12.6
-[v5.12.5]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.4...v5.12.5
-[v5.12.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.3...v5.12.4
-[v5.12.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.2...v5.12.3
-[v5.12.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.1...v5.12.2
-[v5.12.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.12.0...v5.12.1
-[v5.12.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.15...v5.12.0
-[v5.11.14]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.13...v5.11.14
-[v5.11.13]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.12...v5.11.13
-[v5.11.12]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.11...v5.11.12
-[v5.11.11]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.10...v5.11.11
-[v5.11.10]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.9...v5.11.10
-[v5.11.9]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.8...v5.11.9
-[v5.11.8]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.7...v5.11.8
-[v5.11.7]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.6...v5.11.7
-[v5.11.6]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.5...v5.11.6
-[v5.11.5]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.4...v5.11.5
-[v5.11.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.3...v5.11.4
-[v5.11.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.2...v5.11.3
-[v5.11.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.1...v5.11.2
-[v5.11.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.11.0...v5.11.1
-[v5.11.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.9...v5.11.0
-[v5.10.9]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.8...v5.10.9
-[v5.10.8]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.7...v5.10.8
-[v5.10.7]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.6...v5.10.7
-[v5.10.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.3...v5.10.4
-[v5.10.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.2...v5.10.3
-[v5.10.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.1...v5.10.2
-[v5.10.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.10.0...v5.10.1
-[v5.10.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.17...v5.10.0
-[v5.9.17]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.16...v5.9.17
-[v5.9.16]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.15...v5.9.16
-[v5.9.15]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.14...v5.9.15
-[v5.9.14]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.13...v5.9.14
-[v5.9.13]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.12...v5.9.13
-[v5.9.12]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.11...v5.9.12
-[v5.9.11]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.10...v5.9.11
-[v5.9.10]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.9...v5.9.10
-[v5.9.9]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.8...v5.9.9
-[v5.9.8]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.7...v5.9.8
-[v5.9.7]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.6...v5.9.7
-[v5.9.6]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.5...v5.9.6
-[v5.9.5]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.4...v5.9.5
-[v5.9.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.3...v5.9.4
-[v5.9.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.2...v5.9.3
-[v5.9.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.1...v5.9.2
-[v5.9.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.9.0...v5.9.1
-[v5.9.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.8.5...v5.9.0
-[v5.8.5]: https://github.com/mwiraszka/london-chess-club/compare/v5.8.4...v5.8.5
-[v5.8.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.8.3...v5.8.4
-[v5.8.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.8.2...v5.8.3
-[v5.8.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.8.1...v5.8.2
-[v5.8.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.8.0...v5.8.1
-[v5.8.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.7.0...v5.8.0
-[v5.7.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.6.2...v5.7.0
-[v5.6.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.6.1...v5.6.2
-[v5.6.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.6.0...v5.6.1
-[v5.6.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.5.5...v5.6.0
-[v5.5.5]: https://github.com/mwiraszka/london-chess-club/compare/v5.5.4...v5.5.5
-[v5.5.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.5.3...v5.5.4
-[v5.5.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.5.2...v5.5.3
-[v5.5.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.5.1...v5.5.2
-[v5.5.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.4.4...v5.5.0
-[v5.4.4]: https://github.com/mwiraszka/london-chess-club/compare/v5.4.3...v5.4.4
-[v5.4.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.4.2...v5.4.3
-[v5.4.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.4.1...v5.4.2
-[v5.4.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.4.0...v5.4.1
-[v5.4.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.3.3...v5.4.0
-[v5.3.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.3.2...v5.3.3
-[v5.3.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.3.1...v5.3.2
-[v5.3.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.3.0...v5.3.1
-[v5.3.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.2.12...v5.3.0
-[v5.2.1 - v5.2.12]: https://github.com/mwiraszka/london-chess-club/compare/v5.2.0...v5.2.12
-[v5.2.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.1.4...v5.2.0
-[v5.1.3]: https://github.com/mwiraszka/london-chess-club/compare/v5.1.2...v5.1.3
-[v5.1.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.1.1...v5.1.2
-[v5.1.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.1.0...v5.1.1
-[v5.1.0]: https://github.com/mwiraszka/london-chess-club/compare/v5.0.6...v5.1.0
-[v5.0.2]: https://github.com/mwiraszka/london-chess-club/compare/v5.0.1...v5.0.2
-[v5.0.1]: https://github.com/mwiraszka/london-chess-club/compare/v5.0.0...v5.0.1
-[v5.0.0]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.12...v5.0.0
-[v4.1.12]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.11...v4.1.12
-[v4.1.11]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.10...v4.1.11
-[v4.1.10]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.9...v4.1.10
-[v4.1.9]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.8...v4.1.9
-[v4.1.8]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.7...v4.1.8
-[v4.1.7]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.6...v4.1.7
-[v4.1.5]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.4...v4.1.5
-[v4.1.4]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.3...v4.1.4
-[v4.1.3]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.2...v4.1.3
-[v4.1.2]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.1...v4.1.2
-[v4.1.1]: https://github.com/mwiraszka/london-chess-club/compare/v4.1.0...v4.1.1
-[v4.1.0]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.19...v4.1.0
-[v4.0.19]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.18...v4.0.19
-[v4.0.18]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.17...v4.0.18
-[v4.0.17]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.16...v4.0.17
-[v4.0.16]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.15...v4.0.16
-[v4.0.14]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.13...v4.0.14
-[v4.0.13]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.12...v4.0.13
-[v4.0.12]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.11...v4.0.12
-[v4.0.11]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.10...v4.0.11
-[v4.0.10]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.9...v4.0.10
-[v4.0.9]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.8...v4.0.9
-[v4.0.8]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.7...v4.0.8
-[v4.0.7]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.6...v4.0.7
-[v4.0.6]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.5...v4.0.6
-[v4.0.3]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.2...v4.0.3
-[v4.0.2]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.1...v4.0.2
-[v4.0.1]: https://github.com/mwiraszka/london-chess-club/compare/v4.0.0...v4.0.1
-[v4.0.0]: https://github.com/mwiraszka/london-chess-club/compare/v3.3.2...v4.0.0
-[v3.3.2]: https://github.com/mwiraszka/london-chess-club/compare/v3.3.1...v3.3.2
-[v3.3.1]: https://github.com/mwiraszka/london-chess-club/compare/v3.3.0...v3.3.1
-[v3.3.0]: https://github.com/mwiraszka/london-chess-club/compare/v3.2.0...v3.3.0
-[v3.2.0]: https://github.com/mwiraszka/london-chess-club/compare/v3.1.3...v3.2.0
-[v3.1.3]: https://github.com/mwiraszka/london-chess-club/compare/v3.1.2...v3.1.3
-[v3.1.2]: https://github.com/mwiraszka/london-chess-club/compare/v3.1.1...v3.1.2
-[v3.1.1]: https://github.com/mwiraszka/london-chess-club/compare/v3.1.0...v3.1.1
-[v3.1.0]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.12...v3.1.0
-[v3.0.12]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.11...v3.0.12
-[v3.0.11]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.10...v3.0.11
-[v3.0.10]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.9...v3.0.10
-[v3.0.9]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.8...v3.0.9
-[v3.0.8]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.7...v3.0.8
-[v3.0.7]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.6...v3.0.7
-[v3.0.6]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.5...v3.0.6
-[v3.0.5]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.4...v3.0.5
-[v3.0.4]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.3...v3.0.4
-[v3.0.2]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.1...v3.0.2
-[v3.0.1]: https://github.com/mwiraszka/london-chess-club/compare/v3.0.0...v3.0.1
-[v3.0.0]: https://github.com/mwiraszka/london-chess-club/compare/v2.2.5...v3.0.0
-[v2.2.5]: https://github.com/mwiraszka/london-chess-club/compare/v2.2.4...v2.2.5
-[v2.2.4]: https://github.com/mwiraszka/london-chess-club/compare/v2.2.3...v2.2.4
-[v2.2.3]: https://github.com/mwiraszka/london-chess-club/compare/v2.2.2...v2.2.3
-[v2.2.2]: https://github.com/mwiraszka/london-chess-club/compare/v2.2.1...v2.2.2
-[v2.2.1]: https://github.com/mwiraszka/london-chess-club/compare/v2.2.0...v2.2.1
-[v2.2.0]: https://github.com/mwiraszka/london-chess-club/compare/v2.1.0...v2.2.0
-[v2.1.0]: https://github.com/mwiraszka/london-chess-club/compare/v2.0.4...v2.1.0
-[v2.0.4]: https://github.com/mwiraszka/london-chess-club/compare/v2.0.3...v2.0.4
-[v2.0.3]: https://github.com/mwiraszka/london-chess-club/compare/v2.0.2...v2.0.3
-[v2.0.1]: https://github.com/mwiraszka/london-chess-club/compare/v2.0.0...v2.0.1
-[v2.0.0]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.8-beta...v2.0.0
-[v1.6.8-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.7-beta...v1.6.8-beta
-[v1.6.7-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.6-beta...v1.6.7-beta
-[v1.6.6-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.5-beta...v1.6.6-beta
-[v1.6.5-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.4-beta...v1.6.5-beta
-[v1.6.4-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.3-beta...v1.6.4-beta
-[v1.6.3-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.2-beta...v1.6.3-beta
-[v1.6.2-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.1-beta...v1.6.2-beta
-[v1.6.1-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.6.0-beta...v1.6.1-beta
-[v1.6.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.5.3-beta...v1.6.0-beta
-[v1.5.3-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.5.2-beta...v1.5.3-beta
-[v1.5.1-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.5.0-beta...v1.5.1-beta
-[v1.5.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.4.5-beta...v1.5.0-beta
-[v1.4.5-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.4.4-beta...v1.4.5-beta
-[v1.4.4-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.4.3-beta...v1.4.4-beta
-[v1.4.3-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.4.2-beta...v1.4.3-beta
-[v1.4.2-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.4.1-beta...v1.4.2-beta
-[v1.4.1-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.4.0-beta...v1.4.1-beta
-[v1.4.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.3.3-beta...v1.4.0-beta
-[v1.3.3-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.3.2-beta...v1.3.3-beta
-[v1.3.2-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.3.1-beta...v1.3.2-beta
-[v1.3.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.2.0-beta...v1.3.0-beta
-[v1.2.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.1.0-beta...v1.2.0-beta
-[v1.1.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v1.0.0-beta...v1.1.0-beta
-[v1.0.0-beta]: https://github.com/mwiraszka/london-chess-club/compare/v0.8.2-alpha...v1.0.0-beta
-[v0.8.2-alpha]: https://github.com/mwiraszka/london-chess-club/compare/v0.8.1-alpha...v0.8.2-alpha
-[v0.8.1-alpha]: https://github.com/mwiraszka/london-chess-club/compare/v0.8.0-alpha...v0.8.1-alpha
-[v0.8.0-alpha]: https://github.com/mwiraszka/london-chess-club/releases/tag/v0.8.0-alpha
+[v6.0.0]: https://github.com/mwiraszka/london-chess/compare/v5.13.8...v6.0.0
+[v5.13.8]: https://github.com/mwiraszka/london-chess/compare/v5.13.7...v5.13.8
+[v5.13.7]: https://github.com/mwiraszka/london-chess/compare/v5.13.6...v5.13.7
+[v5.13.6]: https://github.com/mwiraszka/london-chess/compare/v5.13.5...v5.13.6
+[v5.13.5]: https://github.com/mwiraszka/london-chess/compare/v5.13.4...v5.13.5
+[v5.13.4]: https://github.com/mwiraszka/london-chess/compare/v5.13.3...v5.13.4
+[v5.13.3]: https://github.com/mwiraszka/london-chess/compare/v5.13.2...v5.13.3
+[v5.13.2]: https://github.com/mwiraszka/london-chess/compare/v5.13.1...v5.13.2
+[v5.13.1]: https://github.com/mwiraszka/london-chess/compare/v5.13.0...v5.13.1
+[v5.13.0]: https://github.com/mwiraszka/london-chess/compare/v5.12.13...v5.13.0
+[v5.12.13]: https://github.com/mwiraszka/london-chess/compare/v5.12.12...v5.12.13
+[v5.12.12]: https://github.com/mwiraszka/london-chess/compare/v5.12.11...v5.12.12
+[v5.12.11]: https://github.com/mwiraszka/london-chess/compare/v5.12.10...v5.12.11
+[v5.12.10]: https://github.com/mwiraszka/london-chess/compare/v5.12.9...v5.12.10
+[v5.12.9]: https://github.com/mwiraszka/london-chess/compare/v5.12.8...v5.12.9
+[v5.12.8]: https://github.com/mwiraszka/london-chess/compare/v5.12.7...v5.12.8
+[v5.12.7]: https://github.com/mwiraszka/london-chess/compare/v5.12.6...v5.12.7
+[v5.12.6]: https://github.com/mwiraszka/london-chess/compare/v5.12.5...v5.12.6
+[v5.12.5]: https://github.com/mwiraszka/london-chess/compare/v5.12.4...v5.12.5
+[v5.12.4]: https://github.com/mwiraszka/london-chess/compare/v5.12.3...v5.12.4
+[v5.12.3]: https://github.com/mwiraszka/london-chess/compare/v5.12.2...v5.12.3
+[v5.12.2]: https://github.com/mwiraszka/london-chess/compare/v5.12.1...v5.12.2
+[v5.12.1]: https://github.com/mwiraszka/london-chess/compare/v5.12.0...v5.12.1
+[v5.12.0]: https://github.com/mwiraszka/london-chess/compare/v5.11.15...v5.12.0
+[v5.11.14]: https://github.com/mwiraszka/london-chess/compare/v5.11.13...v5.11.14
+[v5.11.13]: https://github.com/mwiraszka/london-chess/compare/v5.11.12...v5.11.13
+[v5.11.12]: https://github.com/mwiraszka/london-chess/compare/v5.11.11...v5.11.12
+[v5.11.11]: https://github.com/mwiraszka/london-chess/compare/v5.11.10...v5.11.11
+[v5.11.10]: https://github.com/mwiraszka/london-chess/compare/v5.11.9...v5.11.10
+[v5.11.9]: https://github.com/mwiraszka/london-chess/compare/v5.11.8...v5.11.9
+[v5.11.8]: https://github.com/mwiraszka/london-chess/compare/v5.11.7...v5.11.8
+[v5.11.7]: https://github.com/mwiraszka/london-chess/compare/v5.11.6...v5.11.7
+[v5.11.6]: https://github.com/mwiraszka/london-chess/compare/v5.11.5...v5.11.6
+[v5.11.5]: https://github.com/mwiraszka/london-chess/compare/v5.11.4...v5.11.5
+[v5.11.4]: https://github.com/mwiraszka/london-chess/compare/v5.11.3...v5.11.4
+[v5.11.3]: https://github.com/mwiraszka/london-chess/compare/v5.11.2...v5.11.3
+[v5.11.2]: https://github.com/mwiraszka/london-chess/compare/v5.11.1...v5.11.2
+[v5.11.1]: https://github.com/mwiraszka/london-chess/compare/v5.11.0...v5.11.1
+[v5.11.0]: https://github.com/mwiraszka/london-chess/compare/v5.10.9...v5.11.0
+[v5.10.9]: https://github.com/mwiraszka/london-chess/compare/v5.10.8...v5.10.9
+[v5.10.8]: https://github.com/mwiraszka/london-chess/compare/v5.10.7...v5.10.8
+[v5.10.7]: https://github.com/mwiraszka/london-chess/compare/v5.10.6...v5.10.7
+[v5.10.4]: https://github.com/mwiraszka/london-chess/compare/v5.10.3...v5.10.4
+[v5.10.3]: https://github.com/mwiraszka/london-chess/compare/v5.10.2...v5.10.3
+[v5.10.2]: https://github.com/mwiraszka/london-chess/compare/v5.10.1...v5.10.2
+[v5.10.1]: https://github.com/mwiraszka/london-chess/compare/v5.10.0...v5.10.1
+[v5.10.0]: https://github.com/mwiraszka/london-chess/compare/v5.9.17...v5.10.0
+[v5.9.17]: https://github.com/mwiraszka/london-chess/compare/v5.9.16...v5.9.17
+[v5.9.16]: https://github.com/mwiraszka/london-chess/compare/v5.9.15...v5.9.16
+[v5.9.15]: https://github.com/mwiraszka/london-chess/compare/v5.9.14...v5.9.15
+[v5.9.14]: https://github.com/mwiraszka/london-chess/compare/v5.9.13...v5.9.14
+[v5.9.13]: https://github.com/mwiraszka/london-chess/compare/v5.9.12...v5.9.13
+[v5.9.12]: https://github.com/mwiraszka/london-chess/compare/v5.9.11...v5.9.12
+[v5.9.11]: https://github.com/mwiraszka/london-chess/compare/v5.9.10...v5.9.11
+[v5.9.10]: https://github.com/mwiraszka/london-chess/compare/v5.9.9...v5.9.10
+[v5.9.9]: https://github.com/mwiraszka/london-chess/compare/v5.9.8...v5.9.9
+[v5.9.8]: https://github.com/mwiraszka/london-chess/compare/v5.9.7...v5.9.8
+[v5.9.7]: https://github.com/mwiraszka/london-chess/compare/v5.9.6...v5.9.7
+[v5.9.6]: https://github.com/mwiraszka/london-chess/compare/v5.9.5...v5.9.6
+[v5.9.5]: https://github.com/mwiraszka/london-chess/compare/v5.9.4...v5.9.5
+[v5.9.4]: https://github.com/mwiraszka/london-chess/compare/v5.9.3...v5.9.4
+[v5.9.3]: https://github.com/mwiraszka/london-chess/compare/v5.9.2...v5.9.3
+[v5.9.2]: https://github.com/mwiraszka/london-chess/compare/v5.9.1...v5.9.2
+[v5.9.1]: https://github.com/mwiraszka/london-chess/compare/v5.9.0...v5.9.1
+[v5.9.0]: https://github.com/mwiraszka/london-chess/compare/v5.8.5...v5.9.0
+[v5.8.5]: https://github.com/mwiraszka/london-chess/compare/v5.8.4...v5.8.5
+[v5.8.4]: https://github.com/mwiraszka/london-chess/compare/v5.8.3...v5.8.4
+[v5.8.3]: https://github.com/mwiraszka/london-chess/compare/v5.8.2...v5.8.3
+[v5.8.2]: https://github.com/mwiraszka/london-chess/compare/v5.8.1...v5.8.2
+[v5.8.1]: https://github.com/mwiraszka/london-chess/compare/v5.8.0...v5.8.1
+[v5.8.0]: https://github.com/mwiraszka/london-chess/compare/v5.7.0...v5.8.0
+[v5.7.0]: https://github.com/mwiraszka/london-chess/compare/v5.6.2...v5.7.0
+[v5.6.2]: https://github.com/mwiraszka/london-chess/compare/v5.6.1...v5.6.2
+[v5.6.1]: https://github.com/mwiraszka/london-chess/compare/v5.6.0...v5.6.1
+[v5.6.0]: https://github.com/mwiraszka/london-chess/compare/v5.5.5...v5.6.0
+[v5.5.5]: https://github.com/mwiraszka/london-chess/compare/v5.5.4...v5.5.5
+[v5.5.4]: https://github.com/mwiraszka/london-chess/compare/v5.5.3...v5.5.4
+[v5.5.3]: https://github.com/mwiraszka/london-chess/compare/v5.5.2...v5.5.3
+[v5.5.2]: https://github.com/mwiraszka/london-chess/compare/v5.5.1...v5.5.2
+[v5.5.0]: https://github.com/mwiraszka/london-chess/compare/v5.4.4...v5.5.0
+[v5.4.4]: https://github.com/mwiraszka/london-chess/compare/v5.4.3...v5.4.4
+[v5.4.3]: https://github.com/mwiraszka/london-chess/compare/v5.4.2...v5.4.3
+[v5.4.2]: https://github.com/mwiraszka/london-chess/compare/v5.4.1...v5.4.2
+[v5.4.1]: https://github.com/mwiraszka/london-chess/compare/v5.4.0...v5.4.1
+[v5.4.0]: https://github.com/mwiraszka/london-chess/compare/v5.3.3...v5.4.0
+[v5.3.3]: https://github.com/mwiraszka/london-chess/compare/v5.3.2...v5.3.3
+[v5.3.2]: https://github.com/mwiraszka/london-chess/compare/v5.3.1...v5.3.2
+[v5.3.1]: https://github.com/mwiraszka/london-chess/compare/v5.3.0...v5.3.1
+[v5.3.0]: https://github.com/mwiraszka/london-chess/compare/v5.2.12...v5.3.0
+[v5.2.1 - v5.2.12]: https://github.com/mwiraszka/london-chess/compare/v5.2.0...v5.2.12
+[v5.2.0]: https://github.com/mwiraszka/london-chess/compare/v5.1.4...v5.2.0
+[v5.1.3]: https://github.com/mwiraszka/london-chess/compare/v5.1.2...v5.1.3
+[v5.1.2]: https://github.com/mwiraszka/london-chess/compare/v5.1.1...v5.1.2
+[v5.1.1]: https://github.com/mwiraszka/london-chess/compare/v5.1.0...v5.1.1
+[v5.1.0]: https://github.com/mwiraszka/london-chess/compare/v5.0.6...v5.1.0
+[v5.0.2]: https://github.com/mwiraszka/london-chess/compare/v5.0.1...v5.0.2
+[v5.0.1]: https://github.com/mwiraszka/london-chess/compare/v5.0.0...v5.0.1
+[v5.0.0]: https://github.com/mwiraszka/london-chess/compare/v4.1.12...v5.0.0
+[v4.1.12]: https://github.com/mwiraszka/london-chess/compare/v4.1.11...v4.1.12
+[v4.1.11]: https://github.com/mwiraszka/london-chess/compare/v4.1.10...v4.1.11
+[v4.1.10]: https://github.com/mwiraszka/london-chess/compare/v4.1.9...v4.1.10
+[v4.1.9]: https://github.com/mwiraszka/london-chess/compare/v4.1.8...v4.1.9
+[v4.1.8]: https://github.com/mwiraszka/london-chess/compare/v4.1.7...v4.1.8
+[v4.1.7]: https://github.com/mwiraszka/london-chess/compare/v4.1.6...v4.1.7
+[v4.1.5]: https://github.com/mwiraszka/london-chess/compare/v4.1.4...v4.1.5
+[v4.1.4]: https://github.com/mwiraszka/london-chess/compare/v4.1.3...v4.1.4
+[v4.1.3]: https://github.com/mwiraszka/london-chess/compare/v4.1.2...v4.1.3
+[v4.1.2]: https://github.com/mwiraszka/london-chess/compare/v4.1.1...v4.1.2
+[v4.1.1]: https://github.com/mwiraszka/london-chess/compare/v4.1.0...v4.1.1
+[v4.1.0]: https://github.com/mwiraszka/london-chess/compare/v4.0.19...v4.1.0
+[v4.0.19]: https://github.com/mwiraszka/london-chess/compare/v4.0.18...v4.0.19
+[v4.0.18]: https://github.com/mwiraszka/london-chess/compare/v4.0.17...v4.0.18
+[v4.0.17]: https://github.com/mwiraszka/london-chess/compare/v4.0.16...v4.0.17
+[v4.0.16]: https://github.com/mwiraszka/london-chess/compare/v4.0.15...v4.0.16
+[v4.0.14]: https://github.com/mwiraszka/london-chess/compare/v4.0.13...v4.0.14
+[v4.0.13]: https://github.com/mwiraszka/london-chess/compare/v4.0.12...v4.0.13
+[v4.0.12]: https://github.com/mwiraszka/london-chess/compare/v4.0.11...v4.0.12
+[v4.0.11]: https://github.com/mwiraszka/london-chess/compare/v4.0.10...v4.0.11
+[v4.0.10]: https://github.com/mwiraszka/london-chess/compare/v4.0.9...v4.0.10
+[v4.0.9]: https://github.com/mwiraszka/london-chess/compare/v4.0.8...v4.0.9
+[v4.0.8]: https://github.com/mwiraszka/london-chess/compare/v4.0.7...v4.0.8
+[v4.0.7]: https://github.com/mwiraszka/london-chess/compare/v4.0.6...v4.0.7
+[v4.0.6]: https://github.com/mwiraszka/london-chess/compare/v4.0.5...v4.0.6
+[v4.0.3]: https://github.com/mwiraszka/london-chess/compare/v4.0.2...v4.0.3
+[v4.0.2]: https://github.com/mwiraszka/london-chess/compare/v4.0.1...v4.0.2
+[v4.0.1]: https://github.com/mwiraszka/london-chess/compare/v4.0.0...v4.0.1
+[v4.0.0]: https://github.com/mwiraszka/london-chess/compare/v3.3.2...v4.0.0
+[v3.3.2]: https://github.com/mwiraszka/london-chess/compare/v3.3.1...v3.3.2
+[v3.3.1]: https://github.com/mwiraszka/london-chess/compare/v3.3.0...v3.3.1
+[v3.3.0]: https://github.com/mwiraszka/london-chess/compare/v3.2.0...v3.3.0
+[v3.2.0]: https://github.com/mwiraszka/london-chess/compare/v3.1.3...v3.2.0
+[v3.1.3]: https://github.com/mwiraszka/london-chess/compare/v3.1.2...v3.1.3
+[v3.1.2]: https://github.com/mwiraszka/london-chess/compare/v3.1.1...v3.1.2
+[v3.1.1]: https://github.com/mwiraszka/london-chess/compare/v3.1.0...v3.1.1
+[v3.1.0]: https://github.com/mwiraszka/london-chess/compare/v3.0.12...v3.1.0
+[v3.0.12]: https://github.com/mwiraszka/london-chess/compare/v3.0.11...v3.0.12
+[v3.0.11]: https://github.com/mwiraszka/london-chess/compare/v3.0.10...v3.0.11
+[v3.0.10]: https://github.com/mwiraszka/london-chess/compare/v3.0.9...v3.0.10
+[v3.0.9]: https://github.com/mwiraszka/london-chess/compare/v3.0.8...v3.0.9
+[v3.0.8]: https://github.com/mwiraszka/london-chess/compare/v3.0.7...v3.0.8
+[v3.0.7]: https://github.com/mwiraszka/london-chess/compare/v3.0.6...v3.0.7
+[v3.0.6]: https://github.com/mwiraszka/london-chess/compare/v3.0.5...v3.0.6
+[v3.0.5]: https://github.com/mwiraszka/london-chess/compare/v3.0.4...v3.0.5
+[v3.0.4]: https://github.com/mwiraszka/london-chess/compare/v3.0.3...v3.0.4
+[v3.0.2]: https://github.com/mwiraszka/london-chess/compare/v3.0.1...v3.0.2
+[v3.0.1]: https://github.com/mwiraszka/london-chess/compare/v3.0.0...v3.0.1
+[v3.0.0]: https://github.com/mwiraszka/london-chess/compare/v2.2.5...v3.0.0
+[v2.2.5]: https://github.com/mwiraszka/london-chess/compare/v2.2.4...v2.2.5
+[v2.2.4]: https://github.com/mwiraszka/london-chess/compare/v2.2.3...v2.2.4
+[v2.2.3]: https://github.com/mwiraszka/london-chess/compare/v2.2.2...v2.2.3
+[v2.2.2]: https://github.com/mwiraszka/london-chess/compare/v2.2.1...v2.2.2
+[v2.2.1]: https://github.com/mwiraszka/london-chess/compare/v2.2.0...v2.2.1
+[v2.2.0]: https://github.com/mwiraszka/london-chess/compare/v2.1.0...v2.2.0
+[v2.1.0]: https://github.com/mwiraszka/london-chess/compare/v2.0.4...v2.1.0
+[v2.0.4]: https://github.com/mwiraszka/london-chess/compare/v2.0.3...v2.0.4
+[v2.0.3]: https://github.com/mwiraszka/london-chess/compare/v2.0.2...v2.0.3
+[v2.0.1]: https://github.com/mwiraszka/london-chess/compare/v2.0.0...v2.0.1
+[v2.0.0]: https://github.com/mwiraszka/london-chess/compare/v1.6.8-beta...v2.0.0
+[v1.6.8-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.7-beta...v1.6.8-beta
+[v1.6.7-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.6-beta...v1.6.7-beta
+[v1.6.6-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.5-beta...v1.6.6-beta
+[v1.6.5-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.4-beta...v1.6.5-beta
+[v1.6.4-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.3-beta...v1.6.4-beta
+[v1.6.3-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.2-beta...v1.6.3-beta
+[v1.6.2-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.1-beta...v1.6.2-beta
+[v1.6.1-beta]: https://github.com/mwiraszka/london-chess/compare/v1.6.0-beta...v1.6.1-beta
+[v1.6.0-beta]: https://github.com/mwiraszka/london-chess/compare/v1.5.3-beta...v1.6.0-beta
+[v1.5.3-beta]: https://github.com/mwiraszka/london-chess/compare/v1.5.2-beta...v1.5.3-beta
+[v1.5.1-beta]: https://github.com/mwiraszka/london-chess/compare/v1.5.0-beta...v1.5.1-beta
+[v1.5.0-beta]: https://github.com/mwiraszka/london-chess/compare/v1.4.5-beta...v1.5.0-beta
+[v1.4.5-beta]: https://github.com/mwiraszka/london-chess/compare/v1.4.4-beta...v1.4.5-beta
+[v1.4.4-beta]: https://github.com/mwiraszka/london-chess/compare/v1.4.3-beta...v1.4.4-beta
+[v1.4.3-beta]: https://github.com/mwiraszka/london-chess/compare/v1.4.2-beta...v1.4.3-beta
+[v1.4.2-beta]: https://github.com/mwiraszka/london-chess/compare/v1.4.1-beta...v1.4.2-beta
+[v1.4.1-beta]: https://github.com/mwiraszka/london-chess/compare/v1.4.0-beta...v1.4.1-beta
+[v1.4.0-beta]: https://github.com/mwiraszka/london-chess/compare/v1.3.3-beta...v1.4.0-beta
+[v1.3.3-beta]: https://github.com/mwiraszka/london-chess/compare/v1.3.2-beta...v1.3.3-beta
+[v1.3.2-beta]: https://github.com/mwiraszka/london-chess/compare/v1.3.1-beta...v1.3.2-beta
+[v1.3.0-beta]: https://github.com/mwiraszka/london-chess/compare/v1.2.0-beta...v1.3.0-beta
+[v1.2.0-beta]: https://github.com/mwiraszka/london-chess/compare/v1.1.0-beta...v1.2.0-beta
+[v1.1.0-beta]: https://github.com/mwiraszka/london-chess/compare/v1.0.0-beta...v1.1.0-beta
+[v1.0.0-beta]: https://github.com/mwiraszka/london-chess/compare/v0.8.2-alpha...v1.0.0-beta
+[v0.8.2-alpha]: https://github.com/mwiraszka/london-chess/compare/v0.8.1-alpha...v0.8.2-alpha
+[v0.8.1-alpha]: https://github.com/mwiraszka/london-chess/compare/v0.8.0-alpha...v0.8.1-alpha
+[v0.8.0-alpha]: https://github.com/mwiraszka/london-chess/releases/tag/v0.8.0-alpha

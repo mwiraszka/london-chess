@@ -1,0 +1,29 @@
+@mixin lcc-link {
+  font-size: inherit;
+  font-weight: 200;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 0.5px;
+  text-underline-offset: 3px;
+  color: var(--lcc-color--link);
+  transition:
+    color 300ms,
+    text-decoration-color 300ms;
+
+  &:hover {
+    color: var(--lcc-color--linkOnHover);
+    text-decoration-color: var(--lcc-color--linkUnderline);
+  }
+
+  &[disabled],
+  &[disabled]:hover {
+    font-style: italic;
+    color: var(--lcc-color--linkDisabled);
+    pointer-events: none;
+  }
+}
+
+.lcc-link {
+  @include lcc-link;
+}

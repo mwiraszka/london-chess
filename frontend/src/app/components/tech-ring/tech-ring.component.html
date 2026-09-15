@@ -1,0 +1,29 @@
+<div class="ring">
+  @for (technology of technologies; track technology.name; let i = $index) {
+    <span
+      class="tech"
+      [class.tech--active]="activeIndex() === i"
+      [class.tech--neighbour]="isNeighbour(i)"
+      [class.tech--outer-neighbour]="isOuterNeighbour(i)"
+      [class.tech--far-neighbour]="isFarNeighbour(i)"
+      (click)="onSelect(i)"
+      (mouseenter)="activeIndex.set(i)"
+      (mouseleave)="onLeave(i)">
+      <img
+        class="tech__icon"
+        [src]="iconPath(technology)"
+        [alt]="technology.name" />
+    </span>
+  }
+
+  <div class="tech-info">
+    @for (technology of technologies; track technology.name; let i = $index) {
+      <span
+        class="tech-info__entry"
+        [class.tech-info__entry--visible]="activeIndex() === i">
+        <span class="tech-info__name">{{ technology.name }}</span>
+        <span class="tech-info__purpose">{{ technology.purpose }}</span>
+      </span>
+    }
+  </div>
+</div>

@@ -1,0 +1,41 @@
+:host {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: var(--lcc-borderRadius--small);
+  box-shadow: 0 2px 4px 0 var(--lcc-color--table-boxShadow);
+  background-color: var(--lcc-color--dataToolbar-background);
+
+  .today-button {
+    padding: 4px 8px;
+    font-size: 13px;
+    border-color: var(--lcc-color--dataToolbar-buttonBorder);
+    color: var(--lcc-color--dataToolbar-text);
+
+    &:disabled {
+      opacity: 0.8;
+      cursor: default;
+    }
+  }
+
+  ::ng-deep lcc-toggle-switch {
+    .toggle-icon {
+      margin-right: 4px;
+      color: var(--lcc-color--scheduleToolbar-scheduleViewIcon);
+    }
+  }
+
+  .export-to-ical-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    font-size: 24px;
+    border-color: var(--lcc-color--dataToolbar-buttonBorder);
+    color: var(--lcc-color--dataToolbar-text);
+  }
+}

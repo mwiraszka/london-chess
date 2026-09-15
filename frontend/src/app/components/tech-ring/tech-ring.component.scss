@@ -1,0 +1,109 @@
+@use 'sass:math';
+@use '../../../styles/abstracts/mixins' as *;
+
+// Kept in step with the technology list in the component
+$icon-count: 14;
+
+:host {
+  --ring-size: 300px;
+  --ring-radius: 120px;
+  --icon-size: 44px;
+
+  display: block;
+
+  @include respond-to('lt-xs') {
+    --ring-size: 240px;
+    --ring-radius: 96px;
+    --icon-size: 36px;
+  }
+}
+
+.ring {
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+}
+
+.tech {
+  position: absolute;
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  transition:
+    transform 200ms ease,
+    filter 200ms ease;
+}
+
+@for $i from 1 through $icon-count {
+  // Laid out clockwise from the top of the ring
+  $angle: math.div(360deg, $icon-count) * ($i - 1) - 90deg;
+
+  .tech:nth-of-type(#{$i}) {
+    top: calc(50% + #{math.sin($angle)} * var(--ring-radius) - var(--icon-size) / 2);
+    left: calc(50% + #{math.cos($angle)} * var(--ring-radius) - var(--icon-size) / 2);
+  }
+}
+
+.tech__icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tech--active {
+  filter: drop-shadow(0 0 8px var(--lcc-color--techRing-iconGlow));
+  transform: scale(1.3);
+}
+
+.tech--neighbour {
+  transform: scale(1.06);
+}
+
+// Each step further from the active icon grows by half as much, so the lift
+// tapers off around the ring
+.tech--outer-neighbour {
+  transform: scale(1.03);
+}
+
+.tech--far-neighbour {
+  transform: scale(1.015);
+}
+
+// Every entry shares one grid cell in the middle of the ring, so naming a tool
+// takes no room of its own and never moves anything around it
+.tech-info {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: calc(var(--ring-radius) * 1.3);
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.tech-info__entry {
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  grid-area: 1 / 1;
+  transition: opacity 150ms ease;
+}
+
+.tech-info__entry--visible {
+  opacity: 1;
+}
+
+.tech-info__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lcc-color--techRing-primaryText);
+}
+
+.tech-info__purpose {
+  font-size: 14px;
+  color: var(--lcc-color--techRing-secondaryText);
+}

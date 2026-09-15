@@ -1,0 +1,121 @@
+<form
+  class="lcc-form"
+  [formGroup]="form"
+  (ngSubmit)="onSubmit()">
+  <div class="lcc-form-fields">
+    @if (imageEntity) {
+      <div class="image-container full-span">
+        <lcc-image [image]="imageEntity.image" />
+      </div>
+    } @else {
+      <label
+        for="file-input"
+        class="lcc-required-field">
+        File:
+      </label>
+      <div class="file-and-preview-container">
+        <div class="image-container">
+          <img
+            [src]="newImageDataUrl || 'assets/fallback-image.png'"
+            alt="Image preview" />
+        </div>
+        <label
+          class="choose-file-button lcc-secondary-button"
+          tooltip="Choose file">
+          <ea-icon-image />
+          <input
+            id="file-input"
+            type="file"
+            accept="image/*"
+            (change)="onChooseFile($event)"
+            (cancel)="$event.stopPropagation()" />
+        </label>
+      </div>
+      <lcc-form-error-icon [control]="form.controls.filename"></lcc-form-error-icon>
+    }
+
+    <label
+      for="caption-input"
+      class="lcc-required-field">
+      Caption:
+    </label>
+    <input
+      id="caption-input"
+      type="text"
+      name="caption"
+      formControlName="caption"
+      maxlength="120" />
+    <lcc-form-error-icon [control]="form.controls.caption"></lcc-form-error-icon>
+
+    <label class="lcc-required-field">Album:</label>
+    <fieldset
+      class="existing-albums-fieldset"
+      [class.invalid]="form.controls.album.errors && form.controls.album.touched">
+      @for (album of existingAlbums; track $index) {
+        <div class="existing-album">
+          <input
+            [id]="'album-' + album"
+            type="radio"
+            name="album"
+            [checked]="album === form.controls.album.value"
+            (change)="form.patchValue({ album })" />
+          <label
+            class="lcc-truncate"
+            [for]="'album-' + album">
+            {{ album }}
+          </label>
+        </div>
+      }
+      <div class="new-album">
+        <input
+          id="new-album-input"
+          type="radio"
+          name="album"
+          [checked]="!albumExists"
+          (change)="form.patchValue({ album: newAlbumValue })" />
+        <input
+          class="new-album-input"
+          type="text"
+          name="new-album"
+          [value]="newAlbumValue"
+          (input)="onNewAlbumInputChange($event)"
+          (focus)="onNewAlbumInputFocus()"
+          maxlength="120"
+          placeholder="New album" />
+      </div>
+    </fieldset>
+    <lcc-form-error-icon [control]="form.controls.album"></lcc-form-error-icon>
+
+    <button
+      class="restore-button lcc-secondary-button"
+      [disabled]="!hasUnsavedChanges"
+      tooltip="Restore image to its original state"
+      (click)="onRestore()">
+      <ea-icon-history />
+    </button>
+  </div>
+
+  <aside class="lcc-required-fields-legend">Required fields</aside>
+
+  <hr />
+
+  @if (imageEntity) {
+    <lcc-modification-info [info]="imageEntity.image.modificationInfo">
+    </lcc-modification-info>
+  }
+
+  <div class="lcc-form-buttons-container">
+    <button
+      class="cancel-button lcc-secondary-button"
+      type="button"
+      (click)="onCancel()">
+      Cancel
+    </button>
+    <button
+      class="submit-button lcc-primary-button"
+      type="submit"
+      [disabled]="form.invalid || !hasUnsavedChanges">
+      {{ imageEntity ? 'Update image' : 'Add image' }}
+    </button>
+  </div>
+</form>

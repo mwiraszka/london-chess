@@ -1,0 +1,204 @@
+<form
+  class="lcc-form"
+  [formGroup]="form"
+  (ngSubmit)="onSubmit()">
+  <div class="lcc-form-fields">
+    <label class="lcc-required-field">Album title:</label>
+    <input
+      id="album-input"
+      class="album-input"
+      type="text"
+      name="album"
+      formControlName="album"
+      maxlength="120" />
+    <lcc-form-error-icon [control]="form.controls.album"></lcc-form-error-icon>
+  </div>
+
+  <div
+    formArrayName="existingImages"
+    class="images-grid">
+    @for (
+      imageControl of form.controls.existingImages.controls;
+      track imageControl;
+      let i = $index
+    ) {
+      <div
+        class="lcc-form-fields"
+        [formGroupName]="i">
+        <div class="image-container full-span">
+          <lcc-image [image]="imageEntities[i].image" />
+        </div>
+
+        <div class="cover-image-input-container">
+          <input
+            [id]="'cover-image-radio-' + i"
+            class="cover-image-input"
+            type="radio"
+            name="coverImage"
+            [checked]="imageControl.controls.albumCover.value"
+            (change)="onSetAlbumCover(imageControl.controls.id.value)" />
+          <label
+            class="cover-image-label"
+            [for]="'cover-radio-' + i">
+            Use as album cover
+          </label>
+        </div>
+
+        <label
+          [for]="'caption-input-' + i"
+          class="lcc-required-field">
+          Caption:
+        </label>
+        <input
+          [id]="'caption-input-' + i"
+          type="text"
+          formControlName="caption"
+          maxlength="120" />
+        <lcc-form-error-icon [control]="imageControl.controls.caption">
+        </lcc-form-error-icon>
+
+        <label
+          [for]="'album-ordinality-input-' + i"
+          class="lcc-required-field">
+          Ordinality:
+        </label>
+        <input
+          [id]="'album-orginality-input-' + i"
+          class="album-ordinality-input"
+          type="text"
+          formControlName="albumOrdinality"
+          maxlength="2" />
+        <lcc-form-error-icon [control]="imageControl.controls.albumOrdinality">
+        </lcc-form-error-icon>
+      </div>
+    }
+  </div>
+
+  @if (album) {
+    <hr />
+    <h3 class="new-images-header">New images</h3>
+  }
+
+  <div class="control-buttons-container">
+    <label
+      class="choose-files-button lcc-secondary-button"
+      [tooltip]="
+        imageEntities.length || form.controls.newImages.length
+          ? 'Add more files'
+          : 'Choose files'
+      ">
+      @if (imageEntities.length) {
+        <ea-icon-image-plus />
+      } @else {
+        <ea-icon-image />
+      }
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        (change)="onChooseFiles($event)"
+        (cancel)="$event.stopPropagation()" />
+    </label>
+
+    <button
+      class="restore-button lcc-secondary-button"
+      type="button"
+      [disabled]="!hasUnsavedChanges"
+      tooltip="Restore album to its original state"
+      (click)="onRestore()">
+      <ea-icon-history />
+    </button>
+  </div>
+
+  <div
+    formArrayName="newImages"
+    class="images-grid">
+    @for (
+      imageControl of form.controls.newImages.controls;
+      track imageControl;
+      let i = $index
+    ) {
+      <div
+        class="lcc-form-fields"
+        [formGroupName]="i">
+        <div class="image-container full-span">
+          <img
+            [src]="newImageDataUrls[imageControl.controls.id.value]"
+            alt="New image preview" />
+          <button
+            class="remove-image-button lcc-icon-button"
+            type="button"
+            (click)="onRemoveNewImage(imageControl.getRawValue(), i)"
+            tooltip="Remove image">
+            <ea-icon-x-circle />
+          </button>
+        </div>
+
+        <div class="album-cover-input-container full-span">
+          <input
+            [id]="'album-cover-radio-' + i"
+            class="album-cover-input"
+            type="radio"
+            name="albumCover"
+            [checked]="imageControl.controls.albumCover.value"
+            (change)="onSetAlbumCover(imageControl.controls.id.value)" />
+          <label
+            class="album-cover-label"
+            [for]="'album-cover-radio-' + i">
+            Use as album cover
+          </label>
+        </div>
+
+        <label
+          [for]="'caption-input-' + i"
+          class="lcc-required-field">
+          Caption:
+        </label>
+        <input
+          [id]="'caption-input-' + i"
+          type="text"
+          formControlName="caption"
+          maxlength="120" />
+        <lcc-form-error-icon [control]="imageControl.controls.caption">
+        </lcc-form-error-icon>
+
+        <label
+          [for]="'album-ordinality-input-' + i"
+          class="lcc-required-field">
+          Ordinality:
+        </label>
+        <input
+          [id]="'album-orginality-input-' + i"
+          class="album-ordinality-input"
+          type="text"
+          formControlName="albumOrdinality"
+          maxlength="2" />
+        <lcc-form-error-icon [control]="imageControl.controls.albumOrdinality">
+        </lcc-form-error-icon>
+      </div>
+    }
+  </div>
+
+  <aside class="lcc-required-fields-legend">Required fields</aside>
+
+  <hr />
+
+  @if (mostRecentModificationInfo) {
+    <lcc-modification-info [info]="mostRecentModificationInfo"></lcc-modification-info>
+  }
+
+  <div class="lcc-form-buttons-container">
+    <button
+      class="cancel-button lcc-secondary-button"
+      type="button"
+      (click)="onCancel()">
+      Cancel
+    </button>
+    <button
+      class="submit-button lcc-primary-button"
+      type="submit"
+      [disabled]="form.invalid || !hasUnsavedChanges">
+      {{ album ? 'Update album' : 'Create album' }}
+    </button>
+  </div>
+</form>

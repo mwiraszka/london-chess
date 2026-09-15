@@ -1,0 +1,25 @@
+# Generated code
+/node_modules
+
+# Environment variables
+.prod.env
+.env
+.dev-offline.env
+
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Compiled output
+pnpm-lock.yaml
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+.vercel
