@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import { Types } from 'mongoose';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import {
@@ -153,7 +153,7 @@ export async function updateArticle(
       false,
     );
     const result = await ArticleModel.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new Types.ObjectId(id) },
       { $set: preparedArticle },
     );
 
@@ -178,7 +178,7 @@ export async function deleteArticle(
     const { id } = req.params;
 
     const result = await ArticleModel.deleteOne({
-      _id: new ObjectId(id),
+      _id: new Types.ObjectId(id),
     });
 
     if (result.deletedCount === 0) {

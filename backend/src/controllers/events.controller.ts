@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import { Types } from 'mongoose';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
@@ -150,7 +150,7 @@ export async function updateEvent(
       false,
     );
     const result = await EventModel.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new Types.ObjectId(id) },
       { $set: preparedEvent },
     );
 
@@ -174,7 +174,7 @@ export async function deleteEvent(
   try {
     const { id } = req.params;
 
-    const result = await EventModel.deleteOne({ _id: new ObjectId(id) });
+    const result = await EventModel.deleteOne({ _id: new Types.ObjectId(id) });
 
     if (result.deletedCount === 0) {
       res.status(404).json({
