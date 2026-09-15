@@ -50,6 +50,7 @@ import {
   ApiError,
   ApiService,
   ClerkService,
+  MemberProfilesService,
   MetaAndTitleService,
   UserService,
 } from '@app/services';
@@ -92,6 +93,7 @@ export class AccountPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly clerk = inject(ClerkService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly memberProfiles = inject(MemberProfilesService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -343,6 +345,7 @@ export class AccountPageComponent implements OnInit {
       } else {
         await this.saveCropState();
       }
+      void this.memberProfiles.reload();
 
       this.toast.show('Successfully updated your photo.', {
         title: 'Profile updated',
