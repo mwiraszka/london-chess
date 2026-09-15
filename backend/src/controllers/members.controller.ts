@@ -43,7 +43,10 @@ import {
 } from '../util/member-responses.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
-import { generateTemporaryPassword } from '../util/temporary-password.util';
+import {
+  generateTemporaryPassword,
+  hashTemporaryPassword,
+} from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 type Scope = 'public' | 'admin';
@@ -571,12 +574,9 @@ async function saveWithNewAccount({
   const undoSteps: UndoStep[] = [
     ['remove their new Clerk account', () => clerkClient.users.deleteUser(clerkUserId)],
   ];
-  let failedStep = 'require a new password at their first login';
+  let failedStep = 'save the member';
   try {
-    await clerkClient.users.setPasswordCompromised(clerkUserId);
-
-    failedStep = 'save the member';
-    await save(newAccount(clerkUserId));
+    await save(newAccount(clerkUserId, hashTemporaryPassword(temporaryPassword)));
     undoSteps.push(undoSave);
 
     failedStep = 'assign a member number';
@@ -710,7 +710,7 @@ function accountDetailsProblem(member: EditableMemberFields): string | null {
   return validateDetailField('yearOfBirth', member.yearOfBirth);
 }
 
-function newAccount(clerkUserId: string): MemberAccount {
+function newAccount(clerkUserId: string, temporaryPasswordHash: string): MemberAccount {
   return {
     clerkUserId,
     isAdmin: false,
@@ -720,6 +720,7 @@ function newAccount(clerkUserId: string): MemberAccount {
     avatarManagedByApp: false,
     avatarCropState: null,
     avatarUpdatedAt: null,
+    temporaryPasswordHash,
   };
 }
 

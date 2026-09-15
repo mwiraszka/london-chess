@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 
 // Members copy the password from an email, so characters that are easy to misread
 // (0 and O, 1, l and I) are left out
@@ -21,6 +21,12 @@ export function generateTemporaryPassword(): string {
     ];
   }
   return characters.join('');
+}
+
+// The password is long and random, so a fast hash is enough to recognise it later
+// without keeping it
+export function hashTemporaryPassword(password: string): string {
+  return createHash('sha256').update(password).digest('hex');
 }
 
 function pickFrom(characterSet: string): string {

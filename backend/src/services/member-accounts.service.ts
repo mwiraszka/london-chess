@@ -134,6 +134,7 @@ export async function linkClerkUser(
     avatarManagedByApp: false,
     avatarCropState: null,
     avatarUpdatedAt: null,
+    temporaryPasswordHash: null,
   };
 
   let linkedNow = false;

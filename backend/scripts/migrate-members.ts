@@ -212,6 +212,7 @@ async function linkRetiredAccounts(clerkClient: ClerkClient): Promise<void> {
       avatarManagedByApp: user.avatarManagedByApp,
       avatarCropState: user.avatarCropState,
       avatarUpdatedAt: user.lastModifiedDate?.toISOString() ?? null,
+      temporaryPasswordHash: null,
     };
 
     console.log(`  ${user.firstName} ${user.lastName}: member #${member.number}`);

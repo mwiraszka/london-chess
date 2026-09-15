@@ -53,6 +53,7 @@ function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
       avatarManagedByApp: true,
       avatarCropState: { zoom: 1, offsetX: 0, offsetY: 0 },
       avatarUpdatedAt: '2024-01-01T00:00:00.000Z',
+      temporaryPasswordHash: 'temporary-password-hash',
     },
     ...overrides,
   };
@@ -127,6 +128,7 @@ describe('toPublicMember', () => {
     expect(JSON.stringify(member)).not.toContain('555-123-4567');
     expect(JSON.stringify(member)).not.toContain('user_123');
     expect(JSON.stringify(member)).not.toContain('original');
+    expect(JSON.stringify(member)).not.toContain('temporary-password-hash');
   });
 
   it('should drop unknown fields added to the record later', () => {
@@ -182,6 +184,7 @@ describe('toAdminMember', () => {
     expect(member.phoneNumber).toBe('555-123-4567');
     expect(member.hasAccount).toBe(true);
     expect(JSON.stringify(member)).not.toContain('user_123');
+    expect(JSON.stringify(member)).not.toContain('temporary-password-hash');
     expect(JSON.stringify(member)).not.toContain('original');
   });
 
@@ -225,5 +228,7 @@ describe('toAccountRecord', () => {
     expect(account.id).toBe('user_123');
     expect(account.memberNumber).toBe(7);
     expect(account.avatarOriginalUrl).toBe('https://avatars.example.com/original');
+    expect(account.hasTemporaryPassword).toBe(true);
+    expect(JSON.stringify(account)).not.toContain('temporary-password-hash');
   });
 });

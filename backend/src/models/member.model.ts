@@ -19,6 +19,8 @@ export interface MemberAccount {
   avatarManagedByApp: boolean;
   avatarCropState: AvatarCropState | null;
   avatarUpdatedAt: IsoDate | null;
+  // Set while the member still uses the password the site emailed them
+  temporaryPasswordHash: string | null;
 }
 
 export interface Member {
@@ -60,6 +62,7 @@ const accountSchema = new Schema<MemberAccount>(
       _id: false,
     },
     avatarUpdatedAt: { type: String, default: null },
+    temporaryPasswordHash: { type: String, default: null },
   },
   { _id: false },
 );

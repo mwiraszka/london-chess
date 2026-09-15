@@ -45,6 +45,7 @@ export interface AccountRecord {
   avatarOriginalUrl: string | null;
   avatarCropState: AvatarCropState | null;
   avatarUpdatedAt: IsoDate | null;
+  hasTemporaryPassword: boolean;
 }
 
 export interface MemberProfile {
@@ -180,5 +181,6 @@ export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
     avatarOriginalUrl: record.account.avatarOriginalUrl,
     avatarCropState: record.account.avatarCropState,
     avatarUpdatedAt: record.account.avatarUpdatedAt,
+    hasTemporaryPassword: !!record.account.temporaryPasswordHash,
   };
 }

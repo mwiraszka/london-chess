@@ -31,6 +31,7 @@ import {
   toAccountRecord,
   toAdminMember,
 } from '../util/member-responses.util';
+import { hashTemporaryPassword } from '../util/temporary-password.util';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -319,10 +320,60 @@ export async function changePassword(
         .json({ message: clerkErrorMessage(error, 'Could not update password') });
       return;
     }
+    await updateLinkedMember(req.user.id, { 'account.temporaryPasswordHash': null });
 
     res.status(200).json({ data: 'success' });
   } catch (error) {
     res.status(500).json({ message: `Unable to change password: ${error}` });
+  }
+}
+
+// Forgot password sets a new password without going through the site, so the member
+// confirms it here to clear their temporary password. Clerk checks it is their current
+// password, and the password the site emailed never counts
+export async function confirmMyPassword(
+  req: Request,
+  res: Response<ApiResponse<AccountRecord>>,
+): Promise<void> {
+  try {
+    const { password } = req.body as { password?: unknown };
+    if (typeof password !== 'string' || !password) {
+      res.status(400).json({ message: 'Password is required.' });
+      return;
+    }
+
+    const member = await findLinkedMember(req.user.id);
+    if (!member) {
+      res.status(404).json({ message: 'Account not found.' });
+      return;
+    }
+
+    const { temporaryPasswordHash } = member.account;
+    if (
+      !temporaryPasswordHash ||
+      hashTemporaryPassword(password) === temporaryPasswordHash
+    ) {
+      res.status(200).json({ data: toAccountRecord(member) });
+      return;
+    }
+
+    try {
+      await clerkClient.users.verifyPassword({ userId: req.user.id, password });
+    } catch {
+      res.status(400).json({ message: 'That password does not match your account.' });
+      return;
+    }
+
+    const updated = await updateLinkedMember(req.user.id, {
+      'account.temporaryPasswordHash': null,
+    });
+    if (!updated) {
+      res.status(404).json({ message: 'Account not found.' });
+      return;
+    }
+    res.status(200).json({ data: toAccountRecord(updated) });
+  } catch (error) {
+    res.status(500).json({ message: `Unable to confirm password: ${error}` });
   }
 }
 

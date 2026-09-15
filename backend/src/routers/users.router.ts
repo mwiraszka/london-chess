@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import {
   changePassword,
+  confirmMyPassword,
   deleteMe,
   deleteUserAvatar,
   getMe,
@@ -29,6 +30,7 @@ export const usersRouter = Router()
   .post('/me/sessions/revoke-others', auth, revokeOtherSessions)
   .patch('/me', auth, updateMe)
   .post('/me/password', auth, changePassword)
+  .post('/me/password/confirm', auth, confirmMyPassword)
   .post('/me/avatar', auth, avatarUpload, uploadUserAvatar)
   .patch('/me/avatar', auth, avatarUpload, updateCroppedAvatar)
   .delete('/me/avatar', auth, deleteUserAvatar)
