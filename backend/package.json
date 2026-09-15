@@ -25,16 +25,16 @@
     "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts'"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1131.0",
-    "@aws-sdk/s3-request-presigner": "3.1131.0",
-    "@clerk/backend": "3.17.2",
+    "@aws-sdk/client-s3": "3.1132.0",
+    "@aws-sdk/s3-request-presigner": "3.1132.0",
+    "@clerk/backend": "3.18.0",
     "@sentry/node": "10.74.0",
     "cors": "2.8.6",
     "express": "5.2.1",
     "mongodb": "7.6.0",
-    "mongoose": "9.10.0",
-    "multer": "2.3.0",
-    "nodemailer": "10.0.9",
+    "mongoose": "9.10.1",
+    "multer": "2.4.0",
+    "nodemailer": "10.0.10",
     "sharp": "0.35.4",
     "svix": "2.5.0"
   },
@@ -44,11 +44,11 @@
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/multer": "2.2.0",
-    "@types/node": "26.5.1",
+    "@types/node": "26.6.0",
     "@types/nodemailer": "8.0.1",
     "@typescript-eslint/eslint-plugin": "8.70.0",
     "@typescript-eslint/parser": "8.70.0",
-    "@vitest/coverage-v8": "5.0.0",
+    "@vitest/coverage-v8": "5.0.1",
     "eslint": "10.10.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.6",
@@ -57,7 +57,7 @@
     "tsx": "4.23.13",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.0",
-    "vitest": "5.0.0"
+    "vitest": "5.0.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
