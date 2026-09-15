@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  clerkPublishableKey: 'pk_live_Y2xlcmsubG9uZG9uY2hlc3MuY2Ek',
+  clerkPublishableKey: 'pk_test_bmVlZGVkLWJhcm5hY2xlLTU0LmNsZXJrLmFjY291bnRzLmRldiQ',
   googleMapsApiKey: 'AIzaSyCeuTgq4qe2k8obnbYWrwWsG91B6aDUSA0',
   lccApiBaseUrl: 'https://api-preview.londonchess.ca/v1',
   sentryDsn:
