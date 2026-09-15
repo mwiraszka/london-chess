@@ -75,6 +75,7 @@ describe('PUBLIC_MEMBER_PROJECTION', () => {
 
     expect(leakedFields).toEqual([]);
     expect(readAccountPaths.sort()).toEqual([
+      'account.avatarUpdatedAt',
       'account.avatarUrl',
       'account.isAdmin',
       'account.status',
@@ -146,6 +147,21 @@ describe('toPublicMember', () => {
     expect(member.number).toBe(7);
   });
 
+  it('should version the avatar URL by its upload time so a new photo is never served from cache', () => {
+    const record = buildRecord();
+    const reuploaded = buildRecord({
+      account: { ...record.account!, avatarUpdatedAt: '2024-02-01T00:00:00.000Z' },
+    });
+
+    const member = toPublicMember(record);
+    const updatedMember = toPublicMember(reuploaded);
+
+    expect(member.avatarUrl).toBe('https://avatars.example.com/cropped?v=1704067200000');
+    expect(updatedMember.avatarUrl).toBe(
+      'https://avatars.example.com/cropped?v=1706745600000',
+    );
+  });
+
   it('should pass on the member numbers of the creator and last editor', () => {
     const member = toPublicMember(buildRecord());
 
@@ -210,7 +226,7 @@ describe('toMemberProfiles', () => {
         number: 7,
         firstName: 'Jane',
         lastName: 'Doe',
-        avatarUrl: 'https://avatars.example.com/cropped',
+        avatarUrl: 'https://avatars.example.com/cropped?v=1704067200000',
       },
     ]);
   });

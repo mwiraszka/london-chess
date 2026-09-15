@@ -80,6 +80,7 @@ export const PUBLIC_MEMBER_PROJECTION = {
   'account.status': 1,
   'account.isAdmin': 1,
   'account.avatarUrl': 1,
+  'account.avatarUpdatedAt': 1,
 } as const;
 
 export const PUBLIC_PROFILE_PROJECTION = {
@@ -94,6 +95,7 @@ export const MEMBER_PROFILE_PROJECTION = {
   lastName: 1,
   'account.status': 1,
   'account.avatarUrl': 1,
+  'account.avatarUpdatedAt': 1,
 } as const;
 
 export function toMemberProfiles(records: MemberRecord[]): MemberProfile[] {
@@ -104,7 +106,7 @@ export function toMemberProfiles(records: MemberRecord[]): MemberProfile[] {
             number: record.number,
             firstName: record.firstName,
             lastName: record.lastName,
-            avatarUrl: record.account.avatarUrl ?? null,
+            avatarUrl: versionedAvatarUrl(record.account),
           },
         ]
       : [],
@@ -135,7 +137,7 @@ export function toPublicMember(record: MemberRecord): PublicMember {
       dateLastEdited: record.modificationInfo.dateLastEdited,
     },
     isAdmin: account?.isAdmin === true,
-    avatarUrl: account?.avatarUrl ?? null,
+    avatarUrl: account ? versionedAvatarUrl(account) : null,
   };
 }
 
@@ -161,6 +163,17 @@ export function toAdminMember(record: MemberRecord): AdminMember {
 
 function yearOf(date: IsoDate): string {
   return date.slice(0, 4);
+}
+
+// Avatars are stored under a fixed key, so the upload time versions the URL for caches
+function versionedAvatarUrl({
+  avatarUrl,
+  avatarUpdatedAt,
+}: MemberAccount): string | null {
+  if (!avatarUrl || !avatarUpdatedAt) {
+    return avatarUrl ?? null;
+  }
+  return `${avatarUrl}?v=${Date.parse(avatarUpdatedAt)}`;
 }
 
 export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
