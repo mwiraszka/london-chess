@@ -4,4 +4,5 @@ export const environment = {
   googleMapsApiKey: 'AIzaSyCeuTgq4qe2k8obnbYWrwWsG91B6aDUSA0',
   lccApiBaseUrl: 'http://localhost:3000/v1',
   sentryDsn: '',
+  isPreview: false,
 };

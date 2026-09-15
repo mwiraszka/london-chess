@@ -20,14 +20,18 @@ import {
 import { RouterOutlet } from '@angular/router';
 
 import { AuthDrawerComponent } from '@app/components/auth-drawer/auth-drawer.component';
+import { EnvironmentTagComponent } from '@app/components/environment-tag/environment-tag.component';
 import { FooterComponent } from '@app/components/footer/footer.component';
 import { HeaderComponent } from '@app/components/header/header.component';
 import { NavigationBarComponent } from '@app/components/navigation-bar/navigation-bar.component';
 import { UpcomingEventBannerComponent } from '@app/components/upcoming-event-banner/upcoming-event-banner.component';
+import { GIT_BRANCH_NAME } from '@app/constants/git-branch.generated';
 import { Event, IsoDate } from '@app/models';
 import { RefreshService, RoutingService, TouchEventsService } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
 import { EventsSelectors } from '@app/store/events';
+
+import { environment } from '@env';
 
 @UntilDestroy()
 @Component({
@@ -57,6 +61,13 @@ import { EventsSelectors } from '@app/store/events';
       </main>
     }
 
+    @if (!environment.production) {
+      <lcc-environment-tag
+        [branchName]="gitBranchName"
+        [isPreview]="environment.isPreview">
+      </lcc-environment-tag>
+    }
+
     <lcc-auth-drawer></lcc-auth-drawer>
     <ea-toast></ea-toast>
   `,
@@ -65,6 +76,7 @@ import { EventsSelectors } from '@app/store/events';
     AuthDrawerComponent,
     CdkScrollableModule,
     CommonModule,
+    EnvironmentTagComponent,
     FooterComponent,
     HeaderComponent,
     NavigationBarComponent,
@@ -75,6 +87,9 @@ import { EventsSelectors } from '@app/store/events';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  protected readonly environment = environment;
+  protected readonly gitBranchName = GIT_BRANCH_NAME;
+
   @ViewChild('mainElement', { read: ElementRef })
   public mainElement!: ElementRef<HTMLElement>;
 

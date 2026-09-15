@@ -5,4 +5,5 @@ export const environment = {
   lccApiBaseUrl: 'https://api.londonchess.ca/v1',
   sentryDsn:
     'https://15ca529d0b2ea8ff491edc33e2f234fc@o4511323014234112.ingest.de.sentry.io/4511323126956112',
+  isPreview: false,
 };

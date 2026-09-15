@@ -1,6 +1,8 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { Subject, firstValueFrom, take } from 'rxjs';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -40,6 +42,8 @@ describe('AppComponent', () => {
         UpcomingEventBannerComponent,
       ],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideMockStore(),
         provideRouter([]),
         {
