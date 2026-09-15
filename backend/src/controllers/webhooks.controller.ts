@@ -92,7 +92,7 @@ export async function verifyClerkWebhook(
       new globalThis.Request(`http://localhost${req.originalUrl}`, {
         method: 'POST',
         headers,
-        body: req.body as Buffer,
+        body: new Uint8Array(req.body as Buffer),
       }),
       { signingSecret: CLERK_WEBHOOK_SECRET },
     );
