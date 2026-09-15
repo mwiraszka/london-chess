@@ -1,4 +1,7 @@
-import { ClerkUserEventData, toProfile } from './webhooks.controller';
+import { Request } from 'express';
+import { createHmac } from 'node:crypto';
+
+import { ClerkUserEventData, toProfile, verifyClerkWebhook } from './webhooks.controller';
 
 describe('toProfile', () => {
   const baseData: ClerkUserEventData = {
@@ -78,5 +81,60 @@ describe('toProfile', () => {
       isAdmin: false,
       memberId: null,
     });
+  });
+});
+
+describe('verifyClerkWebhook', () => {
+  const body = JSON.stringify({ type: 'user.created', data: { id: 'user_123' } });
+
+  // Signs like Clerk does, with the test signing secret set in vitest.config.ts
+  function signedRequest(
+    payload: string,
+    signedPayload = payload,
+  ): Pick<Request, 'headers' | 'originalUrl' | 'body'> {
+    const id = 'msg_123';
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = createHmac('sha256', Buffer.from('dGVzdC1zZWNyZXQ=', 'base64'))
+      .update(`${id}.${timestamp}.${signedPayload}`)
+      .digest('base64');
+
+    return {
+      headers: {
+        'content-type': 'application/json',
+        'svix-id': id,
+        'svix-timestamp': timestamp,
+        'svix-signature': `v1,${signature}`,
+      },
+      originalUrl: '/v1/webhooks/clerk',
+      body: Buffer.from(payload),
+    };
+  }
+
+  it('should return the event for a correctly signed request', async () => {
+    const request = signedRequest(body);
+
+    const event = await verifyClerkWebhook(request);
+
+    expect(event?.type).toBe('user.created');
+    expect(event?.data).toEqual({ id: 'user_123' });
+  });
+
+  it('should reject a request whose body changed after it was signed', async () => {
+    const request = signedRequest(body.replace('user_123', 'user_999'), body);
+
+    const event = await verifyClerkWebhook(request);
+
+    expect(event).toBeNull();
+  });
+
+  it('should reject a request without signature headers', async () => {
+    const request = {
+      ...signedRequest(body),
+      headers: { 'content-type': 'application/json' },
+    };
+
+    const event = await verifyClerkWebhook(request);
+
+    expect(event).toBeNull();
   });
 });
