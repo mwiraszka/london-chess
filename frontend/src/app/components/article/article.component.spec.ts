@@ -64,10 +64,10 @@ describe('ArticleComponent', () => {
       const contentSelectors = [
         'img',
         '.title',
-        '.author-name',
+        '.author-name .member-link > span',
         '.date-created',
         '.updated',
-        '.editor-name',
+        '.editor-name .member-link > span',
         '.date-last-edited',
         'lcc-markdown-renderer',
       ];
@@ -82,13 +82,13 @@ describe('ArticleComponent', () => {
     });
 
     it("should include the article author's and editor's names", () => {
-      expect(queryTextContent(fixture.debugElement, '.author-name')).toBe(
-        MOCK_ARTICLES[2].modificationInfo.createdBy,
-      );
+      expect(
+        queryTextContent(fixture.debugElement, '.author-name .member-link > span'),
+      ).toBe(MOCK_ARTICLES[2].modificationInfo.createdBy);
 
-      expect(queryTextContent(fixture.debugElement, '.editor-name')).toBe(
-        MOCK_ARTICLES[2].modificationInfo.lastEditedBy,
-      );
+      expect(
+        queryTextContent(fixture.debugElement, '.editor-name .member-link > span'),
+      ).toBe(MOCK_ARTICLES[2].modificationInfo.lastEditedBy);
     });
 
     it('should format dates correctly', () => {

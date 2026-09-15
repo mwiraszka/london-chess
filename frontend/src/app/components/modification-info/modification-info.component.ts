@@ -1,12 +1,10 @@
-import { AvatarComponent, EditIconComponent, FilePlusIconComponent } from '@eagami/ui';
+import { EditIconComponent, FilePlusIconComponent } from '@eagami/ui';
 
-import { ChangeDetectionStrategy, Component, Input, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { ModificationInfo } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { MemberProfilesService } from '@app/services';
-import { getInitials } from '@app/utils';
 
 @Component({
   selector: 'lcc-modification-info',
@@ -16,18 +14,12 @@ import { getInitials } from '@app/utils';
         <ea-icon-file-plus />
 
         <div class="create-text">
-          @let creator = memberProfiles.nameFor(info.createdByNumber, info.createdBy);
           <span>created by</span>
-          <ea-avatar
-            class="author-avatar"
-            size="xs"
-            [alt]="creator"
-            [src]="memberProfiles.avatarUrlFor(info.createdByNumber)"
-            [initials]="initialsFor(creator)" />
           <span class="name">
             <lcc-member-link
               [memberNumber]="info.createdByNumber"
-              [name]="info.createdBy" />
+              [name]="info.createdBy"
+              [showAvatar]="true" />
           </span>
           <span class="vertical-spacer">|</span>
           <span class="date">{{ info.dateCreated | formatDate: 'short' }}</span>
@@ -43,7 +35,8 @@ import { getInitials } from '@app/utils';
             <span class="name">
               <lcc-member-link
                 [memberNumber]="info.lastEditedByNumber"
-                [name]="info.lastEditedBy" />
+                [name]="info.lastEditedBy"
+                [showAvatar]="true" />
             </span>
             <span class="vertical-spacer">|</span>
             <span class="date">{{ info.dateLastEdited | formatDate: 'short' }}</span>
@@ -54,7 +47,6 @@ import { getInitials } from '@app/utils';
   `,
   styleUrl: './modification-info.component.scss',
   imports: [
-    AvatarComponent,
     EditIconComponent,
     FilePlusIconComponent,
     FormatDatePipe,
@@ -62,16 +54,6 @@ import { getInitials } from '@app/utils';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ModificationInfoComponent implements OnInit {
+export class ModificationInfoComponent {
   @Input({ required: true }) info!: ModificationInfo;
-
-  protected readonly memberProfiles = inject(MemberProfilesService);
-
-  public ngOnInit(): void {
-    void this.memberProfiles.load();
-  }
-
-  protected initialsFor(name: string): string | undefined {
-    return getInitials(name);
-  }
 }

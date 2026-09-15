@@ -13,13 +13,17 @@ import { MemberLinkComponent } from './member-link.component';
   template: `
     <lcc-member-link
       [memberNumber]="memberNumber"
-      [name]="name" />
+      [name]="name"
+      [showAvatar]="showAvatar"
+      [appearance]="appearance" />
   `,
   imports: [MemberLinkComponent],
 })
 class HostComponent {
   public memberNumber: number | null = null;
   public name = 'Stored Name';
+  public showAvatar = false;
+  public appearance: 'plain' | 'link' = 'plain';
 }
 
 describe('MemberLinkComponent', () => {
@@ -50,10 +54,53 @@ describe('MemberLinkComponent', () => {
     await TestBed.inject(MemberProfilesService).load();
     fixture.detectChanges();
 
-    const link = query(fixture.debugElement, 'a.lcc-link');
+    const link = query(fixture.debugElement, 'a.member-link');
     expect(link.attributes['href']).toBe('/members/0');
-    expect(queryTextContent(fixture.debugElement, 'a.lcc-link')).toBe('Magnus Carlsen');
+    expect(queryTextContent(fixture.debugElement, 'a.member-link')).toBe(
+      'Magnus Carlsen',
+    );
     expect(api.get).toHaveBeenCalledWith('/public/members/profiles');
+  });
+
+  it('should leave the name unstyled by default', async () => {
+    host.memberNumber = 0;
+
+    fixture.detectChanges();
+    await TestBed.inject(MemberProfilesService).load();
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'a.member-link.lcc-link')).toBeFalsy();
+  });
+
+  it('should style the name as a link when asked to', async () => {
+    host.memberNumber = 0;
+    host.appearance = 'link';
+
+    fixture.detectChanges();
+    await TestBed.inject(MemberProfilesService).load();
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'a.member-link.lcc-link')).toBeTruthy();
+  });
+
+  it('should include the avatar inside the link when asked to', async () => {
+    host.memberNumber = 0;
+    host.showAvatar = true;
+
+    fixture.detectChanges();
+    await TestBed.inject(MemberProfilesService).load();
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'a.member-link ea-avatar')).toBeTruthy();
+  });
+
+  it('should show the avatar beside an unlinked name for a member without a profile', () => {
+    host.showAvatar = true;
+
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'a.member-link')).toBeFalsy();
+    expect(query(fixture.debugElement, 'span.member-link ea-avatar')).toBeTruthy();
   });
 
   it('should show the stored name unlinked when the member has no profile', async () => {
@@ -63,14 +110,14 @@ describe('MemberLinkComponent', () => {
     await TestBed.inject(MemberProfilesService).load();
     fixture.detectChanges();
 
-    expect(query(fixture.debugElement, 'a.lcc-link')).toBeFalsy();
+    expect(query(fixture.debugElement, 'a.member-link')).toBeFalsy();
     expect(fixture.nativeElement.textContent.trim()).toBe('Stored Name');
   });
 
   it('should show the stored name unlinked, without loading profiles, when there is no number', () => {
     fixture.detectChanges();
 
-    expect(query(fixture.debugElement, 'a.lcc-link')).toBeFalsy();
+    expect(query(fixture.debugElement, 'a.member-link')).toBeFalsy();
     expect(fixture.nativeElement.textContent.trim()).toBe('Stored Name');
     expect(api.get).not.toHaveBeenCalled();
   });

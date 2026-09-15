@@ -8,18 +8,11 @@
 <div class="modification-info-container">
   <div class="author-container">
     <div class="author-row">
-      @let author =
-        memberProfiles.nameFor(
-          article.modificationInfo.createdByNumber,
-          article.modificationInfo.createdBy
-        );
-      <ea-avatar
-        size="xs"
-        [alt]="author"
-        [src]="memberProfiles.avatarUrlFor(article.modificationInfo.createdByNumber)"
-        [initials]="initialsFor(author)" />
       <span class="author-name">
-        {{ author }}
+        <lcc-member-link
+          [memberNumber]="article.modificationInfo.createdByNumber"
+          [name]="article.modificationInfo.createdBy"
+          [showAvatar]="true" />
       </span>
     </div>
     <span class="date-created">
@@ -31,19 +24,11 @@
     @if (article.modificationInfo | wasEdited) {
       <span class="updated">last updated</span>
       <div class="modification-details">
-        @let editor =
-          memberProfiles.nameFor(
-            article.modificationInfo.lastEditedByNumber,
-            article.modificationInfo.lastEditedBy
-          );
-        <ea-avatar
-          class="editor-avatar"
-          size="xs"
-          [alt]="editor"
-          [src]="memberProfiles.avatarUrlFor(article.modificationInfo.lastEditedByNumber)"
-          [initials]="initialsFor(editor)" />
         <span class="editor-name">
-          {{ editor }}
+          <lcc-member-link
+            [memberNumber]="article.modificationInfo.lastEditedByNumber"
+            [name]="article.modificationInfo.lastEditedBy"
+            [showAvatar]="true" />
         </span>
         <span class="vertical-spacer">|</span>
         <span class="date-last-edited">

@@ -138,3 +138,10 @@
     }
   }
 }
+
+// Member names read as plain text, so a profile link shows only through the pointer
+.member-name-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}

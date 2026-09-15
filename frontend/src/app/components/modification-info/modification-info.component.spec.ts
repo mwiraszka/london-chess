@@ -39,7 +39,7 @@ describe('ModificationInfoComponent', () => {
       const createDetails = query(fixture.debugElement, '.create-details-container');
 
       expect(query(createDetails, 'ea-icon-file-plus')).toBeTruthy();
-      expect(queryTextContent(createDetails, '.name')).toBe(
+      expect(queryTextContent(createDetails, '.name .member-link > span')).toBe(
         MOCK_MODIFICATION_INFOS[0].createdBy,
       );
       expect(queryTextContent(createDetails, '.date')).toBe(
@@ -51,7 +51,7 @@ describe('ModificationInfoComponent', () => {
       const editDetails = query(fixture.debugElement, '.edit-details-container');
 
       expect(query(editDetails, 'ea-icon-edit')).toBeTruthy();
-      expect(queryTextContent(editDetails, '.name')).toBe(
+      expect(queryTextContent(editDetails, '.name .member-link > span')).toBe(
         MOCK_MODIFICATION_INFOS[0].lastEditedBy,
       );
       expect(queryTextContent(editDetails, '.date')).toBe(
@@ -75,8 +75,10 @@ describe('ModificationInfoComponent', () => {
       fixture.detectChanges();
 
       const createDetails = query(fixture.debugElement, '.create-details-container');
-      expect(queryTextContent(createDetails, '.name')).toBe('Johnny Doe');
-      expect(query(createDetails, '.name a.lcc-link')).toBeTruthy();
+      expect(queryTextContent(createDetails, '.name .member-link > span')).toBe(
+        'Johnny Doe',
+      );
+      expect(query(createDetails, '.name a.member-link')).toBeTruthy();
     });
   });
 });
