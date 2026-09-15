@@ -4,7 +4,6 @@ import {
   BarChartIconComponent,
   CardComponent,
   ExternalLinkIconComponent,
-  LockIconComponent,
   ShieldCheckIconComponent,
   SkeletonComponent,
   TrophyIconComponent,
@@ -25,16 +24,14 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { Member } from '@app/models';
-import { MetaAndTitleService, UserService } from '@app/services';
-import { AuthSelectors } from '@app/store/auth';
+import { MetaAndTitleService } from '@app/services';
 import { MembersActions, MembersSelectors } from '@app/store/members';
-import { formatDate, isCityChampion } from '@app/utils';
+import { isCityChampion } from '@app/utils';
 
 @Component({
   selector: 'lcc-member-profile-page',
@@ -47,7 +44,6 @@ import { formatDate, isCityChampion } from '@app/utils';
     CardComponent,
     CommonModule,
     ExternalLinkIconComponent,
-    LockIconComponent,
     PageHeaderComponent,
     RouterLink,
     ShieldCheckIconComponent,
@@ -64,8 +60,6 @@ export class MemberProfilePageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(Store);
 
-  private readonly userRecord$ = toObservable(inject(UserService).user);
-
   private readonly memberName = viewChild<ElementRef<HTMLElement>>('memberName');
 
   protected readonly isNameTruncated = signal(false);
@@ -73,8 +67,6 @@ export class MemberProfilePageComponent implements OnInit {
 
   public viewModel$?: Observable<{
     member: Member | null;
-    isAdminViewer: boolean;
-    isOwnProfile: boolean;
     hasError: boolean;
   }>;
 
@@ -110,14 +102,10 @@ export class MemberProfilePageComponent implements OnInit {
       switchMap(memberNumber =>
         combineLatest([
           this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
-          this.store.select(AuthSelectors.selectIsAdmin),
-          this.userRecord$,
           this.store.select(MembersSelectors.selectCallState),
         ]).pipe(
-          map(([member, isAdminViewer, userRecord, callState]) => ({
+          map(([member, callState]) => ({
             member,
-            isAdminViewer,
-            isOwnProfile: !!member && userRecord?.memberNumber === member.number,
             hasError: !member && callState.status === 'error',
           })),
         ),
@@ -132,15 +120,6 @@ export class MemberProfilePageComponent implements OnInit {
   // Member 2's join date is shown as 105 BC, a year the stored ISO join date cannot hold
   protected yearJoined(member: Member): string | undefined {
     return member.number === 2 ? '105 B.C.' : member.yearJoined;
-  }
-
-  protected dateJoined(member: Member): string {
-    if (member.number === 2) {
-      return 'January 1st 105 B.C.';
-    }
-    return member.dateJoined
-      ? formatDate(member.dateJoined, 'long no-time')
-      : 'Not on file';
   }
 
   protected initials(member: Member): string {

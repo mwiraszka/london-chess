@@ -1,14 +1,11 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
-import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { UserRecord } from '@app/models';
-import { MetaAndTitleService, UserService } from '@app/services';
-import { AuthSelectors } from '@app/store/auth';
+import { MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { initialState } from '@app/store/members/members.reducer';
@@ -27,11 +24,8 @@ describe('MemberProfilePageComponent', () => {
     isActive: true,
     isAdmin: false,
   };
-  const userRecord = signal<UserRecord | null>(null);
 
   beforeEach(async () => {
-    userRecord.set(null);
-
     await TestBed.configureTestingModule({
       imports: [MemberProfilePageComponent],
       providers: [
@@ -46,14 +40,12 @@ describe('MemberProfilePageComponent', () => {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
-        { provide: UserService, useValue: { user: userRecord.asReadonly() } },
       ],
     }).compileComponents();
 
     store = TestBed.inject(MockStore);
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
     store.overrideSelector(MembersSelectors.selectCallState, initialState.callState);
-    store.overrideSelector(AuthSelectors.selectIsAdmin, false);
     dispatchSpy = vi.spyOn(store, 'dispatch');
 
     fixture = TestBed.createComponent(MemberProfilePageComponent);
@@ -100,47 +92,6 @@ describe('MemberProfilePageComponent', () => {
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.admin-icon')).toBeTruthy();
-  });
-
-  it('should hide the private details card from non-admin viewers', () => {
-    expect(query(fixture.debugElement, '.details-card')).toBeFalsy();
-  });
-
-  it('should show the private details card to admin viewers', () => {
-    store.overrideSelector(AuthSelectors.selectIsAdmin, true);
-    store.refreshState();
-
-    fixture.detectChanges();
-
-    expect(query(fixture.debugElement, '.details-card')).toBeTruthy();
-    expect(queryTextContent(fixture.debugElement, '.details-card dd')).toBe(member.email);
-    expect(query(fixture.debugElement, '.details-card .privacy-note')).toBeTruthy();
-  });
-
-  it('should only offer the account page link on your own profile', () => {
-    store.overrideSelector(AuthSelectors.selectIsAdmin, true);
-    store.refreshState();
-    fixture.detectChanges();
-
-    expect(query(fixture.debugElement, '.details-card .privacy-note a')).toBeFalsy();
-
-    userRecord.set({
-      id: 'user_1',
-      memberNumber: member.number,
-      firstName: member.firstName,
-      lastName: member.lastName,
-      email: member.email,
-      isAdmin: true,
-      clerkImageUrl: null,
-      avatarUrl: null,
-      avatarOriginalUrl: null,
-      avatarCropState: null,
-      avatarUpdatedAt: null,
-    });
-    TestBed.tick();
-    fixture.detectChanges();
-
-    expect(query(fixture.debugElement, '.details-card .privacy-note a')).toBeTruthy();
   });
 
   it('should render the rating progression placeholder', () => {

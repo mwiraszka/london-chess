@@ -144,52 +144,6 @@
           <p>A graph of this member's rating over time is coming soon.</p>
         </div>
       </ea-card>
-
-      @if (vm.isAdminViewer) {
-        <ea-card
-          class="details-card"
-          [fullWidth]="true">
-          <h3 slot="header">Member details</h3>
-          <dl class="details">
-            <div class="detail">
-              <dt>Email</dt>
-              <dd>{{ member.email || 'Not on file' }}</dd>
-            </div>
-            <div class="detail">
-              <dt>Phone number</dt>
-              <dd>{{ member.phoneNumber || 'Not on file' }}</dd>
-            </div>
-            <div class="detail">
-              <dt>Year of birth</dt>
-              <dd>{{ member.yearOfBirth || 'Not on file' }}</dd>
-            </div>
-            <div class="detail">
-              <dt>Date joined</dt>
-              <dd>{{ dateJoined(member) }}</dd>
-            </div>
-          </dl>
-
-          <p class="privacy-note">
-            <span class="privacy-note__heading">
-              <ea-icon-lock
-                class="privacy-note__icon"
-                aria-hidden="true" />
-              <strong>Privacy</strong>
-            </span>
-            <span>
-              These details are only visible to you and to club admins, and never appear
-              on the public member list.
-              @if (vm.isOwnProfile) {
-                <a
-                  class="lcc-link"
-                  routerLink="/account/profile">
-                  Request a change from your account page.
-                </a>
-              }
-            </span>
-          </p>
-        </ea-card>
-      }
     </div>
   } @else if (vm.hasError) {
     <p class="not-found">This member could not be found.</p>

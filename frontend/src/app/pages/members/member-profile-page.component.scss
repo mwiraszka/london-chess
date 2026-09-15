@@ -233,34 +233,6 @@
   }
 }
 
-.details {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-
-  @include respond-to('gt-sm') {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .detail {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-
-    dt {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    dd {
-      font-size: 14px;
-      overflow-wrap: anywhere;
-    }
-  }
-}
-
 .not-found {
   margin-top: 16px;
   font-size: 14px;
