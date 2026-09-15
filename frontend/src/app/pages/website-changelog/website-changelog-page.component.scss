@@ -139,6 +139,10 @@
   margin-bottom: 16px;
 }
 
+.section-title--links {
+  margin-bottom: 16px;
+}
+
 .intro {
   display: flex;
   flex-direction: column;
@@ -330,13 +334,9 @@
 .page-links {
   width: 100%;
   max-width: 800px;
-  margin-top: 32px;
+  // Adds to the release list's 8px bottom margin, matching the gap above the other headings
+  margin-top: 24px;
   margin-bottom: 8px;
-
-  .page-links__divider {
-    display: block;
-    margin-bottom: 24px;
-  }
 
   .page-links__grid {
     display: grid;
