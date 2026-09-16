@@ -112,10 +112,10 @@ interface ImageRecord {
   album?: string;
 }
 
-interface UserRecord {
-  id?: string;
+interface MemberRecord {
   firstName?: string;
   lastName?: string;
+  account?: { clerkUserId?: string } | null;
 }
 
 async function main(): Promise<void> {
@@ -128,7 +128,7 @@ async function main(): Promise<void> {
   }
 
   const images = (await db.collection('images').find().toArray()) as ImageRecord[];
-  const users = (await db.collection('users').find().toArray()) as UserRecord[];
+  const members = (await db.collection('members').find().toArray()) as MemberRecord[];
 
   // Names are settled for the whole library before anything downloads, so a
   // file name used twice within an album gets an id suffix on every holder
@@ -160,11 +160,13 @@ async function main(): Promise<void> {
     }
   }
 
-  const userDirs = new Map<string, string>();
-  for (const user of users) {
-    if (user.id) {
-      const name = sanitize(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
-      userDirs.set(user.id, name || user.id);
+  // Avatars are stored under the member's Clerk user id, so their name labels the folder
+  const memberDirs = new Map<string, string>();
+  for (const member of members) {
+    const clerkUserId = member.account?.clerkUserId;
+    if (clerkUserId) {
+      const name = sanitize(`${member.firstName ?? ''} ${member.lastName ?? ''}`.trim());
+      memberDirs.set(clerkUserId, name || clerkUserId);
     }
   }
 
@@ -225,8 +227,9 @@ async function main(): Promise<void> {
   }
 
   for (const object of await listBucket(avatarsBucket)) {
-    const [prefix, userId, variant] = object.key.split('/');
-    const dir = prefix === 'avatars' && userId ? userDirs.get(userId) : undefined;
+    const [prefix, clerkUserId, variant] = object.key.split('/');
+    const dir =
+      prefix === 'avatars' && clerkUserId ? memberDirs.get(clerkUserId) : undefined;
 
     let target: string;
     if (!dir || !variant) {
@@ -262,7 +265,7 @@ stores: the database records and every uploaded photo, made on ${day}.
 |             | like any other picture files.                                       |
 | avatars/    | Members' profile pictures, one folder per person. "original" is the |
 |             | photo they uploaded, "cropped" is the version shown on the site.    |
-| database/   | The website's records (articles, events, members, images, users),   |
+| database/   | The website's records (articles, events, members, images),          |
 |             | one plain-text JSON file per category, openable in any text editor. |
 | thumbnails/ | Small preview versions of the gallery photos, used by the website   |
 |             | for faster loading. Kept so the site can be restored exactly.       |
@@ -277,7 +280,7 @@ stores: the database records and every uploaded photo, made on ${day}.
 | Records (database)      | MongoDB Atlas cluster                           |
 | Photos and avatars      | Cloudflare R2 storage buckets                   |
 | Weekly backup copies    | Backblaze B2, encrypted; reading them requires  |
-|                         | the backup passphrase from the password manager |
+|                         | the backup passphrase                           |
 
 ## Restoring the website
 
