@@ -1,17 +1,24 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { pick } from 'lodash';
 
-import { INITIAL_MEMBER_FORM_DATA } from '@app/constants';
 import { Id } from '@app/models';
-import { areSame } from '@app/utils';
 
-import { MembersState, membersAdapter } from './members.reducer';
+import {
+  MembersState,
+  hasFormChanges,
+  memberFormDataOf,
+  membersAdapter,
+} from './members.reducer';
 
 const selectMembersState = createFeatureSelector<MembersState>('membersState');
 
 export const selectCallState = createSelector(
   selectMembersState,
   state => state.callState,
+);
+
+export const selectRecordsScope = createSelector(
+  selectMembersState,
+  state => state.recordsScope,
 );
 
 export const selectLastFullFetch = createSelector(
@@ -67,35 +74,9 @@ export const selectMemberFormDataById = (id: Id | null) =>
     selectAllMemberEntities,
     (state, allMemberEntities) => {
       const entity = allMemberEntities.find(entity => entity.member.id === id);
-      if (!entity) {
-        return state.newMemberFormData;
-      }
-
-      // An account holder's email belongs to their account, so a draft never overrides it
-      return entity.member.hasAccount
-        ? { ...entity.formData, email: entity.member.email }
-        : entity.formData;
+      return entity ? memberFormDataOf(entity) : state.newMemberFormData;
     },
   );
 
 export const selectHasUnsavedChanges = (id: Id | null) =>
-  createSelector(
-    selectMemberById(id),
-    selectMemberFormDataById(id),
-    (member, memberFormData) => {
-      const formPropertiesOfOriginalMember = pick(
-        member ?? INITIAL_MEMBER_FORM_DATA,
-        Object.getOwnPropertyNames(memberFormData),
-      );
-
-      // Only concerned with the day portion of these dates when checking for unsaved changes
-      const { dateJoined: originalDateJoined, ...originalRemainder } =
-        formPropertiesOfOriginalMember;
-      const { dateJoined: formDataDateJoined, ...formDataRemainder } = memberFormData;
-
-      return (
-        originalDateJoined?.slice(0, 10) !== formDataDateJoined?.slice(0, 10) ||
-        !areSame(formDataRemainder, originalRemainder)
-      );
-    },
-  );
+  createSelector(selectMemberById(id), selectMemberFormDataById(id), hasFormChanges);

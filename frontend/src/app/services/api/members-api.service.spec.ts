@@ -66,7 +66,7 @@ describe('MembersApiService', () => {
         },
       };
 
-      service.getAllMembers(true).subscribe(response => {
+      service.getAllMembers('admin').subscribe(response => {
         expect(response).toEqual(mockPaginatedResponse);
       });
 
@@ -105,7 +105,7 @@ describe('MembersApiService', () => {
         .set('search', 'Carlsen');
       vi.mocked(TestBed.inject(SET_PAGINATION_PARAMS)).mockReturnValue(mockParams);
 
-      service.getFilteredMembers(true, options).subscribe(response => {
+      service.getFilteredMembers('admin', options).subscribe(response => {
         expect(response).toEqual(mockPaginatedResponse);
         expect(TestBed.inject(SET_PAGINATION_PARAMS)).toHaveBeenCalledWith(options);
       });
@@ -138,10 +138,10 @@ describe('MembersApiService', () => {
   });
 
   describe('getMemberByNumber', () => {
-    it('should get member by number from the admin endpoint for admins', () => {
+    it('should get member by number from the admin endpoint in admin scope', () => {
       const mockResponse: ApiResponse<Member> = { data: mockMember };
 
-      service.getMemberByNumber(0, true).subscribe(response => {
+      service.getMemberByNumber(0, 'admin').subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 
@@ -150,10 +150,10 @@ describe('MembersApiService', () => {
       req.flush(mockResponse);
     });
 
-    it('should get member by number from the public endpoint for everyone else', () => {
+    it('should get member by number from the public endpoint in public scope', () => {
       const mockResponse: ApiResponse<Member> = { data: mockMember };
 
-      service.getMemberByNumber(0, false).subscribe(response => {
+      service.getMemberByNumber(0, 'public').subscribe(response => {
         expect(response).toEqual(mockResponse);
       });
 

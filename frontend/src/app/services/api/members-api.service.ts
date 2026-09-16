@@ -29,21 +29,16 @@ export class MembersApiService {
 
   constructor(private readonly http: HttpClient) {}
 
-  public getAllMembers(
-    isAdmin: boolean,
-  ): Observable<ApiResponse<PaginatedItems<Member>>> {
-    const scope: ApiScope = isAdmin ? 'admin' : 'public';
-
+  public getAllMembers(scope: ApiScope): Observable<ApiResponse<PaginatedItems<Member>>> {
     return this.http.get<ApiResponse<PaginatedItems<Member>>>(
       `${this.API_BASE_URL}/${scope}/${this.COLLECTION}`,
     );
   }
 
   public getFilteredMembers(
-    isAdmin: boolean,
+    scope: ApiScope,
     options: DataPaginationOptions<Member>,
   ): Observable<ApiResponse<PaginatedItems<Member>>> {
-    const scope: ApiScope = isAdmin ? 'admin' : 'public';
     const params = this.setPaginationParams(options);
 
     return this.http.get<ApiResponse<PaginatedItems<Member>>>(
@@ -60,11 +55,12 @@ export class MembersApiService {
 
   public getMemberByNumber(
     number: number,
-    isAdmin: boolean,
+    scope: ApiScope,
   ): Observable<ApiResponse<Member>> {
-    const url = isAdmin
-      ? `${this.API_BASE_URL}/admin/${this.COLLECTION}/number/${number}`
-      : `${this.API_BASE_URL}/public/${this.COLLECTION}/${number}`;
+    const url =
+      scope === 'admin'
+        ? `${this.API_BASE_URL}/admin/${this.COLLECTION}/number/${number}`
+        : `${this.API_BASE_URL}/public/${this.COLLECTION}/${number}`;
 
     return this.http.get<ApiResponse<Member>>(url);
   }

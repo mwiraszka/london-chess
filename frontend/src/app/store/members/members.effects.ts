@@ -60,16 +60,27 @@ export class MembersEffects {
     { dispatch: false },
   );
 
+  // Records fetched before an admin logged in leave out the details admins work with
+  replacePublicRecordsForAdmin$ = createEffect(() => {
+    return this.store.select(AuthSelectors.selectIsAdmin).pipe(
+      filter(isAdmin => isAdmin),
+      concatLatestFrom(() => this.store.select(MembersSelectors.selectRecordsScope)),
+      filter(([, recordsScope]) => recordsScope === 'public'),
+      map(() => MembersActions.fetchAllMembersRequested()),
+    );
+  });
+
   fetchAllMembers$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(MembersActions.fetchAllMembersRequested),
-      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
-      switchMap(([, isAdmin]) =>
-        this.membersApiService.getAllMembers(isAdmin).pipe(
+      concatLatestFrom(() => this.store.select(AuthSelectors.selectApiScope)),
+      switchMap(([, scope]) =>
+        this.membersApiService.getAllMembers(scope).pipe(
           map(response =>
             MembersActions.fetchAllMembersSucceeded({
               members: response.data.items,
               totalCount: response.data.totalCount,
+              scope,
             }),
           ),
           catchError(error =>
@@ -87,16 +98,17 @@ export class MembersEffects {
         MembersActions.fetchFilteredMembersInBackgroundRequested,
       ),
       concatLatestFrom(() => [
-        this.store.select(AuthSelectors.selectIsAdmin),
+        this.store.select(AuthSelectors.selectApiScope),
         this.store.select(MembersSelectors.selectOptions),
       ]),
-      switchMap(([, isAdmin, options]) =>
-        this.membersApiService.getFilteredMembers(isAdmin, options).pipe(
+      switchMap(([, scope, options]) =>
+        this.membersApiService.getFilteredMembers(scope, options).pipe(
           map(response =>
             MembersActions.fetchFilteredMembersSucceeded({
               members: response.data.items,
               filteredCount: response.data.filteredCount,
               totalCount: response.data.totalCount,
+              scope,
             }),
           ),
           catchError(error =>
@@ -156,7 +168,12 @@ export class MembersEffects {
       ofType(MembersActions.fetchMemberRequested),
       switchMap(({ memberId }) =>
         this.membersApiService.getMember(memberId).pipe(
-          map(response => MembersActions.fetchMemberSucceeded({ member: response.data })),
+          map(response =>
+            MembersActions.fetchMemberSucceeded({
+              member: response.data,
+              scope: 'admin',
+            }),
+          ),
           catchError(error =>
             of(MembersActions.fetchMemberFailed({ error: this.parseError(error) })),
           ),
@@ -168,10 +185,12 @@ export class MembersEffects {
   fetchMemberByNumber$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(MembersActions.fetchMemberByNumberRequested),
-      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
-      switchMap(([{ memberNumber }, isAdmin]) =>
-        this.membersApiService.getMemberByNumber(memberNumber, isAdmin).pipe(
-          map(response => MembersActions.fetchMemberSucceeded({ member: response.data })),
+      concatLatestFrom(() => this.store.select(AuthSelectors.selectApiScope)),
+      switchMap(([{ memberNumber }, scope]) =>
+        this.membersApiService.getMemberByNumber(memberNumber, scope).pipe(
+          map(response =>
+            MembersActions.fetchMemberSucceeded({ member: response.data, scope }),
+          ),
           catchError(error =>
             of(MembersActions.fetchMemberFailed({ error: this.parseError(error) })),
           ),
@@ -280,9 +299,9 @@ export class MembersEffects {
   exportMembersToCsv$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(MembersActions.exportMembersToCsvRequested),
-      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
-      mergeMap(([, isAdmin]) => {
-        return this.membersApiService.getAllMembers(isAdmin).pipe(
+      concatLatestFrom(() => this.store.select(AuthSelectors.selectApiScope)),
+      mergeMap(([, scope]) => {
+        return this.membersApiService.getAllMembers(scope).pipe(
           map(response => {
             const filename = `members_export_${new Date().toISOString().split('T')[0]}.csv`;
             const exportResult = this.exportDataToCsv(response.data.items, filename);

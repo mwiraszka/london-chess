@@ -79,12 +79,13 @@ describe('MembersEffects', () => {
       entities: MOCK_MEMBERS.reduce(
         (acc, member) => ({
           ...acc,
-          [member.id]: { member, formData: INITIAL_MEMBER_FORM_DATA },
+          [member.id]: { member, formData: null },
         }),
         {},
       ),
       callState: { status: 'idle' as const, loadStart: null, error: null },
       newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+      recordsScope: 'admin' as const,
       lastFullFetch: null,
       lastFilteredFetch: null,
       filteredMembers: [],
@@ -135,9 +136,44 @@ describe('MembersEffects', () => {
     mockGetNewPeakRating.mockImplementation((rating, peakRating) => peakRating);
   });
 
+  describe('replacePublicRecordsForAdmin$', () => {
+    it('should fetch every member for an admin while the stored records are public', () => {
+      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
+      store.refreshState();
+      const emitted: Action[] = [];
+
+      effects.replacePublicRecordsForAdmin$.subscribe(action => emitted.push(action));
+
+      expect(emitted).toEqual([MembersActions.fetchAllMembersRequested()]);
+    });
+
+    it('should not fetch when the stored records already came from the admin API', () => {
+      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      store.overrideSelector(MembersSelectors.selectRecordsScope, 'admin');
+      store.refreshState();
+      const emitted: Action[] = [];
+
+      effects.replacePublicRecordsForAdmin$.subscribe(action => emitted.push(action));
+
+      expect(emitted).toEqual([]);
+    });
+
+    it('should not fetch for a visitor who is not an admin', () => {
+      store.overrideSelector(AuthSelectors.selectIsAdmin, false);
+      store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
+      store.refreshState();
+      const emitted: Action[] = [];
+
+      effects.replacePublicRecordsForAdmin$.subscribe(action => emitted.push(action));
+
+      expect(emitted).toEqual([]);
+    });
+  });
+
   describe('fetchAllMembers$', () => {
     beforeEach(() => {
-      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
       store.refreshState();
     });
 
@@ -152,9 +188,10 @@ describe('MembersEffects', () => {
             MembersActions.fetchAllMembersSucceeded({
               members: mockApiResponse.data.items,
               totalCount: mockApiResponse.data.totalCount,
+              scope: 'admin',
             }),
           );
-          expect(membersApiService.getAllMembers).toHaveBeenCalledWith(true);
+          expect(membersApiService.getAllMembers).toHaveBeenCalledWith('admin');
           done();
         });
       }));
@@ -192,7 +229,7 @@ describe('MembersEffects', () => {
     };
 
     beforeEach(() => {
-      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
       store.overrideSelector(MembersSelectors.selectOptions, mockOptions);
       store.refreshState();
     });
@@ -209,10 +246,11 @@ describe('MembersEffects', () => {
               members: mockApiResponse.data.items,
               filteredCount: mockApiResponse.data.filteredCount,
               totalCount: mockApiResponse.data.totalCount,
+              scope: 'admin',
             }),
           );
           expect(membersApiService.getFilteredMembers).toHaveBeenCalledWith(
-            true,
+            'admin',
             mockOptions,
           );
           done();
@@ -231,6 +269,7 @@ describe('MembersEffects', () => {
               members: mockApiResponse.data.items,
               filteredCount: mockApiResponse.data.filteredCount,
               totalCount: mockApiResponse.data.totalCount,
+              scope: 'admin',
             }),
           );
           done();
@@ -386,7 +425,10 @@ describe('MembersEffects', () => {
 
         effects.fetchMember$.subscribe(action => {
           expect(action).toEqual(
-            MembersActions.fetchMemberSucceeded({ member: MOCK_MEMBERS[0] }),
+            MembersActions.fetchMemberSucceeded({
+              member: MOCK_MEMBERS[0],
+              scope: 'admin',
+            }),
           );
           expect(membersApiService.getMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
           done();
@@ -410,7 +452,7 @@ describe('MembersEffects', () => {
   describe('fetchMemberByNumber$', () => {
     it('should fetch a member by number in the viewer scope', () =>
       withDone(done => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+        store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
         store.refreshState();
         const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
         membersApiService.getMemberByNumber.mockReturnValue(of(mockResponse));
@@ -419,16 +461,19 @@ describe('MembersEffects', () => {
 
         effects.fetchMemberByNumber$.subscribe(action => {
           expect(action).toEqual(
-            MembersActions.fetchMemberSucceeded({ member: MOCK_MEMBERS[0] }),
+            MembersActions.fetchMemberSucceeded({
+              member: MOCK_MEMBERS[0],
+              scope: 'admin',
+            }),
           );
-          expect(membersApiService.getMemberByNumber).toHaveBeenCalledWith(0, true);
+          expect(membersApiService.getMemberByNumber).toHaveBeenCalledWith(0, 'admin');
           done();
         });
       }));
 
     it('should handle fetch member by number failure', () =>
       withDone(done => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
+        store.overrideSelector(AuthSelectors.selectApiScope, 'public');
         store.refreshState();
         membersApiService.getMemberByNumber.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
@@ -683,7 +728,7 @@ describe('MembersEffects', () => {
 
   describe('exportMembersToCsv$', () => {
     beforeEach(() => {
-      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
       store.refreshState();
     });
 
@@ -699,7 +744,7 @@ describe('MembersEffects', () => {
           expect(action).toEqual(
             MembersActions.exportMembersToCsvSucceeded({ exportedCount }),
           );
-          expect(membersApiService.getAllMembers).toHaveBeenCalledWith(true);
+          expect(membersApiService.getAllMembers).toHaveBeenCalledWith('admin');
           expect(mockExportDataToCsv).toHaveBeenCalledWith(
             mockApiResponse.data.items,
             expect.stringMatching(/^members_export_\d{4}-\d{2}-\d{2}\.csv$/),

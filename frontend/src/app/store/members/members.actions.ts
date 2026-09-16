@@ -1,6 +1,7 @@
 import { createAction, props } from '@ngrx/store';
 
 import {
+  ApiScope,
   DataPaginationOptions,
   Id,
   LccError,
@@ -15,7 +16,7 @@ export const fetchAllMembersRequested = createAction(
 );
 export const fetchAllMembersSucceeded = createAction(
   '[Members] Fetch all members succeeded',
-  props<{ members: Member[]; totalCount: number }>(),
+  props<{ members: Member[]; totalCount: number; scope: ApiScope }>(),
 );
 export const fetchAllMembersFailed = createAction(
   '[Members] Fetch all members failed',
@@ -30,7 +31,12 @@ export const fetchFilteredMembersInBackgroundRequested = createAction(
 );
 export const fetchFilteredMembersSucceeded = createAction(
   '[Members] Fetch filtered members succeeded',
-  props<{ members: Member[]; filteredCount: number; totalCount: number }>(),
+  props<{
+    members: Member[];
+    filteredCount: number;
+    totalCount: number;
+    scope: ApiScope;
+  }>(),
 );
 export const fetchFilteredMembersFailed = createAction(
   '[Members] Fetch filtered members failed',
@@ -43,7 +49,7 @@ export const fetchMemberRequested = createAction(
 );
 export const fetchMemberSucceeded = createAction(
   '[Members] Fetch member succeeded',
-  props<{ member: Member }>(),
+  props<{ member: Member; scope: ApiScope }>(),
 );
 export const fetchMemberFailed = createAction(
   '[Members] Fetch member failed',

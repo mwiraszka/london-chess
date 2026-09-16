@@ -8,11 +8,12 @@ import { ActivatedRoute } from '@angular/router';
 
 import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { Id, Member, MemberFormData } from '@app/models';
+import { Id, MemberFormData } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { initialState as appInitialState } from '@app/store/app';
 import {
   MembersActions,
+  MembersSelectors,
   MembersState,
   initialState as membersInitialState,
 } from '@app/store/members';
@@ -38,16 +39,10 @@ describe('MemberEditorPageComponent', () => {
 
     const mockMembersState: MembersState = {
       ...membersInitialState,
+      recordsScope: 'admin',
       ids: MOCK_MEMBERS.map(member => member.id),
-      entities: MOCK_MEMBERS.reduce(
-        (acc, member) => {
-          acc[member.id] = {
-            member,
-            formData: pick(member, MEMBER_FORM_DATA_PROPERTIES),
-          };
-          return acc;
-        },
-        {} as Record<Id, { member: Member; formData: MemberFormData }>,
+      entities: Object.fromEntries(
+        MOCK_MEMBERS.map(member => [member.id, { member, formData: null }]),
       ),
       totalCount: MOCK_MEMBERS.length,
     };
@@ -104,6 +99,7 @@ describe('MemberEditorPageComponent', () => {
         expect(vm).toStrictEqual({
           formData: pick(MOCK_MEMBERS[0], MEMBER_FORM_DATA_PROPERTIES),
           hasUnsavedChanges: false,
+          isFormReady: true,
           isSafeMode: false,
           originalMember: MOCK_MEMBERS[0],
           pageHeading: `Edit ${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
@@ -135,6 +131,7 @@ describe('MemberEditorPageComponent', () => {
         expect(vm).toStrictEqual({
           formData: INITIAL_MEMBER_FORM_DATA,
           hasUnsavedChanges: false,
+          isFormReady: true,
           isSafeMode: false,
           originalMember: null,
           pageHeading: 'Add a member',
@@ -236,6 +233,21 @@ describe('MemberEditorPageComponent', () => {
       it('should render page components', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-member-form')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('when the member to edit has only a public record', () => {
+      beforeEach(() => {
+        store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
+        mockParamsSubject.next({ member_id: MOCK_MEMBERS[0].id });
+
+        fixture.detectChanges();
+      });
+
+      it('should wait for the admin record before rendering the form', () => {
+        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-member-form')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
       });
     });

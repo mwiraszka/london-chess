@@ -4,6 +4,7 @@ import { pick } from 'lodash';
 
 import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import {
+  ApiScope,
   CallState,
   DataPaginationOptions,
   IsoDate,
@@ -14,12 +15,17 @@ import { areSame } from '@app/utils';
 
 import * as MembersActions from './members.actions';
 
-export interface MembersState extends EntityState<{
+export interface MemberEntity {
   member: Member;
-  formData: MemberFormData;
-}> {
+  // Written by the member form, so a member nobody has opened has no draft
+  formData: MemberFormData | null;
+}
+
+export interface MembersState extends EntityState<MemberEntity> {
   callState: CallState;
   newMemberFormData: MemberFormData;
+  // Public records leave out private details, so records from both APIs are never mixed
+  recordsScope: ApiScope | null;
   lastFullFetch: IsoDate | null;
   lastFilteredFetch: IsoDate | null;
   filteredMembers: Member[];
@@ -28,10 +34,7 @@ export interface MembersState extends EntityState<{
   totalCount: number;
 }
 
-export const membersAdapter = createEntityAdapter<{
-  member: Member;
-  formData: MemberFormData;
-}>({
+export const membersAdapter = createEntityAdapter<MemberEntity>({
   selectId: ({ member }) => member.id,
 });
 
@@ -42,6 +45,7 @@ export const initialState: MembersState = membersAdapter.getInitialState({
     error: null,
   },
   newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+  recordsScope: null,
   lastFullFetch: null,
   lastFilteredFetch: null,
   filteredMembers: [],
@@ -61,6 +65,59 @@ export const initialState: MembersState = membersAdapter.getInitialState({
   filteredCount: null,
   totalCount: 0,
 });
+
+export function memberFormDataOf({ member, formData }: MemberEntity): MemberFormData {
+  const memberFormData = formData ?? pick(member, MEMBER_FORM_DATA_PROPERTIES);
+
+  // An account holder's email belongs to their account, so a draft never overrides it
+  return member.hasAccount ? { ...memberFormData, email: member.email } : memberFormData;
+}
+
+export function hasFormChanges(member: Member | null, formData: MemberFormData): boolean {
+  const formPropertiesOfOriginalMember = pick(
+    member ?? INITIAL_MEMBER_FORM_DATA,
+    Object.getOwnPropertyNames(formData),
+  );
+
+  // Only concerned with the day portion of these dates when checking for unsaved changes
+  const { dateJoined: originalDateJoined, ...originalRemainder } =
+    formPropertiesOfOriginalMember;
+  const { dateJoined: formDataDateJoined, ...formDataRemainder } = formData;
+
+  return (
+    originalDateJoined?.slice(0, 10) !== formDataDateJoined?.slice(0, 10) ||
+    !areSame(formDataRemainder, originalRemainder)
+  );
+}
+
+function draftWithEdits(entity: MemberEntity | undefined): MemberFormData | null {
+  return entity && hasFormChanges(entity.member, memberFormDataOf(entity))
+    ? entity.formData
+    : null;
+}
+
+function mergedEntity(existing: MemberEntity | undefined, member: Member): MemberEntity {
+  return {
+    // Profile lookups carry fields the list leaves out
+    member: { ...existing?.member, ...member },
+    formData: draftWithEdits(existing),
+  };
+}
+
+function withRecordsScope(state: MembersState, scope: ApiScope): MembersState {
+  if (state.recordsScope === scope) {
+    return state;
+  }
+
+  return membersAdapter.removeAll({
+    ...state,
+    recordsScope: scope,
+    lastFullFetch: null,
+    lastFilteredFetch: null,
+    filteredMembers: [],
+    filteredCount: null,
+  });
+}
 
 export const membersReducer = createReducer(
   initialState,
@@ -112,60 +169,48 @@ export const membersReducer = createReducer(
 
   on(
     MembersActions.fetchAllMembersSucceeded,
-    (state, { members, totalCount }): MembersState =>
-      membersAdapter.setAll(
-        members.map(member => {
-          const existingEntity = state.entities[member.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(existingEntity.formData, pick(member, MEMBER_FORM_DATA_PROPERTIES));
+    (state, { members, totalCount, scope }): MembersState => {
+      const isSameScope = state.recordsScope === scope;
+      const fetchedMembers = new Map(members.map(member => [member.id, member]));
 
-          return {
-            // Profile lookups carry fields the public list leaves out
-            member: { ...existingEntity?.member, ...member },
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(member, MEMBER_FORM_DATA_PROPERTIES),
-          };
-        }),
+      return membersAdapter.setAll(
+        members.map(member =>
+          mergedEntity(isSameScope ? state.entities[member.id] : undefined, member),
+        ),
         {
           ...state,
           callState: initialState.callState,
+          recordsScope: scope,
           lastFullFetch: new Date().toISOString(),
+          // Every member on the page shown is in the full list, so the page switches over too
+          filteredMembers: isSameScope
+            ? state.filteredMembers
+            : state.filteredMembers.flatMap(
+                member => fetchedMembers.get(member.id) ?? [],
+              ),
           totalCount,
         },
-      ),
+      );
+    },
   ),
 
   on(
     MembersActions.fetchFilteredMembersSucceeded,
-    (state, { members, filteredCount, totalCount }): MembersState =>
-      membersAdapter.upsertMany(
-        members.map(member => {
-          const existingEntity = state.entities[member.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(existingEntity.formData, pick(member, MEMBER_FORM_DATA_PROPERTIES));
+    (state, { members, filteredCount, totalCount, scope }): MembersState => {
+      const scopedState = withRecordsScope(state, scope);
 
-          return {
-            // Profile lookups carry fields the public list leaves out
-            member: { ...existingEntity?.member, ...member },
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(member, MEMBER_FORM_DATA_PROPERTIES),
-          };
-        }),
+      return membersAdapter.upsertMany(
+        members.map(member => mergedEntity(scopedState.entities[member.id], member)),
         {
-          ...state,
+          ...scopedState,
           callState: initialState.callState,
           lastFilteredFetch: new Date(Date.now()).toISOString(),
           filteredMembers: members,
           filteredCount,
           totalCount,
         },
-      ),
+      );
+    },
   ),
 
   on(MembersActions.paginationOptionsChanged, (state, { options }): MembersState => ({
@@ -174,23 +219,18 @@ export const membersReducer = createReducer(
     lastFilteredFetch: null,
   })),
 
-  on(MembersActions.fetchMemberSucceeded, (state, { member }): MembersState => {
-    const previousFormData = state.entities[member.id]?.formData;
+  on(MembersActions.fetchMemberSucceeded, (state, { member, scope }): MembersState => {
+    const scopedState = withRecordsScope(state, scope);
+
     return membersAdapter.upsertOne(
-      {
-        member,
-        formData: previousFormData ?? pick(member, MEMBER_FORM_DATA_PROPERTIES),
-      },
-      { ...state, callState: initialState.callState },
+      { member, formData: draftWithEdits(scopedState.entities[member.id]) },
+      { ...scopedState, callState: initialState.callState },
     );
   }),
 
   on(MembersActions.addMemberSucceeded, (state, { member }): MembersState =>
     membersAdapter.upsertOne(
-      {
-        member,
-        formData: pick(member, MEMBER_FORM_DATA_PROPERTIES),
-      },
+      { member, formData: null },
       {
         ...state,
         callState: initialState.callState,
@@ -201,10 +241,7 @@ export const membersReducer = createReducer(
 
   on(MembersActions.updateMemberSucceeded, (state, { member }): MembersState =>
     membersAdapter.upsertOne(
-      {
-        member,
-        formData: pick(member, MEMBER_FORM_DATA_PROPERTIES),
-      },
+      { member, formData: null },
       {
         ...state,
         callState: initialState.callState,
@@ -215,20 +252,10 @@ export const membersReducer = createReducer(
 
   on(MembersActions.updateMemberRatingsSucceeded, (state, { members }): MembersState =>
     membersAdapter.upsertMany(
-      members.map(member => {
-        const existingEntity = state.entities[member.id];
-        const hasUnsavedChanges =
-          existingEntity?.formData &&
-          !areSame(existingEntity.formData, pick(member, MEMBER_FORM_DATA_PROPERTIES));
-
-        return {
-          member,
-          // Preserve existing formData if there are unsaved changes
-          formData: hasUnsavedChanges
-            ? existingEntity.formData
-            : pick(member, MEMBER_FORM_DATA_PROPERTIES),
-        };
-      }),
+      members.map(member => ({
+        member,
+        formData: draftWithEdits(state.entities[member.id]),
+      })),
       { ...state, callState: initialState.callState, lastFilteredFetch: null },
     ),
   ),
@@ -242,9 +269,9 @@ export const membersReducer = createReducer(
   ),
 
   on(MembersActions.formDataChanged, (state, { memberId, formData }): MembersState => {
-    const originalMember = memberId ? state.entities[memberId] : null;
+    const entity = memberId ? state.entities[memberId] : undefined;
 
-    if (!originalMember) {
+    if (!entity) {
       return {
         ...state,
         newMemberFormData: {
@@ -256,9 +283,9 @@ export const membersReducer = createReducer(
 
     return membersAdapter.upsertOne(
       {
-        ...originalMember,
+        ...entity,
         formData: {
-          ...(originalMember?.formData ?? INITIAL_MEMBER_FORM_DATA),
+          ...(entity.formData ?? pick(entity.member, MEMBER_FORM_DATA_PROPERTIES)),
           ...formData,
         },
       },
@@ -276,13 +303,7 @@ export const membersReducer = createReducer(
       };
     }
 
-    return membersAdapter.upsertOne(
-      {
-        member: originalMember,
-        formData: pick(originalMember, MEMBER_FORM_DATA_PROPERTIES),
-      },
-      state,
-    );
+    return membersAdapter.upsertOne({ member: originalMember, formData: null }, state);
   }),
 
   on(MembersActions.requestTimedOut, (state): MembersState => ({

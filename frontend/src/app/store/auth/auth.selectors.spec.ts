@@ -52,6 +52,20 @@ describe('Auth Selectors', () => {
     });
   });
 
+  describe('selectApiScope', () => {
+    it('should use the admin API for admins', () => {
+      const result = AuthSelectors.selectApiScope.projector(true);
+
+      expect(result).toBe('admin');
+    });
+
+    it('should use the public API for everyone else', () => {
+      const result = AuthSelectors.selectApiScope.projector(false);
+
+      expect(result).toBe('public');
+    });
+  });
+
   describe('selectUser', () => {
     it('should select the user', () => {
       const result = AuthSelectors.selectUser.projector(mockAuthState);
