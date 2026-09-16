@@ -8,13 +8,20 @@ import { hasCallState, isPresignedUrlExpired } from '@app/utils';
 import { environment } from '@env';
 
 import { version as currentVersion } from '../../../package.json';
-import { AppState } from './app';
-import { ArticlesState } from './articles';
-import { AuthState } from './auth';
-import { EventsState } from './events';
-import { ImagesState } from './images';
-import { MembersState } from './members';
-import { NavState } from './nav';
+import { AppState } from './app/app.reducer';
+import {
+  ArticlesState,
+  initialState as articlesInitialState,
+} from './articles/articles.reducer';
+import * as AuthActions from './auth/auth.actions';
+import { AuthState } from './auth/auth.reducer';
+import { EventsState, initialState as eventsInitialState } from './events/events.reducer';
+import { ImagesState, initialState as imagesInitialState } from './images/images.reducer';
+import {
+  MembersState,
+  initialState as membersInitialState,
+} from './members/members.reducer';
+import { NavState } from './nav/nav.reducer';
 
 export interface MetaState {
   appState?: AppState;
@@ -218,6 +225,37 @@ export function loadingStateResetMetaReducer(
   };
 }
 
+/**
+ * Drops every cached record and draft when a session ends or loses its admin
+ * rights, so member details and unsaved edits do not outlive the session in
+ * local storage.
+ */
+export function clearRecordsOnAccessLossMetaReducer(
+  reducer: ActionReducer<MetaState>,
+): ActionReducer<MetaState> {
+  return (state, action) => {
+    if (state && action.type === AuthActions.userChanged.type) {
+      const { user } = action as ReturnType<typeof AuthActions.userChanged>;
+      const previous = state.authState?.user ?? null;
+
+      if (previous && (!user || (previous.isAdmin && !user.isAdmin))) {
+        return reducer(
+          {
+            ...state,
+            articlesState: articlesInitialState,
+            eventsState: eventsInitialState,
+            imagesState: imagesInitialState,
+            membersState: membersInitialState,
+          },
+          action,
+        );
+      }
+    }
+
+    return reducer(state, action);
+  };
+}
+
 // Image storage moved off AWS S3, so any persisted URL still pointing there is
 // dead regardless of its recorded expiration (older app versions could stamp a
 // fresh expiration onto an entity while keeping its old URL)
@@ -267,5 +305,6 @@ export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compa
   environment.production ? undefined : actionLogMetaReducer,
   updateStateVersionsInLocalStorageMetaReducer,
   hydrationMetaReducer,
+  clearRecordsOnAccessLossMetaReducer,
   loadingStateResetMetaReducer,
 ]);

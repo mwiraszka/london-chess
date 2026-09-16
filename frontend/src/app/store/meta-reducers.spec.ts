@@ -3,16 +3,18 @@ import { pick } from 'lodash';
 
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { CallState, Image } from '@app/models';
+import { CallState, Image, User } from '@app/models';
 
 import { version } from '../../../package.json';
 import { initialState as articlesInitialState } from './articles/articles.reducer';
+import * as AuthActions from './auth/auth.actions';
 import { initialState as eventsInitialState } from './events/events.reducer';
 import { ImagesState, initialState as imagesInitialState } from './images/images.reducer';
 import { initialState as membersInitialState } from './members/members.reducer';
 import {
   MetaState,
   actionLogMetaReducer,
+  clearRecordsOnAccessLossMetaReducer,
   hydrationMetaReducer,
   loadingStateResetMetaReducer,
   metaReducers,
@@ -461,6 +463,66 @@ describe('Meta Reducers', () => {
       const image = result.imagesState?.entities[expiredImage.id]?.image;
       expect(image).toBeDefined();
       expect(image?.mainUrl).toBeUndefined();
+    });
+  });
+
+  describe('clearRecordsOnAccessLossMetaReducer', () => {
+    const admin: User = {
+      id: 'user123',
+      firstName: 'Ada',
+      lastName: 'Byron',
+      email: 'ada@example.com',
+      isAdmin: true,
+    };
+    const nonAdmin: User = { ...admin, isAdmin: false };
+
+    const stateHolding = (user: User | null): MetaState => ({
+      authState: { user },
+      articlesState: { ...articlesInitialState, lastHomePageFetch: '2026-01-01' },
+      eventsState: { ...eventsInitialState, totalCount: 12 },
+      imagesState: { ...imagesInitialState, totalCount: 34 },
+      membersState: { ...membersInitialState, totalCount: 56 },
+    });
+
+    const run = (state: MetaState, user: User | null): MetaState => {
+      const reducer = vi.fn(
+        (nextState: MetaState | undefined) => nextState ?? {},
+      ) as ActionReducer<MetaState, Action<string>>;
+
+      return clearRecordsOnAccessLossMetaReducer(reducer)(
+        state,
+        AuthActions.userChanged({ user }),
+      );
+    };
+
+    it('should drop every cached record when the session ends', () => {
+      const result = run(stateHolding(admin), null);
+
+      expect(result.articlesState).toEqual(articlesInitialState);
+      expect(result.eventsState).toEqual(eventsInitialState);
+      expect(result.imagesState).toEqual(imagesInitialState);
+      expect(result.membersState).toEqual(membersInitialState);
+    });
+
+    it('should drop every cached record when an admin loses their rights', () => {
+      const result = run(stateHolding(admin), nonAdmin);
+
+      expect(result.articlesState).toEqual(articlesInitialState);
+      expect(result.membersState).toEqual(membersInitialState);
+    });
+
+    it('should keep cached records for a visitor who was never logged in', () => {
+      const result = run(stateHolding(null), null);
+
+      expect(result.articlesState?.lastHomePageFetch).toBe('2026-01-01');
+      expect(result.membersState?.totalCount).toBe(56);
+    });
+
+    it('should keep cached records while the user is still an admin', () => {
+      const result = run(stateHolding(admin), admin);
+
+      expect(result.articlesState?.lastHomePageFetch).toBe('2026-01-01');
+      expect(result.membersState?.totalCount).toBe(56);
     });
   });
 
