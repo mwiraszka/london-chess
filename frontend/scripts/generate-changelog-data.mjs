@@ -80,7 +80,7 @@ const TAG_REGISTRY = [
     label: 'Infrastructure',
     color: '#383d42',
     pattern:
-      /\b(repositor\w*|storage|serverless|hosting|infrastructur\w*|migrat\w*|cloudflare|aws|cognito|databases?|api|back(?:s|ed)? up|backups?)\b/i,
+      /\b(repositor\w*|storage|serverless|hosting|deploy\w*|infrastructur\w*|migrat\w*|cloudflare|aws|cognito|databases?|api|back(?:s|ed)? up|backups?)\b/i,
   },
   { label: 'Content', color: '#657b4c', pattern: /\b(wording|rewrit\w*|copy)\b/i },
 ];
