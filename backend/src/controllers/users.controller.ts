@@ -246,9 +246,10 @@ export async function updateMe(
   res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
-    const { avatarCropState, clerkImageUrl } = req.body as {
+    const { avatarCropState, clerkImageUrl, showYearOfBirth } = req.body as {
       avatarCropState?: unknown;
       clerkImageUrl?: unknown;
+      showYearOfBirth?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
@@ -262,6 +263,13 @@ export async function updateMe(
         return;
       }
       updates['account.clerkImageUrl'] = clerkImageUrl;
+    }
+    if (showYearOfBirth !== undefined) {
+      if (typeof showYearOfBirth !== 'boolean') {
+        res.status(400).json({ message: 'Show year of birth must be true or false.' });
+        return;
+      }
+      updates['preferences.showYearOfBirth'] = showYearOfBirth;
     }
 
     const member = await updateLinkedMember(req.user.id, updates);

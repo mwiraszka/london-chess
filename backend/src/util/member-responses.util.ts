@@ -46,6 +46,7 @@ export interface AccountRecord {
   avatarCropState: AvatarCropState | null;
   avatarUpdatedAt: IsoDate | null;
   hasTemporaryPassword: boolean;
+  showYearOfBirth: boolean;
 }
 
 export interface MemberProfile {
@@ -80,6 +81,7 @@ export const PUBLIC_PROFILE_PROJECTION = {
   ...PUBLIC_MEMBER_PROJECTION,
   yearOfBirth: 1,
   dateJoined: 1,
+  preferences: 1,
 } as const;
 
 export const MEMBER_PROFILE_PROJECTION = {
@@ -136,7 +138,8 @@ export function toPublicMember(record: MemberRecord): PublicMember {
 export function toPublicProfile(record: MemberRecord): PublicProfile {
   return {
     ...toPublicMember(record),
-    yearOfBirth: record.yearOfBirth,
+    // The member decides whether their birth year is shown alongside the rest
+    yearOfBirth: record.preferences?.showYearOfBirth ? record.yearOfBirth : '',
     yearJoined: yearOf(record.dateJoined),
   };
 }
@@ -182,5 +185,6 @@ export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
     avatarCropState: record.account.avatarCropState,
     avatarUpdatedAt: record.account.avatarUpdatedAt,
     hasTemporaryPassword: !!record.account.temporaryPasswordHash,
+    showYearOfBirth: record.preferences?.showYearOfBirth === true,
   };
 }
