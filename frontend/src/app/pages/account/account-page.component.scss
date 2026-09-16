@@ -100,12 +100,53 @@
     flex: 1;
   }
 
+  .year-of-birth {
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
+    gap: 12px;
+
+    // The same half-row width every other field gets, leaving the second half
+    // to the switch and giving the error message a full line to sit on
+    lcc-year-of-birth-field {
+      flex: 0 0 calc(50% - 8px);
+    }
+
+    // A strip the height of the input box, starting below the field's label, so
+    // the switch centres on the box and an error message underneath moves nothing
+    .profile-toggle {
+      display: flex;
+      align-items: center;
+      height: 2.5em;
+      margin-top: calc(
+        var(--ea-field-label-size, 0.875em) * var(--line-height-normal, 1.4) + 0.375em
+      );
+    }
+  }
+
+  // Same strip as the real switch sits in, so nothing moves when the form
+  // replaces it
+  .switch-skeleton {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    height: 2.5em;
+    margin-top: calc(
+      var(--ea-field-label-size, 0.875em) * var(--line-height-normal, 1.4) + 0.375em
+    );
+  }
+
   .field-skeleton {
     flex: 1;
   }
 
   .field-skeleton--narrow {
     flex: 0 0 84px;
+  }
+
+  .field-skeleton--half {
+    flex: 0 0 calc(50% - 8px);
   }
 
   // Paired columns get too tight for wrapped labels on phones

@@ -3,9 +3,8 @@ import { ToastService } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 
 import { Injectable, inject, signal } from '@angular/core';
-import { ActivatedRouteSnapshot, Router } from '@angular/router';
+import { Router } from '@angular/router';
 
-import { AuthGuard, loggedInGuard } from '@app/guards/auth.guard';
 import { LoginResult, User } from '@app/models';
 import { AuthActions } from '@app/store/auth';
 
@@ -282,22 +281,6 @@ export class ClerkService {
       title: 'Logged out',
       variant: 'info',
     });
-
-    if (this.isOnGuardedRoute()) {
-      void this.router.navigate(['/']);
-    }
-  }
-
-  private isOnGuardedRoute(): boolean {
-    let route: ActivatedRouteSnapshot | null = this.router.routerState.snapshot.root;
-    while (route) {
-      const guards = route.routeConfig?.canActivate ?? [];
-      if (guards.includes(AuthGuard) || guards.includes(loggedInGuard)) {
-        return true;
-      }
-      route = route.firstChild;
-    }
-    return false;
   }
 
   private mapUser(clerkUser: NonNullable<Clerk['user']>): User {

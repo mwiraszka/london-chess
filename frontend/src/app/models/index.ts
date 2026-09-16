@@ -57,6 +57,7 @@ export type {
 export type { ModificationInfo } from './modification-info.model';
 export type { NavPath } from './nav-path.model';
 export type { DataPaginationOptions, Filter } from './pagination.model';
+export type { RouteAccess } from './route-access.model';
 export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';

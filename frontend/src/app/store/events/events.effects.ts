@@ -18,13 +18,14 @@ import { Injectable, inject } from '@angular/core';
 
 import { DataPaginationOptions, Event } from '@app/models';
 import { EventsApiService, UserService } from '@app/services';
-import { AppActions } from '@app/store/app';
-import { AuthSelectors } from '@app/store/auth';
-import { NavSelectors } from '@app/store/nav';
+import * as AppActions from '@app/store/app/app.actions';
+import * as AuthSelectors from '@app/store/auth/auth.selectors';
+import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
 import { isDefined } from '@app/utils';
 
-import { EventsActions, EventsSelectors } from '.';
+import * as EventsActions from './events.actions';
+import * as EventsSelectors from './events.selectors';
 
 @Injectable()
 export class EventsEffects {

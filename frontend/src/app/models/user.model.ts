@@ -23,6 +23,7 @@ export interface UserRecord {
   avatarCropState: AvatarEditorCropState | null;
   avatarUpdatedAt: string | null;
   hasTemporaryPassword: boolean;
+  showYearOfBirth: boolean;
 }
 
 export interface UserSessionRecord {

@@ -21,9 +21,9 @@ import { Injectable, inject } from '@angular/core';
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { EditableMember, Member, MemberEmail } from '@app/models';
 import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
-import { AppActions } from '@app/store/app';
-import { AuthSelectors } from '@app/store/auth';
-import { NavSelectors } from '@app/store/nav';
+import * as AppActions from '@app/store/app/app.actions';
+import * as AuthSelectors from '@app/store/auth/auth.selectors';
+import * as NavSelectors from '@app/store/nav/nav.selectors';
 import {
   EXPORT_DATA_TO_CSV,
   GET_NEW_PEAK_RATING,
@@ -32,7 +32,8 @@ import {
 } from '@app/tokens';
 import { isDefined } from '@app/utils';
 
-import { MembersActions, MembersSelectors } from '.';
+import * as MembersActions from './members.actions';
+import * as MembersSelectors from './members.selectors';
 
 @Injectable()
 export class MembersEffects {

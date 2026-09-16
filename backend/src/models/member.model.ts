@@ -23,6 +23,10 @@ export interface MemberAccount {
   temporaryPasswordHash: string | null;
 }
 
+export interface MemberPreferences {
+  showYearOfBirth: boolean;
+}
+
 export interface Member {
   id: Id;
   // Assigned when the member is first linked to an account
@@ -41,12 +45,17 @@ export interface Member {
   dateJoined: IsoDate;
   modificationInfo: ModificationInfo;
   account: MemberAccount | null;
+  // Absent on records saved before the member had anything to choose
+  preferences?: MemberPreferences;
 }
 
 export type MemberRecord = Omit<Member, 'id'> & { _id: Types.ObjectId };
 
-// The number and account belong to the server, so admins never write them
-export type EditableMemberFields = Omit<Member, 'id' | 'number' | 'account'>;
+// The number, account and preferences belong to the member, so admins never write them
+export type EditableMemberFields = Omit<
+  Member,
+  'id' | 'number' | 'account' | 'preferences'
+>;
 
 const accountSchema = new Schema<MemberAccount>(
   {
@@ -67,6 +76,11 @@ const accountSchema = new Schema<MemberAccount>(
   { _id: false },
 );
 
+const preferencesSchema = new Schema<MemberPreferences>(
+  { showYearOfBirth: { type: Boolean, default: false } },
+  { _id: false },
+);
+
 const memberSchema = new Schema<Member>(
   {
     number: { type: Number },
@@ -84,6 +98,7 @@ const memberSchema = new Schema<Member>(
     dateJoined: { type: String, required: true },
     modificationInfo: { type: Object, required: true },
     account: { type: accountSchema, default: null },
+    preferences: { type: preferencesSchema, default: () => ({}) },
   },
   { versionKey: false },
 );

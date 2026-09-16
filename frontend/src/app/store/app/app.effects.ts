@@ -8,17 +8,18 @@ import { filter, map, tap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 
 import { LccError, MemberEmail, Toast } from '@app/models';
-import { ArticlesActions } from '@app/store/articles';
-import { AuthSelectors } from '@app/store/auth';
-import { EventsActions } from '@app/store/events';
-import { ImagesActions } from '@app/store/images';
-import { MembersActions } from '@app/store/members';
-import { NavActions } from '@app/store/nav';
+import * as ArticlesActions from '@app/store/articles/articles.actions';
+import * as AuthSelectors from '@app/store/auth/auth.selectors';
+import * as EventsActions from '@app/store/events/events.actions';
+import * as ImagesActions from '@app/store/images/images.actions';
+import * as MembersActions from '@app/store/members/members.actions';
+import * as NavActions from '@app/store/nav/nav.actions';
 import { isDefined } from '@app/utils';
 
 import { environment } from '@env';
 
-import { AppActions, AppSelectors } from '.';
+import * as AppActions from './app.actions';
+import * as AppSelectors from './app.selectors';
 
 type NotifyAction = ReturnType<
   | (typeof AppActions)[keyof typeof AppActions]

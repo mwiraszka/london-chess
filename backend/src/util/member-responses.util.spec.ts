@@ -82,24 +82,33 @@ describe('PUBLIC_MEMBER_PROJECTION', () => {
 });
 
 describe('PUBLIC_PROFILE_PROJECTION', () => {
-  it('should read only the year of birth and join date beyond the public member fields', () => {
+  it('should read only the year of birth, join date and preferences beyond the public member fields', () => {
     const extraFields = Object.keys(PUBLIC_PROFILE_PROJECTION).filter(
       field => !(field in PUBLIC_MEMBER_PROJECTION),
     );
 
-    expect(extraFields.sort()).toEqual(['dateJoined', 'yearOfBirth']);
+    expect(extraFields.sort()).toEqual(['dateJoined', 'preferences', 'yearOfBirth']);
   });
 });
 
 describe('toPublicProfile', () => {
-  it('should add only the year of birth and the year joined to the public member', () => {
+  it('should withhold the year of birth until the member opts in', () => {
     const profile = toPublicProfile(buildRecord());
 
-    expect(profile.yearOfBirth).toBe('1990');
+    expect(profile.yearOfBirth).toBe('');
     expect(profile.yearJoined).toBe('2022');
     expect(Object.keys(profile)).not.toContain('dateJoined');
     expect(JSON.stringify(profile)).not.toContain('jane@example.com');
     expect(JSON.stringify(profile)).not.toContain('555-123-4567');
+  });
+
+  it('should add the year of birth for a member who opted in', () => {
+    const profile = toPublicProfile(
+      buildRecord({ preferences: { showYearOfBirth: true } }),
+    );
+
+    expect(profile.yearOfBirth).toBe('1990');
+    expect(profile.yearJoined).toBe('2022');
   });
 });
 
@@ -229,6 +238,15 @@ describe('toAccountRecord', () => {
     expect(account.memberNumber).toBe(7);
     expect(account.avatarOriginalUrl).toBe('https://avatars.example.com/original');
     expect(account.hasTemporaryPassword).toBe(true);
+    expect(account.showYearOfBirth).toBe(false);
     expect(JSON.stringify(account)).not.toContain('temporary-password-hash');
+  });
+
+  it('should report the year of birth preference once it is set', () => {
+    const record = buildRecord({ preferences: { showYearOfBirth: true } });
+
+    const account = toAccountRecord({ ...record, account: record.account! });
+
+    expect(account.showYearOfBirth).toBe(true);
   });
 });

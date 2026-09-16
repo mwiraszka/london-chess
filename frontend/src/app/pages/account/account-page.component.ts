@@ -12,6 +12,7 @@ import {
   ShieldIconComponent,
   SkeletonComponent,
   SmartphoneIconComponent,
+  SwitchComponent,
   ToastService,
   UserIconComponent,
 } from '@eagami/ui';
@@ -85,6 +86,7 @@ import { asSentence } from '@app/utils/sentence.util';
     ShieldIconComponent,
     SkeletonComponent,
     SmartphoneIconComponent,
+    SwitchComponent,
     UserIconComponent,
     YearOfBirthFieldComponent,
   ],
@@ -156,6 +158,11 @@ export class AccountPageComponent implements OnInit {
   protected readonly hasPhotoChanges = computed(() => this.pendingPhotoChange() !== null);
 
   protected readonly detailsForm = new FormGroup(createMemberDetailsControls());
+
+  protected readonly savingYearOfBirth = signal(false);
+  protected readonly showYearOfBirth = computed(
+    () => this.userService.user()?.showYearOfBirth === true,
+  );
   protected readonly requestingChanges = signal(false);
   private readonly detailsValue = toSignal(
     this.detailsForm.valueChanges.pipe(map(() => this.detailsForm.getRawValue())),
@@ -403,6 +410,25 @@ export class AccountPageComponent implements OnInit {
       );
     } finally {
       this.requestingChanges.set(false);
+    }
+  }
+
+  protected async onToggleYearOfBirth(show: boolean): Promise<void> {
+    this.savingYearOfBirth.set(true);
+
+    try {
+      this.userService.setUser(
+        await this.api.patch<UserRecord>('/users/me', { showYearOfBirth: show }),
+      );
+    } catch (e: unknown) {
+      this.toast.show(
+        e instanceof ApiError
+          ? asSentence(e.message)
+          : 'Unable to save your preference. Please try again.',
+        { title: 'Preference not saved', variant: 'error' },
+      );
+    } finally {
+      this.savingYearOfBirth.set(false);
     }
   }
 

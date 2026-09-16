@@ -3,12 +3,13 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
 import { Observable, combineLatest } from 'rxjs';
-import { distinctUntilChanged, filter, map, switchMap, tap } from 'rxjs/operators';
+import { distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
+import { ArticleSkeletonComponent } from '@app/components/article-skeleton/article-skeleton.component';
 import { ArticleComponent } from '@app/components/article/article.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
@@ -27,24 +28,33 @@ import { AppSelectors } from '@app/store/app';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesSelectors } from '@app/store/images';
-import { isDefined } from '@app/utils';
 
 @UntilDestroy()
 @Component({
   selector: 'lcc-article-viewer-page',
   template: `
     @if (viewModel$ | async; as vm) {
-      <lcc-article
-        [adminControls]="vm.isAdmin ? getAdminControlsConfig(vm.article) : null"
-        [article]="vm.article"
-        [bannerImage]="vm.bannerImage"
-        [bodyImages]="vm.bodyImages"
-        [isWideView]="vm.isWideView">
-      </lcc-article>
-      <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+      @if (vm.article; as article) {
+        <lcc-article
+          [adminControls]="vm.isAdmin ? getAdminControlsConfig(article) : null"
+          [article]="article"
+          [bannerImage]="vm.bannerImage"
+          [bodyImages]="vm.bodyImages"
+          [isWideView]="vm.isWideView">
+        </lcc-article>
+        <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+      } @else {
+        <lcc-article-skeleton />
+      }
     }
   `,
-  imports: [AdminControlsDirective, ArticleComponent, CommonModule, LinkListComponent],
+  imports: [
+    AdminControlsDirective,
+    ArticleComponent,
+    ArticleSkeletonComponent,
+    CommonModule,
+    LinkListComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleViewerPageComponent implements OnInit {
@@ -54,7 +64,7 @@ export class ArticleViewerPageComponent implements OnInit {
     icon: MapIconComponent,
   };
   public viewModel$?: Observable<{
-    article: Article;
+    article: Article | null;
     bannerImage: Image | null;
     bodyImages: Image[];
     isAdmin: boolean;
@@ -74,9 +84,7 @@ export class ArticleViewerPageComponent implements OnInit {
       map(params => params['article_id'] as Id),
       switchMap(articleId =>
         combineLatest([
-          this.store
-            .select(ArticlesSelectors.selectArticleById(articleId))
-            .pipe(filter(isDefined)),
+          this.store.select(ArticlesSelectors.selectArticleById(articleId)),
           this.store.select(ImagesSelectors.selectBannerImageByArticleId(articleId)),
           this.store.select(ImagesSelectors.selectBodyImagesByArticleId(articleId)),
           this.store.select(AuthSelectors.selectIsAdmin),
@@ -85,13 +93,16 @@ export class ArticleViewerPageComponent implements OnInit {
       ),
       distinctUntilChanged(isEqual),
       tap(([article]) => {
+        if (!article) {
+          return;
+        }
         const articlePreview =
           article.body.length > 197 ? article.body.slice(0, 197) + '...' : article.body;
         this.metaAndTitleService.updateTitle(article.title);
         this.metaAndTitleService.updateDescription(articlePreview);
       }),
       map(([article, bannerImage, bodyImages, isAdmin, isWideView]) => ({
-        article,
+        article: article ?? null,
         bannerImage,
         bodyImages,
         isAdmin,

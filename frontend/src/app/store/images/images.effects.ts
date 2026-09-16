@@ -21,10 +21,11 @@ import { Injectable, inject } from '@angular/core';
 
 import { Article, BaseImage, Image, IndexedDbImageData, LccError } from '@app/models';
 import { ImageFileService, ImagesApiService, UserService } from '@app/services';
-import { AppActions } from '@app/store/app';
-import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
-import { AuthSelectors } from '@app/store/auth';
-import { NavSelectors } from '@app/store/nav';
+import * as AppActions from '@app/store/app/app.actions';
+import * as ArticlesActions from '@app/store/articles/articles.actions';
+import * as ArticlesSelectors from '@app/store/articles/articles.selectors';
+import * as AuthSelectors from '@app/store/auth/auth.selectors';
+import * as NavSelectors from '@app/store/nav/nav.selectors';
 import {
   BUILD_IMAGES_FORM_DATA,
   DATA_URL_TO_FILE,
@@ -34,7 +35,8 @@ import {
 } from '@app/tokens';
 import { isDefined } from '@app/utils';
 
-import { ImagesActions, ImagesSelectors } from '.';
+import * as ImagesActions from './images.actions';
+import * as ImagesSelectors from './images.selectors';
 
 @Injectable()
 export class ImagesEffects {

@@ -84,16 +84,27 @@
                   }
                 </div>
                 <div class="name-row">
-                  <div class="field-skeleton field-skeleton--narrow">
+                  <div class="field-skeleton field-skeleton--half">
                     <ea-skeleton
                       variant="text"
                       width="90px"
                       height="17.5px" />
                     <ea-skeleton
                       variant="rect"
-                      width="84px"
                       height="42px" />
                   </div>
+                  <div class="switch-skeleton">
+                    <ea-skeleton
+                      variant="rect"
+                      width="36px"
+                      height="20px" />
+                    <ea-skeleton
+                      variant="text"
+                      width="96px"
+                      height="17.5px" />
+                  </div>
+                </div>
+                <div class="name-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -136,7 +147,21 @@
                 </div>
 
                 <div class="name-row">
-                  <lcc-year-of-birth-field [control]="detailsForm.controls.yearOfBirth" />
+                  <div class="year-of-birth">
+                    <lcc-year-of-birth-field
+                      [control]="detailsForm.controls.yearOfBirth" />
+                    <div class="profile-toggle">
+                      <ea-switch
+                        size="sm"
+                        label="Show on profile"
+                        [checked]="showYearOfBirth()"
+                        [disabled]="savingYearOfBirth()"
+                        (changed)="onToggleYearOfBirth($event)" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="name-row">
                   <ea-input
                     label="City"
                     autocomplete="address-level2"

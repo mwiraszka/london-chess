@@ -18,4 +18,11 @@ export class YearOfBirthFieldComponent {
 
   protected readonly maxYear = new Date().getFullYear();
   protected readonly minYear = MIN_YEAR_OF_BIRTH;
+
+  protected readonly errorMessages = {
+    required: 'This field is required',
+    min: 'Invalid year',
+    max: 'Invalid year',
+    invalidYearOfBirth: 'Invalid year',
+  };
 }

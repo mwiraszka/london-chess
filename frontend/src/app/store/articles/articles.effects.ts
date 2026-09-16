@@ -19,13 +19,14 @@ import { Injectable, inject } from '@angular/core';
 import { MAX_ARTICLE_BODY_IMAGES } from '@app/constants';
 import { Article, DataPaginationOptions, LccError } from '@app/models';
 import { ArticlesApiService, UserService } from '@app/services';
-import { AppActions } from '@app/store/app';
-import { AuthSelectors } from '@app/store/auth';
-import { NavSelectors } from '@app/store/nav';
+import * as AppActions from '@app/store/app/app.actions';
+import * as AuthSelectors from '@app/store/auth/auth.selectors';
+import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
 import { isDefined } from '@app/utils';
 
-import { ArticlesActions, ArticlesSelectors } from '.';
+import * as ArticlesActions from './articles.actions';
+import * as ArticlesSelectors from './articles.selectors';
 
 @Injectable()
 export class ArticlesEffects {
