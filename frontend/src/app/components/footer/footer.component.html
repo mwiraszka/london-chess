@@ -14,11 +14,8 @@
         London Chess Club<br />
         <a
           class="website-version lcc-link"
-          href="https://github.com/mwiraszka/london-chess/releases/tag/v{{
-            CURRENT_VERSION
-          }}"
-          rel="noopener noreferrer"
-          target="_blank">
+          routerLink="/website-changelog"
+          [fragment]="'v' + CURRENT_VERSION">
           v{{ CURRENT_VERSION }}
         </a>
       </div>

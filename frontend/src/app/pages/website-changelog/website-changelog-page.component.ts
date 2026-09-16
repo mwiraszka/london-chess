@@ -21,6 +21,7 @@ import { NgComponentOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   Injector,
   OnInit,
   Type,
@@ -28,13 +29,15 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TechRingComponent } from '@app/components/tech-ring/tech-ring.component';
 import { ChangelogRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { ChangelogService, MetaAndTitleService } from '@app/services';
+import { ChangelogService, MetaAndTitleService, RoutingService } from '@app/services';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { isExpired } from '@app/utils';
 
@@ -70,8 +73,11 @@ interface ReleaseSection {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WebsiteChangelogPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly router = inject(Router);
+  private readonly routingService = inject(RoutingService);
   private readonly store = inject(Store);
   private readonly changelogService = inject(ChangelogService);
 
@@ -91,6 +97,15 @@ export class WebsiteChangelogPageComponent implements OnInit {
     );
     this.changelogService.markLatestReleaseSeen();
 
+    this.routingService.fragment$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(fragment => {
+        const release = this.releases.find(({ version }) => version === fragment);
+        if (release && !this.isExpanded(release)) {
+          this.showRelease(release);
+        }
+      });
+
     // The maintainer's name links to their member profile, which needs the
     // members loaded
     this.store
@@ -108,7 +123,7 @@ export class WebsiteChangelogPageComponent implements OnInit {
   }
 
   protected releaseId(release: ChangelogRelease): string {
-    return `release-${release.version}`;
+    return release.version;
   }
 
   protected isCurrent(release: ChangelogRelease): boolean {
@@ -126,17 +141,8 @@ export class WebsiteChangelogPageComponent implements OnInit {
   }
 
   protected onJumpToRelease(release: ChangelogRelease): void {
-    this.selectedVersion.set(release.version);
-
-    // Selecting collapses whichever release was open, so the card only lands at
-    // its final offset once that has been rendered
-    afterNextRender(
-      () =>
-        document
-          .getElementById(this.releaseId(release))
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      { injector: this.injector },
-    );
+    void this.router.navigate([], { fragment: release.version, replaceUrl: true });
+    this.showRelease(release);
   }
 
   protected releaseUrl(release: ChangelogRelease): string {
@@ -150,5 +156,19 @@ export class WebsiteChangelogPageComponent implements OnInit {
       { label: 'Fixed', icon: ToolIconComponent, entries: release.fixed },
     ];
     return sections.filter(section => section.entries.length > 0);
+  }
+
+  private showRelease(release: ChangelogRelease): void {
+    this.selectedVersion.set(release.version);
+
+    // Selecting collapses whichever release was open, so the card only lands at
+    // its final offset once that has been rendered
+    afterNextRender(
+      () =>
+        document
+          .getElementById(this.releaseId(release))
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      { injector: this.injector },
+    );
   }
 }
