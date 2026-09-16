@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { AuthGuard } from '@app/guards/auth.guard';
-import { UnsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
+import { accessGuard } from '@app/guards/auth.guard';
+import { unsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
 
 import { AlbumEditorPageComponent } from './album-editor-page.component';
 
@@ -10,14 +10,16 @@ const routes: Routes = [
   {
     path: 'add',
     component: AlbumEditorPageComponent,
-    canActivate: [AuthGuard],
-    canDeactivate: [UnsavedChangesGuard],
+    canActivate: [accessGuard],
+    canDeactivate: [unsavedChangesGuard],
+    data: { access: 'admin' },
   },
   {
     path: 'edit/:album',
     component: AlbumEditorPageComponent,
-    canActivate: [AuthGuard],
-    canDeactivate: [UnsavedChangesGuard],
+    canActivate: [accessGuard],
+    canDeactivate: [unsavedChangesGuard],
+    data: { access: 'admin' },
   },
   {
     path: '**',

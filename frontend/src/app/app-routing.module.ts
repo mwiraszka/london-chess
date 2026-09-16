@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { AuthGuard, loggedInGuard } from '@app/guards/auth.guard';
+import { accessGuard } from '@app/guards/auth.guard';
 
 const routes: Routes = [
   {
@@ -17,7 +17,8 @@ const routes: Routes = [
   },
   {
     path: 'account/:section',
-    canActivate: [loggedInGuard],
+    canActivate: [accessGuard],
+    data: { access: 'member' },
     loadComponent: () =>
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
@@ -34,7 +35,8 @@ const routes: Routes = [
       import('./pages/album/album-page-routing.module').then(
         m => m.AlbumPageRoutingModule,
       ),
-    canActivate: [AuthGuard],
+    canActivate: [accessGuard],
+    data: { access: 'admin' },
   },
   {
     path: 'article',
@@ -63,7 +65,8 @@ const routes: Routes = [
       import('./pages/event/event-page-routing.module').then(
         m => m.EventPageRoutingModule,
       ),
-    canActivate: [AuthGuard],
+    canActivate: [accessGuard],
+    data: { access: 'admin' },
   },
   {
     path: 'game-archives',
@@ -78,7 +81,8 @@ const routes: Routes = [
       import('./pages/image/image-page-routing.module').then(
         m => m.ImagePageRoutingModule,
       ),
-    canActivate: [AuthGuard],
+    canActivate: [accessGuard],
+    data: { access: 'admin' },
   },
   {
     path: 'lifetime-achievement-awards',

@@ -49,6 +49,8 @@ export {
   calculateDecimalAspectRatio,
 } from './image/calculate-aspect-ratio.util';
 
+export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';
+
 export { actionSanitizer } from './store/action-sanitizer.util';
 
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
