@@ -42,11 +42,8 @@ const corsOptions: CorsOptions = {
   optionsSuccessStatus: 200,
   origin: (origin, callback) => {
     // Allow same-origin/non-browser requests (no Origin header) and Vercel previews.
-    if (!origin || isAllowedOrigin(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
+    // Withholding the header rather than throwing keeps scanner probes out of the error log
+    callback(null, !origin || isAllowedOrigin(origin));
   },
 };
 
