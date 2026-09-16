@@ -99,6 +99,27 @@ describe('MemberProfilePageComponent', () => {
     expect(query(fixture.debugElement, '.admin-icon')).toBeTruthy();
   });
 
+  it('should not render skeletons once the member has loaded', () => {
+    expect(queryAll(fixture.debugElement, 'ea-skeleton')).toHaveLength(0);
+    expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('false');
+  });
+
+  it('should cover each card with a skeleton while the member loads', () => {
+    store.overrideSelector(MembersSelectors.selectAllMembers, []);
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    const cards = queryAll(fixture.debugElement, '.profile-card');
+    expect(cards).toHaveLength(2);
+    cards.forEach(card => {
+      expect(query(card, 'ea-card')).toBeTruthy();
+      expect(query(card, 'ea-skeleton')).toBeTruthy();
+    });
+    expect(query(fixture.debugElement, '.profile--loading')).toBeTruthy();
+    expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('true');
+  });
+
   it('should render the rating progression placeholder', () => {
     expect(query(fixture.debugElement, '.rating-progression-placeholder')).toBeTruthy();
   });

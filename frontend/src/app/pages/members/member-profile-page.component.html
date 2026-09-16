@@ -4,8 +4,12 @@
 </lcc-page-header>
 
 @if (viewModel$ | async; as vm) {
-  @if (vm.member; as member) {
-    <div class="profile">
+  @let member = vm.member ?? placeholderMember;
+  <div
+    class="profile"
+    [class.profile--loading]="!vm.member"
+    [attr.aria-busy]="!vm.member">
+    <div class="profile-card">
       <ea-card
         class="identity-card"
         [fullWidth]="true">
@@ -134,7 +138,15 @@
           </div>
         </div>
       </ea-card>
+      @if (!vm.member) {
+        <ea-skeleton
+          variant="rect"
+          width="100%"
+          height="100%" />
+      }
+    </div>
 
+    <div class="profile-card">
       <ea-card
         class="rating-progression-card"
         [fullWidth]="true">
@@ -144,6 +156,12 @@
           <p>A graph of this member's rating over time is coming soon.</p>
         </div>
       </ea-card>
+      @if (!vm.member) {
+        <ea-skeleton
+          variant="rect"
+          width="100%"
+          height="100%" />
+      }
     </div>
-  }
+  </div>
 }
