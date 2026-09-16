@@ -11,7 +11,6 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
-import { KeepFocusDirective } from '@app/directives/keep-focus.directive';
 import { UserRecord } from '@app/models';
 import { ApiError, ApiService } from '@app/services/api.service';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
@@ -32,7 +31,6 @@ import {
     ButtonComponent,
     CodeInputComponent,
     InputComponent,
-    KeepFocusDirective,
     NewPasswordFieldsComponent,
     ReactiveFormsModule,
   ],

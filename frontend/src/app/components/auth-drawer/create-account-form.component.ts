@@ -18,7 +18,6 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { MemberAccountFieldsComponent } from '@app/components/member-account-fields/member-account-fields.component';
 import { VERIFICATION_CODE_LENGTH } from '@app/constants/auth';
-import { KeepFocusDirective } from '@app/directives/keep-focus.directive';
 import { ApiError, ApiService, AuthDrawerService } from '@app/services';
 import { createVerificationCodeControl } from '@app/utils';
 
@@ -30,7 +29,6 @@ import { createVerificationCodeControl } from '@app/utils';
   imports: [
     ButtonComponent,
     CodeInputComponent,
-    KeepFocusDirective,
     LockIconComponent,
     MemberAccountFieldsComponent,
     ReactiveFormsModule,

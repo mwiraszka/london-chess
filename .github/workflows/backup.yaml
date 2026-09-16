@@ -78,22 +78,38 @@ jobs:
 
       # Mirrors rather than dated copies, so only what changed moves each
       # week; the bucket's own file versioning keeps history of what did.
-      # An empty source listing is a broken remote, not a library to mirror
+      # A bucket that lists nothing is left alone, since syncing an empty
+      # listing over the stored copies would delete them, while a listing that
+      # errors still stops the run
       - name: Mirror the image buckets
         run: |
-          test -n "$(rclone lsf "r2:$IMAGES_BUCKET" --max-depth 1)"
-          rclone sync "r2:$IMAGES_BUCKET" crypt:images \
-            --fast-list --transfers 16 --checkers 32 --stats-one-line --stats 60s
-          test -n "$(rclone lsf "r2:$AVATARS_BUCKET" --max-depth 1)"
-          rclone sync "r2:$AVATARS_BUCKET" crypt:avatars \
-            --fast-list --transfers 16 --checkers 32 --stats-one-line --stats 60s
+          images=$(rclone lsf "r2:$IMAGES_BUCKET" --max-depth 1)
+          if [ -n "$images" ]; then
+            rclone sync "r2:$IMAGES_BUCKET" crypt:images \
+              --fast-list --transfers 16 --checkers 32 --stats-one-line --stats 60s
+          else
+            echo "No images to mirror"
+          fi
+          avatars=$(rclone lsf "r2:$AVATARS_BUCKET" --max-depth 1)
+          if [ -n "$avatars" ]; then
+            rclone sync "r2:$AVATARS_BUCKET" crypt:avatars \
+              --fast-list --transfers 16 --checkers 32 --stats-one-line --stats 60s
+          else
+            echo "No avatars to mirror"
+          fi
 
       # Reading the dump back end to end proves the stored copy restores; the
       # mirror checks settle for sizes, since hashes cannot cross the crypt layer
       - name: Verify what landed
         run: |
           rclone cat "$DUMP_REMOTE" | zcat > /dev/null
-          rclone check "r2:$IMAGES_BUCKET" crypt:images --one-way --size-only \
-            --fast-list --checkers 32
-          rclone check "r2:$AVATARS_BUCKET" crypt:avatars --one-way --size-only \
-            --fast-list --checkers 32
+          images=$(rclone lsf "r2:$IMAGES_BUCKET" --max-depth 1)
+          if [ -n "$images" ]; then
+            rclone check "r2:$IMAGES_BUCKET" crypt:images --one-way --size-only \
+              --fast-list --checkers 32
+          fi
+          avatars=$(rclone lsf "r2:$AVATARS_BUCKET" --max-depth 1)
+          if [ -n "$avatars" ]; then
+            rclone check "r2:$AVATARS_BUCKET" crypt:avatars --one-way --size-only \
+              --fast-list --checkers 32
+          fi
