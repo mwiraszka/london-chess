@@ -2,20 +2,21 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import { filter, map, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 
 import { Injectable } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 
 import { DialogService } from '@app/services';
-import { AppActions } from '@app/store/app';
-import { ArticlesActions } from '@app/store/articles';
-import { EventsActions } from '@app/store/events';
-import { ImagesActions } from '@app/store/images';
-import { MembersActions } from '@app/store/members';
+import * as AppActions from '@app/store/app/app.actions';
+import * as ArticlesActions from '@app/store/articles/articles.actions';
+import * as EventsActions from '@app/store/events/events.actions';
+import * as ImagesActions from '@app/store/images/images.actions';
+import * as MembersActions from '@app/store/members/members.actions';
 import { isCollectionId, isDefined, isEntity, isString } from '@app/utils';
 
-import { NavActions, NavSelectors } from '.';
+import * as NavActions from './nav.actions';
+import * as NavSelectors from './nav.selectors';
 
 const RECORD_FETCH_FAILURES = [
   ArticlesActions.fetchArticleFailed,
@@ -155,17 +156,13 @@ export class NavEffects {
   handleEntityRouteNavigationRequest$ = createEffect(() =>
     this.actions$.pipe(
       ofType(routerNavigatedAction),
-      map(({ payload }) => payload.event.url),
-      concatLatestFrom(() => this.store.select(NavSelectors.selectCurrentPath)),
-      filter(
-        ([requestedPath, currentPath]) =>
-          requestedPath !== currentPath && isEntity(requestedPath.split('/').slice(1)[0]),
-      ),
-      map(([requestedPath]) => {
-        const [entity, controlMode, idWithFragment] = requestedPath.split('/').slice(1);
-        const id = idWithFragment
-          ? decodeURIComponent(idWithFragment.split('#')[0])
-          : null;
+      // A fragment moves within a record rather than choosing a different one
+      map(({ payload }) => payload.event.url.split('#')[0]),
+      distinctUntilChanged(),
+      filter(requestedPath => isEntity(requestedPath.split('/').slice(1)[0])),
+      map(requestedPath => {
+        const [entity, controlMode, encodedId] = requestedPath.split('/').slice(1);
+        const id = encodedId ? decodeURIComponent(encodedId) : null;
 
         switch (entity) {
           case 'album':
