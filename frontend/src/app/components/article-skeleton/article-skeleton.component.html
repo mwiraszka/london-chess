@@ -1,0 +1,44 @@
+<div class="banner-image-container">
+  <ea-skeleton
+    variant="rect"
+    width="100%"
+    height="300px" />
+  <h3 class="title">
+    <ea-skeleton
+      variant="text"
+      width="60%"
+      height="27px" />
+  </h3>
+</div>
+
+<div class="modification-info-container">
+  <div class="author-container">
+    <div class="author-row">
+      <ea-skeleton
+        variant="circle"
+        width="24px"
+        height="24px" />
+      <ea-skeleton
+        variant="text"
+        width="150px"
+        height="27px" />
+    </div>
+    <ea-skeleton
+      variant="text"
+      width="120px"
+      height="21px" />
+  </div>
+</div>
+
+<hr />
+
+<div class="markdown-container">
+  <div class="body-lines">
+    @for (width of bodyLineWidths; track $index) {
+      <ea-skeleton
+        variant="text"
+        height="24px"
+        [width]="width" />
+    }
+  </div>
+</div>
