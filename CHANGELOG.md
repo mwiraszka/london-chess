@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Show admins the same member profile pages that everyone else sees
 - Display placeholder cards while a member profile is still loading
+- Link the footer version to its release on the website changelog page, where each release now has its own link
 
 ### Fixed
 
