@@ -8,11 +8,12 @@ import {
 } from './email-template.util';
 
 describe('buildEmail', () => {
-  it('should open with the heading in both versions', () => {
+  it('should open with the logo and heading, and start the text with the heading', () => {
     const email = buildEmail('Subject', 'Heading', [paragraph('Body')]);
 
     expect(email.subject).toBe('Subject');
-    expect(email.html).toMatch(/^<div[^>]*><h2[^>]*>Heading<\/h2>/);
+    expect(email.html).toMatch(/^<div[^>]*><img src="https:\/\/londonchess\.ca\/[^"]+"/);
+    expect(email.html).toMatch(/<h2[^>]*>Heading<\/h2>/);
     expect(email.text).toBe('Heading\n\nBody');
   });
 

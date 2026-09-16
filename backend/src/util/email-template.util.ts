@@ -22,10 +22,18 @@ export type EmailBlock =
   | { kind: 'code'; value: string }
   | EmailTable;
 
+// The live site's copy, so emails sent during local development show the logo too
+const LOGO_URL = 'https://londonchess.ca/assets/lcc-logo.png';
+
+// 97px high keeps the 387x374 logo in proportion
+const LOGO_WIDTH = 100;
+const LOGO_HEIGHT = 97;
+
 const SPACING = '16px';
 
 const STYLES = {
   container: 'font-family: Arial, sans-serif; color: #222;',
+  logo: `display: block; margin: 0 0 ${SPACING}; border: 0;`,
   heading: `margin: 0 0 ${SPACING};`,
   code: 'font-size: 24px; font-weight: bold; letter-spacing: 2px; font-family: monospace;',
   table: 'border-collapse: collapse;',
@@ -44,12 +52,13 @@ export function buildEmail(
     .map((block, index) => blockHtml(block, index === lastIndex ? '0' : `0 0 ${SPACING}`))
     .join('');
 
+  const logo = `<img src="${LOGO_URL}" alt="London Chess logo" width="${LOGO_WIDTH}" height="${LOGO_HEIGHT}" style="${STYLES.logo}">`;
   const title = `<h2 style="${STYLES.heading}">${escapeHtml(heading)}</h2>`;
 
   return {
     subject,
     text: [heading, ...blocks.map(blockText)].join('\n\n'),
-    html: `<div style="${STYLES.container}">${title}${body}</div>`,
+    html: `<div style="${STYLES.container}">${logo}${title}${body}</div>`,
   };
 }
 
