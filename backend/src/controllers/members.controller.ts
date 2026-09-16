@@ -453,7 +453,7 @@ export async function updateMembers(
     }
 
     const unnotifiedMemberNames = siteUrl
-      ? await emailRatingChanges(notices, siteUrl)
+      ? await notifyRatingChanges(notices, siteUrl)
       : [];
     res.status(200).json({ data: { updatedIds, unnotifiedMemberNames } });
   } catch (error) {
@@ -653,9 +653,7 @@ async function saveForAccountHolder(
   }
 }
 
-// Ratings are already saved when these go out, so a failed email is reported back
-// rather than undoing everyone's new rating
-async function emailRatingChanges(
+async function notifyRatingChanges(
   notices: RatingNotice[],
   siteUrl: string,
 ): Promise<string[]> {
