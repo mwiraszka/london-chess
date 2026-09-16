@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Show admins the same member profile pages that everyone else sees
+- Display placeholder cards while a member profile is still loading
 
 ### Fixed
 
