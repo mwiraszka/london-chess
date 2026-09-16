@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix blank fields in the edit member form for details that were already saved
 - Load admin-only member details as soon as an admin logs in, with no page refresh needed
-- Tag version 6.0.2 as an infrastructure release on the website changelog page
 
 ## [v6.0.3] - 2026-09-16
 
