@@ -21,6 +21,7 @@ describe('MemberProfilePageComponent', () => {
     ...MOCK_MEMBERS[0],
     isActive: true,
     isAdmin: false,
+    showYearOfBirth: true,
   };
 
   beforeEach(async () => {
@@ -67,6 +68,20 @@ describe('MemberProfilePageComponent', () => {
       el.nativeElement.textContent.trim(),
     );
     expect(statValues).toEqual([member.peakRating, member.city, member.yearOfBirth]);
+  });
+
+  it('should hide the year of birth when the member has not chosen to show it', () => {
+    store.overrideSelector(MembersSelectors.selectAllMembers, [
+      { ...member, showYearOfBirth: false },
+    ]);
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    const statValues = queryAll(fixture.debugElement, '.stat__value').map(el =>
+      el.nativeElement.textContent.trim(),
+    );
+    expect(statValues).toEqual([member.peakRating, member.city]);
   });
 
   it('should not render the admin icon for non-admin members', () => {

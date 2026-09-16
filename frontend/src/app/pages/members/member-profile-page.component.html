@@ -79,7 +79,7 @@
                   <dd class="stat__value">{{ year }}</dd>
                 </div>
               }
-              @if (member.yearOfBirth) {
+              @if (member.showYearOfBirth && member.yearOfBirth) {
                 <div class="stat">
                   <dt class="stat__label">Year of birth</dt>
                   <dd class="stat__value">{{ member.yearOfBirth }}</dd>

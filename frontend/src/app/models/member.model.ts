@@ -24,6 +24,7 @@ export interface Member {
   dateJoined: IsoDate;
   // Sent only with a profile page lookup or to admins
   yearJoined?: string;
+  showYearOfBirth?: boolean;
   modificationInfo: ModificationInfo;
   avatarUrl: Url | null;
   // Only admins learn whether a member has an account

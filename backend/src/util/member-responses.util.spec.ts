@@ -96,6 +96,7 @@ describe('toPublicProfile', () => {
     const profile = toPublicProfile(buildRecord());
 
     expect(profile.yearOfBirth).toBe('');
+    expect(profile.showYearOfBirth).toBe(false);
     expect(profile.yearJoined).toBe('2022');
     expect(Object.keys(profile)).not.toContain('dateJoined');
     expect(JSON.stringify(profile)).not.toContain('jane@example.com');
@@ -108,6 +109,7 @@ describe('toPublicProfile', () => {
     );
 
     expect(profile.yearOfBirth).toBe('1990');
+    expect(profile.showYearOfBirth).toBe(true);
     expect(profile.yearJoined).toBe('2022');
   });
 });
@@ -201,6 +203,16 @@ describe('toAdminMember', () => {
     const member = toAdminMember(buildRecord({ account: null }));
 
     expect(member.hasAccount).toBe(false);
+  });
+
+  it('should keep the year of birth and report whether the member shows it on their profile', () => {
+    const hidden = toAdminMember(buildRecord());
+    const shown = toAdminMember(buildRecord({ preferences: { showYearOfBirth: true } }));
+
+    expect(hidden.yearOfBirth).toBe('1990');
+    expect(hidden.showYearOfBirth).toBe(false);
+    expect(shown.yearOfBirth).toBe('1990');
+    expect(shown.showYearOfBirth).toBe(true);
   });
 });
 
