@@ -43,6 +43,21 @@ const hydratedStates = [
   'navState',
 ] as Array<keyof Exclude<MetaState, RouterState>>;
 
+// State saved by an app version older than these no longer fits its reducer
+const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
+  membersState: [6, 0, 4],
+};
+
+function isOlderThan(version: string, minimum: number[]): boolean {
+  const parts = version.split('.').map(Number);
+  for (const [index, minimumPart] of minimum.entries()) {
+    if (parts[index] !== minimumPart) {
+      return parts[index] < minimumPart;
+    }
+  }
+  return false;
+}
+
 /**
  * Updates hydrated state keys to new app version in local storage
  */
@@ -73,12 +88,15 @@ export function updateStateVersionsInLocalStorageMetaReducer(
         // Skip migrating state from v5.12.x or older to force a reset of stale data
         const [major, minor] = (version || '').split('.').map(Number);
         const isStaleVersion = major < 5 || (major === 5 && minor <= 12);
+        const firstCompatibleVersion = FIRST_COMPATIBLE_VERSIONS[stateName];
+        const isIncompatible =
+          !!firstCompatibleVersion && isOlderThan(version || '', firstCompatibleVersion);
 
         // Remove the old key first to free up space before writing the new one
         localStorage.removeItem(key);
 
-        // Keep all state from previous version except imagesState and stale versions
-        if (stateName !== 'imagesState' && !isStaleVersion) {
+        // Keep state from the previous version unless it is imagesState, stale or incompatible
+        if (stateName !== 'imagesState' && !isStaleVersion && !isIncompatible) {
           try {
             localStorage.setItem(`${stateName}_v${currentVersion}`, stateValue);
           } catch {

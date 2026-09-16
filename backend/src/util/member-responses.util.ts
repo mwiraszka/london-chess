@@ -22,6 +22,7 @@ export interface AdminMember extends PublicMember {
   email: string;
   phoneNumber: string;
   yearOfBirth: string;
+  showYearOfBirth: boolean;
   dateJoined: IsoDate;
   yearJoined: string;
   hasAccount: boolean;
@@ -30,6 +31,7 @@ export interface AdminMember extends PublicMember {
 // A profile page is public, so it shows years rather than full dates
 export interface PublicProfile extends PublicMember {
   yearOfBirth: string;
+  showYearOfBirth: boolean;
   yearJoined: string;
 }
 
@@ -136,10 +138,13 @@ export function toPublicMember(record: MemberRecord): PublicMember {
 }
 
 export function toPublicProfile(record: MemberRecord): PublicProfile {
+  const showYearOfBirth = showsYearOfBirth(record);
+
   return {
     ...toPublicMember(record),
     // The member decides whether their birth year is shown alongside the rest
-    yearOfBirth: record.preferences?.showYearOfBirth ? record.yearOfBirth : '',
+    yearOfBirth: showYearOfBirth ? record.yearOfBirth : '',
+    showYearOfBirth,
     yearJoined: yearOf(record.dateJoined),
   };
 }
@@ -150,10 +155,15 @@ export function toAdminMember(record: MemberRecord): AdminMember {
     email: record.email,
     phoneNumber: record.phoneNumber,
     yearOfBirth: record.yearOfBirth,
+    showYearOfBirth: showsYearOfBirth(record),
     dateJoined: record.dateJoined,
     yearJoined: yearOf(record.dateJoined),
     hasAccount: !!record.account,
   };
+}
+
+function showsYearOfBirth(record: MemberRecord): boolean {
+  return record.preferences?.showYearOfBirth === true;
 }
 
 function yearOf(date: IsoDate): string {
@@ -185,6 +195,6 @@ export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
     avatarCropState: record.account.avatarCropState,
     avatarUpdatedAt: record.account.avatarUpdatedAt,
     hasTemporaryPassword: !!record.account.temporaryPasswordHash,
-    showYearOfBirth: record.preferences?.showYearOfBirth === true,
+    showYearOfBirth: showsYearOfBirth(record),
   };
 }

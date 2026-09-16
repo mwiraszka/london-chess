@@ -71,6 +71,28 @@ describe('Meta Reducers', () => {
       expect(preserved).toBe(oldAppState);
     });
 
+    it('should drop member state saved in an incompatible shape', () => {
+      localStorage.setItem('membersState_v6.0.3', '{"entities": {}}');
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(localStorage.getItem('membersState_v6.0.3')).toBeNull();
+      expect(localStorage.getItem(`membersState_v${version}`)).toBeNull();
+    });
+
+    it('should keep member state saved in a compatible shape', () => {
+      const oldMembersState = JSON.stringify({ entities: {} });
+      localStorage.setItem('membersState_v10.50.0', oldMembersState);
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(localStorage.getItem(`membersState_v${version}`)).toBe(oldMembersState);
+    });
+
     it('should not remove keys with current version', () => {
       const currentKey = `appState_v${version}`;
       localStorage.setItem(currentKey, '{"theme": "dark"}');

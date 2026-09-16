@@ -1,6 +1,7 @@
+import { pick } from 'lodash';
 import moment from 'moment-timezone';
 
-import { INITIAL_MEMBER_FORM_DATA } from '@app/constants';
+import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { CallState, DataPaginationOptions, Member, MemberFormData } from '@app/models';
 
@@ -47,6 +48,7 @@ describe('Members Selectors', () => {
     ...membersAdapter.getInitialState({
       callState: mockCallState,
       newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+      recordsScope: 'admin',
       lastFullFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
       filteredMembers: [MOCK_MEMBERS[0], MOCK_MEMBERS[1]],
@@ -61,7 +63,7 @@ describe('Members Selectors', () => {
       },
       [MOCK_MEMBERS[1].id]: {
         member: MOCK_MEMBERS[1],
-        formData: INITIAL_MEMBER_FORM_DATA,
+        formData: null,
       },
     },
     ids: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
@@ -71,6 +73,13 @@ describe('Members Selectors', () => {
     it('should select the call state', () => {
       const result = MembersSelectors.selectCallState.projector(mockMembersState);
       expect(result).toEqual(mockCallState);
+    });
+  });
+
+  describe('selectRecordsScope', () => {
+    it('should select the scope the stored records came from', () => {
+      const result = MembersSelectors.selectRecordsScope.projector(mockMembersState);
+      expect(result).toBe('admin');
     });
   });
 
@@ -120,7 +129,7 @@ describe('Members Selectors', () => {
     it('should select all members from entities', () => {
       const allMemberEntities = [
         { member: MOCK_MEMBERS[0], formData: mockMemberFormData },
-        { member: MOCK_MEMBERS[1], formData: INITIAL_MEMBER_FORM_DATA },
+        { member: MOCK_MEMBERS[1], formData: null },
       ];
       const result = MembersSelectors.selectAllMembers.projector(allMemberEntities);
       expect(result).toEqual([MOCK_MEMBERS[0], MOCK_MEMBERS[1]]);
@@ -158,6 +167,15 @@ describe('Members Selectors', () => {
       const selector = MembersSelectors.selectMemberFormDataById(MOCK_MEMBERS[1].id);
       const result = selector.projector(mockMembersState, allMemberEntities);
       expect(result).toEqual(mockMemberFormData);
+    });
+
+    it('should use the member record when there is no draft', () => {
+      const allMemberEntities = [{ member: MOCK_MEMBERS[1], formData: null }];
+      const selector = MembersSelectors.selectMemberFormDataById(MOCK_MEMBERS[1].id);
+
+      const result = selector.projector(mockMembersState, allMemberEntities);
+
+      expect(result).toEqual(pick(MOCK_MEMBERS[1], MEMBER_FORM_DATA_PROPERTIES));
     });
 
     it("should keep an account holder's email from the member rather than the draft", () => {

@@ -19,6 +19,7 @@ import { findEditor, isLinkedMember } from '../services/member-accounts.service'
 import { assignMemberNumber } from '../services/member-numbers.service';
 import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
+import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
 import { isCollectionId } from '../util/is-collection-id.util';
 import {
   MemberChange,
@@ -26,7 +27,6 @@ import {
   describeMemberChanges,
 } from '../util/member-changes.util';
 import { EMAIL_PATTERN, validateDetailField } from '../util/member-details.util';
-import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/member-emails.util';
 import {
   AdminMember,
   LinkedMemberRecord,
@@ -453,7 +453,7 @@ export async function updateMembers(
     }
 
     const unnotifiedMemberNames = siteUrl
-      ? await emailRatingChanges(notices, siteUrl)
+      ? await notifyRatingChanges(notices, siteUrl)
       : [];
     res.status(200).json({ data: { updatedIds, unnotifiedMemberNames } });
   } catch (error) {
@@ -590,7 +590,7 @@ async function saveWithNewAccount({
       siteUrl,
       profileUrlFor(siteUrl, record),
     );
-    await sendEmail(record.email, email.subject, email.text, email.html);
+    await sendEmail(record.email, email);
 
     res.status(status).json({ data: toAdminMember(record) });
   } catch (error) {
@@ -644,7 +644,7 @@ async function saveForAccountHolder(
         changes,
         profileUrlFor(siteUrl, record),
       );
-      await sendEmail(record.email, email.subject, email.text, email.html);
+      await sendEmail(record.email, email);
     }
 
     res.status(200).json({ data: toAdminMember(record) });
@@ -653,9 +653,7 @@ async function saveForAccountHolder(
   }
 }
 
-// Ratings are already saved when these go out, so a failed email is reported back
-// rather than undoing everyone's new rating
-async function emailRatingChanges(
+async function notifyRatingChanges(
   notices: RatingNotice[],
   siteUrl: string,
 ): Promise<string[]> {
@@ -666,7 +664,7 @@ async function emailRatingChanges(
         changes,
         profileUrlFor(siteUrl, record),
       );
-      await sendEmail(record.email, email.subject, email.text, email.html);
+      await sendEmail(record.email, email);
     }),
   );
 

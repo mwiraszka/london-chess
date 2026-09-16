@@ -1,17 +1,38 @@
-import { INITIAL_MEMBER_FORM_DATA } from '@app/constants';
+import { pick } from 'lodash';
+
+import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { LccError } from '@app/models';
+import { LccError, Member, MemberFormData } from '@app/models';
 
 import * as MembersActions from './members.actions';
 import {
+  MemberEntity,
   MembersState,
   initialState,
+  memberFormDataOf,
   membersAdapter,
   membersReducer,
 } from './members.reducer';
 
 describe('Members Reducer', () => {
   const mockMember = MOCK_MEMBERS[0];
+  const otherMember = MOCK_MEMBERS[1];
+  // The public API leaves out a member's private details
+  const publicOtherMember: Member = {
+    ...otherMember,
+    email: '',
+    phoneNumber: '',
+    yearOfBirth: '',
+  };
+
+  function adminStateWith(entity: MemberEntity): MembersState {
+    return membersAdapter.setAll([entity], { ...initialState, recordsScope: 'admin' });
+  }
+
+  function formDataIn(state: MembersState, id: string): MemberFormData | undefined {
+    const entity = state.entities[id];
+    return entity && memberFormDataOf(entity);
+  }
   const mockError: LccError = {
     name: 'LCCError',
     message: 'Something went wrong',
@@ -37,6 +58,7 @@ describe('Members Reducer', () => {
           loadStart: null,
         },
         newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+        recordsScope: null,
         lastFullFetch: null,
         lastFilteredFetch: null,
         filteredMembers: [],
@@ -187,51 +209,90 @@ describe('Members Reducer', () => {
   });
 
   describe('fetchAllMembersSucceeded', () => {
-    it('should set all members in state', () => {
+    it('should set all members in state along with the scope they came from', () => {
       const members = [mockMember];
-      const action = MembersActions.fetchAllMembersSucceeded({ members, totalCount: 1 });
+      const action = MembersActions.fetchAllMembersSucceeded({
+        members,
+        totalCount: 1,
+        scope: 'admin',
+      });
+
       const state = membersReducer(initialState, action);
 
       expect(state.ids.length).toBe(1);
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.member).toEqual(mockMember);
+      expect(state.entities[mockMember.id]?.member).toEqual(mockMember);
+      expect(state.entities[mockMember.id]?.formData).toBeNull();
+      expect(state.recordsScope).toBe('admin');
       expect(state.totalCount).toBe(1);
       expect(state.lastFullFetch).toBeTruthy();
       expect(state.callState.status).toBe('idle');
     });
 
-    it('should preserve formData with unsaved changes', () => {
-      const modifiedFormData = {
+    it('should keep a draft that holds edits', () => {
+      const draft = {
+        ...pick(otherMember, MEMBER_FORM_DATA_PROPERTIES),
         firstName: 'Modified',
-        lastName: 'Name',
-        rating: '1500/10',
-        peakRating: '1600',
-        isActive: true,
-        dateJoined: '2025-01-01T00:00:00.000Z',
-        city: 'London',
-        email: '',
-        phoneNumber: '',
-        yearOfBirth: '',
-        chessComUsername: '',
-        lichessUsername: '',
       };
-
-      const previousState: MembersState = membersAdapter.upsertOne(
-        {
-          member: mockMember,
-          formData: modifiedFormData,
-        },
-        initialState,
-      );
-
-      const updatedMember = { ...mockMember, firstName: 'Updated' };
+      const previousState = adminStateWith({ member: otherMember, formData: draft });
       const action = MembersActions.fetchAllMembersSucceeded({
-        members: [updatedMember],
+        members: [{ ...otherMember, firstName: 'Updated' }],
         totalCount: 1,
+        scope: 'admin',
       });
+
       const state = membersReducer(previousState, action);
 
-      // Should preserve modified formData
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.formData.firstName).toBe('Modified');
+      expect(state.entities[otherMember.id]?.formData).toEqual(draft);
+    });
+
+    it('should drop a draft that holds no edits', () => {
+      const previousState = adminStateWith({
+        member: otherMember,
+        formData: pick(otherMember, MEMBER_FORM_DATA_PROPERTIES),
+      });
+      const action = MembersActions.fetchAllMembersSucceeded({
+        members: [{ ...otherMember, city: 'Toronto' }],
+        totalCount: 1,
+        scope: 'admin',
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.entities[otherMember.id]?.formData).toBeNull();
+      expect(formDataIn(state, otherMember.id)?.city).toBe('Toronto');
+    });
+
+    it('should replace public records and the page shown with admin records', () => {
+      const previousState: MembersState = {
+        ...membersAdapter.setAll(
+          [
+            {
+              member: publicOtherMember,
+              formData: pick(publicOtherMember, MEMBER_FORM_DATA_PROPERTIES),
+            },
+          ],
+          initialState,
+        ),
+        recordsScope: 'public',
+        filteredMembers: [publicOtherMember],
+      };
+      const action = MembersActions.fetchAllMembersSucceeded({
+        members: [otherMember],
+        totalCount: 1,
+        scope: 'admin',
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.recordsScope).toBe('admin');
+      expect(state.entities[otherMember.id]).toEqual({
+        member: otherMember,
+        formData: null,
+      });
+      expect(state.filteredMembers).toEqual([otherMember]);
+      expect(formDataIn(state, otherMember.id)?.yearOfBirth).toBe(
+        otherMember.yearOfBirth,
+      );
     });
   });
 
@@ -242,14 +303,40 @@ describe('Members Reducer', () => {
         members,
         filteredCount: 1,
         totalCount: 1,
+        scope: 'public',
       });
+
       const state = membersReducer(initialState, action);
 
       expect(state.ids.length).toBe(1);
+      expect(state.recordsScope).toBe('public');
       expect(state.filteredMembers).toEqual(members);
       expect(state.filteredCount).toBe(1);
       expect(state.totalCount).toBe(1);
       expect(state.lastFilteredFetch).toBeTruthy();
+    });
+
+    it('should drop records from the other scope', () => {
+      const previousState: MembersState = {
+        ...membersAdapter.setAll(
+          [{ member: publicOtherMember, formData: null }],
+          initialState,
+        ),
+        recordsScope: 'public',
+        lastFullFetch: '2025-01-01T00:00:00.000Z',
+      };
+      const action = MembersActions.fetchFilteredMembersSucceeded({
+        members: [mockMember],
+        filteredCount: 1,
+        totalCount: 2,
+        scope: 'admin',
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.recordsScope).toBe('admin');
+      expect(state.ids).toEqual([mockMember.id]);
+      expect(state.lastFullFetch).toBeNull();
     });
   });
 
@@ -273,11 +360,61 @@ describe('Members Reducer', () => {
 
   describe('fetchMemberSucceeded', () => {
     it('should add member to state', () => {
-      const action = MembersActions.fetchMemberSucceeded({ member: mockMember });
+      const action = MembersActions.fetchMemberSucceeded({
+        member: mockMember,
+        scope: 'admin',
+      });
+
       const state = membersReducer(initialState, action);
 
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.member).toEqual(mockMember);
+      expect(state.entities[mockMember.id]).toEqual({
+        member: mockMember,
+        formData: null,
+      });
+      expect(state.recordsScope).toBe('admin');
       expect(state.callState.status).toBe('idle');
+    });
+
+    it('should keep a draft that holds edits', () => {
+      const draft = {
+        ...pick(otherMember, MEMBER_FORM_DATA_PROPERTIES),
+        city: 'Toronto',
+      };
+      const previousState = adminStateWith({ member: otherMember, formData: draft });
+      const action = MembersActions.fetchMemberSucceeded({
+        member: otherMember,
+        scope: 'admin',
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.entities[otherMember.id]?.formData).toEqual(draft);
+    });
+
+    it('should build form data from the admin record once public records are replaced', () => {
+      const publicState = membersReducer(
+        initialState,
+        MembersActions.fetchFilteredMembersSucceeded({
+          members: [publicOtherMember, mockMember],
+          filteredCount: 2,
+          totalCount: 2,
+          scope: 'public',
+        }),
+      );
+      const action = MembersActions.fetchMemberSucceeded({
+        member: otherMember,
+        scope: 'admin',
+      });
+
+      const state = membersReducer(publicState, action);
+
+      expect(state.recordsScope).toBe('admin');
+      expect(state.ids).toEqual([otherMember.id]);
+      expect(state.filteredMembers).toEqual([]);
+      expect(state.lastFilteredFetch).toBeNull();
+      expect(formDataIn(state, otherMember.id)).toEqual(
+        pick(otherMember, MEMBER_FORM_DATA_PROPERTIES),
+      );
     });
   });
 
@@ -289,34 +426,24 @@ describe('Members Reducer', () => {
       });
       const state = membersReducer(initialState, action);
 
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.member).toEqual(mockMember);
+      expect(state.entities['a1b2c3d4e5f6a7b8']).toEqual({
+        member: mockMember,
+        formData: null,
+      });
       expect(state.newMemberFormData).toEqual(INITIAL_MEMBER_FORM_DATA);
       expect(state.callState.status).toBe('idle');
     });
   });
 
   describe('updateMemberSucceeded', () => {
-    it('should update existing member', () => {
-      const previousState: MembersState = membersAdapter.upsertOne(
-        {
-          member: mockMember,
-          formData: {
-            firstName: mockMember.firstName,
-            lastName: mockMember.lastName,
-            rating: mockMember.rating,
-            peakRating: mockMember.peakRating || '',
-            isActive: mockMember.isActive,
-            dateJoined: mockMember.dateJoined,
-            city: mockMember.city,
-            email: '',
-            phoneNumber: '',
-            yearOfBirth: '',
-            chessComUsername: '',
-            lichessUsername: '',
-          },
+    it('should update existing member and clear its draft', () => {
+      const previousState = adminStateWith({
+        member: mockMember,
+        formData: {
+          ...pick(mockMember, MEMBER_FORM_DATA_PROPERTIES),
+          rating: '1600/15',
         },
-        initialState,
-      );
+      });
 
       const updatedMember = { ...mockMember, rating: '1600/15' };
       const action = MembersActions.updateMemberSucceeded({
@@ -326,7 +453,10 @@ describe('Members Reducer', () => {
       });
       const state = membersReducer(previousState, action);
 
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.member.rating).toBe('1600/15');
+      expect(state.entities['a1b2c3d4e5f6a7b8']).toEqual({
+        member: updatedMember,
+        formData: null,
+      });
       expect(state.callState.status).toBe('idle');
       expect(state.lastFilteredFetch).toBeNull();
     });
@@ -339,8 +469,8 @@ describe('Members Reducer', () => {
 
       const previousState: MembersState = membersAdapter.setAll(
         [
-          { member: member1, formData: INITIAL_MEMBER_FORM_DATA },
-          { member: member2, formData: INITIAL_MEMBER_FORM_DATA },
+          { member: member1, formData: null },
+          { member: member2, formData: null },
         ],
         initialState,
       );
@@ -363,10 +493,7 @@ describe('Members Reducer', () => {
   describe('deleteMemberSucceeded', () => {
     it('should remove member from state', () => {
       const previousState: MembersState = membersAdapter.upsertOne(
-        {
-          member: mockMember,
-          formData: INITIAL_MEMBER_FORM_DATA,
-        },
+        { member: mockMember, formData: null },
         initialState,
       );
 
@@ -404,36 +531,38 @@ describe('Members Reducer', () => {
       expect(state.newMemberFormData.firstName).toBe('New Name');
     });
 
-    it('should update existing member formData', () => {
-      const previousState: MembersState = membersAdapter.upsertOne(
-        {
-          member: mockMember,
-          formData: {
-            firstName: mockMember.firstName,
-            lastName: mockMember.lastName,
-            rating: mockMember.rating,
-            peakRating: mockMember.peakRating || '',
-            isActive: mockMember.isActive,
-            dateJoined: mockMember.dateJoined,
-            city: mockMember.city,
-            email: '',
-            phoneNumber: '',
-            yearOfBirth: '',
-            chessComUsername: '',
-            lichessUsername: '',
-          },
-        },
-        initialState,
-      );
-
-      const formData = { firstName: 'Modified' };
+    it('should start a draft from the member record', () => {
+      const previousState = adminStateWith({ member: mockMember, formData: null });
       const action = MembersActions.formDataChanged({
-        memberId: MOCK_MEMBERS[0].id,
-        formData,
+        memberId: mockMember.id,
+        formData: { firstName: 'Modified' },
       });
+
       const state = membersReducer(previousState, action);
 
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.formData.firstName).toBe('Modified');
+      expect(state.entities[mockMember.id]?.formData).toEqual({
+        ...pick(mockMember, MEMBER_FORM_DATA_PROPERTIES),
+        firstName: 'Modified',
+      });
+    });
+
+    it('should update an existing draft', () => {
+      const previousState = adminStateWith({
+        member: mockMember,
+        formData: { ...pick(mockMember, MEMBER_FORM_DATA_PROPERTIES), city: 'Toronto' },
+      });
+      const action = MembersActions.formDataChanged({
+        memberId: mockMember.id,
+        formData: { firstName: 'Modified' },
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.entities[mockMember.id]?.formData).toEqual({
+        ...pick(mockMember, MEMBER_FORM_DATA_PROPERTIES),
+        city: 'Toronto',
+        firstName: 'Modified',
+      });
     });
   });
 
@@ -453,7 +582,7 @@ describe('Members Reducer', () => {
       expect(state.newMemberFormData).toEqual(INITIAL_MEMBER_FORM_DATA);
     });
 
-    it('should restore member formData from original member', () => {
+    it('should discard the member draft', () => {
       const previousState: MembersState = membersAdapter.upsertOne(
         {
           member: mockMember,
@@ -468,9 +597,7 @@ describe('Members Reducer', () => {
       const action = MembersActions.formDataRestored({ memberId: MOCK_MEMBERS[0].id });
       const state = membersReducer(previousState, action);
 
-      expect(state.entities['a1b2c3d4e5f6a7b8']?.formData.firstName).toBe(
-        mockMember.firstName,
-      );
+      expect(state.entities['a1b2c3d4e5f6a7b8']?.formData).toBeNull();
     });
   });
 

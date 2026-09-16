@@ -17,7 +17,12 @@ import {
   updateLinkedMember,
 } from '../services/member-accounts.service';
 import { clerkErrorMessage } from '../util/clerk-error.util';
-import { escapeHtml } from '../util/html.util';
+import {
+  ChangeRow,
+  buildAccountRequestEmail,
+  buildDetailsChangeRequestEmail,
+  buildVerificationCodeEmail,
+} from '../util/emails.util';
 import {
   DETAIL_FIELDS,
   DetailField,
@@ -104,47 +109,25 @@ export async function requestMemberDetailsChange(
       return;
     }
 
-    const rows: Array<[string, string, string]> = [];
+    const changes: ChangeRow[] = [];
     for (const field of Object.keys(requested) as DetailField[]) {
       const before = String(current[field] ?? '');
       const after = requested[field] ?? '';
       if (before !== after) {
-        rows.push([DETAIL_FIELDS[field], before || '(empty)', after || '(empty)']);
+        changes.push({
+          label: DETAIL_FIELDS[field],
+          before: before || '(empty)',
+          after: after || '(empty)',
+        });
       }
     }
-    if (!rows.length) {
+    if (!changes.length) {
       res.status(400).json({ message: 'No changes were requested.' });
       return;
     }
 
     const name = `${current.firstName} ${current.lastName}`.trim();
-    const html = `
-      <div style="font-family: Arial, sans-serif; color: #222;">
-        <h2 style="margin: 0 0 4px;">Member details change request</h2>
-        <p style="margin: 0 0 16px;">${escapeHtml(name)} has requested these changes to their member record.</p>
-        <table style="border-collapse: collapse;">
-          <tr>
-            <td style="padding: 6px 16px 6px 0; font-weight: bold;">Field</td>
-            <td style="padding: 6px 16px 6px 0; font-weight: bold;">Current</td>
-            <td style="padding: 6px 0; font-weight: bold;">Requested</td>
-          </tr>
-          ${rows
-            .map(
-              ([label, before, after]) => `
-                <tr>
-                  <td style="padding: 6px 16px 6px 0;">${escapeHtml(label)}</td>
-                  <td style="padding: 6px 16px 6px 0;">${escapeHtml(before)}</td>
-                  <td style="padding: 6px 0;">${escapeHtml(after)}</td>
-                </tr>`,
-            )
-            .join('')}
-        </table>
-      </div>`;
-    const text = `Member details change request from ${name}\n\n${rows
-      .map(([label, before, after]) => `${label}: ${before} -> ${after}`)
-      .join('\n')}`;
-
-    await sendAdminEmail(`Member details change request from ${name}`, text, html);
+    await sendAdminEmail(buildDetailsChangeRequestEmail(name, changes));
 
     res.status(200).json({ data: 'success' });
   } catch (error) {
@@ -620,17 +603,7 @@ export async function requestAccountVerification(
       { upsert: true },
     );
 
-    await sendEmail(
-      email.trim(),
-      'Your London Chess verification code',
-      `Your verification code is ${code}. It expires in 10 minutes.`,
-      `
-      <div style="font-family: Arial, sans-serif; color: #222;">
-        <h2 style="margin: 0 0 8px;">London Chess</h2>
-        <p style="margin: 0 0 16px;">Use this code to verify your email address. It expires in 10 minutes.</p>
-        <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 0;">${code}</p>
-      </div>`,
-    );
+    await sendEmail(email.trim(), buildVerificationCodeEmail(code));
 
     res.status(200).json({ data: 'success' });
   } catch (error) {
@@ -747,37 +720,20 @@ export async function requestAccount(
         return;
       }
       if (trimmed) {
-        extras.push([label, escapeHtml(trimmed)]);
+        extras.push([label, trimmed]);
       }
     }
 
     const name = `${firstName.trim()} ${lastName.trim()}`;
-    const rows: Array<[string, string]> = [
-      ['Name', escapeHtml(name)],
-      ['Email', escapeHtml(email)],
-      ['Year of birth', String(yearOfBirth)],
-      ['City', escapeHtml(city.trim())],
-      ...extras,
-    ];
-    const html = `
-      <div style="font-family: Arial, sans-serif; color: #222;">
-        <h2 style="margin: 0 0 4px;">New account request</h2>
-        <p style="margin: 0 0 16px;">Someone has requested a London Chess account.</p>
-        <table style="border-collapse: collapse;">
-          ${rows
-            .map(
-              ([label, value]) => `
-                <tr>
-                  <td style="padding: 6px 16px 6px 0; font-weight: bold;">${label}</td>
-                  <td style="padding: 6px 0;">${value}</td>
-                </tr>`,
-            )
-            .join('')}
-        </table>
-      </div>`;
-    const text = `New account request\n\n${rows.map(([label, value]) => `${label}: ${value}`).join('\n')}`;
-
-    await sendAdminEmail(`New account request from ${name}`, text, html);
+    await sendAdminEmail(
+      buildAccountRequestEmail(name, [
+        ['Name', name],
+        ['Email', email],
+        ['Year of birth', String(yearOfBirth)],
+        ['City', city.trim()],
+        ...extras,
+      ]),
+    );
 
     res.status(200).json({ data: 'success' });
   } catch (error) {

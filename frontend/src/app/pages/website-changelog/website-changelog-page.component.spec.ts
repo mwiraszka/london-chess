@@ -1,8 +1,10 @@
 import { provideMockStore } from '@ngrx/store/testing';
+import { BehaviorSubject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 
-import { ChangelogService, MetaAndTitleService } from '@app/services';
+import { ChangelogService, MetaAndTitleService, RoutingService } from '@app/services';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { queryAll, queryTextContent } from '@app/utils';
 
@@ -14,9 +16,11 @@ describe('WebsiteChangelogPageComponent', () => {
   let fixture: ComponentFixture<WebsiteChangelogPageComponent>;
   let component: WebsiteChangelogPageComponent;
   let markLatestReleaseSeenSpy: Mock;
+  let fragment$: BehaviorSubject<string | null>;
 
   beforeEach(async () => {
     markLatestReleaseSeenSpy = vi.fn();
+    fragment$ = new BehaviorSubject<string | null>(null);
 
     await TestBed.configureTestingModule({
       imports: [WebsiteChangelogPageComponent],
@@ -32,9 +36,11 @@ describe('WebsiteChangelogPageComponent', () => {
             markLatestReleaseSeen: markLatestReleaseSeenSpy,
           },
         },
+        { provide: RoutingService, useValue: { fragment$ } },
         provideMockStore({ initialState: { membersState: membersInitialState } }),
       ],
     }).compileComponents();
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     fixture = TestBed.createComponent(WebsiteChangelogPageComponent);
     component = fixture.componentInstance;
@@ -164,6 +170,34 @@ describe('WebsiteChangelogPageComponent', () => {
     fixture.detectChanges();
 
     expect(queryAll(firstCard, '.release-section').length).toBeGreaterThan(0);
+  });
+
+  it('should give each release card its version as the id its fragment points to', () => {
+    const ids = queryAll(fixture.debugElement, '.release-card').map(
+      card => card.attributes['id'],
+    );
+
+    expect(ids).toEqual(CHANGELOG_RELEASES.map(release => release.version));
+  });
+
+  it('should expand the release named by the URL fragment', () => {
+    const secondCard = queryAll(fixture.debugElement, '.release-card')[1];
+
+    fragment$.next(CHANGELOG_RELEASES[1].version);
+    fixture.detectChanges();
+
+    expect(queryAll(secondCard, '.release-section').length).toBeGreaterThan(0);
+  });
+
+  it('should put the release in the URL fragment when its quick find button is clicked', () => {
+    const router = TestBed.inject(Router);
+
+    queryAll(fixture.debugElement, '.version-nav__item')[1].nativeElement.click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      fragment: CHANGELOG_RELEASES[1].version,
+      replaceUrl: true,
+    });
   });
 
   it('should mark the latest release as seen on init', () => {

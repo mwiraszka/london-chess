@@ -21,6 +21,7 @@ describe('MemberProfilePageComponent', () => {
     ...MOCK_MEMBERS[0],
     isActive: true,
     isAdmin: false,
+    showYearOfBirth: true,
   };
 
   beforeEach(async () => {
@@ -69,6 +70,20 @@ describe('MemberProfilePageComponent', () => {
     expect(statValues).toEqual([member.peakRating, member.city, member.yearOfBirth]);
   });
 
+  it('should hide the year of birth when the member has not chosen to show it', () => {
+    store.overrideSelector(MembersSelectors.selectAllMembers, [
+      { ...member, showYearOfBirth: false },
+    ]);
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    const statValues = queryAll(fixture.debugElement, '.stat__value').map(el =>
+      el.nativeElement.textContent.trim(),
+    );
+    expect(statValues).toEqual([member.peakRating, member.city]);
+  });
+
   it('should not render the admin icon for non-admin members', () => {
     expect(query(fixture.debugElement, '.admin-icon')).toBeFalsy();
   });
@@ -82,6 +97,27 @@ describe('MemberProfilePageComponent', () => {
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.admin-icon')).toBeTruthy();
+  });
+
+  it('should not render skeletons once the member has loaded', () => {
+    expect(queryAll(fixture.debugElement, 'ea-skeleton')).toHaveLength(0);
+    expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('false');
+  });
+
+  it('should cover each card with a skeleton while the member loads', () => {
+    store.overrideSelector(MembersSelectors.selectAllMembers, []);
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    const cards = queryAll(fixture.debugElement, '.profile-card');
+    expect(cards).toHaveLength(2);
+    cards.forEach(card => {
+      expect(query(card, 'ea-card')).toBeTruthy();
+      expect(query(card, 'ea-skeleton')).toBeTruthy();
+    });
+    expect(query(fixture.debugElement, '.profile--loading')).toBeTruthy();
+    expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('true');
   });
 
   it('should render the rating progression placeholder', () => {

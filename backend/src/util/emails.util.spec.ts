@@ -1,15 +1,21 @@
+import {
+  buildAccountRequestEmail,
+  buildDetailsChangeRequestEmail,
+  buildMemberChangesEmail,
+  buildVerificationCodeEmail,
+  buildWelcomeEmail,
+} from './emails.util';
 import { MemberChange } from './member-changes.util';
-import { buildMemberChangesEmail, buildWelcomeEmail } from './member-emails.util';
 
-const SITE_URL = 'https://londonchess.ca';
+const LOGIN_URL = 'https://londonchess.ca/account';
 const PROFILE_URL = 'https://londonchess.ca/members/7';
 
 describe('buildWelcomeEmail', () => {
-  it('should give the member their temporary password and link to the site and their profile', () => {
+  it('should give the member their temporary password and link to the login page and their profile', () => {
     const email = buildWelcomeEmail(
       { firstName: 'Jane', email: 'jane@example.com' },
       'Temp4Pass',
-      SITE_URL,
+      LOGIN_URL,
       PROFILE_URL,
     );
 
@@ -20,7 +26,7 @@ describe('buildWelcomeEmail', () => {
       expect(body).toContain('Temp4Pass');
       expect(body).toContain(PROFILE_URL);
     }
-    expect(email.html).toContain(`<a href="${SITE_URL}">`);
+    expect(email.html).toContain(`<a href="${LOGIN_URL}">`);
     expect(email.html).toContain(`<a href="${PROFILE_URL}">`);
   });
 
@@ -28,7 +34,7 @@ describe('buildWelcomeEmail', () => {
     const email = buildWelcomeEmail(
       { firstName: '<b>Jane</b>', email: 'jane@example.com' },
       'Temp4Pass',
-      SITE_URL,
+      LOGIN_URL,
       PROFILE_URL,
     );
 
@@ -78,10 +84,44 @@ describe('buildMemberChangesEmail', () => {
       PROFILE_URL,
     );
 
-    expect(email.text).toContain('Rating: 1550 (previously 1500)');
-    expect(email.text).toContain('City: Toronto (previously London)');
+    expect(email.text).toContain('Rating: previous 1500, new 1550');
+    expect(email.text).toContain('City: previous London, new Toronto');
     expect(email.text).toContain(PROFILE_URL);
-    expect(email.html).toContain('<td style="padding: 6px 0;">1550</td>');
+    expect(email.html).toMatch(/<td[^>]*>1550<\/td>/);
     expect(email.html).toContain(`<a href="${PROFILE_URL}">`);
+  });
+});
+
+describe('buildVerificationCodeEmail', () => {
+  it('should give the reader their code', () => {
+    const email = buildVerificationCodeEmail('123456');
+
+    expect(email.subject).toBe('Your London Chess verification code');
+    expect(email.text).toContain('123456');
+    expect(email.html).toContain('123456');
+  });
+});
+
+describe('buildDetailsChangeRequestEmail', () => {
+  it('should name the member and list each requested change', () => {
+    const email = buildDetailsChangeRequestEmail('Jane Doe', [
+      { label: 'City', before: 'London', after: 'Toronto' },
+    ]);
+
+    expect(email.subject).toBe('Member details change request from Jane Doe');
+    expect(email.text).toContain('Jane Doe has requested these changes');
+    expect(email.text).toContain('City: current London, requested Toronto');
+  });
+});
+
+describe('buildAccountRequestEmail', () => {
+  it('should name the requester and list their details', () => {
+    const email = buildAccountRequestEmail('Jane Doe', [
+      ['Name', 'Jane Doe'],
+      ['Email', 'jane@example.com'],
+    ]);
+
+    expect(email.subject).toBe('New account request from Jane Doe');
+    expect(email.text).toContain('Name: Jane Doe\nEmail: jane@example.com');
   });
 });

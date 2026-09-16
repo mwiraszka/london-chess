@@ -59,6 +59,15 @@ describe('FooterComponent', () => {
         expect(clubNameText).toContain('London Chess Club');
         expect(clubNameText).toContain(`v${component.CURRENT_VERSION}`);
       });
+
+      it('should link the version to its card on the website changelog page', () => {
+        const versionLink = query(fixture.debugElement, '.website-version');
+
+        expect(versionLink.nativeElement.getAttribute('href')).toBe(
+          `/website-changelog#v${component.CURRENT_VERSION}`,
+        );
+        expect(versionLink.nativeElement.target).toBe('');
+      });
     });
 
     describe('social links', () => {

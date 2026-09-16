@@ -5,6 +5,7 @@ import {
   CardComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
+  SkeletonComponent,
   TrophyIconComponent,
   UserIconComponent,
 } from '@eagami/ui';
@@ -26,6 +27,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
@@ -46,6 +48,7 @@ import { isCityChampion } from '@app/utils';
     PageHeaderComponent,
     RouterLink,
     ShieldCheckIconComponent,
+    SkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -62,6 +65,7 @@ export class MemberProfilePageComponent implements OnInit {
 
   protected readonly isNameTruncated = signal(false);
   protected readonly pageIcon = UserIconComponent;
+  protected readonly placeholderMember = PLACEHOLDER_PROFILE_MEMBER;
 
   public viewModel$?: Observable<{
     member: Member | null;
@@ -89,7 +93,6 @@ export class MemberProfilePageComponent implements OnInit {
     this.metaAndTitleService.updateTitle('Member Profile');
     this.metaAndTitleService.updateDescription('Profile of a London Chess Club member.');
 
-    // The route guard has already loaded the member for every number this page shows
     this.viewModel$ = this.route.paramMap.pipe(
       map(params => Number(params.get('number'))),
       switchMap(memberNumber =>

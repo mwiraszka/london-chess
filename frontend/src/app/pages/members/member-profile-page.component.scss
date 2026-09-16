@@ -15,6 +15,23 @@
   margin: 8px auto;
 }
 
+.profile-card {
+  position: relative;
+
+  ea-skeleton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+}
+
+// The cards keep their size under the skeletons, so nothing shifts when the member arrives
+.profile--loading ea-card {
+  visibility: hidden;
+}
+
 .summary {
   container-type: inline-size;
 }

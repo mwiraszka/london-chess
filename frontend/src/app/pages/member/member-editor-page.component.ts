@@ -21,25 +21,27 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
   selector: 'lcc-member-editor-page',
   template: `
     @if (viewModel$ | async; as vm) {
-      <lcc-page-header
-        [hasUnsavedChanges]="vm.hasUnsavedChanges"
-        [icon]="adminIcon"
-        [heading]="vm.pageHeading">
-      </lcc-page-header>
+      @if (vm.isFormReady) {
+        <lcc-page-header
+          [hasUnsavedChanges]="vm.hasUnsavedChanges"
+          [icon]="adminIcon"
+          [heading]="vm.pageHeading">
+        </lcc-page-header>
 
-      <lcc-member-form
-        [formData]="vm.formData"
-        [hasUnsavedChanges]="vm.hasUnsavedChanges"
-        [isSafeMode]="vm.isSafeMode"
-        [originalMember]="vm.originalMember"
-        (cancel)="onCancel()"
-        (change)="onChange($event.memberId, $event.formData)"
-        (requestAddMember)="onRequestAddMember($event.notifyMember)"
-        (requestUpdateMember)="
-          onRequestUpdateMember($event.memberId, $event.notifyMember)
-        "
-        (restore)="onRestore($event)">
-      </lcc-member-form>
+        <lcc-member-form
+          [formData]="vm.formData"
+          [hasUnsavedChanges]="vm.hasUnsavedChanges"
+          [isSafeMode]="vm.isSafeMode"
+          [originalMember]="vm.originalMember"
+          (cancel)="onCancel()"
+          (change)="onChange($event.memberId, $event.formData)"
+          (requestAddMember)="onRequestAddMember($event.notifyMember)"
+          (requestUpdateMember)="
+            onRequestUpdateMember($event.memberId, $event.notifyMember)
+          "
+          (restore)="onRestore($event)">
+        </lcc-member-form>
+      }
 
       <lcc-link-list [links]="[membersPageLink]"></lcc-link-list>
     }
@@ -58,6 +60,7 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
   public viewModel$?: Observable<{
     formData: MemberFormData;
     hasUnsavedChanges: boolean;
+    isFormReady: boolean;
     isSafeMode: boolean;
     originalMember: Member | null;
     pageHeading: string;
@@ -79,17 +82,30 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
           this.store.select(MembersSelectors.selectMemberFormDataById(memberId)),
           this.store.select(MembersSelectors.selectHasUnsavedChanges(memberId)),
           this.store.select(AppSelectors.selectIsSafeMode),
-        ]),
+          this.store.select(MembersSelectors.selectRecordsScope),
+        ]).pipe(
+          map(
+            ([
+              originalMember,
+              formData,
+              hasUnsavedChanges,
+              isSafeMode,
+              recordsScope,
+            ]) => ({
+              originalMember,
+              formData,
+              hasUnsavedChanges,
+              // The form reads its values once, so it waits for the record admins fetch
+              isFormReady:
+                memberId === null || (!!originalMember && recordsScope === 'admin'),
+              isSafeMode,
+              pageHeading: originalMember
+                ? `Edit ${originalMember.firstName} ${originalMember.lastName}`
+                : 'Add a member',
+            }),
+          ),
+        ),
       ),
-      map(([originalMember, formData, hasUnsavedChanges, isSafeMode]) => ({
-        originalMember,
-        formData,
-        hasUnsavedChanges,
-        isSafeMode,
-        pageHeading: originalMember
-          ? `Edit ${originalMember.firstName} ${originalMember.lastName}`
-          : 'Add a member',
-      })),
       tap(viewModel => {
         this.metaAndTitleService.updateTitle(viewModel.pageHeading);
         this.metaAndTitleService.updateDescription(

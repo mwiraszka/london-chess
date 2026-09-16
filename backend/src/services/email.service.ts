@@ -1,5 +1,7 @@
 import nodemailer, { Transporter } from 'nodemailer';
 
+import { EmailContent } from '../util/email-template.util';
+
 const SMTP_HOST = 'smtppro.zoho.com';
 const SMTP_PORT = 465;
 const SENDER = 'London Chess <noreply@londonchess.ca>';
@@ -8,9 +10,7 @@ let transport: Transporter | null = null;
 
 export async function sendEmail(
   to: string,
-  subject: string,
-  text: string,
-  html?: string,
+  { subject, text, html }: EmailContent,
 ): Promise<void> {
   const { ZOHO_SMTP_USER, ZOHO_SMTP_PASSWORD } = process.env;
   if (!ZOHO_SMTP_USER || !ZOHO_SMTP_PASSWORD) {
@@ -34,14 +34,10 @@ export async function sendEmail(
 }
 
 // Sends a notification to the club admin mailbox over Zoho SMTP
-export async function sendAdminEmail(
-  subject: string,
-  text: string,
-  html?: string,
-): Promise<void> {
+export async function sendAdminEmail(email: EmailContent): Promise<void> {
   const { NOTIFY_EMAIL } = process.env;
   if (!NOTIFY_EMAIL) {
     throw new Error('Unable to parse SMTP environment variables.');
   }
-  await sendEmail(NOTIFY_EMAIL, subject, text, html);
+  await sendEmail(NOTIFY_EMAIL, email);
 }
