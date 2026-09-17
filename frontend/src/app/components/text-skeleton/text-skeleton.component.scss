@@ -1,0 +1,13 @@
+// A line of text in the surrounding font, so it takes up exactly the space of the text it stands in for
+:host {
+  position: relative;
+  display: inline-block;
+}
+
+.bar {
+  position: absolute;
+  top: 0.2em;
+  right: 0;
+  bottom: 0.2em;
+  left: 0;
+}

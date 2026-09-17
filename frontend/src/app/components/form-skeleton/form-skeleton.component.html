@@ -1,0 +1,34 @@
+<div class="heading">
+  <ea-skeleton
+    variant="text"
+    width="100%"
+    height="100%" />
+</div>
+
+<div class="fields">
+  @for (field of fields(); track field) {
+    <div class="label">
+      <ea-skeleton
+        variant="text"
+        width="100%"
+        height="100%" />
+    </div>
+    <div class="control">
+      <ea-skeleton
+        variant="rect"
+        width="100%"
+        height="100%" />
+    </div>
+  }
+</div>
+
+<div class="buttons">
+  @for (button of [0, 1]; track button) {
+    <div class="button">
+      <ea-skeleton
+        variant="rect"
+        width="100%"
+        height="100%" />
+    </div>
+  }
+</div>
