@@ -5,7 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { MetaAndTitleService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { query } from '@app/utils';
@@ -37,6 +37,7 @@ describe('PhotoGalleryPageComponent', () => {
             updateDescription: vi.fn(),
           },
         },
+        { provide: StoreRequestService, useValue: { dispatch: vi.fn() } },
         provideMockStore(),
         provideRouter([]),
       ],
@@ -54,10 +55,7 @@ describe('PhotoGalleryPageComponent', () => {
 
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
     store.overrideSelector(ImagesSelectors.selectPhotoImages, mockPhotoImages);
-    store.overrideSelector(
-      ImagesSelectors.selectLastMetadataFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
+    store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loaded');
     store.refreshState();
   });
 
@@ -81,40 +79,19 @@ describe('PhotoGalleryPageComponent', () => {
 
       expect(vm).toStrictEqual({
         isAdmin: mockIsAdmin,
-        isLoading: false,
         photoImages: mockPhotoImages,
+        status: 'loaded',
       });
     });
   });
 
-  describe('isLoading', () => {
-    it('should be true when images have not been fetched yet', async () => {
-      store.overrideSelector(ImagesSelectors.selectLastMetadataFetch, null);
-      store.refreshState();
-      component.ngOnInit();
-
-      const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
-
-      expect(vm.isLoading).toBe(true);
-    });
-
-    it('should be false when images have been fetched', async () => {
-      component.ngOnInit();
-
-      const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
-
-      expect(vm.isLoading).toBe(false);
-    });
-  });
-
-  describe('onRequestDeleteAlbum', () => {
-    it('should dispatch deleteAlbumRequested action', () => {
-      const album = 'Test Album';
-      component.onRequestDeleteAlbum(album);
+  describe('onRetry', () => {
+    it('should fetch the photos again', () => {
+      component.onRetry();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.deleteAlbumRequested({ album }),
+        ImagesActions.fetchAllImagesMetadataRequested(),
       );
     });
   });
@@ -135,6 +112,42 @@ describe('PhotoGalleryPageComponent', () => {
       it('should render page header and photo grid', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-photo-grid')).toBeTruthy();
+      });
+    });
+
+    describe('while the photos load', () => {
+      beforeEach(() => {
+        store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loading');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render the photo grid as a skeleton', () => {
+        const photoGrid = query(fixture.debugElement, 'lcc-photo-grid');
+
+        expect(photoGrid.componentInstance.isLoading).toBe(true);
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe('when the photos fail to load', () => {
+      beforeEach(() => {
+        store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the photo grid', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-photo-grid')).toBeFalsy();
+      });
+
+      it('should fetch the photos again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ImagesActions.fetchAllImagesMetadataRequested(),
+        );
       });
     });
   });

@@ -6,8 +6,9 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
-import { DialogService } from '@app/services';
-import { query, queryAll, queryTextContent } from '@app/utils';
+import { DialogService, StoreRequestService } from '@app/services';
+import { ArticlesActions } from '@app/store/articles';
+import { lastOpenedDialog, query, queryAll, queryTextContent } from '@app/utils';
 
 import { ArticleGridComponent } from './article-grid.component';
 
@@ -18,8 +19,7 @@ describe('ArticleGridComponent', () => {
   let dialogService: DialogService;
 
   let dialogOpenSpy: MockInstance;
-  let requestDeleteArticleSpy: MockInstance;
-  let requestUpdateArticleBookmarkSpy: MockInstance;
+  let storeRequestSpy: Mock;
 
   const mockOptions: DataPaginationOptions<Article> = {
     page: 1,
@@ -38,6 +38,10 @@ describe('ArticleGridComponent', () => {
           provide: DialogService,
           useValue: { open: vi.fn() },
         },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
         provideRouter([]),
       ],
     }).compileComponents();
@@ -48,11 +52,7 @@ describe('ArticleGridComponent', () => {
     dialogService = TestBed.inject(DialogService);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    requestDeleteArticleSpy = vi.spyOn(component.requestDeleteArticle, 'emit');
-    requestUpdateArticleBookmarkSpy = vi.spyOn(
-      component.requestUpdateArticleBookmark,
-      'emit',
-    );
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
     fixture.componentRef.setInput('articles', MOCK_ARTICLES);
     fixture.componentRef.setInput('images', MOCK_IMAGES);
@@ -177,29 +177,33 @@ describe('ArticleGridComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Delete ${mockArticle.title}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
-          },
+          }),
         },
         isModal: true,
       });
     });
 
-    it('should emit requestDeleteArticle when user confirms', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should delete the article from the confirmation dialog', async () => {
       await component.onDeleteArticle(mockArticle);
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(requestDeleteArticleSpy).toHaveBeenCalledWith(mockArticle);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        ArticlesActions.deleteArticleRequested({ article: mockArticle }),
+        [ArticlesActions.deleteArticleSucceeded, ArticlesActions.deleteArticleFailed],
+      );
     });
 
-    it('should not emit requestDeleteArticle when user cancels', async () => {
+    it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
+
       await component.onDeleteArticle(mockArticle);
 
-      expect(requestDeleteArticleSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -214,25 +218,28 @@ describe('ArticleGridComponent', () => {
         expect(dialogOpenSpy).toHaveBeenCalledWith({
           componentType: BasicDialogComponent,
           inputs: {
-            dialog: {
+            dialog: expect.objectContaining({
               title: 'Confirm',
               body: `Remove bookmark from article ${bookmarkedArticle.title}?`,
               confirmButtonText: 'Remove',
               confirmButtonType: 'primary',
-            },
+            }),
           },
           isModal: true,
         });
       });
 
-      it('should emit requestUpdateArticleBookmark with bookmark false when confirmed', async () => {
-        dialogOpenSpy.mockResolvedValue('confirm');
+      it('should remove the bookmark from the confirmation dialog', async () => {
         await component.onBookmarkArticle(bookmarkedArticle);
+        await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-        expect(requestUpdateArticleBookmarkSpy).toHaveBeenCalledWith({
-          articleId: bookmarkedArticle.id,
-          bookmark: false,
-        });
+        expect(storeRequestSpy).toHaveBeenCalledWith(
+          ArticlesActions.updateArticleBookmarkRequested({
+            articleId: bookmarkedArticle.id,
+            bookmark: false,
+          }),
+          [ArticlesActions.updateArticleSucceeded, ArticlesActions.updateArticleFailed],
+        );
       });
     });
 
@@ -247,25 +254,28 @@ describe('ArticleGridComponent', () => {
         expect(dialogOpenSpy).toHaveBeenCalledWith({
           componentType: BasicDialogComponent,
           inputs: {
-            dialog: {
+            dialog: expect.objectContaining({
               title: 'Confirm',
               body: `Bookmark ${nonBookmarkedArticle.title}? This will make the article show up first in the list of articles.`,
               confirmButtonText: 'Bookmark',
               confirmButtonType: 'primary',
-            },
+            }),
           },
           isModal: true,
         });
       });
 
-      it('should emit requestUpdateArticleBookmark with bookmark true when confirmed', async () => {
-        dialogOpenSpy.mockResolvedValue('confirm');
+      it('should bookmark the article from the confirmation dialog', async () => {
         await component.onBookmarkArticle(nonBookmarkedArticle);
+        await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-        expect(requestUpdateArticleBookmarkSpy).toHaveBeenCalledWith({
-          articleId: nonBookmarkedArticle.id,
-          bookmark: true,
-        });
+        expect(storeRequestSpy).toHaveBeenCalledWith(
+          ArticlesActions.updateArticleBookmarkRequested({
+            articleId: nonBookmarkedArticle.id,
+            bookmark: true,
+          }),
+          [ArticlesActions.updateArticleSucceeded, ArticlesActions.updateArticleFailed],
+        );
       });
     });
   });

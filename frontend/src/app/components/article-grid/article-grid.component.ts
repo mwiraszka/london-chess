@@ -3,11 +3,10 @@ import { BookmarkIconComponent, SkeletonComponent } from '@eagami/ui';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
   Input,
   OnChanges,
-  Output,
   SimpleChanges,
+  inject,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -29,7 +28,8 @@ import {
   RouterLinkPipe,
   SummarizeArticlePipe,
 } from '@app/pipes';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { ArticlesActions } from '@app/store/articles';
 import { isDefined } from '@app/utils';
 
 interface ArticleRow {
@@ -64,18 +64,14 @@ export class ArticleGridComponent implements OnChanges {
   @Input() isLoading?: boolean;
   @Input() options?: DataPaginationOptions<Article>;
 
-  @Output() requestDeleteArticle = new EventEmitter<Article>();
-  @Output() requestUpdateArticleBookmark = new EventEmitter<{
-    articleId: Id;
-    bookmark: boolean;
-  }>();
-
   public visibleRows: ArticleRow[] = [];
 
   private readonly skeletonRow: ArticleRow = {
     article: {} as Article,
     bannerImage: null,
   };
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(private readonly dialogService: DialogService) {}
 
@@ -133,19 +129,18 @@ export class ArticleGridComponent implements OnChanges {
       body: `Delete ${article.title}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(ArticlesActions.deleteArticleRequested({ article }), [
+          ArticlesActions.deleteArticleSucceeded,
+          ArticlesActions.deleteArticleFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
-
-    if (result === 'confirm') {
-      this.requestDeleteArticle.emit(article);
-    }
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
   }
 
   public async onBookmarkArticle(article: Article): Promise<void> {
@@ -157,21 +152,20 @@ export class ArticleGridComponent implements OnChanges {
         : `Bookmark ${article.title}? This will make the article show up first in the list of articles.`,
       confirmButtonText: hasBookmark ? 'Remove' : 'Bookmark',
       confirmButtonType: 'primary',
+      confirmAction: () =>
+        this.storeRequests.dispatch(
+          ArticlesActions.updateArticleBookmarkRequested({
+            articleId: article.id,
+            bookmark: !hasBookmark,
+          }),
+          [ArticlesActions.updateArticleSucceeded, ArticlesActions.updateArticleFailed],
+        ),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
-
-    if (result === 'confirm') {
-      this.requestUpdateArticleBookmark.emit({
-        articleId: article.id!,
-        bookmark: !hasBookmark,
-      });
-    }
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
   }
 }

@@ -1,6 +1,7 @@
+import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick, uniq } from 'lodash';
-import { BehaviorSubject, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -52,6 +53,7 @@ describe('ImageEditorPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ImageEditorPageComponent],
       providers: [
+        provideMockActions(() => EMPTY),
         {
           provide: ActivatedRoute,
           useValue: { params: mockParamsSubject.asObservable() },
@@ -109,8 +111,10 @@ describe('ImageEditorPageComponent', () => {
             image: MOCK_IMAGES[0],
             formData: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
           },
+          imageId: MOCK_IMAGES[0].id,
           newImageFormData: null,
           pageHeading: `Edit ${MOCK_IMAGES[0].filename}`,
+          status: 'loaded',
         });
       });
 
@@ -138,8 +142,10 @@ describe('ImageEditorPageComponent', () => {
           existingAlbums: uniq(MOCK_IMAGES.map(image => image.album)),
           hasUnsavedChanges: false,
           imageEntity: null,
+          imageId: null,
           newImageFormData: null,
           pageHeading: 'Add an image',
+          status: 'loaded',
         });
       });
 
@@ -196,18 +202,6 @@ describe('ImageEditorPageComponent', () => {
     });
   });
 
-  describe('onRequestAddImage', () => {
-    it('should dispatch addImageRequested action', () => {
-      const mockImageId = 'abc123abc123';
-      component.onRequestAddImage(mockImageId);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.addImageRequested({ imageId: mockImageId }),
-      );
-    });
-  });
-
   describe('onRequestFetchMainImage', () => {
     it('should dispatch fetchMainImageRequested action', () => {
       const mockImageId = 'abc123abc123';
@@ -220,15 +214,20 @@ describe('ImageEditorPageComponent', () => {
     });
   });
 
-  describe('onRequestUpdateAlbum', () => {
-    it('should dispatch updateAlbumRequested action', () => {
-      const mockImage = 'abc123abc123';
-      component.onRequestUpdateImage(mockImage);
+  describe('onRetry', () => {
+    it('should fetch the image again', () => {
+      component.onRetry(MOCK_IMAGES[0].id);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.updateImageRequested({ imageId: mockImage }),
+        ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
       );
+    });
+
+    it('should not fetch anything for a new image', () => {
+      component.onRetry(null);
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -262,6 +261,45 @@ describe('ImageEditorPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-image-form')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('while the image is loading', () => {
+      beforeEach(() => {
+        mockParamsSubject.next({ image_id: 'unknown-id' });
+        fixture.detectChanges();
+      });
+
+      it('should render a form skeleton in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-image-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe('when the image fails to load', () => {
+      beforeEach(() => {
+        store.setState({
+          imagesState: { ...imagesInitialState, failedLoads: ['mainImage'] },
+        });
+        mockParamsSubject.next({ image_id: 'unknown-id' });
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-image-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+
+      it('should fetch the image again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ImagesActions.fetchMainImageRequested({ imageId: 'unknown-id' }),
+        );
       });
     });
   });

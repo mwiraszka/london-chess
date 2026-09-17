@@ -10,6 +10,7 @@ import {
   Input,
   OnInit,
   Output,
+  inject,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -32,7 +33,8 @@ import {
   EventFormGroup,
   Id,
 } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { EventsActions } from '@app/store/events';
 import { isValidTime } from '@app/utils';
 import { idValidator, textValidator, timeValidator } from '@app/validators';
 
@@ -61,11 +63,11 @@ export class EventFormComponent implements OnInit {
     eventId: Id | null;
     formData: Partial<EventFormData>;
   }>();
-  @Output() requestAddEvent = new EventEmitter<void>();
-  @Output() requestUpdateEvent = new EventEmitter<Id>();
   @Output() restore = new EventEmitter<Id | null>();
 
   public form!: FormGroup<EventFormGroup>;
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -123,25 +125,26 @@ export class EventFormComponent implements OnInit {
         ? `Update ${this.originalEvent.title} event?`
         : `Add ${this.formData.title} to schedule?`,
       confirmButtonText: this.originalEvent ? 'Update' : 'Add',
+      confirmAction: () => this.save(),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: false,
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: false,
+    });
+  }
 
-    if (result !== 'confirm') {
-      return;
-    }
-
-    if (this.originalEvent) {
-      this.requestUpdateEvent.emit(this.originalEvent.id);
-    } else {
-      this.requestAddEvent.emit();
-    }
+  private save(): Promise<unknown> {
+    return this.originalEvent
+      ? this.storeRequests.dispatch(
+          EventsActions.updateEventRequested({ eventId: this.originalEvent.id }),
+          [EventsActions.updateEventSucceeded, EventsActions.updateEventFailed],
+        )
+      : this.storeRequests.dispatch(EventsActions.addEventRequested(), [
+          EventsActions.addEventSucceeded,
+          EventsActions.addEventFailed,
+        ]);
   }
 
   private initForm(): void {

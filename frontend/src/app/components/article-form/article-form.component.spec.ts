@@ -12,9 +12,10 @@ import { ARTICLE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { ArticlesActions } from '@app/store/articles';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 
 import { ArticleFormComponent } from './article-form.component';
 
@@ -42,8 +43,7 @@ describe('ArticleFormComponent', () => {
   let initFormValueChangeListenerSpy: MockInstance;
   let insertImageSpy: MockInstance;
   let requestFetchMainImageSpy: MockInstance;
-  let requestPublishArticleSpy: MockInstance;
-  let requestUpdateArticleSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let restoreSpy: MockInstance;
   let revertBannerImageSpy: MockInstance;
   let selectBannerImageSpy: MockInstance;
@@ -57,6 +57,10 @@ describe('ArticleFormComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         FormBuilder,
       ],
@@ -84,8 +88,7 @@ describe('ArticleFormComponent', () => {
     );
     insertImageSpy = vi.spyOn(component, 'onInsertImage');
     requestFetchMainImageSpy = vi.spyOn(component.requestFetchMainImage, 'emit');
-    requestPublishArticleSpy = vi.spyOn(component.requestPublishArticle, 'emit');
-    requestUpdateArticleSpy = vi.spyOn(component.requestUpdateArticle, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     restoreSpy = vi.spyOn(component.restore, 'emit');
     revertBannerImageSpy = vi.spyOn(component, 'onRevertBannerImage');
     selectBannerImageSpy = vi.spyOn(component, 'onSelectBannerImage');
@@ -369,8 +372,7 @@ describe('ArticleFormComponent', () => {
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
-    it('should open confirmation dialog with correct data and emit request publish article event if adding a new article', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should publish a new article from the confirmation dialog', async () => {
       fixture.componentRef.setInput('originalArticle', null);
       fixture.componentRef.setInput(
         'formData',
@@ -378,23 +380,26 @@ describe('ArticleFormComponent', () => {
       );
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Publish ${MOCK_ARTICLES[3].title} to News page?`,
             confirmButtonText: 'Publish',
-          },
+          }),
         },
       });
-      expect(requestPublishArticleSpy).toHaveBeenCalled();
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        ArticlesActions.publishArticleRequested(),
+        [ArticlesActions.publishArticleSucceeded, ArticlesActions.publishArticleFailed],
+      );
     });
 
-    it('should open confirmation dialog with correct data and emit request update article event if updating an article', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should update an existing article from the confirmation dialog', async () => {
       fixture.componentRef.setInput('originalArticle', MOCK_ARTICLES[2]);
       fixture.componentRef.setInput(
         'formData',
@@ -402,22 +407,26 @@ describe('ArticleFormComponent', () => {
       );
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Update ${MOCK_ARTICLES[2].title} article?`,
             confirmButtonText: 'Update',
-          },
+          }),
         },
       });
-      expect(requestUpdateArticleSpy).toHaveBeenCalledWith(MOCK_ARTICLES[2].id);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        ArticlesActions.updateArticleRequested({ articleId: MOCK_ARTICLES[2].id }),
+        [ArticlesActions.updateArticleSucceeded, ArticlesActions.updateArticleFailed],
+      );
     });
 
-    it('should not emit publish or update event if dialog is cancelled', async () => {
+    it('should not save anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
       fixture.componentRef.setInput(
         'formData',
@@ -428,8 +437,7 @@ describe('ArticleFormComponent', () => {
       await component.onSubmit();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(requestPublishArticleSpy).not.toHaveBeenCalled();
-      expect(requestUpdateArticleSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 

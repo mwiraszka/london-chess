@@ -10,79 +10,109 @@
     (optionsChangeNoFetch)="onOptionsChange($event, false)">
   </lcc-data-toolbar>
 
-  <div class="image-grid-wrapper">
-    <div
-      class="image-grid"
-      [attr.card-count]="vm.images.length"
-      cdkScrollable>
-      @for (image of vm.images; track image.id) {
-        <div
-          class="image-card"
-          [class.selectable]="selectable"
-          [adminControls]="getAdminControlsConfig(image)"
-          (click)="selectable ? dialogResult.emit(image.id) : null">
-          <div class="image-container">
-            <lcc-image [image]="image" />
-          </div>
-
-          <div class="caption">
-            <label>Caption:</label>
-            <span
-              class="lcc-truncate"
-              [innerHTML]="image.caption | highlight: vm.options.search">
-            </span>
-          </div>
-
-          <div class="filename">
-            <label>Filename:</label>
-            <span
-              class="lcc-truncate"
-              [innerHTML]="image.filename | highlight: vm.options.search">
-            </span>
-          </div>
-
-          @if (image.mainFileSize) {
-            <div class="file-size">
-              <label>File size:</label>
-              <span class="lcc-truncate">
-                {{ image.mainFileSize | formatBytes }}
-              </span>
+  @if (vm.status === 'failed') {
+    <lcc-load-failed
+      title="Unable to load images"
+      (retry)="onRetry()" />
+  } @else {
+    <div class="image-grid-wrapper">
+      <div
+        class="image-grid"
+        [attr.aria-busy]="vm.status === 'loading'"
+        [attr.card-count]="
+          vm.status === 'loading' ? vm.skeletonCards.length : vm.images.length
+        "
+        cdkScrollable>
+        @if (vm.status === 'loading') {
+          @for (card of vm.skeletonCards; track card) {
+            <div class="image-card">
+              <div class="image-container">
+                <ea-skeleton
+                  variant="rect"
+                  width="100%"
+                  height="100%" />
+              </div>
+              @for (line of [0, 1, 2]; track line) {
+                <div class="skeleton-line">
+                  <ea-skeleton
+                    variant="text"
+                    width="100%"
+                    height="100%" />
+                </div>
+              }
             </div>
           }
+        } @else {
+          @for (image of vm.images; track image.id) {
+            <div
+              class="image-card"
+              [class.selectable]="selectable"
+              [adminControls]="getAdminControlsConfig(image)"
+              (click)="selectable ? dialogResult.emit(image.id) : null">
+              <div class="image-container">
+                <lcc-image [image]="image" />
+              </div>
 
-          @if (image.mainWidth && image.mainHeight) {
-            <div class="dimensions">
-              <label>Dimensions:</label>
-              <span class="lcc-truncate">
-                {{ image.mainWidth }} x {{ image.mainHeight }} px
-              </span>
+              <div class="caption">
+                <label>Caption:</label>
+                <span
+                  class="lcc-truncate"
+                  [innerHTML]="image.caption | highlight: vm.options.search">
+                </span>
+              </div>
+
+              <div class="filename">
+                <label>Filename:</label>
+                <span
+                  class="lcc-truncate"
+                  [innerHTML]="image.filename | highlight: vm.options.search">
+                </span>
+              </div>
+
+              @if (image.mainFileSize) {
+                <div class="file-size">
+                  <label>File size:</label>
+                  <span class="lcc-truncate">
+                    {{ image.mainFileSize | formatBytes }}
+                  </span>
+                </div>
+              }
+
+              @if (image.mainWidth && image.mainHeight) {
+                <div class="dimensions">
+                  <label>Dimensions:</label>
+                  <span class="lcc-truncate">
+                    {{ image.mainWidth }} x {{ image.mainHeight }} px
+                  </span>
+                </div>
+              }
+
+              <div class="upload-date">
+                <label>Upload date:</label>
+                <span class="lcc-truncate">
+                  {{ image.modificationInfo.dateCreated | formatDate: 'short' }}
+                </span>
+              </div>
+
+              <div class="album">
+                <label>Album:</label>
+                <span
+                  class="lcc-truncate-max-2-lines"
+                  [innerHTML]="image.album | highlight: vm.options.search">
+                </span>
+              </div>
+
+              @if (image?.articleAppearances; as num) {
+                <div class="article-appearances">
+                  <span>(Used in</span>
+                  <b>{{ num }}</b>
+                  <span>{{ num! > 1 ? 'articles' : 'article' }})</span>
+                </div>
+              }
             </div>
           }
-
-          <div class="upload-date">
-            <label>Upload date:</label>
-            <span class="lcc-truncate">
-              {{ image.modificationInfo.dateCreated | formatDate: 'short' }}
-            </span>
-          </div>
-
-          <div class="album">
-            <label>Album:</label>
-            <span
-              class="lcc-truncate-max-2-lines"
-              [innerHTML]="image.album | highlight: vm.options.search">
-            </span>
-          </div>
-
-          @if (image?.articleAppearances; as num) {
-            <div class="article-appearances">
-              <span>(Used in</span>
-              <b>{{ num }}</b>
-              <span>{{ num! > 1 ? 'articles' : 'article' }})</span>
-            </div>
-          }
-        </div>
-      }
+        }
+      </div>
     </div>
-  </div>
+  }
 }

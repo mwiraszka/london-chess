@@ -7,9 +7,10 @@ import { map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
-import { Image } from '@app/models';
+import { Image, LoadStatus } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
@@ -24,15 +25,20 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
         [icon]="pageIcon">
       </lcc-page-header>
 
-      <lcc-photo-grid
-        [isAdmin]="vm.isAdmin"
-        [isLoading]="vm.isLoading"
-        [photoImages]="vm.photoImages"
-        (requestDeleteAlbum)="onRequestDeleteAlbum($event)">
-      </lcc-photo-grid>
+      @if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load photos"
+          (retry)="onRetry()" />
+      } @else {
+        <lcc-photo-grid
+          [isAdmin]="vm.isAdmin"
+          [isLoading]="vm.status === 'loading'"
+          [photoImages]="vm.photoImages">
+        </lcc-photo-grid>
+      }
     }
   `,
-  imports: [CommonModule, PageHeaderComponent, PhotoGridComponent],
+  imports: [CommonModule, LoadFailedComponent, PageHeaderComponent, PhotoGridComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhotoGalleryPageComponent implements OnInit {
@@ -40,8 +46,8 @@ export class PhotoGalleryPageComponent implements OnInit {
 
   public viewModel$?: Observable<{
     isAdmin: boolean;
-    isLoading: boolean;
     photoImages: Image[];
+    status: LoadStatus;
   }>;
 
   constructor(
@@ -58,18 +64,14 @@ export class PhotoGalleryPageComponent implements OnInit {
     this.viewModel$ = combineLatest([
       this.store.select(AuthSelectors.selectIsAdmin),
       this.store.select(ImagesSelectors.selectPhotoImages),
-      this.store.select(ImagesSelectors.selectLastMetadataFetch),
+      this.store.select(ImagesSelectors.selectMetadataStatus),
     ]).pipe(
       untilDestroyed(this),
-      map(([isAdmin, photoImages, lastMetadataFetch]) => ({
-        isAdmin,
-        isLoading: lastMetadataFetch === null,
-        photoImages,
-      })),
+      map(([isAdmin, photoImages, status]) => ({ isAdmin, photoImages, status })),
     );
   }
 
-  public onRequestDeleteAlbum(album: string): void {
-    this.store.dispatch(ImagesActions.deleteAlbumRequested({ album }));
+  public onRetry(): void {
+    this.store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
   }
 }

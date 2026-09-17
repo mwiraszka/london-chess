@@ -8,11 +8,10 @@ import { UpperCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
   Input,
   OnChanges,
-  Output,
   SimpleChanges,
+  inject,
 } from '@angular/core';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
@@ -30,7 +29,8 @@ import {
   Image,
   InternalLink,
 } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { ImagesActions } from '@app/store/images';
 import { customSort } from '@app/utils';
 
 @Component({
@@ -52,8 +52,6 @@ export class PhotoGridComponent implements OnChanges {
 
   @Input() public isLoading?: boolean;
   @Input() public maxAlbums?: number;
-
-  @Output() public readonly requestDeleteAlbum = new EventEmitter<string>();
 
   public visibleAlbumCovers: Image[] = [];
 
@@ -81,6 +79,8 @@ export class PhotoGridComponent implements OnChanges {
     text: 'Create an album',
     icon: PlusCircleIconComponent,
   };
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(private readonly dialogService: DialogService) {}
 
@@ -139,7 +139,7 @@ export class PhotoGridComponent implements OnChanges {
   public getAdminControlsConfig(album: string): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onRequestDeleteAlbum(album),
+      deleteCb: () => this.onDeleteAlbum(album),
       editPath: ['album', 'edit', album],
       editInNewTab: true,
       isEditDisabled: false,
@@ -148,25 +148,24 @@ export class PhotoGridComponent implements OnChanges {
     };
   }
 
-  public async onRequestDeleteAlbum(album: string): Promise<void> {
+  public async onDeleteAlbum(album: string): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
       body: `Delete ${album} and its ${this.getAlbumPhotoCountText(album)}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(ImagesActions.deleteAlbumRequested({ album }), [
+          ImagesActions.deleteAlbumSucceeded,
+          ImagesActions.deleteAlbumFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
-
-    if (result === 'confirm') {
-      this.requestDeleteAlbum.emit(album);
-    }
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
   }
 
   public getAlbumPhotoCountText(album: string): string {

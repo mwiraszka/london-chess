@@ -18,8 +18,9 @@
         [id]="group.events[0].id">
         <td class="event-date-cell">
           @if (showSkeleton) {
-            <div class="event-date-widget skeleton-date-widget">
+            <div class="event-date-widget">
               <ea-skeleton
+                class="date-skeleton"
                 variant="circle"
                 width="100%"
                 height="100%" />
@@ -42,20 +43,32 @@
         <td class="event-details-cell">
           @if (showSkeleton) {
             <div class="event-entry">
-              <div class="main-content skeleton-main-content">
-                <div class="skeleton-line wide">
-                  <ea-skeleton
-                    variant="rect"
-                    width="100%"
-                    height="100%" />
+              <div class="main-content">
+                <div class="title-and-type">
+                  <h3 class="title">
+                    <lcc-text-skeleton width="16ch" />
+                  </h3>
+                  <div class="type-container">
+                    <span class="type">
+                      <lcc-text-skeleton width="12ch" />
+                    </span>
+                  </div>
                 </div>
-                <div class="skeleton-line narrow">
-                  <ea-skeleton
-                    variant="rect"
-                    width="100%"
-                    height="100%" />
-                </div>
+                <p class="event-details">
+                  <lcc-text-skeleton width="36ch" />
+                </p>
               </div>
+
+              @if (showModificationInfo) {
+                <aside class="created-and-edited">
+                  <div>
+                    <lcc-text-skeleton width="20ch" />
+                  </div>
+                  <div>
+                    <lcc-text-skeleton width="18ch" />
+                  </div>
+                </aside>
+              }
             </div>
           } @else {
             @for (event of group.events; track event.id) {

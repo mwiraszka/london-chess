@@ -38,15 +38,18 @@
         [adminButtons]="[exportToCsvButton]">
       </lcc-admin-toolbar>
     }
-    @if (vm.isLoadingEvents || vm.homePageEvents.length) {
+    @if (vm.eventsStatus === 'failed') {
+      <lcc-load-failed
+        title="Unable to load upcoming events"
+        (retry)="onRetryEvents()" />
+    } @else if (vm.eventsStatus === 'loading' || vm.homePageEvents.length) {
       <div class="events-table-wrapper">
         <lcc-events-table
           [dateLimit]="5"
           [events]="vm.homePageEvents"
           [isAdmin]="vm.isAdmin"
-          [isLoading]="vm.isLoadingEvents"
-          [nextEvent]="vm.nextEvent"
-          (requestDeleteEvent)="onRequestDeleteEvent($event)">
+          [isLoading]="vm.eventsStatus === 'loading'"
+          [nextEvent]="vm.nextEvent">
         </lcc-events-table>
       </div>
       <lcc-link-list [links]="[schedulePageLink]"></lcc-link-list>
@@ -58,26 +61,35 @@
     @if (vm.isAdmin) {
       <lcc-admin-toolbar [adminLinks]="[createArticleLink]"></lcc-admin-toolbar>
     }
-    <lcc-article-grid
-      [articles]="vm.homePageArticles"
-      [images]="vm.allImages"
-      [isAdmin]="vm.isAdmin"
-      [isHomePage]="true"
-      [isLoading]="vm.isLoadingArticles || vm.isLoadingImages"
-      (requestDeleteArticle)="onRequestDeleteArticle($event)"
-      (requestUpdateArticleBookmark)="onRequestUpdateArticleBookmark($event)">
-    </lcc-article-grid>
+    @if (vm.articlesStatus === 'failed') {
+      <lcc-load-failed
+        title="Unable to load the latest news"
+        (retry)="onRetryArticles()" />
+    } @else {
+      <lcc-article-grid
+        [articles]="vm.homePageArticles"
+        [images]="vm.allImages"
+        [isAdmin]="vm.isAdmin"
+        [isHomePage]="true"
+        [isLoading]="vm.articlesStatus === 'loading'">
+      </lcc-article-grid>
+    }
     <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
   </section>
 
   <section class="photos-section">
-    <lcc-photo-grid
-      [isAdmin]="vm.isAdmin"
-      [isLoading]="vm.isLoadingImages"
-      [maxAlbums]="20"
-      [photoImages]="vm.photoImages"
-      (requestDeleteAlbum)="onRequestDeleteAlbum($event)">
-    </lcc-photo-grid>
+    @if (vm.photosStatus === 'failed') {
+      <lcc-load-failed
+        title="Unable to load photos"
+        (retry)="onRetryPhotos()" />
+    } @else {
+      <lcc-photo-grid
+        [isAdmin]="vm.isAdmin"
+        [isLoading]="vm.photosStatus === 'loading'"
+        [maxAlbums]="20"
+        [photoImages]="vm.photoImages">
+      </lcc-photo-grid>
+    }
     <lcc-link-list [links]="[photoGalleryPageLink]"></lcc-link-list>
   </section>
 }

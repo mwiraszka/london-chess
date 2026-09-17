@@ -5,8 +5,9 @@ import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolb
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { DialogService } from '@app/services';
-import { query, queryAll, queryTextContent } from '@app/utils';
+import { DialogService, StoreRequestService } from '@app/services';
+import { EventsActions } from '@app/store/events';
+import { lastOpenedDialog, query, queryAll, queryTextContent } from '@app/utils';
 
 import { EventsTableComponent } from './events-table.component';
 
@@ -17,7 +18,7 @@ describe('EventsTableComponent', () => {
   let dialogService: DialogService;
 
   let dialogOpenSpy: MockInstance;
-  let requestDeleteEventSpy: MockInstance;
+  let storeRequestSpy: Mock;
 
   const mockEvents = MOCK_EVENTS.slice(0, 3);
   const mockIsAdmin = true;
@@ -45,6 +46,10 @@ describe('EventsTableComponent', () => {
           provide: DialogService,
           useValue: { open: vi.fn() },
         },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
         provideRouter([]),
       ],
     }).compileComponents();
@@ -55,7 +60,7 @@ describe('EventsTableComponent', () => {
     dialogService = TestBed.inject(DialogService);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    requestDeleteEventSpy = vi.spyOn(component.requestDeleteEvent, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
     fixture.componentRef.setInput('events', mockEvents);
     fixture.componentRef.setInput('isAdmin', mockIsAdmin);
@@ -221,29 +226,33 @@ describe('EventsTableComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Delete ${mockEvents[0].title}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
-          },
+          }),
         },
         isModal: true,
       });
     });
 
-    it('should emit request delete event when user confirms', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should delete the event from the confirmation dialog', async () => {
       await component.onDeleteEvent(mockEvents[2]);
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(requestDeleteEventSpy).toHaveBeenCalledWith(mockEvents[2]);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        EventsActions.deleteEventRequested({ event: mockEvents[2] }),
+        [EventsActions.deleteEventSucceeded, EventsActions.deleteEventFailed],
+      );
     });
 
-    it('should not emit request delete event when user cancels', async () => {
+    it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
+
       await component.onDeleteEvent(mockEvents[2]);
 
-      expect(requestDeleteEventSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -259,15 +268,42 @@ describe('EventsTableComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should render skeleton rows with placeholder elements', () => {
-        expect(query(fixture.debugElement, '.skeleton-date-widget')).toBeTruthy();
-        expect(query(fixture.debugElement, '.skeleton-main-content')).toBeTruthy();
+      it('should lay skeleton rows out like event rows', () => {
+        const row = query(fixture.debugElement, 'tbody tr[id]');
+
+        expect(
+          query(row, '.event-date-cell .event-date-widget .date-skeleton'),
+        ).toBeTruthy();
+        expect(
+          query(
+            row,
+            '.event-entry .main-content .title-and-type .title lcc-text-skeleton',
+          ),
+        ).toBeTruthy();
+        expect(
+          query(row, '.title-and-type .type-container .type lcc-text-skeleton'),
+        ).toBeTruthy();
+        expect(query(row, '.main-content .event-details lcc-text-skeleton')).toBeTruthy();
       });
 
-      it('should not render real date widgets or event entries', () => {
+      it('should not render any event data', () => {
         expect(query(fixture.debugElement, '.date-text')).toBeFalsy();
-        expect(query(fixture.debugElement, '.title')).toBeFalsy();
-        expect(query(fixture.debugElement, '.event-details')).toBeFalsy();
+        expect(query(fixture.debugElement, '.event-article-link')).toBeFalsy();
+        expect(queryTextContent(fixture.debugElement, '.title')).toBe('');
+        expect(queryTextContent(fixture.debugElement, '.event-details')).toBe('');
+      });
+
+      it('should lay out modification info when it will be shown', () => {
+        expect(
+          queryAll(fixture.debugElement, 'tr[id]:first-child .created-and-edited > div'),
+        ).toHaveLength(2);
+      });
+
+      it('should not lay out modification info when it will be hidden', () => {
+        fixture.componentRef.setInput('showModificationInfo', false);
+        fixture.detectChanges();
+
+        expect(query(fixture.debugElement, '.created-and-edited')).toBeFalsy();
       });
 
       it('should render the correct number of skeleton rows', () => {

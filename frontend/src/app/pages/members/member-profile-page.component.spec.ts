@@ -7,7 +7,11 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
-import { MembersSelectors } from '@app/store/members';
+import {
+  MembersActions,
+  MembersSelectors,
+  initialState as membersInitialState,
+} from '@app/store/members';
 import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { MemberProfilePageComponent } from './member-profile-page.component';
@@ -28,7 +32,12 @@ describe('MemberProfilePageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [MemberProfilePageComponent],
       providers: [
-        provideMockStore({ initialState: { authState: authInitialState } }),
+        provideMockStore({
+          initialState: {
+            authState: authInitialState,
+            membersState: membersInitialState,
+          },
+        }),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -122,5 +131,51 @@ describe('MemberProfilePageComponent', () => {
 
   it('should render the rating progression placeholder', () => {
     expect(query(fixture.debugElement, '.rating-progression-placeholder')).toBeTruthy();
+  });
+
+  describe('when the member fails to load', () => {
+    beforeEach(() => {
+      store.setState({
+        authState: authInitialState,
+        membersState: { ...membersInitialState, failedLoads: ['member'] },
+      });
+      store.overrideSelector(MembersSelectors.selectAllMembers, []);
+      store.refreshState();
+
+      fixture.detectChanges();
+    });
+
+    it('should render a failure panel in place of the profile cards', () => {
+      expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+      expect(query(fixture.debugElement, '.profile')).toBeFalsy();
+      expect(query(fixture.debugElement, 'ea-skeleton')).toBeFalsy();
+    });
+
+    it('should fetch the member again on retry', () => {
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+      query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        MembersActions.fetchMemberByNumberRequested({
+          memberNumber: Number(member.number),
+        }),
+      );
+    });
+  });
+
+  it('should keep showing a loaded member when a later refresh fails', () => {
+    store.setState({
+      authState: authInitialState,
+      membersState: { ...membersInitialState, failedLoads: ['member'] },
+    });
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+    expect(queryTextContent(fixture.debugElement, '.member-name__first')).toBe(
+      member.firstName,
+    );
   });
 });

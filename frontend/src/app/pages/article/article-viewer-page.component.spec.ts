@@ -13,7 +13,7 @@ import { ARTICLE_FORM_DATA_PROPERTIES, IMAGE_FORM_DATA_PROPERTIES } from '@app/c
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, Image } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppState, initialState as appInitialState } from '@app/store/app';
 import {
   ArticlesActions,
@@ -22,7 +22,7 @@ import {
 } from '@app/store/articles';
 import { AuthState } from '@app/store/auth';
 import { ImagesState, initialState as imagesInitialState } from '@app/store/images';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 
 import { ArticleViewerPageComponent } from './article-viewer-page.component';
 
@@ -48,6 +48,7 @@ describe('ArticleViewerPageComponent', () => {
 
   let dialogOpenSpy: MockInstance;
   let dispatchSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
@@ -56,12 +57,17 @@ describe('ArticleViewerPageComponent', () => {
     image => image.id === mockArticle.bannerImageId,
   )!;
 
+  let mockAppState: AppState;
+  let mockArticlesState: ArticlesState;
+  let mockAuthState: AuthState;
+  let mockImagesState: ImagesState;
+
   beforeEach(async () => {
-    const mockAppState: AppState = {
+    mockAppState = {
       ...appInitialState,
     };
 
-    const mockArticlesState: ArticlesState = {
+    mockArticlesState = {
       ...articlesInitialState,
       ids: [mockArticle.id],
       entities: {
@@ -73,7 +79,7 @@ describe('ArticleViewerPageComponent', () => {
       totalCount: 1,
     };
 
-    const mockAuthState: AuthState = {
+    mockAuthState = {
       user: {
         id: 'user-1',
         firstName: 'Admin',
@@ -83,7 +89,7 @@ describe('ArticleViewerPageComponent', () => {
       },
     };
 
-    const mockImagesState: ImagesState = {
+    mockImagesState = {
       ...imagesInitialState,
       ids: [mockBannerImage.id],
       entities: {
@@ -105,6 +111,10 @@ describe('ArticleViewerPageComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         {
           provide: MetaAndTitleService,
@@ -140,6 +150,7 @@ describe('ArticleViewerPageComponent', () => {
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
 
@@ -160,10 +171,12 @@ describe('ArticleViewerPageComponent', () => {
 
       expect(vm).toStrictEqual({
         article: mockArticle,
+        articleId: mockArticle.id,
         isAdmin: true,
         bannerImage: mockBannerImage,
         bodyImages: [],
         isWideView: false,
+        status: 'loaded',
       });
     });
 
@@ -197,38 +210,47 @@ describe('ArticleViewerPageComponent', () => {
   });
 
   describe('onDelete', () => {
-    it('should dispatch deleteArticleRequested action when confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
-
+    it('should delete the article from the confirmation dialog', async () => {
       // @ts-expect-error Private class member
       await component.onDelete(mockArticle);
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Update ${mockArticle.title}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
-          },
+          }),
         },
         isModal: true,
       });
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
+      expect(storeRequestSpy).toHaveBeenCalledWith(
         ArticlesActions.deleteArticleRequested({ article: mockArticle }),
+        [ArticlesActions.deleteArticleSucceeded, ArticlesActions.deleteArticleFailed],
       );
     });
 
-    it('should not dispatch any action when dialog is cancelled', async () => {
+    it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
       // @ts-expect-error Private class member
       await component.onDelete(mockArticle);
 
-      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onRetry', () => {
+    it('should fetch the article again', () => {
+      component.onRetry(mockArticle.id);
+
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ArticlesActions.fetchArticleRequested({ articleId: mockArticle.id }),
+      );
     });
   });
 
@@ -246,6 +268,68 @@ describe('ArticleViewerPageComponent', () => {
 
         expect(query(fixture.debugElement, 'lcc-article')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('while the article loads', () => {
+      beforeEach(() => {
+        store.setState({
+          appState: mockAppState,
+          articlesState: articlesInitialState,
+          authState: mockAuthState,
+          imagesState: mockImagesState,
+        });
+        fixture.detectChanges();
+      });
+
+      it('should render an article skeleton', () => {
+        expect(query(fixture.debugElement, 'lcc-article-skeleton')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-article')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe('when the article fails to load', () => {
+      beforeEach(() => {
+        store.setState({
+          appState: mockAppState,
+          articlesState: { ...articlesInitialState, failedLoads: ['article'] },
+          authState: mockAuthState,
+          imagesState: mockImagesState,
+        });
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the article', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-article-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-article')).toBeFalsy();
+      });
+
+      it('should fetch the article again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ArticlesActions.fetchArticleRequested({ articleId: mockArticle.id }),
+        );
+      });
+    });
+
+    describe('when a stored article fails to refresh', () => {
+      it('should keep showing the article', () => {
+        store.setState({
+          appState: mockAppState,
+          articlesState: {
+            ...mockArticlesState,
+            failedLoads: ['article'],
+          },
+          authState: mockAuthState,
+          imagesState: mockImagesState,
+        });
+        fixture.detectChanges();
+
+        expect(query(fixture.debugElement, 'lcc-article')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
       });
     });
   });

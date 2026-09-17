@@ -1,4 +1,5 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { firstValueFrom } from 'rxjs';
 
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -7,9 +8,10 @@ import { ActivatedRoute } from '@angular/router';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { DialogService } from '@app/services';
+import { DataPaginationOptions, Image } from '@app/models';
+import { DialogService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { query, queryAll, queryTextContent } from '@app/utils';
+import { lastOpenedDialog, query, queryAll, queryTextContent } from '@app/utils';
 
 import { ImageExplorerComponent } from './image-explorer.component';
 
@@ -24,8 +26,17 @@ describe('ImageExplorerComponent', () => {
   let dialogOpenSpy: MockInstance;
   let dialogResultSpy: MockInstance;
   let dispatchSpy: MockInstance;
+  let storeRequestSpy: Mock;
 
   const mockImages = MOCK_IMAGES;
+  const mockOptions: DataPaginationOptions<Image> = {
+    page: 1,
+    pageSize: 20,
+    sortBy: 'modificationInfo',
+    sortOrder: 'desc',
+    filters: null,
+    search: '',
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -38,6 +49,10 @@ describe('ImageExplorerComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         provideMockStore(),
       ],
@@ -53,18 +68,13 @@ describe('ImageExplorerComponent', () => {
     store.overrideSelector(ImagesSelectors.selectFilteredImages, mockImages);
     store.overrideSelector(ImagesSelectors.selectFilteredCount, mockImages.length);
     store.overrideSelector(ImagesSelectors.selectTotalCount, mockImages.length);
-    store.overrideSelector(ImagesSelectors.selectOptions, {
-      page: 1,
-      pageSize: 20,
-      sortBy: 'modificationInfo' as keyof (typeof mockImages)[0],
-      sortOrder: 'desc',
-      filters: null,
-      search: '',
-    });
+    store.overrideSelector(ImagesSelectors.selectOptions, mockOptions);
+    store.overrideSelector(ImagesSelectors.selectFilteredThumbnailsStatus, 'loaded');
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
     dispatchSpy = vi.spyOn(store, 'dispatch');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
   });
 
   it('should create', () => {
@@ -75,6 +85,34 @@ describe('ImageExplorerComponent', () => {
     it('should be selectable by default', () => {
       fixture.detectChanges();
       expect(component.selectable).toBe(true);
+    });
+
+    it('should fetch the thumbnails for the current options', () => {
+      fixture.detectChanges();
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.fetchFilteredThumbnailsRequested(),
+      );
+    });
+
+    it('should size the skeleton to the page size', async () => {
+      component.ngOnInit();
+
+      const vm = await firstValueFrom(component.viewModel$!);
+
+      expect(vm.skeletonCards).toHaveLength(20);
+    });
+
+    it('should cap the skeleton at a screenful when showing every image', async () => {
+      store.overrideSelector(ImagesSelectors.selectOptions, {
+        ...mockOptions,
+        pageSize: -1,
+      });
+      component.ngOnInit();
+
+      const vm = await firstValueFrom(component.viewModel$!);
+
+      expect(vm.skeletonCards).toHaveLength(20);
     });
   });
 
@@ -102,50 +140,47 @@ describe('ImageExplorerComponent', () => {
   });
 
   describe('image deletion', () => {
-    it('should open confirmation dialog and dispatch delete action when confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
-
+    it('should delete the image from the confirmation dialog', async () => {
       await component.onDeleteImage(mockImages[1]);
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Delete ${mockImages[1].filename}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
-          },
+          }),
         },
         isModal: true,
       });
-      expect(dispatchSpy).toHaveBeenCalledWith(
+      expect(storeRequestSpy).toHaveBeenCalledWith(
         ImagesActions.deleteImageRequested({ image: mockImages[1] }),
+        [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
       );
       expect(dialogResultSpy).not.toHaveBeenCalled();
     });
 
-    it('should not dispatch delete action when dialog is cancelled', async () => {
-      // Reset all mocks before this test
-      vi.clearAllMocks();
+    it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onDeleteImage(mockImages[1]);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: `Delete ${mockImages[1].filename}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          },
-        },
-        isModal: true,
-      });
-      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
       expect(dialogResultSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onRetry', () => {
+    it('should fetch the thumbnails again', () => {
+      component.onRetry();
+
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.fetchFilteredThumbnailsRequested(),
+      );
     });
   });
 
@@ -207,6 +242,58 @@ describe('ImageExplorerComponent', () => {
 
       // Actual text will depend on formatDate pipe implementation
       expect(query(fixture.debugElement, '.upload-date span')).toBeTruthy();
+    });
+
+    describe('while the thumbnails load', () => {
+      beforeEach(() => {
+        store.overrideSelector(ImagesSelectors.selectFilteredThumbnailsStatus, 'loading');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a skeleton card for each image on the page', () => {
+        expect(queryAll(fixture.debugElement, '.image-card')).toHaveLength(20);
+        expect(queryAll(fixture.debugElement, '.image-card ea-skeleton')).toHaveLength(
+          20 * 4,
+        );
+        expect(query(fixture.debugElement, 'lcc-image')).toBeFalsy();
+      });
+
+      it('should mark the grid as busy', () => {
+        expect(query(fixture.debugElement, '.image-grid').attributes['aria-busy']).toBe(
+          'true',
+        );
+      });
+
+      it('should not let skeleton cards be selected', () => {
+        query(fixture.debugElement, '.image-card').triggerEventHandler('click');
+
+        expect(dialogResultSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('when the thumbnails fail to load', () => {
+      beforeEach(() => {
+        store.overrideSelector(ImagesSelectors.selectFilteredThumbnailsStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the image grid', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, '.image-grid')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+      });
+
+      it('should fetch the thumbnails again on retry', () => {
+        dispatchSpy.mockClear();
+
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ImagesActions.fetchFilteredThumbnailsRequested(),
+        );
+      });
     });
   });
 });

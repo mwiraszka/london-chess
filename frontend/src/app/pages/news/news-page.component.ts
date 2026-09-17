@@ -10,12 +10,20 @@ import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
 import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { Article, DataPaginationOptions, Id, Image, InternalLink } from '@app/models';
+import {
+  Article,
+  DataPaginationOptions,
+  Image,
+  InternalLink,
+  LoadStatus,
+} from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
-import { ImagesSelectors } from '@app/store/images';
+import { ImagesActions, ImagesSelectors } from '@app/store/images';
+import { combinedLoadStatus } from '@app/utils';
 
 @UntilDestroy()
 @Component({
@@ -40,15 +48,19 @@ import { ImagesSelectors } from '@app/store/images';
         (optionsChangeNoFetch)="onOptionsChange($event, false)">
       </lcc-data-toolbar>
 
-      <lcc-article-grid
-        [articles]="vm.filteredArticles"
-        [images]="vm.images"
-        [isAdmin]="vm.isAdmin"
-        [isLoading]="vm.isLoading"
-        [options]="vm.options"
-        (requestDeleteArticle)="onRequestDeleteArticle($event)"
-        (requestUpdateArticleBookmark)="onRequestUpdateArticleBookmark($event)">
-      </lcc-article-grid>
+      @if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load articles"
+          (retry)="onRetry()" />
+      } @else {
+        <lcc-article-grid
+          [articles]="vm.filteredArticles"
+          [images]="vm.images"
+          [isAdmin]="vm.isAdmin"
+          [isLoading]="vm.status === 'loading'"
+          [options]="vm.options">
+        </lcc-article-grid>
+      }
     }
   `,
   imports: [
@@ -56,6 +68,7 @@ import { ImagesSelectors } from '@app/store/images';
     ArticleGridComponent,
     CommonModule,
     DataToolbarComponent,
+    LoadFailedComponent,
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,8 +87,8 @@ export class NewsPageComponent implements OnInit {
     filteredCount: number | null;
     images: Image[];
     isAdmin: boolean;
-    isLoading: boolean;
     options: DataPaginationOptions<Article>;
+    status: LoadStatus;
   }>;
 
   constructor(
@@ -95,8 +108,8 @@ export class NewsPageComponent implements OnInit {
       this.store.select(ImagesSelectors.selectAllImages),
       this.store.select(AuthSelectors.selectIsAdmin),
       this.store.select(ArticlesSelectors.selectOptions),
-      this.store.select(ArticlesSelectors.selectLastFilteredFetch),
-      this.store.select(ImagesSelectors.selectLastMetadataFetch),
+      this.store.select(ArticlesSelectors.selectFilteredArticlesStatus),
+      this.store.select(ImagesSelectors.selectMetadataStatus),
     ]).pipe(
       untilDestroyed(this),
       map(
@@ -106,15 +119,15 @@ export class NewsPageComponent implements OnInit {
           images,
           isAdmin,
           options,
-          lastArticlesFetch,
-          lastImagesFetch,
+          articlesStatus,
+          imagesStatus,
         ]) => ({
           filteredArticles,
           filteredCount,
           images,
           isAdmin,
-          isLoading: lastArticlesFetch === null || lastImagesFetch === null,
           options,
+          status: combinedLoadStatus(articlesStatus, imagesStatus),
         }),
       ),
     );
@@ -124,14 +137,8 @@ export class NewsPageComponent implements OnInit {
     this.store.dispatch(ArticlesActions.paginationOptionsChanged({ options, fetch }));
   }
 
-  public onRequestDeleteArticle(article: Article): void {
-    this.store.dispatch(ArticlesActions.deleteArticleRequested({ article }));
-  }
-
-  public onRequestUpdateArticleBookmark(event: {
-    articleId: Id;
-    bookmark: boolean;
-  }): void {
-    this.store.dispatch(ArticlesActions.updateArticleBookmarkRequested(event));
+  public onRetry(): void {
+    this.store.dispatch(ArticlesActions.fetchFilteredArticlesRequested());
+    this.store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
   }
 }

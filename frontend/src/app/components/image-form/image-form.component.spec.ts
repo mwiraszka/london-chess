@@ -7,10 +7,11 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { LccError } from '@app/models';
-import { DialogService, ImageFileService } from '@app/services';
+import { DialogService, ImageFileService, StoreRequestService } from '@app/services';
+import { ImagesActions } from '@app/store/images';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { GENERATE_UUID } from '@app/tokens';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 
 import { BasicDialogComponent } from '../basic-dialog/basic-dialog.component';
 import { ImageFormComponent } from './image-form.component';
@@ -29,9 +30,8 @@ describe('ImageFormComponent', () => {
   let fileActionFailSpy: MockInstance;
   let initFormSpy: MockInstance;
   let initFormValueChangeListenerSpy: MockInstance;
-  let requestAddImageSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let requestFetchMainImage: MockInstance;
-  let requestUpdateImageSpy: MockInstance;
   let restoreSpy: MockInstance;
   let storeImageFileSpy: MockInstance;
   let submitSpy: MockInstance;
@@ -46,6 +46,10 @@ describe('ImageFormComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         FormBuilder,
         {
@@ -74,9 +78,8 @@ describe('ImageFormComponent', () => {
       // @ts-expect-error Private class member
       'initFormValueChangeListener',
     );
-    requestAddImageSpy = vi.spyOn(component.requestAddImage, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     requestFetchMainImage = vi.spyOn(component.requestFetchMainImage, 'emit');
-    requestUpdateImageSpy = vi.spyOn(component.requestUpdateImage, 'emit');
     restoreSpy = vi.spyOn(component.restore, 'emit');
     storeImageFileSpy = vi.spyOn(imageFileService, 'storeImageFile');
     submitSpy = vi.spyOn(component, 'onSubmit');
@@ -549,30 +552,32 @@ describe('ImageFormComponent', () => {
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
-    it('should open confirmation dialog with correct data and emit request add image event if adding a new image', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should add a new image from the confirmation dialog', async () => {
       component.form.patchValue(pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES));
       component.newImageFormData = MOCK_IMAGES[3];
       fixture.detectChanges();
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Add ${MOCK_IMAGES[3].filename} to ${MOCK_IMAGES[3].album}?`,
             confirmButtonText: 'Add',
-          },
+          }),
         },
       });
-      expect(requestAddImageSpy).toHaveBeenCalledWith(MOCK_IMAGES[3].id);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        ImagesActions.addImageRequested({ imageId: MOCK_IMAGES[3].id }),
+        [ImagesActions.addImageSucceeded, ImagesActions.addImageFailed],
+      );
     });
 
-    it('should open confirmation dialog with correct data and emit request update image event if updating an image', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should update an existing image from the confirmation dialog', async () => {
       component.imageEntity = {
         image: MOCK_IMAGES[3],
         formData: pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES),
@@ -581,22 +586,26 @@ describe('ImageFormComponent', () => {
       fixture.detectChanges();
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Update ${MOCK_IMAGES[3].filename}?`,
             confirmButtonText: 'Update',
-          },
+          }),
         },
       });
-      expect(requestUpdateImageSpy).toHaveBeenCalledWith(MOCK_IMAGES[3].id);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        ImagesActions.updateImageRequested({ imageId: MOCK_IMAGES[3].id }),
+        [ImagesActions.updateImageSucceeded, ImagesActions.updateImageFailed],
+      );
     });
 
-    it('should not emit add or update events if dialog is cancelled', async () => {
+    it('should not save anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
       component.hasUnsavedChanges = true;
       component.newImageFormData = MOCK_IMAGES[3];
@@ -606,8 +615,7 @@ describe('ImageFormComponent', () => {
       await component.onSubmit();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(requestAddImageSpy).not.toHaveBeenCalled();
-      expect(requestUpdateImageSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 

@@ -1,6 +1,7 @@
+import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick, uniq } from 'lodash';
-import { BehaviorSubject, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -46,12 +47,14 @@ describe('AlbumEditorPageComponent', () => {
         },
         {} as Record<string, { image: Image; formData: ImageFormData }>,
       ),
+      lastMetadataFetch: '2025-01-01T00:00:00.000Z',
       totalCount: MOCK_IMAGES.length,
     };
 
     await TestBed.configureTestingModule({
       imports: [AlbumEditorPageComponent],
       providers: [
+        provideMockActions(() => EMPTY),
         {
           provide: ActivatedRoute,
           useValue: { params: mockParamsSubject.asObservable() },
@@ -109,6 +112,7 @@ describe('AlbumEditorPageComponent', () => {
           imageEntities: expect.any(Array),
           newImagesFormData: {},
           pageHeading: 'Edit Album of the Year',
+          status: 'loaded',
         });
       });
 
@@ -139,6 +143,7 @@ describe('AlbumEditorPageComponent', () => {
           imageEntities: expect.any(Array),
           newImagesFormData: {},
           pageHeading: 'Create an album',
+          status: 'loaded',
         });
       });
 
@@ -207,23 +212,13 @@ describe('AlbumEditorPageComponent', () => {
     });
   });
 
-  describe('onRequestAddImages', () => {
-    it('should dispatch addImagesRequested action', () => {
-      component.onRequestAddImages();
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(ImagesActions.addImagesRequested());
-    });
-  });
-
-  describe('onRequestUpdateAlbum', () => {
-    it('should dispatch updateAlbumRequested action', () => {
-      const mockAlbum = 'abc123abc123';
-      component.onRequestUpdateAlbum(mockAlbum);
+  describe('onRetry', () => {
+    it('should fetch the image metadata again', () => {
+      component.onRetry();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.updateAlbumRequested({ album: mockAlbum }),
+        ImagesActions.fetchAllImagesMetadataRequested(),
       );
     });
   });
@@ -258,6 +253,46 @@ describe('AlbumEditorPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-album-form')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('while the album is loading', () => {
+      beforeEach(() => {
+        store.setState({ imagesState: imagesInitialState });
+        mockParamsSubject.next({ album: 'Album of the Year' });
+        fixture.detectChanges();
+      });
+
+      it('should render a form skeleton in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-album-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe('when the album fails to load', () => {
+      beforeEach(() => {
+        store.setState({
+          imagesState: { ...imagesInitialState, failedLoads: ['metadata'] },
+        });
+        mockParamsSubject.next({ album: 'Album of the Year' });
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-album-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+
+      it('should fetch the image metadata again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ImagesActions.fetchAllImagesMetadataRequested(),
+        );
       });
     });
   });

@@ -13,11 +13,13 @@ import {
   EventEmitter,
   Input,
   Output,
+  inject,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import {
@@ -28,7 +30,8 @@ import {
   Member,
 } from '@app/models';
 import { CamelCasePipe, FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { MembersActions } from '@app/store/members';
 import { isCityChampion } from '@app/utils';
 
 @UntilDestroy()
@@ -47,6 +50,7 @@ import { isCityChampion } from '@app/utils';
     KebabCasePipe,
     RouterLink,
     SafeModeNoticeComponent,
+    TextSkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -83,13 +87,21 @@ export class MembersTableComponent {
   @Input({ required: true }) options!: DataPaginationOptions<Member>;
   @Input({ required: true }) isSafeMode!: boolean;
   @Input({ required: true }) members!: Member[];
+  @Input() isLoading = false;
 
-  @Output() public requestDeleteMember = new EventEmitter<Member>();
   @Output() public optionsChange = new EventEmitter<DataPaginationOptions<Member>>();
+
+  // A page size of -1 shows every member, so the skeleton stops at a screenful
+  protected get skeletonRows(): number[] {
+    const rowCount = this.options.pageSize > 0 ? this.options.pageSize : 50;
+    return Array.from({ length: rowCount }, (_, index) => index);
+  }
 
   public get startIndex(): number {
     return this.options.pageSize * (this.options.page - 1) + 1;
   }
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(private readonly dialogService: DialogService) {}
 
@@ -128,18 +140,17 @@ export class MembersTableComponent {
       body: `Delete ${member.firstName} ${member.lastName}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(MembersActions.deleteMemberRequested({ member }), [
+          MembersActions.deleteMemberSucceeded,
+          MembersActions.deleteMemberFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
-
-    if (result === 'confirm') {
-      this.requestDeleteMember.emit(member);
-    }
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
   }
 }

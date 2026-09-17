@@ -9,9 +9,18 @@ import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { AlbumFormComponent } from '@app/components/album-form/album-form.component';
+import { FormSkeletonComponent } from '@app/components/form-skeleton/form-skeleton.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { EditorPage, Image, ImageFormData, InternalLink, LccError } from '@app/models';
+import {
+  EditorPage,
+  Image,
+  ImageFormData,
+  InternalLink,
+  LccError,
+  LoadStatus,
+} from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 
@@ -20,31 +29,48 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
   selector: 'lcc-images-editor-page',
   template: `
     @if (viewModel$ | async; as vm) {
-      <lcc-page-header
-        [hasUnsavedChanges]="vm.hasUnsavedChanges"
-        [heading]="vm.pageHeading"
-        [icon]="adminIcon">
-      </lcc-page-header>
+      @switch (vm.status) {
+        @case ('loaded') {
+          <lcc-page-header
+            [hasUnsavedChanges]="vm.hasUnsavedChanges"
+            [heading]="vm.pageHeading"
+            [icon]="adminIcon">
+          </lcc-page-header>
 
-      <lcc-album-form
-        [album]="vm.album"
-        [existingAlbums]="vm.existingAlbums"
-        [hasUnsavedChanges]="vm.hasUnsavedChanges"
-        [imageEntities]="vm.imageEntities"
-        [newImagesFormData]="vm.newImagesFormData"
-        (cancel)="onCancel()"
-        (change)="onChange($event.multipleFormData)"
-        (fileActionFail)="onFileActionFail($event)"
-        (removeNewImage)="onRemoveNewImage($event)"
-        (requestAddImages)="onRequestAddImages()"
-        (requestUpdateAlbum)="onRequestUpdateAlbum($event)"
-        (restore)="onRestore($event)">
-      </lcc-album-form>
+          <lcc-album-form
+            [album]="vm.album"
+            [existingAlbums]="vm.existingAlbums"
+            [hasUnsavedChanges]="vm.hasUnsavedChanges"
+            [imageEntities]="vm.imageEntities"
+            [newImagesFormData]="vm.newImagesFormData"
+            (cancel)="onCancel()"
+            (change)="onChange($event.multipleFormData)"
+            (fileActionFail)="onFileActionFail($event)"
+            (removeNewImage)="onRemoveNewImage($event)"
+            (restore)="onRestore($event)">
+          </lcc-album-form>
+        }
+        @case ('failed') {
+          <lcc-load-failed
+            title="Unable to load this album"
+            (retry)="onRetry()" />
+        }
+        @default {
+          <lcc-form-skeleton [fieldCount]="4" />
+        }
+      }
 
       <lcc-link-list [links]="[photoGalleryLink]"></lcc-link-list>
     }
   `,
-  imports: [AlbumFormComponent, CommonModule, LinkListComponent, PageHeaderComponent],
+  imports: [
+    AlbumFormComponent,
+    CommonModule,
+    FormSkeletonComponent,
+    LinkListComponent,
+    LoadFailedComponent,
+    PageHeaderComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlbumEditorPageComponent implements EditorPage, OnInit {
@@ -63,6 +89,7 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
     imageEntities: { image: Image; formData: ImageFormData }[];
     newImagesFormData: Record<string, ImageFormData>;
     pageHeading: string;
+    status: LoadStatus;
   }>;
 
   constructor(
@@ -82,6 +109,9 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
           this.store.select(ImagesSelectors.selectNewImagesFormData),
           this.store.select(ImagesSelectors.selectAllExistingAlbums),
           this.store.select(ImagesSelectors.selectAlbumHasUnsavedChanges(album)),
+          album
+            ? this.store.select(ImagesSelectors.selectMetadataStatus)
+            : of<LoadStatus>('loaded'),
         ]),
       ),
       map(
@@ -91,6 +121,7 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
           newImagesFormData,
           existingAlbums,
           hasUnsavedChanges,
+          status,
         ]) => ({
           album,
           existingAlbums,
@@ -98,6 +129,7 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
           imageEntities,
           newImagesFormData,
           pageHeading: album ? `Edit ${album}` : 'Create an album',
+          status,
         }),
       ),
       tap(viewModel => {
@@ -129,12 +161,8 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
     this.store.dispatch(ImagesActions.newImageRemoved({ imageId }));
   }
 
-  public onRequestAddImages(): void {
-    this.store.dispatch(ImagesActions.addImagesRequested());
-  }
-
-  public onRequestUpdateAlbum(album: string): void {
-    this.store.dispatch(ImagesActions.updateAlbumRequested({ album }));
+  public onRetry(): void {
+    this.store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
   }
 
   public onRestore(album: string | null): void {

@@ -1,6 +1,7 @@
+import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
-import { BehaviorSubject, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -52,6 +53,7 @@ describe('EventEditorPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [EventEditorPageComponent],
       providers: [
+        provideMockActions(() => EMPTY),
         {
           provide: ActivatedRoute,
           useValue: { params: mockParamsSubject.asObservable() },
@@ -99,10 +101,12 @@ describe('EventEditorPageComponent', () => {
         const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
         expect(vm).toStrictEqual({
+          eventId: MOCK_EVENTS[0].id,
           formData: pick(MOCK_EVENTS[0], EVENT_FORM_DATA_PROPERTIES),
           hasUnsavedChanges: false,
           originalEvent: MOCK_EVENTS[0],
           pageHeading: `Edit ${MOCK_EVENTS[0].title}`,
+          status: 'loaded',
         });
       });
 
@@ -127,10 +131,12 @@ describe('EventEditorPageComponent', () => {
         const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
         expect(vm).toStrictEqual({
+          eventId: null,
           formData: INITIAL_EVENT_FORM_DATA,
           hasUnsavedChanges: false,
           originalEvent: null,
           pageHeading: 'Add an event',
+          status: 'loaded',
         });
       });
 
@@ -174,24 +180,20 @@ describe('EventEditorPageComponent', () => {
     });
   });
 
-  describe('onRequestAddEvent', () => {
-    it('should dispatch addEventRequested action', () => {
-      component.onRequestAddEvent();
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(EventsActions.addEventRequested());
-    });
-  });
-
-  describe('onRequestUpdateEvent', () => {
-    it('should dispatch updateEventRequested action', () => {
-      const mockEventId = 'abc123abc123';
-      component.onRequestUpdateEvent(mockEventId);
+  describe('onRetry', () => {
+    it('should fetch the event again', () => {
+      component.onRetry(MOCK_EVENTS[0].id);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        EventsActions.updateEventRequested({ eventId: mockEventId }),
+        EventsActions.fetchEventRequested({ eventId: MOCK_EVENTS[0].id }),
       );
+    });
+
+    it('should not fetch anything for a new event', () => {
+      component.onRetry(null);
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -225,6 +227,45 @@ describe('EventEditorPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-event-form')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('while the event is loading', () => {
+      beforeEach(() => {
+        mockParamsSubject.next({ event_id: 'unknown-id' });
+        fixture.detectChanges();
+      });
+
+      it('should render a form skeleton in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-event-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe('when the event fails to load', () => {
+      beforeEach(() => {
+        store.setState({
+          eventsState: { ...eventsInitialState, failedLoads: ['event'] },
+        });
+        mockParamsSubject.next({ event_id: 'unknown-id' });
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-event-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+
+      it('should fetch the event again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          EventsActions.fetchEventRequested({ eventId: 'unknown-id' }),
+        );
       });
     });
   });

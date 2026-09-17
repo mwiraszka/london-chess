@@ -1,5 +1,6 @@
 import { provideMockStore } from '@ngrx/store/testing';
 
+import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -8,9 +9,10 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DataPaginationOptions, Member } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { MembersActions } from '@app/store/members';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { formatDate, query, queryAll } from '@app/utils';
+import { formatDate, lastOpenedDialog, query, queryAll } from '@app/utils';
 
 import { MembersTableComponent } from './members-table.component';
 
@@ -23,7 +25,7 @@ describe('MembersTableComponent', () => {
   let dialogOpenSpy: MockInstance;
   let onDeleteMemberSpy: MockInstance;
   let optionsChangeSpy: MockInstance;
-  let requestDeleteMemberSpy: MockInstance;
+  let storeRequestSpy: Mock;
 
   const mockOptions: DataPaginationOptions<Member> = {
     page: 1,
@@ -48,6 +50,10 @@ describe('MembersTableComponent', () => {
           provide: DialogService,
           useValue: { open: vi.fn() },
         },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
         provideRouter([]),
       ],
     }).compileComponents();
@@ -60,7 +66,7 @@ describe('MembersTableComponent', () => {
     // @ts-expect-error Private class member
     onDeleteMemberSpy = vi.spyOn(component, 'onDeleteMember');
     optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
-    requestDeleteMemberSpy = vi.spyOn(component.requestDeleteMember, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
     component.isAdmin = true;
     component.isSafeMode = false;
@@ -178,47 +184,36 @@ describe('MembersTableComponent', () => {
   });
 
   describe('member deletion', () => {
-    it('should open confirmation dialog and emit delete request when confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should delete the member from the confirmation dialog', async () => {
       const member = MOCK_MEMBERS[0];
 
       await component['onDeleteMember'](member);
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Delete ${member.firstName} ${member.lastName}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
-          },
+          }),
         },
         isModal: true,
       });
-      expect(requestDeleteMemberSpy).toHaveBeenCalledWith(member);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        MembersActions.deleteMemberRequested({ member }),
+        [MembersActions.deleteMemberSucceeded, MembersActions.deleteMemberFailed],
+      );
     });
 
-    it('should not emit delete request when dialog is cancelled', async () => {
-      vi.clearAllMocks();
+    it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
-      const member = MOCK_MEMBERS[0];
 
-      await component['onDeleteMember'](member);
+      await component['onDeleteMember'](MOCK_MEMBERS[0]);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: `Delete ${member.firstName} ${member.lastName}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          },
-        },
-        isModal: true,
-      });
-      expect(requestDeleteMemberSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -335,6 +330,92 @@ describe('MembersTableComponent', () => {
         MOCK_MEMBERS[0].chessComUsername,
         MOCK_MEMBERS[0].lichessUsername,
       ]);
+    });
+  });
+
+  describe('while the members load', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('members', []);
+      fixture.componentRef.setInput('isLoading', true);
+      fixture.detectChanges();
+    });
+
+    it('should render a skeleton row for each member on the page', () => {
+      expect(queryAll(fixture.debugElement, 'tbody tr.skeleton-row')).toHaveLength(10);
+      expect(query(fixture.debugElement, 'tbody').attributes['aria-busy']).toBe('true');
+    });
+
+    function columnClasses(row: DebugElement): string[] {
+      return queryAll(row, 'td').map(cell =>
+        Object.keys(cell.classes)
+          .filter(name => cell.classes[name] && name !== 'lcc-truncate')
+          .join(' '),
+      );
+    }
+
+    function loadedRowColumnClasses(): string[] {
+      fixture.componentRef.setInput('members', MOCK_MEMBERS.slice(0, 1));
+      fixture.detectChanges();
+      return columnClasses(query(fixture.debugElement, 'tbody tr'));
+    }
+
+    it('should give each admin skeleton cell the column of the cell it stands in for', () => {
+      const skeletonClasses = columnClasses(query(fixture.debugElement, '.skeleton-row'));
+
+      expect(skeletonClasses).toEqual(loadedRowColumnClasses());
+      expect(skeletonClasses).toHaveLength(component.ADMIN_TABLE_HEADERS.length + 1);
+    });
+
+    it('should give each public skeleton cell the column of the cell it stands in for', () => {
+      fixture.componentRef.setInput('isAdmin', false);
+      fixture.detectChanges();
+
+      const skeletonClasses = columnClasses(query(fixture.debugElement, '.skeleton-row'));
+
+      expect(skeletonClasses).toEqual(loadedRowColumnClasses());
+      expect(skeletonClasses).toHaveLength(component.DEFAULT_TABLE_HEADERS.length + 1);
+    });
+
+    it('should hold a line of text in every member cell', () => {
+      const cells = queryAll(query(fixture.debugElement, '.skeleton-row'), 'td');
+
+      cells
+        .slice(1)
+        .forEach(cell => expect(query(cell, 'lcc-text-skeleton')).toBeTruthy());
+    });
+
+    it('should number the skeleton rows like the members they stand in for', () => {
+      fixture.componentRef.setInput('options', { ...mockOptions, page: 3 });
+      fixture.detectChanges();
+
+      expect(
+        queryAll(fixture.debugElement, '.skeleton-row .row-number').map(cell =>
+          cell.nativeElement.textContent.trim(),
+        ),
+      ).toEqual(['21', '22', '23', '24', '25', '26', '27', '28', '29', '30']);
+    });
+
+    it('should cap the skeleton at a screenful when showing every member', () => {
+      fixture.componentRef.setInput('options', { ...mockOptions, pageSize: -1 });
+      fixture.detectChanges();
+
+      expect(queryAll(fixture.debugElement, 'tbody tr.skeleton-row')).toHaveLength(50);
+    });
+
+    it('should keep showing members already loaded while refreshing', () => {
+      fixture.componentRef.setInput('members', MOCK_MEMBERS.slice(0, 3));
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.skeleton-row')).toBeFalsy();
+      expect(queryAll(fixture.debugElement, 'tbody tr')).toHaveLength(3);
+      expect(query(fixture.debugElement, 'tbody').attributes['aria-busy']).toBe('false');
+    });
+
+    it('should not render the table once loading ends without any members', () => {
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'table')).toBeFalsy();
     });
   });
 });

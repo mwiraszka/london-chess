@@ -1,6 +1,7 @@
+import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
-import { BehaviorSubject, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -54,6 +55,7 @@ describe('ArticleEditorPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ArticleEditorPageComponent],
       providers: [
+        provideMockActions(() => EMPTY),
         {
           provide: ActivatedRoute,
           useValue: { params: mockParamsSubject.asObservable() },
@@ -102,12 +104,14 @@ describe('ArticleEditorPageComponent', () => {
         const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
         expect(vm).toStrictEqual({
+          articleId: MOCK_ARTICLES[0].id,
           bannerImage: null,
           bodyImages: [],
           formData: pick(MOCK_ARTICLES[0], ARTICLE_FORM_DATA_PROPERTIES),
           hasUnsavedChanges: false,
           originalArticle: MOCK_ARTICLES[0],
           pageHeading: `Edit ${MOCK_ARTICLES[0].title}`,
+          status: 'loaded',
         });
       });
 
@@ -132,12 +136,14 @@ describe('ArticleEditorPageComponent', () => {
         const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
         expect(vm).toStrictEqual({
+          articleId: null,
           bannerImage: null,
           bodyImages: [],
           formData: INITIAL_ARTICLE_FORM_DATA,
           hasUnsavedChanges: false,
           originalArticle: null,
           pageHeading: 'Compose an article',
+          status: 'loaded',
         });
       });
 
@@ -193,24 +199,20 @@ describe('ArticleEditorPageComponent', () => {
     });
   });
 
-  describe('onRequestPublishArticle', () => {
-    it('should dispatch publishArticleRequested action', () => {
-      component.onRequestPublishArticle();
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(ArticlesActions.publishArticleRequested());
-    });
-  });
-
-  describe('onRequestUpdateArticle', () => {
-    it('should dispatch updateArticleRequested action', () => {
-      const mockArticleId = 'abc123abc123';
-      component.onRequestUpdateArticle(mockArticleId);
+  describe('onRetry', () => {
+    it('should fetch the article again', () => {
+      component.onRetry(MOCK_ARTICLES[0].id);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.updateArticleRequested({ articleId: mockArticleId }),
+        ArticlesActions.fetchArticleRequested({ articleId: MOCK_ARTICLES[0].id }),
       );
+    });
+
+    it('should not fetch anything for a new article', () => {
+      component.onRetry(null);
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -244,6 +246,46 @@ describe('ArticleEditorPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-article-form')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('while the article is loading', () => {
+      beforeEach(() => {
+        mockParamsSubject.next({ article_id: 'unknown-id' });
+        fixture.detectChanges();
+      });
+
+      it('should render a form skeleton in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-article-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe('when the article fails to load', () => {
+      beforeEach(() => {
+        store.setState({
+          articlesState: { ...articlesInitialState, failedLoads: ['article'] },
+          imagesState: imagesInitialState,
+        });
+        mockParamsSubject.next({ article_id: 'unknown-id' });
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-article-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+
+      it('should fetch the article again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ArticlesActions.fetchArticleRequested({ articleId: 'unknown-id' }),
+        );
       });
     });
   });

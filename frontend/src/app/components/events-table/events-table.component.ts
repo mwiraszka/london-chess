@@ -1,16 +1,11 @@
 import { SkeletonComponent, TrophyIconComponent } from '@eagami/ui';
 
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -20,7 +15,8 @@ import {
   Event,
 } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { EventsActions } from '@app/store/events';
 import { customSort } from '@app/utils';
 
 @Component({
@@ -35,6 +31,7 @@ import { customSort } from '@app/utils';
     KebabCasePipe,
     RouterLink,
     SkeletonComponent,
+    TextSkeletonComponent,
     TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,13 +46,13 @@ export class EventsTableComponent {
   @Input() public options?: DataPaginationOptions<Event>;
   @Input() public showModificationInfo?: boolean;
 
-  @Output() public requestDeleteEvent = new EventEmitter<Event>();
-
   private readonly skeletonGroup = (i: number) => ({
     dateKey: `skeleton-${i}`,
     events: [{ id: `skeleton-${i}` } as Event],
     hasNextEvent: false,
   });
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(private readonly dialogService: DialogService) {}
 
@@ -129,18 +126,17 @@ export class EventsTableComponent {
       body: `Delete ${event.title}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(EventsActions.deleteEventRequested({ event }), [
+          EventsActions.deleteEventSucceeded,
+          EventsActions.deleteEventFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
-
-    if (result === 'confirm') {
-      this.requestDeleteEvent.emit(event);
-    }
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
   }
 }

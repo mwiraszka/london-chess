@@ -8,10 +8,10 @@ import { provideRouter } from '@angular/router';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
-import { ImagesSelectors } from '@app/store/images';
+import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { query } from '@app/utils';
 
 import { NewsPageComponent } from './news-page.component';
@@ -51,6 +51,7 @@ describe('NewsPageComponent', () => {
             updateDescription: vi.fn(),
           },
         },
+        { provide: StoreRequestService, useValue: { dispatch: vi.fn() } },
         provideMockStore(),
         provideRouter([]),
       ],
@@ -71,14 +72,8 @@ describe('NewsPageComponent', () => {
     store.overrideSelector(ImagesSelectors.selectAllImages, mockImages);
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
     store.overrideSelector(ArticlesSelectors.selectOptions, mockOptions);
-    store.overrideSelector(
-      ArticlesSelectors.selectLastFilteredFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
-    store.overrideSelector(
-      ImagesSelectors.selectLastMetadataFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
+    store.overrideSelector(ArticlesSelectors.selectFilteredArticlesStatus, 'loaded');
+    store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loaded');
     store.refreshState();
   });
 
@@ -105,39 +100,42 @@ describe('NewsPageComponent', () => {
         filteredCount: mockFilteredCount,
         images: mockImages,
         isAdmin: mockIsAdmin,
-        isLoading: false,
         options: mockOptions,
+        status: 'loaded',
       });
     });
   });
 
-  describe('isLoading', () => {
-    it('should be true when articles have not been fetched yet', async () => {
-      store.overrideSelector(ArticlesSelectors.selectLastFilteredFetch, null);
+  describe('status', () => {
+    it('should be loading while the articles load', async () => {
+      store.overrideSelector(ArticlesSelectors.selectFilteredArticlesStatus, 'loading');
       store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoading).toBe(true);
+      expect(vm.status).toBe('loading');
     });
 
-    it('should be true when images have not been fetched yet', async () => {
-      store.overrideSelector(ImagesSelectors.selectLastMetadataFetch, null);
+    it('should be loading while the banner images load', async () => {
+      store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loading');
       store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoading).toBe(true);
+      expect(vm.status).toBe('loading');
     });
 
-    it('should be false when both articles and images have been fetched', async () => {
+    it('should fail when either load fails', async () => {
+      store.overrideSelector(ArticlesSelectors.selectFilteredArticlesStatus, 'loading');
+      store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'failed');
+      store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoading).toBe(false);
+      expect(vm.status).toBe('failed');
     });
   });
 
@@ -163,29 +161,16 @@ describe('NewsPageComponent', () => {
     });
   });
 
-  describe('onRequestDeleteArticle', () => {
-    it('should dispatch deleteArticleRequested action', () => {
-      const article = mockArticles[0];
-      component.onRequestDeleteArticle(article);
+  describe('onRetry', () => {
+    it('should fetch the articles and their banner images again', () => {
+      component.onRetry();
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy).toHaveBeenCalledTimes(2);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.deleteArticleRequested({ article }),
+        ArticlesActions.fetchFilteredArticlesRequested(),
       );
-    });
-  });
-
-  describe('onRequestUpdateArticleBookmark', () => {
-    it('should dispatch updateArticleBookmarkRequested action', () => {
-      const payload = {
-        articleId: mockArticles[0].id,
-        bookmark: true,
-      };
-      component.onRequestUpdateArticleBookmark(payload);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.updateArticleBookmarkRequested(payload),
+        ImagesActions.fetchAllImagesMetadataRequested(),
       );
     });
   });
@@ -231,6 +216,31 @@ describe('NewsPageComponent', () => {
         fixture.detectChanges();
 
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
+      });
+    });
+
+    describe('when the articles fail to load', () => {
+      beforeEach(() => {
+        store.overrideSelector(ArticlesSelectors.selectFilteredArticlesStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the article grid', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-article-grid')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+      });
+
+      it('should fetch everything again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ArticlesActions.fetchFilteredArticlesRequested(),
+        );
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ImagesActions.fetchAllImagesMetadataRequested(),
+        );
       });
     });
   });

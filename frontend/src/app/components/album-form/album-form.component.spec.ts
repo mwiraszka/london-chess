@@ -8,10 +8,11 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { ImageFormData, LccError } from '@app/models';
-import { DialogService, ImageFileService } from '@app/services';
+import { DialogService, ImageFileService, StoreRequestService } from '@app/services';
+import { ImagesActions } from '@app/store/images';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { GENERATE_UUID } from '@app/tokens';
-import { query, queryTextContent } from '@app/utils';
+import { lastOpenedDialog, query, queryTextContent } from '@app/utils';
 
 import { AlbumFormComponent } from './album-form.component';
 
@@ -31,8 +32,7 @@ describe('AlbumFormComponent', () => {
   let initFormSpy: MockInstance;
   let initFormValueChangeListenerSpy: MockInstance;
   let removeNewImageSpy: MockInstance;
-  let requestAddImagesSpy: MockInstance;
-  let requestUpdateAlbumSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let restoreSpy: MockInstance;
   let storeImageFileSpy: MockInstance;
   let submitSpy: MockInstance;
@@ -47,6 +47,10 @@ describe('AlbumFormComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         FormBuilder,
         {
@@ -93,8 +97,7 @@ describe('AlbumFormComponent', () => {
       'initFormValueChangeListener',
     );
     removeNewImageSpy = vi.spyOn(component.removeNewImage, 'emit');
-    requestAddImagesSpy = vi.spyOn(component.requestAddImages, 'emit');
-    requestUpdateAlbumSpy = vi.spyOn(component.requestUpdateAlbum, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     restoreSpy = vi.spyOn(component.restore, 'emit');
     storeImageFileSpy = vi.spyOn(imageFileService, 'storeImageFile');
     submitSpy = vi.spyOn(component, 'onSubmit');
@@ -781,30 +784,32 @@ describe('AlbumFormComponent', () => {
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
-    it('should open confirmation dialog with correct data and emit request add images event if adding a new image', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should create a new album from the confirmation dialog', async () => {
       component.newImagesFormData = { [MOCK_IMAGES[3].id]: MOCK_IMAGES[3] };
       fixture.detectChanges();
       component.ngOnInit(); // Initialize form with newImagesFormData
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: 'Create new album with this 1 new image?',
             confirmButtonText: 'Create',
-          },
+          }),
         },
       });
-      expect(requestAddImagesSpy).toHaveBeenCalled();
+      expect(storeRequestSpy).toHaveBeenCalledWith(ImagesActions.addImagesRequested(), [
+        ImagesActions.addImagesSucceeded,
+        ImagesActions.addImagesFailed,
+      ]);
     });
 
-    it('should open confirmation dialog with correct data and emit request update album event if updating the album', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should update an existing album from the confirmation dialog', async () => {
       component.album = MOCK_IMAGES[3].album;
       component.imageEntities = [
         {
@@ -816,22 +821,26 @@ describe('AlbumFormComponent', () => {
       component.ngOnInit(); // Initialize form with imageEntities
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Update ${MOCK_IMAGES[3].album}?`,
             confirmButtonText: 'Update',
-          },
+          }),
         },
       });
-      expect(requestUpdateAlbumSpy).toHaveBeenCalledWith(MOCK_IMAGES[3].album);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        ImagesActions.updateAlbumRequested({ album: MOCK_IMAGES[3].album }),
+        [ImagesActions.updateAlbumSucceeded, ImagesActions.updateAlbumFailed],
+      );
     });
 
-    it('should not emit add or update events if dialog is cancelled', async () => {
+    it('should not save anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
       component.hasUnsavedChanges = true;
       component.newImagesFormData = { [MOCK_IMAGES[3].id]: MOCK_IMAGES[3] };
@@ -841,8 +850,7 @@ describe('AlbumFormComponent', () => {
       await component.onSubmit();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(requestAddImagesSpy).not.toHaveBeenCalled();
-      expect(requestUpdateAlbumSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 

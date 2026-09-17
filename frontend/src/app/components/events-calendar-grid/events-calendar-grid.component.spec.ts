@@ -7,9 +7,10 @@ import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { CalendarMonth, DataPaginationOptions, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { EventsActions } from '@app/store/events';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
-import { query, queryAll } from '@app/utils';
+import { lastOpenedDialog, query, queryAll } from '@app/utils';
 
 import { EventsCalendarGridComponent } from './events-calendar-grid.component';
 
@@ -20,7 +21,7 @@ describe('EventsCalendarGridComponent', () => {
   let dialogService: DialogService;
 
   let dialogOpenSpy: MockInstance;
-  let requestDeleteEventSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let updateCalendarMonthsSpy: MockInstance;
 
   const mockEvents = MOCK_EVENTS.slice(0, 2);
@@ -55,6 +56,10 @@ describe('EventsCalendarGridComponent', () => {
           provide: DialogService,
           useValue: { open: vi.fn() },
         },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
         provideRouter([{ path: 'article/view/:id', component: class {} }]),
       ],
     }).compileComponents();
@@ -65,7 +70,7 @@ describe('EventsCalendarGridComponent', () => {
     dialogService = TestBed.inject(DialogService);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    requestDeleteEventSpy = vi.spyOn(component.requestDeleteEvent, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     // @ts-expect-error Private class member
     updateCalendarMonthsSpy = vi.spyOn(component, 'updateCalendarMonths');
 
@@ -142,29 +147,33 @@ describe('EventsCalendarGridComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Delete ${mockEvents[0].title}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
-          },
+          }),
         },
         isModal: true,
       });
     });
 
-    it('should emit requestDeleteEvent when user confirms', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should delete the event from the confirmation dialog', async () => {
       await component.onDeleteEvent(mockEvents[0]);
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(requestDeleteEventSpy).toHaveBeenCalledWith(mockEvents[0]);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        EventsActions.deleteEventRequested({ event: mockEvents[0] }),
+        [EventsActions.deleteEventSucceeded, EventsActions.deleteEventFailed],
+      );
     });
 
-    it('should not emit requestDeleteEvent when user cancels', async () => {
+    it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
+
       await component.onDeleteEvent(mockEvents[0]);
 
-      expect(requestDeleteEventSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -342,6 +351,56 @@ describe('EventsCalendarGridComponent', () => {
 
           expect(directiveInstance.tooltip).toBeFalsy();
         });
+      });
+    });
+
+    describe('while the events load', () => {
+      beforeEach(() => {
+        fixture.componentRef.setInput('isLoading', true);
+        fixture.detectChanges();
+      });
+
+      it('should render three skeleton months in place of the calendar', () => {
+        const monthsGrid = query(fixture.debugElement, '.months-grid');
+
+        expect(queryAll(monthsGrid, '.month')).toHaveLength(3);
+        expect(queryAll(monthsGrid, '.month-title lcc-text-skeleton')).toHaveLength(3);
+        expect(monthsGrid.attributes['month-count']).toBe('3');
+        expect(monthsGrid.attributes['aria-busy']).toBe('true');
+      });
+
+      it('should lay each skeleton month out like a calendar month', () => {
+        const month = query(fixture.debugElement, '.month');
+
+        expect(
+          queryAll(month, '.calendar-grid .day-header').map(header =>
+            header.nativeElement.textContent.trim(),
+          ),
+        ).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+        expect(queryAll(month, '.calendar-grid .calendar-day')).toHaveLength(7 * 6);
+        expect(
+          queryAll(month, '.calendar-day .day-number lcc-text-skeleton'),
+        ).toHaveLength(7 * 6);
+      });
+
+      it('should not render any event data', () => {
+        expect(query(fixture.debugElement, '.event-indicator')).toBeFalsy();
+        expect(
+          queryAll(fixture.debugElement, '.month-title, .day-number').every(
+            element => element.nativeElement.textContent.trim() === '',
+          ),
+        ).toBe(true);
+      });
+
+      it('should render the calendar once the events have loaded', () => {
+        fixture.componentRef.setInput('isLoading', false);
+        fixture.detectChanges();
+
+        expect(queryAll(fixture.debugElement, '.month')).toHaveLength(3);
+        expect(query(fixture.debugElement, 'lcc-text-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, '.months-grid').attributes['aria-busy']).toBe(
+          undefined,
+        );
       });
     });
   });

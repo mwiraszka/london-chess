@@ -7,9 +7,10 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { MembersActions } from '@app/store/members';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { query, queryTextContent } from '@app/utils';
+import { lastOpenedDialog, query, queryTextContent } from '@app/utils';
 
 import { MemberFormComponent } from './member-form.component';
 
@@ -24,8 +25,7 @@ describe('MemberFormComponent', () => {
   let dialogOpenSpy: MockInstance;
   let initFormSpy: MockInstance;
   let initFormValueChangeListenerSpy: MockInstance;
-  let requestAddMemberSpy: MockInstance;
-  let requestUpdateMemberSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let restoreSpy: MockInstance;
   let submitSpy: MockInstance;
 
@@ -37,6 +37,10 @@ describe('MemberFormComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         FormBuilder,
       ],
@@ -57,8 +61,7 @@ describe('MemberFormComponent', () => {
       // @ts-expect-error Private class member
       'initFormValueChangeListener',
     );
-    requestAddMemberSpy = vi.spyOn(component.requestAddMember, 'emit');
-    requestUpdateMemberSpy = vi.spyOn(component.requestUpdateMember, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     restoreSpy = vi.spyOn(component.restore, 'emit');
     submitSpy = vi.spyOn(component, 'onSubmit');
 
@@ -237,8 +240,7 @@ describe('MemberFormComponent', () => {
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
-    it('should open confirmation dialog with correct data and emit request add member event if adding a new member', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should add a new member from the confirmation dialog', async () => {
       fixture.componentRef.setInput(
         'formData',
         pick(MOCK_MEMBERS[3], MEMBER_FORM_DATA_PROPERTIES),
@@ -246,23 +248,26 @@ describe('MemberFormComponent', () => {
       fixture.componentRef.setInput('originalMember', null);
 
       await component.onSubmit();
+      const dialog = lastOpenedDialog(dialogOpenSpy);
+      await dialog.confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        isModal: false,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: `Add ${component.formData.firstName} ${component.formData.lastName} and email them their login details?`,
-            confirmButtonText: 'Add',
-          },
-        },
-      });
-      expect(requestAddMemberSpy).toHaveBeenCalledWith({ notifyMember: true });
+      expect(dialogOpenSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ componentType: BasicDialogComponent, isModal: false }),
+      );
+      expect(dialog).toEqual(
+        expect.objectContaining({
+          title: 'Confirm',
+          body: `Add ${component.formData.firstName} ${component.formData.lastName} and email them their login details?`,
+          confirmButtonText: 'Add',
+        }),
+      );
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        MembersActions.addMemberRequested({ notifyMember: true }),
+        [MembersActions.addMemberSucceeded, MembersActions.addMemberFailed],
+      );
     });
 
-    it('should open confirmation dialog with correct data and emit request update member event if updating a member', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should update an existing member from the confirmation dialog', async () => {
       fixture.componentRef.setInput(
         'formData',
         pick(MOCK_MEMBERS[3], MEMBER_FORM_DATA_PROPERTIES),
@@ -270,37 +275,31 @@ describe('MemberFormComponent', () => {
       fixture.componentRef.setInput('originalMember', MOCK_MEMBERS[2]);
 
       await component.onSubmit();
+      const dialog = lastOpenedDialog(dialogOpenSpy);
+      await dialog.confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        isModal: false,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: `Update ${component.originalMember!.firstName} ${component.originalMember!.lastName}, create their account and email them their login details?`,
-            confirmButtonText: 'Update',
-          },
-        },
-      });
-      expect(requestUpdateMemberSpy).toHaveBeenCalledWith({
-        memberId: MOCK_MEMBERS[2].id,
-        notifyMember: true,
-      });
+      expect(dialog).toEqual(
+        expect.objectContaining({
+          body: `Update ${MOCK_MEMBERS[2].firstName} ${MOCK_MEMBERS[2].lastName}, create their account and email them their login details?`,
+          confirmButtonText: 'Update',
+        }),
+      );
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        MembersActions.updateMemberRequested({
+          memberId: MOCK_MEMBERS[2].id,
+          notifyMember: true,
+        }),
+        [MembersActions.updateMemberSucceeded, MembersActions.updateMemberFailed],
+      );
     });
 
-    it('should not emit add or update events or re-initialize form if dialog is cancelled', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
-      fixture.componentRef.setInput(
-        'formData',
-        pick(MOCK_MEMBERS[3], MEMBER_FORM_DATA_PROPERTIES),
-      );
+    it('should not save anything until the dialog is confirmed', async () => {
       fixture.componentRef.setInput('originalMember', null);
 
       await component.onSubmit();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(requestAddMemberSpy).not.toHaveBeenCalled();
-      expect(requestUpdateMemberSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -341,17 +340,20 @@ describe('MemberFormComponent', () => {
       expect(component.notifyMember.value).toBe(false);
     });
 
-    it('should emit the choice not to email an edited member', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should save the choice not to email an edited member', async () => {
       fixture.componentRef.setInput('originalMember', MOCK_MEMBERS[0]);
       component.notifyMember.setValue(false);
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(requestUpdateMemberSpy).toHaveBeenCalledWith({
-        memberId: MOCK_MEMBERS[0].id,
-        notifyMember: false,
-      });
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        MembersActions.updateMemberRequested({
+          memberId: MOCK_MEMBERS[0].id,
+          notifyMember: false,
+        }),
+        [MembersActions.updateMemberSucceeded, MembersActions.updateMemberFailed],
+      );
     });
 
     it('should not be shown when adding a member', () => {
@@ -363,12 +365,15 @@ describe('MemberFormComponent', () => {
     });
 
     it('should not email a new member without an email address', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
       component.form.controls.email.setValue('');
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(requestAddMemberSpy).toHaveBeenCalledWith({ notifyMember: false });
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        MembersActions.addMemberRequested({ notifyMember: false }),
+        [MembersActions.addMemberSucceeded, MembersActions.addMemberFailed],
+      );
     });
 
     it('should offer to email the changes to a member with an account', () => {

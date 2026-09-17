@@ -1,6 +1,6 @@
 import { ChevronLeftIconComponent, ChevronRightIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { Store } from '@ngrx/store';
+import { Action, Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, from, timer } from 'rxjs';
 import { concatMap, map, switchMap, take } from 'rxjs/operators';
 
@@ -16,6 +16,7 @@ import {
   Output,
   Renderer2,
   ViewChild,
+  inject,
 } from '@angular/core';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
@@ -30,7 +31,7 @@ import {
   Id,
   Image,
 } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { isPresignedUrlExpired } from '@app/utils';
 
@@ -74,6 +75,8 @@ export class ImageViewerComponent
   }
 
   private indexSubject = new BehaviorSubject<number>(0);
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -130,23 +133,27 @@ export class ImageViewerComponent
   }
 
   public async onDeleteImage(image: Image): Promise<void> {
+    let outcome: Action | undefined;
     const dialog: Dialog = {
       title: 'Confirm',
       body: `Delete ${image.filename}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: async () => {
+        outcome = await this.storeRequests.dispatch(
+          ImagesActions.deleteImageRequested({ image }),
+          [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
+        );
+      },
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
 
-    if (result === 'confirm') {
-      this.store.dispatch(ImagesActions.deleteImageRequested({ image }));
+    if (outcome?.type === ImagesActions.deleteImageSucceeded.type) {
       this.dialogResult.emit(null);
     }
   }
