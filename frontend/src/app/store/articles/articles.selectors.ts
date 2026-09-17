@@ -3,16 +3,13 @@ import { pick } from 'lodash';
 
 import { INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
 import { Id } from '@app/models';
-import { areSame } from '@app/utils';
+import { areSame, loadStatus } from '@app/utils';
 
 import { ArticlesState, articlesAdapter } from './articles.reducer';
 
 const selectArticlesState = createFeatureSelector<ArticlesState>('articlesState');
 
-export const selectCallState = createSelector(
-  selectArticlesState,
-  state => state.callState,
-);
+const selectFailedLoads = createSelector(selectArticlesState, state => state.failedLoads);
 
 export const selectLastHomePageFetch = createSelector(
   selectArticlesState,
@@ -58,6 +55,25 @@ export const selectArticleById = (id: Id | null) =>
   createSelector(
     selectAllArticles,
     allArticles => allArticles.find(article => article.id === id) ?? null,
+  );
+
+export const selectHomePageArticlesStatus = createSelector(
+  selectLastHomePageFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('homePage')),
+);
+
+export const selectFilteredArticlesStatus = createSelector(
+  selectLastFilteredFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('filtered')),
+);
+
+export const selectArticleStatus = (id: Id | null) =>
+  createSelector(selectArticleById(id), selectFailedLoads, (article, failedLoads) =>
+    loadStatus(!!article, failedLoads.includes('article')),
   );
 
 export const selectArticleFormDataById = (id: Id | null) =>

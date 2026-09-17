@@ -57,7 +57,7 @@ describe('ArticlesEffects', () => {
       }),
       {},
     ),
-    callState: { status: 'idle' as const, loadStart: null, error: null },
+    failedLoads: [],
     newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
     lastHomePageFetch: null,
     lastFilteredFetch: null,
@@ -136,23 +136,6 @@ describe('ArticlesEffects', () => {
         });
       }));
 
-    it('should fetch home page articles in background', () =>
-      withDone(done => {
-        articlesApiService.getFilteredArticles.mockReturnValue(of(mockApiResponse));
-
-        actions$.next(ArticlesActions.fetchHomePageArticlesInBackgroundRequested());
-
-        effects.fetchHomePageArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchHomePageArticlesSucceeded({
-              articles: mockApiResponse.data.items,
-              totalCount: mockApiResponse.data.totalCount,
-            }),
-          );
-          done();
-        });
-      }));
-
     it('should handle fetch home page articles failure', () =>
       withDone(done => {
         articlesApiService.getFilteredArticles.mockReturnValue(
@@ -207,24 +190,6 @@ describe('ArticlesEffects', () => {
         });
       }));
 
-    it('should fetch filtered articles in background', () =>
-      withDone(done => {
-        articlesApiService.getFilteredArticles.mockReturnValue(of(mockApiResponse));
-
-        actions$.next(ArticlesActions.fetchFilteredArticlesInBackgroundRequested());
-
-        effects.fetchFilteredArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchFilteredArticlesSucceeded({
-              articles: mockApiResponse.data.items,
-              filteredCount: mockApiResponse.data.filteredCount,
-              totalCount: mockApiResponse.data.totalCount,
-            }),
-          );
-          done();
-        });
-      }));
-
     it('should handle fetch filtered articles failure', () =>
       withDone(done => {
         articlesApiService.getFilteredArticles.mockReturnValue(
@@ -244,6 +209,19 @@ describe('ArticlesEffects', () => {
   });
 
   describe('refetchHomePageArticles$', () => {
+    it('should check for stale home page articles as soon as it starts', () => {
+      vi.useFakeTimers();
+      store.overrideSelector(ArticlesSelectors.selectLastHomePageFetch, null);
+      store.refreshState();
+      mockIsExpired.mockReturnValue(true);
+      const results: Action[] = [];
+
+      effects.refetchHomePageArticles$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([ArticlesActions.fetchHomePageArticlesRequested()]);
+    });
+
     it('should trigger refetch after publishArticleSucceeded', () =>
       withDone(done => {
         actions$.next(
@@ -251,9 +229,7 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchHomePageArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchHomePageArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchHomePageArticlesRequested());
           done();
         });
       }));
@@ -268,9 +244,7 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchHomePageArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchHomePageArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchHomePageArticlesRequested());
           done();
         });
       }));
@@ -285,9 +259,7 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchHomePageArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchHomePageArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchHomePageArticlesRequested());
           done();
         });
       }));
@@ -307,9 +279,7 @@ describe('ArticlesEffects', () => {
       vi.advanceTimersByTime(3000);
       vi.advanceTimersByTime(10 * 60 * 1000);
 
-      expect(results[0]).toEqual(
-        ArticlesActions.fetchHomePageArticlesInBackgroundRequested(),
-      );
+      expect(results[0]).toEqual(ArticlesActions.fetchHomePageArticlesRequested());
       expect(mockIsExpired).toHaveBeenCalledWith(expiredTimestamp);
     });
 
@@ -340,9 +310,7 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchFilteredArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchFilteredArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchFilteredArticlesRequested());
           done();
         });
       }));
@@ -357,9 +325,7 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchFilteredArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchFilteredArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchFilteredArticlesRequested());
           done();
         });
       }));
@@ -374,9 +340,7 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchFilteredArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchFilteredArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchFilteredArticlesRequested());
           done();
         });
       }));
@@ -398,12 +362,48 @@ describe('ArticlesEffects', () => {
         );
 
         effects.refetchFilteredArticles$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchFilteredArticlesInBackgroundRequested(),
-          );
+          expect(action).toEqual(ArticlesActions.fetchFilteredArticlesRequested());
           done();
         });
       }));
+
+    it('should not refetch when the options change without asking for a fetch', () => {
+      vi.useFakeTimers();
+      mockIsExpired.mockReturnValue(false);
+      const results: Action[] = [];
+      effects.refetchFilteredArticles$.subscribe(action => results.push(action));
+
+      actions$.next(
+        ArticlesActions.paginationOptionsChanged({
+          options: {
+            page: 1,
+            pageSize: 10,
+            sortBy: 'bookmarkDate',
+            sortOrder: 'desc',
+            filters: null,
+            search: '',
+          },
+          fetch: false,
+        }),
+      );
+      vi.advanceTimersByTime(0);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should check for stale articles as soon as it starts', () => {
+      vi.useFakeTimers();
+      store.overrideSelector(ArticlesSelectors.selectLastFilteredFetch, null);
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.refreshState();
+      mockIsExpired.mockReturnValue(true);
+      const results: Action[] = [];
+
+      effects.refetchFilteredArticles$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([ArticlesActions.fetchFilteredArticlesRequested()]);
+    });
 
     it('should trigger refetch when last fetch is expired', () => {
       vi.useFakeTimers();
@@ -421,9 +421,7 @@ describe('ArticlesEffects', () => {
       vi.advanceTimersByTime(3000);
       vi.advanceTimersByTime(10 * 60 * 1000);
 
-      expect(results[0]).toEqual(
-        ArticlesActions.fetchFilteredArticlesInBackgroundRequested(),
-      );
+      expect(results[0]).toEqual(ArticlesActions.fetchFilteredArticlesRequested());
       expect(mockIsExpired).toHaveBeenCalledWith(expiredTimestamp);
     });
 
@@ -638,25 +636,6 @@ describe('ArticlesEffects', () => {
           done();
         });
       }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const articleId = MOCK_ARTICLES[0].id;
-        const mockUpdateResponse: ApiResponse<string> = { data: 'different-id' };
-
-        articlesApiService.updateArticle.mockReturnValue(of(mockUpdateResponse));
-
-        actions$.next(ArticlesActions.updateArticleRequested({ articleId }));
-
-        const subscription = effects.updateArticle$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
-      }));
   });
 
   describe('updateArticleBookmarkRequested$', () => {
@@ -762,25 +741,6 @@ describe('ArticlesEffects', () => {
           );
           done();
         });
-      }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const mockDeleteResponse: ApiResponse<string> = { data: 'different-id' };
-        articlesApiService.deleteArticle.mockReturnValue(of(mockDeleteResponse));
-
-        actions$.next(
-          ArticlesActions.deleteArticleRequested({ article: MOCK_ARTICLES[0] }),
-        );
-
-        const subscription = effects.deleteArticle$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
       }));
   });
 });

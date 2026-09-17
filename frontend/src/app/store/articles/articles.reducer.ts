@@ -3,23 +3,20 @@ import { createReducer, on } from '@ngrx/store';
 import { pick } from 'lodash';
 
 import { ARTICLE_FORM_DATA_PROPERTIES, INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
-import {
-  Article,
-  ArticleFormData,
-  CallState,
-  DataPaginationOptions,
-  IsoDate,
-} from '@app/models';
+import { Article, ArticleFormData, DataPaginationOptions, IsoDate } from '@app/models';
 import { areSame } from '@app/utils';
 
 import * as ArticlesActions from './articles.actions';
+
+export type ArticlesLoad = 'homePage' | 'filtered' | 'article';
 
 export interface ArticlesState extends EntityState<{
   article: Article;
   formData: ArticleFormData;
 }> {
-  callState: CallState;
   newArticleFormData: ArticleFormData;
+  // Loads whose latest attempt failed, which are never persisted
+  failedLoads: ArticlesLoad[];
   lastHomePageFetch: IsoDate | null;
   lastFilteredFetch: IsoDate | null;
   homePageArticles: Article[];
@@ -37,12 +34,8 @@ export const articlesAdapter = createEntityAdapter<{
 });
 
 export const initialState: ArticlesState = articlesAdapter.getInitialState({
-  callState: {
-    status: 'idle',
-    loadStart: null,
-    error: null,
-  },
   newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
+  failedLoads: [],
   lastHomePageFetch: null,
   lastFilteredFetch: null,
   homePageArticles: [],
@@ -59,55 +52,36 @@ export const initialState: ArticlesState = articlesAdapter.getInitialState({
   totalCount: 0,
 });
 
+function withLoadAttempt(state: ArticlesState, load: ArticlesLoad): ArticlesState {
+  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
+}
+
+function withFailedLoad(state: ArticlesState, load: ArticlesLoad): ArticlesState {
+  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
+}
+
 export const articlesReducer = createReducer(
   initialState,
 
-  on(
-    ArticlesActions.fetchHomePageArticlesRequested,
-    ArticlesActions.fetchFilteredArticlesRequested,
-    ArticlesActions.fetchArticleRequested,
-    ArticlesActions.publishArticleRequested,
-    ArticlesActions.updateArticleRequested,
-    ArticlesActions.updateArticleBookmarkRequested,
-    ArticlesActions.deleteArticleRequested,
-    (state): ArticlesState => ({
-      ...state,
-      callState: {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(ArticlesActions.fetchHomePageArticlesRequested, (state): ArticlesState =>
+    withLoadAttempt(state, 'homePage'),
+  ),
+  on(ArticlesActions.fetchHomePageArticlesFailed, (state): ArticlesState =>
+    withFailedLoad(state, 'homePage'),
   ),
 
-  on(
-    ArticlesActions.fetchHomePageArticlesInBackgroundRequested,
-    ArticlesActions.fetchFilteredArticlesInBackgroundRequested,
-    (state): ArticlesState => ({
-      ...state,
-      callState: {
-        status: 'background-loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(ArticlesActions.fetchFilteredArticlesRequested, (state): ArticlesState =>
+    withLoadAttempt(state, 'filtered'),
+  ),
+  on(ArticlesActions.fetchFilteredArticlesFailed, (state): ArticlesState =>
+    withFailedLoad(state, 'filtered'),
   ),
 
-  on(
-    ArticlesActions.fetchHomePageArticlesFailed,
-    ArticlesActions.fetchFilteredArticlesFailed,
-    ArticlesActions.fetchArticleFailed,
-    ArticlesActions.publishArticleFailed,
-    ArticlesActions.updateArticleFailed,
-    ArticlesActions.deleteArticleFailed,
-    (state, { error }): ArticlesState => ({
-      ...state,
-      callState: {
-        status: 'error',
-        loadStart: null,
-        error,
-      },
-    }),
+  on(ArticlesActions.fetchArticleRequested, (state): ArticlesState =>
+    withLoadAttempt(state, 'article'),
+  ),
+  on(ArticlesActions.fetchArticleFailed, (state): ArticlesState =>
+    withFailedLoad(state, 'article'),
   ),
 
   on(
@@ -133,7 +107,6 @@ export const articlesReducer = createReducer(
         }),
         {
           ...state,
-          callState: initialState.callState,
           homePageArticles: articles,
           lastHomePageFetch: new Date().toISOString(),
           totalCount,
@@ -164,7 +137,6 @@ export const articlesReducer = createReducer(
         }),
         {
           ...state,
-          callState: initialState.callState,
           filteredArticles: articles,
           lastFilteredFetch: new Date().toISOString(),
           filteredCount,
@@ -176,7 +148,6 @@ export const articlesReducer = createReducer(
   on(ArticlesActions.paginationOptionsChanged, (state, { options }): ArticlesState => ({
     ...state,
     options,
-    lastFilteredFetch: null,
   })),
 
   on(ArticlesActions.fetchArticleSucceeded, (state, { article }): ArticlesState => {
@@ -186,10 +157,7 @@ export const articlesReducer = createReducer(
         article,
         formData: previousFormData ?? pick(article, ARTICLE_FORM_DATA_PROPERTIES),
       },
-      {
-        ...state,
-        callState: initialState.callState,
-      },
+      state,
     );
   }),
 
@@ -201,46 +169,28 @@ export const articlesReducer = createReducer(
       },
       {
         ...state,
-        callState: initialState.callState,
         newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
-        lastHomePageFetch: null,
-        lastFilteredFetch: null,
       },
     ),
   ),
 
-  on(ArticlesActions.updateArticleSucceeded, (state, { article }): ArticlesState => {
-    return articlesAdapter.upsertOne(
+  on(ArticlesActions.updateArticleSucceeded, (state, { article }): ArticlesState =>
+    articlesAdapter.upsertOne(
       {
         article,
         formData: pick(article, ARTICLE_FORM_DATA_PROPERTIES),
       },
-      {
-        ...state,
-        callState: initialState.callState,
-        lastHomePageFetch: null,
-        lastFilteredFetch: null,
-      },
-    );
-  }),
+      state,
+    ),
+  ),
 
   on(ArticlesActions.deleteArticleSucceeded, (state, { articleId }): ArticlesState =>
     articlesAdapter.removeOne(articleId, {
       ...state,
-      callState: initialState.callState,
-      lastHomePageFetch: null,
-      lastFilteredFetch: null,
+      homePageArticles: state.homePageArticles.filter(({ id }) => id !== articleId),
+      filteredArticles: state.filteredArticles.filter(({ id }) => id !== articleId),
     }),
   ),
-
-  on(ArticlesActions.requestTimedOut, (state): ArticlesState => ({
-    ...state,
-    callState: {
-      status: 'error',
-      loadStart: null,
-      error: { name: 'LCCError', message: 'Request timed out' },
-    },
-  })),
 
   on(ArticlesActions.formDataChanged, (state, { articleId, formData }): ArticlesState => {
     const originalArticle = articleId ? state.entities[articleId] : null;

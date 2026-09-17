@@ -3,7 +3,6 @@ import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import {
   ArticleFormData,
-  CallState,
   DataPaginationOptions,
   Image,
   ImageFormData,
@@ -13,12 +12,6 @@ import { ImagesState, imagesAdapter } from './images.reducer';
 import * as ImagesSelectors from './images.selectors';
 
 describe('Images Selectors', () => {
-  const mockCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
   const mockOptions: DataPaginationOptions<Image> = {
     page: 1,
     pageSize: 20,
@@ -39,7 +32,8 @@ describe('Images Selectors', () => {
 
   const mockImagesState: ImagesState = {
     ...imagesAdapter.getInitialState({
-      callState: mockCallState,
+      failedLoads: [],
+      uploadProgress: { uploaded: 1, total: 3 },
       newImagesFormData: {},
       lastMetadataFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredThumbnailsFetch: '2025-01-14T12:00:00.000Z',
@@ -73,10 +67,82 @@ describe('Images Selectors', () => {
     });
   });
 
-  describe('selectCallState', () => {
-    it('should select the call state', () => {
-      const result = ImagesSelectors.selectCallState.projector(mockImagesState);
-      expect(result).toEqual(mockCallState);
+  describe('selectUploadProgress', () => {
+    it('should select the progress of the uploads in flight', () => {
+      const result = ImagesSelectors.selectUploadProgress.projector(mockImagesState);
+
+      expect(result).toEqual({ uploaded: 1, total: 3 });
+    });
+  });
+
+  describe('selectMetadataStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = ImagesSelectors.selectMetadataStatus.projector(null, ['mainImage']);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the first results could not be loaded', () => {
+      const result = ImagesSelectors.selectMetadataStatus.projector(null, ['metadata']);
+
+      expect(result).toBe('failed');
+    });
+
+    it('should stay loaded when a later refresh fails', () => {
+      const result = ImagesSelectors.selectMetadataStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['metadata'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectFilteredThumbnailsStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = ImagesSelectors.selectFilteredThumbnailsStatus.projector(null, [
+        'metadata',
+      ]);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the first results could not be loaded', () => {
+      const result = ImagesSelectors.selectFilteredThumbnailsStatus.projector(null, [
+        'filteredThumbnails',
+      ]);
+
+      expect(result).toBe('failed');
+    });
+
+    it('should stay loaded when a later refresh fails', () => {
+      const result = ImagesSelectors.selectFilteredThumbnailsStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['filteredThumbnails'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectImageStatus', () => {
+    it('should be loaded once the image is stored', () => {
+      const selector = ImagesSelectors.selectImageStatus(MOCK_IMAGES[0].id);
+
+      const result = selector.projector(
+        { image: MOCK_IMAGES[0], formData: mockImageFormData },
+        ['mainImage'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+
+    it('should be failed when the image could not be loaded', () => {
+      const selector = ImagesSelectors.selectImageStatus(MOCK_IMAGES[0].id);
+
+      const result = selector.projector(null, ['mainImage']);
+
+      expect(result).toBe('failed');
     });
   });
 

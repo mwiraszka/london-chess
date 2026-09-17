@@ -83,7 +83,7 @@ describe('MembersEffects', () => {
         }),
         {},
       ),
-      callState: { status: 'idle' as const, loadStart: null, error: null },
+      failedLoads: [],
       newMemberFormData: INITIAL_MEMBER_FORM_DATA,
       recordsScope: 'admin' as const,
       lastFullFetch: null,
@@ -257,25 +257,6 @@ describe('MembersEffects', () => {
         });
       }));
 
-    it('should fetch filtered members in background', () =>
-      withDone(done => {
-        membersApiService.getFilteredMembers.mockReturnValue(of(mockApiResponse));
-
-        actions$.next(MembersActions.fetchFilteredMembersInBackgroundRequested());
-
-        effects.fetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersSucceeded({
-              members: mockApiResponse.data.items,
-              filteredCount: mockApiResponse.data.filteredCount,
-              totalCount: mockApiResponse.data.totalCount,
-              scope: 'admin',
-            }),
-          );
-          done();
-        });
-      }));
-
     it('should handle fetch filtered members failure', () =>
       withDone(done => {
         membersApiService.getFilteredMembers.mockReturnValue(throwError(() => mockError));
@@ -300,9 +281,7 @@ describe('MembersEffects', () => {
         );
 
         effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersInBackgroundRequested(),
-          );
+          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
           done();
         });
       }));
@@ -318,9 +297,22 @@ describe('MembersEffects', () => {
         );
 
         effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersInBackgroundRequested(),
-          );
+          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
+          done();
+        });
+      }));
+
+    it('should trigger refetch after updateMemberRatingsSucceeded', () =>
+      withDone(done => {
+        actions$.next(
+          MembersActions.updateMemberRatingsSucceeded({
+            members: [MOCK_MEMBERS[0]],
+            unnotifiedMemberNames: [],
+          }),
+        );
+
+        effects.refetchFilteredMembers$.subscribe(action => {
+          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
           done();
         });
       }));
@@ -335,9 +327,7 @@ describe('MembersEffects', () => {
         );
 
         effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersInBackgroundRequested(),
-          );
+          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
           done();
         });
       }));
@@ -364,12 +354,53 @@ describe('MembersEffects', () => {
         );
 
         effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersInBackgroundRequested(),
-          );
+          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
           done();
         });
       }));
+
+    it('should not refetch when the options change without asking for a fetch', () => {
+      vi.useFakeTimers();
+      mockIsExpired.mockReturnValue(false);
+      const results: Action[] = [];
+      effects.refetchFilteredMembers$.subscribe(action => results.push(action));
+
+      actions$.next(
+        MembersActions.paginationOptionsChanged({
+          options: {
+            page: 1,
+            pageSize: 10,
+            sortBy: 'lastName',
+            sortOrder: 'asc',
+            filters: {
+              showInactiveMembers: {
+                label: 'Show inactive members',
+                value: false,
+              },
+            },
+            search: '',
+          },
+          fetch: false,
+        }),
+      );
+      vi.advanceTimersByTime(0);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should check for stale members as soon as it starts', () => {
+      vi.useFakeTimers();
+      store.overrideSelector(MembersSelectors.selectLastFilteredFetch, null);
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
+      store.refreshState();
+      mockIsExpired.mockReturnValue(true);
+      const results: Action[] = [];
+
+      effects.refetchFilteredMembers$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([MembersActions.fetchFilteredMembersRequested()]);
+    });
 
     it('should trigger refetch when last fetch is expired', () => {
       vi.useFakeTimers();
@@ -387,9 +418,7 @@ describe('MembersEffects', () => {
       vi.advanceTimersByTime(3000);
       vi.advanceTimersByTime(10 * 60 * 1000);
 
-      expect(results[0]).toEqual(
-        MembersActions.fetchFilteredMembersInBackgroundRequested(),
-      );
+      expect(results[0]).toEqual(MembersActions.fetchFilteredMembersRequested());
       expect(mockIsExpired).toHaveBeenCalledWith(expiredTimestamp);
     });
 
@@ -650,29 +679,6 @@ describe('MembersEffects', () => {
           done();
         });
       }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const memberId = MOCK_MEMBERS[0].id;
-        const mockUpdateResponse: ApiResponse<Member> = {
-          data: { ...MOCK_MEMBERS[0], id: 'different-id' },
-        };
-
-        membersApiService.updateMember.mockReturnValue(of(mockUpdateResponse));
-
-        actions$.next(
-          MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
-        );
-
-        const subscription = effects.updateMember$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
-      }));
   });
 
   describe('deleteMember$', () => {
@@ -706,23 +712,6 @@ describe('MembersEffects', () => {
           expect(action).toEqual(MembersActions.deleteMemberFailed({ error: mockError }));
           done();
         });
-      }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const mockDeleteResponse: ApiResponse<string> = { data: 'different-id' };
-        membersApiService.deleteMember.mockReturnValue(of(mockDeleteResponse));
-
-        actions$.next(MembersActions.deleteMemberRequested({ member: MOCK_MEMBERS[0] }));
-
-        const subscription = effects.deleteMember$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
       }));
   });
 
@@ -772,7 +761,7 @@ describe('MembersEffects', () => {
         });
       }));
 
-    it('should handle API error during export', () =>
+    it('should report an export failure when the members cannot be fetched', () =>
       withDone(done => {
         membersApiService.getAllMembers.mockReturnValue(throwError(() => mockError));
         mockParseError.mockReturnValue(mockError);
@@ -781,8 +770,9 @@ describe('MembersEffects', () => {
 
         effects.exportMembersToCsv$.subscribe(action => {
           expect(action).toEqual(
-            MembersActions.fetchAllMembersFailed({ error: mockError }),
+            MembersActions.exportMembersToCsvFailed({ error: mockError }),
           );
+          expect(mockExportDataToCsv).not.toHaveBeenCalled();
           done();
         });
       }));

@@ -3,7 +3,7 @@ import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
 import moment from 'moment-timezone';
-import { combineLatest, merge, of, race, timer } from 'rxjs';
+import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -34,31 +34,9 @@ export class EventsEffects {
   private readonly parseError = inject(PARSE_ERROR);
   private readonly userService = inject(UserService);
 
-  fetchAllEvents$ = createEffect(() => {
-    return this.actions$.pipe(
-      ofType(EventsActions.fetchAllEventsRequested),
-      switchMap(() =>
-        this.eventsApiService.getAllEvents().pipe(
-          map(response =>
-            EventsActions.fetchAllEventsSucceeded({
-              events: response.data.items,
-              totalCount: response.data.totalCount,
-            }),
-          ),
-          catchError(error =>
-            of(EventsActions.fetchAllEventsFailed({ error: this.parseError(error) })),
-          ),
-        ),
-      ),
-    );
-  });
-
   fetchHomePageEvents$ = createEffect(() => {
     return this.actions$.pipe(
-      ofType(
-        EventsActions.fetchHomePageEventsRequested,
-        EventsActions.fetchHomePageEventsInBackgroundRequested,
-      ),
+      ofType(EventsActions.fetchHomePageEventsRequested),
       switchMap(() => {
         const options: DataPaginationOptions<Event> = {
           page: 1,
@@ -74,23 +52,20 @@ export class EventsEffects {
           search: '',
         };
 
-        return race(
-          this.eventsApiService.getFilteredEvents(options).pipe(
-            map(response =>
-              EventsActions.fetchHomePageEventsSucceeded({
-                events: response.data.items,
-                totalCount: response.data.totalCount,
+        return this.eventsApiService.getFilteredEvents(options).pipe(
+          map(response =>
+            EventsActions.fetchHomePageEventsSucceeded({
+              events: response.data.items,
+              totalCount: response.data.totalCount,
+            }),
+          ),
+          catchError(error =>
+            of(
+              EventsActions.fetchHomePageEventsFailed({
+                error: this.parseError(error),
               }),
             ),
-            catchError(error =>
-              of(
-                EventsActions.fetchHomePageEventsFailed({
-                  error: this.parseError(error),
-                }),
-              ),
-            ),
           ),
-          timer(10_000).pipe(map(() => EventsActions.requestTimedOut())),
         );
       }),
     );
@@ -98,10 +73,7 @@ export class EventsEffects {
 
   fetchFilteredEvents$ = createEffect(() => {
     return this.actions$.pipe(
-      ofType(
-        EventsActions.fetchFilteredEventsRequested,
-        EventsActions.fetchFilteredEventsInBackgroundRequested,
-      ),
+      ofType(EventsActions.fetchFilteredEventsRequested),
       concatLatestFrom(() => this.store.select(EventsSelectors.selectOptions)),
       switchMap(([, options]) =>
         this.eventsApiService.getFilteredEvents(options).pipe(
@@ -132,7 +104,7 @@ export class EventsEffects {
       ),
     );
 
-    const periodicCheck$ = timer(3500, 10 * 60 * 1000).pipe(
+    const periodicCheck$ = timer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         this.store.select(EventsSelectors.selectLastHomePageFetch).pipe(take(1)),
       ),
@@ -140,22 +112,27 @@ export class EventsEffects {
     );
 
     return merge(refetchActions$, periodicCheck$).pipe(
-      map(() => EventsActions.fetchHomePageEventsInBackgroundRequested()),
+      map(() => EventsActions.fetchHomePageEventsRequested()),
     );
   });
 
   refetchFilteredEvents$ = createEffect(() => {
-    const refetchActions$ = this.actions$.pipe(
-      ofType(
-        AppActions.refreshAppRequested,
-        EventsActions.addEventSucceeded,
-        EventsActions.updateEventSucceeded,
-        EventsActions.deleteEventSucceeded,
-        EventsActions.paginationOptionsChanged,
+    const refetchActions$ = merge(
+      this.actions$.pipe(
+        ofType(
+          AppActions.refreshAppRequested,
+          EventsActions.addEventSucceeded,
+          EventsActions.updateEventSucceeded,
+          EventsActions.deleteEventSucceeded,
+        ),
+      ),
+      this.actions$.pipe(
+        ofType(EventsActions.paginationOptionsChanged),
+        filter(({ fetch }) => fetch),
       ),
     );
 
-    const timerCheck$ = timer(5000, 10 * 60 * 1000).pipe(
+    const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(EventsSelectors.selectLastFilteredFetch),
@@ -184,7 +161,7 @@ export class EventsEffects {
     const periodicCheck$ = merge(timerCheck$, routerCheck$);
 
     return merge(refetchActions$, periodicCheck$).pipe(
-      map(() => EventsActions.fetchFilteredEventsInBackgroundRequested()),
+      map(() => EventsActions.fetchFilteredEventsRequested()),
     );
   });
 
@@ -260,7 +237,6 @@ export class EventsEffects {
         };
 
         return this.eventsApiService.updateEvent(updatedEvent).pipe(
-          filter(response => response.data === updatedEvent.id),
           map(() =>
             EventsActions.updateEventSucceeded({
               event: updatedEvent,
@@ -280,7 +256,6 @@ export class EventsEffects {
       ofType(EventsActions.deleteEventRequested),
       mergeMap(({ event }) =>
         this.eventsApiService.deleteEvent(event.id).pipe(
-          filter(response => response.data === event.id),
           map(() =>
             EventsActions.deleteEventSucceeded({
               eventId: event.id,
@@ -311,7 +286,7 @@ export class EventsEffects {
               : EventsActions.exportEventsToCsvFailed({ error: exportResult });
           }),
           catchError(error =>
-            of(EventsActions.fetchAllEventsFailed({ error: this.parseError(error) })),
+            of(EventsActions.exportEventsToCsvFailed({ error: this.parseError(error) })),
           ),
         );
       }),

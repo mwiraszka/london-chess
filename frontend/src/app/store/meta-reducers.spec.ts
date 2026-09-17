@@ -1,22 +1,33 @@
-import { Action, ActionReducer } from '@ngrx/store';
-import { pick } from 'lodash';
+import { Action, ActionReducer, Store, StoreModule } from '@ngrx/store';
+import { omit, pick } from 'lodash';
+import { firstValueFrom } from 'rxjs';
+
+import { TestBed } from '@angular/core/testing';
 
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { CallState, Image, User } from '@app/models';
+import { Image, User } from '@app/models';
 
 import { version } from '../../../package.json';
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import * as AuthActions from './auth/auth.actions';
 import { initialState as eventsInitialState } from './events/events.reducer';
-import { ImagesState, initialState as imagesInitialState } from './images/images.reducer';
-import { initialState as membersInitialState } from './members/members.reducer';
+import * as ImagesActions from './images/images.actions';
+import {
+  ImagesState,
+  initialState as imagesInitialState,
+  imagesReducer,
+} from './images/images.reducer';
+import * as MembersActions from './members/members.actions';
+import {
+  initialState as membersInitialState,
+  membersReducer,
+} from './members/members.reducer';
 import {
   MetaState,
   actionLogMetaReducer,
   clearRecordsOnAccessLossMetaReducer,
   hydrationMetaReducer,
-  loadingStateResetMetaReducer,
   metaReducers,
   stripExpiredImageUrls,
   updateStateVersionsInLocalStorageMetaReducer,
@@ -71,15 +82,18 @@ describe('Meta Reducers', () => {
       expect(preserved).toBe(oldAppState);
     });
 
-    it('should drop member state saved in an incompatible shape', () => {
-      localStorage.setItem('membersState_v6.0.3', '{"entities": {}}');
+    it('should drop record state saved in an incompatible shape', () => {
+      const staleKeys = ['articlesState', 'eventsState', 'membersState'];
+      staleKeys.forEach(key => localStorage.setItem(`${key}_v6.0.4`, '{"entities": {}}'));
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
-      expect(localStorage.getItem('membersState_v6.0.3')).toBeNull();
-      expect(localStorage.getItem(`membersState_v${version}`)).toBeNull();
+      staleKeys.forEach(key => {
+        expect(localStorage.getItem(`${key}_v6.0.4`)).toBeNull();
+        expect(localStorage.getItem(`${key}_v${version}`)).toBeNull();
+      });
     });
 
     it('should keep member state saved in a compatible shape', () => {
@@ -200,207 +214,6 @@ describe('Meta Reducers', () => {
     });
   });
 
-  describe('loadingStateResetMetaReducer', () => {
-    it('should reset loading state for articlesState on rehydration', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      };
-
-      const state: MetaState = {
-        articlesState: {
-          ...articlesInitialState,
-          callState: loadingCallState,
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.articlesState?.callState).toEqual(articlesInitialState.callState);
-    });
-
-    it('should reset loading state for eventsState on rehydration', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      };
-
-      const state: MetaState = {
-        eventsState: {
-          ...eventsInitialState,
-          callState: loadingCallState,
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.eventsState?.callState).toEqual(eventsInitialState.callState);
-    });
-
-    it('should reset loading state for imagesState on rehydration', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      };
-
-      const state: MetaState = {
-        imagesState: {
-          ...imagesInitialState,
-          callState: loadingCallState,
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.imagesState?.callState).toEqual(imagesInitialState.callState);
-    });
-
-    it('should reset loading state for membersState on rehydration', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      };
-
-      const state: MetaState = {
-        membersState: {
-          ...membersInitialState,
-          callState: loadingCallState,
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.membersState?.callState).toEqual(membersInitialState.callState);
-    });
-
-    it('should reset loading state for multiple states on rehydration', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      };
-
-      const state: MetaState = {
-        articlesState: {
-          ...articlesInitialState,
-          callState: loadingCallState,
-        },
-        eventsState: {
-          ...eventsInitialState,
-          callState: { status: 'idle', loadStart: null, error: null },
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.articlesState?.callState).toEqual(articlesInitialState.callState);
-      expect(result.eventsState?.callState.status).toBe('idle');
-    });
-
-    it('should not modify state when no loading states exist', () => {
-      const state: MetaState = {
-        articlesState: {
-          ...articlesInitialState,
-          callState: { status: 'idle', loadStart: null, error: null },
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result).toBe(state);
-    });
-
-    it('should preserve error states on rehydration', () => {
-      const errorCallState: CallState = {
-        status: 'error',
-        loadStart: null,
-        error: { name: 'LCCError', message: 'Test error' },
-      };
-
-      const state: MetaState = {
-        articlesState: {
-          ...articlesInitialState,
-          callState: errorCallState,
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '@ngrx/store/update-reducers' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.articlesState?.callState).toEqual(errorCallState);
-    });
-
-    it('should not modify state on non-rehydration actions', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      };
-
-      const state: MetaState = {
-        articlesState: {
-          ...articlesInitialState,
-          callState: loadingCallState,
-        },
-      };
-
-      mockReducer = vi.fn(() => state);
-
-      const wrappedLoadingStateResetMetaReducer =
-        loadingStateResetMetaReducer(mockReducer);
-      const action = { type: '[Articles] Publish article requested' };
-
-      const result = wrappedLoadingStateResetMetaReducer(mockState, action);
-
-      expect(result.articlesState?.callState).toEqual(loadingCallState);
-    });
-  });
-
   describe('stripExpiredImageUrls', () => {
     const stateWith = (image: Image): ImagesState => ({
       ...imagesInitialState,
@@ -488,6 +301,81 @@ describe('Meta Reducers', () => {
     });
   });
 
+  describe('hydrationMetaReducer', () => {
+    it('should leave request outcomes out of local storage', () => {
+      const state: MetaState = {
+        articlesState: { ...articlesInitialState, failedLoads: ['homePage'] },
+        imagesState: {
+          ...imagesInitialState,
+          failedLoads: ['metadata'],
+          uploadProgress: { uploaded: 1, total: 2 },
+        },
+      };
+      mockReducer = vi.fn(() => state);
+      const wrappedReducer = hydrationMetaReducer(mockReducer);
+
+      wrappedReducer(state, { type: '[Test] State changed' });
+
+      const savedArticles = JSON.parse(versionedStorage.getItem('articlesState') ?? '{}');
+      const savedImages = JSON.parse(versionedStorage.getItem('imagesState') ?? '{}');
+      expect(savedArticles).not.toHaveProperty('failedLoads');
+      expect(savedArticles).toHaveProperty('options');
+      expect(savedImages).not.toHaveProperty('failedLoads');
+      expect(savedImages).not.toHaveProperty('uploadProgress');
+    });
+
+    describe('when a visit starts from saved state', () => {
+      let store: Store<MetaState>;
+
+      beforeEach(() => {
+        versionedStorage.setItem(
+          'membersState',
+          JSON.stringify(omit({ ...membersInitialState, totalCount: 56 }, 'failedLoads')),
+        );
+        versionedStorage.setItem(
+          'imagesState',
+          JSON.stringify(omit(imagesInitialState, ['failedLoads', 'uploadProgress'])),
+        );
+
+        TestBed.configureTestingModule({
+          imports: [
+            StoreModule.forRoot({}, { metaReducers: [hydrationMetaReducer] }),
+            StoreModule.forFeature('imagesState', imagesReducer),
+            StoreModule.forFeature('membersState', membersReducer),
+          ],
+        });
+        store = TestBed.inject(Store);
+      });
+
+      it('should restore the saved records', async () => {
+        const state = await firstValueFrom(store);
+
+        expect(state.membersState?.totalCount).toBe(56);
+      });
+
+      it('should start without earlier request outcomes', async () => {
+        const state = await firstValueFrom(store);
+
+        expect(state.membersState?.failedLoads).toEqual([]);
+        expect(state.imagesState?.failedLoads).toEqual([]);
+        expect(state.imagesState?.uploadProgress).toBeNull();
+      });
+
+      it('should track the loads made during the visit', async () => {
+        const error = { name: 'LCCError' as const, message: 'Unable to load.' };
+
+        store.dispatch(MembersActions.fetchFilteredMembersRequested());
+        store.dispatch(MembersActions.fetchFilteredMembersFailed({ error }));
+        store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
+        store.dispatch(ImagesActions.imageUploadsProgressed({ uploaded: 1, total: 2 }));
+        const state = await firstValueFrom(store);
+
+        expect(state.membersState?.failedLoads).toEqual(['filtered']);
+        expect(state.imagesState?.uploadProgress).toEqual({ uploaded: 1, total: 2 });
+      });
+    });
+  });
+
   describe('clearRecordsOnAccessLossMetaReducer', () => {
     const admin: User = {
       id: 'user123',
@@ -552,13 +440,6 @@ describe('Meta Reducers', () => {
     it('should export metaReducers array', () => {
       expect(metaReducers).toBeDefined();
       expect(Array.isArray(metaReducers)).toBe(true);
-    });
-
-    it('should include loadingStateResetMetaReducer', () => {
-      const loadingStateReset = metaReducers.find(
-        metaReducer => metaReducer.name === 'loadingStateResetMetaReducer',
-      );
-      expect(loadingStateReset).toBeDefined();
     });
 
     it('should include updateStateVersionsInLocalStorageMetaReducer', () => {

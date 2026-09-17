@@ -164,19 +164,6 @@ describe('AppEffects', () => {
             done();
           });
         }));
-
-      it('should display toast for requestTimedOut', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.requestTimedOut());
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Request timed out', {
-              title: 'Articles request',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
     });
 
     describe('Events actions', () => {

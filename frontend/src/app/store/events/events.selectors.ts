@@ -4,21 +4,13 @@ import moment from 'moment-timezone';
 
 import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
 import { Id } from '@app/models';
-import { areSame, customSort } from '@app/utils';
+import { areSame, customSort, loadStatus } from '@app/utils';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 
 const selectEventsState = createFeatureSelector<EventsState>('eventsState');
 
-export const selectCallState = createSelector(
-  selectEventsState,
-  state => state.callState,
-);
-
-export const selectLastFullFetch = createSelector(
-  selectEventsState,
-  state => state.lastFullFetch,
-);
+const selectFailedLoads = createSelector(selectEventsState, state => state.failedLoads);
 
 export const selectLastHomePageFetch = createSelector(
   selectEventsState,
@@ -69,6 +61,25 @@ export const selectEventById = (id: Id | null) =>
     selectAllEventEntities,
     allEventEntities =>
       allEventEntities?.find(entity => entity.event.id === id)?.event ?? null,
+  );
+
+export const selectHomePageEventsStatus = createSelector(
+  selectLastHomePageFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('homePage')),
+);
+
+export const selectFilteredEventsStatus = createSelector(
+  selectLastFilteredFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('filtered')),
+);
+
+export const selectEventStatus = (id: Id | null) =>
+  createSelector(selectEventById(id), selectFailedLoads, (event, failedLoads) =>
+    loadStatus(!!event, failedLoads.includes('event')),
   );
 
 export const selectEventFormDataById = (id: Id | null) =>

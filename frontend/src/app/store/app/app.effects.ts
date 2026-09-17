@@ -42,7 +42,6 @@ export class AppEffects {
     ArticlesActions.fetchHomePageArticlesFailed,
     ArticlesActions.publishArticleFailed,
     ArticlesActions.publishArticleSucceeded,
-    ArticlesActions.requestTimedOut,
     ArticlesActions.updateArticleFailed,
     ArticlesActions.updateArticleSucceeded,
 
@@ -52,11 +51,9 @@ export class AppEffects {
     EventsActions.deleteEventSucceeded,
     EventsActions.exportEventsToCsvFailed,
     EventsActions.exportEventsToCsvSucceeded,
-    EventsActions.fetchAllEventsFailed,
     EventsActions.fetchEventFailed,
     EventsActions.fetchFilteredEventsFailed,
     EventsActions.fetchHomePageEventsFailed,
-    EventsActions.requestTimedOut,
     EventsActions.updateEventFailed,
     EventsActions.updateEventSucceeded,
 
@@ -75,7 +72,6 @@ export class AppEffects {
     ImagesActions.fetchFilteredThumbnailsFailed,
     ImagesActions.fetchMainImageFailed,
     ImagesActions.imageFileActionFailed,
-    ImagesActions.requestTimedOut,
     ImagesActions.updateAlbumFailed,
     ImagesActions.updateImageFailed,
     ImagesActions.updateAlbumSucceeded,
@@ -91,7 +87,6 @@ export class AppEffects {
     MembersActions.fetchAllMembersFailed,
     MembersActions.fetchFilteredMembersFailed,
     MembersActions.parseMemberRatingsFromCsvFailed,
-    MembersActions.requestTimedOut,
     MembersActions.updateMemberFailed,
     MembersActions.updateMemberSucceeded,
     MembersActions.updateMemberRatingsSucceeded,
@@ -105,7 +100,6 @@ export class AppEffects {
     ArticlesActions.fetchHomePageArticlesFailed,
     ArticlesActions.fetchArticleFailed,
 
-    EventsActions.fetchAllEventsFailed,
     EventsActions.fetchFilteredEventsFailed,
     EventsActions.fetchHomePageEventsFailed,
     EventsActions.fetchEventFailed,
@@ -247,12 +241,6 @@ export class AppEffects {
           message: `Successfully published ${action.article.title}`,
           type: 'success',
         };
-      case ArticlesActions.requestTimedOut.type:
-        return {
-          title: 'Articles request',
-          message: 'Request timed out',
-          type: 'warning',
-        };
       case ArticlesActions.updateArticleFailed.type:
         return {
           title: 'Article update',
@@ -318,12 +306,6 @@ export class AppEffects {
         return {
           title: 'Load events',
           message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case EventsActions.requestTimedOut.type:
-        return {
-          title: 'Events request',
-          message: 'Request timed out',
           type: 'warning',
         };
       case EventsActions.updateEventFailed.type:
@@ -432,12 +414,6 @@ export class AppEffects {
           message: this.getErrorMessage(action.error),
           type: 'warning',
         };
-      case ImagesActions.requestTimedOut.type:
-        return {
-          title: 'Images request',
-          message: 'Request timed out',
-          type: 'warning',
-        };
       case ImagesActions.updateAlbumFailed.type:
         return {
           title: 'Album update',
@@ -524,12 +500,6 @@ export class AppEffects {
         return {
           title: 'CSV import',
           message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case MembersActions.requestTimedOut.type:
-        return {
-          title: 'Members request',
-          message: 'Request timed out',
           type: 'warning',
         };
       case MembersActions.updateMemberFailed.type:

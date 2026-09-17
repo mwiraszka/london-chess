@@ -3,24 +3,20 @@ import { createReducer, on } from '@ngrx/store';
 import { pick } from 'lodash';
 
 import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
-import {
-  CallState,
-  DataPaginationOptions,
-  Event,
-  EventFormData,
-  IsoDate,
-} from '@app/models';
+import { DataPaginationOptions, Event, EventFormData, IsoDate } from '@app/models';
 import { areSame } from '@app/utils';
 
 import * as EventsActions from './events.actions';
+
+export type EventsLoad = 'homePage' | 'filtered' | 'event';
 
 export interface EventsState extends EntityState<{
   event: Event;
   formData: EventFormData;
 }> {
-  callState: CallState;
   newEventFormData: EventFormData;
-  lastFullFetch: IsoDate | null;
+  // Loads whose latest attempt failed, which are never persisted
+  failedLoads: EventsLoad[];
   lastHomePageFetch: IsoDate | null;
   lastFilteredFetch: IsoDate | null;
   homePageEvents: Event[];
@@ -39,13 +35,8 @@ export const eventsAdapter = createEntityAdapter<{
 });
 
 export const initialState: EventsState = eventsAdapter.getInitialState({
-  callState: {
-    status: 'idle',
-    loadStart: null,
-    error: null,
-  },
   newEventFormData: INITIAL_EVENT_FORM_DATA,
-  lastFullFetch: null,
+  failedLoads: [],
   lastHomePageFetch: null,
   lastFilteredFetch: null,
   homePageEvents: [],
@@ -68,83 +59,36 @@ export const initialState: EventsState = eventsAdapter.getInitialState({
   scheduleView: 'calendar',
 });
 
+function withLoadAttempt(state: EventsState, load: EventsLoad): EventsState {
+  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
+}
+
+function withFailedLoad(state: EventsState, load: EventsLoad): EventsState {
+  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
+}
+
 export const eventsReducer = createReducer(
   initialState,
 
-  on(
-    EventsActions.fetchAllEventsRequested,
-    EventsActions.fetchHomePageEventsRequested,
-    EventsActions.fetchFilteredEventsRequested,
-    EventsActions.fetchEventRequested,
-    EventsActions.addEventRequested,
-    EventsActions.updateEventRequested,
-    EventsActions.deleteEventRequested,
-    (state): EventsState => ({
-      ...state,
-      callState: {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(EventsActions.fetchHomePageEventsRequested, (state): EventsState =>
+    withLoadAttempt(state, 'homePage'),
+  ),
+  on(EventsActions.fetchHomePageEventsFailed, (state): EventsState =>
+    withFailedLoad(state, 'homePage'),
   ),
 
-  on(
-    EventsActions.fetchHomePageEventsInBackgroundRequested,
-    EventsActions.fetchFilteredEventsInBackgroundRequested,
-    (state): EventsState => ({
-      ...state,
-      callState: {
-        status: 'background-loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(EventsActions.fetchFilteredEventsRequested, (state): EventsState =>
+    withLoadAttempt(state, 'filtered'),
+  ),
+  on(EventsActions.fetchFilteredEventsFailed, (state): EventsState =>
+    withFailedLoad(state, 'filtered'),
   ),
 
-  on(
-    EventsActions.fetchAllEventsFailed,
-    EventsActions.fetchHomePageEventsFailed,
-    EventsActions.fetchFilteredEventsFailed,
-    EventsActions.fetchEventFailed,
-    EventsActions.addEventFailed,
-    EventsActions.updateEventFailed,
-    EventsActions.deleteEventFailed,
-    (state, { error }): EventsState => ({
-      ...state,
-      callState: {
-        status: 'error',
-        loadStart: null,
-        error,
-      },
-    }),
+  on(EventsActions.fetchEventRequested, (state): EventsState =>
+    withLoadAttempt(state, 'event'),
   ),
-
-  on(
-    EventsActions.fetchAllEventsSucceeded,
-    (state, { events, totalCount }): EventsState =>
-      eventsAdapter.setAll(
-        events.map(event => {
-          const existingEntity = state.entities[event.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(existingEntity.formData, pick(event, EVENT_FORM_DATA_PROPERTIES));
-
-          return {
-            event,
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(event, EVENT_FORM_DATA_PROPERTIES),
-          };
-        }),
-        {
-          ...state,
-          callState: initialState.callState,
-          lastFullFetch: new Date().toISOString(),
-          totalCount,
-        },
-      ),
+  on(EventsActions.fetchEventFailed, (state): EventsState =>
+    withFailedLoad(state, 'event'),
   ),
 
   on(
@@ -167,7 +111,6 @@ export const eventsReducer = createReducer(
         }),
         {
           ...state,
-          callState: initialState.callState,
           homePageEvents: events,
           lastHomePageFetch: new Date().toISOString(),
           totalCount,
@@ -196,7 +139,6 @@ export const eventsReducer = createReducer(
         }),
         {
           ...state,
-          callState: initialState.callState,
           filteredEvents: events,
           lastFilteredFetch: new Date().toISOString(),
           filteredCount,
@@ -208,7 +150,6 @@ export const eventsReducer = createReducer(
   on(EventsActions.paginationOptionsChanged, (state, { options }): EventsState => ({
     ...state,
     options,
-    lastFilteredFetch: null,
   })),
 
   on(EventsActions.fetchEventSucceeded, (state, { event }): EventsState => {
@@ -218,7 +159,7 @@ export const eventsReducer = createReducer(
         event,
         formData: previousFormData ?? pick(event, EVENT_FORM_DATA_PROPERTIES),
       },
-      { ...state, callState: initialState.callState },
+      state,
     );
   }),
 
@@ -230,9 +171,7 @@ export const eventsReducer = createReducer(
       },
       {
         ...state,
-        callState: initialState.callState,
         newEventFormData: INITIAL_EVENT_FORM_DATA,
-        lastFetch: null,
       },
     ),
   ),
@@ -243,30 +182,17 @@ export const eventsReducer = createReducer(
         event,
         formData: pick(event, EVENT_FORM_DATA_PROPERTIES),
       },
-      {
-        ...state,
-        callState: initialState.callState,
-        lastFetch: null,
-      },
+      state,
     ),
   ),
 
   on(EventsActions.deleteEventSucceeded, (state, { eventId }): EventsState =>
     eventsAdapter.removeOne(eventId, {
       ...state,
-      callState: initialState.callState,
-      lastFetch: null,
+      homePageEvents: state.homePageEvents.filter(({ id }) => id !== eventId),
+      filteredEvents: state.filteredEvents.filter(({ id }) => id !== eventId),
     }),
   ),
-
-  on(EventsActions.requestTimedOut, (state): EventsState => ({
-    ...state,
-    callState: {
-      status: 'error',
-      loadStart: null,
-      error: { name: 'LCCError', message: 'Request timed out' },
-    },
-  })),
 
   on(EventsActions.formDataChanged, (state, { eventId, formData }): EventsState => {
     const originalEvent = eventId ? state.entities[eventId] : null;

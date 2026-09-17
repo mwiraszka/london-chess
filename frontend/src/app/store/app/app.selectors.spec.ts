@@ -1,5 +1,3 @@
-import { CallState } from '@app/models';
-
 import { AppState } from './app.reducer';
 import * as AppSelectors from './app.selectors';
 
@@ -13,30 +11,6 @@ describe('App Selectors', () => {
     showUpcomingEventBanner: false,
   };
 
-  const mockArticlesCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
-  const mockEventsCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
-  const mockImagesCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
-  const mockMembersCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
   describe('selectAppState', () => {
     it('should select the app state', () => {
       const state = {
@@ -46,80 +20,6 @@ describe('App Selectors', () => {
       const result = AppSelectors.selectAppState(state as { appState: AppState });
 
       expect(result).toEqual(mockAppState);
-    });
-  });
-
-  describe('selectIsLoading', () => {
-    const loadingCallState: CallState = {
-      status: 'loading',
-      error: null,
-      loadStart: null,
-    };
-
-    it('should return false when no call states are loading', () => {
-      const result = AppSelectors.selectIsLoading.projector(
-        mockArticlesCallState,
-        mockEventsCallState,
-        mockImagesCallState,
-        mockMembersCallState,
-      );
-
-      expect(result).toBe(false);
-    });
-
-    it('should return true when articles call state is loading', () => {
-      const result = AppSelectors.selectIsLoading.projector(
-        loadingCallState,
-        mockEventsCallState,
-        mockImagesCallState,
-        mockMembersCallState,
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it('should return true when events call state is loading', () => {
-      const result = AppSelectors.selectIsLoading.projector(
-        mockArticlesCallState,
-        loadingCallState,
-        mockImagesCallState,
-        mockMembersCallState,
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it('should return true when images call state is loading', () => {
-      const result = AppSelectors.selectIsLoading.projector(
-        mockArticlesCallState,
-        mockEventsCallState,
-        loadingCallState,
-        mockMembersCallState,
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it('should return true when members call state is loading', () => {
-      const result = AppSelectors.selectIsLoading.projector(
-        mockArticlesCallState,
-        mockEventsCallState,
-        mockImagesCallState,
-        loadingCallState,
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it('should return true when multiple call states are loading', () => {
-      const result = AppSelectors.selectIsLoading.projector(
-        loadingCallState,
-        loadingCallState,
-        mockImagesCallState,
-        mockMembersCallState,
-      );
-
-      expect(result).toBe(true);
     });
   });
 

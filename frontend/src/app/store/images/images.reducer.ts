@@ -3,24 +3,22 @@ import { createReducer, on } from '@ngrx/store';
 import { compact, pick } from 'lodash';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
-import {
-  CallState,
-  DataPaginationOptions,
-  Id,
-  Image,
-  ImageFormData,
-  IsoDate,
-} from '@app/models';
+import { DataPaginationOptions, Id, Image, ImageFormData, IsoDate } from '@app/models';
 import { customSort } from '@app/utils';
 
 import * as ImagesActions from './images.actions';
+
+export type ImagesLoad = 'metadata' | 'filteredThumbnails' | 'mainImage';
 
 export interface ImagesState extends EntityState<{
   image: Image;
   formData: ImageFormData;
 }> {
-  callState: CallState;
   newImagesFormData: Record<string, ImageFormData>;
+  // Loads whose latest attempt failed, which are never persisted
+  failedLoads: ImagesLoad[];
+  // Progress of the image uploads in flight, which is never persisted
+  uploadProgress: { uploaded: number; total: number } | null;
   lastMetadataFetch: IsoDate | null;
   lastFilteredThumbnailsFetch: IsoDate | null;
   lastAlbumCoversFetch: IsoDate | null;
@@ -40,12 +38,9 @@ export const imagesAdapter = createEntityAdapter<{
 });
 
 export const initialState: ImagesState = imagesAdapter.getInitialState({
-  callState: {
-    status: 'idle',
-    loadStart: null,
-    error: null,
-  },
   newImagesFormData: {},
+  failedLoads: [],
+  uploadProgress: null,
   lastMetadataFetch: null,
   lastFilteredThumbnailsFetch: null,
   lastAlbumCoversFetch: null,
@@ -73,60 +68,46 @@ function earlierIso(a: IsoDate | undefined, b: IsoDate | undefined): IsoDate | u
   return a < b ? a : b;
 }
 
+function withLoadAttempt(state: ImagesState, load: ImagesLoad): ImagesState {
+  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
+}
+
+function withFailedLoad(state: ImagesState, load: ImagesLoad): ImagesState {
+  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
+}
+
 export const imagesReducer = createReducer(
   initialState,
 
-  on(
-    ImagesActions.fetchFilteredThumbnailsRequested,
-    ImagesActions.fetchMainImageRequested,
-    ImagesActions.addImageRequested,
-    ImagesActions.addImagesRequested,
-    ImagesActions.updateImageRequested,
-    ImagesActions.updateAlbumRequested,
-    ImagesActions.deleteImageRequested,
-    ImagesActions.deleteAlbumRequested,
-    (state): ImagesState => ({
-      ...state,
-      callState: {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(ImagesActions.fetchAllImagesMetadataRequested, (state): ImagesState =>
+    withLoadAttempt(state, 'metadata'),
+  ),
+  on(ImagesActions.fetchAllImagesMetadataFailed, (state): ImagesState =>
+    withFailedLoad(state, 'metadata'),
   ),
 
-  on(
-    ImagesActions.fetchAllImagesMetadataRequested,
-    ImagesActions.fetchBatchThumbnailsRequested,
-    (state): ImagesState => ({
-      ...state,
-      callState: {
-        status: 'background-loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState =>
+    withLoadAttempt(state, 'filteredThumbnails'),
+  ),
+  on(ImagesActions.fetchFilteredThumbnailsFailed, (state): ImagesState =>
+    withFailedLoad(state, 'filteredThumbnails'),
   ),
 
+  on(ImagesActions.fetchMainImageRequested, (state): ImagesState =>
+    withLoadAttempt(state, 'mainImage'),
+  ),
+  on(ImagesActions.fetchMainImageFailed, (state): ImagesState =>
+    withFailedLoad(state, 'mainImage'),
+  ),
+
+  on(ImagesActions.imageUploadsProgressed, (state, { uploaded, total }): ImagesState => ({
+    ...state,
+    uploadProgress: { uploaded, total },
+  })),
   on(
-    ImagesActions.fetchAllImagesMetadataFailed,
-    ImagesActions.fetchFilteredThumbnailsFailed,
-    ImagesActions.fetchBatchThumbnailsFailed,
-    ImagesActions.fetchMainImageFailed,
-    ImagesActions.addImageFailed,
     ImagesActions.addImagesFailed,
-    ImagesActions.updateImageFailed,
     ImagesActions.updateAlbumFailed,
-    ImagesActions.deleteImageFailed,
-    ImagesActions.deleteAlbumFailed,
-    (state, { error }): ImagesState => ({
-      ...state,
-      callState: {
-        status: 'error',
-        loadStart: null,
-        error,
-      },
-    }),
+    (state): ImagesState => ({ ...state, uploadProgress: null }),
   ),
 
   on(ImagesActions.fetchAllImagesMetadataSucceeded, (state, { images }): ImagesState =>
@@ -146,7 +127,6 @@ export const imagesReducer = createReducer(
       }),
       {
         ...state,
-        callState: initialState.callState,
         lastMetadataFetch: new Date(Date.now()).toISOString(),
       },
     ),
@@ -175,7 +155,6 @@ export const imagesReducer = createReducer(
         }),
         {
           ...state,
-          callState: initialState.callState,
           lastFilteredThumbnailsFetch: new Date(Date.now()).toISOString(),
           filteredImages: images,
           filteredCount,
@@ -208,7 +187,6 @@ export const imagesReducer = createReducer(
         }),
         {
           ...state,
-          callState: initialState.callState,
           lastAlbumCoversFetch:
             context === 'album-covers'
               ? new Date(Date.now()).toISOString()
@@ -220,12 +198,6 @@ export const imagesReducer = createReducer(
   on(ImagesActions.paginationOptionsChanged, (state, { options }): ImagesState => ({
     ...state,
     options,
-    lastFilteredThumbnailsFetch: null,
-  })),
-
-  on(ImagesActions.fetchMainImageInBackgroundFailed, (state): ImagesState => ({
-    ...state,
-    callState: initialState.callState,
   })),
 
   on(ImagesActions.fetchMainImageSucceeded, (state, { image }): ImagesState => {
@@ -243,7 +215,7 @@ export const imagesReducer = createReducer(
         },
         formData: originalEntity?.formData ?? pick(image, IMAGE_FORM_DATA_PROPERTIES),
       },
-      { ...state, callState: initialState.callState },
+      state,
     );
   }),
 
@@ -253,14 +225,7 @@ export const imagesReducer = createReducer(
         image,
         formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
       },
-      {
-        ...state,
-        callState: initialState.callState,
-        newImagesFormData: {},
-        lastFilteredThumbnailsFetch: null,
-        lastAlbumCoversFetch: null,
-        lastMetadataFetch: null,
-      },
+      { ...state, newImagesFormData: {} },
     );
   }),
 
@@ -280,14 +245,7 @@ export const imagesReducer = createReducer(
           formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
         };
       }),
-      {
-        ...state,
-        callState: initialState.callState,
-        newImagesFormData: {},
-        lastFilteredThumbnailsFetch: null,
-        lastAlbumCoversFetch: null,
-        lastMetadataFetch: null,
-      },
+      { ...state, newImagesFormData: {}, uploadProgress: null },
     );
   }),
 
@@ -305,13 +263,7 @@ export const imagesReducer = createReducer(
           } as Image,
           formData: pick(baseImage, IMAGE_FORM_DATA_PROPERTIES),
         },
-        {
-          ...state,
-          callState: initialState.callState,
-          lastFilteredThumbnailsFetch: null,
-          lastAlbumCoversFetch: null,
-          lastMetadataFetch: null,
-        },
+        state,
       );
     },
   ),
@@ -344,11 +296,8 @@ export const imagesReducer = createReducer(
 
       return imagesAdapter.upsertMany(allEntities, {
         ...state,
-        callState: initialState.callState,
-        lastFilteredThumbnailsFetch: null,
-        lastAlbumCoversFetch: null,
-        lastMetadataFetch: null,
         newImagesFormData: {},
+        uploadProgress: null,
       });
     },
   ),
@@ -356,20 +305,14 @@ export const imagesReducer = createReducer(
   on(ImagesActions.deleteImageSucceeded, (state, { image }): ImagesState =>
     imagesAdapter.removeOne(image.id, {
       ...state,
-      callState: initialState.callState,
-      lastFilteredThumbnailsFetch: null,
-      lastAlbumCoversFetch: null,
-      lastMetadataFetch: null,
+      filteredImages: state.filteredImages.filter(({ id }) => id !== image.id),
     }),
   ),
 
   on(ImagesActions.deleteAlbumSucceeded, (state, { imageIds }): ImagesState =>
     imagesAdapter.removeMany(imageIds, {
       ...state,
-      callState: initialState.callState,
-      lastFilteredThumbnailsFetch: null,
-      lastAlbumCoversFetch: null,
-      lastMetadataFetch: null,
+      filteredImages: state.filteredImages.filter(({ id }) => !imageIds.includes(id)),
     }),
   ),
 
@@ -488,13 +431,4 @@ export const imagesReducer = createReducer(
       newImagesFormData: {},
     };
   }),
-
-  on(ImagesActions.requestTimedOut, (state): ImagesState => ({
-    ...state,
-    callState: {
-      status: 'error',
-      loadStart: null,
-      error: { name: 'LCCError', message: 'Request timed out' },
-    },
-  })),
 );

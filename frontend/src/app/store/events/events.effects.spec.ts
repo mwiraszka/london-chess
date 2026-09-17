@@ -68,7 +68,7 @@ describe('EventsEffects', () => {
         }),
         {},
       ),
-      callState: { status: 'idle' as const, loadStart: null, error: null },
+      failedLoads: [],
       newEventFormData: INITIAL_EVENT_FORM_DATA,
       lastFullFetch: null,
       lastHomePageFetch: null,
@@ -114,42 +114,6 @@ describe('EventsEffects', () => {
     mockParseError.mockImplementation(error => error);
   });
 
-  describe('fetchAllEvents$', () => {
-    it('should fetch all events successfully', () =>
-      withDone(done => {
-        eventsApiService.getAllEvents.mockReturnValue(of(mockApiResponse));
-
-        actions$.next(EventsActions.fetchAllEventsRequested());
-
-        effects.fetchAllEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchAllEventsSucceeded({
-              events: mockApiResponse.data.items,
-              totalCount: mockApiResponse.data.totalCount,
-            }),
-          );
-          expect(eventsApiService.getAllEvents).toHaveBeenCalledTimes(1);
-          done();
-        });
-      }));
-
-    it('should handle fetch all events failure', () =>
-      withDone(done => {
-        eventsApiService.getAllEvents.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
-
-        actions$.next(EventsActions.fetchAllEventsRequested());
-
-        effects.fetchAllEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchAllEventsFailed({ error: mockError }),
-          );
-          expect(mockParseError).toHaveBeenCalledWith(mockError);
-          done();
-        });
-      }));
-  });
-
   describe('fetchHomePageEvents$', () => {
     it('should fetch home page events with correct options', () =>
       withDone(done => {
@@ -177,23 +141,6 @@ describe('EventsEffects', () => {
             },
             search: '',
           });
-          done();
-        });
-      }));
-
-    it('should fetch home page events in background', () =>
-      withDone(done => {
-        eventsApiService.getFilteredEvents.mockReturnValue(of(mockApiResponse));
-
-        actions$.next(EventsActions.fetchHomePageEventsInBackgroundRequested());
-
-        effects.fetchHomePageEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchHomePageEventsSucceeded({
-              events: mockApiResponse.data.items,
-              totalCount: mockApiResponse.data.totalCount,
-            }),
-          );
           done();
         });
       }));
@@ -253,24 +200,6 @@ describe('EventsEffects', () => {
         });
       }));
 
-    it('should fetch filtered events in background', () =>
-      withDone(done => {
-        eventsApiService.getFilteredEvents.mockReturnValue(of(mockApiResponse));
-
-        actions$.next(EventsActions.fetchFilteredEventsInBackgroundRequested());
-
-        effects.fetchFilteredEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchFilteredEventsSucceeded({
-              events: mockApiResponse.data.items,
-              filteredCount: mockApiResponse.data.filteredCount,
-              totalCount: mockApiResponse.data.totalCount,
-            }),
-          );
-          done();
-        });
-      }));
-
     it('should handle fetch filtered events failure', () =>
       withDone(done => {
         eventsApiService.getFilteredEvents.mockReturnValue(throwError(() => mockError));
@@ -288,14 +217,25 @@ describe('EventsEffects', () => {
   });
 
   describe('refetchHomePageEvents$', () => {
+    it('should check for stale home page events as soon as it starts', () => {
+      vi.useFakeTimers();
+      store.overrideSelector(EventsSelectors.selectLastHomePageFetch, null);
+      store.refreshState();
+      mockIsExpired.mockReturnValue(true);
+      const results: Action[] = [];
+
+      effects.refetchHomePageEvents$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([EventsActions.fetchHomePageEventsRequested()]);
+    });
+
     it('should trigger refetch after addEventSucceeded', () =>
       withDone(done => {
         actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
 
         effects.refetchHomePageEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchHomePageEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchHomePageEventsRequested());
           done();
         });
       }));
@@ -310,9 +250,7 @@ describe('EventsEffects', () => {
         );
 
         effects.refetchHomePageEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchHomePageEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchHomePageEventsRequested());
           done();
         });
       }));
@@ -327,9 +265,7 @@ describe('EventsEffects', () => {
         );
 
         effects.refetchHomePageEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchHomePageEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchHomePageEventsRequested());
           done();
         });
       }));
@@ -349,9 +285,7 @@ describe('EventsEffects', () => {
       vi.advanceTimersByTime(3000);
       vi.advanceTimersByTime(10 * 60 * 1000);
 
-      expect(results[0]).toEqual(
-        EventsActions.fetchHomePageEventsInBackgroundRequested(),
-      );
+      expect(results[0]).toEqual(EventsActions.fetchHomePageEventsRequested());
       expect(mockIsExpired).toHaveBeenCalledWith(expiredTimestamp);
     });
 
@@ -380,9 +314,7 @@ describe('EventsEffects', () => {
         actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
 
         effects.refetchFilteredEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchFilteredEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchFilteredEventsRequested());
           done();
         });
       }));
@@ -397,9 +329,7 @@ describe('EventsEffects', () => {
         );
 
         effects.refetchFilteredEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchFilteredEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchFilteredEventsRequested());
           done();
         });
       }));
@@ -414,9 +344,7 @@ describe('EventsEffects', () => {
         );
 
         effects.refetchFilteredEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchFilteredEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchFilteredEventsRequested());
           done();
         });
       }));
@@ -443,12 +371,53 @@ describe('EventsEffects', () => {
         );
 
         effects.refetchFilteredEvents$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchFilteredEventsInBackgroundRequested(),
-          );
+          expect(action).toEqual(EventsActions.fetchFilteredEventsRequested());
           done();
         });
       }));
+
+    it('should not refetch when the options change without asking for a fetch', () => {
+      vi.useFakeTimers();
+      mockIsExpired.mockReturnValue(false);
+      const results: Action[] = [];
+      effects.refetchFilteredEvents$.subscribe(action => results.push(action));
+
+      actions$.next(
+        EventsActions.paginationOptionsChanged({
+          options: {
+            page: 1,
+            pageSize: 10,
+            sortBy: 'eventDate',
+            sortOrder: 'asc',
+            filters: {
+              showPastEvents: {
+                label: 'Show past events',
+                value: false,
+              },
+            },
+            search: '',
+          },
+          fetch: false,
+        }),
+      );
+      vi.advanceTimersByTime(0);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should check for stale events as soon as it starts', () => {
+      vi.useFakeTimers();
+      store.overrideSelector(EventsSelectors.selectLastFilteredFetch, null);
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/schedule');
+      store.refreshState();
+      mockIsExpired.mockReturnValue(true);
+      const results: Action[] = [];
+
+      effects.refetchFilteredEvents$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([EventsActions.fetchFilteredEventsRequested()]);
+    });
 
     it('should trigger refetch when last fetch is expired', () => {
       vi.useFakeTimers();
@@ -466,9 +435,7 @@ describe('EventsEffects', () => {
       vi.advanceTimersByTime(3000);
       vi.advanceTimersByTime(10 * 60 * 1000);
 
-      expect(results[0]).toEqual(
-        EventsActions.fetchFilteredEventsInBackgroundRequested(),
-      );
+      expect(results[0]).toEqual(EventsActions.fetchFilteredEventsRequested());
       expect(mockIsExpired).toHaveBeenCalledWith(expiredTimestamp);
     });
 
@@ -603,25 +570,6 @@ describe('EventsEffects', () => {
           done();
         });
       }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const eventId = MOCK_EVENTS[0].id;
-        const mockUpdateResponse: ApiResponse<string> = { data: 'different-id' };
-
-        eventsApiService.updateEvent.mockReturnValue(of(mockUpdateResponse));
-
-        actions$.next(EventsActions.updateEventRequested({ eventId }));
-
-        const subscription = effects.updateEvent$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
-      }));
   });
 
   describe('deleteEvent$', () => {
@@ -655,23 +603,6 @@ describe('EventsEffects', () => {
           expect(action).toEqual(EventsActions.deleteEventFailed({ error: mockError }));
           done();
         });
-      }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const mockDeleteResponse: ApiResponse<string> = { data: 'different-id' };
-        eventsApiService.deleteEvent.mockReturnValue(of(mockDeleteResponse));
-
-        actions$.next(EventsActions.deleteEventRequested({ event: MOCK_EVENTS[0] }));
-
-        const subscription = effects.deleteEvent$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
       }));
   });
 
@@ -725,7 +656,7 @@ describe('EventsEffects', () => {
 
         effects.exportEventsToCsv$.subscribe(action => {
           expect(action).toEqual(
-            EventsActions.fetchAllEventsFailed({ error: mockError }),
+            EventsActions.exportEventsToCsvFailed({ error: mockError }),
           );
           done();
         });

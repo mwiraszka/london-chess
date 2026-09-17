@@ -93,10 +93,7 @@ export class MembersEffects {
 
   fetchFilteredMembers$ = createEffect(() => {
     return this.actions$.pipe(
-      ofType(
-        MembersActions.fetchFilteredMembersRequested,
-        MembersActions.fetchFilteredMembersInBackgroundRequested,
-      ),
+      ofType(MembersActions.fetchFilteredMembersRequested),
       concatLatestFrom(() => [
         this.store.select(AuthSelectors.selectApiScope),
         this.store.select(MembersSelectors.selectOptions),
@@ -124,17 +121,23 @@ export class MembersEffects {
   });
 
   refetchFilteredMembers$ = createEffect(() => {
-    const refetchActions$ = this.actions$.pipe(
-      ofType(
-        AppActions.refreshAppRequested,
-        MembersActions.addMemberSucceeded,
-        MembersActions.updateMemberSucceeded,
-        MembersActions.deleteMemberSucceeded,
-        MembersActions.paginationOptionsChanged,
+    const refetchActions$ = merge(
+      this.actions$.pipe(
+        ofType(
+          AppActions.refreshAppRequested,
+          MembersActions.addMemberSucceeded,
+          MembersActions.updateMemberSucceeded,
+          MembersActions.updateMemberRatingsSucceeded,
+          MembersActions.deleteMemberSucceeded,
+        ),
+      ),
+      this.actions$.pipe(
+        ofType(MembersActions.paginationOptionsChanged),
+        filter(({ fetch }) => fetch),
       ),
     );
 
-    const timerCheck$ = timer(6500, 10 * 60 * 1000).pipe(
+    const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(MembersSelectors.selectLastFilteredFetch),
@@ -159,7 +162,7 @@ export class MembersEffects {
     const periodicCheck$ = merge(timerCheck$, routerCheck$);
 
     return merge(refetchActions$, periodicCheck$).pipe(
-      map(() => MembersActions.fetchFilteredMembersInBackgroundRequested()),
+      map(() => MembersActions.fetchFilteredMembersRequested()),
     );
   });
 
@@ -260,7 +263,6 @@ export class MembersEffects {
         return this.membersApiService
           .updateMember(member.id, editableMember, notifyMember)
           .pipe(
-            filter(response => response.data.id === member.id),
             map(response =>
               MembersActions.updateMemberSucceeded({
                 member: response.data,
@@ -281,7 +283,6 @@ export class MembersEffects {
       ofType(MembersActions.deleteMemberRequested),
       mergeMap(({ member }) =>
         this.membersApiService.deleteMember(member.id).pipe(
-          filter(response => response.data === member.id),
           map(() =>
             MembersActions.deleteMemberSucceeded({
               memberId: member.id,
@@ -313,7 +314,9 @@ export class MembersEffects {
               : MembersActions.exportMembersToCsvFailed({ error: exportResult });
           }),
           catchError(error =>
-            of(MembersActions.fetchAllMembersFailed({ error: this.parseError(error) })),
+            of(
+              MembersActions.exportMembersToCsvFailed({ error: this.parseError(error) }),
+            ),
           ),
         );
       }),

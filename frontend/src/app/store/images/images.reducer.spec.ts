@@ -34,12 +34,9 @@ describe('Images Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        callState: {
-          status: 'idle',
-          error: null,
-          loadStart: null,
-        },
         newImagesFormData: {},
+        failedLoads: [],
+        uploadProgress: null,
         filteredImages: [],
         filteredCount: null,
         totalCount: 0,
@@ -58,135 +55,84 @@ describe('Images Reducer', () => {
     });
   });
 
-  describe('loading states', () => {
-    it('should set loading state on fetchFilteredThumbnailsRequested', () => {
-      const action = ImagesActions.fetchFilteredThumbnailsRequested();
-      const state = imagesReducer(initialState, action);
+  describe('failed loads', () => {
+    it('should record each load whose request fails', () => {
+      const actions = [
+        ImagesActions.fetchAllImagesMetadataFailed({ error: mockError }),
+        ImagesActions.fetchFilteredThumbnailsFailed({ error: mockError }),
+        ImagesActions.fetchMainImageFailed({ error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('loading');
-      expect(state.callState.loadStart).toBeTruthy();
-      expect(state.callState.error).toBeNull();
+      const state = actions.reduce(imagesReducer, initialState);
+
+      expect(state.failedLoads).toEqual(['metadata', 'filteredThumbnails', 'mainImage']);
     });
 
-    it('should set loading state on fetchMainImageRequested', () => {
-      const action = ImagesActions.fetchMainImageRequested({ imageId: 'mock-id-1' });
-      const state = imagesReducer(initialState, action);
+    it('should forget a failure once its load is attempted again', () => {
+      const previousState: ImagesState = {
+        ...initialState,
+        failedLoads: ['metadata', 'mainImage'],
+      };
 
-      expect(state.callState.status).toBe('loading');
+      const state = imagesReducer(
+        previousState,
+        ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
+      );
+
+      expect(state.failedLoads).toEqual(['metadata']);
     });
 
-    it('should set loading state on addImageRequested', () => {
-      const action = ImagesActions.addImageRequested({ imageId: 'new-1' });
+    it('should not record a failure for images fetched ahead of time', () => {
+      const action = ImagesActions.fetchMainImageInBackgroundFailed({ error: mockError });
+
       const state = imagesReducer(initialState, action);
 
-      expect(state.callState.status).toBe('loading');
+      expect(state).toBe(initialState);
     });
 
-    it('should set loading state on addImagesRequested', () => {
-      const action = ImagesActions.addImagesRequested();
-      const state = imagesReducer(initialState, action);
+    it('should leave loads untouched when a change fails to save', () => {
+      const actions = [
+        ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+        ImagesActions.addImageFailed({ error: mockError }),
+        ImagesActions.updateImageFailed({ baseImage: mockBaseImage, error: mockError }),
+        ImagesActions.deleteImageFailed({ image: MOCK_IMAGES[0], error: mockError }),
+        ImagesActions.deleteAlbumFailed({ album: 'Test Album', error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('loading');
-    });
+      const state = actions.reduce(imagesReducer, initialState);
 
-    it('should set loading state on updateImageRequested', () => {
-      const action = ImagesActions.updateImageRequested({ imageId: 'mock-id-1' });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on updateAlbumRequested', () => {
-      const action = ImagesActions.updateAlbumRequested({ album: 'Test Album' });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on deleteImageRequested', () => {
-      const action = ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[0] });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on deleteAlbumRequested', () => {
-      const action = ImagesActions.deleteAlbumRequested({ album: 'Test Album' });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
+      expect(state).toEqual(initialState);
     });
   });
 
-  describe('background loading states', () => {
-    it('should set background-loading state on fetchAllImagesMetadataRequested', () => {
-      const action = ImagesActions.fetchAllImagesMetadataRequested();
+  describe('uploadProgress', () => {
+    it('should track how many images have uploaded', () => {
+      const action = ImagesActions.imageUploadsProgressed({ uploaded: 2, total: 5 });
+
       const state = imagesReducer(initialState, action);
 
-      expect(state.callState.status).toBe('background-loading');
-      expect(state.callState.loadStart).toBeTruthy();
+      expect(state.uploadProgress).toEqual({ uploaded: 2, total: 5 });
     });
 
-    it('should set background-loading state on fetchBatchThumbnailsRequested', () => {
-      const action = ImagesActions.fetchBatchThumbnailsRequested({
-        imageIds: ['mock-id-1', 'mock-id-2'],
-        context: 'album-covers',
-      });
-      const state = imagesReducer(initialState, action);
+    it('should clear the progress once the uploads settle', () => {
+      const uploadingState: ImagesState = {
+        ...initialState,
+        uploadProgress: { uploaded: 5, total: 5 },
+      };
+      const outcomes = [
+        ImagesActions.addImagesSucceeded({ images: [] }),
+        ImagesActions.addImagesFailed({ error: mockError }),
+        ImagesActions.updateAlbumSucceeded({
+          album: 'Test Album',
+          newImages: [],
+          updatedImages: [],
+        }),
+        ImagesActions.updateAlbumFailed({ album: 'Test Album', error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('background-loading');
-    });
-  });
+      const states = outcomes.map(outcome => imagesReducer(uploadingState, outcome));
 
-  describe('error states', () => {
-    it('should set error state on fetchAllImagesMetadataFailed', () => {
-      const action = ImagesActions.fetchAllImagesMetadataFailed({ error: mockError });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual(mockError);
-      expect(state.callState.loadStart).toBeNull();
-    });
-
-    it('should set error state on fetchFilteredThumbnailsFailed', () => {
-      const action = ImagesActions.fetchFilteredThumbnailsFailed({ error: mockError });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on fetchMainImageFailed', () => {
-      const action = ImagesActions.fetchMainImageFailed({ error: mockError });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on addImageFailed', () => {
-      const action = ImagesActions.addImageFailed({ error: mockError });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on updateImageFailed', () => {
-      const action = ImagesActions.updateImageFailed({
-        baseImage: mockBaseImage,
-        error: mockError,
-      });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on deleteImageFailed', () => {
-      const action = ImagesActions.deleteImageFailed({
-        image: MOCK_IMAGES[0],
-        error: mockError,
-      });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
+      states.forEach(state => expect(state.uploadProgress).toBeNull());
     });
   });
 
@@ -246,17 +192,6 @@ describe('Images Reducer', () => {
       expect(state.filteredCount).toBe(1);
       expect(state.totalCount).toBe(10);
       expect(state.lastFilteredThumbnailsFetch).toBeTruthy();
-    });
-
-    it('should reset callState', () => {
-      const action = ImagesActions.fetchFilteredThumbnailsSucceeded({
-        images: [],
-        filteredCount: 0,
-        totalCount: 0,
-      });
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('idle');
     });
   });
 
@@ -319,7 +254,7 @@ describe('Images Reducer', () => {
       expect(state.options.pageSize).toBe(40);
     });
 
-    it('should reset lastFilteredThumbnailsFetch', () => {
+    it('should keep the shown page loaded until the next one arrives', () => {
       const previousState: ImagesState = {
         ...initialState,
         lastFilteredThumbnailsFetch: '2025-01-01T00:00:00.000Z',
@@ -327,11 +262,11 @@ describe('Images Reducer', () => {
 
       const action = ImagesActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: false,
+        fetch: true,
       });
       const state = imagesReducer(previousState, action);
 
-      expect(state.lastFilteredThumbnailsFetch).toBeNull();
+      expect(state.lastFilteredThumbnailsFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -344,7 +279,6 @@ describe('Images Reducer', () => {
         ...MOCK_IMAGES[0],
         thumbnailUrl: undefined,
       });
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should preserve an existing thumbnail URL and keep the earlier expiration', () => {
@@ -405,36 +339,15 @@ describe('Images Reducer', () => {
     });
   });
 
-  describe('fetchMainImageInBackgroundFailed', () => {
-    it('should reset the call state without recording an error', () => {
-      const loadingState = {
-        ...initialState,
-        callState: {
-          status: 'loading' as const,
-          loadStart: new Date().toISOString(),
-          error: null,
-        },
-      };
-
-      const action = ImagesActions.fetchMainImageInBackgroundFailed({
-        error: { name: 'LCCError', message: 'Background fetch failed.' },
-      });
-      const state = imagesReducer(loadingState, action);
-
-      expect(state.callState).toEqual(initialState.callState);
-    });
-  });
-
   describe('addImageSucceeded', () => {
     it('should add new image to state', () => {
       const action = ImagesActions.addImageSucceeded({ image: MOCK_IMAGES[0] });
       const state = imagesReducer(initialState, action);
 
       expect(state.entities['mock-id-1']?.image).toEqual(MOCK_IMAGES[0]);
-      expect(state.callState.status).toBe('idle');
     });
 
-    it('should reset newImagesFormData and timestamps', () => {
+    it('should reset newImagesFormData and keep the shown lists loaded', () => {
       const previousState: ImagesState = {
         ...initialState,
         newImagesFormData: {
@@ -449,9 +362,9 @@ describe('Images Reducer', () => {
       const state = imagesReducer(previousState, action);
 
       expect(state.newImagesFormData).toEqual({});
-      expect(state.lastFilteredThumbnailsFetch).toBeNull();
-      expect(state.lastAlbumCoversFetch).toBeNull();
-      expect(state.lastMetadataFetch).toBeNull();
+      expect(state.lastFilteredThumbnailsFetch).toBe('2025-01-01T00:00:00.000Z');
+      expect(state.lastAlbumCoversFetch).toBe('2025-01-01T00:00:00.000Z');
+      expect(state.lastMetadataFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -507,7 +420,6 @@ describe('Images Reducer', () => {
       const state = imagesReducer(previousState, action);
 
       expect(state.entities['mock-id-1']?.image.caption).toBe('Updated Caption');
-      expect(state.callState.status).toBe('idle');
     });
   });
 
@@ -625,7 +537,18 @@ describe('Images Reducer', () => {
 
       expect(state.entities['mock-id-1']).toBeUndefined();
       expect(state.ids.length).toBe(0);
-      expect(state.callState.status).toBe('idle');
+    });
+
+    it('should take the image off the page shown', () => {
+      const previousState: ImagesState = {
+        ...initialState,
+        filteredImages: [MOCK_IMAGES[0], MOCK_IMAGES[1]],
+      };
+      const action = ImagesActions.deleteImageSucceeded({ image: MOCK_IMAGES[0] });
+
+      const state = imagesReducer(previousState, action);
+
+      expect(state.filteredImages).toEqual([MOCK_IMAGES[1]]);
     });
   });
 
@@ -666,7 +589,21 @@ describe('Images Reducer', () => {
       const state = imagesReducer(previousState, action);
 
       expect(state.ids.length).toBe(0);
-      expect(state.callState.status).toBe('idle');
+    });
+
+    it('should take the album images off the page shown', () => {
+      const previousState: ImagesState = {
+        ...initialState,
+        filteredImages: [MOCK_IMAGES[0], MOCK_IMAGES[1], MOCK_IMAGES[2]],
+      };
+      const action = ImagesActions.deleteAlbumSucceeded({
+        album: 'Test Album',
+        imageIds: [MOCK_IMAGES[0].id, MOCK_IMAGES[1].id],
+      });
+
+      const state = imagesReducer(previousState, action);
+
+      expect(state.filteredImages).toEqual([MOCK_IMAGES[2]]);
     });
   });
 
@@ -853,19 +790,6 @@ describe('Images Reducer', () => {
       const state = imagesReducer(previousState, action);
 
       expect(state.newImagesFormData).toEqual({});
-    });
-  });
-
-  describe('requestTimedOut', () => {
-    it('should set timeout error', () => {
-      const action = ImagesActions.requestTimedOut();
-      const state = imagesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual({
-        name: 'LCCError',
-        message: 'Request timed out',
-      });
     });
   });
 

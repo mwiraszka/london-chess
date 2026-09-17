@@ -3,7 +3,7 @@ import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
 import moment from 'moment-timezone';
-import { combineLatest, merge, of, race, timer } from 'rxjs';
+import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -36,10 +36,7 @@ export class ArticlesEffects {
 
   fetchHomePageArticles$ = createEffect(() => {
     return this.actions$.pipe(
-      ofType(
-        ArticlesActions.fetchHomePageArticlesRequested,
-        ArticlesActions.fetchHomePageArticlesInBackgroundRequested,
-      ),
+      ofType(ArticlesActions.fetchHomePageArticlesRequested),
       switchMap(() => {
         const options: DataPaginationOptions<Article> = {
           page: 1,
@@ -50,23 +47,20 @@ export class ArticlesEffects {
           search: '',
         };
 
-        return race(
-          this.articlesApiService.getFilteredArticles(options).pipe(
-            map(response =>
-              ArticlesActions.fetchHomePageArticlesSucceeded({
-                articles: response.data.items,
-                totalCount: response.data.totalCount,
+        return this.articlesApiService.getFilteredArticles(options).pipe(
+          map(response =>
+            ArticlesActions.fetchHomePageArticlesSucceeded({
+              articles: response.data.items,
+              totalCount: response.data.totalCount,
+            }),
+          ),
+          catchError(error =>
+            of(
+              ArticlesActions.fetchHomePageArticlesFailed({
+                error: this.parseError(error),
               }),
             ),
-            catchError(error =>
-              of(
-                ArticlesActions.fetchHomePageArticlesFailed({
-                  error: this.parseError(error),
-                }),
-              ),
-            ),
           ),
-          timer(10_000).pipe(map(() => ArticlesActions.requestTimedOut())),
         );
       }),
     );
@@ -74,10 +68,7 @@ export class ArticlesEffects {
 
   fetchFilteredArticles$ = createEffect(() => {
     return this.actions$.pipe(
-      ofType(
-        ArticlesActions.fetchFilteredArticlesRequested,
-        ArticlesActions.fetchFilteredArticlesInBackgroundRequested,
-      ),
+      ofType(ArticlesActions.fetchFilteredArticlesRequested),
       concatLatestFrom(() => this.store.select(ArticlesSelectors.selectOptions)),
       switchMap(([, options]) =>
         this.articlesApiService.getFilteredArticles(options).pipe(
@@ -110,7 +101,7 @@ export class ArticlesEffects {
       ),
     );
 
-    const periodicCheck$ = timer(3 * 1000, 10 * 60 * 1000).pipe(
+    const periodicCheck$ = timer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         this.store.select(ArticlesSelectors.selectLastHomePageFetch).pipe(take(1)),
       ),
@@ -118,22 +109,27 @@ export class ArticlesEffects {
     );
 
     return merge(refetchActions$, periodicCheck$).pipe(
-      map(() => ArticlesActions.fetchHomePageArticlesInBackgroundRequested()),
+      map(() => ArticlesActions.fetchHomePageArticlesRequested()),
     );
   });
 
   refetchFilteredArticles$ = createEffect(() => {
-    const refetchActions$ = this.actions$.pipe(
-      ofType(
-        AppActions.refreshAppRequested,
-        ArticlesActions.publishArticleSucceeded,
-        ArticlesActions.updateArticleSucceeded,
-        ArticlesActions.deleteArticleSucceeded,
-        ArticlesActions.paginationOptionsChanged,
+    const refetchActions$ = merge(
+      this.actions$.pipe(
+        ofType(
+          AppActions.refreshAppRequested,
+          ArticlesActions.publishArticleSucceeded,
+          ArticlesActions.updateArticleSucceeded,
+          ArticlesActions.deleteArticleSucceeded,
+        ),
+      ),
+      this.actions$.pipe(
+        ofType(ArticlesActions.paginationOptionsChanged),
+        filter(({ fetch }) => fetch),
       ),
     );
 
-    const timerCheck$ = timer(4500, 10 * 60 * 1000).pipe(
+    const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(ArticlesSelectors.selectLastFilteredFetch),
@@ -162,7 +158,7 @@ export class ArticlesEffects {
     const periodicCheck$ = merge(timerCheck$, routerCheck$);
 
     return merge(refetchActions$, periodicCheck$).pipe(
-      map(() => ArticlesActions.fetchFilteredArticlesInBackgroundRequested()),
+      map(() => ArticlesActions.fetchFilteredArticlesRequested()),
     );
   });
 
@@ -267,7 +263,6 @@ export class ArticlesEffects {
         };
 
         return this.articlesApiService.updateArticle(updatedArticle).pipe(
-          filter(response => response.data === updatedArticle.id),
           map(() =>
             ArticlesActions.updateArticleSucceeded({
               article: updatedArticle,
@@ -315,7 +310,6 @@ export class ArticlesEffects {
       ofType(ArticlesActions.deleteArticleRequested),
       mergeMap(({ article }) =>
         this.articlesApiService.deleteArticle(article.id).pipe(
-          filter(response => response.data === article.id),
           map(() =>
             ArticlesActions.deleteArticleSucceeded({
               articleId: article.id,

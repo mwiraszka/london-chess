@@ -30,13 +30,8 @@ describe('Events Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        callState: {
-          status: 'idle',
-          error: null,
-          loadStart: null,
-        },
         newEventFormData: INITIAL_EVENT_FORM_DATA,
-        lastFullFetch: null,
+        failedLoads: [],
         lastHomePageFetch: null,
         lastFilteredFetch: null,
         homePageEvents: [],
@@ -61,191 +56,44 @@ describe('Events Reducer', () => {
     });
   });
 
-  describe('loading states', () => {
-    it('should set loading state on fetchAllEventsRequested', () => {
-      const action = EventsActions.fetchAllEventsRequested();
-      const state = eventsReducer(initialState, action);
+  describe('failed loads', () => {
+    it('should record each load whose request fails', () => {
+      const actions = [
+        EventsActions.fetchHomePageEventsFailed({ error: mockError }),
+        EventsActions.fetchFilteredEventsFailed({ error: mockError }),
+        EventsActions.fetchEventFailed({ error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('loading');
-      expect(state.callState.loadStart).toBeTruthy();
-      expect(state.callState.error).toBeNull();
+      const state = actions.reduce(eventsReducer, initialState);
+
+      expect(state.failedLoads).toEqual(['homePage', 'filtered', 'event']);
     });
 
-    it('should set loading state on fetchHomePageEventsRequested', () => {
-      const action = EventsActions.fetchHomePageEventsRequested();
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on fetchFilteredEventsRequested', () => {
-      const action = EventsActions.fetchFilteredEventsRequested();
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on fetchEventRequested', () => {
-      const action = EventsActions.fetchEventRequested({ eventId: '1' });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on addEventRequested', () => {
-      const action = EventsActions.addEventRequested();
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on updateEventRequested', () => {
-      const action = EventsActions.updateEventRequested({ eventId: '1' });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on deleteEventRequested', () => {
-      const action = EventsActions.deleteEventRequested({ event: MOCK_EVENTS[0] });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-  });
-
-  describe('background loading states', () => {
-    it('should set background-loading state on fetchHomePageEventsInBackgroundRequested', () => {
-      const action = EventsActions.fetchHomePageEventsInBackgroundRequested();
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('background-loading');
-      expect(state.callState.loadStart).toBeTruthy();
-    });
-
-    it('should set background-loading state on fetchFilteredEventsInBackgroundRequested', () => {
-      const action = EventsActions.fetchFilteredEventsInBackgroundRequested();
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('background-loading');
-    });
-  });
-
-  describe('error states', () => {
-    it('should set error state on fetchAllEventsFailed', () => {
-      const action = EventsActions.fetchAllEventsFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual(mockError);
-      expect(state.callState.loadStart).toBeNull();
-    });
-
-    it('should set error state on fetchHomePageEventsFailed', () => {
-      const action = EventsActions.fetchHomePageEventsFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on fetchFilteredEventsFailed', () => {
-      const action = EventsActions.fetchFilteredEventsFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on fetchEventFailed', () => {
-      const action = EventsActions.fetchEventFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on addEventFailed', () => {
-      const action = EventsActions.addEventFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on updateEventFailed', () => {
-      const action = EventsActions.updateEventFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on deleteEventFailed', () => {
-      const action = EventsActions.deleteEventFailed({ error: mockError });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-  });
-
-  describe('fetchAllEventsSucceeded', () => {
-    it('should replace all events in state', () => {
-      const events = [MOCK_EVENTS[0], MOCK_EVENTS[1]];
-      const action = EventsActions.fetchAllEventsSucceeded({
-        events,
-        totalCount: 2,
-      });
-      const state = eventsReducer(initialState, action);
-
-      expect(state.ids.length).toBe(2);
-      expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(MOCK_EVENTS[0]);
-      expect(state.entities['a7b8c9d0e1f2a3b4']?.event).toEqual(MOCK_EVENTS[1]);
-      expect(state.totalCount).toBe(2);
-      expect(state.lastFullFetch).toBeTruthy();
-    });
-
-    it('should reset callState to idle', () => {
+    it('should forget a failure once its load is attempted again', () => {
       const previousState: EventsState = {
         ...initialState,
-        callState: {
-          status: 'loading',
-          loadStart: new Date().toISOString(),
-          error: null,
-        },
+        failedLoads: ['filtered', 'event'],
       };
 
-      const action = EventsActions.fetchAllEventsSucceeded({
-        events: [MOCK_EVENTS[0]],
-        totalCount: 1,
-      });
-      const state = eventsReducer(previousState, action);
-
-      expect(state.callState.status).toBe('idle');
-      expect(state.callState.error).toBeNull();
-    });
-
-    it('should preserve formData with unsaved changes', () => {
-      const modifiedFormData = {
-        type: 'rapid tournament (25 mins)' as const,
-        eventDate: '2025-07-01T18:00:00.000Z',
-        title: 'Modified Title',
-        details: 'Modified Details',
-        articleId: 'article999',
-      };
-
-      const previousState: EventsState = eventsAdapter.upsertOne(
-        {
-          event: MOCK_EVENTS[0],
-          formData: modifiedFormData,
-        },
-        initialState,
+      const state = eventsReducer(
+        previousState,
+        EventsActions.fetchEventRequested({ eventId: MOCK_EVENTS[0].id }),
       );
 
-      const updatedEvent = { ...MOCK_EVENTS[0], title: 'Updated from server' };
-      const action = EventsActions.fetchAllEventsSucceeded({
-        events: [updatedEvent],
-        totalCount: 1,
-      });
-      const state = eventsReducer(previousState, action);
+      expect(state.failedLoads).toEqual(['filtered']);
+    });
 
-      expect(state.entities['f6a7b8c9d0e1f2a3']?.formData).toEqual(modifiedFormData);
-      expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(updatedEvent);
+    it('should leave loads untouched when a change fails to save', () => {
+      const actions = [
+        EventsActions.addEventFailed({ error: mockError }),
+        EventsActions.updateEventFailed({ error: mockError }),
+        EventsActions.deleteEventFailed({ error: mockError }),
+        EventsActions.exportEventsToCsvFailed({ error: mockError }),
+      ];
+
+      const state = actions.reduce(eventsReducer, initialState);
+
+      expect(state).toEqual(initialState);
     });
   });
 
@@ -262,6 +110,30 @@ describe('Events Reducer', () => {
       expect(state.homePageEvents).toEqual(events);
       expect(state.totalCount).toBe(1);
       expect(state.lastHomePageFetch).toBeTruthy();
+    });
+
+    it('should preserve formData with unsaved changes', () => {
+      const modifiedFormData = {
+        type: 'rapid tournament (25 mins)' as const,
+        eventDate: '2025-07-01T18:00:00.000Z',
+        title: 'Modified Title',
+        details: 'Modified Details',
+        articleId: 'article999',
+      };
+      const previousState: EventsState = eventsAdapter.upsertOne(
+        { event: MOCK_EVENTS[0], formData: modifiedFormData },
+        initialState,
+      );
+      const updatedEvent = { ...MOCK_EVENTS[0], title: 'Updated from server' };
+      const action = EventsActions.fetchHomePageEventsSucceeded({
+        events: [updatedEvent],
+        totalCount: 1,
+      });
+
+      const state = eventsReducer(previousState, action);
+
+      expect(state.entities['f6a7b8c9d0e1f2a3']?.formData).toEqual(modifiedFormData);
+      expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(updatedEvent);
     });
   });
 
@@ -301,7 +173,7 @@ describe('Events Reducer', () => {
       expect(state.options.pageSize).toBe(20);
     });
 
-    it('should reset lastFilteredFetch', () => {
+    it('should keep the shown page loaded until the next one arrives', () => {
       const previousState: EventsState = {
         ...initialState,
         lastFilteredFetch: '2025-01-01T00:00:00.000Z',
@@ -309,11 +181,11 @@ describe('Events Reducer', () => {
 
       const action = EventsActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: false,
+        fetch: true,
       });
       const state = eventsReducer(previousState, action);
 
-      expect(state.lastFilteredFetch).toBeNull();
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -323,7 +195,6 @@ describe('Events Reducer', () => {
       const state = eventsReducer(initialState, action);
 
       expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(MOCK_EVENTS[0]);
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should preserve existing formData', () => {
@@ -356,7 +227,6 @@ describe('Events Reducer', () => {
       const state = eventsReducer(initialState, action);
 
       expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(MOCK_EVENTS[0]);
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should reset newEventFormData', () => {
@@ -402,7 +272,6 @@ describe('Events Reducer', () => {
       const state = eventsReducer(previousState, action);
 
       expect(state.entities['f6a7b8c9d0e1f2a3']?.event.title).toBe('Updated Title');
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should update formData to match event', () => {
@@ -455,7 +324,25 @@ describe('Events Reducer', () => {
 
       expect(state.entities['f6a7b8c9d0e1f2a3']).toBeUndefined();
       expect(state.ids.length).toBe(0);
-      expect(state.callState.status).toBe('idle');
+    });
+
+    it('should take the event off the lists shown without reloading them', () => {
+      const previousState: EventsState = {
+        ...initialState,
+        homePageEvents: [MOCK_EVENTS[0], MOCK_EVENTS[1]],
+        filteredEvents: [MOCK_EVENTS[0]],
+        lastHomePageFetch: '2025-01-01T00:00:00.000Z',
+      };
+      const action = EventsActions.deleteEventSucceeded({
+        eventId: MOCK_EVENTS[0].id,
+        eventTitle: MOCK_EVENTS[0].title,
+      });
+
+      const state = eventsReducer(previousState, action);
+
+      expect(state.homePageEvents).toEqual([MOCK_EVENTS[1]]);
+      expect(state.filteredEvents).toEqual([]);
+      expect(state.lastHomePageFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -570,25 +457,12 @@ describe('Events Reducer', () => {
     });
   });
 
-  describe('requestTimedOut', () => {
-    it('should set timeout error', () => {
-      const action = EventsActions.requestTimedOut();
-      const state = eventsReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual({
-        name: 'LCCError',
-        message: 'Request timed out',
-      });
-    });
-  });
-
   describe('state immutability', () => {
     it('should not mutate the previous state', () => {
       const previousState: EventsState = { ...initialState };
       const originalState = { ...previousState };
 
-      const action = EventsActions.fetchAllEventsRequested();
+      const action = EventsActions.fetchHomePageEventsRequested();
       const state = eventsReducer(previousState, action);
 
       expect(previousState).toEqual(originalState);

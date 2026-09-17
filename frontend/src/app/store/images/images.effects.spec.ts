@@ -2,7 +2,8 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
-import { ReplaySubject, of, throwError } from 'rxjs';
+import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
+import { filter, take, toArray } from 'rxjs/operators';
 
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -36,6 +37,9 @@ const mockParseError = vi.fn();
 const mockIsExpired = vi.fn();
 const mockDataUrlToFile = vi.fn();
 const mockIsLccError = vi.fn();
+
+const isOutcome = (action: Action) =>
+  action.type !== ImagesActions.imageUploadsProgressed.type;
 
 describe('ImagesEffects', () => {
   let actions$: ReplaySubject<Action>;
@@ -85,7 +89,8 @@ describe('ImagesEffects', () => {
       }),
       {},
     ),
-    callState: { status: 'idle' as const, loadStart: null, error: null },
+    failedLoads: [],
+    uploadProgress: null,
     newImageFormData: null,
     newImagesFormData: {},
     lastMetadataFetch: null,
@@ -151,6 +156,10 @@ describe('ImagesEffects', () => {
     mockParseError.mockImplementation(error => error);
     mockIsLccError.mockReturnValue(false);
     mockBuildImagesFormData.mockReturnValue(new FormData());
+  });
+
+  afterEach(() => {
+    store.resetSelectors();
   });
 
   describe('fetchAllImagesMetadata$', () => {
@@ -580,6 +589,223 @@ describe('ImagesEffects', () => {
       }));
   });
 
+  describe('addImages$', () => {
+    const album = 'New Album';
+    const mockIndexedDbData = [
+      { id: 'new-1', filename: 'new1.jpg', dataUrl: 'data:image/jpeg;base64,abc' },
+      { id: 'new-2', filename: 'new2.jpg', dataUrl: 'data:image/jpeg;base64,def' },
+    ];
+    let mockImageFileService: Mocked<ImageFileService>;
+
+    beforeEach(() => {
+      mockImageFileService = TestBed.inject(ImageFileService) as Mocked<ImageFileService>;
+      store.overrideSelector(AuthSelectors.selectUser, mockUser);
+      store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {
+        'new-1': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-1', album },
+        'new-2': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-2', album },
+      });
+      store.refreshState();
+      mockImageFileService.getAllImages.mockReturnValue(
+        Promise.resolve(mockIndexedDbData),
+      );
+      mockImageFileService.deleteImage.mockReturnValue(Promise.resolve('success'));
+    });
+
+    it('should report progress before adding the uploaded images', async () => {
+      const uploadedImages = [
+        { ...MOCK_IMAGES[0], id: 'new-1' },
+        { ...MOCK_IMAGES[1], id: 'new-2' },
+      ];
+      imagesApiService.addImages.mockReturnValueOnce(of({ data: [uploadedImages[0]] }));
+      imagesApiService.addImages.mockReturnValueOnce(of({ data: [uploadedImages[1]] }));
+
+      actions$.next(ImagesActions.addImagesRequested());
+      const emitted = await firstValueFrom(effects.addImages$.pipe(take(4), toArray()));
+
+      expect(emitted).toEqual([
+        ImagesActions.imageUploadsProgressed({ uploaded: 0, total: 2 }),
+        ImagesActions.imageUploadsProgressed({ uploaded: 1, total: 2 }),
+        ImagesActions.imageUploadsProgressed({ uploaded: 2, total: 2 }),
+        ImagesActions.addImagesSucceeded({ images: uploadedImages }),
+      ]);
+    });
+
+    it('should count failed uploads towards the progress', async () => {
+      imagesApiService.addImages.mockReturnValue(throwError(() => mockError));
+
+      actions$.next(ImagesActions.addImagesRequested());
+      const emitted = await firstValueFrom(effects.addImages$.pipe(take(4), toArray()));
+
+      expect(emitted[2]).toEqual(
+        ImagesActions.imageUploadsProgressed({ uploaded: 2, total: 2 }),
+      );
+      expect(emitted[3]).toEqual(
+        ImagesActions.addImagesFailed({
+          error: { name: 'LCCError', message: '2 of 2 images failed to upload' },
+        }),
+      );
+    });
+
+    it('should report uploads that fail before sending a request', async () => {
+      mockIsLccError.mockImplementation(value => value === mockError);
+      mockBuildImagesFormData.mockReturnValue(mockError);
+
+      actions$.next(ImagesActions.addImagesRequested());
+      const emitted = await firstValueFrom(effects.addImages$.pipe(take(4), toArray()));
+
+      expect(emitted.map(action => action.type)).toEqual([
+        ImagesActions.imageUploadsProgressed.type,
+        ImagesActions.imageUploadsProgressed.type,
+        ImagesActions.imageUploadsProgressed.type,
+        ImagesActions.addImagesFailed.type,
+      ]);
+      expect(imagesApiService.addImages).not.toHaveBeenCalled();
+    });
+
+    it('should fail without uploading when no image files are stored', async () => {
+      mockImageFileService.getAllImages.mockReturnValue(Promise.resolve([]));
+
+      actions$.next(ImagesActions.addImagesRequested());
+      const action = await firstValueFrom(effects.addImages$);
+
+      expect(action).toEqual(
+        ImagesActions.addImagesFailed({
+          error: { name: 'LCCError', message: 'No image data found in IndexedDB' },
+        }),
+      );
+    });
+  });
+
+  describe('refetchFilteredThumbnails$', () => {
+    const options = {
+      page: 2,
+      pageSize: 12,
+      sortBy: 'filename' as const,
+      sortOrder: 'asc' as const,
+      filters: null,
+      search: '',
+    };
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      mockIsExpired.mockReturnValue(false);
+    });
+
+    it('should refetch when the options change and ask for a fetch', () => {
+      const results: Action[] = [];
+      effects.refetchFilteredThumbnails$.subscribe(action => results.push(action));
+
+      actions$.next(ImagesActions.paginationOptionsChanged({ options, fetch: true }));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([ImagesActions.fetchFilteredThumbnailsRequested()]);
+    });
+
+    it('should not refetch when the options change without asking for a fetch', () => {
+      const results: Action[] = [];
+      effects.refetchFilteredThumbnails$.subscribe(action => results.push(action));
+
+      actions$.next(ImagesActions.paginationOptionsChanged({ options, fetch: false }));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toHaveLength(0);
+    });
+  });
+
+  describe('refetchAlbumCoverThumbnails$', () => {
+    const coverWithoutThumbnail: Image = {
+      ...MOCK_IMAGES[0],
+      albumCover: true,
+      thumbnailUrl: undefined,
+    };
+
+    function seedImagesState(
+      images: Image[],
+      lastMetadataFetch: string | null,
+      lastAlbumCoversFetch: string | null = null,
+    ): void {
+      store.setState({
+        imagesState: {
+          ...mockImagesState,
+          ids: images.map(image => image.id),
+          entities: Object.fromEntries(
+            images.map(image => [
+              image.id,
+              { image, formData: { ...INITIAL_IMAGE_FORM_DATA, id: image.id } },
+            ]),
+          ),
+          lastMetadataFetch,
+          lastAlbumCoversFetch,
+        },
+      });
+    }
+
+    it('should fetch missing album cover thumbnails after every metadata refresh', async () => {
+      seedImagesState([coverWithoutThumbnail], null);
+      mockIsExpired.mockReturnValue(false);
+
+      actions$.next(
+        ImagesActions.fetchAllImagesMetadataSucceeded({
+          images: mockImageMetadataResponse.data,
+        }),
+      );
+      const action = await firstValueFrom(effects.refetchAlbumCoverThumbnails$);
+
+      expect(action).toEqual(
+        ImagesActions.fetchBatchThumbnailsRequested({
+          imageIds: [coverWithoutThumbnail.id],
+          context: 'album-covers',
+        }),
+      );
+    });
+
+    it('should check for expired album covers as soon as it starts', () => {
+      vi.useFakeTimers();
+      const lastMetadataFetch = moment().toISOString();
+      seedImagesState([coverWithoutThumbnail], lastMetadataFetch);
+      mockIsExpired.mockImplementation(lastFetch => lastFetch !== lastMetadataFetch);
+      const results: Action[] = [];
+
+      effects.refetchAlbumCoverThumbnails$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([
+        ImagesActions.fetchBatchThumbnailsRequested({
+          imageIds: [coverWithoutThumbnail.id],
+          context: 'album-covers',
+        }),
+      ]);
+    });
+
+    it('should wait for fresh metadata before checking the album covers', () => {
+      vi.useFakeTimers();
+      seedImagesState([coverWithoutThumbnail], null);
+      mockIsExpired.mockReturnValue(true);
+      const results: Action[] = [];
+
+      effects.refetchAlbumCoverThumbnails$.subscribe(action => results.push(action));
+      vi.advanceTimersByTime(5 * 60 * 1000);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should not fetch anything when no album cover needs a thumbnail', async () => {
+      seedImagesState([{ ...MOCK_IMAGES[0], albumCover: false }], null);
+      mockIsExpired.mockReturnValue(false);
+      const results: Action[] = [];
+
+      effects.refetchAlbumCoverThumbnails$.subscribe(action => results.push(action));
+      actions$.next(
+        ImagesActions.fetchAllImagesMetadataSucceeded({
+          images: mockImageMetadataResponse.data,
+        }),
+      );
+      await Promise.resolve();
+
+      expect(results).toHaveLength(0);
+    });
+  });
+
   describe('updateAlbum$', () => {
     const album = 'Test Album';
     const mockIndexedDbData = [
@@ -657,7 +883,7 @@ describe('ImagesEffects', () => {
 
         actions$.next(ImagesActions.updateAlbumRequested({ album }));
 
-        effects.updateAlbum$.subscribe(action => {
+        effects.updateAlbum$.pipe(filter(isOutcome)).subscribe(action => {
           expect(action.type).toBe(ImagesActions.updateAlbumSucceeded.type);
           const payload = action as ReturnType<typeof ImagesActions.updateAlbumSucceeded>;
           expect(payload.album).toBe(album);
@@ -681,11 +907,52 @@ describe('ImagesEffects', () => {
 
         actions$.next(ImagesActions.updateAlbumRequested({ album }));
 
-        effects.updateAlbum$.subscribe(action => {
+        effects.updateAlbum$.pipe(filter(isOutcome)).subscribe(action => {
           expect(action.type).toBe(ImagesActions.updateAlbumFailed.type);
           done();
         });
       }));
+
+    it('should report progress as each new image finishes uploading', async () => {
+      mockImageFileService.getAllImages.mockReturnValue(
+        Promise.resolve(mockIndexedDbData),
+      );
+      imagesApiService.addImages.mockReturnValueOnce(of({ data: [MOCK_IMAGES[0]] }));
+      imagesApiService.addImages.mockReturnValueOnce(throwError(() => mockError));
+      imagesApiService.updateImages.mockReturnValue(
+        of({ data: { newImages: [], updatedImages: [] } }),
+      );
+
+      actions$.next(ImagesActions.updateAlbumRequested({ album }));
+      const emitted = await firstValueFrom(effects.updateAlbum$.pipe(take(4), toArray()));
+
+      expect(emitted.slice(0, 3)).toEqual([
+        ImagesActions.imageUploadsProgressed({ uploaded: 0, total: 2 }),
+        ImagesActions.imageUploadsProgressed({ uploaded: 1, total: 2 }),
+        ImagesActions.imageUploadsProgressed({ uploaded: 2, total: 2 }),
+      ]);
+      expect(emitted[3].type).toBe(ImagesActions.updateAlbumFailed.type);
+    });
+
+    it('should not report upload progress when no new images are added', async () => {
+      store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {});
+      store.refreshState();
+      mockImageFileService.getAllImages.mockReturnValue(Promise.resolve([]));
+      imagesApiService.updateImages.mockReturnValue(
+        of({
+          data: {
+            newImages: [],
+            updatedImages: [existingAlbumImage],
+          },
+        }),
+      );
+
+      actions$.next(ImagesActions.updateAlbumRequested({ album }));
+      const action = await firstValueFrom(effects.updateAlbum$);
+
+      expect(action.type).not.toBe(ImagesActions.imageUploadsProgressed.type);
+      expect(imagesApiService.addImages).not.toHaveBeenCalled();
+    });
 
     it('should fail when form data is missing for an image', () =>
       withDone(done => {
@@ -861,23 +1128,6 @@ describe('ImagesEffects', () => {
           );
           done();
         });
-      }));
-
-    it('should not dispatch success if response ID does not match', () =>
-      withDone(done => {
-        const mockDeleteResponse: ApiResponse<Id> = { data: 'different-id' };
-        imagesApiService.deleteImage.mockReturnValue(of(mockDeleteResponse));
-
-        actions$.next(ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[0] }));
-
-        const subscription = effects.deleteImage$.subscribe(() => {
-          done.fail('Should not dispatch action when IDs do not match');
-        });
-
-        setTimeout(() => {
-          subscription.unsubscribe();
-          done();
-        }, 100);
       }));
   });
 

@@ -4,7 +4,7 @@ import { omit, pick, uniq } from 'lodash';
 import { INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { Article, Id } from '@app/models';
 import * as ArticlesSelectors from '@app/store/articles/articles.selectors';
-import { areSame, isPresignedUrlExpired } from '@app/utils';
+import { areSame, isPresignedUrlExpired, loadStatus } from '@app/utils';
 
 import { ImagesState, imagesAdapter } from './images.reducer';
 
@@ -20,9 +20,12 @@ export const selectAllImages = createSelector(
   },
 );
 
-export const selectCallState = createSelector(selectImagesState, state => {
-  return state.callState;
-});
+const selectFailedLoads = createSelector(selectImagesState, state => state.failedLoads);
+
+export const selectUploadProgress = createSelector(
+  selectImagesState,
+  state => state.uploadProgress,
+);
 
 export const selectNewImagesFormData = createSelector(selectImagesState, state => {
   return state.newImagesFormData;
@@ -42,6 +45,20 @@ export const selectLastFilteredThumbnailsFetch = createSelector(
 export const selectLastAlbumCoversFetch = createSelector(selectImagesState, state => {
   return state.lastAlbumCoversFetch;
 });
+
+export const selectMetadataStatus = createSelector(
+  selectLastMetadataFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('metadata')),
+);
+
+export const selectFilteredThumbnailsStatus = createSelector(
+  selectLastFilteredThumbnailsFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('filteredThumbnails')),
+);
 
 export const selectFilteredImages = createSelector(selectImagesState, state => {
   return state.filteredImages;
@@ -93,6 +110,11 @@ export const selectImageEntityById = (id: Id | null) =>
   createSelector(
     selectAllImageEntities,
     allImageEntities => allImageEntities.find(entity => entity.image.id === id) ?? null,
+  );
+
+export const selectImageStatus = (id: Id | null) =>
+  createSelector(selectImageEntityById(id), selectFailedLoads, (entity, failedLoads) =>
+    loadStatus(!!entity, failedLoads.includes('mainImage')),
   );
 
 export const selectImageById = (id: Id) =>
