@@ -1,4 +1,4 @@
-import { ShieldCheckIconComponent } from '@eagami/ui';
+import { ShieldCheckIconComponent, SpinnerComponent } from '@eagami/ui';
 
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
@@ -22,10 +22,16 @@ import { AdminButton, ExternalLink, InternalLink } from '@app/models';
               [id]="button.id"
               class="admin-button lcc-secondary-button"
               type="button"
+              [attr.aria-busy]="button.isLoading?.() ?? false"
+              [disabled]="button.isLoading?.() ?? false"
               [tooltip]="button.tooltip"
               (click)="button.action()">
               <span class="button-icon">
-                <ng-container *ngComponentOutlet="button.icon" />
+                @if (button.isLoading?.()) {
+                  <ea-spinner size="sm" />
+                } @else {
+                  <ng-container *ngComponentOutlet="button.icon" />
+                }
               </span>
             </button>
           }
@@ -38,6 +44,7 @@ import { AdminButton, ExternalLink, InternalLink } from '@app/models';
     LinkListComponent,
     NgComponentOutlet,
     ShieldCheckIconComponent,
+    SpinnerComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

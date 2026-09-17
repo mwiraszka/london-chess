@@ -53,16 +53,8 @@
   </section>
 }
 
-<div class="buttons-container">
-  <button
-    class="cancel-button lcc-secondary-button lcc-dark-button"
-    (click)="dialogResult.emit('cancel')">
-    Cancel
-  </button>
-  <button
-    class="confirm-button lcc-primary-button"
-    [disabled]="!membersWithNewRatings?.length"
-    (click)="dialogResult.emit('confirm')">
-    Update members
-  </button>
-</div>
+<lcc-dialog-buttons
+  confirmText="Update members"
+  [confirmAction]="confirmAction"
+  [confirmDisabled]="!membersWithNewRatings?.length"
+  (result)="dialogResult.emit($event)" />

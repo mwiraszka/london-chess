@@ -1,4 +1,4 @@
-import { EventEmitter, Type } from '@angular/core';
+import { EventEmitter, Signal, Type } from '@angular/core';
 
 export interface Dialog {
   title: 'Confirm' | 'Unsaved changes';
@@ -6,6 +6,9 @@ export interface Dialog {
   confirmButtonText: string;
   confirmButtonType?: 'primary' | 'warning';
   cancelButtonText?: string;
+  // Keeps the dialog open, with the confirm button loading, until the work is done
+  confirmAction?: () => Promise<unknown>;
+  uploadProgress?: Signal<{ uploaded: number; total: number } | null>;
 }
 
 export type BasicDialogResult = 'cancel' | 'confirm';

@@ -52,10 +52,11 @@ export {
 export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';
 
 export { actionSanitizer } from './store/action-sanitizer.util';
+export { combinedLoadStatus, loadStatus } from './store/load-status.util';
 
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
+export { lastOpenedDialog } from './test/last-opened-dialog.util';
 
-export { hasCallState } from './type-guards/has-call-state.util';
 export { isAccountSection } from './type-guards/is-account-section.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
