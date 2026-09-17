@@ -71,7 +71,6 @@ describe('AppComponent', () => {
     store.overrideSelector(AppSelectors.selectIsDarkMode, false);
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
     store.overrideSelector(AppSelectors.selectIsWideView, false);
-    store.overrideSelector(AppSelectors.selectIsLoading, false);
     store.overrideSelector(EventsSelectors.selectConcurrentNextEvents, [MOCK_EVENTS[0]]);
     store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, false);
     store.refreshState();
@@ -128,7 +127,6 @@ describe('AppComponent', () => {
       expect(vm).toStrictEqual({
         bannerLastCleared: null,
         isDarkMode: false,
-        isLoading: false,
         isDesktopView: false,
         isWideView: false,
         nextEvents: [MOCK_EVENTS[0]],
@@ -181,8 +179,7 @@ describe('AppComponent', () => {
         expect(query(fixture.debugElement, 'main[cdkScrollable]')).toBeFalsy();
         expect(query(fixture.debugElement, 'router-outlet')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-footer')).toBeFalsy();
-
-        expect(query(fixture.debugElement, '.lcc-loader')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-pull-to-refresh-indicator')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
       });
     });
@@ -198,17 +195,15 @@ describe('AppComponent', () => {
         expect(query(fixture.debugElement, 'main[cdkScrollable]')).toBeTruthy();
         expect(query(fixture.debugElement, 'router-outlet')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-footer')).toBeTruthy();
-
-        expect(query(fixture.debugElement, '.lcc-loader')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
       });
 
-      it('should render loader when app is loading data', () => {
-        store.overrideSelector(AppSelectors.selectIsLoading, true);
-        store.refreshState();
-        fixture.detectChanges();
+      it('should render the pull to refresh indicator over the top of the scroller, outside its content', () => {
+        const indicator = query(fixture.debugElement, 'lcc-pull-to-refresh-indicator');
+        const main = query(fixture.debugElement, 'main[cdkScrollable]');
 
-        expect(query(fixture.debugElement, '.lcc-loader')).toBeTruthy();
+        expect(indicator.nativeElement.nextElementSibling).toBe(main.nativeElement);
+        expect(query(main, 'lcc-pull-to-refresh-indicator')).toBeFalsy();
       });
 
       describe('upcoming event banner', () => {

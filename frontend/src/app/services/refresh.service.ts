@@ -1,28 +1,40 @@
-import { BehaviorSubject } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { filter, take } from 'rxjs/operators';
 
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Injector, computed, inject, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 
+import { refreshAppRequested } from '@app/store/app/app.actions';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
+
+import { PendingRequestsService } from './pending-requests.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RefreshService {
-  public readonly isRefreshing$ = new BehaviorSubject<boolean>(false);
+  private readonly injector = inject(Injector);
+  private readonly isTouchDevice = inject(IS_TOUCH_DEVICE);
+  private readonly pendingRequests = inject(PendingRequestsService);
+  private readonly store = inject(Store);
 
   private readonly MAX_PULL_DISTANCE_PX = 120;
   private readonly PULL_THRESHOLD_PX = 80;
   private readonly RESISTANCE = 0.5;
 
-  private currentPullDistancePx = 0;
+  private readonly pullDistancePx = signal(0);
+
+  readonly isRefreshing = signal(false);
+  readonly pullProgress = computed(() =>
+    Math.min(this.pullDistancePx() / this.PULL_THRESHOLD_PX, 1),
+  );
+
   private mainElement: HTMLElement | null = null;
   private touchStartY = 0;
 
   private readonly boundOnTouchStart = this.onTouchStart.bind(this);
   private readonly boundOnTouchMove = this.onTouchMove.bind(this);
   private readonly boundOnTouchEnd = this.onTouchEnd.bind(this);
-
-  private readonly isTouchDevice = inject(IS_TOUCH_DEVICE);
 
   public initialize(mainElement: HTMLElement): void {
     if (!this.isTouchDevice()) {
@@ -51,13 +63,8 @@ export class RefreshService {
     this.mainElement.removeEventListener('touchend', this.boundOnTouchEnd);
   }
 
-  public completeRefresh(): void {
-    this.currentPullDistancePx = 0;
-    this.isRefreshing$.next(false);
-  }
-
   private onTouchStart(event: TouchEvent): void {
-    if (this.isRefreshing$.value || !this.mainElement) {
+    if (this.isRefreshing() || !this.mainElement) {
       return;
     }
 
@@ -70,36 +77,46 @@ export class RefreshService {
   }
 
   private onTouchMove(event: TouchEvent): void {
-    if (this.isRefreshing$.value || !this.mainElement || this.touchStartY === 0) {
+    if (this.isRefreshing() || !this.mainElement || this.touchStartY === 0) {
       return;
     }
 
-    const touchY = event.touches[0].clientY;
-    const pullDistance = touchY - this.touchStartY;
+    const pullDistance = event.touches[0].clientY - this.touchStartY;
 
-    // Track pull distance without preventing default scroll behavior
     if (pullDistance > 0 && this.mainElement.scrollTop <= 5) {
-      this.currentPullDistancePx = Math.min(
-        pullDistance * this.RESISTANCE,
-        this.MAX_PULL_DISTANCE_PX,
+      this.pullDistancePx.set(
+        Math.min(pullDistance * this.RESISTANCE, this.MAX_PULL_DISTANCE_PX),
       );
     } else if (pullDistance <= 0) {
-      // Reset if user starts pulling up
-      this.currentPullDistancePx = 0;
+      this.pullDistancePx.set(0);
     }
   }
 
   private onTouchEnd(): void {
-    if (this.isRefreshing$.value || this.touchStartY === 0) {
+    if (this.isRefreshing() || this.touchStartY === 0) {
       return;
     }
 
     this.touchStartY = 0;
 
-    if (this.currentPullDistancePx >= this.PULL_THRESHOLD_PX) {
-      this.isRefreshing$.next(true);
+    if (this.pullDistancePx() >= this.PULL_THRESHOLD_PX) {
+      this.refresh();
     }
 
-    this.currentPullDistancePx = 0;
+    this.pullDistancePx.set(0);
+  }
+
+  // The requests a refresh sets off start while it is dispatched, so the refresh
+  // is over once no request is left pending
+  private refresh(): void {
+    this.isRefreshing.set(true);
+    this.store.dispatch(refreshAppRequested());
+
+    toObservable(this.pendingRequests.hasPendingRequests, { injector: this.injector })
+      .pipe(
+        filter(hasPendingRequests => !hasPendingRequests),
+        take(1),
+      )
+      .subscribe(() => this.isRefreshing.set(false));
   }
 }
