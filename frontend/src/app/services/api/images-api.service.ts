@@ -1,8 +1,9 @@
 import { Observable } from 'rxjs';
 
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
+import { REQUEST_TIMEOUT, UPLOAD_TIMEOUT_MS } from '@app/constants/http';
 import {
   ApiResponse,
   DataPaginationOptions,
@@ -61,6 +62,7 @@ export class ImagesApiService {
     return this.http.post<ApiResponse<Image[]>>(
       `${this.API_BASE_URL}/${this.COLLECTION}`,
       imagesFormData,
+      { context: new HttpContext().set(REQUEST_TIMEOUT, UPLOAD_TIMEOUT_MS) },
     );
   }
 

@@ -26,6 +26,8 @@ import {
   AuthInterceptorProvider,
   CacheControlInterceptorProvider,
   LoggingInterceptorProvider,
+  PendingRequestsInterceptorProvider,
+  TimeoutInterceptorProvider,
 } from '@app/interceptors';
 import { ClerkService, UserService } from '@app/services';
 import { AppStoreModule } from '@app/store/app';
@@ -107,6 +109,9 @@ bootstrapApplication(AppComponent, {
         console.error(`[LCC] Unable to load Clerk: ${error}`);
       }
     }),
+    // Listed first so they also cover the time other interceptors spend
+    PendingRequestsInterceptorProvider,
+    TimeoutInterceptorProvider,
     AuthInterceptorProvider,
     CacheControlInterceptorProvider,
     LoggingInterceptorProvider,
