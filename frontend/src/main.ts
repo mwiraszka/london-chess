@@ -54,6 +54,13 @@ Sentry.init({
   environment: environment.production ? 'production' : 'development',
   enabled: !!environment.sentryDsn,
   tracesSampleRate: 0,
+  // Raised by browser extensions running on the page, not by the app
+  ignoreErrors: [/runtime\.sendMessage/, /Extension context invalidated/],
+  denyUrls: [
+    /^chrome-extension:\/\//,
+    /^moz-extension:\/\//,
+    /^safari-(web-)?extension:\/\//,
+  ],
 });
 
 applyPalette(
