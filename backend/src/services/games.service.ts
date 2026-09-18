@@ -1,4 +1,4 @@
-import { QueryFilter, Types } from 'mongoose';
+import { PipelineStage, QueryFilter, Types } from 'mongoose';
 
 import { Id } from '../models/core.model';
 import {
@@ -12,6 +12,14 @@ import {
 import { MemberModel, MemberRecord } from '../models/member.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
 import { isCollectionId } from '../util/is-collection-id.util';
+
+export type PlayerSide = 'whitePlayerId' | 'blackPlayerId';
+
+// The sort fields that order games by a player's name rather than by their own field
+export const PLAYER_SORT_SIDES: Record<string, PlayerSide> = {
+  white: 'whitePlayerId',
+  black: 'blackPlayerId',
+};
 
 export interface GameFilters {
   player?: Id;
@@ -40,6 +48,77 @@ export function parseGameFilters(query: Record<string, unknown>): GameFilters {
   if (GAME_RESULTS.includes(result as GameResult)) filters.result = result as GameResult;
 
   return filters;
+}
+
+const asObjectId = (input: unknown) => ({
+  $convert: { input, to: 'objectId', onError: null, onNull: null },
+});
+
+/**
+ * Orders games by the name shown for one side, which is the linked member's name where
+ * there is one, so both collections are joined before the page is cut.
+ */
+export function buildPlayerNameSortPipeline(
+  filter: QueryFilter<Game>,
+  side: PlayerSide,
+  sortOrder: 1 | -1,
+  skip: number,
+  limit?: number,
+): PipelineStage[] {
+  return [
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'players',
+        let: { playerId: asObjectId(`$${side}`) },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$_id', '$$playerId'] } } },
+          { $project: { firstName: 1, lastName: 1, memberId: 1 } },
+        ],
+        as: 'player',
+      },
+    },
+    {
+      $lookup: {
+        from: 'members',
+        let: { memberId: asObjectId({ $first: '$player.memberId' }) },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$_id', '$$memberId'] } } },
+          { $project: { firstName: 1, lastName: 1 } },
+        ],
+        as: 'member',
+      },
+    },
+    {
+      $addFields: {
+        playerSortName: {
+          $toLower: {
+            $concat: [
+              {
+                $ifNull: [
+                  { $first: '$member.lastName' },
+                  { $first: '$player.lastName' },
+                  '',
+                ],
+              },
+              ' ',
+              {
+                $ifNull: [
+                  { $first: '$member.firstName' },
+                  { $first: '$player.firstName' },
+                  '',
+                ],
+              },
+            ],
+          },
+        },
+      },
+    },
+    { $sort: { playerSortName: sortOrder, date: -1 } },
+    ...(skip ? [{ $skip: skip }] : []),
+    ...(limit === undefined ? [] : [{ $limit: limit }]),
+    { $project: { player: 0, member: 0, playerSortName: 0 } },
+  ] as PipelineStage[];
 }
 
 export function buildGamesFilter(filters: GameFilters): QueryFilter<Game> {
