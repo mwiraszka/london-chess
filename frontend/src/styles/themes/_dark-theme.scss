@@ -350,6 +350,7 @@ body[data-theme='dark'] {
   --lcc-color--table-rowBackgroundEven: #{clr(grayscale, gray-30)};
   --lcc-color--table-rowBackgroundOdd: #{clr(grayscale, gray-32)};
   --lcc-color--table-rowForeground: #{clr(grayscale, white-90)};
+  --lcc-color--table-skeleton: #{clr(grayscale, gray-50)};
 
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOn: #{clr(grayscale, gray-35)};
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOff: #{clr(grayscale, gray-25)};

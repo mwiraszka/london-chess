@@ -115,7 +115,6 @@ function toGameView(game: Game): GameView {
     AsyncPipe,
     ButtonComponent,
     CardComponent,
-    ChevronRightIconComponent,
     DecimalPipe,
     LinkListComponent,
     LoadFailedComponent,
