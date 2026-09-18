@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show a spinner on the ratings import button while the file is being prepared
 - Keep the pull-to-refresh spinner visible until the refreshed content has arrived
 - Frame the introduction of the website changelog page in a card like its releases, and mark Game Archives with an archive icon in the navigation bar
+- Give search fields, dropdowns, segmented controls and table paginators the same background as the site's other inputs in dark mode
 
 ### Fixed
 
