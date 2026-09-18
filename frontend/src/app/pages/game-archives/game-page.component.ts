@@ -1,9 +1,6 @@
 import {
   ArchiveIconComponent,
-  ButtonComponent,
   CardComponent,
-  ChevronLeftIconComponent,
-  ChevronRightIconComponent,
   MicroscopeIconComponent,
   SkeletonComponent,
 } from '@eagami/ui';
@@ -12,9 +9,9 @@ import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
 import { map, switchMap, take, tap } from 'rxjs/operators';
 
-import { AsyncPipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute, Params, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
@@ -22,14 +19,12 @@ import { MemberLinkComponent } from '@app/components/member-link/member-link.com
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PgnViewerComponent } from '@app/components/pgn-viewer/pgn-viewer.component';
 import { PLACEHOLDER_GAME } from '@app/constants/games';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { ExternalLink, Game, Id, InternalLink, LoadStatus } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import { MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import {
   buildPgn,
   formatPartialDate,
-  gamesQueryParams,
   getLichessAnalysisUrl,
   playerName,
   resultLabel,
@@ -56,22 +51,8 @@ interface GameView {
   analysisLink: ExternalLink;
 }
 
-interface GamePosition {
-  number: number;
-  count: number;
-}
-
 const extraOf = (detail: string | number | null): string =>
   detail === null ? '' : String(detail);
-
-function archiveLink(queryParams: Params): InternalLink {
-  return {
-    text: 'Back to the archives',
-    internalPath: 'game-archives',
-    queryParams,
-    icon: ArchiveIconComponent,
-  };
-}
 
 function toGameView(game: Game): GameView {
   const whiteName = playerName(game.white);
@@ -113,18 +94,14 @@ function toGameView(game: Game): GameView {
   styleUrl: './game-page.component.scss',
   imports: [
     AsyncPipe,
-    ButtonComponent,
     CardComponent,
-    DecimalPipe,
     LinkListComponent,
     LoadFailedComponent,
     MemberLinkComponent,
     NgTemplateOutlet,
     PageHeaderComponent,
     PgnViewerComponent,
-    RouterLink,
     SkeletonComponent,
-    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -134,19 +111,17 @@ export class GamePageComponent implements OnInit {
   private readonly store = inject(Store);
 
   protected readonly pageIcon = ArchiveIconComponent;
-  protected readonly previousIcon = ChevronLeftIconComponent;
-  protected readonly nextIcon = ChevronRightIconComponent;
-  protected readonly keepScroll = KEEP_SCROLL;
+  protected readonly archiveLink: InternalLink = {
+    text: 'Back to the archives',
+    internalPath: 'game-archives',
+    icon: ArchiveIconComponent,
+  };
   protected readonly placeholderView = toGameView(PLACEHOLDER_GAME);
 
   public viewModel$?: Observable<{
     gameId: Id;
     view: GameView | null;
     status: LoadStatus;
-    previousId: Id | null;
-    nextId: Id | null;
-    position: GamePosition | null;
-    archiveLink: InternalLink;
   }>;
 
   public ngOnInit(): void {
@@ -174,18 +149,11 @@ export class GamePageComponent implements OnInit {
         combineLatest([
           this.store.select(GamesSelectors.selectGameById(gameId)),
           this.store.select(GamesSelectors.selectGameStatus(gameId)),
-          this.store.select(GamesSelectors.selectAdjacentGameIds(gameId)),
-          this.store.select(GamesSelectors.selectGamePosition(gameId)),
-          this.store.select(GamesSelectors.selectQuery),
         ]).pipe(
-          map(([game, status, adjacent, position, query]) => ({
+          map(([game, status]) => ({
             gameId,
             view: game ? toGameView(game) : null,
             status,
-            previousId: adjacent.previous,
-            nextId: adjacent.next,
-            position,
-            archiveLink: archiveLink(gamesQueryParams(query)),
           })),
         ),
       ),

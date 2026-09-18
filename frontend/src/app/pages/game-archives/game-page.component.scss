@@ -19,15 +19,12 @@ $board-width: 432px;
   grid-template-columns: minmax(0, $board-width);
   grid-template-areas:
     'details'
-    'board'
-    'analysis';
+    'board';
 
   @include respond-to('gt-lg') {
     align-items: stretch;
     grid-template-columns: auto auto;
-    grid-template-areas:
-      'details board'
-      '.       analysis';
+    grid-template-areas: 'details board';
   }
 }
 
@@ -47,10 +44,6 @@ $board-width: 432px;
   @include respond-to('gt-lg') {
     width: $board-width;
   }
-}
-
-.game__analysis {
-  grid-area: analysis;
 }
 
 // A grid child stretches, so the card fills the column's height beside the board
@@ -95,18 +88,6 @@ $board-width: 432px;
     overflow-wrap: anywhere;
     color: var(--color-text-primary);
   }
-}
-
-.game__nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.game__position {
-  color: var(--color-text-secondary);
 }
 
 .details__extra {

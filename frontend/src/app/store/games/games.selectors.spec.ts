@@ -38,20 +38,6 @@ describe('Games Selectors', () => {
     expect(GamesSelectors.selectSummary(state)).toEqual(MOCK_GAMES_SUMMARY);
   });
 
-  describe('selectGamePosition', () => {
-    it('should count from the first result of the first page', () => {
-      expect(
-        GamesSelectors.selectGamePosition(MOCK_GAMES[1].id)(withState(loadedState)),
-      ).toEqual({ number: 27, count: 3 });
-    });
-
-    it('should place no game that is not among the results', () => {
-      expect(
-        GamesSelectors.selectGamePosition('unknown')(withState(loadedState)),
-      ).toBeNull();
-    });
-  });
-
   describe('selectGameById', () => {
     it('should find a stored game', () => {
       expect(
@@ -127,33 +113,6 @@ describe('Games Selectors', () => {
       expect(GamesSelectors.selectGameStatus('unknown')(withState(loadedState))).toBe(
         'loading',
       );
-    });
-  });
-
-  describe('selectAdjacentGameIds', () => {
-    it('should find the games either side within the results', () => {
-      expect(
-        GamesSelectors.selectAdjacentGameIds(MOCK_GAMES[1].id)(withState(loadedState)),
-      ).toEqual({ previous: MOCK_GAMES[0].id, next: MOCK_GAMES[2].id });
-    });
-
-    it('should have no neighbour past either end', () => {
-      const state = withState(loadedState);
-
-      expect(GamesSelectors.selectAdjacentGameIds(MOCK_GAMES[0].id)(state)).toEqual({
-        previous: null,
-        next: MOCK_GAMES[1].id,
-      });
-      expect(GamesSelectors.selectAdjacentGameIds(MOCK_GAMES[2].id)(state)).toEqual({
-        previous: MOCK_GAMES[1].id,
-        next: null,
-      });
-    });
-
-    it('should have no neighbours for a game outside the results', () => {
-      expect(
-        GamesSelectors.selectAdjacentGameIds('unknown')(withState(loadedState)),
-      ).toEqual({ previous: null, next: null });
     });
   });
 });

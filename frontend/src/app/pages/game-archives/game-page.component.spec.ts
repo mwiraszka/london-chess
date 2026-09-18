@@ -1,5 +1,5 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -15,7 +15,7 @@ import { PgnViewerComponent } from '@app/components/pgn-viewer/pgn-viewer.compon
 import { INITIAL_GAMES_QUERY, PLACEHOLDER_GAME } from '@app/constants/games';
 import { MOCK_GAMES } from '@app/mocks/games.mock';
 import { Game } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import { MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesState, initialState } from '@app/store/games';
 import { gamesAdapter } from '@app/store/games/games.reducer';
 import {
@@ -135,29 +135,6 @@ describe('GamePageComponent', () => {
       expect(viewer.game()).toEqual(MOCK_GAMES[1]);
     });
 
-    it('should link to the games either side within the results', () => {
-      const [previous, next] = queryAll(fixture.debugElement, '.game__nav ea-button').map(
-        button => button.injector.get(RouterLink).urlTree?.toString(),
-      );
-
-      expect(previous).toBe(`/game-archives/${MOCK_GAMES[0].id}`);
-      expect(next).toBe(`/game-archives/${MOCK_GAMES[2].id}`);
-    });
-
-    it('should keep the scroll position when moving to a neighbouring game', () => {
-      const links = queryAll(fixture.debugElement, '.game__nav ea-button').map(button =>
-        button.injector.get(RouterLink),
-      );
-
-      expect(links.map(link => link.info)).toEqual([KEEP_SCROLL, KEEP_SCROLL]);
-    });
-
-    it('should say where the game sits within the results', () => {
-      expect(queryTextContent(fixture.debugElement, '.game__position')).toBe(
-        'Game 2 of 3',
-      );
-    });
-
     it('should set the qualifying details apart', () => {
       expect(
         queryAll(fixture.debugElement, '.details__extra').map(extra =>
@@ -166,29 +143,13 @@ describe('GamePageComponent', () => {
       ).toEqual(['(A1)', '(Round 1)', '(2000)', '(Draw)', '(D02)']);
     });
 
-    it('should link to the game on the Lichess analysis board', () => {
-      const link = query(fixture.debugElement, '.game__analysis a');
+    it('should offer the analysis board and the way back together', () => {
+      const [analysis, back] = queryAll(fixture.debugElement, '.game__links a');
 
-      expect(link.attributes['href']).toBe(
+      expect(analysis.attributes['href']).toBe(
         getLichessAnalysisUrl(buildPgn(MOCK_GAMES[1])),
       );
-    });
-
-    it('should hide the neighbouring game links when the game is on its own', () => {
-      store.setState(stateWith([MOCK_GAMES[1]]));
-      fixture.detectChanges();
-
-      expect(query(fixture.debugElement, '.game__nav')).toBeFalsy();
-    });
-
-    it('should link back to the archives with the query that was open', async () => {
-      const vm = await firstValueFrom(component.viewModel$!);
-      const back = query(fixture.debugElement, '.game__back a');
-
-      expect(vm.archiveLink.queryParams).toEqual({ year: 1994 });
-      expect(back.injector.get(RouterLink).urlTree?.toString()).toBe(
-        '/game-archives?year=1994',
-      );
+      expect(back.injector.get(RouterLink).urlTree?.toString()).toBe('/game-archives');
     });
 
     it('should update the page title', () => {
@@ -227,13 +188,13 @@ describe('GamePageComponent', () => {
       expect(queryAll(fixture.debugElement, '.details dt')).toHaveLength(8);
     });
 
-    it('should offer only the way back while the game is not among any results', () => {
-      expect(query(fixture.debugElement, '.game__nav')).toBeFalsy();
-      expect(
-        query(fixture.debugElement, '.game__back a')
-          .injector.get(RouterLink)
-          .urlTree?.toString(),
-      ).toBe('/game-archives?year=1994');
+    it('should offer only the way back while the game loads', () => {
+      const links = queryAll(fixture.debugElement, '.game__links a');
+
+      expect(links).toHaveLength(1);
+      expect(links[0].injector.get(RouterLink).urlTree?.toString()).toBe(
+        '/game-archives',
+      );
     });
   });
 
@@ -247,7 +208,7 @@ describe('GamePageComponent', () => {
       expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
       expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
       expect(query(fixture.debugElement, 'lcc-pgn-viewer')).toBeFalsy();
-      expect(query(fixture.debugElement, '.game__back a')).toBeTruthy();
+      expect(query(fixture.debugElement, '.game__links a')).toBeTruthy();
     });
 
     it('should fetch the game again on retry', () => {
