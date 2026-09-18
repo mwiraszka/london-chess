@@ -15,8 +15,6 @@ import { isCollectionId } from '../util/is-collection-id.util';
 
 export interface GameFilters {
   player?: Id;
-  tournament?: string;
-  section?: string;
   year?: number;
   result?: GameResult;
 }
@@ -34,14 +32,10 @@ export function parseGameFilters(query: Record<string, unknown>): GameFilters {
 
   const filters: GameFilters = {};
   const player = read('player');
-  const tournament = read('tournament');
-  const section = read('section');
   const year = Number(read('year'));
   const result = read('result');
 
   if (isCollectionId(player)) filters.player = player;
-  if (tournament) filters.tournament = tournament;
-  if (section) filters.section = section;
   if (Number.isInteger(year) && year > 0) filters.year = year;
   if (GAME_RESULTS.includes(result as GameResult)) filters.result = result as GameResult;
 
@@ -56,8 +50,6 @@ export function buildGamesFilter(filters: GameFilters): QueryFilter<Game> {
       $or: [{ whitePlayerId: filters.player }, { blackPlayerId: filters.player }],
     });
   }
-  if (filters.tournament) conditions.push({ tournament: filters.tournament });
-  if (filters.section) conditions.push({ section: filters.section });
   if (filters.year) conditions.push({ year: filters.year });
   if (filters.result) conditions.push({ result: filters.result });
 

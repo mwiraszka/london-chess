@@ -30,8 +30,6 @@ export function parseGamesQuery(params: Params): GamesQuery {
     sortOrder: single(params['order']) === 'asc' ? 'asc' : 'desc',
     filters: {
       player: single(params['player']),
-      tournament: single(params['tournament']),
-      section: single(params['section']),
       year: Number.isInteger(year) && year > 0 ? year : null,
       result: GAME_RESULTS.includes(result) ? result : '',
     },
@@ -44,8 +42,6 @@ export function gamesQueryParams(query: GamesQuery): Params {
   const { filters } = query;
 
   if (filters.player) params['player'] = filters.player;
-  if (filters.tournament) params['tournament'] = filters.tournament;
-  if (filters.section) params['section'] = filters.section;
   if (filters.year !== null) params['year'] = filters.year;
   if (filters.result) params['result'] = filters.result;
   if (query.sortBy !== INITIAL_GAMES_QUERY.sortBy) params['sort'] = query.sortBy;

@@ -3,7 +3,7 @@ import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
 import { forkJoin, of } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take } from 'rxjs/operators';
+import { catchError, filter, map, switchMap, take } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 
@@ -113,23 +113,6 @@ export class GamesEffects {
       concatLatestFrom(() => this.store.select(GamesSelectors.selectLastReferenceFetch)),
       filter(([, lastFetch]) => lastFetch !== null),
       map(() => GamesActions.fetchArchiveReferenceRequested()),
-    );
-  });
-
-  openRandomGame$ = createEffect(() => {
-    return this.actions$.pipe(
-      ofType(GamesActions.randomGameRequested),
-      switchMap(() =>
-        this.gamesApiService.getRandomGame().pipe(
-          mergeMap(response => [
-            GamesActions.fetchGameSucceeded({ game: response.data }),
-            GamesActions.randomGamePicked({ gameId: response.data.id }),
-          ]),
-          catchError(error =>
-            of(GamesActions.randomGameFailed({ error: this.parseError(error) })),
-          ),
-        ),
-      ),
     );
   });
 }

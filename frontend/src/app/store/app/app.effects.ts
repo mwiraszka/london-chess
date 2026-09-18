@@ -62,7 +62,6 @@ export class AppEffects {
     GamesActions.fetchArchiveReferenceFailed,
     GamesActions.fetchFilteredGamesFailed,
     GamesActions.fetchGameFailed,
-    GamesActions.randomGameFailed,
 
     ImagesActions.addImageFailed,
     ImagesActions.addImagesFailed,
@@ -411,12 +410,6 @@ export class AppEffects {
       case GamesActions.fetchGameFailed.type:
         return {
           title: 'Load game',
-          message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case GamesActions.randomGameFailed.type:
-        return {
-          title: 'Random game',
           message: this.getErrorMessage(action.error),
           type: 'warning',
         };

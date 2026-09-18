@@ -276,31 +276,4 @@ describe('GamesEffects', () => {
       expect(results).toEqual([]);
     });
   });
-
-  describe('openRandomGame$', () => {
-    it('should store the game and hand its id back', () => {
-      gamesApiService.getRandomGame.mockReturnValue(of({ data: MOCK_GAMES[2] }));
-      const results: Action[] = [];
-      effects.openRandomGame$.subscribe(action => results.push(action));
-
-      actions$.next(GamesActions.randomGameRequested());
-
-      expect(results).toEqual([
-        GamesActions.fetchGameSucceeded({ game: MOCK_GAMES[2] }),
-        GamesActions.randomGamePicked({ gameId: MOCK_GAMES[2].id }),
-      ]);
-    });
-
-    it('should report a failure', () =>
-      withDone(done => {
-        gamesApiService.getRandomGame.mockReturnValue(throwError(() => mockError));
-
-        actions$.next(GamesActions.randomGameRequested());
-
-        effects.openRandomGame$.subscribe(action => {
-          expect(action).toEqual(GamesActions.randomGameFailed({ error: mockError }));
-          done();
-        });
-      }));
-  });
 });

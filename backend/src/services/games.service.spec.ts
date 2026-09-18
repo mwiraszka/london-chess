@@ -7,15 +7,11 @@ describe('parseGameFilters', () => {
     expect(
       parseGameFilters({
         filter_player: PLAYER_ID,
-        filter_tournament: 'Fall Open',
-        filter_section: 'U1800',
         filter_year: '1994',
         filter_result: '1/2-1/2',
       }),
     ).toEqual({
       player: PLAYER_ID,
-      tournament: 'Fall Open',
-      section: 'U1800',
       year: 1994,
       result: '1/2-1/2',
     });
@@ -25,7 +21,6 @@ describe('parseGameFilters', () => {
     expect(
       parseGameFilters({
         filter_player: 'not-an-id',
-        filter_tournament: '  ',
         filter_year: 'soon',
         filter_result: '2-0',
         filter_colour: 'white',
@@ -51,10 +46,12 @@ describe('buildGamesFilter', () => {
   });
 
   it('should combine filters', () => {
-    expect(
-      buildGamesFilter({ tournament: 'Fall Open', section: 'U1800', year: 1994 }),
-    ).toEqual({
-      $and: [{ tournament: 'Fall Open' }, { section: 'U1800' }, { year: 1994 }],
+    expect(buildGamesFilter({ player: PLAYER_ID, year: 1994, result: '1-0' })).toEqual({
+      $and: [
+        { $or: [{ whitePlayerId: PLAYER_ID }, { blackPlayerId: PLAYER_ID }] },
+        { year: 1994 },
+        { result: '1-0' },
+      ],
     });
   });
 });

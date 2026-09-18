@@ -49,8 +49,8 @@ describe('GamesApiService', () => {
           page: 2,
           filters: {
             ...INITIAL_GAMES_QUERY.filters,
-            tournament: 'Fall Open',
             year: 1994,
+            result: '1-0',
           },
         })
         .subscribe(result => (received = result));
@@ -60,7 +60,7 @@ describe('GamesApiService', () => {
 
       expect(request.request.method).toBe('GET');
       expect(request.request.params.keys().sort()).toEqual([
-        'filter_tournament',
+        'filter_result',
         'filter_year',
         'page',
         'pageSize',
@@ -71,7 +71,7 @@ describe('GamesApiService', () => {
       expect(request.request.params.get('pageSize')).toBe('25');
       expect(request.request.params.get('sortBy')).toBe('date');
       expect(request.request.params.get('sortOrder')).toBe('desc');
-      expect(request.request.params.get('filter_tournament')).toBe('Fall Open');
+      expect(request.request.params.get('filter_result')).toBe('1-0');
       expect(request.request.params.get('filter_year')).toBe('1994');
       expect(received).toEqual(response);
     });
@@ -87,17 +87,6 @@ describe('GamesApiService', () => {
 
       expect(request.request.method).toBe('GET');
       expect(received).toEqual({ data: MOCK_GAMES[0] });
-    });
-  });
-
-  describe('getRandomGame', () => {
-    it('should request a random game', () => {
-      service.getRandomGame().subscribe();
-
-      const request = httpMock.expectOne(`${apiBaseUrl}/random`);
-      request.flush({ data: MOCK_GAMES[1] });
-
-      expect(request.request.method).toBe('GET');
     });
   });
 

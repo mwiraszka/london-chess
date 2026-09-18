@@ -47,16 +47,6 @@ export const fetchArchiveReferenceFailed = createAction(
   props<{ error: LccError }>(),
 );
 
-export const randomGameRequested = createAction('[Games] Random game requested');
-export const randomGamePicked = createAction(
-  '[Games] Random game picked',
-  props<{ gameId: Id }>(),
-);
-export const randomGameFailed = createAction(
-  '[Games] Random game failed',
-  props<{ error: LccError }>(),
-);
-
 export const queryChanged = createAction(
   '[Games] Query changed',
   props<{ query: GamesQuery }>(),

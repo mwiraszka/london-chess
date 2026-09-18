@@ -39,12 +39,6 @@ export class GamesApiService {
     );
   }
 
-  public getRandomGame(): Observable<ApiResponse<Game>> {
-    return this.http.get<ApiResponse<Game>>(
-      `${this.API_BASE_URL}/${this.COLLECTION}/random`,
-    );
-  }
-
   public getPlayers(): Observable<ApiResponse<ArchivePlayer[]>> {
     return this.http.get<ApiResponse<ArchivePlayer[]>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/players`,

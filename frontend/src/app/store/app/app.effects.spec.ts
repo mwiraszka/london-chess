@@ -245,19 +245,6 @@ describe('AppEffects', () => {
             done();
           });
         }));
-
-      it('should display toast for randomGameFailed', () =>
-        withDone(done => {
-          actions$.next(GamesActions.randomGameFailed({ error: mockError }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
-              title: 'Random game',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
     });
 
     describe('Images actions', () => {

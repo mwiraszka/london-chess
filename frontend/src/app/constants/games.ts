@@ -6,10 +6,6 @@ export const GAMES_SORT_FIELDS: GamesSortBy[] = ['date', 'tournament', 'eco', 'm
 
 export const GAMES_PAGE_SIZES = [25, 50, 100];
 
-// A random game's die shows this many faces, this many milliseconds apart
-export const DIE_ROLL_FRAMES = 20;
-export const DIE_ROLL_INTERVAL = 100;
-
 // The archive figures count up to their amounts over this long, a frame this often
 export const FIGURE_COUNT_UP_DURATION = 3000;
 export const FIGURE_COUNT_UP_INTERVAL = 30;
@@ -21,8 +17,6 @@ export const INITIAL_GAMES_QUERY: GamesQuery = {
   sortOrder: 'desc',
   filters: {
     player: '',
-    tournament: '',
-    section: '',
     year: null,
     result: '',
   },

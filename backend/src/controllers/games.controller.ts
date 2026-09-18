@@ -71,25 +71,6 @@ export async function getGame(
   }
 }
 
-export async function getRandomGame(
-  _req: Request,
-  res: Response<ApiResponse<GameResponse>>,
-): Promise<void> {
-  try {
-    const [record] = await GameModel.aggregate<GameRecord>([{ $sample: { size: 1 } }]);
-
-    if (!record) {
-      res.status(404).json({ message: 'The archive holds no games yet.' });
-      return;
-    }
-
-    const [game] = await toGameResponses([record]);
-    res.status(200).json({ data: game });
-  } catch (error) {
-    res.status(500).json({ message: `Unknown error: ${error}` });
-  }
-}
-
 export async function getPlayers(
   _req: Request,
   res: Response<ApiResponse<ArchivePlayer[]>>,

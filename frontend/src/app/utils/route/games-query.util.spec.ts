@@ -10,8 +10,6 @@ const FULL_QUERY: GamesQuery = {
   sortOrder: 'asc',
   filters: {
     player: '64b7f0c2a1d3e4f5a6b7c8d9',
-    tournament: 'Fall Open',
-    section: 'U1800',
     year: 1994,
     result: '1/2-1/2',
   },
@@ -30,8 +28,6 @@ describe('parseGamesQuery', () => {
         sort: 'moves',
         order: 'asc',
         player: '64b7f0c2a1d3e4f5a6b7c8d9',
-        tournament: 'Fall Open',
-        section: 'U1800',
         year: '1994',
         result: '1/2-1/2',
       }),
@@ -64,8 +60,6 @@ describe('gamesQueryParams', () => {
   it('should write every parameter that differs from the defaults', () => {
     expect(gamesQueryParams(FULL_QUERY)).toEqual({
       player: '64b7f0c2a1d3e4f5a6b7c8d9',
-      tournament: 'Fall Open',
-      section: 'U1800',
       year: 1994,
       result: '1/2-1/2',
       sort: 'moves',

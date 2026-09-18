@@ -65,8 +65,6 @@ export interface ArchiveSizing {
 
 export interface GameFilters {
   player: Id | '';
-  tournament: string;
-  section: string;
   year: number | null;
   result: GameResult | '';
 }
