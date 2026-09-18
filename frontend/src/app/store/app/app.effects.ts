@@ -11,6 +11,7 @@ import { LccError, MemberEmail, Toast } from '@app/models';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as EventsActions from '@app/store/events/events.actions';
+import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import * as NavActions from '@app/store/nav/nav.actions';
@@ -25,6 +26,7 @@ type NotifyAction = ReturnType<
   | (typeof AppActions)[keyof typeof AppActions]
   | (typeof ArticlesActions)[keyof typeof ArticlesActions]
   | (typeof EventsActions)[keyof typeof EventsActions]
+  | (typeof GamesActions)[keyof typeof GamesActions]
   | (typeof ImagesActions)[keyof typeof ImagesActions]
   | (typeof MembersActions)[keyof typeof MembersActions]
   | (typeof NavActions)[keyof typeof NavActions]
@@ -56,6 +58,11 @@ export class AppEffects {
     EventsActions.fetchHomePageEventsFailed,
     EventsActions.updateEventFailed,
     EventsActions.updateEventSucceeded,
+
+    GamesActions.fetchArchiveReferenceFailed,
+    GamesActions.fetchFilteredGamesFailed,
+    GamesActions.fetchGameFailed,
+    GamesActions.randomGameFailed,
 
     ImagesActions.addImageFailed,
     ImagesActions.addImagesFailed,
@@ -104,6 +111,10 @@ export class AppEffects {
     EventsActions.fetchHomePageEventsFailed,
     EventsActions.fetchEventFailed,
 
+    GamesActions.fetchArchiveReferenceFailed,
+    GamesActions.fetchFilteredGamesFailed,
+    GamesActions.fetchGameFailed,
+
     ImagesActions.fetchAllImagesMetadataFailed,
     ImagesActions.fetchBatchThumbnailsFailed,
     ImagesActions.fetchFilteredThumbnailsFailed,
@@ -117,6 +128,7 @@ export class AppEffects {
   readonly MISSING_RECORD_FAILURES = [
     ArticlesActions.fetchArticleFailed,
     EventsActions.fetchEventFailed,
+    GamesActions.fetchGameFailed,
     MembersActions.fetchMemberFailed,
   ] as const;
 
@@ -383,6 +395,30 @@ export class AppEffects {
           title: 'Image deletion',
           message: `Successfully deleted ${action.image.filename}`,
           type: 'success',
+        };
+      case GamesActions.fetchArchiveReferenceFailed.type:
+        return {
+          title: 'Load game archives',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case GamesActions.fetchFilteredGamesFailed.type:
+        return {
+          title: 'Load games',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case GamesActions.fetchGameFailed.type:
+        return {
+          title: 'Load game',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case GamesActions.randomGameFailed.type:
+        return {
+          title: 'Random game',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
         };
       case ImagesActions.fetchAllImagesMetadataFailed.type:
         return {

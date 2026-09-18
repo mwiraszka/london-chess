@@ -34,6 +34,7 @@ import { AppStoreModule } from '@app/store/app';
 import { ArticlesStoreModule } from '@app/store/articles';
 import { AuthStoreModule } from '@app/store/auth';
 import { EventsStoreModule } from '@app/store/events';
+import { GamesStoreModule } from '@app/store/games';
 import { ImagesStoreModule } from '@app/store/images';
 import { MembersStoreModule } from '@app/store/members';
 import { MetaState, metaReducers } from '@app/store/meta-reducers';
@@ -73,6 +74,7 @@ bootstrapApplication(AppComponent, {
       BrowserModule,
       EffectsModule.forRoot([]),
       EventsStoreModule,
+      GamesStoreModule,
       ImagesStoreModule,
       MarkdownModule.forRoot(),
       MembersStoreModule,

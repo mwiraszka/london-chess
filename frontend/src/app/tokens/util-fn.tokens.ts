@@ -7,8 +7,6 @@ import {
   exportEventsToIcal,
   generateUuid,
   getNewPeakRating,
-  getPlayerName,
-  getScore,
   isExpired,
   isLccError,
   isMac,
@@ -38,17 +36,6 @@ export const IS_MAC = new InjectionToken<typeof isMac>('IS_MAC', {
 
 export const GENERATE_UUID = new InjectionToken<typeof generateUuid>('GENERATE_UUID', {
   factory: () => generateUuid,
-});
-
-export const GET_PLAYER_NAME = new InjectionToken<typeof getPlayerName>(
-  'GET_PLAYER_NAME',
-  {
-    factory: () => getPlayerName,
-  },
-);
-
-export const GET_SCORE = new InjectionToken<typeof getScore>('GET_SCORE', {
-  factory: () => getScore,
 });
 
 export const EXPORT_EVENTS_TO_ICAL = new InjectionToken<typeof exportEventsToIcal>(

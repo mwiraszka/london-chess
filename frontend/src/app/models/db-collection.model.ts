@@ -1,1 +1,2 @@
-export type DbCollection = 'articles' | 'events' | 'images' | 'members' | 'users';
+export type DbCollection =
+  'articles' | 'events' | 'games' | 'images' | 'members' | 'users';

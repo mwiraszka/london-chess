@@ -5,6 +5,7 @@ export { ChangelogService } from './changelog.service';
 export { ClerkService } from './clerk.service';
 export { DIALOG_CONFIG_TOKEN, DialogService } from './dialog.service';
 export { EventsApiService } from './api/events-api.service';
+export { GamesApiService } from './api/games-api.service';
 export { HealthApiService } from './api/health-api.service';
 export { ImageFileService } from './image-file.service';
 export { ImagesApiService } from './api/images-api.service';
