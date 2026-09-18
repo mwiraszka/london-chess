@@ -1,8 +1,6 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-// The details and the board share one width, side by side or stacked, so neither
-// resizes from game to game
-$column-width: 432px;
+$board-width: 432px;
 
 :host {
   display: flex;
@@ -12,27 +10,47 @@ $column-width: 432px;
   width: 100%;
 }
 
+// Stacked, the details and board share the board's width; side by side, the
+// details take only the width this game needs and the board's height
 .game {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  justify-content: center;
+  gap: 8px;
+  grid-template-columns: minmax(0, $board-width);
+  grid-template-areas:
+    'details'
+    'board'
+    'analysis';
 
   @include respond-to('gt-lg') {
-    flex-direction: row;
     align-items: stretch;
-    justify-content: center;
-    gap: 32px;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      'details board'
+      '.       analysis';
   }
 }
 
-.game__details,
+.game__details {
+  position: relative;
+  grid-area: details;
+  min-width: 0;
+  max-width: 560px;
+}
+
 .game__board {
   position: relative;
-  flex: 0 0 auto;
+  grid-area: board;
   width: 100%;
   min-width: 0;
-  max-width: $column-width;
+
+  @include respond-to('gt-lg') {
+    width: $board-width;
+  }
+}
+
+.game__analysis {
+  grid-area: analysis;
 }
 
 // A grid child stretches, so the card fills the column's height beside the board
@@ -88,5 +106,9 @@ $column-width: 432px;
 }
 
 .game__position {
+  color: var(--color-text-secondary);
+}
+
+.details__extra {
   color: var(--color-text-secondary);
 }

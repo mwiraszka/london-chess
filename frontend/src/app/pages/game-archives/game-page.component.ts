@@ -4,6 +4,7 @@ import {
   CardComponent,
   ChevronLeftIconComponent,
   ChevronRightIconComponent,
+  MicroscopeIconComponent,
   SkeletonComponent,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
@@ -11,7 +12,7 @@ import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
 import { map, switchMap, take, tap } from 'rxjs/operators';
 
-import { AsyncPipe, DecimalPipe } from '@angular/common';
+import { AsyncPipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Params, RouterLink } from '@angular/router';
 
@@ -21,23 +22,38 @@ import { MemberLinkComponent } from '@app/components/member-link/member-link.com
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PgnViewerComponent } from '@app/components/pgn-viewer/pgn-viewer.component';
 import { PLACEHOLDER_GAME } from '@app/constants/games';
-import { Game, Id, InternalLink, LoadStatus } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { ExternalLink, Game, Id, InternalLink, LoadStatus } from '@app/models';
+import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
-import { formatPartialDate, gamesQueryParams, playerName, resultLabel } from '@app/utils';
+import {
+  buildPgn,
+  formatPartialDate,
+  gamesQueryParams,
+  getLichessAnalysisUrl,
+  playerName,
+  resultLabel,
+} from '@app/utils';
+
+// A detail and whatever qualifies it, shown in parentheses after it
+interface Detail {
+  text: string;
+  extra: string;
+}
 
 interface GameView {
   game: Game;
   heading: string;
-  event: string;
-  date: string;
+  event: Detail;
+  date: Detail;
   whiteName: string;
   whiteRating: string;
   blackName: string;
   blackRating: string;
-  result: string;
-  opening: string;
+  result: Detail;
+  opening: Detail | null;
   moveCount: number;
+  analysisLink: ExternalLink;
 }
 
 interface GamePosition {
@@ -45,8 +61,8 @@ interface GamePosition {
   count: number;
 }
 
-const inParentheses = (detail: string | number | null): string =>
-  detail === null || detail === '' ? '' : ` (${detail})`;
+const extraOf = (detail: string | number | null): string =>
+  detail === null ? '' : String(detail);
 
 function archiveLink(queryParams: Params): InternalLink {
   return {
@@ -63,15 +79,30 @@ function toGameView(game: Game): GameView {
   return {
     game,
     heading: `${whiteName} vs ${blackName}`,
-    event: `${game.tournament || 'Unknown event'}${inParentheses(game.section)}`,
-    date: `${formatPartialDate(game.date)}${inParentheses(game.round && `Round ${game.round}`)}`,
+    event: { text: game.tournament || 'Unknown event', extra: game.section },
+    date: {
+      text: formatPartialDate(game.date),
+      extra: game.round ? `Round ${game.round}` : '',
+    },
     whiteName,
-    whiteRating: inParentheses(game.whiteElo),
+    whiteRating: extraOf(game.whiteElo),
     blackName,
-    blackRating: inParentheses(game.blackElo),
-    result: `${game.result === '1/2-1/2' ? '½-½' : game.result} (${resultLabel(game.result)})`,
-    opening: game.opening ? `${game.opening}${inParentheses(game.eco)}` : game.eco,
+    blackRating: extraOf(game.blackElo),
+    result: {
+      text: game.result === '1/2-1/2' ? '½-½' : game.result,
+      extra: resultLabel(game.result),
+    },
+    opening: game.opening
+      ? { text: game.opening, extra: game.eco }
+      : game.eco
+        ? { text: game.eco, extra: '' }
+        : null,
     moveCount: Math.ceil(game.plyCount / 2),
+    analysisLink: {
+      text: 'Analyze game on Lichess',
+      externalPath: getLichessAnalysisUrl(buildPgn(game)),
+      icon: MicroscopeIconComponent,
+    },
   };
 }
 
@@ -89,10 +120,12 @@ function toGameView(game: Game): GameView {
     LinkListComponent,
     LoadFailedComponent,
     MemberLinkComponent,
+    NgTemplateOutlet,
     PageHeaderComponent,
     PgnViewerComponent,
     RouterLink,
     SkeletonComponent,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -103,6 +136,8 @@ export class GamePageComponent implements OnInit {
 
   protected readonly pageIcon = ArchiveIconComponent;
   protected readonly previousIcon = ChevronLeftIconComponent;
+  protected readonly nextIcon = ChevronRightIconComponent;
+  protected readonly keepScroll = KEEP_SCROLL;
   protected readonly placeholderView = toGameView(PLACEHOLDER_GAME);
 
   public viewModel$?: Observable<{

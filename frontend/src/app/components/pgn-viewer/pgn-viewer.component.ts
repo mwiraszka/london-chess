@@ -1,4 +1,3 @@
-import { MicroscopeIconComponent } from '@eagami/ui';
 import LichessPgnViewer from 'lichess-pgn-viewer';
 
 import {
@@ -11,26 +10,17 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { LinkListComponent } from '@app/components/link-list/link-list.component';
-import { ExternalLink, Game } from '@app/models';
-import { buildPgn, getLichessAnalysisUrl, playerName, playerScores } from '@app/utils';
+import { Game } from '@app/models';
+import { buildPgn, playerName, playerScores } from '@app/utils';
 
 @Component({
   selector: 'lcc-pgn-viewer',
-  template: `
-    <div #board></div>
-    <lcc-link-list [links]="[lichessAnalysisBoardLink()]"></lcc-link-list>
-  `,
+  template: `<div #board></div>`,
   styles: `
     :host {
       display: block;
     }
-
-    lcc-link-list {
-      margin-top: 4px;
-    }
   `,
-  imports: [LinkListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PgnViewerComponent {
@@ -39,12 +29,6 @@ export class PgnViewerComponent {
   private readonly board = viewChild.required<ElementRef<HTMLElement>>('board');
 
   protected readonly pgn = computed(() => buildPgn(this.game()));
-
-  protected readonly lichessAnalysisBoardLink = computed<ExternalLink>(() => ({
-    text: 'Analyze game on Lichess',
-    externalPath: getLichessAnalysisUrl(this.pgn()),
-    icon: MicroscopeIconComponent,
-  }));
 
   constructor() {
     effect(() => this.render(this.game(), this.board().nativeElement));

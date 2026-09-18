@@ -15,7 +15,7 @@ export { MembersApiService } from './api/members-api.service';
 export { MetaAndTitleService } from './meta-and-title.service';
 export { PendingRequestsService } from './pending-requests.service';
 export { RefreshService } from './refresh.service';
-export { RoutingService } from './routing.service';
+export { KEEP_SCROLL, RoutingService } from './routing.service';
 export { StoreRequestService } from './store-request.service';
 export { TouchEventsService } from './touch-events.service';
 export { UserService } from './user.service';

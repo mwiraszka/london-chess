@@ -79,15 +79,6 @@ test.describe('game archives', () => {
     }
   });
 
-  test('rolls the die and opens a random game', async ({ page }) => {
-    await page.goto('/game-archives');
-
-    await page.getByRole('button', { name: 'View random game' }).click();
-
-    await expect(page).toHaveURL(/\/game-archives\/[0-9a-f]{24}$/, { timeout: 5_000 });
-    await expect(page.locator('.page-heading')).toContainText(' vs ');
-  });
-
   test('sends a visitor with a mistyped game link home', async ({ page }) => {
     await page.goto('/game-archives/000000000000000000000000');
 

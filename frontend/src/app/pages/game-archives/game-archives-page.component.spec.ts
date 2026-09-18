@@ -1,15 +1,11 @@
-import { provideMockActions } from '@ngrx/effects/testing';
-import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Params, Router, provideRouter } from '@angular/router';
 
 import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
 import {
-  DIE_ROLL_FRAMES,
-  DIE_ROLL_INTERVAL,
   FIGURE_COUNT_UP_DURATION,
   INITIAL_GAMES_QUERY,
   PLACEHOLDER_GAME,
@@ -32,24 +28,21 @@ describe('GameArchivesPageComponent', () => {
   let router: Router;
   let store: MockStore;
 
-  let actions$: Subject<Action>;
   let dispatchSpy: MockInstance;
   let navigateSpy: MockInstance;
   let queryParams: BehaviorSubject<Params>;
 
   const loadedQuery = {
     ...INITIAL_GAMES_QUERY,
-    filters: { ...INITIAL_GAMES_QUERY.filters, tournament: 'Fall Open', year: 1994 },
+    filters: { ...INITIAL_GAMES_QUERY.filters, year: 1994 },
   };
 
   beforeEach(async () => {
-    actions$ = new Subject<Action>();
     queryParams = new BehaviorSubject<Params>({});
 
     await TestBed.configureTestingModule({
       imports: [GameArchivesPageComponent],
       providers: [
-        provideMockActions(() => actions$),
         provideMockStore(),
         provideRouter([]),
         {
@@ -88,7 +81,7 @@ describe('GameArchivesPageComponent', () => {
 
   describe('the URL', () => {
     it('should set the query from the URL', () => {
-      queryParams.next({ tournament: 'Fall Open', year: '1994' });
+      queryParams.next({ year: '1994' });
       fixture.detectChanges();
 
       expect(dispatchSpy).toHaveBeenCalledWith(
@@ -134,23 +127,7 @@ describe('GameArchivesPageComponent', () => {
       expect(component['playerText']()).toBe('Litchfield, Gerry');
     });
 
-    it('should offer the sections and years of the chosen tournament', () => {
-      expect(component['sectionOptions']().map(option => option.value)).toEqual([
-        '',
-        'U1600',
-        'U1800',
-      ]);
-      expect(component['yearOptions']().map(option => option.value)).toEqual([
-        '',
-        '1994',
-      ]);
-    });
-
-    it('should offer every year when no tournament is chosen', () => {
-      store.overrideSelector(GamesSelectors.selectQuery, INITIAL_GAMES_QUERY);
-      store.refreshState();
-      fixture.detectChanges();
-
+    it('should offer every year in the archive', () => {
       expect(component['yearOptions']().map(option => option.value)).toEqual([
         '',
         '2023',
@@ -169,7 +146,6 @@ describe('GameArchivesPageComponent', () => {
         relativeTo: TestBed.inject(ActivatedRoute),
         queryParams: {
           player: MOCK_GAMES[0].white.id,
-          tournament: 'Fall Open',
           year: 1994,
         },
       });
@@ -186,7 +162,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Fall Open', year: 1994 },
+        queryParams: { year: 1994 },
       });
     });
 
@@ -197,32 +173,17 @@ describe('GameArchivesPageComponent', () => {
       expect(navigateSpy).not.toHaveBeenCalled();
     });
 
-    it('should drop the section when the tournament changes', () => {
-      store.overrideSelector(GamesSelectors.selectQuery, {
-        ...loadedQuery,
-        filters: { ...loadedQuery.filters, section: 'U1800' },
-      });
-      store.refreshState();
-
-      component.onTournamentChanged('Club Championship');
-
-      expect(navigateSpy).toHaveBeenCalledWith([], {
-        relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Club Championship', year: 1994 },
-      });
-    });
-
     it('should put the year and result in the URL', () => {
       component.onYearChanged('2023');
       component.onResultChanged('1-0');
 
       expect(navigateSpy).toHaveBeenNthCalledWith(1, [], {
         relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Fall Open', year: 2023 },
+        queryParams: { year: 2023 },
       });
       expect(navigateSpy).toHaveBeenNthCalledWith(2, [], {
         relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Fall Open', year: 1994, result: '1-0' },
+        queryParams: { year: 1994, result: '1-0' },
       });
     });
 
@@ -259,7 +220,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Fall Open', year: 1994, sort: 'moves', order: 'asc' },
+        queryParams: { year: 1994, sort: 'moves', order: 'asc' },
       });
     });
 
@@ -268,7 +229,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Fall Open', year: 1994 },
+        queryParams: { year: 1994 },
       });
     });
 
@@ -277,7 +238,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
-        queryParams: { tournament: 'Fall Open', year: 1994, size: 50, page: 3 },
+        queryParams: { year: 1994, size: 50, page: 3 },
       });
     });
   });
@@ -319,75 +280,6 @@ describe('GameArchivesPageComponent', () => {
         '989 players',
         '189 tournaments',
       ]);
-    });
-  });
-
-  describe('the random game', () => {
-    const rollDuration = DIE_ROLL_FRAMES * DIE_ROLL_INTERVAL;
-
-    // The count starts as the page initialises, so the timers are faked before that
-    beforeEach(() => {
-      vi.useFakeTimers();
-      fixture.detectChanges();
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should roll the die before opening the game that was picked', () => {
-      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
-      actions$.next(GamesActions.randomGamePicked({ gameId: MOCK_GAMES[2].id }));
-
-      vi.advanceTimersByTime(rollDuration - 1);
-
-      expect(dispatchSpy).toHaveBeenCalledWith(GamesActions.randomGameRequested());
-      expect(navigateSpy).not.toHaveBeenCalled();
-
-      vi.advanceTimersByTime(1);
-
-      expect(navigateSpy).toHaveBeenCalledWith(['/game-archives', MOCK_GAMES[2].id]);
-    });
-
-    it('should swap the label for a loading spinner while the die rolls', () => {
-      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
-      fixture.detectChanges();
-
-      expect(query(fixture.debugElement, '.intro__random-label--rolling')).toBeTruthy();
-    });
-
-    it('should show another face of the die with every frame', () => {
-      const before = component['randomIcon']();
-
-      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
-      vi.advanceTimersByTime(DIE_ROLL_INTERVAL);
-
-      expect(component['randomIcon']()).not.toBe(before);
-    });
-
-    it('should ignore a second press while the die is rolling', () => {
-      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
-      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
-
-      expect(
-        dispatchSpy.mock.calls.filter(
-          ([action]) => action.type === GamesActions.randomGameRequested.type,
-        ),
-      ).toHaveLength(1);
-    });
-
-    it('should stop rolling without opening anything when no game was picked', () => {
-      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
-      actions$.next(
-        GamesActions.randomGameFailed({
-          error: { name: 'LCCError', message: 'Failed' },
-        }),
-      );
-
-      vi.advanceTimersByTime(rollDuration);
-
-      expect(component['rolling']()).toBe(false);
-      expect(navigateSpy).not.toHaveBeenCalled();
     });
   });
 

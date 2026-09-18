@@ -171,6 +171,8 @@ body[data-theme='dark'] {
 
   --lcc-color--formErrorIcon: #{clr(warning, light)};
 
+  --lcc-color--gameArchivesPage-figure: var(--color-brand-secondary-text);
+
   --lcc-color--general-accentIcon: #{clr(secondary, base)};
   --lcc-color--general-cardBackground: #{clr(grayscale, black-20, 0.5)};
   --lcc-color--general-cardBoxShadow: #{clr(grayscale, black-10, 0.7)};
@@ -342,6 +344,7 @@ body[data-theme='dark'] {
 
   --lcc-color--table-boxShadow: #{clr(grayscale, black-20, 0.7)};
   --lcc-color--table-footerForeground: #{clr(grayscale, gray-65)};
+  --lcc-color--table-headerBackgroundOnHover: #{clr(primary, dark)};
   --lcc-color--table-headerBackground: #{clr(primary, darker)};
   --lcc-color--table-headerForeground: #{clr(grayscale, white-95)};
   --lcc-color--table-rowBackgroundEven: #{clr(grayscale, gray-30)};

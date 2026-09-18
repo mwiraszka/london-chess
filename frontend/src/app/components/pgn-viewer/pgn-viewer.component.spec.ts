@@ -1,10 +1,9 @@
 import LichessPgnViewer from 'lichess-pgn-viewer';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
 
 import { MOCK_GAMES } from '@app/mocks/games.mock';
-import { buildPgn, getLichessAnalysisUrl, query } from '@app/utils';
+import { buildPgn } from '@app/utils';
 
 import { PgnViewerComponent } from './pgn-viewer.component';
 
@@ -34,7 +33,6 @@ describe('PgnViewerComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PgnViewerComponent],
-      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PgnViewerComponent);
@@ -61,12 +59,6 @@ describe('PgnViewerComponent', () => {
     expect(person('bottom').getAttribute('data-score')).toBe('1');
     expect(person('top').getAttribute('data-name')).toBe('H. Jung');
     expect(person('top').getAttribute('data-score')).toBe('0');
-  });
-
-  it('should link to the game on the Lichess analysis board', () => {
-    const link = query(fixture.debugElement, 'lcc-link-list a');
-
-    expect(link.attributes['href']).toBe(getLichessAnalysisUrl(buildPgn(MOCK_GAMES[0])));
   });
 
   it('should show another game when the input changes', () => {

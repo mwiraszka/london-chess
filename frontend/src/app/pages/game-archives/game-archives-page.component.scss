@@ -9,6 +9,7 @@
 }
 
 .intro__body {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,15 +29,19 @@
   }
 }
 
-// Stretched to the text's height beside it, the image crops rather than distorts
 .intro__image {
   object-fit: cover;
-  flex: 1 1 0;
   width: 100%;
-  min-width: 0;
   height: auto;
-  min-height: 0;
   border-radius: var(--lcc-borderRadius--large);
+
+  // Beside the text it shares the row and stretches to the text's height, cropping
+  // rather than distorting
+  @include respond-to('gt-lg') {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+  }
 }
 
 .intro__text {
@@ -50,14 +55,15 @@
   color: var(--color-text-primary);
 }
 
+// Two rows of two until the card is wide enough for four cards to keep their room
 .figures {
   display: grid;
-  gap: 16px;
+  gap: 8px;
   grid-template-columns: repeat(2, 1fr);
   width: 100%;
   list-style: none;
 
-  @include respond-to('gt-sm') {
+  @container (min-width: 720px) {
     grid-template-columns: repeat(4, 1fr);
   }
 }
@@ -66,53 +72,59 @@
   min-width: 0;
 }
 
+.figure ea-card {
+  --ea-card-body-padding: 8px;
+}
+
 .figure__content {
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 8px;
+  white-space: nowrap;
+
+  @include respond-to('lt-sm') {
+    gap: 6px;
+  }
 }
 
 .figure__value {
   font-size: 36px;
   font-weight: bold;
-  color: var(--color-brand-secondary-text);
+  color: var(--lcc-color--gameArchivesPage-figure);
+
+  @include respond-to('lt-sm') {
+    font-size: 20px;
+  }
+}
+
+// Pulses like a skeleton until the figures arrive
+.figure__value--pending {
+  animation: figure-pulse 1.5s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes figure-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .figure__label {
   font-size: 16px;
   color: var(--color-text-primary);
-}
 
-.intro__random {
-  width: 320px;
-  max-width: 100%;
-}
-
-// Both labels share one box sized by the longer, so the die never moves when they swap
-.intro__random-label {
-  display: inline-grid;
-  justify-items: start;
-}
-
-.intro__random-idle,
-.intro__random-rolling {
-  grid-area: 1 / 1;
-}
-
-.intro__random-rolling {
-  visibility: hidden;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.intro__random-label--rolling .intro__random-idle {
-  visibility: hidden;
-}
-
-.intro__random-label--rolling .intro__random-rolling {
-  visibility: visible;
+  @include respond-to('lt-sm') {
+    font-size: 14px;
+  }
 }
 
 .filters {
@@ -127,22 +139,46 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  @include respond-to('gt-md') {
-    grid-template-columns: 2fr 2fr 1fr 1fr auto auto;
+  // One row, with the results track never squeezed into wrapping its options
+  @include respond-to('gt-lg') {
+    grid-template-columns: 2fr 1fr max-content auto;
   }
+}
+
+// Until the filters fit one row, the results and the clear button each take a row
+.filters__result,
+.filters__clear {
+  @include respond-to('lt-lg') {
+    grid-column: 1 / -1;
+  }
+}
+
+.filters__clear {
+  align-self: end;
+  justify-self: center;
+
+  @include respond-to('gt-lg') {
+    justify-self: start;
+  }
+}
+
+// Coloured like the app's other tables
+.games {
+  --ea-data-table-background-color: var(--lcc-color--table-rowBackgroundOdd);
+  --ea-data-table-row-stripe-background-color: var(--lcc-color--table-rowBackgroundEven);
+  --ea-data-table-color: var(--lcc-color--table-rowForeground);
+  --ea-data-table-header-background-color: var(--lcc-color--table-headerBackground);
+  --ea-data-table-header-color: var(--lcc-color--table-headerForeground);
+  --ea-data-table-header-hover-background-color: var(
+    --lcc-color--table-headerBackgroundOnHover
+  );
+  --ea-data-table-header-hover-color: var(--lcc-color--table-headerForeground);
+  --ea-data-table-header-sorted-color: var(--lcc-color--table-headerForeground);
 }
 
 // A loading cell's placeholder fills the cell, and as a block sits centred in it
 .games lcc-text-skeleton {
   display: block;
-}
-
-.games__date {
-  white-space: nowrap;
-}
-
-.games__result {
-  white-space: nowrap;
 }
 
 .games__result--decisive {
@@ -154,7 +190,7 @@
 }
 
 .games__eco {
-  margin-left: 4px;
+  margin-right: 6px;
   font-size: 12px;
   color: var(--color-text-secondary);
 }

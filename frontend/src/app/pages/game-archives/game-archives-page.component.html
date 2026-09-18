@@ -16,13 +16,11 @@
         alt="" />
       <div class="intro__text">
         <p>
-          Every game recorded at the London Chess Club since 1974: club championships, the
-          Tolpuddle and Fall Opens, the Geza Fuster and Tom Southam memorials, junior
-          events, and over a thousand games annotated by the players themselves.
-        </p>
-        <p>
-          Search a player to see every game they have played at the club, open any game to
-          step through it on the board, or send it to Lichess to analyse.
+          Here you will find every game recorded at the London Chess Club since 1974: club
+          championships, the Tolpuddle and Fall Opens, the Geza Fuster and Tom Southam
+          memorials, junior events, and over a thousand games annotated by the players
+          themselves. Search a player to walk through their games or open up in Lichess to
+          analyze.
         </p>
         <p>
           All games meticulously transcribed and compiled over the years by
@@ -46,30 +44,17 @@
         <li class="figure">
           <ea-card [fullWidth]="true">
             <div class="figure__content">
-              <span class="figure__value">{{ figure.value | number }}</span>
+              <span
+                class="figure__value"
+                [class.figure__value--pending]="!summary()">
+                {{ figure.value | number }}
+              </span>
               <span class="figure__label">{{ figure.label }}</span>
             </div>
           </ea-card>
         </li>
       }
     </ul>
-    <ea-button
-      class="intro__random"
-      variant="secondary"
-      size="lg"
-      [fullWidth]="true"
-      [icon]="randomIcon()"
-      (clicked)="onRandomGame()">
-      <span
-        class="intro__random-label"
-        [class.intro__random-label--rolling]="rolling()">
-        <span class="intro__random-idle">View random game</span>
-        <span class="intro__random-rolling">
-          Loading
-          <ea-spinner size="sm" />
-        </span>
-      </span>
-    </ea-button>
   </div>
 </ea-card>
 
@@ -85,19 +70,6 @@
     (changed)="onPlayerTyped($event)"
     (selected)="onPlayerSelected($event)" />
   <ea-dropdown
-    class="filters__tournament"
-    label="Tournament"
-    [options]="tournamentOptions()"
-    [value]="query().filters.tournament"
-    (changed)="onTournamentChanged($event)" />
-  <ea-dropdown
-    class="filters__section"
-    label="Section"
-    [disabled]="sectionOptions().length === 1"
-    [options]="sectionOptions()"
-    [value]="query().filters.section"
-    (changed)="onSectionChanged($event)" />
-  <ea-dropdown
     class="filters__year"
     label="Year"
     [options]="yearOptions()"
@@ -112,7 +84,7 @@
   <ea-button
     class="filters__clear"
     variant="ghost"
-    size="sm"
+    size="md"
     [disabled]="!hasFilters()"
     (clicked)="onClearFilters()">
     Clear filters
@@ -134,6 +106,7 @@
     [columns]="columns()"
     [data]="rows()"
     [hoverable]="!loading()"
+    [nowrap]="true"
     [rowHref]="rowHref"
     [sizingRows]="sizingRows"
     [sort]="sortState()"

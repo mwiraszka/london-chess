@@ -18,10 +18,18 @@
         <ea-card [fullWidth]="true">
           <dl class="details">
             <dt>Event</dt>
-            <dd>{{ view.event }}</dd>
+            <dd>
+              {{ view.event.text }}
+              <ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.event.extra }" />
+            </dd>
 
             <dt>Date</dt>
-            <dd>{{ view.date }}</dd>
+            <dd>
+              {{ view.date.text }}
+              <ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.date.extra }" />
+            </dd>
 
             @if (view.game.location) {
               <dt>Location</dt>
@@ -32,22 +40,32 @@
             <dd>
               <lcc-member-link
                 [memberNumber]="view.game.white.memberNumber"
-                [name]="view.whiteName" />{{ view.whiteRating }}
+                [name]="view.whiteName" />&ngsp;<ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.whiteRating }" />
             </dd>
 
             <dt>Black</dt>
             <dd>
               <lcc-member-link
                 [memberNumber]="view.game.black.memberNumber"
-                [name]="view.blackName" />{{ view.blackRating }}
+                [name]="view.blackName" />&ngsp;<ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.blackRating }" />
             </dd>
 
             <dt>Result</dt>
-            <dd>{{ view.result }}</dd>
+            <dd>
+              {{ view.result.text }}
+              <ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.result.extra }" />
+            </dd>
 
-            @if (view.opening) {
+            @if (view.opening; as opening) {
               <dt>Opening</dt>
-              <dd>{{ view.opening }}</dd>
+              <dd>
+                {{ opening.text }}
+                <ng-container
+                  *ngTemplateOutlet="extra; context: { $implicit: opening.extra }" />
+              </dd>
             }
 
             <dt>Moves</dt>
@@ -76,33 +94,48 @@
             height="100%" />
         }
       </div>
+      <lcc-link-list
+        class="game__analysis"
+        [links]="[view.analysisLink]"></lcc-link-list>
     </div>
   }
 
-  <nav
-    class="game__nav"
-    aria-label="Games">
-    <ea-button
-      variant="ghost"
-      size="sm"
-      [disabled]="!vm.previousId"
-      [icon]="previousIcon"
-      [routerLink]="vm.previousId ? ['/game-archives', vm.previousId] : null">
-      Previous game
-    </ea-button>
-    @if (vm.position) {
+  @if (vm.position && vm.position.count > 1) {
+    <nav
+      class="game__nav"
+      aria-label="Games">
+      <ea-button
+        variant="ghost"
+        size="md"
+        ariaLabel="Previous game"
+        tooltip="Previous game"
+        [disabled]="!vm.previousId"
+        [icon]="previousIcon"
+        [info]="keepScroll"
+        [routerLink]="vm.previousId ? ['/game-archives', vm.previousId] : null" />
       <span class="game__position">
         Game {{ vm.position.number | number }} of {{ vm.position.count | number }}
       </span>
-    }
-    <ea-button
-      variant="ghost"
-      size="sm"
-      [disabled]="!vm.nextId"
-      [routerLink]="vm.nextId ? ['/game-archives', vm.nextId] : null">
-      Next game
-      <ea-icon-chevron-right slot="suffix" />
-    </ea-button>
-  </nav>
-  <lcc-link-list [links]="[vm.archiveLink]"></lcc-link-list>
+      <ea-button
+        variant="ghost"
+        size="md"
+        ariaLabel="Next game"
+        tooltip="Next game"
+        [disabled]="!vm.nextId"
+        [icon]="nextIcon"
+        [info]="keepScroll"
+        [routerLink]="vm.nextId ? ['/game-archives', vm.nextId] : null" />
+    </nav>
+  }
+  <lcc-link-list
+    class="game__back"
+    [links]="[vm.archiveLink]"></lcc-link-list>
 }
+
+<ng-template
+  #extra
+  let-text>
+  @if (text) {
+    <span class="details__extra">({{ text }})</span>
+  }
+</ng-template>

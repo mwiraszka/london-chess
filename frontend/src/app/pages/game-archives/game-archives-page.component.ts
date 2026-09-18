@@ -6,33 +6,17 @@ import {
   DataTableColumn,
   DataTableComponent,
   DataTableSortState,
-  Dice1IconComponent,
-  Dice2IconComponent,
-  Dice3IconComponent,
-  Dice4IconComponent,
-  Dice5IconComponent,
-  Dice6IconComponent,
   DropdownComponent,
   PaginatorComponent,
   PaginatorState,
   SegmentedComponent,
   SelectOption,
-  SpinnerComponent,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
-import { Observable, forkJoin, interval, timer } from 'rxjs';
-import {
-  distinctUntilChanged,
-  filter,
-  last,
-  map,
-  switchMap,
-  take,
-  tap,
-} from 'rxjs/operators';
+import { Observable, interval } from 'rxjs';
+import { distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
 
 import { DecimalPipe } from '@angular/common';
 import {
@@ -55,8 +39,6 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
 import {
-  DIE_ROLL_FRAMES,
-  DIE_ROLL_INTERVAL,
   FIGURE_COUNT_UP_DURATION,
   FIGURE_COUNT_UP_INTERVAL,
   GAMES_PAGE_SIZES,
@@ -185,15 +167,6 @@ function countUp(figures: Figure[]): Observable<Figure[]> {
   );
 }
 
-const DICE = [
-  Dice1IconComponent,
-  Dice2IconComponent,
-  Dice3IconComponent,
-  Dice4IconComponent,
-  Dice5IconComponent,
-  Dice6IconComponent,
-];
-
 const SORT_COLUMNS: Record<GamesSortBy, string> = {
   date: 'date',
   tournament: 'event',
@@ -218,13 +191,11 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
     PageHeaderComponent,
     PaginatorComponent,
     SegmentedComponent,
-    SpinnerComponent,
     TextSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameArchivesPageComponent implements OnInit {
-  private readonly actions$ = inject(Actions);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -240,10 +211,6 @@ export class GameArchivesPageComponent implements OnInit {
 
   protected readonly pageIcon = ArchiveIconComponent;
   protected readonly pageSizes = GAMES_PAGE_SIZES;
-  protected readonly dieFace = signal(4);
-  protected readonly randomIcon = computed(() => DICE[this.dieFace()]);
-  protected readonly rolling = signal(false);
-
   protected readonly figures = signal<Figure[]>(
     FIGURE_LABELS.map(label => ({ label, value: 0 })),
   );
@@ -354,35 +321,12 @@ export class GameArchivesPageComponent implements OnInit {
   // What the player box shows, which is the chosen player until the text is edited
   protected readonly playerText = linkedSignal(() => this.selectedPlayerLabel());
 
-  protected readonly tournamentOptions = computed<SelectOption[]>(() => [
-    { value: '', label: 'All tournaments' },
-    ...this.tournaments().map(({ name }) => ({ value: name, label: name })),
+  protected readonly yearOptions = computed<SelectOption[]>(() => [
+    { value: '', label: 'All years' },
+    ...[...new Set(this.tournaments().flatMap(({ years }) => years))]
+      .sort((a, b) => b - a)
+      .map(year => ({ value: String(year), label: String(year) })),
   ]);
-
-  protected readonly selectedTournament = computed(
-    () =>
-      this.tournaments().find(({ name }) => name === this.query().filters.tournament) ??
-      null,
-  );
-
-  protected readonly sectionOptions = computed<SelectOption[]>(() => [
-    { value: '', label: 'All sections' },
-    ...(this.selectedTournament()?.sections ?? []).map(section => ({
-      value: section,
-      label: section,
-    })),
-  ]);
-
-  protected readonly yearOptions = computed<SelectOption[]>(() => {
-    const years =
-      this.selectedTournament()?.years ?? this.tournaments().flatMap(t => t.years);
-    return [
-      { value: '', label: 'All years' },
-      ...[...new Set(years)]
-        .sort((a, b) => b - a)
-        .map(year => ({ value: String(year), label: String(year) })),
-    ];
-  });
 
   protected readonly yearValue = computed(() => {
     const { year } = this.query().filters;
@@ -431,14 +375,6 @@ export class GameArchivesPageComponent implements OnInit {
     }
   }
 
-  public onTournamentChanged(tournament: string): void {
-    this.applyFilters({ tournament, section: '' });
-  }
-
-  public onSectionChanged(section: string): void {
-    this.applyFilters({ section });
-  }
-
   public onYearChanged(year: string): void {
     this.applyFilters({ year: year ? Number(year) : null });
   }
@@ -473,43 +409,11 @@ export class GameArchivesPageComponent implements OnInit {
     }
   }
 
-  // Rolls the die for a moment before the game opens, however quickly it arrives
-  public onRandomGame(): void {
-    if (this.rolling()) {
-      return;
-    }
-    this.rolling.set(true);
-    this.store.dispatch(GamesActions.randomGameRequested());
-
-    const rolled$ = timer(DIE_ROLL_INTERVAL, DIE_ROLL_INTERVAL).pipe(
-      take(DIE_ROLL_FRAMES),
-      tap(() => this.dieFace.set(this.nextFace())),
-      last(),
-    );
-    const outcome$ = this.actions$.pipe(
-      ofType(GamesActions.randomGamePicked, GamesActions.randomGameFailed),
-      take(1),
-    );
-    forkJoin([rolled$, outcome$])
-      .pipe(untilDestroyed(this))
-      .subscribe(([, outcome]) => {
-        this.rolling.set(false);
-        if (outcome.type === GamesActions.randomGamePicked.type) {
-          this.router.navigate(['/game-archives', outcome.gameId]);
-        }
-      });
-  }
-
   public onRetry(): void {
     this.store.dispatch(GamesActions.fetchFilteredGamesRequested());
     if (this.referenceStatus() === 'failed') {
       this.store.dispatch(GamesActions.fetchArchiveReferenceRequested());
     }
-  }
-
-  private nextFace(): number {
-    const others = DICE.map((_, face) => face).filter(face => face !== this.dieFace());
-    return others[Math.floor(Math.random() * others.length)];
   }
 
   private applyFilters(changes: Partial<GameFilters>): void {

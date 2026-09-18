@@ -171,6 +171,8 @@
 
   --lcc-color--formErrorIcon: #{clr(warning, lighter)};
 
+  --lcc-color--gameArchivesPage-figure: #{clr(secondary, base)};
+
   --lcc-color--general-accentIcon: #{clr(secondary, base)};
   --lcc-color--general-cardBackground: #{clr(grayscale, white-95)};
   --lcc-color--general-cardBoxShadow: #{clr(grayscale, white-85, 0.7)};
@@ -342,6 +344,7 @@
 
   --lcc-color--table-boxShadow: #{clr(grayscale, white-85, 0.7)};
   --lcc-color--table-footerForeground: #{clr(grayscale, gray-35)};
+  --lcc-color--table-headerBackgroundOnHover: #{clr(primary, light)};
   --lcc-color--table-headerBackground: #{clr(primary, base)};
   --lcc-color--table-headerForeground: #{clr(grayscale, white-95)};
   --lcc-color--table-rowBackgroundEven: #{clr(grayscale, white-92)};
