@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Move the game archive into the database, with every player linked to their member profile so a name change carries through to their games
-- Rebuild the Game Archives page around a table of every game that can be filtered by player, tournament, section, year and result and sorted by date, event, opening or length, with the filters kept in the page address, the page staying put as they change, and a "View random game" button that rolls a die
-- Give every game its own page with its details, a board to step through it, links to the games either side within the current results, and a link back to the archives
+- Rebuild the Game Archives page around a table of every game, styled like the members table, that can be filtered by player, year and result and sorted by date, event, opening or length, with the filters kept in the page address and the page staying put as they change
+- Give every game its own page with its details, a board to step through it, a link to analyse it on Lichess, arrows to the games either side within the current results that keep your place on the page, and a link back to the archives
 - Offer a "Try again" button wherever a page or section fails to load, instead of leaving it loading
 - Show upload progress while photos are being added to an album
 
@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep confirmation dialogs open, with a spinner on the confirm button, until saving, deleting, bookmarking or exporting has finished
 - Show a spinner on the ratings import button while the file is being prepared
 - Keep the pull-to-refresh spinner visible until the refreshed content has arrived
+- Frame the introduction of the website changelog page in a card like its releases, and mark Game Archives with an archive icon in the navigation bar
 
 ### Fixed
 
