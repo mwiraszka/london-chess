@@ -64,27 +64,3 @@ export const selectGameStatus = (id: Id) =>
   createSelector(selectGameById(id), selectFailedLoads, (game, failedLoads) =>
     loadStatus(!!game, failedLoads.includes('game')),
   );
-
-// Where a game sits within all the results of the current query
-export const selectGamePosition = (id: Id) =>
-  createSelector(
-    selectFilteredGames,
-    selectFilteredCount,
-    selectQuery,
-    (games, count, { page, pageSize }) => {
-      const index = games.findIndex(game => game.id === id);
-      return index >= 0 && count !== null
-        ? { number: (page - 1) * pageSize + index + 1, count }
-        : null;
-    },
-  );
-
-// The games either side of one within the current results
-export const selectAdjacentGameIds = (id: Id) =>
-  createSelector(selectFilteredGames, games => {
-    const index = games.findIndex(game => game.id === id);
-    return {
-      previous: index > 0 ? games[index - 1].id : null,
-      next: index >= 0 && index < games.length - 1 ? games[index + 1].id : null,
-    };
-  });

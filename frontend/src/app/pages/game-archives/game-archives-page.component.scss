@@ -168,6 +168,9 @@
   max-width: 100%;
   --ea-data-table-background-color: var(--lcc-color--table-rowBackgroundOdd);
   --ea-data-table-row-stripe-background-color: var(--lcc-color--table-rowBackgroundEven);
+  --ea-data-table-row-hover-background-color: var(
+    --lcc-color--table-rowBackgroundOnHover
+  );
   --ea-data-table-color: var(--lcc-color--table-rowForeground);
   --ea-data-table-header-background-color: var(--lcc-color--table-headerBackground);
   --ea-data-table-header-color: var(--lcc-color--table-headerForeground);
@@ -189,6 +192,15 @@
 
 .games__section {
   color: var(--color-text-secondary);
+}
+
+// Openings get at most this much room; a longer name is cut short and read in full
+// from its tooltip
+.games__opening-cell {
+  overflow: hidden;
+  display: block;
+  max-width: 350px;
+  text-overflow: ellipsis;
 }
 
 .games__eco {

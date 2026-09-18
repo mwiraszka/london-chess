@@ -2,7 +2,15 @@ import { Game, GameResult, GamesQuery, GamesSortBy } from '@app/models';
 
 export const GAME_RESULTS: GameResult[] = ['1-0', '0-1', '1/2-1/2', '*'];
 
-export const GAMES_SORT_FIELDS: GamesSortBy[] = ['date', 'tournament', 'eco', 'moves'];
+export const GAMES_SORT_FIELDS: GamesSortBy[] = [
+  'date',
+  'white',
+  'result',
+  'black',
+  'tournament',
+  'eco',
+  'moves',
+];
 
 export const GAMES_PAGE_SIZES = [25, 50, 100];
 

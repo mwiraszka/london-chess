@@ -105,7 +105,6 @@
     [clickable]="!loading()"
     [columns]="columns()"
     [data]="rows()"
-    [hoverable]="false"
     [nowrap]="true"
     [rowHref]="rowHref"
     [sizingRows]="sizingRows"
@@ -189,10 +188,15 @@
   #openingCell
   let-row>
   @if (row.game; as game) {
-    @if (game.eco) {
-      <span class="games__eco">{{ game.eco }}</span>
-    }
-    <span class="games__opening">{{ game.opening }}</span>
+    <span
+      class="games__opening-cell"
+      [eaTooltip]="game.opening"
+      [whenClipped]="true">
+      @if (game.eco) {
+        <span class="games__eco">{{ game.eco }}</span>
+      }
+      <span class="games__opening">{{ game.opening }}</span>
+    </span>
   } @else {
     <lcc-text-skeleton width="100%" />
   }

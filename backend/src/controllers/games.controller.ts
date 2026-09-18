@@ -13,7 +13,9 @@ import {
 } from '../models/game.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
 import {
+  PLAYER_SORT_SIDES,
   buildGamesFilter,
+  buildPlayerNameSortPipeline,
   parseGameFilters,
   resolvePlayers,
   toGameResponses,
@@ -28,15 +30,26 @@ export async function getGames(
   res: Response<ApiPaginatedResponse<GameResponse>>,
 ): Promise<void> {
   try {
-    const query = buildPaginationQuery<GameRecord>(
-      parsePaginationParams(req),
-      gameSortingConfig,
-    );
+    const params = parsePaginationParams(req);
+    const query = buildPaginationQuery<GameRecord>(params, gameSortingConfig);
     const filter = buildGamesFilter(parseGameFilters(req.query));
+    const playerSide = PLAYER_SORT_SIDES[params.sortBy];
 
     const find = GameModel.find(filter).sort(query.sort).skip(query.skip);
     const [records, filteredCount, totalCount] = await Promise.all([
-      (query.limit !== undefined ? find.limit(query.limit) : find).lean<GameRecord[]>(),
+      playerSide
+        ? GameModel.aggregate<GameRecord>(
+            buildPlayerNameSortPipeline(
+              filter,
+              playerSide,
+              params.sortOrder === 'asc' ? 1 : -1,
+              query.skip,
+              query.limit,
+            ),
+          ).exec()
+        : (query.limit !== undefined ? find.limit(query.limit) : find).lean<
+            GameRecord[]
+          >(),
       GameModel.countDocuments(filter),
       GameModel.countDocuments({}),
     ]);

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
+import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, User } from '@app/models';
 
@@ -12,6 +13,7 @@ import { version } from '../../../package.json';
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import * as AuthActions from './auth/auth.actions';
 import { initialState as eventsInitialState } from './events/events.reducer';
+import { initialState as gamesInitialState, gamesReducer } from './games/games.reducer';
 import * as ImagesActions from './images/images.actions';
 import {
   ImagesState,
@@ -302,6 +304,11 @@ describe('Meta Reducers', () => {
   });
 
   describe('hydrationMetaReducer', () => {
+    const rememberedQuery = {
+      ...INITIAL_GAMES_QUERY,
+      filters: { ...INITIAL_GAMES_QUERY.filters, year: 1994 },
+    };
+
     it('should leave request outcomes out of local storage', () => {
       const state: MetaState = {
         articlesState: { ...articlesInitialState, failedLoads: ['homePage'] },
@@ -324,10 +331,28 @@ describe('Meta Reducers', () => {
       expect(savedImages).not.toHaveProperty('uploadProgress');
     });
 
+    it('should remember only how the archives were last queried', () => {
+      const state: MetaState = {
+        gamesState: { ...gamesInitialState, filteredCount: 12, query: rememberedQuery },
+      };
+      mockReducer = vi.fn(() => state);
+      const wrappedReducer = hydrationMetaReducer(mockReducer);
+
+      wrappedReducer(state, { type: '[Test] State changed' });
+
+      expect(JSON.parse(versionedStorage.getItem('gamesState') ?? '{}')).toEqual({
+        query: rememberedQuery,
+      });
+    });
+
     describe('when a visit starts from saved state', () => {
       let store: Store<MetaState>;
 
       beforeEach(() => {
+        versionedStorage.setItem(
+          'gamesState',
+          JSON.stringify({ query: rememberedQuery }),
+        );
         versionedStorage.setItem(
           'membersState',
           JSON.stringify(omit({ ...membersInitialState, totalCount: 56 }, 'failedLoads')),
@@ -340,6 +365,7 @@ describe('Meta Reducers', () => {
         TestBed.configureTestingModule({
           imports: [
             StoreModule.forRoot({}, { metaReducers: [hydrationMetaReducer] }),
+            StoreModule.forFeature('gamesState', gamesReducer),
             StoreModule.forFeature('imagesState', imagesReducer),
             StoreModule.forFeature('membersState', membersReducer),
           ],
@@ -351,6 +377,13 @@ describe('Meta Reducers', () => {
         const state = await firstValueFrom(store);
 
         expect(state.membersState?.totalCount).toBe(56);
+      });
+
+      it('should open the archives as they were last queried', async () => {
+        const state = await firstValueFrom(store);
+
+        expect(state.gamesState?.query).toEqual(rememberedQuery);
+        expect(state.gamesState?.filteredCount).toBeNull();
       });
 
       it('should start without earlier request outcomes', async () => {

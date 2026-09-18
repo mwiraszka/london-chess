@@ -1,3 +1,4 @@
+import { TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -16,7 +17,7 @@ import {
   MOCK_GAMES_SUMMARY,
   MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
-import { MetaAndTitleService } from '@app/services';
+import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { playerName, query, queryAll, queryTextContent } from '@app/utils';
 
@@ -38,7 +39,7 @@ describe('GameArchivesPageComponent', () => {
   };
 
   beforeEach(async () => {
-    queryParams = new BehaviorSubject<Params>({});
+    queryParams = new BehaviorSubject<Params>({ year: '1994' });
 
     await TestBed.configureTestingModule({
       imports: [GameArchivesPageComponent],
@@ -91,7 +92,7 @@ describe('GameArchivesPageComponent', () => {
 
     it('should set the query once per distinct URL', () => {
       fixture.detectChanges();
-      queryParams.next({});
+      queryParams.next({ year: '1994' });
       queryParams.next({ page: '2' });
 
       expect(
@@ -99,6 +100,59 @@ describe('GameArchivesPageComponent', () => {
           ([action]) => action.type === GamesActions.queryChanged.type,
         ),
       ).toHaveLength(2);
+    });
+
+    it('should open a bare address at the remembered query', () => {
+      queryParams.next({});
+
+      fixture.detectChanges();
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
+        queryParams: { year: 1994 },
+        replaceUrl: true,
+      });
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        GamesActions.queryChanged({ query: loadedQuery }),
+      );
+    });
+
+    it('should leave a bare address alone when nothing is remembered', () => {
+      store.overrideSelector(GamesSelectors.selectQuery, INITIAL_GAMES_QUERY);
+      store.refreshState();
+      queryParams.next({});
+
+      fixture.detectChanges();
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        GamesActions.queryChanged({ query: INITIAL_GAMES_QUERY }),
+      );
+    });
+
+    it('should follow an address over the remembered query', () => {
+      queryParams.next({ year: '2023' });
+
+      fixture.detectChanges();
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        GamesActions.queryChanged({
+          query: { ...loadedQuery, filters: { ...loadedQuery.filters, year: 2023 } },
+        }),
+      );
+    });
+
+    it('should take a later bare address as it is', () => {
+      fixture.detectChanges();
+
+      queryParams.next({});
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        GamesActions.queryChanged({ query: INITIAL_GAMES_QUERY }),
+      );
     });
   });
 
@@ -144,6 +198,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: {
           player: MOCK_GAMES[0].white.id,
           year: 1994,
@@ -162,6 +217,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: { year: 1994 },
       });
     });
@@ -179,10 +235,12 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenNthCalledWith(1, [], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: { year: 2023 },
       });
       expect(navigateSpy).toHaveBeenNthCalledWith(2, [], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: { year: 1994, result: '1-0' },
       });
     });
@@ -192,6 +250,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: {},
       });
     });
@@ -215,11 +274,38 @@ describe('GameArchivesPageComponent', () => {
       expect(component['sortState']()).toEqual({ column: 'date', direction: 'desc' });
     });
 
+    it('should offer every column of a game as a sort', () => {
+      expect(
+        component['columns']()
+          .filter(column => column.sortable)
+          .map(column => column.key),
+      ).toEqual([
+        'date',
+        'whiteName',
+        'result',
+        'blackName',
+        'event',
+        'opening',
+        'moves',
+      ]);
+    });
+
+    it('should sort on the server by a player name', () => {
+      component.onSorted({ column: 'whiteName', direction: 'asc' });
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
+        queryParams: { year: 1994, sort: 'white', order: 'asc' },
+      });
+    });
+
     it('should sort on the server from the first page', () => {
       component.onSorted({ column: 'moves', direction: 'asc' });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: { year: 1994, sort: 'moves', order: 'asc' },
       });
     });
@@ -229,6 +315,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: { year: 1994 },
       });
     });
@@ -238,6 +325,7 @@ describe('GameArchivesPageComponent', () => {
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
         queryParams: { year: 1994, size: 50, page: 3 },
       });
     });
@@ -261,7 +349,7 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should start every figure from nothing', () => {
-      expect(figureTexts()).toEqual(['0 games', '0 years', '0 players', '0 tournaments']);
+      expect(figureTexts()).toEqual(['0 games', '0 players', '0 tournaments', '0 years']);
     });
 
     it('should count the figures up to their amounts over three seconds', () => {
@@ -276,9 +364,9 @@ describe('GameArchivesPageComponent', () => {
       expect(halfway[0]).toBeLessThan(9119);
       expect(figureTexts()).toEqual([
         '9,119 games',
-        '53 years',
         '989 players',
         '189 tournaments',
+        '53 years',
       ]);
     });
   });
@@ -338,6 +426,17 @@ describe('GameArchivesPageComponent', () => {
 
       expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
       expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
+    });
+
+    it('should offer a long opening in full from its tooltip', () => {
+      const cell = query(
+        fixture.debugElement,
+        '.ea-data-table__body .games__opening-cell',
+      );
+      const tooltip = cell.injector.get(TooltipDirective);
+
+      expect(tooltip.eaTooltip()).toBe(MOCK_GAMES[1].opening);
+      expect(tooltip.whenClipped()).toBe(true);
     });
 
     it('should link every row to its game', () => {

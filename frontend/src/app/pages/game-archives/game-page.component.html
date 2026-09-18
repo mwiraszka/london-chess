@@ -94,42 +94,14 @@
             height="100%" />
         }
       </div>
-      <lcc-link-list
-        class="game__analysis"
-        [links]="[view.analysisLink]"></lcc-link-list>
     </div>
   }
 
-  @if (vm.position && vm.position.count > 1) {
-    <nav
-      class="game__nav"
-      aria-label="Games">
-      <ea-button
-        variant="ghost"
-        size="md"
-        ariaLabel="Previous game"
-        tooltip="Previous game"
-        [disabled]="!vm.previousId"
-        [icon]="previousIcon"
-        [info]="keepScroll"
-        [routerLink]="vm.previousId ? ['/game-archives', vm.previousId] : null" />
-      <span class="game__position">
-        Game {{ vm.position.number | number }} of {{ vm.position.count | number }}
-      </span>
-      <ea-button
-        variant="ghost"
-        size="md"
-        ariaLabel="Next game"
-        tooltip="Next game"
-        [disabled]="!vm.nextId"
-        [icon]="nextIcon"
-        [info]="keepScroll"
-        [routerLink]="vm.nextId ? ['/game-archives', vm.nextId] : null" />
-    </nav>
-  }
   <lcc-link-list
-    class="game__back"
-    [links]="[vm.archiveLink]"></lcc-link-list>
+    class="game__links"
+    [links]="
+      vm.view ? [vm.view.analysisLink, archiveLink] : [archiveLink]
+    "></lcc-link-list>
 }
 
 <ng-template

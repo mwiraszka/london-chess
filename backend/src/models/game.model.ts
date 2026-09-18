@@ -100,6 +100,7 @@ export const gameSortingConfig: SortingConfig = {
   },
   secondarySort: {
     date: 'round',
+    result: 'date',
     tournament: 'date',
     plyCount: 'date',
     moves: 'date',

@@ -39,7 +39,7 @@ describe('parseGamesQuery', () => {
       parseGamesQuery({
         page: '0',
         size: '7',
-        sort: 'white',
+        sort: 'winner',
         order: 'sideways',
         year: 'soon',
         result: '2-0',

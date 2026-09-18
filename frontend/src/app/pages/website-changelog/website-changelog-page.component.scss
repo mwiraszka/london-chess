@@ -123,7 +123,7 @@
   .section-title__rule {
     display: block;
     width: 100%;
-    margin: 4px 0 8px;
+    margin: 4px 0 16px;
   }
 }
 
@@ -135,17 +135,11 @@
 .section-title--releases {
   grid-area: listTitle;
   margin-top: 32px;
-  margin-bottom: 16px;
-}
-
-.section-title--links {
-  margin-bottom: 16px;
 }
 
 .intro {
   grid-area: intro;
   width: 100%;
-  margin-top: 8px;
 }
 
 .intro__layout {

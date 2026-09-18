@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.1.1] - 2026-09-18
+
+### Added
+
+- Make the White, Result and Black columns of the game archives table sortable, so the games can be ordered by either player's name or by outcome
+- Remember how the game archives were last filtered and sorted, and open them that way on the next visit
+
+### Changed
+
+- Cap the opening column of the game archives table at a fixed width, with a longer opening cut short and given in full in a tooltip
+- Show each game on its own, with the link to analyse it on Lichess and the link back to the archives listed together beneath the board, in place of the arrows to the games either side
+- Order the figures above the game archives as games, players, tournaments and years
+- Deepen the striped rows of tables in dark mode, so loading placeholders stand out on every row
+
+### Fixed
+
+- Highlight the whole row of the game archives table on hover, in the row's own text colour
+- Keep the page in place when the game archives table is sorted
+- Give the Releases heading on the website changelog page the same spacing as Behind the scenes
+
 ## [v6.1.0] - 2026-09-18
 
 ### Added
@@ -1870,6 +1890,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.1.1]: https://github.com/mwiraszka/london-chess/compare/v6.1.0...v6.1.1
 [v6.1.0]: https://github.com/mwiraszka/london-chess/compare/v6.0.4...v6.1.0
 [v6.0.4]: https://github.com/mwiraszka/london-chess/compare/v6.0.3...v6.0.4
 [v6.0.3]: https://github.com/mwiraszka/london-chess/compare/v6.0.2...v6.0.3

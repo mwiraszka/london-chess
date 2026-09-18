@@ -69,7 +69,8 @@ export interface GameFilters {
   result: GameResult | '';
 }
 
-export type GamesSortBy = 'date' | 'tournament' | 'eco' | 'moves';
+export type GamesSortBy =
+  'date' | 'white' | 'result' | 'black' | 'tournament' | 'eco' | 'moves';
 
 export interface GamesQuery {
   page: number;
