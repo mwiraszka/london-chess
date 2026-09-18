@@ -1,55 +1,205 @@
-import { BarChartIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { Store } from '@ngrx/store';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
-
 import {
-  CdkFixedSizeVirtualScroll,
-  CdkVirtualForOf,
-  CdkVirtualScrollViewport,
-} from '@angular/cdk/scrolling';
-import { CommonModule } from '@angular/common';
+  ArchiveIconComponent,
+  AutocompleteComponent,
+  ButtonComponent,
+  CardComponent,
+  DataTableColumn,
+  DataTableComponent,
+  DataTableSortState,
+  Dice1IconComponent,
+  Dice2IconComponent,
+  Dice3IconComponent,
+  Dice4IconComponent,
+  Dice5IconComponent,
+  Dice6IconComponent,
+  DropdownComponent,
+  PaginatorComponent,
+  PaginatorState,
+  SegmentedComponent,
+  SelectOption,
+  SpinnerComponent,
+} from '@eagami/ui';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { Actions, ofType } from '@ngrx/effects';
+import { Store } from '@ngrx/store';
+import { isEqual } from 'lodash';
+import { Observable, forkJoin, interval, timer } from 'rxjs';
+import {
+  distinctUntilChanged,
+  filter,
+  last,
+  map,
+  switchMap,
+  take,
+  tap,
+} from 'rxjs/operators';
+
+import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
-  ElementRef,
-  HostListener,
-  OnDestroy,
   OnInit,
-  ViewChild,
+  TemplateRef,
+  computed,
   inject,
+  linkedSignal,
+  signal,
+  viewChild,
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import { FormErrorIconComponent } from '@app/components/form-error-icon/form-error-icon.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { PgnViewerComponent } from '@app/components/pgn-viewer/pgn-viewer.component';
-import { FilterFormGroup, GameDetails } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
-import { AppSelectors } from '@app/store/app';
-import { MembersActions, MembersSelectors } from '@app/store/members';
-import { PARSE_CSV } from '@app/tokens';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
 import {
-  getOpeningTallies,
-  getPlayerName,
-  getPlyCount,
-  getResultTallies,
-  getScore,
-  isExpired,
-  isLccError,
+  DIE_ROLL_FRAMES,
+  DIE_ROLL_INTERVAL,
+  FIGURE_COUNT_UP_DURATION,
+  FIGURE_COUNT_UP_INTERVAL,
+  GAMES_PAGE_SIZES,
+  INITIAL_GAMES_QUERY,
+  PLACEHOLDER_GAME,
+} from '@app/constants/games';
+import {
+  Game,
+  GameFilters,
+  GamePlayer,
+  GameResult,
+  GamesQuery,
+  GamesSortBy,
+} from '@app/models';
+import { MetaAndTitleService } from '@app/services';
+import { GamesActions, GamesSelectors } from '@app/store/games';
+import {
+  formatPartialDate,
+  gamesQueryParams,
+  parseGamesQuery,
+  playerName,
 } from '@app/utils';
 
-import * as fromPgns from './pgns';
-import { YEARS } from './years';
+// A row stands in for a game that is still loading when it has none. The sort
+// keys carry raw values so the table orders a page the way the server did.
+export interface GameRow {
+  id: string;
+  game: Game | null;
+  date: string;
+  dateLabel: string;
+  white: GamePlayer | null;
+  whiteName: string;
+  black: GamePlayer | null;
+  blackName: string;
+  event: string;
+  opening: string;
+  moves: number | null;
+}
+
+const LOADING_ROW: Omit<GameRow, 'id'> = {
+  game: null,
+  date: '',
+  dateLabel: '',
+  white: null,
+  whiteName: '',
+  black: null,
+  blackName: '',
+  event: '',
+  opening: '',
+  moves: null,
+};
+
+function toGameRow(game: Game): GameRow {
+  return {
+    id: game.id,
+    game,
+    date: game.date,
+    dateLabel: formatPartialDate(game.date),
+    white: game.white,
+    whiteName: playerName(game.white),
+    black: game.black,
+    blackName: playerName(game.black),
+    event: game.tournament,
+    opening: game.eco,
+    moves: Math.ceil(game.plyCount / 2),
+  };
+}
+
+// The longest month name and a two-digit day make the widest date label
+const WIDEST_DATE = '2000-09-30';
+
+function cycle<T>(items: T[], index: number, fallback: T): T {
+  return items.length ? items[index % items.length] : fallback;
+}
+
+// Rows holding the widest content each column shows anywhere in the archive, so
+// the columns are sized once for every page rather than by the one on screen
+const SIZING_ROWS: GameRow[] = (() => {
+  const { players, events, openings, longestGame } = ARCHIVE_SIZING;
+  const results: GameResult[] = ['1-0', '1/2-1/2', '0-1'];
+  const count = Math.max(players.length, events.length, openings.length, results.length);
+
+  return Array.from({ length: count }, (_, index) => {
+    const event = cycle(events, index, { tournament: '', section: '' });
+    const opening = cycle(openings, index, { eco: '', name: '' });
+    return toGameRow({
+      ...PLACEHOLDER_GAME,
+      id: `sizing-${index}`,
+      date: WIDEST_DATE,
+      white: {
+        ...PLACEHOLDER_GAME.white,
+        ...cycle(players, index, PLACEHOLDER_GAME.white),
+      },
+      black: {
+        ...PLACEHOLDER_GAME.black,
+        ...cycle(players, index + 1, PLACEHOLDER_GAME.black),
+      },
+      tournament: event.tournament,
+      section: event.section,
+      eco: opening.eco,
+      opening: opening.name,
+      result: cycle(results, index, PLACEHOLDER_GAME.result),
+      plyCount: longestGame * 2,
+    });
+  });
+})();
+
+type CellTemplate = TemplateRef<{ $implicit: GameRow; value: unknown }>;
+
+interface Figure {
+  value: number;
+  label: string;
+}
+
+const FIGURE_LABELS = ['games', 'years', 'players', 'tournaments'];
+
+// Counts the figures up from nothing, quickly at first and settling on the amounts
+function countUp(figures: Figure[]): Observable<Figure[]> {
+  const frames = Math.ceil(FIGURE_COUNT_UP_DURATION / FIGURE_COUNT_UP_INTERVAL);
+  return interval(FIGURE_COUNT_UP_INTERVAL).pipe(
+    take(frames),
+    map(frame => 1 - Math.pow(1 - (frame + 1) / frames, 3)),
+    map(progress =>
+      figures.map(figure => ({ ...figure, value: Math.round(figure.value * progress) })),
+    ),
+  );
+}
+
+const DICE = [
+  Dice1IconComponent,
+  Dice2IconComponent,
+  Dice3IconComponent,
+  Dice4IconComponent,
+  Dice5IconComponent,
+  Dice6IconComponent,
+];
+
+const SORT_COLUMNS: Record<GamesSortBy, string> = {
+  date: 'date',
+  tournament: 'event',
+  eco: 'opening',
+  moves: 'moves',
+};
 
 @UntilDestroy()
 @Component({
@@ -57,583 +207,320 @@ import { YEARS } from './years';
   templateUrl: './game-archives-page.component.html',
   styleUrl: './game-archives-page.component.scss',
   imports: [
-    CdkFixedSizeVirtualScroll,
-    CdkVirtualForOf,
-    CdkVirtualScrollViewport,
-    CommonModule,
-    FormErrorIconComponent,
+    AutocompleteComponent,
+    ButtonComponent,
+    CardComponent,
+    DataTableComponent,
+    DecimalPipe,
+    DropdownComponent,
+    LoadFailedComponent,
     MemberLinkComponent,
     PageHeaderComponent,
-    PgnViewerComponent,
-    ReactiveFormsModule,
+    PaginatorComponent,
+    SegmentedComponent,
+    SpinnerComponent,
+    TextSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GameArchivesPageComponent implements OnInit, OnDestroy {
-  protected readonly pageIcon = BarChartIconComponent;
+export class GameArchivesPageComponent implements OnInit {
+  private readonly actions$ = inject(Actions);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
 
-  private readonly FILE_PATH = 'assets/eco-openings.csv';
+  private readonly dateCell = viewChild<CellTemplate>('dateCell');
+  private readonly whiteCell = viewChild<CellTemplate>('whiteCell');
+  private readonly blackCell = viewChild<CellTemplate>('blackCell');
+  private readonly resultCell = viewChild<CellTemplate>('resultCell');
+  private readonly eventCell = viewChild<CellTemplate>('eventCell');
+  private readonly openingCell = viewChild<CellTemplate>('openingCell');
+  private readonly movesCell = viewChild<CellTemplate>('movesCell');
 
-  public activeYear!: string | null;
-  public allGames: Map<string, GameDetails[]> = new Map();
-  public chessOpenings: Map<string, string> | null = null;
-  public filteredGames: Map<string, GameDetails[]> = new Map();
-  public form!: FormGroup<FilterFormGroup>;
-  public openingChartDatasets: ChartConfiguration<'doughnut'>['data']['datasets'] = [];
-  public openingChartLabels: string[] = [];
-  public openingChartOptions: ChartConfiguration<'doughnut'>['options'] = {};
-  public resultChartDatasets: ChartConfiguration<'doughnut'>['data']['datasets'] = [];
-  public resultChartLabels: string[] = [];
-  public resultChartOptions: ChartConfiguration<'doughnut'>['options'] = {};
-  private _showStats = false;
-  private isDarkMode = false;
+  protected readonly pageIcon = ArchiveIconComponent;
+  protected readonly pageSizes = GAMES_PAGE_SIZES;
+  protected readonly dieFace = signal(4);
+  protected readonly randomIcon = computed(() => DICE[this.dieFace()]);
+  protected readonly rolling = signal(false);
 
-  public get showStats(): boolean {
-    return this._showStats;
-  }
+  protected readonly figures = signal<Figure[]>(
+    FIGURE_LABELS.map(label => ({ label, value: 0 })),
+  );
 
-  public set showStats(value: boolean) {
-    if (this._showStats === value) {
-      return;
+  protected readonly query = this.store.selectSignal(GamesSelectors.selectQuery);
+  protected readonly games = this.store.selectSignal(GamesSelectors.selectFilteredGames);
+  protected readonly filteredCount = this.store.selectSignal(
+    GamesSelectors.selectFilteredCount,
+  );
+  protected readonly status = this.store.selectSignal(
+    GamesSelectors.selectFilteredGamesStatus,
+  );
+  protected readonly players = this.store.selectSignal(GamesSelectors.selectPlayers);
+  protected readonly tournaments = this.store.selectSignal(
+    GamesSelectors.selectTournaments,
+  );
+  protected readonly summary = this.store.selectSignal(GamesSelectors.selectSummary);
+  protected readonly referenceStatus = this.store.selectSignal(
+    GamesSelectors.selectReferenceStatus,
+  );
+
+  private readonly archiveFigures = computed<Figure[] | null>(() => {
+    const summary = this.summary();
+    if (!summary) {
+      return null;
     }
+    const { firstYear, lastYear } = summary;
+    const years = firstYear !== null && lastYear !== null ? lastYear - firstYear + 1 : 0;
+    const amounts = [
+      summary.gameCount,
+      years,
+      summary.playerCount,
+      summary.tournamentCount,
+    ];
+    return FIGURE_LABELS.map((label, index) => ({ label, value: amounts[index] }));
+  });
 
-    this._showStats = value;
+  private readonly archiveFigures$ = toObservable(this.archiveFigures);
 
-    if (value) {
-      this.updateCharts();
-    } else {
-      this.destroyCharts();
+  protected readonly loading = computed(
+    () => this.status() === 'loading' && !this.games().length,
+  );
+
+  protected readonly rows = computed<GameRow[]>(() => {
+    if (this.loading()) {
+      return Array.from({ length: this.query().pageSize }, (_, index) => ({
+        ...LOADING_ROW,
+        id: `loading-${index}`,
+      }));
     }
-  }
+    return this.games().map(toGameRow);
+  });
 
-  public get searchResultSummaryMessage(): string {
-    const allGamesCount = Array.from(this.allGames.values()).flat().length;
-    const filteredGameCount = this.filteredGameCount;
+  protected readonly sizingRows = SIZING_ROWS;
 
-    if (filteredGameCount === 0) {
-      return 'No matches 😢';
+  // Rows are real links to their games, so the browser shows and can open them
+  protected readonly rowHref = ({ game }: GameRow): string | null =>
+    game ? `/game-archives/${game.id}` : null;
+
+  protected readonly columns = computed<DataTableColumn<GameRow>[]>(() => {
+    const cells = {
+      date: this.dateCell(),
+      white: this.whiteCell(),
+      black: this.blackCell(),
+      result: this.resultCell(),
+      event: this.eventCell(),
+      opening: this.openingCell(),
+      moves: this.movesCell(),
+    };
+    if (Object.values(cells).some(cell => !cell)) {
+      return [];
     }
+    return [
+      { key: 'date', label: 'Date', sortable: true, cellTemplate: cells.date },
+      { key: 'white', label: 'White', cellTemplate: cells.white },
+      { key: 'result', label: 'Result', align: 'center', cellTemplate: cells.result },
+      { key: 'black', label: 'Black', cellTemplate: cells.black },
+      { key: 'event', label: 'Event', sortable: true, cellTemplate: cells.event },
+      { key: 'opening', label: 'Opening', sortable: true, cellTemplate: cells.opening },
+      {
+        key: 'moves',
+        label: 'Moves',
+        sortable: true,
+        align: 'right',
+        cellTemplate: cells.moves,
+      },
+    ];
+  });
 
-    return `Showing ${filteredGameCount} / ${allGamesCount} ${filteredGameCount === 1 ? 'game' : 'games'}`;
-  }
+  protected readonly sortState = computed<DataTableSortState>(() => ({
+    column: SORT_COLUMNS[this.query().sortBy],
+    direction: this.query().sortOrder,
+  }));
 
-  public get filteredGameCount(): number {
-    return Array.from(this.filteredGames.values()).flat().length;
-  }
+  protected readonly playerOptions = computed<SelectOption[]>(() =>
+    this.players().map(player => ({
+      value: player.id,
+      label: `${player.lastName}, ${player.firstName}${player.suffix ? ` ${player.suffix}` : ''}`,
+    })),
+  );
 
-  @ViewChild(CdkVirtualScrollViewport)
-  public cdkVirtualScrollViewport?: CdkVirtualScrollViewport;
+  protected readonly selectedPlayerLabel = computed(
+    () =>
+      this.playerOptions().find(option => option.value === this.query().filters.player)
+        ?.label ?? '',
+  );
 
-  @ViewChild('openingChart')
-  set openingChartCanvas(ref: ElementRef<HTMLCanvasElement> | undefined) {
-    this._openingChartCanvas = ref;
-    this.tryInitOpeningChart();
-  }
-  private _openingChartCanvas?: ElementRef<HTMLCanvasElement>;
-  public get openingChartCanvas(): ElementRef<HTMLCanvasElement> | undefined {
-    return this._openingChartCanvas;
-  }
+  // What the player box shows, which is the chosen player until the text is edited
+  protected readonly playerText = linkedSignal(() => this.selectedPlayerLabel());
 
-  @ViewChild('resultChart')
-  set resultChartCanvas(ref: ElementRef<HTMLCanvasElement> | undefined) {
-    this._resultChartCanvas = ref;
-    this.tryInitResultChart();
-  }
-  private _resultChartCanvas?: ElementRef<HTMLCanvasElement>;
-  public get resultChartCanvas(): ElementRef<HTMLCanvasElement> | undefined {
-    return this._resultChartCanvas;
-  }
+  protected readonly tournamentOptions = computed<SelectOption[]>(() => [
+    { value: '', label: 'All tournaments' },
+    ...this.tournaments().map(({ name }) => ({ value: name, label: name })),
+  ]);
 
-  private openingChart?: Chart;
-  private resultChart?: Chart;
+  protected readonly selectedTournament = computed(
+    () =>
+      this.tournaments().find(({ name }) => name === this.query().filters.tournament) ??
+      null,
+  );
 
-  private readonly parseCsv = inject(PARSE_CSV);
+  protected readonly sectionOptions = computed<SelectOption[]>(() => [
+    { value: '', label: 'All sections' },
+    ...(this.selectedTournament()?.sections ?? []).map(section => ({
+      value: section,
+      label: section,
+    })),
+  ]);
 
-  constructor(
-    private readonly changeDetectorRef: ChangeDetectorRef,
-    private readonly formBuilder: FormBuilder,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
+  protected readonly yearOptions = computed<SelectOption[]>(() => {
+    const years =
+      this.selectedTournament()?.years ?? this.tournaments().flatMap(t => t.years);
+    return [
+      { value: '', label: 'All years' },
+      ...[...new Set(years)]
+        .sort((a, b) => b - a)
+        .map(year => ({ value: String(year), label: String(year) })),
+    ];
+  });
 
-  @HostListener('window:resize')
-  onResize(): void {
-    this.cdkVirtualScrollViewport?.checkViewportSize();
-  }
+  protected readonly yearValue = computed(() => {
+    const { year } = this.query().filters;
+    return year === null ? '' : String(year);
+  });
+
+  protected readonly resultOptions: SelectOption[] = [
+    { value: '', label: 'All' },
+    { value: '1-0', label: '1-0' },
+    { value: '1/2-1/2', label: '½-½' },
+    { value: '0-1', label: '0-1' },
+  ];
+
+  protected readonly hasFilters = computed(
+    () => !isEqual(this.query().filters, INITIAL_GAMES_QUERY.filters),
+  );
 
   public ngOnInit(): void {
-    Chart.register(...registerables);
-
     this.metaAndTitleService.updateTitle('Game Archives');
     this.metaAndTitleService.updateDescription(
       'A collection of games played by London Chess Club members, going all the way back to 1974.',
     );
 
-    // The intro credit links to a member profile, which needs the members loaded
-    this.store
-      .select(MembersSelectors.selectLastFullFetch)
-      .pipe(take(1))
-      .subscribe(lastFullFetch => {
-        if (isExpired(lastFullFetch)) {
-          this.store.dispatch(MembersActions.fetchAllMembersRequested());
-        }
-      });
+    this.route.queryParams
+      .pipe(map(parseGamesQuery), distinctUntilChanged(isEqual), untilDestroyed(this))
+      .subscribe(query => this.store.dispatch(GamesActions.queryChanged({ query })));
 
-    this.initForm();
-    this.initGames();
-    this.initFormValueChangeListeners();
-    this.initDarkModeListener();
-    this.loadChessOpenings();
-    this.filterGames();
-
-    // Listen for dark mode changes to update chart colors
-    this.store
-      .select(AppSelectors.selectIsDarkMode)
-      .pipe(untilDestroyed(this))
-      .subscribe(isDarkMode => {
-        this.isDarkMode = isDarkMode;
-        if (this.showStats) {
-          this.updateCharts(true);
-        }
-      });
+    this.archiveFigures$
+      .pipe(
+        filter((figures): figures is Figure[] => figures !== null),
+        take(1),
+        switchMap(countUp),
+        untilDestroyed(this),
+      )
+      .subscribe(figures => this.figures.set(figures));
   }
 
-  public ngOnDestroy(): void {
-    if (this.openingChart) {
-      this.openingChart.destroy();
-      this.openingChart = undefined;
-    }
+  public onPlayerSelected({ value }: SelectOption): void {
+    this.applyFilters({ player: value });
+  }
 
-    if (this.resultChart) {
-      this.resultChart.destroy();
-      this.resultChart = undefined;
+  public onPlayerTyped(text: string): void {
+    this.playerText.set(text);
+    if (text === '' && this.query().filters.player) {
+      this.applyFilters({ player: '' });
     }
   }
 
-  private get chartTextColor(): string {
-    return this.isDarkMode ? '#ddd' : '#777';
+  public onTournamentChanged(tournament: string): void {
+    this.applyFilters({ tournament, section: '' });
   }
 
-  private generateChartColors(count: number): string[] {
-    const baseColors = [
-      '#a51d2d', // Dark Red
-      '#613583', // Dark Purple
-      '#cd9309', // Golden
-      '#3584e4', // Blue
-      '#33d17a', // Green
-      '#e66100', // Orange
-      '#9141ac', // Purple
-      '#c01c28', // Red
-      '#1a5fb4', // Dark Blue
-      '#26a269', // Dark Green
-    ];
-
-    const colors: string[] = [];
-
-    // Generate variations of base colours if more are needed
-    for (let i = 0; i < count; i++) {
-      if (i < baseColors.length) {
-        colors.push(baseColors[i]);
-      } else {
-        const baseColor = baseColors[i % baseColors.length];
-        const opacity = 0.7 + 0.3 * Math.floor(i / baseColors.length);
-        colors.push(
-          baseColor +
-            Math.floor(opacity * 255)
-              .toString(16)
-              .padStart(2, '0'),
-        );
-      }
-    }
-
-    return colors;
+  public onSectionChanged(section: string): void {
+    this.applyFilters({ section });
   }
 
-  public trackByFn = (_index: number, item: GameDetails) => item.pgn;
-
-  public onKeydown(event: Event): void {
-    const key = (event as KeyboardEvent)?.key;
-    if (key === 'ArrowLeft' || key === 'ArrowRight') {
-      event.preventDefault();
-    }
+  public onYearChanged(year: string): void {
+    this.applyFilters({ year: year ? Number(year) : null });
   }
 
-  public originalOrder = () => 0;
-
-  private initForm(): void {
-    this.form = this.formBuilder.group({
-      firstName: new FormControl('', { nonNullable: true }),
-      lastName: new FormControl('', { nonNullable: true }),
-      asWhite: new FormControl(true, { nonNullable: true }),
-      asBlack: new FormControl(true, { nonNullable: true }),
-      movesMin: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.max(999), Validators.pattern(/^[0-9]*$/)],
-      }),
-      movesMax: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.max(999), Validators.pattern(/^[0-9]*$/)],
-      }),
-      resultWhiteWon: new FormControl(true, { nonNullable: true }),
-      resultDraw: new FormControl(true, { nonNullable: true }),
-      resultBlackWon: new FormControl(true, { nonNullable: true }),
-      resultInconclusive: new FormControl(true, { nonNullable: true }),
-    });
+  public onResultChanged(result: string): void {
+    this.applyFilters({ result: result as GameResult | '' });
   }
 
-  private initGames(): void {
-    YEARS.forEach(year => {
-      const pgns = fromPgns[`pgns${year}`];
-      this.allGames.set(
-        year,
-        pgns.map(pgn => {
-          return {
-            pgn,
-            whiteFirstName: getPlayerName(pgn, 'first', 'White'),
-            whiteLastName: getPlayerName(pgn, 'last', 'White'),
-            whiteScore: getScore(pgn, 'White'),
-            blackFirstName: getPlayerName(pgn, 'first', 'Black'),
-            blackLastName: getPlayerName(pgn, 'last', 'Black'),
-            blackScore: getScore(pgn, 'Black'),
-            plyCount: getPlyCount(pgn),
-          };
-        }),
-      );
-    });
+  public onClearFilters(): void {
+    this.applyFilters(INITIAL_GAMES_QUERY.filters);
   }
 
-  private initFormValueChangeListeners(): void {
-    this.form.valueChanges
-      .pipe(distinctUntilChanged(), debounceTime(50), untilDestroyed(this))
-      .subscribe(() => this.filterGames());
-
-    this.form.controls['asBlack'].valueChanges.subscribe(asBlack => {
-      if (!asBlack && !this.form.controls['asWhite'].value) {
-        this.form.controls['asWhite'].setValue(true);
-      }
-    });
-
-    this.form.controls['asWhite'].valueChanges.subscribe(asWhite => {
-      if (!asWhite && !this.form.controls['asBlack'].value) {
-        this.form.controls['asBlack'].setValue(true);
-      }
-    });
-
-    this.form.controls['resultWhiteWon'].valueChanges.subscribe(resultWhiteWon => {
-      if (
-        !resultWhiteWon &&
-        !this.form.controls['resultDraw'].value &&
-        !this.form.controls['resultBlackWon'].value &&
-        !this.form.controls['resultInconclusive'].value
-      ) {
-        this.form.controls['resultDraw'].setValue(true);
-      }
-    });
-
-    this.form.controls['resultDraw'].valueChanges.subscribe(resultDraw => {
-      if (
-        !resultDraw &&
-        !this.form.controls['resultDraw'].value &&
-        !this.form.controls['resultBlackWon'].value &&
-        !this.form.controls['resultInconclusive'].value
-      ) {
-        this.form.controls['resultWhiteWon'].setValue(true);
-      }
-    });
-
-    this.form.controls['resultBlackWon'].valueChanges.subscribe(resultBlackWon => {
-      if (
-        !resultBlackWon &&
-        !this.form.controls['resultWhiteWon'].value &&
-        !this.form.controls['resultDraw'].value &&
-        !this.form.controls['resultInconclusive'].value
-      ) {
-        this.form.controls['resultWhiteWon'].setValue(true);
-      }
-    });
-
-    this.form.controls['resultInconclusive'].valueChanges.subscribe(
-      resultInconclusive => {
-        if (
-          !resultInconclusive &&
-          !this.form.controls['resultWhiteWon'].value &&
-          !this.form.controls['resultDraw'].value &&
-          !this.form.controls['resultBlackWon'].value
-        ) {
-          this.form.controls['resultWhiteWon'].setValue(true);
-        }
-      },
+  public onSorted({ column, direction }: DataTableSortState): void {
+    const sortBy = (Object.keys(SORT_COLUMNS) as GamesSortBy[]).find(
+      key => SORT_COLUMNS[key] === column,
     );
+    this.navigateTo({
+      ...this.query(),
+      page: 1,
+      sortBy: direction && sortBy ? sortBy : INITIAL_GAMES_QUERY.sortBy,
+      sortOrder: direction && sortBy ? direction : INITIAL_GAMES_QUERY.sortOrder,
+    });
   }
 
-  private initDarkModeListener(): void {
-    this.store
-      .select(AppSelectors.selectIsDarkMode)
+  public onPageChanged({ page, pageSize }: PaginatorState): void {
+    this.navigateTo({ ...this.query(), page, pageSize });
+  }
+
+  public onOpenGame({ game }: GameRow): void {
+    if (game) {
+      this.router.navigate(['/game-archives', game.id]);
+    }
+  }
+
+  // Rolls the die for a moment before the game opens, however quickly it arrives
+  public onRandomGame(): void {
+    if (this.rolling()) {
+      return;
+    }
+    this.rolling.set(true);
+    this.store.dispatch(GamesActions.randomGameRequested());
+
+    const rolled$ = timer(DIE_ROLL_INTERVAL, DIE_ROLL_INTERVAL).pipe(
+      take(DIE_ROLL_FRAMES),
+      tap(() => this.dieFace.set(this.nextFace())),
+      last(),
+    );
+    const outcome$ = this.actions$.pipe(
+      ofType(GamesActions.randomGamePicked, GamesActions.randomGameFailed),
+      take(1),
+    );
+    forkJoin([rolled$, outcome$])
       .pipe(untilDestroyed(this))
-      .subscribe(isDarkMode => {
-        const color = isDarkMode ? '#bbb' : '#222';
-        this.isDarkMode = isDarkMode;
-
-        this.openingChartOptions = {
-          responsive: true,
-          color: color,
-        };
-
-        this.resultChartOptions = {
-          responsive: true,
-          color: color,
-        };
-
-        // Update existing charts with new options
-        if (this.openingChart) {
-          this.openingChart.options.color = color;
-          this.openingChart.update();
-        }
-
-        if (this.resultChart) {
-          this.resultChart.options.color = color;
-          this.resultChart.update();
+      .subscribe(([, outcome]) => {
+        this.rolling.set(false);
+        if (outcome.type === GamesActions.randomGamePicked.type) {
+          this.router.navigate(['/game-archives', outcome.gameId]);
         }
       });
   }
 
-  private destroyCharts(): void {
-    this.openingChart?.destroy();
-    this.openingChart = undefined;
-    this.resultChart?.destroy();
-    this.resultChart = undefined;
+  public onRetry(): void {
+    this.store.dispatch(GamesActions.fetchFilteredGamesRequested());
+    if (this.referenceStatus() === 'failed') {
+      this.store.dispatch(GamesActions.fetchArchiveReferenceRequested());
+    }
   }
 
-  private buildCommonOptions(): ChartConfiguration<'doughnut'>['options'] {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: { boxWidth: 15, padding: 10, font: { size: 12 } },
-        },
-        tooltip: { enabled: true },
-      },
-      color: this.chartTextColor,
-    };
+  private nextFace(): number {
+    const others = DICE.map((_, face) => face).filter(face => face !== this.dieFace());
+    return others[Math.floor(Math.random() * others.length)];
   }
 
-  private tryInitOpeningChart(): void {
-    if (!this.showStats) return;
-    if (this.openingChart || !this.openingChartCanvas || !this.openingChartLabels.length)
-      return;
-    this.openingChart = new Chart(this.openingChartCanvas.nativeElement, {
-      type: 'doughnut',
-      data: { labels: this.openingChartLabels, datasets: this.openingChartDatasets },
-      options: this.buildCommonOptions(),
+  private applyFilters(changes: Partial<GameFilters>): void {
+    const query = this.query();
+    this.navigateTo({ ...query, page: 1, filters: { ...query.filters, ...changes } });
+  }
+
+  private navigateTo(query: GamesQuery): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: gamesQueryParams(query),
     });
-  }
-
-  private tryInitResultChart(): void {
-    if (!this.showStats) return;
-    if (this.resultChart || !this.resultChartCanvas || !this.resultChartLabels.length)
-      return;
-    this.resultChart = new Chart(this.resultChartCanvas.nativeElement, {
-      type: 'doughnut',
-      data: { labels: this.resultChartLabels, datasets: this.resultChartDatasets },
-      options: this.buildCommonOptions(),
-    });
-  }
-
-  private updateCharts(forceRecreate = false): void {
-    if (!this.showStats) return;
-
-    // Opening chart
-    if (forceRecreate && this.openingChart) {
-      this.openingChart.destroy();
-      this.openingChart = undefined;
-    }
-    if (!this.openingChartLabels.length) {
-      if (this.openingChart) {
-        this.openingChart.destroy();
-        this.openingChart = undefined;
-      }
-    } else if (this.openingChart) {
-      this.openingChart.data.labels = this.openingChartLabels;
-      this.openingChart.data.datasets = this.openingChartDatasets;
-      this.openingChart.options.color = this.chartTextColor;
-      this.openingChart.update();
-    } else {
-      this.tryInitOpeningChart();
-    }
-
-    // Result chart
-    if (forceRecreate && this.resultChart) {
-      this.resultChart.destroy();
-      this.resultChart = undefined;
-    }
-    if (!this.resultChartLabels.length) {
-      if (this.resultChart) {
-        this.resultChart.destroy();
-        this.resultChart = undefined;
-      }
-    } else if (this.resultChart) {
-      this.resultChart.data.labels = this.resultChartLabels;
-      this.resultChart.data.datasets = this.resultChartDatasets;
-      this.resultChart.options.color = this.chartTextColor;
-      this.resultChart.update();
-    } else {
-      this.tryInitResultChart();
-    }
-  }
-
-  private async loadChessOpenings(): Promise<void> {
-    const rawData = await fetch(this.FILE_PATH);
-    const blob = await rawData.blob();
-    const file = new File([blob], this.FILE_PATH, { type: 'text/csv' });
-
-    const parsedData = await this.parseCsv(file, ['eco', 'name', 'moves'], 2);
-
-    if (isLccError(parsedData)) {
-      console.error('[LCC] Error parsing chess opening CSV data:', parsedData);
-      return;
-    }
-
-    // Convert to a map of ECO codes mapped to their corresponding opening names
-    this.chessOpenings = new Map(parsedData.map(opening => [opening[0], opening[1]]));
-
-    this.updateStats(this.filteredGames);
-    // Initialize charts after we have data if they should be shown
-    if (this.showStats) {
-      this.updateCharts();
-    }
-  }
-
-  private async filterGames(): Promise<void> {
-    const firstName = this.form.value['firstName']?.toLowerCase();
-    const lastName = this.form.value['lastName']?.toLowerCase();
-    const pliesMin = Number(this.form.value['movesMin']) * 2;
-    const pliesMax = Number(this.form.value['movesMax']) * 2;
-    const asWhite = this.form.value['asWhite'];
-    const asBlack = this.form.value['asBlack'];
-    const resultWhiteWon = this.form.value['resultWhiteWon'];
-    const resultDraw = this.form.value['resultDraw'];
-    const resultBlackWon = this.form.value['resultBlackWon'];
-    const resultInconclusive = this.form.value['resultInconclusive'];
-
-    this.filteredGames = new Map();
-    this.allGames.forEach((games, year) => {
-      const filteredGames = games
-        .filter(game => {
-          return (
-            !firstName ||
-            (asWhite && game.whiteFirstName?.toLowerCase().includes(firstName)) ||
-            (asBlack && game.blackFirstName?.toLowerCase().includes(firstName))
-          );
-        })
-        .filter(game => {
-          return (
-            !lastName ||
-            (asWhite && game.whiteLastName?.toLowerCase().includes(lastName)) ||
-            (asBlack && game.blackLastName?.toLowerCase().includes(lastName))
-          );
-        })
-        .filter(game => {
-          if (game.plyCount === undefined || !pliesMax) {
-            return true;
-          }
-          return game.plyCount <= pliesMax;
-        })
-        .filter(game => {
-          if (game.plyCount === undefined || !pliesMin) {
-            return true;
-          }
-          return game.plyCount >= pliesMin;
-        })
-        .filter(game => {
-          return (
-            (resultWhiteWon && game.whiteScore === '1') ||
-            (resultDraw && game.whiteScore === '1/2' && game.blackScore === '1/2') ||
-            (resultBlackWon && game.blackScore === '1') ||
-            (resultInconclusive && (game.whiteScore === '*' || game.blackScore === '*'))
-          );
-        });
-      this.filteredGames.set(year, filteredGames);
-    });
-
-    this.updateStats(this.filteredGames);
-
-    // Find first year with games
-    const firstAvailableYear = Array.from(this.filteredGames.entries()).find(
-      ([, games]) => games.length > 0,
-    )?.[0];
-
-    if (!firstAvailableYear) {
-      this.activeYear = null;
-    } else if (
-      !this.activeYear ||
-      !this.filteredGames.has(this.activeYear) ||
-      !this.filteredGames.get(this.activeYear)?.length
-    ) {
-      this.activeYear = firstAvailableYear;
-      this.changeDetectorRef.markForCheck();
-    }
-  }
-
-  private updateStats(games: Map<string, GameDetails[]>): void {
-    const pgns: string[] = [];
-    for (const [year] of games) {
-      const pgnsForThisYear = games.get(year)?.map(game => game.pgn) ?? [];
-      pgns.push(...pgnsForThisYear);
-    }
-
-    const openingTallies = getOpeningTallies(pgns);
-    if (!openingTallies?.size || !this.chessOpenings?.size) {
-      this.openingChartLabels = [];
-      this.openingChartDatasets = [];
-    } else {
-      this.openingChartLabels = Array.from(openingTallies.keys()).map(openingEco => {
-        const opening = this.chessOpenings!.get(openingEco) ?? 'Unrecognized ECO code';
-        const tally = openingTallies.get(openingEco);
-        return `${opening} (${tally})`;
-      });
-      this.openingChartDatasets = [
-        {
-          data: Array.from(openingTallies!.values()),
-          backgroundColor: this.generateChartColors(openingTallies.size),
-        },
-      ];
-    }
-
-    const resultTallies = getResultTallies(pgns);
-    if (!resultTallies?.size) {
-      this.resultChartLabels = [];
-      this.resultChartDatasets = [];
-    } else {
-      const results = Array.from(resultTallies.keys());
-      this.resultChartLabels = results.map(
-        result => `${result} (${resultTallies.get(result)})`,
-      );
-      this.resultChartDatasets = [
-        {
-          data: Array.from(resultTallies.values()),
-          backgroundColor: results.map(result => {
-            switch (result) {
-              case 'White wins':
-                return '#eee';
-              case 'Black wins':
-                return '#111';
-              case 'Draw':
-                return '#999';
-              case 'Inconclusive':
-                return '#358';
-              default:
-                return '#d72';
-            }
-          }),
-        },
-      ];
-    }
-
-    // If stats are being shown, handle chart initialization or update
-    if (this.showStats) {
-      this.updateCharts();
-    }
   }
 }

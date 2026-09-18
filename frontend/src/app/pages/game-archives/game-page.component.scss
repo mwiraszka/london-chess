@@ -1,0 +1,92 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+// The details and the board share one width, side by side or stacked, so neither
+// resizes from game to game
+$column-width: 432px;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+
+  @include respond-to('gt-lg') {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: 32px;
+  }
+}
+
+.game__details,
+.game__board {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: $column-width;
+}
+
+// A grid child stretches, so the card fills the column's height beside the board
+.game__details ea-card {
+  display: grid;
+  height: 100%;
+}
+
+.game__details ea-skeleton,
+.game__board ea-skeleton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+// The details and board keep their size under the skeletons, so nothing shifts when the game arrives
+.game--loading ea-card,
+.game--loading lcc-pgn-viewer {
+  visibility: hidden;
+}
+
+.details {
+  display: grid;
+  align-items: baseline;
+  gap: 8px 16px;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+
+  dt {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+    color: var(--color-text-primary);
+  }
+}
+
+.game__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.game__position {
+  color: var(--color-text-secondary);
+}

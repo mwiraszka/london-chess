@@ -189,7 +189,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   private initNavigationListenerForScrollingBackToTop(): void {
-    this.routingService.fragment$
+    this.routingService.pageNavigated$
       .pipe(
         untilDestroyed(this),
         filter(fragment => !fragment),

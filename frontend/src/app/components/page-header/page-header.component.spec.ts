@@ -33,6 +33,14 @@ describe('PageHeaderComponent', () => {
       );
     });
 
+    it('should hold the heading space with a placeholder until the heading is known', () => {
+      fixture.componentRef.setInput('heading', null);
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.page-heading lcc-text-skeleton')).toBeTruthy();
+      expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe('');
+    });
+
     it('should display icon when provided', () => {
       fixture.componentRef.setInput('icon', HomeIconComponent);
       fixture.detectChanges();

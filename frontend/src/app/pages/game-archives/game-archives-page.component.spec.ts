@@ -1,464 +1,588 @@
-import { provideMockStore } from '@ngrx/store/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { Action } from '@ngrx/store';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Params, Router, provideRouter } from '@angular/router';
 
+import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
+import {
+  DIE_ROLL_FRAMES,
+  DIE_ROLL_INTERVAL,
+  FIGURE_COUNT_UP_DURATION,
+  INITIAL_GAMES_QUERY,
+  PLACEHOLDER_GAME,
+} from '@app/constants/games';
+import {
+  MOCK_ARCHIVE_PLAYERS,
+  MOCK_GAMES,
+  MOCK_GAMES_SUMMARY,
+  MOCK_TOURNAMENTS,
+} from '@app/mocks/games.mock';
 import { MetaAndTitleService } from '@app/services';
-import { AppSelectors } from '@app/store/app';
-import { initialState as membersInitialState } from '@app/store/members';
-import { PARSE_CSV } from '@app/tokens';
-import { query } from '@app/utils';
+import { GamesActions, GamesSelectors } from '@app/store/games';
+import { playerName, query, queryAll, queryTextContent } from '@app/utils';
 
-import { GameArchivesPageComponent } from './game-archives-page.component';
+import { GameArchivesPageComponent, GameRow } from './game-archives-page.component';
 
 describe('GameArchivesPageComponent', () => {
   let fixture: ComponentFixture<GameArchivesPageComponent>;
   let component: GameArchivesPageComponent;
+  let router: Router;
+  let store: MockStore;
 
-  let metaAndTitleService: MetaAndTitleService;
+  let actions$: Subject<Action>;
+  let dispatchSpy: MockInstance;
+  let navigateSpy: MockInstance;
+  let queryParams: BehaviorSubject<Params>;
 
-  let updateDescriptionSpy: MockInstance;
-  let updateTitleSpy: MockInstance;
+  const loadedQuery = {
+    ...INITIAL_GAMES_QUERY,
+    filters: { ...INITIAL_GAMES_QUERY.filters, tournament: 'Fall Open', year: 1994 },
+  };
 
   beforeEach(async () => {
-    Object.defineProperty(globalThis, 'fetch', {
-      value: vi.fn().mockResolvedValue({
-        blob: vi
-          .fn()
-          .mockResolvedValue(new Blob(['mock,csv,data'], { type: 'text/csv' })),
-      }),
-      configurable: true,
-    });
+    actions$ = new Subject<Action>();
+    queryParams = new BehaviorSubject<Params>({});
 
     await TestBed.configureTestingModule({
-      imports: [GameArchivesPageComponent, ReactiveFormsModule],
+      imports: [GameArchivesPageComponent],
       providers: [
+        provideMockActions(() => actions$),
+        provideMockStore(),
+        provideRouter([]),
         {
-          provide: PARSE_CSV,
-          useValue: vi.fn().mockResolvedValue([
-            ['A00', 'Dummy Opening', '1. a4'],
-            ['B00', 'Another Opening', '1. e4 e5'],
-          ]),
+          provide: ActivatedRoute,
+          useValue: { queryParams: queryParams.asObservable() },
         },
         {
           provide: MetaAndTitleService,
-          useValue: {
-            updateTitle: vi.fn(),
-            updateDescription: vi.fn(),
-          },
+          useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
-        provideMockStore({
-          initialState: { membersState: membersInitialState },
-          selectors: [
-            {
-              selector: AppSelectors.selectIsDarkMode,
-              value: false,
-            },
-          ],
-        }),
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(GameArchivesPageComponent);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
+    store = TestBed.inject(MockStore);
 
-    metaAndTitleService = TestBed.inject(MetaAndTitleService);
+    dispatchSpy = vi.spyOn(store, 'dispatch');
+    navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
-    updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
+    store.overrideSelector(GamesSelectors.selectQuery, loadedQuery);
+    store.overrideSelector(GamesSelectors.selectFilteredGames, MOCK_GAMES);
+    store.overrideSelector(GamesSelectors.selectFilteredCount, 3);
+    store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loaded');
+    store.overrideSelector(GamesSelectors.selectPlayers, MOCK_ARCHIVE_PLAYERS);
+    store.overrideSelector(GamesSelectors.selectTournaments, MOCK_TOURNAMENTS);
+    store.overrideSelector(GamesSelectors.selectSummary, MOCK_GAMES_SUMMARY);
+    store.overrideSelector(GamesSelectors.selectReferenceStatus, 'loaded');
+    store.refreshState();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('initialization', () => {
+  describe('the URL', () => {
+    it('should set the query from the URL', () => {
+      queryParams.next({ tournament: 'Fall Open', year: '1994' });
+      fixture.detectChanges();
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        GamesActions.queryChanged({ query: loadedQuery }),
+      );
+    });
+
+    it('should set the query once per distinct URL', () => {
+      fixture.detectChanges();
+      queryParams.next({});
+      queryParams.next({ page: '2' });
+
+      expect(
+        dispatchSpy.mock.calls.filter(
+          ([action]) => action.type === GamesActions.queryChanged.type,
+        ),
+      ).toHaveLength(2);
+    });
+  });
+
+  describe('filters', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
     });
 
-    it('should set meta title and description', () => {
-      expect(updateTitleSpy).toHaveBeenCalledTimes(1);
-      expect(updateTitleSpy).toHaveBeenCalledWith('Game Archives');
-      expect(updateDescriptionSpy).toHaveBeenCalledTimes(1);
+    it('should offer the players by surname', () => {
+      expect(component['playerOptions']().map(option => option.label)).toEqual([
+        'Chen, Sasha',
+        'Jung, H.',
+        'Litchfield, Gerry',
+        'Oraha, ',
+      ]);
     });
 
-    it('should initialize form with default values', () => {
-      expect(component.form.value).toStrictEqual({
-        firstName: '',
-        lastName: '',
-        asWhite: true,
-        asBlack: true,
-        movesMin: '',
-        movesMax: '',
-        resultWhiteWon: true,
-        resultDraw: true,
-        resultBlackWon: true,
-        resultInconclusive: true,
+    it('should show the chosen player in the player box', () => {
+      store.overrideSelector(GamesSelectors.selectQuery, {
+        ...loadedQuery,
+        filters: { ...loadedQuery.filters, player: MOCK_GAMES[0].white.id },
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(component['playerText']()).toBe('Litchfield, Gerry');
+    });
+
+    it('should offer the sections and years of the chosen tournament', () => {
+      expect(component['sectionOptions']().map(option => option.value)).toEqual([
+        '',
+        'U1600',
+        'U1800',
+      ]);
+      expect(component['yearOptions']().map(option => option.value)).toEqual([
+        '',
+        '1994',
+      ]);
+    });
+
+    it('should offer every year when no tournament is chosen', () => {
+      store.overrideSelector(GamesSelectors.selectQuery, INITIAL_GAMES_QUERY);
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(component['yearOptions']().map(option => option.value)).toEqual([
+        '',
+        '2023',
+        '2022',
+        '1994',
+      ]);
+    });
+
+    it('should put a chosen player in the URL and start from the first page', () => {
+      component.onPlayerSelected({
+        value: MOCK_GAMES[0].white.id,
+        label: 'Litchfield, Gerry',
+      });
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: {
+          player: MOCK_GAMES[0].white.id,
+          tournament: 'Fall Open',
+          year: 1994,
+        },
       });
     });
 
-    it('should initialize games map and filtered games map', () => {
-      expect(component.allGames).toBeInstanceOf(Map);
-      expect(component.allGames.size).toBeGreaterThan(0);
-      expect(component.filteredGames).toBeInstanceOf(Map);
-      expect(component.filteredGames.size).toBeGreaterThan(0);
+    it('should clear the player filter when the player box is emptied', () => {
+      store.overrideSelector(GamesSelectors.selectQuery, {
+        ...loadedQuery,
+        filters: { ...loadedQuery.filters, player: MOCK_GAMES[0].white.id },
+      });
+      store.refreshState();
+
+      component.onPlayerTyped('');
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Fall Open', year: 1994 },
+      });
+    });
+
+    it('should not touch the URL while a name is being typed', () => {
+      component.onPlayerTyped('Lit');
+
+      expect(component['playerText']()).toBe('Lit');
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should drop the section when the tournament changes', () => {
+      store.overrideSelector(GamesSelectors.selectQuery, {
+        ...loadedQuery,
+        filters: { ...loadedQuery.filters, section: 'U1800' },
+      });
+      store.refreshState();
+
+      component.onTournamentChanged('Club Championship');
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Club Championship', year: 1994 },
+      });
+    });
+
+    it('should put the year and result in the URL', () => {
+      component.onYearChanged('2023');
+      component.onResultChanged('1-0');
+
+      expect(navigateSpy).toHaveBeenNthCalledWith(1, [], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Fall Open', year: 2023 },
+      });
+      expect(navigateSpy).toHaveBeenNthCalledWith(2, [], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Fall Open', year: 1994, result: '1-0' },
+      });
+    });
+
+    it('should clear every filter', () => {
+      component.onClearFilters();
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: {},
+      });
+    });
+
+    it('should only offer to clear filters while some are set', () => {
+      expect(component['hasFilters']()).toBe(true);
+
+      store.overrideSelector(GamesSelectors.selectQuery, INITIAL_GAMES_QUERY);
+      store.refreshState();
+
+      expect(component['hasFilters']()).toBe(false);
     });
   });
 
-  describe('form validation', () => {
+  describe('sorting and paging', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
     });
 
-    it('should have max value validator for movesMin', () => {
-      component.form.controls.movesMin.setValue('1000');
-
-      expect(component.form.controls.movesMin.invalid).toBe(true);
-      expect(component.form.controls.movesMin.errors?.['max']).toBeTruthy();
+    it('should reflect the query in the table sort', () => {
+      expect(component['sortState']()).toEqual({ column: 'date', direction: 'desc' });
     });
 
-    it('should have max value validator for movesMax', () => {
-      component.form.controls.movesMax.setValue('1000');
+    it('should sort on the server from the first page', () => {
+      component.onSorted({ column: 'moves', direction: 'asc' });
 
-      expect(component.form.controls.movesMax.invalid).toBe(true);
-      expect(component.form.controls.movesMax.errors?.['max']).toBeTruthy();
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Fall Open', year: 1994, sort: 'moves', order: 'asc' },
+      });
     });
 
-    it('should have pattern validator for movesMin', () => {
-      component.form.controls.movesMin.setValue('abc');
+    it('should fall back to the default sort when a column is unsorted', () => {
+      component.onSorted({ column: 'moves', direction: null });
 
-      expect(component.form.controls.movesMin.invalid).toBe(true);
-      expect(component.form.controls.movesMin.errors?.['pattern']).toBeTruthy();
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Fall Open', year: 1994 },
+      });
     });
 
-    it('should have pattern validator for movesMax', () => {
-      component.form.controls.movesMax.setValue('abc');
+    it('should page on the server', () => {
+      component.onPageChanged({ page: 3, pageSize: 50 });
 
-      expect(component.form.controls.movesMax.invalid).toBe(true);
-      expect(component.form.controls.movesMax.errors?.['pattern']).toBeTruthy();
-    });
-
-    it('should accept valid numeric values for moves', () => {
-      component.form.controls.movesMin.setValue('50');
-      component.form.controls.movesMax.setValue('100');
-
-      expect(component.form.controls.movesMin.valid).toBe(true);
-      expect(component.form.controls.movesMax.valid).toBe(true);
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        queryParams: { tournament: 'Fall Open', year: 1994, size: 50, page: 3 },
+      });
     });
   });
 
-  describe('form interactions', () => {
+  describe('the archive figures', () => {
+    const figureTexts = () =>
+      queryAll(fixture.debugElement, '.figures .figure').map(
+        figure =>
+          `${queryTextContent(figure, '.figure__value')} ${queryTextContent(figure, '.figure__label')}`,
+      );
+
+    // The count starts as the page initialises, so the timers are faked before that
     beforeEach(() => {
-      component.ngOnInit();
+      vi.useFakeTimers();
+      fixture.detectChanges();
     });
 
-    it('should automatically check asWhite when asBlack is unchecked', () => {
-      component.form.controls.asWhite.setValue(false);
-      component.form.controls.asBlack.setValue(false);
-
-      expect(component.form.controls.asWhite.value).toBe(true);
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
-    it('should automatically check asBlack when asWhite is unchecked', () => {
-      component.form.controls.asBlack.setValue(false);
-      component.form.controls.asWhite.setValue(false);
-
-      expect(component.form.controls.asBlack.value).toBe(true);
+    it('should start every figure from nothing', () => {
+      expect(figureTexts()).toEqual(['0 games', '0 years', '0 players', '0 tournaments']);
     });
 
-    it('should automatically check a result when all results are unchecked', () => {
-      component.form.controls.resultWhiteWon.setValue(false);
-      component.form.controls.resultDraw.setValue(false);
-      component.form.controls.resultBlackWon.setValue(false);
-      component.form.controls.resultInconclusive.setValue(false);
+    it('should count the figures up to their amounts over three seconds', () => {
+      vi.advanceTimersByTime(FIGURE_COUNT_UP_DURATION / 2);
+      fixture.detectChanges();
+      const halfway = component['figures']().map(figure => figure.value);
+
+      vi.advanceTimersByTime(FIGURE_COUNT_UP_DURATION / 2);
+      fixture.detectChanges();
+
+      expect(halfway[0]).toBeGreaterThan(0);
+      expect(halfway[0]).toBeLessThan(9119);
+      expect(figureTexts()).toEqual([
+        '9,119 games',
+        '53 years',
+        '989 players',
+        '189 tournaments',
+      ]);
+    });
+  });
+
+  describe('the random game', () => {
+    const rollDuration = DIE_ROLL_FRAMES * DIE_ROLL_INTERVAL;
+
+    // The count starts as the page initialises, so the timers are faked before that
+    beforeEach(() => {
+      vi.useFakeTimers();
+      fixture.detectChanges();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should roll the die before opening the game that was picked', () => {
+      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
+      actions$.next(GamesActions.randomGamePicked({ gameId: MOCK_GAMES[2].id }));
+
+      vi.advanceTimersByTime(rollDuration - 1);
+
+      expect(dispatchSpy).toHaveBeenCalledWith(GamesActions.randomGameRequested());
+      expect(navigateSpy).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+
+      expect(navigateSpy).toHaveBeenCalledWith(['/game-archives', MOCK_GAMES[2].id]);
+    });
+
+    it('should swap the label for a loading spinner while the die rolls', () => {
+      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.intro__random-label--rolling')).toBeTruthy();
+    });
+
+    it('should show another face of the die with every frame', () => {
+      const before = component['randomIcon']();
+
+      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
+      vi.advanceTimersByTime(DIE_ROLL_INTERVAL);
+
+      expect(component['randomIcon']()).not.toBe(before);
+    });
+
+    it('should ignore a second press while the die is rolling', () => {
+      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
+      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
 
       expect(
-        component.form.controls.resultWhiteWon.value ||
-          component.form.controls.resultDraw.value ||
-          component.form.controls.resultBlackWon.value ||
-          component.form.controls.resultInconclusive.value,
-      ).toBe(true);
-    });
-  });
-
-  describe('computed properties', () => {
-    beforeEach(() => {
-      component.ngOnInit();
+        dispatchSpy.mock.calls.filter(
+          ([action]) => action.type === GamesActions.randomGameRequested.type,
+        ),
+      ).toHaveLength(1);
     });
 
-    it('should calculate filtered game count', () => {
-      component.filteredGames.clear();
-      component.filteredGames.set('2024', [
-        {
-          pgn: 'test-pgn-1',
-          whiteFirstName: 'John',
-          whiteLastName: 'Doe',
-          blackFirstName: 'Jane',
-          blackLastName: 'Smith',
-        },
-        {
-          pgn: 'test-pgn-2',
-          whiteFirstName: 'Bob',
-          whiteLastName: 'Johnson',
-          blackFirstName: 'Alice',
-          blackLastName: 'Brown',
-        },
-      ]);
+    it('should stop rolling without opening anything when no game was picked', () => {
+      query(fixture.debugElement, '.intro__random').triggerEventHandler('clicked');
+      actions$.next(
+        GamesActions.randomGameFailed({
+          error: { name: 'LCCError', message: 'Failed' },
+        }),
+      );
 
-      expect(component.filteredGameCount).toBe(2);
-    });
+      vi.advanceTimersByTime(rollDuration);
 
-    it('should generate search result summary message for no matches', () => {
-      component.filteredGames.clear();
-
-      expect(component.searchResultSummaryMessage).toBe('No matches 😢');
-    });
-
-    it('should generate search result summary message for single game', () => {
-      component.allGames.clear();
-      component.filteredGames.clear();
-
-      component.allGames.set('2024', [
-        {
-          pgn: 'test-pgn',
-          whiteFirstName: 'John',
-          whiteLastName: 'Doe',
-          blackFirstName: 'Jane',
-          blackLastName: 'Smith',
-        },
-      ]);
-      component.filteredGames.set('2024', [
-        {
-          pgn: 'test-pgn',
-          whiteFirstName: 'John',
-          whiteLastName: 'Doe',
-          blackFirstName: 'Jane',
-          blackLastName: 'Smith',
-        },
-      ]);
-
-      expect(component.searchResultSummaryMessage).toBe('Showing 1 / 1 game');
-    });
-
-    it('should generate search result summary message for multiple games', () => {
-      component.allGames.clear();
-      component.filteredGames.clear();
-
-      component.allGames.set('2024', [
-        {
-          pgn: 'test-pgn-1',
-          whiteFirstName: 'John',
-          whiteLastName: 'Doe',
-          blackFirstName: 'Jane',
-          blackLastName: 'Smith',
-        },
-        {
-          pgn: 'test-pgn-2',
-          whiteFirstName: 'Bob',
-          whiteLastName: 'Johnson',
-          blackFirstName: 'Alice',
-          blackLastName: 'Brown',
-        },
-      ]);
-      component.filteredGames.set('2024', [
-        {
-          pgn: 'test-pgn-1',
-          whiteFirstName: 'John',
-          whiteLastName: 'Doe',
-          blackFirstName: 'Jane',
-          blackLastName: 'Smith',
-        },
-      ]);
-
-      expect(component.searchResultSummaryMessage).toBe('Showing 1 / 2 game');
-    });
-  });
-
-  describe('stats functionality', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
-
-    it('should initialize showStats as false', () => {
-      expect(component.showStats).toBe(false);
-    });
-
-    it('should set showStats to true', () => {
-      component.showStats = true;
-
-      expect(component.showStats).toBe(true);
-    });
-
-    it('should set showStats to false', () => {
-      component.showStats = true;
-
-      component.showStats = false;
-
-      expect(component.showStats).toBe(false);
-    });
-
-    it('should not change showStats when setting same value', () => {
-      const initialValue = component.showStats;
-
-      component.showStats = initialValue;
-
-      expect(component.showStats).toBe(initialValue);
-    });
-  });
-
-  describe('event handlers', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
-
-    it('should prevent default for arrow key events', () => {
-      const mockEvent = {
-        key: 'ArrowLeft',
-        preventDefault: vi.fn(),
-      } as unknown as Event;
-
-      component.onKeydown(mockEvent);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalledTimes(1);
-    });
-
-    it('should prevent default for arrow right key events', () => {
-      const mockEvent = {
-        key: 'ArrowRight',
-        preventDefault: vi.fn(),
-      } as unknown as Event;
-
-      component.onKeydown(mockEvent);
-
-      expect(mockEvent.preventDefault).toHaveBeenCalledTimes(1);
-    });
-
-    it('should not prevent default for non-arrow key events', () => {
-      const mockEvent = {
-        key: 'Enter',
-        preventDefault: vi.fn(),
-      } as unknown as Event;
-
-      component.onKeydown(mockEvent);
-
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-    });
-
-    it('should return 0 for originalOrder function', () => {
-      expect(component.originalOrder()).toBe(0);
-    });
-  });
-
-  describe('trackBy function', () => {
-    it('should return PGN string for tracking', () => {
-      const mockGame = {
-        pgn: '[Event "Test Game"]\n1. e4 e5',
-        whiteFirstName: 'John',
-        whiteLastName: 'Doe',
-      };
-
-      const result = component.trackByFn(0, mockGame);
-
-      expect(result).toBe('[Event "Test Game"]\n1. e4 e5');
-    });
-  });
-
-  describe('component cleanup', () => {
-    it('should call ngOnDestroy without errors', () => {
-      expect(() => component.ngOnDestroy()).not.toThrow();
-    });
-
-    it('should handle ngOnDestroy when called multiple times', () => {
-      component.ngOnDestroy();
-
-      expect(() => component.ngOnDestroy()).not.toThrow();
+      expect(component['rolling']()).toBe(false);
+      expect(navigateSpy).not.toHaveBeenCalled();
     });
   });
 
   describe('template rendering', () => {
-    it('should render page header', () => {
-      component.ngOnInit();
+    beforeEach(() => {
       fixture.detectChanges();
-      expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
     });
 
-    it('should render form controls', () => {
-      component.ngOnInit();
-      fixture.detectChanges();
-      expect(query(fixture.debugElement, 'form')).toBeTruthy();
+    it('should list the games', () => {
+      const rows = queryAll(
+        fixture.debugElement,
+        '.ea-data-table__body .ea-data-table__row',
+      );
+
+      expect(rows).toHaveLength(3);
+      expect(queryTextContent(rows[0], '.games__date')).toBe('December 7, 2023');
       expect(
-        query(fixture.debugElement, 'input[formControlName="firstName"]'),
-      ).toBeTruthy();
-      expect(
-        query(fixture.debugElement, 'input[formControlName="lastName"]'),
-      ).toBeTruthy();
+        queryAll(rows[0], 'lcc-member-link').map(link => link.componentInstance.name()),
+      ).toEqual(['Sasha Chen', 'Gerry Litchfield']);
+      expect(queryTextContent(rows[0], '.games__result')).toBe('½-½');
+      expect(queryTextContent(rows[0], '.games__event')).toBe('Club Championship');
+      expect(queryTextContent(rows[0], '.games__section')).toBe('(A1)');
+      expect(queryTextContent(rows[0], '.games__eco')).toBe('D02');
+      expect(queryTextContent(rows[1], '.games__date')).toBe('October 1994');
+      expect(queryTextContent(rows[1], '.games__result')).toBe('1-0');
+      expect(queryTextContent(rows[2], '.games__event')).toBe('Unknown event');
     });
 
-    it('should render active games section when active year has games', () => {
-      component.ngOnInit();
-      // Override filtered games BEFORE first detectChanges so section appears based on our data
-      component.filteredGames = new Map([
-        [
-          '2024',
-          [
-            {
-              pgn: 'test-pgn',
-              whiteFirstName: 'John',
-              whiteLastName: 'Doe',
-              blackFirstName: 'Jane',
-              blackLastName: 'Smith',
-            },
-          ],
-        ],
-      ]);
-      component.activeYear = '2024';
+    it('should size the columns by the widest content in the archive', () => {
+      const sizingRows: GameRow[] = query(
+        fixture.debugElement,
+        'ea-data-table',
+      ).componentInstance.sizingRows();
+
+      const [widestPlayer] = ARCHIVE_SIZING.players;
+      const [widestEvent] = ARCHIVE_SIZING.events;
+      const [widestOpening] = ARCHIVE_SIZING.openings;
+
+      expect(sizingRows[0].dateLabel).toBe('September 30, 2000');
+      expect(sizingRows[0].whiteName).toBe(
+        playerName({ ...PLACEHOLDER_GAME.white, ...widestPlayer }),
+      );
+      expect(sizingRows[0].game?.tournament).toBe(widestEvent.tournament);
+      expect(sizingRows[0].game?.section).toBe(widestEvent.section);
+      expect(sizingRows[0].game?.opening).toBe(widestOpening.name);
+      expect(sizingRows[0].moves).toBe(ARCHIVE_SIZING.longestGame);
+      expect(
+        queryAll(fixture.debugElement, '.ea-data-table__sizing .ea-data-table__row'),
+      ).toHaveLength(sizingRows.length);
+    });
+
+    it('should render the failure panel when the reference data fails to load', () => {
+      store.overrideSelector(GamesSelectors.selectReferenceStatus, 'failed');
+      store.refreshState();
       fixture.detectChanges();
 
-      expect(query(fixture.debugElement, '.active-games')).toBeTruthy();
+      expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+      expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
     });
 
-    it('should not render active games section when active year is null', () => {
-      const localFixture = TestBed.createComponent(GameArchivesPageComponent);
-      const localComponent = localFixture.componentInstance;
+    it('should link every row to its game', () => {
+      const links = queryAll(
+        fixture.debugElement,
+        '.ea-data-table__body .ea-data-table__row-link',
+      );
 
-      localComponent['filterGames'] = vi.fn();
-      localComponent.ngOnInit();
-      localComponent.filteredGames = new Map([
-        [
-          '2024',
-          [
-            {
-              pgn: 'test-pgn',
-              whiteFirstName: 'John',
-              whiteLastName: 'Doe',
-              blackFirstName: 'Jane',
-              blackLastName: 'Smith',
-            },
-          ],
-        ],
-      ]);
-      localComponent.activeYear = null;
-      localFixture.detectChanges();
-
-      expect(query(localFixture.debugElement, '.active-games')).toBeFalsy();
+      expect(links).toHaveLength(3 * 7);
+      expect(links[0].attributes['href']).toBe(`/game-archives/${MOCK_GAMES[1].id}`);
     });
 
-    it('should not render active games section when active year has no games', () => {
-      const localFixture = TestBed.createComponent(GameArchivesPageComponent);
-      const localComponent = localFixture.componentInstance;
+    it('should open a game when its row is chosen', () => {
+      query(
+        fixture.debugElement,
+        '.ea-data-table__body .ea-data-table__row',
+      ).triggerEventHandler('click');
 
-      localComponent['filterGames'] = vi.fn();
-      localComponent.ngOnInit();
-      localComponent.activeYear = '2024';
-      localComponent.filteredGames = new Map([['2024', []]]);
-      localFixture.detectChanges();
+      expect(navigateSpy).toHaveBeenCalledWith(['/game-archives', MOCK_GAMES[1].id]);
+    });
 
-      expect(query(localFixture.debugElement, '.active-games')).toBeFalsy();
+    it('should keep the paginator total while another page loads', () => {
+      store.overrideSelector(GamesSelectors.selectFilteredGames, []);
+      store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+      store.refreshState();
+      fixture.detectChanges();
+
+      const paginator = query(fixture.debugElement, 'ea-paginator').componentInstance;
+
+      expect(paginator.totalItems()).toBe(3);
+      expect(paginator.showRangeLabel()).toBe(true);
+    });
+
+    it('should hold the paginator range back until the first count is known', () => {
+      store.overrideSelector(GamesSelectors.selectFilteredGames, []);
+      store.overrideSelector(GamesSelectors.selectFilteredCount, null);
+      store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(
+        query(fixture.debugElement, 'ea-paginator').componentInstance.showRangeLabel(),
+      ).toBe(false);
+    });
+
+    it('should show the paginator for the filtered games', () => {
+      const paginator = query(fixture.debugElement, 'ea-paginator').componentInstance;
+
+      expect(paginator.totalItems()).toBe(3);
+      expect(paginator.page()).toBe(1);
+      expect(paginator.pageSize()).toBe(25);
+    });
+
+    describe('while the games load', () => {
+      beforeEach(() => {
+        store.overrideSelector(GamesSelectors.selectFilteredGames, []);
+        store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a skeleton row for each game on the page', () => {
+        const rows = queryAll(
+          fixture.debugElement,
+          '.ea-data-table__body .ea-data-table__row',
+        );
+
+        expect(rows).toHaveLength(25);
+        expect(queryAll(rows[0], 'lcc-text-skeleton')).toHaveLength(7);
+      });
+
+      it('should not open skeleton rows', () => {
+        query(
+          fixture.debugElement,
+          '.ea-data-table__body .ea-data-table__row',
+        ).triggerEventHandler('click');
+
+        expect(navigateSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should keep the games on screen while they refresh', () => {
+      store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(
+        queryAll(fixture.debugElement, '.ea-data-table__body .ea-data-table__row'),
+      ).toHaveLength(3);
+      expect(query(fixture.debugElement, 'lcc-text-skeleton')).toBeFalsy();
+    });
+
+    it('should say when no games match', () => {
+      store.overrideSelector(GamesSelectors.selectFilteredGames, []);
+      store.overrideSelector(GamesSelectors.selectFilteredCount, 0);
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.ea-data-table__cell--empty')).toBe(
+        'No games match these filters.',
+      );
+    });
+
+    describe('when the games fail to load', () => {
+      beforeEach(() => {
+        store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the table', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
+      });
+
+      it('should fetch the games again on retry', () => {
+        dispatchSpy.mockClear();
+
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledTimes(1);
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          GamesActions.fetchFilteredGamesRequested(),
+        );
+      });
+
+      it('should also fetch the reference data again when that failed too', () => {
+        store.overrideSelector(GamesSelectors.selectReferenceStatus, 'failed');
+        store.refreshState();
+        dispatchSpy.mockClear();
+
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          GamesActions.fetchArchiveReferenceRequested(),
+        );
+      });
     });
   });
 });

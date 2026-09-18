@@ -10,4 +10,6 @@
   right: 0;
   bottom: 0.2em;
   left: 0;
+  // The app stretches every skeleton to its box, which would override the bottom inset
+  height: auto;
 }

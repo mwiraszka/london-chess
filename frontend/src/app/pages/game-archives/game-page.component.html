@@ -1,0 +1,108 @@
+@if (viewModel$ | async; as vm) {
+  @if (vm.status === 'failed') {
+    <lcc-load-failed
+      title="Unable to load this game"
+      (retry)="onRetry(vm.gameId)" />
+  } @else {
+    @let view = vm.view ?? placeholderView;
+    <lcc-page-header
+      [heading]="vm.view?.heading ?? null"
+      [icon]="pageIcon">
+    </lcc-page-header>
+
+    <div
+      class="game"
+      [class.game--loading]="!vm.view"
+      [attr.aria-busy]="!vm.view">
+      <div class="game__details">
+        <ea-card [fullWidth]="true">
+          <dl class="details">
+            <dt>Event</dt>
+            <dd>{{ view.event }}</dd>
+
+            <dt>Date</dt>
+            <dd>{{ view.date }}</dd>
+
+            @if (view.game.location) {
+              <dt>Location</dt>
+              <dd>{{ view.game.location }}</dd>
+            }
+
+            <dt>White</dt>
+            <dd>
+              <lcc-member-link
+                [memberNumber]="view.game.white.memberNumber"
+                [name]="view.whiteName" />{{ view.whiteRating }}
+            </dd>
+
+            <dt>Black</dt>
+            <dd>
+              <lcc-member-link
+                [memberNumber]="view.game.black.memberNumber"
+                [name]="view.blackName" />{{ view.blackRating }}
+            </dd>
+
+            <dt>Result</dt>
+            <dd>{{ view.result }}</dd>
+
+            @if (view.opening) {
+              <dt>Opening</dt>
+              <dd>{{ view.opening }}</dd>
+            }
+
+            <dt>Moves</dt>
+            <dd>{{ view.moveCount }}</dd>
+
+            @if (view.game.annotator) {
+              <dt>Annotated by</dt>
+              <dd>{{ view.game.annotator }}</dd>
+            }
+          </dl>
+        </ea-card>
+        @if (!vm.view) {
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
+        }
+      </div>
+
+      <div class="game__board">
+        <lcc-pgn-viewer [game]="view.game" />
+        @if (!vm.view) {
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
+        }
+      </div>
+    </div>
+  }
+
+  <nav
+    class="game__nav"
+    aria-label="Games">
+    <ea-button
+      variant="ghost"
+      size="sm"
+      [disabled]="!vm.previousId"
+      [icon]="previousIcon"
+      [routerLink]="vm.previousId ? ['/game-archives', vm.previousId] : null">
+      Previous game
+    </ea-button>
+    @if (vm.position) {
+      <span class="game__position">
+        Game {{ vm.position.number | number }} of {{ vm.position.count | number }}
+      </span>
+    }
+    <ea-button
+      variant="ghost"
+      size="sm"
+      [disabled]="!vm.nextId"
+      [routerLink]="vm.nextId ? ['/game-archives', vm.nextId] : null">
+      Next game
+      <ea-icon-chevron-right slot="suffix" />
+    </ea-button>
+  </nav>
+  <lcc-link-list [links]="[vm.archiveLink]"></lcc-link-list>
+}

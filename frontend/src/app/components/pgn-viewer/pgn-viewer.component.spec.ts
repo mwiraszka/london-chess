@@ -1,41 +1,46 @@
-import { MicroscopeIconComponent } from '@eagami/ui';
+import LichessPgnViewer from 'lichess-pgn-viewer';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
-import { MOCK_PGNS } from '@app/mocks/pgns.mock';
-import { GET_PLAYER_NAME, GET_SCORE } from '@app/tokens';
-import { getPlayerName, getScore, queryTextContent } from '@app/utils';
+import { MOCK_GAMES } from '@app/mocks/games.mock';
+import { buildPgn, getLichessAnalysisUrl, query } from '@app/utils';
 
 import { PgnViewerComponent } from './pgn-viewer.component';
+
+// Stands in for the board, which renders a person element per player
+vi.mock('lichess-pgn-viewer', () => ({
+  default: vi.fn((container: HTMLElement) => {
+    container.innerHTML = `
+      <div class="lpv">
+        <div class="lpv__player lpv__player--top"><span class="lpv__player__person"></span></div>
+        <div class="lpv__player lpv__player--bottom"><span class="lpv__player__person"></span></div>
+      </div>`;
+  }),
+}));
 
 describe('PgnViewerComponent', () => {
   let fixture: ComponentFixture<PgnViewerComponent>;
   let component: PgnViewerComponent;
 
-  let consoleWarnSpy: MockInstance;
-  let getPlayerNameSpy: MockInstance;
-  let getScoreSpy: MockInstance;
+  const board = vi.mocked(LichessPgnViewer);
+
+  // The board's own elements are outside Angular's view, so read them from the DOM
+  const person = (side: 'top' | 'bottom'): Element =>
+    (fixture.nativeElement as HTMLElement).querySelector(
+      `.lpv__player--${side} > .lpv__player__person`,
+    )!;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PgnViewerComponent],
-      providers: [
-        { provide: GET_SCORE, useValue: vi.fn(getScore) },
-        { provide: GET_PLAYER_NAME, useValue: vi.fn(getPlayerName) },
-      ],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(PgnViewerComponent);
     component = fixture.componentInstance;
 
-    consoleWarnSpy = vi.spyOn(console, 'warn');
-    getPlayerNameSpy = TestBed.inject(GET_PLAYER_NAME) as Mock;
-    getScoreSpy = TestBed.inject(GET_SCORE) as Mock;
-
-    component.index = 1;
-    component.label = 'test-game';
-    component.pgn = MOCK_PGNS[0];
-
+    fixture.componentRef.setInput('game', MOCK_GAMES[0]);
     fixture.detectChanges();
   });
 
@@ -43,89 +48,41 @@ describe('PgnViewerComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should generate a unique viewer ID based on label and index', () => {
-    expect(component.viewerId).toBe('pgn-viewer--test-game--1');
+  it('should render the game on the board from its PGN', () => {
+    expect(board).toHaveBeenCalledTimes(1);
+    expect(board).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ pgn: buildPgn(MOCK_GAMES[0]), orientation: 'white' }),
+    );
   });
 
-  it('should create a analysis board link with correct data', () => {
-    expect(component.lichessAnalysisBoardLink).toEqual({
-      text: 'Analyze game on Lichess',
-      externalPath:
-        'https://lichess.org/analysis/pgn/1. d4 e6 2. c4 f5 3. g3 Nf6 4. Bg2 d5 5. Nf3 c6 6. O-O 1-0',
-      icon: MicroscopeIconComponent,
-    });
+  it('should label each player with their name and score', () => {
+    expect(person('bottom').getAttribute('data-name')).toBe('Gerry Litchfield');
+    expect(person('bottom').getAttribute('data-score')).toBe('1');
+    expect(person('top').getAttribute('data-name')).toBe('H. Jung');
+    expect(person('top').getAttribute('data-score')).toBe('0');
   });
 
-  describe('after view init', () => {
-    it('should get player names and scores from PGN', () => {
-      getPlayerNameSpy.mockImplementation((_, __, color) =>
-        color === 'White' ? 'Player1' : 'Player2',
-      );
-      getScoreSpy.mockImplementation((_, color) => (color === 'White' ? '1' : '0'));
-      component.ngAfterViewInit();
+  it('should link to the game on the Lichess analysis board', () => {
+    const link = query(fixture.debugElement, 'lcc-link-list a');
 
-      expect(getPlayerNameSpy).toHaveBeenCalledWith(MOCK_PGNS[0], 'full', 'White');
-      expect(getPlayerNameSpy).toHaveBeenCalledWith(MOCK_PGNS[0], 'full', 'Black');
-      expect(getScoreSpy).toHaveBeenCalledWith(MOCK_PGNS[0], 'White');
-      expect(getScoreSpy).toHaveBeenCalledWith(MOCK_PGNS[0], 'Black');
-    });
+    expect(link.attributes['href']).toBe(getLichessAnalysisUrl(buildPgn(MOCK_GAMES[0])));
   });
 
-  describe('error handling', () => {
-    it('should log a warning if White player name is missing', () => {
-      getPlayerNameSpy.mockImplementation((_, __, color) =>
-        color === 'White' ? null : 'Player2',
-      );
+  it('should show another game when the input changes', () => {
+    fixture.componentRef.setInput('game', MOCK_GAMES[1]);
+    fixture.detectChanges();
 
-      component.ngAfterViewInit();
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('undefined White player'),
-        expect.anything(),
-      );
-    });
-
-    it('should log a warning if Black player name is missing', () => {
-      getPlayerNameSpy.mockImplementation((_, __, color) =>
-        color === 'White' ? 'Player1' : null,
-      );
-
-      component.ngAfterViewInit();
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('undefined Black player'),
-        expect.anything(),
-      );
-    });
-
-    it('should log a warning if White score is missing', () => {
-      getScoreSpy.mockImplementation((_, color) => (color === 'White' ? null : '0'));
-
-      component.ngAfterViewInit();
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('invalid score for White'),
-        expect.anything(),
-      );
-    });
-
-    it('should log a warning if Black score is missing', () => {
-      getScoreSpy.mockImplementation((_, color) => (color === 'White' ? '1' : null));
-
-      component.ngAfterViewInit();
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('invalid score for Black'),
-        expect.anything(),
-      );
-    });
-  });
-
-  describe('template rendering', () => {
-    it('should render link in the Link List component', () => {
-      expect(queryTextContent(fixture.debugElement, 'lcc-link-list')).toContain(
-        'Analyze game on Lichess',
-      );
-    });
+    expect(board).toHaveBeenCalledTimes(2);
+    expect(board).toHaveBeenLastCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ pgn: buildPgn(MOCK_GAMES[1]) }),
+    );
+    expect(person('bottom').getAttribute('data-name')).toBe('Sasha Chen');
+    expect(person('bottom').getAttribute('data-score')).toBe('½');
+    expect(person('top').getAttribute('data-name')).toBe('Gerry Litchfield');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.lpv')).toHaveLength(
+      1,
+    );
   });
 });

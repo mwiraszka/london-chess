@@ -93,6 +93,42 @@ describe('RoutingService', () => {
     });
   });
 
+  describe('pageNavigated$', () => {
+    let emissions: (string | null)[];
+
+    beforeEach(() => {
+      emissions = [];
+      service.pageNavigated$.subscribe(fragment => emissions.push(fragment));
+    });
+
+    it('should emit the fragment of a navigation to another page', () => {
+      parseUrlSpy.mockReturnValue({ fragment: 'top' });
+
+      routerEvents$.next(new NavigationEnd(1, '/news#top', '/news#top'));
+
+      expect(emissions).toEqual(['top']);
+    });
+
+    it('should leave out a navigation that only changes the query', () => {
+      routerEvents$.next(new NavigationEnd(1, '/test?page=2', '/test?page=2'));
+      routerEvents$.next(new NavigationEnd(2, '/test?page=3', '/test?page=3'));
+
+      expect(emissions).toEqual([]);
+    });
+
+    it('should emit again when the current page reloads', () => {
+      routerEvents$.next(new NavigationEnd(1, '/test', '/test'));
+
+      expect(emissions).toEqual([null]);
+    });
+
+    it('should emit when the query goes along with a move to another page', () => {
+      routerEvents$.next(new NavigationEnd(1, '/news?page=2', '/news?page=2'));
+
+      expect(emissions).toEqual([null]);
+    });
+  });
+
   describe('currentFragment', () => {
     it('should return null when no fragment', () => {
       expect(service.currentFragment).toBeNull();

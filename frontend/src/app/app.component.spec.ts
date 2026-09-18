@@ -48,7 +48,7 @@ describe('AppComponent', () => {
         provideRouter([]),
         {
           provide: RoutingService,
-          useValue: { fragment$: mockFragmentSubject.asObservable() },
+          useValue: { pageNavigated$: mockFragmentSubject.asObservable() },
         },
         {
           provide: TouchEventsService,
