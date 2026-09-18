@@ -8,13 +8,13 @@ import { provideRouter } from '@angular/router';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { Article, Event, Image } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { Image } from '@app/models';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 
 import { HomePageComponent } from './home-page.component';
 
@@ -29,6 +29,7 @@ describe('HomePageComponent', () => {
   let dialogOpenSpy: MockInstance;
   let dispatchSpy: MockInstance;
   let onExportToCsvSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
@@ -48,7 +49,10 @@ describe('HomePageComponent', () => {
       imports: [HomePageComponent],
       providers: [
         { provide: DialogService, useValue: { open: vi.fn() } },
-
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
         {
           provide: MetaAndTitleService,
           useValue: {
@@ -72,6 +76,7 @@ describe('HomePageComponent', () => {
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
     onExportToCsvSpy = vi.spyOn(component, 'onExportToCsv');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
@@ -84,18 +89,9 @@ describe('HomePageComponent', () => {
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
     store.overrideSelector(EventsSelectors.selectNextEvent, mockNextEvent);
     store.overrideSelector(EventsSelectors.selectTotalCount, mockTotalCount);
-    store.overrideSelector(
-      ArticlesSelectors.selectLastHomePageFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
-    store.overrideSelector(
-      EventsSelectors.selectLastHomePageFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
-    store.overrideSelector(
-      ImagesSelectors.selectLastMetadataFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
+    store.overrideSelector(ArticlesSelectors.selectHomePageArticlesStatus, 'loaded');
+    store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loaded');
+    store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loaded');
     store.refreshState();
   });
 
@@ -124,42 +120,44 @@ describe('HomePageComponent', () => {
         isAdmin: mockIsAdmin,
         nextEvent: mockNextEvent,
         photoImages: mockPhotoImages,
-        isLoadingArticles: false,
-        isLoadingEvents: false,
-        isLoadingImages: false,
+        articlesStatus: 'loaded',
+        eventsStatus: 'loaded',
+        photosStatus: 'loaded',
       });
     });
   });
 
-  describe('isLoading states', () => {
-    it('should set isLoadingArticles to true when articles have not been fetched', async () => {
-      store.overrideSelector(ArticlesSelectors.selectLastHomePageFetch, null);
+  describe('load statuses', () => {
+    it('should pass the events and photos statuses through', async () => {
+      store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'failed');
+      store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loading');
       store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoadingArticles).toBe(true);
+      expect(vm.eventsStatus).toBe('failed');
+      expect(vm.photosStatus).toBe('loading');
     });
 
-    it('should set isLoadingEvents to true when events have not been fetched', async () => {
-      store.overrideSelector(EventsSelectors.selectLastHomePageFetch, null);
+    it('should keep articles loading until their banner images have loaded', async () => {
+      store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loading');
       store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoadingEvents).toBe(true);
+      expect(vm.articlesStatus).toBe('loading');
     });
 
-    it('should set isLoadingImages to true when images have not been fetched', async () => {
-      store.overrideSelector(ImagesSelectors.selectLastMetadataFetch, null);
+    it('should fail articles when their banner images fail to load', async () => {
+      store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'failed');
       store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoadingImages).toBe(true);
+      expect(vm.articlesStatus).toBe('failed');
     });
   });
 
@@ -186,83 +184,68 @@ describe('HomePageComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: expect.any(Function),
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Export all ${mockTotalCount} events to a CSV file?`,
             confirmButtonText: 'Export',
             confirmButtonType: 'primary',
-          },
+          }),
         },
         isModal: false,
       });
     });
 
-    it('should dispatch exportEventsToCsvRequested when dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
-
+    it('should export the events from the confirmation dialog', async () => {
       await component.onExportToCsv();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dispatchSpy).toHaveBeenCalledWith(
+      expect(storeRequestSpy).toHaveBeenCalledWith(
         EventsActions.exportEventsToCsvRequested(),
+        [EventsActions.exportEventsToCsvSucceeded, EventsActions.exportEventsToCsvFailed],
       );
     });
 
-    it('should not dispatch exportEventsToCsvRequested when dialog is cancelled', async () => {
+    it('should not export anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onExportToCsv();
 
-      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
-  describe('onRequestDeleteAlbum', () => {
-    it('should dispatch deleteAlbumRequested action', () => {
-      const album = 'Album X';
-      component.onRequestDeleteAlbum(album);
+  describe('onRetryArticles', () => {
+    it('should fetch the articles and their banner images again', () => {
+      component.onRetryArticles();
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy).toHaveBeenCalledTimes(2);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.deleteAlbumRequested({ album }),
+        ArticlesActions.fetchHomePageArticlesRequested(),
+      );
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.fetchAllImagesMetadataRequested(),
       );
     });
   });
 
-  describe('onRequestDeleteArticle', () => {
-    it('should dispatch deleteArticleRequested action', () => {
-      const article: Article = mockHomePageArticles[0];
-      component.onRequestDeleteArticle(article);
+  describe('onRetryEvents', () => {
+    it('should fetch the events again', () => {
+      component.onRetryEvents();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.deleteArticleRequested({ article }),
+        EventsActions.fetchHomePageEventsRequested(),
       );
     });
   });
 
-  describe('onRequestDeleteEvent', () => {
-    it('should dispatch deleteEventRequested action', () => {
-      const event: Event = mockHomePageEvents[0];
-      component.onRequestDeleteEvent(event);
+  describe('onRetryPhotos', () => {
+    it('should fetch the photos again', () => {
+      component.onRetryPhotos();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        EventsActions.deleteEventRequested({ event }),
-      );
-    });
-  });
-
-  describe('onRequestUpdateArticleBookmark', () => {
-    it('should dispatch updateArticleBookmarkRequested action', () => {
-      const payload = {
-        articleId: mockHomePageArticles[0].id,
-        bookmark: true,
-      };
-      component.onRequestUpdateArticleBookmark(payload);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.updateArticleBookmarkRequested(payload),
+        ImagesActions.fetchAllImagesMetadataRequested(),
       );
     });
   });
@@ -369,6 +352,86 @@ describe('HomePageComponent', () => {
 
         expect(
           query(fixture.debugElement, '.articles-section lcc-admin-toolbar'),
+        ).toBeFalsy();
+      });
+    });
+
+    describe('when a section fails to load', () => {
+      it('should render a failure panel in place of the events', () => {
+        store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, '.schedule-section lcc-load-failed'),
+        ).toBeTruthy();
+        expect(
+          query(fixture.debugElement, '.schedule-section lcc-events-table'),
+        ).toBeFalsy();
+      });
+
+      it('should render a failure panel in place of the articles', () => {
+        store.overrideSelector(ArticlesSelectors.selectHomePageArticlesStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, '.articles-section lcc-load-failed'),
+        ).toBeTruthy();
+        expect(
+          query(fixture.debugElement, '.articles-section lcc-article-grid'),
+        ).toBeFalsy();
+      });
+
+      it('should render a failure panel in place of the photos', () => {
+        store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, '.photos-section lcc-load-failed'),
+        ).toBeTruthy();
+        expect(query(fixture.debugElement, '.photos-section lcc-photo-grid')).toBeFalsy();
+      });
+
+      it('should retry only the failed section', () => {
+        store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+
+        query(
+          fixture.debugElement,
+          '.schedule-section lcc-load-failed',
+        ).triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledTimes(1);
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          EventsActions.fetchHomePageEventsRequested(),
+        );
+      });
+    });
+
+    describe('when there are no upcoming events', () => {
+      beforeEach(() => {
+        store.overrideSelector(EventsSelectors.selectHomePageEvents, []);
+      });
+
+      it('should render the events table while the events load', () => {
+        store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loading');
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, '.schedule-section lcc-events-table'),
+        ).toBeTruthy();
+      });
+
+      it('should not render the events table once the events have loaded', () => {
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, '.schedule-section lcc-events-table'),
         ).toBeFalsy();
       });
     });

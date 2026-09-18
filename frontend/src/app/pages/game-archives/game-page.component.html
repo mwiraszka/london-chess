@@ -1,0 +1,141 @@
+@if (viewModel$ | async; as vm) {
+  @if (vm.status === 'failed') {
+    <lcc-load-failed
+      title="Unable to load this game"
+      (retry)="onRetry(vm.gameId)" />
+  } @else {
+    @let view = vm.view ?? placeholderView;
+    <lcc-page-header
+      [heading]="vm.view?.heading ?? null"
+      [icon]="pageIcon">
+    </lcc-page-header>
+
+    <div
+      class="game"
+      [class.game--loading]="!vm.view"
+      [attr.aria-busy]="!vm.view">
+      <div class="game__details">
+        <ea-card [fullWidth]="true">
+          <dl class="details">
+            <dt>Event</dt>
+            <dd>
+              {{ view.event.text }}
+              <ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.event.extra }" />
+            </dd>
+
+            <dt>Date</dt>
+            <dd>
+              {{ view.date.text }}
+              <ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.date.extra }" />
+            </dd>
+
+            @if (view.game.location) {
+              <dt>Location</dt>
+              <dd>{{ view.game.location }}</dd>
+            }
+
+            <dt>White</dt>
+            <dd>
+              <lcc-member-link
+                [memberNumber]="view.game.white.memberNumber"
+                [name]="view.whiteName" />&ngsp;<ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.whiteRating }" />
+            </dd>
+
+            <dt>Black</dt>
+            <dd>
+              <lcc-member-link
+                [memberNumber]="view.game.black.memberNumber"
+                [name]="view.blackName" />&ngsp;<ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.blackRating }" />
+            </dd>
+
+            <dt>Result</dt>
+            <dd>
+              {{ view.result.text }}
+              <ng-container
+                *ngTemplateOutlet="extra; context: { $implicit: view.result.extra }" />
+            </dd>
+
+            @if (view.opening; as opening) {
+              <dt>Opening</dt>
+              <dd>
+                {{ opening.text }}
+                <ng-container
+                  *ngTemplateOutlet="extra; context: { $implicit: opening.extra }" />
+              </dd>
+            }
+
+            <dt>Moves</dt>
+            <dd>{{ view.moveCount }}</dd>
+
+            @if (view.game.annotator) {
+              <dt>Annotated by</dt>
+              <dd>{{ view.game.annotator }}</dd>
+            }
+          </dl>
+        </ea-card>
+        @if (!vm.view) {
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
+        }
+      </div>
+
+      <div class="game__board">
+        <lcc-pgn-viewer [game]="view.game" />
+        @if (!vm.view) {
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
+        }
+      </div>
+      <lcc-link-list
+        class="game__analysis"
+        [links]="[view.analysisLink]"></lcc-link-list>
+    </div>
+  }
+
+  @if (vm.position && vm.position.count > 1) {
+    <nav
+      class="game__nav"
+      aria-label="Games">
+      <ea-button
+        variant="ghost"
+        size="md"
+        ariaLabel="Previous game"
+        tooltip="Previous game"
+        [disabled]="!vm.previousId"
+        [icon]="previousIcon"
+        [info]="keepScroll"
+        [routerLink]="vm.previousId ? ['/game-archives', vm.previousId] : null" />
+      <span class="game__position">
+        Game {{ vm.position.number | number }} of {{ vm.position.count | number }}
+      </span>
+      <ea-button
+        variant="ghost"
+        size="md"
+        ariaLabel="Next game"
+        tooltip="Next game"
+        [disabled]="!vm.nextId"
+        [icon]="nextIcon"
+        [info]="keepScroll"
+        [routerLink]="vm.nextId ? ['/game-archives', vm.nextId] : null" />
+    </nav>
+  }
+  <lcc-link-list
+    class="game__back"
+    [links]="[vm.archiveLink]"></lcc-link-list>
+}
+
+<ng-template
+  #extra
+  let-text>
+  @if (text) {
+    <span class="details__extra">({{ text }})</span>
+  }
+</ng-template>

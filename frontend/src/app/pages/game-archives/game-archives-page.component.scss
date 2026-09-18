@@ -1,232 +1,203 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-$grid-button-min-width: 115px;
-$pgn-viewer-width: 432px;
-
-.intro {
+:host {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.intro__body {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.intro__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 
   @include respond-to('gt-lg') {
     flex-direction: row;
+    align-items: stretch;
+    gap: 32px;
+  }
+}
+
+.intro__image {
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+  border-radius: var(--lcc-borderRadius--large);
+
+  // Beside the text it shares the row and stretches to the text's height, cropping
+  // rather than distorting
+  @include respond-to('gt-lg') {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+.intro__text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  font-size: 16px;
+  color: var(--color-text-primary);
+}
+
+// Two rows of two until the card is wide enough for four cards to keep their room
+.figures {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+  list-style: none;
+
+  @container (min-width: 720px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.figure {
+  min-width: 0;
+}
+
+.figure ea-card {
+  --ea-card-body-padding: 8px;
+}
+
+.figure__content {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+
+  @include respond-to('lt-sm') {
+    gap: 6px;
+  }
+}
+
+.figure__value {
+  font-size: 36px;
+  font-weight: bold;
+  color: var(--lcc-color--gameArchivesPage-figure);
+
+  @include respond-to('lt-sm') {
+    font-size: 20px;
+  }
+}
+
+// Pulses like a skeleton until the figures arrive
+.figure__value--pending {
+  animation: figure-pulse 1.5s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes figure-pulse {
+  0%,
+  100% {
+    opacity: 1;
   }
 
-  .image-container {
-    opacity: 0;
-    display: flex;
-    align-self: center;
-    flex: 2;
-    align-items: center;
-    justify-content: center;
-    animation: fade-in-up 1s ease-out forwards;
-
-    img {
-      object-fit: contain;
-      width: auto;
-      max-width: 100%;
-      height: auto;
-      max-height: 534px;
-      border-radius: var(--lcc-borderRadius--large);
-    }
+  50% {
+    opacity: 0.4;
   }
+}
 
-  .text-container {
-    flex: 1;
-    padding: 8px;
+.figure__label {
+  font-size: 16px;
+  color: var(--color-text-primary);
 
-    @include respond-to('gt-lg') {
-      padding: 0 32px;
-    }
-
-    h3 {
-      opacity: 0;
-      margin: 8px 0 16px;
-      font-style: italic;
-      color: var(--lcc-color--gameArchivesPage-headerText);
-      animation: fade-in-up 1s ease-out forwards;
-      animation-delay: 0.5s;
-    }
-
-    p {
-      opacity: 0;
-      margin-bottom: 16px;
-      color: var(--lcc-color--gameArchivesPage-text);
-      animation: fade-in-up 1s ease-out forwards;
-
-      &:nth-child(2) {
-        animation-delay: 1s;
-      }
-
-      &:nth-child(3) {
-        animation-delay: 1.5s;
-      }
-    }
+  @include respond-to('lt-sm') {
+    font-size: 14px;
   }
 }
 
 .filters {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 8px;
-  border-radius: var(--lcc-borderRadius--large);
-  background-color: var(--lcc-color--gameArchivesPage-filterContainerBackground);
-
-  .filter-games-text {
-    align-self: start;
-    padding: 8px;
-    color: var(--lcc-color--gameArchivesPage-headerText);
-  }
-
-  .game-filter-form {
-    display: grid;
-    align-items: stretch;
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-      'player player'
-      'moves result';
-    gap: 2px;
-
-    @include respond-to('gt-xs') {
-      gap: 8px;
-    }
-
-    @include respond-to('gt-md') {
-      grid-template-columns: 1fr auto auto;
-      grid-template-areas: 'player moves result';
-    }
-
-    .filter-section {
-      gap: 4px 8px;
-      padding: 8px;
-      border: 1px solid var(--lcc-color--gameArchivesPage-filterSectionBorder);
-      border-radius: var(--lcc-borderRadius--large);
-
-      &.player-filter-section {
-        grid-area: player;
-      }
-
-      &.moves-filter-section {
-        grid-area: moves;
-
-        input {
-          max-width: 50px;
-        }
-      }
-
-      &.result-filter-section {
-        grid-area: result;
-      }
-    }
-  }
-
-  .result-summary-text {
-    padding: 8px;
-    color: var(--lcc-color--gameArchivesPage-text);
-  }
-
-  .search-stats-container {
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: center;
-    gap: 32px;
-    padding: 16px 8px;
-    margin-top: 16px;
-
-    .opening-chart-container,
-    .result-chart-container {
-      display: flex;
-      flex-direction: column;
-      max-width: 500px;
-      min-height: 400px;
-
-      canvas {
-        width: 300px !important;
-        height: 450px !important;
-      }
-
-      label {
-        padding-bottom: 2px;
-        margin-bottom: 8px;
-        font-size: var(--lcc-font-size--h2);
-        text-align: center;
-        border-bottom: 1px solid var(--lcc-color--gameArchivesPage-labelUnderline);
-        color: var(--lcc-color--gameArchivesPage-chartLabel);
-      }
-    }
-  }
-}
-
-.year-grid {
   display: grid;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin: 32px 0;
-  border-radius: var(--lcc-borderRadius--large);
-  grid-template-columns: repeat(auto-fit, minmax(#{$grid-button-min-width}, 1fr));
+  align-items: end;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  // Room above and below the filters, on top of the page gap
+  margin: 24px 0;
 
-  button {
-    padding: 8px 16px;
-    text-transform: none;
-    --expansion-pixels: 4px;
+  @include respond-to('gt-sm') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    &.active {
-      position: relative;
-      overflow: visible;
-      background-color: var(--lcc-color--gameArchivesPage-activeButtonBackground);
-      color: var(--lcc-color--gameArchivesPage-activeButtonText);
-      animation: shadow-pulse 2s ease-in-out infinite;
-    }
+  // One row, with the results track never squeezed into wrapping its options
+  @include respond-to('gt-lg') {
+    grid-template-columns: 2fr 1fr max-content auto;
   }
 }
 
-.active-games {
-  width: 100%;
-  padding: 8px;
-  text-align: center;
-  border-radius: var(--lcc-borderRadius--large);
-  background-color: var(--lcc-color--gameArchivesPage-activeGamesBackground);
-
-  cdk-virtual-scroll-viewport {
-    height: 410px; // tall enough to avoid vertical scrollbar
-
-    ::ng-deep .cdk-virtual-scroll-content-wrapper {
-      display: flex;
-
-      lcc-pgn-viewer {
-        max-width: $pgn-viewer-width;
-        margin: 8px;
-      }
-    }
-  }
-
-  .loading-text {
-    color: var(--lcc-color--gameArchivesPage-loadingText);
+// Until the filters fit one row, the results and the clear button each take a row
+.filters__result,
+.filters__clear {
+  @include respond-to('lt-lg') {
+    grid-column: 1 / -1;
   }
 }
 
-@keyframes shadow-pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.97);
-  }
-  100% {
-    transform: scale(1);
+.filters__clear {
+  align-self: end;
+  justify-self: center;
+
+  @include respond-to('gt-lg') {
+    justify-self: start;
   }
 }
 
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+// Coloured like the app's other tables, and capped at the page so a wider table
+// scrolls sideways within itself rather than being clipped by the page
+.games {
+  max-width: 100%;
+  --ea-data-table-background-color: var(--lcc-color--table-rowBackgroundOdd);
+  --ea-data-table-row-stripe-background-color: var(--lcc-color--table-rowBackgroundEven);
+  --ea-data-table-color: var(--lcc-color--table-rowForeground);
+  --ea-data-table-header-background-color: var(--lcc-color--table-headerBackground);
+  --ea-data-table-header-color: var(--lcc-color--table-headerForeground);
+  --ea-data-table-header-hover-background-color: var(
+    --lcc-color--table-headerBackgroundOnHover
+  );
+  --ea-data-table-header-hover-color: var(--lcc-color--table-headerForeground);
+  --ea-data-table-header-sorted-color: var(--lcc-color--table-headerForeground);
+}
+
+// A loading cell's placeholder fills the cell, and as a block sits centred in it
+.games lcc-text-skeleton {
+  display: block;
+}
+
+.games__result--decisive {
+  font-weight: bold;
+}
+
+.games__section {
+  color: var(--color-text-secondary);
+}
+
+.games__eco {
+  margin-right: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.games__eco {
+  margin-right: 4px;
+  margin-left: 0;
 }

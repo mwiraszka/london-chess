@@ -10,7 +10,7 @@ import {
   UserIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { Observable, combineLatest } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
@@ -26,12 +26,13 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
-import { Member } from '@app/models';
+import { LoadStatus, Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
-import { MembersSelectors } from '@app/store/members';
+import { MembersActions, MembersSelectors } from '@app/store/members';
 import { isCityChampion } from '@app/utils';
 
 @Component({
@@ -45,6 +46,7 @@ import { isCityChampion } from '@app/utils';
     CardComponent,
     CommonModule,
     ExternalLinkIconComponent,
+    LoadFailedComponent,
     PageHeaderComponent,
     RouterLink,
     ShieldCheckIconComponent,
@@ -69,6 +71,8 @@ export class MemberProfilePageComponent implements OnInit {
 
   public viewModel$?: Observable<{
     member: Member | null;
+    memberNumber: number;
+    status: LoadStatus;
   }>;
 
   constructor() {
@@ -96,10 +100,16 @@ export class MemberProfilePageComponent implements OnInit {
     this.viewModel$ = this.route.paramMap.pipe(
       map(params => Number(params.get('number'))),
       switchMap(memberNumber =>
-        this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
+        combineLatest([
+          this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
+          this.store.select(MembersSelectors.selectMemberProfileStatus(memberNumber)),
+        ]).pipe(map(([member, status]) => ({ member, memberNumber, status }))),
       ),
-      map(member => ({ member })),
     );
+  }
+
+  public onRetry(memberNumber: number): void {
+    this.store.dispatch(MembersActions.fetchMemberByNumberRequested({ memberNumber }));
   }
 
   protected fullName(member: Member): string {

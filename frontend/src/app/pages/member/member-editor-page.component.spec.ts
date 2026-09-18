@@ -99,10 +99,11 @@ describe('MemberEditorPageComponent', () => {
         expect(vm).toStrictEqual({
           formData: pick(MOCK_MEMBERS[0], MEMBER_FORM_DATA_PROPERTIES),
           hasUnsavedChanges: false,
-          isFormReady: true,
           isSafeMode: false,
+          memberId: MOCK_MEMBERS[0].id,
           originalMember: MOCK_MEMBERS[0],
           pageHeading: `Edit ${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
+          status: 'loaded',
         });
       });
 
@@ -131,10 +132,11 @@ describe('MemberEditorPageComponent', () => {
         expect(vm).toStrictEqual({
           formData: INITIAL_MEMBER_FORM_DATA,
           hasUnsavedChanges: false,
-          isFormReady: true,
           isSafeMode: false,
+          memberId: null,
           originalMember: null,
           pageHeading: 'Add a member',
+          status: 'loaded',
         });
       });
 
@@ -178,29 +180,20 @@ describe('MemberEditorPageComponent', () => {
     });
   });
 
-  describe('onRequestAddMember', () => {
-    it('should dispatch addMemberRequested action', () => {
-      component.onRequestAddMember(true);
+  describe('onRetry', () => {
+    it('should fetch the member again', () => {
+      component.onRetry(MOCK_MEMBERS[0].id);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.addMemberRequested({ notifyMember: true }),
+        MembersActions.fetchMemberRequested({ memberId: MOCK_MEMBERS[0].id }),
       );
     });
-  });
 
-  describe('onRequestUpdateMember', () => {
-    it('should dispatch updateMemberRequested action', () => {
-      const mockMemberId = 'abc123abc123';
-      component.onRequestUpdateMember(mockMemberId, false);
+    it('should not fetch anything for a new member', () => {
+      component.onRetry(null);
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.updateMemberRequested({
-          memberId: mockMemberId,
-          notifyMember: false,
-        }),
-      );
+      expect(dispatchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -245,10 +238,38 @@ describe('MemberEditorPageComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should wait for the admin record before rendering the form', () => {
+      it('should render a form skeleton until the admin record arrives', () => {
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-member-form')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+    });
+
+    describe('when the member fails to load', () => {
+      beforeEach(() => {
+        store.setState({
+          appState: appInitialState,
+          membersState: { ...membersInitialState, failedLoads: ['member'] },
+        });
+        mockParamsSubject.next({ member_id: 'unknown-id' });
+
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the form', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-form-skeleton')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-member-form')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+
+      it('should fetch the member again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          MembersActions.fetchMemberRequested({ memberId: 'unknown-id' }),
+        );
       });
     });
   });

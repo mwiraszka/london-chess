@@ -143,17 +143,19 @@
 }
 
 .intro {
+  grid-area: intro;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.intro__layout {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  grid-area: intro;
-  width: 100%;
-  max-width: 800px;
-  margin-top: 8px;
 
-  // The ring leaves too little room for the text below this width
-  @include respond-to('gt-md') {
+  // The ring leaves too little room for the text beside it below this width
+  @media (min-width: 800px) {
     flex-direction: row;
     align-items: center;
     gap: 32px;
@@ -168,7 +170,7 @@
       margin-bottom: 16px;
       font-size: 16px;
       line-height: 24px;
-      color: var(--lcc-color--websiteChangelogPage-secondaryText);
+      color: var(--color-text-primary);
 
       &:last-child {
         margin-bottom: 0;
@@ -336,7 +338,7 @@
     flex-direction: column;
     gap: 4px;
     padding-left: 24px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }

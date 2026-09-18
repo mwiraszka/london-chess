@@ -11,6 +11,7 @@ import { LccError, MemberEmail, Toast } from '@app/models';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as EventsActions from '@app/store/events/events.actions';
+import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import * as NavActions from '@app/store/nav/nav.actions';
@@ -25,6 +26,7 @@ type NotifyAction = ReturnType<
   | (typeof AppActions)[keyof typeof AppActions]
   | (typeof ArticlesActions)[keyof typeof ArticlesActions]
   | (typeof EventsActions)[keyof typeof EventsActions]
+  | (typeof GamesActions)[keyof typeof GamesActions]
   | (typeof ImagesActions)[keyof typeof ImagesActions]
   | (typeof MembersActions)[keyof typeof MembersActions]
   | (typeof NavActions)[keyof typeof NavActions]
@@ -42,7 +44,6 @@ export class AppEffects {
     ArticlesActions.fetchHomePageArticlesFailed,
     ArticlesActions.publishArticleFailed,
     ArticlesActions.publishArticleSucceeded,
-    ArticlesActions.requestTimedOut,
     ArticlesActions.updateArticleFailed,
     ArticlesActions.updateArticleSucceeded,
 
@@ -52,13 +53,15 @@ export class AppEffects {
     EventsActions.deleteEventSucceeded,
     EventsActions.exportEventsToCsvFailed,
     EventsActions.exportEventsToCsvSucceeded,
-    EventsActions.fetchAllEventsFailed,
     EventsActions.fetchEventFailed,
     EventsActions.fetchFilteredEventsFailed,
     EventsActions.fetchHomePageEventsFailed,
-    EventsActions.requestTimedOut,
     EventsActions.updateEventFailed,
     EventsActions.updateEventSucceeded,
+
+    GamesActions.fetchArchiveReferenceFailed,
+    GamesActions.fetchFilteredGamesFailed,
+    GamesActions.fetchGameFailed,
 
     ImagesActions.addImageFailed,
     ImagesActions.addImagesFailed,
@@ -75,7 +78,6 @@ export class AppEffects {
     ImagesActions.fetchFilteredThumbnailsFailed,
     ImagesActions.fetchMainImageFailed,
     ImagesActions.imageFileActionFailed,
-    ImagesActions.requestTimedOut,
     ImagesActions.updateAlbumFailed,
     ImagesActions.updateImageFailed,
     ImagesActions.updateAlbumSucceeded,
@@ -91,7 +93,6 @@ export class AppEffects {
     MembersActions.fetchAllMembersFailed,
     MembersActions.fetchFilteredMembersFailed,
     MembersActions.parseMemberRatingsFromCsvFailed,
-    MembersActions.requestTimedOut,
     MembersActions.updateMemberFailed,
     MembersActions.updateMemberSucceeded,
     MembersActions.updateMemberRatingsSucceeded,
@@ -105,10 +106,13 @@ export class AppEffects {
     ArticlesActions.fetchHomePageArticlesFailed,
     ArticlesActions.fetchArticleFailed,
 
-    EventsActions.fetchAllEventsFailed,
     EventsActions.fetchFilteredEventsFailed,
     EventsActions.fetchHomePageEventsFailed,
     EventsActions.fetchEventFailed,
+
+    GamesActions.fetchArchiveReferenceFailed,
+    GamesActions.fetchFilteredGamesFailed,
+    GamesActions.fetchGameFailed,
 
     ImagesActions.fetchAllImagesMetadataFailed,
     ImagesActions.fetchBatchThumbnailsFailed,
@@ -123,6 +127,7 @@ export class AppEffects {
   readonly MISSING_RECORD_FAILURES = [
     ArticlesActions.fetchArticleFailed,
     EventsActions.fetchEventFailed,
+    GamesActions.fetchGameFailed,
     MembersActions.fetchMemberFailed,
   ] as const;
 
@@ -247,12 +252,6 @@ export class AppEffects {
           message: `Successfully published ${action.article.title}`,
           type: 'success',
         };
-      case ArticlesActions.requestTimedOut.type:
-        return {
-          title: 'Articles request',
-          message: 'Request timed out',
-          type: 'warning',
-        };
       case ArticlesActions.updateArticleFailed.type:
         return {
           title: 'Article update',
@@ -318,12 +317,6 @@ export class AppEffects {
         return {
           title: 'Load events',
           message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case EventsActions.requestTimedOut.type:
-        return {
-          title: 'Events request',
-          message: 'Request timed out',
           type: 'warning',
         };
       case EventsActions.updateEventFailed.type:
@@ -402,6 +395,24 @@ export class AppEffects {
           message: `Successfully deleted ${action.image.filename}`,
           type: 'success',
         };
+      case GamesActions.fetchArchiveReferenceFailed.type:
+        return {
+          title: 'Load game archives',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case GamesActions.fetchFilteredGamesFailed.type:
+        return {
+          title: 'Load games',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case GamesActions.fetchGameFailed.type:
+        return {
+          title: 'Load game',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
       case ImagesActions.fetchAllImagesMetadataFailed.type:
         return {
           title: "Fetch images' metadata",
@@ -430,12 +441,6 @@ export class AppEffects {
         return {
           title: 'Image file',
           message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case ImagesActions.requestTimedOut.type:
-        return {
-          title: 'Images request',
-          message: 'Request timed out',
           type: 'warning',
         };
       case ImagesActions.updateAlbumFailed.type:
@@ -524,12 +529,6 @@ export class AppEffects {
         return {
           title: 'CSV import',
           message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
-      case MembersActions.requestTimedOut.type:
-        return {
-          title: 'Members request',
-          message: 'Request timed out',
           type: 'warning',
         };
       case MembersActions.updateMemberFailed.type:

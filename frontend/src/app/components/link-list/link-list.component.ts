@@ -37,6 +37,7 @@ import { RouterLinkPipe } from '@app/pipes';
             <a
               class="lcc-link"
               [routerLink]="link.internalPath | routerLink"
+              [queryParams]="link.queryParams"
               [tooltip]="link.tooltip ?? null">
               @if (link.icon) {
                 <span class="link-icon">

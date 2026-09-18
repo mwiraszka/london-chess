@@ -7,9 +7,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { query, queryTextContent } from '@app/utils';
+import { lastOpenedDialog, query, queryTextContent } from '@app/utils';
 
 import { ImageViewerComponent } from './image-viewer.component';
 
@@ -26,6 +26,7 @@ describe('ImageViewerComponent', () => {
   let dispatchSpy: MockInstance;
   let fetchImageSpy: MockInstance;
   let indexSubjectNextSpy: MockInstance;
+  let storeRequestSpy: Mock;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -35,6 +36,10 @@ describe('ImageViewerComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         {
           provide: Renderer2,
@@ -64,6 +69,7 @@ describe('ImageViewerComponent', () => {
     fetchImageSpy = vi.spyOn(component, 'fetchImage');
     // @ts-expect-error Private class member
     indexSubjectNextSpy = vi.spyOn(component.indexSubject, 'next');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
     component.album = 'Mock Album';
     component.images = MOCK_IMAGES;
@@ -278,50 +284,66 @@ describe('ImageViewerComponent', () => {
   });
 
   describe('image deletion', () => {
-    it('should open confirmation dialog and dispatch delete action when confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
-
-      await component.onDeleteImage(MOCK_IMAGES[1]);
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: `Delete ${MOCK_IMAGES[1].filename}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          },
-        },
-        isModal: true,
+    describe('when the dialog is confirmed', () => {
+      beforeEach(() => {
+        dialogOpenSpy.mockImplementation(async () => {
+          await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
+          return 'confirm';
+        });
       });
-      expect(dialogResultSpy).toHaveBeenCalledWith(null);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[1] }),
-      );
+
+      it('should delete the image from the confirmation dialog', async () => {
+        await component.onDeleteImage(MOCK_IMAGES[1]);
+
+        expect(dialogOpenSpy).toHaveBeenCalledWith({
+          componentType: BasicDialogComponent,
+          inputs: {
+            dialog: expect.objectContaining({
+              title: 'Confirm',
+              body: `Delete ${MOCK_IMAGES[1].filename}?`,
+              confirmButtonText: 'Delete',
+              confirmButtonType: 'warning',
+            }),
+          },
+          isModal: true,
+        });
+        expect(storeRequestSpy).toHaveBeenCalledWith(
+          ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[1] }),
+          [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
+        );
+      });
+
+      it('should close the viewer once the image is deleted', async () => {
+        storeRequestSpy.mockResolvedValue(
+          ImagesActions.deleteImageSucceeded({ image: MOCK_IMAGES[1] }),
+        );
+
+        await component.onDeleteImage(MOCK_IMAGES[1]);
+
+        expect(dialogResultSpy).toHaveBeenCalledWith(null);
+      });
+
+      it('should keep the viewer open when the image fails to delete', async () => {
+        storeRequestSpy.mockResolvedValue(
+          ImagesActions.deleteImageFailed({
+            image: MOCK_IMAGES[1],
+            error: { name: 'LCCError', message: 'Unable to delete image.' },
+          }),
+        );
+
+        await component.onDeleteImage(MOCK_IMAGES[1]);
+
+        expect(dialogResultSpy).not.toHaveBeenCalled();
+      });
     });
 
-    it('should not dispatch delete action when dialog is cancelled', async () => {
+    it('should not delete anything when the dialog is cancelled', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onDeleteImage(MOCK_IMAGES[1]);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: `Delete ${MOCK_IMAGES[1].filename}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          },
-        },
-        isModal: true,
-      });
+      expect(storeRequestSpy).not.toHaveBeenCalled();
       expect(dialogResultSpy).not.toHaveBeenCalled();
-      expect(dispatchSpy).not.toHaveBeenCalledWith(
-        ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[1] }),
-      );
     });
   });
 

@@ -11,7 +11,6 @@ export type {
 } from './auth.model';
 export type { CalendarDay, CalendarMonth } from './calendar.model';
 export type { ChangelogRelease, ChangelogTag } from './changelog.model';
-export type { CallState } from './call-state.model';
 export type { ChampionshipTableRowData } from './championship-data.model';
 export type { Club, ClubDocument } from './club.model';
 export type { Id, IsoDate, Pixels, Url } from './core.model';
@@ -26,9 +25,20 @@ export type { DbCollection } from './db-collection.model';
 export type { EditorPage } from './editor-page.model';
 export type { Entity, EntityType } from './entity.model';
 export type { LccError } from './error.model';
+export type { LoadStatus } from './load-status.model';
 export type { Event, EventFormData, EventFormGroup, EventType } from './event.model';
-export type { FilterFormGroup } from './filter-form-group.model';
-export type { GameDetails, GameScore } from './game-details.model';
+export type {
+  ArchivePlayer,
+  ArchiveSizing,
+  Game,
+  GameFilters,
+  GamePlayer,
+  GameResult,
+  GamesQuery,
+  GamesSortBy,
+  GamesSummary,
+  Tournament,
+} from './game.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {
   AlbumFormData,

@@ -5,6 +5,7 @@ import {
   XCircleIconComponent,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { Store } from '@ngrx/store';
 import { debounceTime } from 'rxjs/operators';
 
 import {
@@ -42,7 +43,8 @@ import {
   ModificationInfo,
   Url,
 } from '@app/models';
-import { DialogService, ImageFileService } from '@app/services';
+import { DialogService, ImageFileService, StoreRequestService } from '@app/services';
+import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { GENERATE_UUID } from '@app/tokens';
 import { isLccError } from '@app/utils';
 import { ordinalityValidator, textValidator } from '@app/validators';
@@ -81,8 +83,6 @@ export class AlbumFormComponent implements OnInit {
   }>();
   @Output() public readonly fileActionFail = new EventEmitter<LccError>();
   @Output() public readonly removeNewImage = new EventEmitter<Id>();
-  @Output() public readonly requestAddImages = new EventEmitter<void>();
-  @Output() public readonly requestUpdateAlbum = new EventEmitter<string>();
   @Output() public readonly restore = new EventEmitter<string | null>();
 
   public form!: FormGroup<AlbumFormGroup>;
@@ -108,6 +108,10 @@ export class AlbumFormComponent implements OnInit {
   }
 
   private readonly generateUuid = inject(GENERATE_UUID);
+  private readonly storeRequests = inject(StoreRequestService);
+  private readonly uploadProgress = inject(Store).selectSignal(
+    ImagesSelectors.selectUploadProgress,
+  );
 
   constructor(
     private readonly dialogService: DialogService,
@@ -304,25 +308,31 @@ export class AlbumFormComponent implements OnInit {
       title: 'Confirm',
       body,
       confirmButtonText: this.album ? 'Update' : 'Create',
+      confirmAction: () => this.save(),
+      uploadProgress: this.uploadProgress,
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: false,
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: false,
+    });
+  }
 
-    if (result !== 'confirm') {
-      return;
-    }
-
+  private async save(): Promise<unknown> {
     if (this.album) {
-      this.requestUpdateAlbum.emit(this.album);
-    } else if (Object.keys(this.newImagesFormData).length) {
-      this.requestAddImages.emit();
+      return this.storeRequests.dispatch(
+        ImagesActions.updateAlbumRequested({ album: this.album }),
+        [ImagesActions.updateAlbumSucceeded, ImagesActions.updateAlbumFailed],
+      );
     }
+    if (Object.keys(this.newImagesFormData).length) {
+      return this.storeRequests.dispatch(ImagesActions.addImagesRequested(), [
+        ImagesActions.addImagesSucceeded,
+        ImagesActions.addImagesFailed,
+      ]);
+    }
+    return null;
   }
 
   private async fetchNewImageDataUrls(): Promise<void> {

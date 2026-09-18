@@ -5,8 +5,8 @@ import { pick } from 'lodash';
 import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import {
   ApiScope,
-  CallState,
   DataPaginationOptions,
+  Id,
   IsoDate,
   Member,
   MemberFormData,
@@ -21,9 +21,12 @@ export interface MemberEntity {
   formData: MemberFormData | null;
 }
 
+export type MembersLoad = 'filtered' | 'member';
+
 export interface MembersState extends EntityState<MemberEntity> {
-  callState: CallState;
   newMemberFormData: MemberFormData;
+  // Loads whose latest attempt failed, which are never persisted
+  failedLoads: MembersLoad[];
   // Public records leave out private details, so records from both APIs are never mixed
   recordsScope: ApiScope | null;
   lastFullFetch: IsoDate | null;
@@ -39,12 +42,8 @@ export const membersAdapter = createEntityAdapter<MemberEntity>({
 });
 
 export const initialState: MembersState = membersAdapter.getInitialState({
-  callState: {
-    status: 'idle',
-    loadStart: null,
-    error: null,
-  },
   newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+  failedLoads: [],
   recordsScope: null,
   lastFullFetch: null,
   lastFilteredFetch: null,
@@ -119,52 +118,36 @@ function withRecordsScope(state: MembersState, scope: ApiScope): MembersState {
   });
 }
 
+function withLoadAttempt(state: MembersState, load: MembersLoad): MembersState {
+  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
+}
+
+function withFailedLoad(state: MembersState, load: MembersLoad): MembersState {
+  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
+}
+
+function withUpdatedMembers(members: Member[], updates: Member[]): Member[] {
+  const updatesById = new Map<Id, Member>(updates.map(member => [member.id, member]));
+  return members.map(member => updatesById.get(member.id) ?? member);
+}
+
 export const membersReducer = createReducer(
   initialState,
 
-  on(
-    MembersActions.fetchAllMembersRequested,
-    MembersActions.fetchFilteredMembersRequested,
-    MembersActions.fetchMemberRequested,
-    MembersActions.addMemberRequested,
-    MembersActions.updateMemberRequested,
-    MembersActions.deleteMemberRequested,
-    MembersActions.updateMemberRatingsRequested,
-    (state): MembersState => ({
-      ...state,
-      callState: {
-        status: 'loading',
-        loadStart: new Date().toISOString(),
-        error: null,
-      },
-    }),
+  on(MembersActions.fetchFilteredMembersRequested, (state): MembersState =>
+    withLoadAttempt(state, 'filtered'),
+  ),
+  on(MembersActions.fetchFilteredMembersFailed, (state): MembersState =>
+    withFailedLoad(state, 'filtered'),
   ),
 
-  on(MembersActions.fetchFilteredMembersInBackgroundRequested, (state): MembersState => ({
-    ...state,
-    callState: {
-      status: 'background-loading',
-      loadStart: new Date().toISOString(),
-      error: null,
-    },
-  })),
-
   on(
-    MembersActions.fetchAllMembersFailed,
-    MembersActions.fetchFilteredMembersFailed,
-    MembersActions.fetchMemberFailed,
-    MembersActions.addMemberFailed,
-    MembersActions.updateMemberFailed,
-    MembersActions.deleteMemberFailed,
-    MembersActions.updateMemberRatingsFailed,
-    (state, { error }): MembersState => ({
-      ...state,
-      callState: {
-        status: 'error',
-        loadStart: null,
-        error,
-      },
-    }),
+    MembersActions.fetchMemberRequested,
+    MembersActions.fetchMemberByNumberRequested,
+    (state): MembersState => withLoadAttempt(state, 'member'),
+  ),
+  on(MembersActions.fetchMemberFailed, (state): MembersState =>
+    withFailedLoad(state, 'member'),
   ),
 
   on(
@@ -179,7 +162,6 @@ export const membersReducer = createReducer(
         ),
         {
           ...state,
-          callState: initialState.callState,
           recordsScope: scope,
           lastFullFetch: new Date().toISOString(),
           // Every member on the page shown is in the full list, so the page switches over too
@@ -203,7 +185,6 @@ export const membersReducer = createReducer(
         members.map(member => mergedEntity(scopedState.entities[member.id], member)),
         {
           ...scopedState,
-          callState: initialState.callState,
           lastFilteredFetch: new Date(Date.now()).toISOString(),
           filteredMembers: members,
           filteredCount,
@@ -216,7 +197,6 @@ export const membersReducer = createReducer(
   on(MembersActions.paginationOptionsChanged, (state, { options }): MembersState => ({
     ...state,
     options,
-    lastFilteredFetch: null,
   })),
 
   on(MembersActions.fetchMemberSucceeded, (state, { member, scope }): MembersState => {
@@ -224,7 +204,7 @@ export const membersReducer = createReducer(
 
     return membersAdapter.upsertOne(
       { member, formData: draftWithEdits(scopedState.entities[member.id]) },
-      { ...scopedState, callState: initialState.callState },
+      scopedState,
     );
   }),
 
@@ -233,7 +213,6 @@ export const membersReducer = createReducer(
       { member, formData: null },
       {
         ...state,
-        callState: initialState.callState,
         newMemberFormData: INITIAL_MEMBER_FORM_DATA,
       },
     ),
@@ -244,8 +223,7 @@ export const membersReducer = createReducer(
       { member, formData: null },
       {
         ...state,
-        callState: initialState.callState,
-        lastFilteredFetch: null,
+        filteredMembers: withUpdatedMembers(state.filteredMembers, [member]),
       },
     ),
   ),
@@ -256,15 +234,14 @@ export const membersReducer = createReducer(
         member,
         formData: draftWithEdits(state.entities[member.id]),
       })),
-      { ...state, callState: initialState.callState, lastFilteredFetch: null },
+      { ...state, filteredMembers: withUpdatedMembers(state.filteredMembers, members) },
     ),
   ),
 
   on(MembersActions.deleteMemberSucceeded, (state, { memberId }): MembersState =>
     membersAdapter.removeOne(memberId, {
       ...state,
-      callState: initialState.callState,
-      lastFilteredFetch: null,
+      filteredMembers: state.filteredMembers.filter(({ id }) => id !== memberId),
     }),
   ),
 
@@ -305,13 +282,4 @@ export const membersReducer = createReducer(
 
     return membersAdapter.upsertOne({ member: originalMember, formData: null }, state);
   }),
-
-  on(MembersActions.requestTimedOut, (state): MembersState => ({
-    ...state,
-    callState: {
-      status: 'error',
-      loadStart: null,
-      error: { name: 'LCCError', message: 'Request timed out' },
-    },
-  })),
 );

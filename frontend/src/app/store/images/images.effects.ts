@@ -1,8 +1,19 @@
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
-import { Store } from '@ngrx/store';
+import { Action, Store } from '@ngrx/store';
 import moment from 'moment-timezone';
-import { Observable, combineLatest, forkJoin, from, merge, of, race, timer } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  ReplaySubject,
+  combineLatest,
+  concat,
+  forkJoin,
+  from,
+  merge,
+  of,
+  timer,
+} from 'rxjs';
 import {
   catchError,
   exhaustMap,
@@ -10,10 +21,10 @@ import {
   groupBy,
   map,
   mergeMap,
+  share,
   switchMap,
   take,
   tap,
-  timeout,
   toArray,
 } from 'rxjs/operators';
 
@@ -73,6 +84,36 @@ export class ImagesEffects {
     );
   }
 
+  private uploadNewImages(
+    newImagesMetadata: Omit<BaseImage, 'fileSize'>[],
+    indexedDbImageData: IndexedDbImageData[],
+  ): {
+    progress$: Observable<Action>;
+    results$: Observable<{ success: boolean; images: Image[] }[]>;
+  } {
+    const total = newImagesMetadata.length;
+    const uploads$ = from(newImagesMetadata).pipe(
+      mergeMap(
+        metadata => this.uploadSingleNewImage(metadata, indexedDbImageData),
+        this.UPLOAD_CONCURRENCY,
+      ),
+      // Replayed, as uploads that fail without a request settle before a late subscriber
+      share({ connector: () => new ReplaySubject(), resetOnRefCountZero: false }),
+    );
+
+    return {
+      progress$: concat(
+        of(ImagesActions.imageUploadsProgressed({ uploaded: 0, total })),
+        uploads$.pipe(
+          map((_, index) =>
+            ImagesActions.imageUploadsProgressed({ uploaded: index + 1, total }),
+          ),
+        ),
+      ),
+      results$: uploads$.pipe(toArray()),
+    };
+  }
+
   // Updates the metadata of existing album images in a single (file-less) request.
   private updateExistingImages(
     existingImages: BaseImage[],
@@ -93,22 +134,19 @@ export class ImagesEffects {
     return this.actions$.pipe(
       ofType(ImagesActions.fetchAllImagesMetadataRequested),
       switchMap(() =>
-        race(
-          this.imagesApiService.getAllImagesMetadata().pipe(
-            map(response =>
-              ImagesActions.fetchAllImagesMetadataSucceeded({
-                images: response.data,
+        this.imagesApiService.getAllImagesMetadata().pipe(
+          map(response =>
+            ImagesActions.fetchAllImagesMetadataSucceeded({
+              images: response.data,
+            }),
+          ),
+          catchError(error =>
+            of(
+              ImagesActions.fetchAllImagesMetadataFailed({
+                error: this.parseError(error),
               }),
             ),
-            catchError(error =>
-              of(
-                ImagesActions.fetchAllImagesMetadataFailed({
-                  error: this.parseError(error),
-                }),
-              ),
-            ),
           ),
-          timer(10_000).pipe(map(() => ImagesActions.requestTimedOut())),
         ),
       ),
     );
@@ -144,7 +182,6 @@ export class ImagesEffects {
       ofType(ImagesActions.fetchBatchThumbnailsRequested),
       mergeMap(({ imageIds, context }) =>
         this.imagesApiService.getBatchThumbnailImages(imageIds).pipe(
-          timeout(30000),
           map(response =>
             ImagesActions.fetchBatchThumbnailsSucceeded({
               images: response.data,
@@ -172,10 +209,13 @@ export class ImagesEffects {
           take(1),
           switchMap(lastFetch => {
             if (!lastFetch) {
-              // Trigger metadata fetch and wait until it succeeds before proceeding
+              // Trigger metadata fetch and wait until it settles before proceeding
               this.store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
               return this.actions$.pipe(
-                ofType(ImagesActions.fetchAllImagesMetadataSucceeded),
+                ofType(
+                  ImagesActions.fetchAllImagesMetadataSucceeded,
+                  ImagesActions.fetchAllImagesMetadataFailed,
+                ),
                 take(1),
                 switchMap(() =>
                   this.store
@@ -317,7 +357,6 @@ export class ImagesEffects {
         group$.pipe(
           exhaustMap(action =>
             this.imagesApiService.getMainImage(action.imageId).pipe(
-              timeout(30000),
               map(response =>
                 ImagesActions.fetchMainImageSucceeded({ image: response.data }),
               ),
@@ -353,7 +392,7 @@ export class ImagesEffects {
       ),
     );
 
-    const periodicCheck$ = timer(4000, 5 * 60 * 1000).pipe(
+    const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
       switchMap(() =>
         this.store.select(ImagesSelectors.selectLastMetadataFetch).pipe(take(1)),
       ),
@@ -366,21 +405,26 @@ export class ImagesEffects {
   });
 
   refetchFilteredThumbnails$ = createEffect(() => {
-    const refetchActions$ = this.actions$.pipe(
-      ofType(
-        AppActions.refreshAppRequested,
-        ImagesActions.addImageSucceeded,
-        ImagesActions.addImagesSucceeded,
-        ImagesActions.updateImageSucceeded,
-        ImagesActions.updateAlbumSucceeded,
-        ImagesActions.deleteImageSucceeded,
-        ImagesActions.deleteAlbumSucceeded,
-        ImagesActions.automaticAlbumCoverSwitchSucceeded,
-        ImagesActions.paginationOptionsChanged,
+    const refetchActions$ = merge(
+      this.actions$.pipe(
+        ofType(
+          AppActions.refreshAppRequested,
+          ImagesActions.addImageSucceeded,
+          ImagesActions.addImagesSucceeded,
+          ImagesActions.updateImageSucceeded,
+          ImagesActions.updateAlbumSucceeded,
+          ImagesActions.deleteImageSucceeded,
+          ImagesActions.deleteAlbumSucceeded,
+          ImagesActions.automaticAlbumCoverSwitchSucceeded,
+        ),
+      ),
+      this.actions$.pipe(
+        ofType(ImagesActions.paginationOptionsChanged),
+        filter(({ fetch }) => fetch),
       ),
     );
 
-    const periodicCheck$ = timer(5500, 5 * 60 * 1000).pipe(
+    const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(ImagesSelectors.selectLastFilteredThumbnailsFetch),
@@ -403,30 +447,26 @@ export class ImagesEffects {
     );
   });
 
+  // Every metadata refresh can change which images are album covers
   refetchAlbumCoverThumbnails$ = createEffect(() => {
-    const refetchActions$ = this.actions$.pipe(
-      ofType(
-        AppActions.refreshAppRequested,
-        ImagesActions.addImageSucceeded,
-        ImagesActions.addImagesSucceeded,
-        ImagesActions.updateImageSucceeded,
-        ImagesActions.updateAlbumSucceeded,
-        ImagesActions.deleteImageSucceeded,
-        ImagesActions.deleteAlbumSucceeded,
-        ImagesActions.automaticAlbumCoverSwitchSucceeded,
-      ),
+    const metadataRefreshed$ = this.actions$.pipe(
+      ofType(ImagesActions.fetchAllImagesMetadataSucceeded),
     );
 
-    const periodicCheck$ = timer(7000, 5 * 60 * 1000).pipe(
+    const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
       switchMap(() =>
-        this.store.select(ImagesSelectors.selectLastAlbumCoversFetch).pipe(take(1)),
+        combineLatest([
+          this.store.select(ImagesSelectors.selectLastAlbumCoversFetch),
+          this.store.select(ImagesSelectors.selectLastMetadataFetch),
+        ]).pipe(take(1)),
       ),
-      filter(lastFetch => this.isExpired(lastFetch)),
+      filter(
+        ([lastAlbumCoversFetch, lastMetadataFetch]) =>
+          this.isExpired(lastAlbumCoversFetch) && !this.isExpired(lastMetadataFetch),
+      ),
     );
 
-    return merge(refetchActions$, periodicCheck$).pipe(
-      switchMap(() => this.store.select(ImagesSelectors.selectLastMetadataFetch)),
-      filter(lastMetadataFetch => !this.isExpired(lastMetadataFetch)),
+    return merge(metadataRefreshed$, periodicCheck$).pipe(
       switchMap(() =>
         this.store
           .select(ImagesSelectors.selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls)
@@ -550,7 +590,7 @@ export class ImagesEffects {
       ]),
       mergeMap(([imageFilesResult, user, newImagesFormData]) => {
         if (this.isLccError(imageFilesResult)) {
-          return of(ImagesActions.addImageFailed({ error: imageFilesResult }));
+          return of(ImagesActions.addImagesFailed({ error: imageFilesResult }));
         }
 
         if (!imageFilesResult.length) {
@@ -558,7 +598,7 @@ export class ImagesEffects {
             name: 'LCCError',
             message: 'No image data found in IndexedDB',
           };
-          return of(ImagesActions.addImageFailed({ error }));
+          return of(ImagesActions.addImagesFailed({ error }));
         }
 
         const newImagesMetadata: Omit<BaseImage, 'fileSize'>[] = [];
@@ -593,12 +633,12 @@ export class ImagesEffects {
           });
         }
 
-        return from(newImagesMetadata).pipe(
-          mergeMap(
-            metadata => this.uploadSingleNewImage(metadata, imageFilesResult),
-            this.UPLOAD_CONCURRENCY,
-          ),
-          toArray(),
+        const { progress$, results$ } = this.uploadNewImages(
+          newImagesMetadata,
+          imageFilesResult,
+        );
+
+        const result$ = results$.pipe(
           map(results => {
             const images = results.flatMap(result => result.images);
             const failedCount = results.filter(result => !result.success).length;
@@ -614,6 +654,8 @@ export class ImagesEffects {
             return ImagesActions.addImagesSucceeded({ images });
           }),
         );
+
+        return merge(progress$, result$);
       }),
     );
   });
@@ -750,17 +792,15 @@ export class ImagesEffects {
 
           // New images upload one file per request (concurrency-bounded); existing
           // image edits go in a single file-less request, well under the body limit.
-          const newImages$ = newImagesMetadata.length
-            ? from(newImagesMetadata).pipe(
-                mergeMap(
-                  metadata =>
-                    this.uploadSingleNewImage(
-                      metadata,
-                      indexedDbImageDataResult as IndexedDbImageData[],
-                    ),
-                  this.UPLOAD_CONCURRENCY,
-                ),
-                toArray(),
+          const uploads = newImagesMetadata.length
+            ? this.uploadNewImages(
+                newImagesMetadata,
+                indexedDbImageDataResult as IndexedDbImageData[],
+              )
+            : null;
+
+          const newImages$ = uploads
+            ? uploads.results$.pipe(
                 map(results => ({
                   newImages: results.flatMap(result => result.images),
                   failed: results.filter(result => !result.success).length,
@@ -772,7 +812,7 @@ export class ImagesEffects {
             ? this.updateExistingImages(existingImages)
             : of({ updatedImages: [] as BaseImage[], failed: 0 });
 
-          return forkJoin([newImages$, updatedImages$]).pipe(
+          const result$ = forkJoin([newImages$, updatedImages$]).pipe(
             map(([newResult, updateResult]) => {
               const failedCount = newResult.failed + updateResult.failed;
 
@@ -791,6 +831,8 @@ export class ImagesEffects {
               });
             }),
           );
+
+          return merge(uploads?.progress$ ?? EMPTY, result$);
         },
       ),
     );
@@ -801,7 +843,6 @@ export class ImagesEffects {
       ofType(ImagesActions.deleteImageRequested),
       mergeMap(({ image }) => {
         return this.imagesApiService.deleteImage(image.id).pipe(
-          filter(response => response.data === image.id),
           map(() => ImagesActions.deleteImageSucceeded({ image })),
           catchError(error =>
             of(ImagesActions.deleteImageFailed({ image, error: this.parseError(error) })),

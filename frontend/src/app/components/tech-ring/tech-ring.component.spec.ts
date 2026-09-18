@@ -24,7 +24,7 @@ describe('TechRingComponent', () => {
   });
 
   it('should render every technology', () => {
-    expect(icons().length).toBe(14);
+    expect(icons().length).toBe(13);
   });
 
   it('should taper the lift over the three icons either side', () => {
@@ -44,9 +44,9 @@ describe('TechRingComponent', () => {
   it('should measure the lift around the ring rather than along the list', () => {
     hover(0);
 
-    expect(icons()[13].classes['tech--neighbour']).toBe(true);
+    expect(icons()[12].classes['tech--neighbour']).toBe(true);
     expect(icons()[1].classes['tech--neighbour']).toBe(true);
-    expect(icons()[12].classes['tech--outer-neighbour']).toBe(true);
+    expect(icons()[11].classes['tech--outer-neighbour']).toBe(true);
     expect(icons()[2].classes['tech--outer-neighbour']).toBe(true);
   });
 
@@ -64,7 +64,7 @@ describe('TechRingComponent', () => {
 
     hover(3);
 
-    expect(entries().length).toBe(14);
+    expect(entries().length).toBe(13);
     expect(
       entries().filter(entry => entry.classes['tech-info__entry--visible']).length,
     ).toBe(1);

@@ -1,6 +1,7 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 
 import { Id } from '@app/models';
+import { loadStatus } from '@app/utils';
 
 import {
   MembersState,
@@ -11,10 +12,7 @@ import {
 
 const selectMembersState = createFeatureSelector<MembersState>('membersState');
 
-export const selectCallState = createSelector(
-  selectMembersState,
-  state => state.callState,
-);
+const selectFailedLoads = createSelector(selectMembersState, state => state.failedLoads);
 
 export const selectRecordsScope = createSelector(
   selectMembersState,
@@ -66,6 +64,28 @@ export const selectMemberByNumber = (number: number) =>
   createSelector(
     selectAllMembers,
     allMembers => allMembers.find(member => member.number === number) ?? null,
+  );
+
+export const selectFilteredMembersStatus = createSelector(
+  selectLastFilteredFetch,
+  selectFailedLoads,
+  (lastFetch, failedLoads) =>
+    loadStatus(lastFetch !== null, failedLoads.includes('filtered')),
+);
+
+export const selectMemberProfileStatus = (number: number) =>
+  createSelector(selectMemberByNumber(number), selectFailedLoads, (member, failedLoads) =>
+    loadStatus(!!member, failedLoads.includes('member')),
+  );
+
+// Only a record from the admin API holds every detail the member form edits
+export const selectEditableMemberStatus = (id: Id) =>
+  createSelector(
+    selectMemberById(id),
+    selectRecordsScope,
+    selectFailedLoads,
+    (member, recordsScope, failedLoads) =>
+      loadStatus(!!member && recordsScope === 'admin', failedLoads.includes('member')),
   );
 
 export const selectMemberFormDataById = (id: Id | null) =>

@@ -1,25 +1,8 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 
-import * as ArticlesSelectors from '@app/store/articles/articles.selectors';
-import * as EventsSelectors from '@app/store/events/events.selectors';
-import * as ImagesSelectors from '@app/store/images/images.selectors';
-import * as MembersSelectors from '@app/store/members/members.selectors';
-
 import { AppState } from './app.reducer';
 
 export const selectAppState = createFeatureSelector<AppState>('appState');
-
-export const selectIsLoading = createSelector(
-  ArticlesSelectors.selectCallState,
-  EventsSelectors.selectCallState,
-  ImagesSelectors.selectCallState,
-  MembersSelectors.selectCallState,
-  (articlesCallState, eventsCallState, imagesCallState, membersCallState) => {
-    return [articlesCallState, eventsCallState, imagesCallState, membersCallState].some(
-      callState => callState.status === 'loading',
-    );
-  },
-);
 
 export const selectIsDarkMode = createSelector(selectAppState, state => state.isDarkMode);
 

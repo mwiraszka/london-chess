@@ -26,9 +26,6 @@ export const fetchAllMembersFailed = createAction(
 export const fetchFilteredMembersRequested = createAction(
   '[Members] Fetch filtered members requested',
 );
-export const fetchFilteredMembersInBackgroundRequested = createAction(
-  '[Members] Fetch filtered members in background requested',
-);
 export const fetchFilteredMembersSucceeded = createAction(
   '[Members] Fetch filtered members succeeded',
   props<{
@@ -148,5 +145,3 @@ export const exportMembersToCsvFailed = createAction(
   '[Members] Export members to CSV failed',
   props<{ error: LccError }>(),
 );
-
-export const requestTimedOut = createAction('[Members] Request timed out');

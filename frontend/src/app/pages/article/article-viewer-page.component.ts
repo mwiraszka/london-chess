@@ -2,17 +2,18 @@ import { MapIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
-import { Observable, combineLatest } from 'rxjs';
+import { Observable, combineLatest, of } from 'rxjs';
 import { distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { ArticleSkeletonComponent } from '@app/components/article-skeleton/article-skeleton.component';
 import { ArticleComponent } from '@app/components/article/article.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -22,8 +23,9 @@ import {
   Id,
   Image,
   InternalLink,
+  LoadStatus,
 } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
@@ -43,6 +45,10 @@ import { ImagesSelectors } from '@app/store/images';
           [isWideView]="vm.isWideView">
         </lcc-article>
         <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+      } @else if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load this article"
+          (retry)="onRetry(vm.articleId)" />
       } @else {
         <lcc-article-skeleton />
       }
@@ -54,6 +60,7 @@ import { ImagesSelectors } from '@app/store/images';
     ArticleSkeletonComponent,
     CommonModule,
     LinkListComponent,
+    LoadFailedComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -65,11 +72,15 @@ export class ArticleViewerPageComponent implements OnInit {
   };
   public viewModel$?: Observable<{
     article: Article | null;
+    articleId: Id;
     bannerImage: Image | null;
     bodyImages: Image[];
     isAdmin: boolean;
     isWideView: boolean;
+    status: LoadStatus;
   }>;
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly activatedRoute: ActivatedRoute,
@@ -85,10 +96,12 @@ export class ArticleViewerPageComponent implements OnInit {
       switchMap(articleId =>
         combineLatest([
           this.store.select(ArticlesSelectors.selectArticleById(articleId)),
+          of(articleId),
           this.store.select(ImagesSelectors.selectBannerImageByArticleId(articleId)),
           this.store.select(ImagesSelectors.selectBodyImagesByArticleId(articleId)),
           this.store.select(AuthSelectors.selectIsAdmin),
           this.store.select(AppSelectors.selectIsWideView),
+          this.store.select(ArticlesSelectors.selectArticleStatus(articleId)),
         ]),
       ),
       distinctUntilChanged(isEqual),
@@ -101,13 +114,17 @@ export class ArticleViewerPageComponent implements OnInit {
         this.metaAndTitleService.updateTitle(article.title);
         this.metaAndTitleService.updateDescription(articlePreview);
       }),
-      map(([article, bannerImage, bodyImages, isAdmin, isWideView]) => ({
-        article: article ?? null,
-        bannerImage,
-        bodyImages,
-        isAdmin,
-        isWideView,
-      })),
+      map(
+        ([article, articleId, bannerImage, bodyImages, isAdmin, isWideView, status]) => ({
+          article: article ?? null,
+          articleId,
+          bannerImage,
+          bodyImages,
+          isAdmin,
+          isWideView,
+          status,
+        }),
+      ),
     );
   }
 
@@ -126,18 +143,21 @@ export class ArticleViewerPageComponent implements OnInit {
       body: `Update ${article.title}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(ArticlesActions.deleteArticleRequested({ article }), [
+          ArticlesActions.deleteArticleSucceeded,
+          ArticlesActions.deleteArticleFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        isModal: true,
-        inputs: { dialog },
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      isModal: true,
+      inputs: { dialog },
+    });
+  }
 
-    if (result === 'confirm') {
-      this.store.dispatch(ArticlesActions.deleteArticleRequested({ article }));
-    }
+  public onRetry(articleId: Id): void {
+    this.store.dispatch(ArticlesActions.fetchArticleRequested({ articleId }));
   }
 }

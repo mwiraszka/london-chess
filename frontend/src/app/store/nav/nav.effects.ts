@@ -11,6 +11,7 @@ import { DialogService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as EventsActions from '@app/store/events/events.actions';
+import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import { isCollectionId, isDefined, isEntity, isString } from '@app/utils';
@@ -21,6 +22,7 @@ import * as NavSelectors from './nav.selectors';
 const RECORD_FETCH_FAILURES = [
   ArticlesActions.fetchArticleFailed,
   EventsActions.fetchEventFailed,
+  GamesActions.fetchGameFailed,
   MembersActions.fetchMemberFailed,
 ] as const;
 
@@ -113,19 +115,8 @@ export class NavEffects {
   leaveMissingRecord$ = createEffect(() =>
     this.actions$.pipe(
       ofType(...RECORD_FETCH_FAILURES),
-      map(action => {
-        if (isMissingRecord(action)) {
-          return NavActions.navigationRequested({ path: '/' });
-        }
-        switch (action.type) {
-          case ArticlesActions.fetchArticleFailed.type:
-            return NavActions.navigationRequested({ path: 'news' });
-          case EventsActions.fetchEventFailed.type:
-            return NavActions.navigationRequested({ path: 'schedule' });
-          default:
-            return NavActions.navigationRequested({ path: 'members' });
-        }
-      }),
+      filter(isMissingRecord),
+      map(() => NavActions.navigationRequested({ path: '/' })),
     ),
   );
 

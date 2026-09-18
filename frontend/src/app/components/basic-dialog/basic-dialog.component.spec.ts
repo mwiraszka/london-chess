@@ -1,7 +1,9 @@
-import { Renderer2 } from '@angular/core';
+import { Renderer2, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { query, queryTextContent } from '@app/utils';
+import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
+import { Dialog } from '@app/models';
+import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { BasicDialogComponent } from './basic-dialog.component';
 
@@ -9,7 +11,7 @@ describe('BasicDialogComponent', () => {
   let fixture: ComponentFixture<BasicDialogComponent>;
   let component: BasicDialogComponent;
 
-  const mockDialog = {
+  const mockDialog: Dialog = {
     title: 'Confirm' as const,
     body: 'Body of the mock dialog',
     confirmButtonText: 'Confirm',
@@ -66,6 +68,103 @@ describe('BasicDialogComponent', () => {
       document.dispatchEvent(enterEvent);
 
       expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+    });
+  });
+
+  describe('with a confirm action', () => {
+    let confirmAction: Mock<Promise<unknown>, []>;
+    let finishAction: () => void;
+
+    beforeEach(() => {
+      confirmAction = vi.fn<() => Promise<unknown>>(
+        () => new Promise<void>(resolve => (finishAction = () => resolve())),
+      );
+      fixture.destroy();
+      fixture = TestBed.createComponent(BasicDialogComponent);
+      component = fixture.componentInstance;
+      dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
+      component.dialog = { ...mockDialog, confirmAction };
+      fixture.detectChanges();
+    });
+
+    it('should stay open until the confirm action finishes', async () => {
+      const buttons: DialogButtonsComponent = query(
+        fixture.debugElement,
+        'lcc-dialog-buttons',
+      ).componentInstance;
+
+      const confirmation = buttons.confirm();
+      fixture.detectChanges();
+
+      expect(confirmAction).toHaveBeenCalledTimes(1);
+      expect(query(fixture.debugElement, '.confirm-button ea-spinner')).toBeTruthy();
+      expect(dialogResultSpy).not.toHaveBeenCalled();
+
+      finishAction();
+      await confirmation;
+
+      expect(dialogResultSpy).toHaveBeenCalledTimes(1);
+      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+    });
+
+    it('should run the action once however often enter is pressed', () => {
+      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+
+      document.dispatchEvent(enterEvent);
+      document.dispatchEvent(enterEvent);
+
+      expect(confirmAction).toHaveBeenCalledTimes(1);
+      expect(dialogResultSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('upload progress', () => {
+    const uploadProgress = signal<{ uploaded: number; total: number } | null>(null);
+
+    beforeEach(() => {
+      uploadProgress.set(null);
+      fixture.destroy();
+      fixture = TestBed.createComponent(BasicDialogComponent);
+      component = fixture.componentInstance;
+      component.dialog = { ...mockDialog, uploadProgress };
+      fixture.detectChanges();
+    });
+
+    it('should not render a progress bar before any upload starts', () => {
+      expect(query(fixture.debugElement, 'ea-progress-bar')).toBeFalsy();
+    });
+
+    it('should render the progress of the uploads in flight', () => {
+      uploadProgress.set({ uploaded: 1, total: 3 });
+      fixture.detectChanges();
+
+      const progressBar = query(
+        fixture.debugElement,
+        'ea-progress-bar',
+      ).componentInstance;
+      expect(progressBar.value()).toBe(1);
+      expect(progressBar.max()).toBe(3);
+      expect(queryTextContent(fixture.debugElement, '.upload-progress__text')).toBe(
+        'Uploaded 1 of 3 images',
+      );
+    });
+
+    it('should use the singular for a single upload', () => {
+      uploadProgress.set({ uploaded: 0, total: 1 });
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.upload-progress__text')).toBe(
+        'Uploaded 0 of 1 image',
+      );
+    });
+
+    it('should not render a progress bar for dialogs without uploads', () => {
+      fixture.destroy();
+      fixture = TestBed.createComponent(BasicDialogComponent);
+      fixture.componentInstance.dialog = mockDialog;
+      fixture.detectChanges();
+
+      expect(queryAll(fixture.debugElement, '.upload-progress')).toHaveLength(0);
     });
   });
 

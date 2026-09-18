@@ -1,17 +1,26 @@
 import { ShieldCheckIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
-import { Observable, combineLatest } from 'rxjs';
+import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
+import { FormSkeletonComponent } from '@app/components/form-skeleton/form-skeleton.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberFormComponent } from '@app/components/member-form/member-form.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { EditorPage, Id, InternalLink, Member, MemberFormData } from '@app/models';
+import {
+  EditorPage,
+  Id,
+  InternalLink,
+  LoadStatus,
+  Member,
+  MemberFormData,
+} from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -21,32 +30,45 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
   selector: 'lcc-member-editor-page',
   template: `
     @if (viewModel$ | async; as vm) {
-      @if (vm.isFormReady) {
-        <lcc-page-header
-          [hasUnsavedChanges]="vm.hasUnsavedChanges"
-          [icon]="adminIcon"
-          [heading]="vm.pageHeading">
-        </lcc-page-header>
+      @switch (vm.status) {
+        @case ('loaded') {
+          <lcc-page-header
+            [hasUnsavedChanges]="vm.hasUnsavedChanges"
+            [icon]="adminIcon"
+            [heading]="vm.pageHeading">
+          </lcc-page-header>
 
-        <lcc-member-form
-          [formData]="vm.formData"
-          [hasUnsavedChanges]="vm.hasUnsavedChanges"
-          [isSafeMode]="vm.isSafeMode"
-          [originalMember]="vm.originalMember"
-          (cancel)="onCancel()"
-          (change)="onChange($event.memberId, $event.formData)"
-          (requestAddMember)="onRequestAddMember($event.notifyMember)"
-          (requestUpdateMember)="
-            onRequestUpdateMember($event.memberId, $event.notifyMember)
-          "
-          (restore)="onRestore($event)">
-        </lcc-member-form>
+          <lcc-member-form
+            [formData]="vm.formData"
+            [hasUnsavedChanges]="vm.hasUnsavedChanges"
+            [isSafeMode]="vm.isSafeMode"
+            [originalMember]="vm.originalMember"
+            (cancel)="onCancel()"
+            (change)="onChange($event.memberId, $event.formData)"
+            (restore)="onRestore($event)">
+          </lcc-member-form>
+        }
+        @case ('failed') {
+          <lcc-load-failed
+            title="Unable to load this member"
+            (retry)="onRetry(vm.memberId)" />
+        }
+        @default {
+          <lcc-form-skeleton [fieldCount]="12" />
+        }
       }
 
       <lcc-link-list [links]="[membersPageLink]"></lcc-link-list>
     }
   `,
-  imports: [CommonModule, LinkListComponent, MemberFormComponent, PageHeaderComponent],
+  imports: [
+    CommonModule,
+    FormSkeletonComponent,
+    LinkListComponent,
+    LoadFailedComponent,
+    MemberFormComponent,
+    PageHeaderComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberEditorPageComponent implements EditorPage, OnInit {
@@ -60,10 +82,11 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
   public viewModel$?: Observable<{
     formData: MemberFormData;
     hasUnsavedChanges: boolean;
-    isFormReady: boolean;
     isSafeMode: boolean;
+    memberId: Id | null;
     originalMember: Member | null;
     pageHeading: string;
+    status: LoadStatus;
   }>;
 
   constructor(
@@ -82,28 +105,21 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
           this.store.select(MembersSelectors.selectMemberFormDataById(memberId)),
           this.store.select(MembersSelectors.selectHasUnsavedChanges(memberId)),
           this.store.select(AppSelectors.selectIsSafeMode),
-          this.store.select(MembersSelectors.selectRecordsScope),
+          memberId
+            ? this.store.select(MembersSelectors.selectEditableMemberStatus(memberId))
+            : of<LoadStatus>('loaded'),
         ]).pipe(
-          map(
-            ([
-              originalMember,
-              formData,
-              hasUnsavedChanges,
-              isSafeMode,
-              recordsScope,
-            ]) => ({
-              originalMember,
-              formData,
-              hasUnsavedChanges,
-              // The form reads its values once, so it waits for the record admins fetch
-              isFormReady:
-                memberId === null || (!!originalMember && recordsScope === 'admin'),
-              isSafeMode,
-              pageHeading: originalMember
-                ? `Edit ${originalMember.firstName} ${originalMember.lastName}`
-                : 'Add a member',
-            }),
-          ),
+          map(([originalMember, formData, hasUnsavedChanges, isSafeMode, status]) => ({
+            originalMember,
+            formData,
+            hasUnsavedChanges,
+            isSafeMode,
+            memberId,
+            pageHeading: originalMember
+              ? `Edit ${originalMember.firstName} ${originalMember.lastName}`
+              : 'Add a member',
+            status,
+          })),
         ),
       ),
       tap(viewModel => {
@@ -123,12 +139,10 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
     this.store.dispatch(MembersActions.formDataChanged({ memberId, formData }));
   }
 
-  public onRequestAddMember(notifyMember: boolean): void {
-    this.store.dispatch(MembersActions.addMemberRequested({ notifyMember }));
-  }
-
-  public onRequestUpdateMember(memberId: Id, notifyMember: boolean): void {
-    this.store.dispatch(MembersActions.updateMemberRequested({ memberId, notifyMember }));
+  public onRetry(memberId: Id | null): void {
+    if (memberId) {
+      this.store.dispatch(MembersActions.fetchMemberRequested({ memberId }));
+    }
   }
 
   public onRestore(memberId: Id | null): void {

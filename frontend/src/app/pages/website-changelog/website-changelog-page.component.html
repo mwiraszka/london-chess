@@ -26,25 +26,29 @@
     }
   </nav>
 
-  <section class="intro">
-    <div class="image-container">
-      <lcc-tech-ring />
+  <ea-card
+    class="intro"
+    [fullWidth]="true">
+    <div class="intro__layout">
+      <div class="image-container">
+        <lcc-tech-ring />
+      </div>
+      <div class="text-container">
+        <p>
+          The London Chess Club website is an open-source project built and maintained by
+          <lcc-member-link
+            name="Michal Wiraszka"
+            appearance="link"
+            [memberNumber]="0" />. Anyone is free to read and use the code behind it.
+        </p>
+        <p>
+          Below you'll find details about all the latest changes made to the site. Changes
+          for each release are grouped into what is new, what has been improved and what
+          has been fixed.
+        </p>
+      </div>
     </div>
-    <div class="text-container">
-      <p>
-        The London Chess Club website is an open-source project built and maintained by
-        <lcc-member-link
-          name="Michal Wiraszka"
-          appearance="link"
-          [memberNumber]="0" />. Anyone is free to read and use the code behind it.
-      </p>
-      <p>
-        Below you'll find details about all the latest changes made to the site. Changes
-        for each release are grouped into what is new, what has been improved and what has
-        been fixed.
-      </p>
-    </div>
-  </section>
+  </ea-card>
 
   <div class="section-title section-title--releases">
     <h3>Releases</h3>

@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.confirm-button {
+  position: relative;
+}
+
+// The label keeps its space, so the button holds its width while the spinner shows
+.confirm-button--pending .confirm-button__label {
+  visibility: hidden;
+}
+
+.confirm-button__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  transform: translate(-50%, -50%);
+}

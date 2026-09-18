@@ -15,6 +15,7 @@ import { LccError } from '@app/models';
 import { ArticlesActions } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions } from '@app/store/events';
+import { GamesActions } from '@app/store/games';
 import { ImagesActions } from '@app/store/images';
 import { MembersActions } from '@app/store/members';
 import { NavActions } from '@app/store/nav';
@@ -164,19 +165,6 @@ describe('AppEffects', () => {
             done();
           });
         }));
-
-      it('should display toast for requestTimedOut', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.requestTimedOut());
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Request timed out', {
-              title: 'Articles request',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
     });
 
     describe('Events actions', () => {
@@ -239,6 +227,21 @@ describe('AppEffects', () => {
               'Successfully updated Original Event',
               { title: 'Event update', variant: 'success' },
             );
+            done();
+          });
+        }));
+    });
+
+    describe('Games actions', () => {
+      it('should display toast for fetchFilteredGamesFailed', () =>
+        withDone(done => {
+          actions$.next(GamesActions.fetchFilteredGamesFailed({ error: mockError }));
+
+          effects.notify$.subscribe(() => {
+            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
+              title: 'Load games',
+              variant: 'warning',
+            });
             done();
           });
         }));

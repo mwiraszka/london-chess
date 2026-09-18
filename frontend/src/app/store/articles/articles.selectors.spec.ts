@@ -1,17 +1,11 @@
 import { INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
-import { Article, ArticleFormData, CallState, DataPaginationOptions } from '@app/models';
+import { Article, ArticleFormData, DataPaginationOptions } from '@app/models';
 
 import { ArticlesState, articlesAdapter } from './articles.reducer';
 import * as ArticlesSelectors from './articles.selectors';
 
 describe('Articles Selectors', () => {
-  const mockCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
   const mockOptions: DataPaginationOptions<Article> = {
     page: 1,
     pageSize: 10,
@@ -29,7 +23,7 @@ describe('Articles Selectors', () => {
 
   const mockArticlesState: ArticlesState = {
     ...articlesAdapter.getInitialState({
-      callState: mockCallState,
+      failedLoads: [],
       newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
       lastHomePageFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
@@ -52,27 +46,83 @@ describe('Articles Selectors', () => {
     ids: [MOCK_ARTICLES[0].id, MOCK_ARTICLES[1].id],
   };
 
-  describe('selectCallState', () => {
-    it('should select the call state', () => {
-      const result = ArticlesSelectors.selectCallState.projector(mockArticlesState);
+  describe('selectHomePageArticlesStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = ArticlesSelectors.selectHomePageArticlesStatus.projector(null, [
+        'filtered',
+      ]);
 
-      expect(result).toEqual(mockCallState);
+      expect(result).toBe('loading');
     });
 
-    it('should select loading call state', () => {
-      const loadingCallState: CallState = {
-        status: 'loading',
-        error: null,
-        loadStart: '2025-01-15T10:00:00.000Z',
-      };
-      const state: ArticlesState = {
-        ...mockArticlesState,
-        callState: loadingCallState,
-      };
+    it('should be failed when the first results could not be loaded', () => {
+      const result = ArticlesSelectors.selectHomePageArticlesStatus.projector(null, [
+        'homePage',
+      ]);
 
-      const result = ArticlesSelectors.selectCallState.projector(state);
+      expect(result).toBe('failed');
+    });
 
-      expect(result).toEqual(loadingCallState);
+    it('should stay loaded when a later refresh fails', () => {
+      const result = ArticlesSelectors.selectHomePageArticlesStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['homePage'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectFilteredArticlesStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = ArticlesSelectors.selectFilteredArticlesStatus.projector(null, [
+        'homePage',
+      ]);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the first results could not be loaded', () => {
+      const result = ArticlesSelectors.selectFilteredArticlesStatus.projector(null, [
+        'filtered',
+      ]);
+
+      expect(result).toBe('failed');
+    });
+
+    it('should stay loaded when a later refresh fails', () => {
+      const result = ArticlesSelectors.selectFilteredArticlesStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['filtered'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectArticleStatus', () => {
+    it('should be loaded once the article is stored', () => {
+      const selector = ArticlesSelectors.selectArticleStatus(MOCK_ARTICLES[0].id);
+
+      const result = selector.projector(MOCK_ARTICLES[0], ['article']);
+
+      expect(result).toBe('loaded');
+    });
+
+    it('should be loading while the article is on its way', () => {
+      const selector = ArticlesSelectors.selectArticleStatus(MOCK_ARTICLES[0].id);
+
+      const result = selector.projector(null, ['homePage']);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the article could not be loaded', () => {
+      const selector = ArticlesSelectors.selectArticleStatus(MOCK_ARTICLES[0].id);
+
+      const result = selector.projector(null, ['article']);
+
+      expect(result).toBe('failed');
     });
   });
 

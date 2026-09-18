@@ -5,7 +5,7 @@ import { Observable, combineLatest, firstValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
@@ -14,6 +14,7 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { ClubLinksComponent } from '@app/components/club-links/club-links.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
 import { REGIONAL_CLUBS } from '@app/constants/clubs';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -23,15 +24,16 @@ import {
   BasicDialogResult,
   Dialog,
   Event,
-  Id,
   Image,
   InternalLink,
+  LoadStatus,
 } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
+import { combinedLoadStatus } from '@app/utils';
 
 @UntilDestroy()
 @Component({
@@ -45,6 +47,7 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
     CommonModule,
     EventsTableComponent,
     LinkListComponent,
+    LoadFailedComponent,
     PhotoGridComponent,
     RouterLink,
     TooltipDirective,
@@ -58,12 +61,12 @@ export class HomePageComponent implements OnInit {
     allImages: Image[];
     homePageArticles: Article[];
     homePageEvents: Event[];
+    articlesStatus: LoadStatus;
+    eventsStatus: LoadStatus;
     isAdmin: boolean;
-    isLoadingArticles: boolean;
-    isLoadingEvents: boolean;
-    isLoadingImages: boolean;
     nextEvent: Event | null;
     photoImages: Image[];
+    photosStatus: LoadStatus;
   }>;
 
   public aboutPageLink: InternalLink = {
@@ -100,6 +103,8 @@ export class HomePageComponent implements OnInit {
     action: () => this.onExportToCsv(),
   };
 
+  private readonly storeRequests = inject(StoreRequestService);
+
   constructor(
     private readonly dialogService: DialogService,
     private readonly metaAndTitleService: MetaAndTitleService,
@@ -120,9 +125,9 @@ export class HomePageComponent implements OnInit {
       this.store.select(ImagesSelectors.selectAllImages),
       this.store.select(AuthSelectors.selectIsAdmin),
       this.store.select(EventsSelectors.selectNextEvent),
-      this.store.select(ArticlesSelectors.selectLastHomePageFetch),
-      this.store.select(EventsSelectors.selectLastHomePageFetch),
-      this.store.select(ImagesSelectors.selectLastMetadataFetch),
+      this.store.select(ArticlesSelectors.selectHomePageArticlesStatus),
+      this.store.select(EventsSelectors.selectHomePageEventsStatus),
+      this.store.select(ImagesSelectors.selectMetadataStatus),
     ]).pipe(
       untilDestroyed(this),
       map(
@@ -132,9 +137,9 @@ export class HomePageComponent implements OnInit {
           allImages,
           isAdmin,
           nextEvent,
-          lastArticlesFetch,
-          lastEventsFetch,
-          lastImagesFetch,
+          homePageArticlesStatus,
+          eventsStatus,
+          photosStatus,
         ]) => ({
           homePageArticles,
           homePageEvents,
@@ -142,9 +147,10 @@ export class HomePageComponent implements OnInit {
           isAdmin,
           nextEvent,
           photoImages: allImages.filter(image => !image.album.startsWith('_')),
-          isLoadingArticles: lastArticlesFetch === null,
-          isLoadingEvents: lastEventsFetch === null,
-          isLoadingImages: lastImagesFetch === null,
+          // Article cards show their banner images, which come with the photos
+          articlesStatus: combinedLoadStatus(homePageArticlesStatus, photosStatus),
+          eventsStatus,
+          photosStatus,
         }),
       ),
     );
@@ -164,40 +170,30 @@ export class HomePageComponent implements OnInit {
       body: `Export all ${eventCount} events to a CSV file?`,
       confirmButtonText: 'Export',
       confirmButtonType: 'primary',
+      confirmAction: () =>
+        this.storeRequests.dispatch(EventsActions.exportEventsToCsvRequested(), [
+          EventsActions.exportEventsToCsvSucceeded,
+          EventsActions.exportEventsToCsvFailed,
+        ]),
     };
 
-    const dialogResult = await this.dialogService.open<
-      BasicDialogComponent,
-      BasicDialogResult
-    >({
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
       componentType: BasicDialogComponent,
       inputs: { dialog },
       isModal: false,
     });
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
-    this.store.dispatch(EventsActions.exportEventsToCsvRequested());
   }
 
-  public onRequestDeleteAlbum(album: string): void {
-    this.store.dispatch(ImagesActions.deleteAlbumRequested({ album }));
+  public onRetryArticles(): void {
+    this.store.dispatch(ArticlesActions.fetchHomePageArticlesRequested());
+    this.onRetryPhotos();
   }
 
-  public onRequestDeleteArticle(article: Article): void {
-    this.store.dispatch(ArticlesActions.deleteArticleRequested({ article }));
+  public onRetryEvents(): void {
+    this.store.dispatch(EventsActions.fetchHomePageEventsRequested());
   }
 
-  public onRequestDeleteEvent(event: Event): void {
-    this.store.dispatch(EventsActions.deleteEventRequested({ event }));
-  }
-
-  public onRequestUpdateArticleBookmark(event: {
-    articleId: Id;
-    bookmark: boolean;
-  }): void {
-    this.store.dispatch(ArticlesActions.updateArticleBookmarkRequested(event));
+  public onRetryPhotos(): void {
+    this.store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
   }
 }

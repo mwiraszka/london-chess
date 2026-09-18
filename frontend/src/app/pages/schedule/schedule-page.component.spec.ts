@@ -7,10 +7,10 @@ import { provideRouter } from '@angular/router';
 
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 
 import { SchedulePageComponent } from './schedule-page.component';
 
@@ -25,6 +25,7 @@ describe('SchedulePageComponent', () => {
   let dialogOpenSpy: MockInstance;
   let dispatchSpy: MockInstance;
   let onExportToCsvSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
@@ -54,6 +55,10 @@ describe('SchedulePageComponent', () => {
       providers: [
         { provide: DialogService, useValue: { open: vi.fn() } },
         {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
+        {
           provide: MetaAndTitleService,
           useValue: {
             updateTitle: vi.fn(),
@@ -75,6 +80,7 @@ describe('SchedulePageComponent', () => {
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
     onExportToCsvSpy = vi.spyOn(component, 'onExportToCsv');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
@@ -85,10 +91,7 @@ describe('SchedulePageComponent', () => {
     store.overrideSelector(EventsSelectors.selectOptions, mockOptions);
     store.overrideSelector(EventsSelectors.selectScheduleView, mockScheduleView);
     store.overrideSelector(EventsSelectors.selectTotalCount, mockTotalCount);
-    store.overrideSelector(
-      EventsSelectors.selectLastFilteredFetch,
-      '2026-01-01T00:00:00.000Z',
-    );
+    store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'loaded');
 
     store.refreshState();
   });
@@ -120,10 +123,10 @@ describe('SchedulePageComponent', () => {
         filteredCount: mockFilteredCount,
         filteredEvents: mockFilteredEvents,
         isAdmin: mockIsAdmin,
-        isLoadingEvents: false,
         nextEvent: mockNextEvent,
         options: mockOptions,
         scheduleView: mockScheduleView,
+        status: 'loaded',
         totalCount: mockTotalCount,
       });
     });
@@ -179,23 +182,15 @@ describe('SchedulePageComponent', () => {
     });
   });
 
-  describe('isLoadingEvents', () => {
-    it('should be true when events have not been fetched yet', async () => {
-      store.overrideSelector(EventsSelectors.selectLastFilteredFetch, null);
+  describe('status', () => {
+    it('should pass the filtered events status through', async () => {
+      store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'loading');
       store.refreshState();
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
-      expect(vm.isLoadingEvents).toBe(true);
-    });
-
-    it('should be false when events have been fetched', async () => {
-      component.ngOnInit();
-
-      const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
-
-      expect(vm.isLoadingEvents).toBe(false);
+      expect(vm.status).toBe('loading');
     });
   });
 
@@ -222,33 +217,33 @@ describe('SchedulePageComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: expect.any(Function),
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Export all ${mockTotalCount} events to a CSV file?`,
             confirmButtonText: 'Export',
             confirmButtonType: 'primary',
-          },
+          }),
         },
         isModal: false,
       });
     });
 
-    it('should dispatch exportEventsToCsvRequested when dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
-
+    it('should export the events from the confirmation dialog', async () => {
       await component.onExportToCsv();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dispatchSpy).toHaveBeenCalledWith(
+      expect(storeRequestSpy).toHaveBeenCalledWith(
         EventsActions.exportEventsToCsvRequested(),
+        [EventsActions.exportEventsToCsvSucceeded, EventsActions.exportEventsToCsvFailed],
       );
     });
 
-    it('should not dispatch exportEventsToCsvRequested when dialog is cancelled', async () => {
+    it('should not export anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onExportToCsv();
 
-      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -280,14 +275,13 @@ describe('SchedulePageComponent', () => {
     });
   });
 
-  describe('onRequestDeleteEvent', () => {
-    it('should dispatch deleteEventRequested action', () => {
-      const event = mockFilteredEvents[0];
-      component.onRequestDeleteEvent(event);
+  describe('onRetry', () => {
+    it('should fetch the filtered events again', () => {
+      component.onRetry();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        EventsActions.deleteEventRequested({ event }),
+        EventsActions.fetchFilteredEventsRequested(),
       );
     });
   });
@@ -382,13 +376,42 @@ describe('SchedulePageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeFalsy();
       });
 
-      it('should render events table when filteredCount is 0 but isLoadingEvents is true', () => {
+      it('should render both schedule views as skeletons while the events load', () => {
         store.overrideSelector(EventsSelectors.selectFilteredCount, 0);
-        store.overrideSelector(EventsSelectors.selectLastFilteredFetch, null);
+        store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'loading');
         store.refreshState();
         fixture.detectChanges();
 
-        expect(query(fixture.debugElement, 'lcc-events-table')).toBeTruthy();
+        expect(
+          query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading,
+        ).toBe(true);
+        expect(
+          query(fixture.debugElement, 'lcc-events-calendar-grid').componentInstance
+            .isLoading,
+        ).toBe(true);
+      });
+
+      it('should render a failure panel in place of the schedule views when the events fail to load', () => {
+        store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeTruthy();
+      });
+
+      it('should fetch the events again on retry', () => {
+        store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          EventsActions.fetchFilteredEventsRequested(),
+        );
       });
     });
   });

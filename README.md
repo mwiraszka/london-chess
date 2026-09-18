@@ -18,7 +18,6 @@ For feature requests or to report a bug, open an
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;                                    |                      |                                    |
 | ----------------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------- |
 | [![Angular](readme-icons/angular.png)](https://angular.dev)                                           | `Angular`            | frontend framework                 |
-| [![Chart.js](readme-icons/chartjs.png)](https://www.chartjs.org/)                                     | `Chart.js`           | charts for game and player stats   |
 | [![Clerk](readme-icons/clerk.png)](https://clerk.com)                                                 | `Clerk`              | user management and authentication |
 | [![Cloudflare R2](readme-icons/cloudflare-r2.png)](https://www.cloudflare.com/developer-platform/r2/) | `Cloudflare R2`      | cloud storage for all site images  |
 | [![Eagami UI](readme-icons/eagami-ui.png)](https://eagami.com/ui)                                     | `Eagami UI`          | Angular component and icon library |

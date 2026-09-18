@@ -1,4 +1,4 @@
-import { PlusCircleIconComponent } from '@eagami/ui';
+import { PlusCircleIconComponent, SkeletonComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
@@ -13,12 +13,14 @@ import {
   Input,
   OnInit,
   Output,
+  inject,
 } from '@angular/core';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
 import { ImageComponent } from '@app/components/image/image.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -29,9 +31,10 @@ import {
   Id,
   Image,
   InternalLink,
+  LoadStatus,
 } from '@app/models';
 import { FormatBytesPipe, FormatDatePipe, HighlightPipe } from '@app/pipes';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as ImagesSelectors from '@app/store/images/images.selectors';
 
@@ -50,6 +53,8 @@ import * as ImagesSelectors from '@app/store/images/images.selectors';
     FormatDatePipe,
     HighlightPipe,
     ImageComponent,
+    LoadFailedComponent,
+    SkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   hostDirectives: [CdkScrollable],
@@ -63,6 +68,8 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
     images: Image[];
     filteredCount: number | null;
     options: DataPaginationOptions<Image>;
+    skeletonCards: number[];
+    status: LoadStatus;
     totalCount: number;
   }>;
 
@@ -71,6 +78,8 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
     text: 'Add an image',
     icon: PlusCircleIconComponent,
   };
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -85,12 +94,19 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
       this.store.select(ImagesSelectors.selectFilteredCount),
       this.store.select(ImagesSelectors.selectOptions),
       this.store.select(ImagesSelectors.selectTotalCount),
+      this.store.select(ImagesSelectors.selectFilteredThumbnailsStatus),
     ]).pipe(
       untilDestroyed(this),
-      map(([images, filteredCount, options, totalCount]) => ({
+      map(([images, filteredCount, options, totalCount, status]) => ({
         images,
         filteredCount,
         options,
+        // A page size of -1 shows every image, so the skeleton stops at a screenful
+        skeletonCards: Array.from(
+          { length: options.pageSize > 0 ? options.pageSize : 20 },
+          (_, index) => index,
+        ),
+        status,
         totalCount,
       })),
     );
@@ -114,19 +130,22 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
       body: `Delete ${image.filename}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(ImagesActions.deleteImageRequested({ image }), [
+          ImagesActions.deleteImageSucceeded,
+          ImagesActions.deleteImageFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
+  }
 
-    if (result === 'confirm') {
-      this.store.dispatch(ImagesActions.deleteImageRequested({ image }));
-    }
+  public onRetry(): void {
+    this.store.dispatch(ImagesActions.fetchFilteredThumbnailsRequested());
   }
 
   public onOptionsChange(options: DataPaginationOptions<Image>, fetch = true): void {

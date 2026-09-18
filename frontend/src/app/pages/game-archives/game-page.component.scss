@@ -1,0 +1,114 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+$board-width: 432px;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+// Stacked, the details and board share the board's width; side by side, the
+// details take only the width this game needs and the board's height
+.game {
+  display: grid;
+  justify-content: center;
+  gap: 8px;
+  grid-template-columns: minmax(0, $board-width);
+  grid-template-areas:
+    'details'
+    'board'
+    'analysis';
+
+  @include respond-to('gt-lg') {
+    align-items: stretch;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      'details board'
+      '.       analysis';
+  }
+}
+
+.game__details {
+  position: relative;
+  grid-area: details;
+  min-width: 0;
+  max-width: 560px;
+}
+
+.game__board {
+  position: relative;
+  grid-area: board;
+  width: 100%;
+  min-width: 0;
+
+  @include respond-to('gt-lg') {
+    width: $board-width;
+  }
+}
+
+.game__analysis {
+  grid-area: analysis;
+}
+
+// A grid child stretches, so the card fills the column's height beside the board
+.game__details ea-card {
+  display: grid;
+  height: 100%;
+}
+
+.game__details ea-skeleton,
+.game__board ea-skeleton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+// The details and board keep their size under the skeletons, so nothing shifts when the game arrives
+.game--loading ea-card,
+.game--loading lcc-pgn-viewer {
+  visibility: hidden;
+}
+
+.details {
+  display: grid;
+  align-items: baseline;
+  gap: 8px 16px;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+
+  dt {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+    color: var(--color-text-primary);
+  }
+}
+
+.game__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.game__position {
+  color: var(--color-text-secondary);
+}
+
+.details__extra {
+  color: var(--color-text-secondary);
+}

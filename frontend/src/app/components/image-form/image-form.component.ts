@@ -35,7 +35,8 @@ import {
   LccError,
   Url,
 } from '@app/models';
-import { DialogService, ImageFileService } from '@app/services';
+import { DialogService, ImageFileService, StoreRequestService } from '@app/services';
+import { ImagesActions } from '@app/store/images';
 import { GENERATE_UUID } from '@app/tokens';
 import { isLccError } from '@app/utils';
 import { textValidator } from '@app/validators';
@@ -70,9 +71,7 @@ export class ImageFormComponent implements OnInit {
     multipleFormData: (Partial<ImageFormData> & { id: Id })[];
   }>();
   @Output() public readonly fileActionFail = new EventEmitter<LccError>();
-  @Output() public readonly requestAddImage = new EventEmitter<Id>();
   @Output() public readonly requestFetchMainImage = new EventEmitter<Id>();
-  @Output() public readonly requestUpdateImage = new EventEmitter<Id>();
   @Output() public readonly restore = new EventEmitter<Id>();
 
   public form!: FormGroup<ImageFormGroup>;
@@ -80,6 +79,7 @@ export class ImageFormComponent implements OnInit {
   public newImageDataUrl: Url | null = null;
 
   private readonly generateUuid = inject(GENERATE_UUID);
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -192,26 +192,26 @@ export class ImageFormComponent implements OnInit {
         ? `Update ${this.imageEntity.image.filename}?`
         : `Add ${this.form.controls.filename.value} to ${this.form.controls.album.value}?`,
       confirmButtonText: this.imageEntity ? 'Update' : 'Add',
+      confirmAction: () => this.save(this.form.controls.id.value),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: false,
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: false,
+    });
+  }
 
-    if (result !== 'confirm') {
-      return;
-    }
-
-    const imageId = this.form.controls.id.value;
-    if (this.imageEntity) {
-      this.requestUpdateImage.emit(imageId);
-    } else {
-      this.requestAddImage.emit(imageId);
-    }
+  private save(imageId: Id): Promise<unknown> {
+    return this.imageEntity
+      ? this.storeRequests.dispatch(ImagesActions.updateImageRequested({ imageId }), [
+          ImagesActions.updateImageSucceeded,
+          ImagesActions.updateImageFailed,
+        ])
+      : this.storeRequests.dispatch(ImagesActions.addImageRequested({ imageId }), [
+          ImagesActions.addImageSucceeded,
+          ImagesActions.addImageFailed,
+        ]);
   }
 
   private async fetchNewImageDataUrl(id: Id): Promise<void> {

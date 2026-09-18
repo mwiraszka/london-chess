@@ -1,9 +1,9 @@
 import { RouterState } from '@ngrx/router-store';
 import { Action, ActionReducer, MetaReducer } from '@ngrx/store';
-import { compact } from 'lodash';
+import { compact, omit, pick } from 'lodash';
 import { localStorageSync } from 'ngrx-store-localstorage';
 
-import { hasCallState, isPresignedUrlExpired } from '@app/utils';
+import { isPresignedUrlExpired } from '@app/utils';
 
 import { environment } from '@env';
 
@@ -45,7 +45,17 @@ const hydratedStates = [
 
 // State saved by an app version older than these no longer fits its reducer
 const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
-  membersState: [6, 0, 4],
+  articlesState: [6, 1, 0],
+  eventsState: [6, 1, 0],
+  membersState: [6, 1, 0],
+};
+
+// Request outcomes only describe the current visit, so every visit starts from these
+const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
+  articlesState: pick(articlesInitialState, 'failedLoads'),
+  eventsState: pick(eventsInitialState, 'failedLoads'),
+  imagesState: pick(imagesInitialState, ['failedLoads', 'uploadProgress']),
+  membersState: pick(membersInitialState, 'failedLoads'),
 };
 
 function isOlderThan(version: string, minimum: number[]): boolean {
@@ -183,64 +193,28 @@ export function hydrationMetaReducer(
   reducer: ActionReducer<MetaState>,
 ): ActionReducer<MetaState> {
   return localStorageSync({
-    keys: hydratedStates.map(stateKey =>
-      stateKey === 'imagesState'
-        ? { imagesState: { deserialize: stripExpiredImageUrls } }
-        : stateKey,
-    ),
+    keys: hydratedStates.map(stateKey => {
+      const unpersistedFields = UNPERSISTED_FIELDS[stateKey] ?? {};
+      const restore = <T extends object>(stateSlice: T): T => ({
+        ...stateSlice,
+        ...unpersistedFields,
+      });
+
+      return {
+        [stateKey]: {
+          serialize: (stateSlice: object) =>
+            omit(stateSlice, Object.keys(unpersistedFields)),
+          deserialize:
+            stateKey === 'imagesState'
+              ? (stateSlice: ImagesState) => stripExpiredImageUrls(restore(stateSlice))
+              : restore,
+        },
+      };
+    }),
     rehydrate: true,
     restoreDates: false,
     storage: versionedStorage,
   })(reducer);
-}
-
-/**
- * Resets loading states on rehydration to prevent stuck loading spinners
- */
-export function loadingStateResetMetaReducer(
-  reducer: ActionReducer<MetaState>,
-): ActionReducer<MetaState> {
-  return (state, action) => {
-    const nextState = reducer(state, action);
-
-    // Only reset on update-reducers action (after hydration completes)
-    if (action.type === '@ngrx/store/update-reducers' && nextState) {
-      const statesWithCallState: Array<keyof MetaState> = [
-        'articlesState',
-        'eventsState',
-        'imagesState',
-        'membersState',
-      ];
-
-      let updatedState: MetaState | null = null;
-
-      const idleCallState = {
-        status: 'idle' as const,
-        loadStart: null,
-        error: null,
-      };
-
-      statesWithCallState.forEach(stateKey => {
-        const stateSlice = nextState[stateKey];
-        if (hasCallState(stateSlice) && stateSlice.callState.status === 'loading') {
-          if (!updatedState) {
-            updatedState = { ...nextState };
-          }
-          // Use type assertion to work around TypeScript's complex union type
-          (updatedState[stateKey] as typeof stateSlice) = {
-            ...stateSlice,
-            callState: idleCallState,
-          };
-        }
-      });
-
-      if (updatedState) {
-        return updatedState;
-      }
-    }
-
-    return nextState;
-  };
 }
 
 /**
@@ -324,5 +298,4 @@ export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compa
   updateStateVersionsInLocalStorageMetaReducer,
   hydrationMetaReducer,
   clearRecordsOnAccessLossMetaReducer,
-  loadingStateResetMetaReducer,
 ]);

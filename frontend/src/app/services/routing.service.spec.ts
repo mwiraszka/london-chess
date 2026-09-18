@@ -1,10 +1,11 @@
 import { Subject } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { NavigationEnd, Router } from '@angular/router';
+import { Navigation, NavigationEnd, Router } from '@angular/router';
 
 import { DialogService } from './dialog.service';
-import { RoutingService } from './routing.service';
+import { KEEP_SCROLL, RoutingService } from './routing.service';
 
 describe('RoutingService', () => {
   let service: RoutingService;
@@ -28,6 +29,7 @@ describe('RoutingService', () => {
       url: '/test',
       navigate: vi.fn().mockReturnValue(Promise.resolve(true)),
       parseUrl: vi.fn().mockReturnValue({ fragment: null }),
+      lastSuccessfulNavigation: signal<Navigation | null>(null),
     };
 
     TestBed.configureTestingModule({
@@ -90,6 +92,56 @@ describe('RoutingService', () => {
       routerEvents$.next(new NavigationEnd(1, '/test', '/test'));
 
       expect(emissions).toEqual([null, null]);
+    });
+  });
+
+  describe('pageNavigated$', () => {
+    let emissions: (string | null)[];
+
+    beforeEach(() => {
+      emissions = [];
+      service.pageNavigated$.subscribe(fragment => emissions.push(fragment));
+    });
+
+    it('should emit the fragment of a navigation to another page', () => {
+      parseUrlSpy.mockReturnValue({ fragment: 'top' });
+
+      routerEvents$.next(new NavigationEnd(1, '/news#top', '/news#top'));
+
+      expect(emissions).toEqual(['top']);
+    });
+
+    it('should leave out a navigation that only changes the query', () => {
+      routerEvents$.next(new NavigationEnd(1, '/test?page=2', '/test?page=2'));
+      routerEvents$.next(new NavigationEnd(2, '/test?page=3', '/test?page=3'));
+
+      expect(emissions).toEqual([]);
+    });
+
+    it('should emit again when the current page reloads', () => {
+      routerEvents$.next(new NavigationEnd(1, '/test', '/test'));
+
+      expect(emissions).toEqual([null]);
+    });
+
+    it('should leave out a navigation that asks to keep the scroll position', () => {
+      (
+        mockRouter.lastSuccessfulNavigation as ReturnType<
+          typeof signal<Navigation | null>
+        >
+      ).set({
+        extras: { info: KEEP_SCROLL },
+      } as Navigation);
+
+      routerEvents$.next(new NavigationEnd(1, '/games/2', '/games/2'));
+
+      expect(emissions).toEqual([]);
+    });
+
+    it('should emit when the query goes along with a move to another page', () => {
+      routerEvents$.next(new NavigationEnd(1, '/news?page=2', '/news?page=2'));
+
+      expect(emissions).toEqual([null]);
     });
   });
 

@@ -15,6 +15,7 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  inject,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -41,7 +42,8 @@ import {
   Id,
   Image,
 } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { ArticlesActions } from '@app/store/articles';
 import { isCollectionId } from '@app/utils';
 import { textValidator } from '@app/validators';
 
@@ -76,14 +78,14 @@ export class ArticleFormComponent implements OnInit, OnChanges {
     formData: Partial<ArticleFormData>;
   }>();
   @Output() requestFetchMainImage = new EventEmitter<Id>();
-  @Output() requestPublishArticle = new EventEmitter<void>();
-  @Output() requestUpdateArticle = new EventEmitter<Id>();
   @Output() restore = new EventEmitter<Id | null>();
 
   public form!: FormGroup<ArticleFormGroup>;
   public readonly maxBodyImages = MAX_ARTICLE_BODY_IMAGES;
 
   private lastCursorPosition = 0;
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -234,25 +236,26 @@ export class ArticleFormComponent implements OnInit, OnChanges {
         ? `Update ${this.originalArticle.title} article?`
         : `Publish ${this.formData.title} to News page?`,
       confirmButtonText: this.originalArticle ? 'Update' : 'Publish',
+      confirmAction: () => this.save(),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        isModal: false,
-        inputs: { dialog },
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      isModal: false,
+      inputs: { dialog },
+    });
+  }
 
-    if (result !== 'confirm') {
-      return;
-    }
-
-    if (this.originalArticle) {
-      this.requestUpdateArticle.emit(this.originalArticle.id);
-    } else {
-      this.requestPublishArticle.emit();
-    }
+  private save(): Promise<unknown> {
+    return this.originalArticle
+      ? this.storeRequests.dispatch(
+          ArticlesActions.updateArticleRequested({ articleId: this.originalArticle.id }),
+          [ArticlesActions.updateArticleSucceeded, ArticlesActions.updateArticleFailed],
+        )
+      : this.storeRequests.dispatch(ArticlesActions.publishArticleRequested(), [
+          ArticlesActions.publishArticleSucceeded,
+          ArticlesActions.publishArticleFailed,
+        ]);
   }
 
   private initForm(): void {

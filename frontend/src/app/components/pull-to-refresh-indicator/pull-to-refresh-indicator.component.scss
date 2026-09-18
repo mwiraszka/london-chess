@@ -1,0 +1,28 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+// Takes no space, so it floats over the top of the page content
+:host {
+  z-index: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  height: 0;
+}
+
+.indicator {
+  @include icon-size(20px);
+
+  display: flex;
+  box-sizing: content-box;
+  padding: 8px;
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  transform: translateY(calc(var(--lcc-pull-progress) * 16px))
+    rotate(calc(var(--lcc-pull-progress) * 270deg));
+}
+
+:host(.refreshing) .indicator {
+  transform: translateY(16px);
+}

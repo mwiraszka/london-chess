@@ -4,6 +4,7 @@ import {
   SettingsIconComponent,
 } from '@eagami/ui';
 
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -254,6 +255,58 @@ describe('AdminToolbarComponent', () => {
         fixture.detectChanges();
 
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
+      });
+    });
+
+    describe('with a loading button', () => {
+      const isLoading = signal(true);
+      const loadingButton: AdminButton = {
+        id: 'upload-button',
+        tooltip: 'Upload data',
+        icon: DownloadIconComponent,
+        action: vi.fn(),
+        isLoading,
+      };
+
+      beforeEach(() => {
+        isLoading.set(true);
+        fixture.componentRef.setInput('adminButtons', [
+          loadingButton,
+          mockAdminButtons[1],
+        ]);
+        fixture.detectChanges();
+      });
+
+      it('should show a spinner in place of the icon', () => {
+        const button = query(fixture.debugElement, '#upload-button');
+
+        expect(query(button, 'ea-spinner')).toBeTruthy();
+        expect(query(button, 'ea-icon-download')).toBeFalsy();
+      });
+
+      it('should disable the button and mark it as busy', () => {
+        const button = query(fixture.debugElement, '#upload-button');
+
+        expect(button.nativeElement.disabled).toBe(true);
+        expect(button.attributes['aria-busy']).toBe('true');
+      });
+
+      it('should leave the other buttons alone', () => {
+        const button = query(fixture.debugElement, '#settings-button');
+
+        expect(query(button, 'ea-spinner')).toBeFalsy();
+        expect(button.nativeElement.disabled).toBe(false);
+        expect(button.attributes['aria-busy']).toBe('false');
+      });
+
+      it('should restore the button once loading ends', () => {
+        isLoading.set(false);
+        fixture.detectChanges();
+
+        const button = query(fixture.debugElement, '#upload-button');
+        expect(query(button, 'ea-spinner')).toBeFalsy();
+        expect(query(button, 'ea-icon-download')).toBeTruthy();
+        expect(button.nativeElement.disabled).toBe(false);
       });
     });
   });

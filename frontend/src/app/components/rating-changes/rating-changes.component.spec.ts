@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MemberWithNewRatings } from '@app/models';
 import { query, queryAll, queryTextContent } from '@app/utils';
@@ -114,6 +115,31 @@ describe('RatingChangesComponent', () => {
 
     it('should emit confirm when confirm button clicked', () => {
       query(fixture.debugElement, '.confirm-button').triggerEventHandler('click');
+
+      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+    });
+
+    it('should apply the ratings before confirming', async () => {
+      let finishUpdate: () => void = () => undefined;
+      const confirmAction = vi.fn(
+        () => new Promise<void>(resolve => (finishUpdate = () => resolve())),
+      );
+      fixture.componentRef.setInput('confirmAction', confirmAction);
+      fixture.detectChanges();
+      const buttons: DialogButtonsComponent = query(
+        fixture.debugElement,
+        'lcc-dialog-buttons',
+      ).componentInstance;
+
+      const confirmation = buttons.confirm();
+      fixture.detectChanges();
+
+      expect(confirmAction).toHaveBeenCalledTimes(1);
+      expect(query(fixture.debugElement, '.confirm-button ea-spinner')).toBeTruthy();
+      expect(dialogResultSpy).not.toHaveBeenCalled();
+
+      finishUpdate();
+      await confirmation;
 
       expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
     });

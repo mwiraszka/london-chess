@@ -171,16 +171,7 @@
 
   --lcc-color--formErrorIcon: #{clr(warning, lighter)};
 
-  --lcc-color--gameArchivesPage-activeButtonBackground: #{clr(primary, lighter)};
-  --lcc-color--gameArchivesPage-activeButtonText: #{clr(grayscale, white-98)};
-  --lcc-color--gameArchivesPage-activeGamesBackground: #{clr(grayscale, white-90)};
-  --lcc-color--gameArchivesPage-chartLabel: #{clr(grayscale, black-10)};
-  --lcc-color--gameArchivesPage-filterContainerBackground: #{clr(grayscale, white-90)};
-  --lcc-color--gameArchivesPage-filterSectionBorder: #{clr(grayscale, white-80)};
-  --lcc-color--gameArchivesPage-headerText: #{clr(grayscale, black-10)};
-  --lcc-color--gameArchivesPage-labelUnderline: #{clr(secondary, light)};
-  --lcc-color--gameArchivesPage-loadingText: #{clr(grayscale, white-85)};
-  --lcc-color--gameArchivesPage-text: #{clr(grayscale, gray-25)};
+  --lcc-color--gameArchivesPage-figure: #{clr(secondary, base)};
 
   --lcc-color--general-accentIcon: #{clr(secondary, base)};
   --lcc-color--general-cardBackground: #{clr(grayscale, white-95)};
@@ -243,8 +234,6 @@
   --lcc-color--linkUnderline: #{clr(primary, base, 0.8)};
 
   --lcc-color--linkList-headerText: #{clr(grayscale, gray-35)};
-
-  --lcc-color--loader: #{clr(grayscale, black-15)};
 
   --lcc-color--markdownRenderer-background: #{clr(grayscale, white-95)};
   --lcc-color--markdownRenderer-blockquoteBackground: #{clr(grayscale, white-90)};
@@ -355,11 +344,13 @@
 
   --lcc-color--table-boxShadow: #{clr(grayscale, white-85, 0.7)};
   --lcc-color--table-footerForeground: #{clr(grayscale, gray-35)};
+  --lcc-color--table-headerBackgroundOnHover: #{clr(primary, light)};
   --lcc-color--table-headerBackground: #{clr(primary, base)};
   --lcc-color--table-headerForeground: #{clr(grayscale, white-95)};
   --lcc-color--table-rowBackgroundEven: #{clr(grayscale, white-92)};
   --lcc-color--table-rowBackgroundOdd: #{clr(grayscale, white-95)};
   --lcc-color--table-rowForeground: #{clr(grayscale, black-10)};
+  --lcc-color--table-skeleton: #{clr(grayscale, white-85)};
 
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOn: #{clr(grayscale, gray-35)};
   --lcc-color--toggleSwitch-sliderBackgroundDefaultOff: #{clr(grayscale, gray-25)};

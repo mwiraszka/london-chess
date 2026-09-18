@@ -7,9 +7,10 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EVENT_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { EventsActions } from '@app/store/events';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 import { generateId } from '@app/utils/common/generate-id.util';
 
 import { EventFormComponent } from './event-form.component';
@@ -25,8 +26,7 @@ describe('EventFormComponent', () => {
   let dialogOpenSpy: MockInstance;
   let initFormSpy: MockInstance;
   let initFormValueChangeListenerSpy: MockInstance;
-  let requestAddEventSpy: MockInstance;
-  let requestUpdateEventSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let restoreSpy: MockInstance;
   let submitSpy: MockInstance;
 
@@ -38,6 +38,10 @@ describe('EventFormComponent', () => {
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         FormBuilder,
       ],
@@ -58,8 +62,7 @@ describe('EventFormComponent', () => {
       // @ts-expect-error Private class member
       'initFormValueChangeListener',
     );
-    requestAddEventSpy = vi.spyOn(component.requestAddEvent, 'emit');
-    requestUpdateEventSpy = vi.spyOn(component.requestUpdateEvent, 'emit');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     restoreSpy = vi.spyOn(component.restore, 'emit');
     submitSpy = vi.spyOn(component, 'onSubmit');
 
@@ -276,8 +279,7 @@ describe('EventFormComponent', () => {
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
-    it('should open confirmation dialog with correct data and emit request add event if adding a new event', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should add a new event from the confirmation dialog', async () => {
       fixture.componentRef.setInput(
         'formData',
         pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
@@ -286,23 +288,26 @@ describe('EventFormComponent', () => {
       fixture.detectChanges();
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Add ${component.formData.title} to schedule?`,
             confirmButtonText: 'Add',
-          },
+          }),
         },
       });
-      expect(requestAddEventSpy).toHaveBeenCalled();
+      expect(storeRequestSpy).toHaveBeenCalledWith(EventsActions.addEventRequested(), [
+        EventsActions.addEventSucceeded,
+        EventsActions.addEventFailed,
+      ]);
     });
 
-    it('should open confirmation dialog with correct data and emit request update event if updating an event', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should update an existing event from the confirmation dialog', async () => {
       fixture.componentRef.setInput(
         'formData',
         pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
@@ -311,22 +316,26 @@ describe('EventFormComponent', () => {
       fixture.detectChanges();
 
       await component.onSubmit();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: BasicDialogComponent,
         isModal: false,
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Update ${component.originalEvent!.title} event?`,
             confirmButtonText: 'Update',
-          },
+          }),
         },
       });
-      expect(requestUpdateEventSpy).toHaveBeenCalledWith(MOCK_EVENTS[2].id);
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        EventsActions.updateEventRequested({ eventId: MOCK_EVENTS[2].id }),
+        [EventsActions.updateEventSucceeded, EventsActions.updateEventFailed],
+      );
     });
 
-    it('should not emit add or update events if dialog is cancelled', async () => {
+    it('should not save anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
       fixture.componentRef.setInput(
         'formData',
@@ -338,8 +347,7 @@ describe('EventFormComponent', () => {
       await component.onSubmit();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(requestAddEventSpy).not.toHaveBeenCalled();
-      expect(requestUpdateEventSpy).not.toHaveBeenCalled();
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 

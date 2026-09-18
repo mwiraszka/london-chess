@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.1.0] - 2026-09-18
+
+### Added
+
+- Move the game archive into the database, with every player linked to their member profile so a name change carries through to their games
+- Rebuild the Game Archives page around a table of every game, styled like the members table, that can be filtered by player, year and result and sorted by date, event, opening or length, with the filters kept in the page address and the page staying put as they change
+- Give every game its own page with its details, a board to step through it, a link to analyse it on Lichess, arrows to the games either side within the current results that keep your place on the page, and a link back to the archives
+- Offer a "Try again" button wherever a page or section fails to load, instead of leaving it loading
+- Show upload progress while photos are being added to an album
+
+### Changed
+
+- Replace the full-screen dimming overlay with placeholders shaped like the content being loaded, now also shown in the editors, the schedule list and calendar, the members table and the image explorer
+- Keep the article, event and member pages in place with a "Try again" button when they fail to load, instead of moving to the list page, while a link to something that no longer exists still leads home
+- Keep content that is already on screen in place while it refreshes in the background
+- Keep confirmation dialogs open, with a spinner on the confirm button, until saving, deleting, bookmarking or exporting has finished
+- Show a spinner on the ratings import button while the file is being prepared
+- Keep the pull-to-refresh spinner visible until the refreshed content has arrived
+- Frame the introduction of the website changelog page in a card like its releases, and mark Game Archives with an archive icon in the navigation bar
+- Give search fields, dropdowns, segmented controls and table paginators the same background as the site's other inputs in dark mode
+
+### Fixed
+
+- Stop the screen from dimming at unexpected times, such as during background refreshes
+- Centre loading placeholders on the line of text they stand in for
+- Fix the colours of the current page button under tables in dark mode
+- Stop a page from loading forever when the server never responds
+- Show the right error message when a CSV export fails
+
 ## [v6.0.4] - 2026-09-16
 
 ### Changed
@@ -1841,6 +1870,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.1.0]: https://github.com/mwiraszka/london-chess/compare/v6.0.4...v6.1.0
 [v6.0.4]: https://github.com/mwiraszka/london-chess/compare/v6.0.3...v6.0.4
 [v6.0.3]: https://github.com/mwiraszka/london-chess/compare/v6.0.2...v6.0.3
 [v6.0.2]: https://github.com/mwiraszka/london-chess/compare/v6.0.1...v6.0.2

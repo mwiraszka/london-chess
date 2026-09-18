@@ -52,12 +52,8 @@ describe('Members Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        callState: {
-          status: 'idle',
-          error: null,
-          loadStart: null,
-        },
         newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+        failedLoads: [],
         recordsScope: null,
         lastFullFetch: null,
         lastFilteredFetch: null,
@@ -81,130 +77,46 @@ describe('Members Reducer', () => {
     });
   });
 
-  describe('loading states', () => {
-    it('should set loading state on fetchAllMembersRequested', () => {
-      const action = MembersActions.fetchAllMembersRequested();
-      const state = membersReducer(initialState, action);
+  describe('failed loads', () => {
+    it('should record each load whose request fails', () => {
+      const actions = [
+        MembersActions.fetchFilteredMembersFailed({ error: mockError }),
+        MembersActions.fetchMemberFailed({ error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('loading');
-      expect(state.callState.loadStart).toBeTruthy();
+      const state = actions.reduce(membersReducer, initialState);
+
+      expect(state.failedLoads).toEqual(['filtered', 'member']);
     });
 
-    it('should set loading state on fetchFilteredMembersRequested', () => {
-      const action = MembersActions.fetchFilteredMembersRequested();
-      const state = membersReducer(initialState, action);
+    it('should forget a member failure when a profile or editor asks for it again', () => {
+      const failedState: MembersState = { ...initialState, failedLoads: ['member'] };
 
-      expect(state.callState.status).toBe('loading');
+      const byNumber = membersReducer(
+        failedState,
+        MembersActions.fetchMemberByNumberRequested({ memberNumber: 7 }),
+      );
+      const byId = membersReducer(
+        failedState,
+        MembersActions.fetchMemberRequested({ memberId: mockMember.id }),
+      );
+
+      expect(byNumber.failedLoads).toEqual([]);
+      expect(byId.failedLoads).toEqual([]);
     });
 
-    it('should set loading state on fetchMemberRequested', () => {
-      const action = MembersActions.fetchMemberRequested({
-        memberId: MOCK_MEMBERS[0].id,
-      });
-      const state = membersReducer(initialState, action);
+    it('should leave loads untouched when a change or full fetch fails', () => {
+      const actions = [
+        MembersActions.fetchAllMembersFailed({ error: mockError }),
+        MembersActions.addMemberFailed({ error: mockError }),
+        MembersActions.updateMemberFailed({ error: mockError }),
+        MembersActions.deleteMemberFailed({ error: mockError }),
+        MembersActions.updateMemberRatingsFailed({ error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('loading');
-    });
+      const state = actions.reduce(membersReducer, initialState);
 
-    it('should set loading state on addMemberRequested', () => {
-      const action = MembersActions.addMemberRequested({ notifyMember: false });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on updateMemberRequested', () => {
-      const action = MembersActions.updateMemberRequested({
-        memberId: MOCK_MEMBERS[0].id,
-        notifyMember: false,
-      });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on deleteMemberRequested', () => {
-      const action = MembersActions.deleteMemberRequested({ member: mockMember });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on updateMemberRatingsRequested', () => {
-      const action = MembersActions.updateMemberRatingsRequested({
-        membersWithNewRatings: [
-          {
-            ...mockMember,
-            newRating: '1600/15',
-            newPeakRating: '1600',
-          },
-        ],
-      });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-  });
-
-  describe('background loading states', () => {
-    it('should set background-loading state on fetchFilteredMembersInBackgroundRequested', () => {
-      const action = MembersActions.fetchFilteredMembersInBackgroundRequested();
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('background-loading');
-      expect(state.callState.loadStart).toBeTruthy();
-    });
-  });
-
-  describe('error states', () => {
-    it('should set error state on fetchAllMembersFailed', () => {
-      const action = MembersActions.fetchAllMembersFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual(mockError);
-    });
-
-    it('should set error state on fetchFilteredMembersFailed', () => {
-      const action = MembersActions.fetchFilteredMembersFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on fetchMemberFailed', () => {
-      const action = MembersActions.fetchMemberFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on addMemberFailed', () => {
-      const action = MembersActions.addMemberFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on updateMemberFailed', () => {
-      const action = MembersActions.updateMemberFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on deleteMemberFailed', () => {
-      const action = MembersActions.deleteMemberFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on updateMemberRatingsFailed', () => {
-      const action = MembersActions.updateMemberRatingsFailed({ error: mockError });
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
+      expect(state).toEqual(initialState);
     });
   });
 
@@ -225,7 +137,6 @@ describe('Members Reducer', () => {
       expect(state.recordsScope).toBe('admin');
       expect(state.totalCount).toBe(1);
       expect(state.lastFullFetch).toBeTruthy();
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should keep a draft that holds edits', () => {
@@ -354,7 +265,21 @@ describe('Members Reducer', () => {
       const state = membersReducer(initialState, action);
 
       expect(state.options.page).toBe(2);
-      expect(state.lastFilteredFetch).toBeNull();
+    });
+
+    it('should keep the shown page loaded until the next one arrives', () => {
+      const previousState: MembersState = {
+        ...initialState,
+        lastFilteredFetch: '2025-01-01T00:00:00.000Z',
+      };
+      const action = MembersActions.paginationOptionsChanged({
+        options: { ...initialState.options, page: 2 },
+        fetch: true,
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -372,7 +297,6 @@ describe('Members Reducer', () => {
         formData: null,
       });
       expect(state.recordsScope).toBe('admin');
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should keep a draft that holds edits', () => {
@@ -431,7 +355,6 @@ describe('Members Reducer', () => {
         formData: null,
       });
       expect(state.newMemberFormData).toEqual(INITIAL_MEMBER_FORM_DATA);
-      expect(state.callState.status).toBe('idle');
     });
   });
 
@@ -457,8 +380,25 @@ describe('Members Reducer', () => {
         member: updatedMember,
         formData: null,
       });
-      expect(state.callState.status).toBe('idle');
-      expect(state.lastFilteredFetch).toBeNull();
+    });
+
+    it('should show the saved member in the page shown straight away', () => {
+      const updatedMember = { ...mockMember, rating: '1600/15' };
+      const previousState: MembersState = {
+        ...adminStateWith({ member: mockMember, formData: null }),
+        filteredMembers: [mockMember, otherMember],
+        lastFilteredFetch: '2025-01-01T00:00:00.000Z',
+      };
+      const action = MembersActions.updateMemberSucceeded({
+        member: updatedMember,
+        originalMemberName: 'John Doe',
+        emailSent: null,
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.filteredMembers).toEqual([updatedMember, otherMember]);
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -486,7 +426,22 @@ describe('Members Reducer', () => {
 
       expect(state.entities['a1b2c3d4e5f6a7b8']?.member.rating).toBe('1550/15');
       expect(state.entities['b2c3d4e5f6a7b8c9']?.member.rating).toBe('1450/13');
-      expect(state.callState.status).toBe('idle');
+    });
+
+    it('should show the new ratings in the page shown straight away', () => {
+      const updatedMember = { ...otherMember, rating: '1450/13' };
+      const previousState: MembersState = {
+        ...initialState,
+        filteredMembers: [mockMember, otherMember],
+      };
+      const action = MembersActions.updateMemberRatingsSucceeded({
+        members: [updatedMember],
+        unnotifiedMemberNames: [],
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.filteredMembers).toEqual([mockMember, updatedMember]);
     });
   });
 
@@ -505,20 +460,23 @@ describe('Members Reducer', () => {
 
       expect(state.entities['a1b2c3d4e5f6a7b8']).toBeUndefined();
       expect(state.ids.length).toBe(0);
-      expect(state.callState.status).toBe('idle');
     });
-  });
 
-  describe('requestTimedOut', () => {
-    it('should set timeout error', () => {
-      const action = MembersActions.requestTimedOut();
-      const state = membersReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual({
-        name: 'LCCError',
-        message: 'Request timed out',
+    it('should take the member off the page shown without reloading it', () => {
+      const previousState: MembersState = {
+        ...initialState,
+        filteredMembers: [mockMember, otherMember],
+        lastFilteredFetch: '2025-01-01T00:00:00.000Z',
+      };
+      const action = MembersActions.deleteMemberSucceeded({
+        memberId: mockMember.id,
+        memberName: 'John Doe',
       });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.filteredMembers).toEqual([otherMember]);
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -606,7 +564,7 @@ describe('Members Reducer', () => {
       const previousState: MembersState = { ...initialState };
       const originalState = { ...previousState };
 
-      const action = MembersActions.fetchAllMembersRequested();
+      const action = MembersActions.fetchFilteredMembersRequested();
       const state = membersReducer(previousState, action);
 
       expect(previousState).toEqual(originalState);

@@ -16,12 +16,12 @@ import {
   Member,
   MemberWithNewRatings,
 } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
-import { query } from '@app/utils';
+import { lastOpenedDialog, query } from '@app/utils';
 
 import { MembersPageComponent } from './members-page.component';
 
@@ -36,6 +36,7 @@ describe('MembersPageComponent', () => {
 
   let dispatchSpy: MockInstance;
   let onExportToCsvSpy: MockInstance;
+  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
@@ -68,6 +69,10 @@ describe('MembersPageComponent', () => {
           useValue: { open: vi.fn() },
         },
         {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
+        {
           provide: MetaAndTitleService,
           useValue: {
             updateTitle: vi.fn(),
@@ -89,6 +94,7 @@ describe('MembersPageComponent', () => {
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
     onExportToCsvSpy = vi.spyOn(component, 'onExportToCsv');
+    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
@@ -98,6 +104,8 @@ describe('MembersPageComponent', () => {
     store.overrideSelector(AppSelectors.selectIsSafeMode, mockIsSafeMode);
     store.overrideSelector(MembersSelectors.selectOptions, mockOptions);
     store.overrideSelector(MembersSelectors.selectTotalCount, mockTotalCount);
+    store.overrideSelector(MembersSelectors.selectFilteredMembersStatus, 'loaded');
+    store.overrideSelector(MembersSelectors.selectRecordsScope, 'admin');
     store.refreshState();
   });
 
@@ -125,6 +133,7 @@ describe('MembersPageComponent', () => {
         isAdmin: mockIsAdmin,
         isSafeMode: mockIsSafeMode,
         options: mockOptions,
+        status: 'loaded',
         totalCount: mockTotalCount,
       });
     });
@@ -158,14 +167,13 @@ describe('MembersPageComponent', () => {
     });
   });
 
-  describe('onRequestDeleteMember', () => {
-    it('should dispatch deleteMemberRequested action', () => {
-      const member = mockFilteredMembers[0];
-      component.onRequestDeleteMember(member);
+  describe('onRetry', () => {
+    it('should fetch the filtered members again', () => {
+      component.onRetry();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.deleteMemberRequested({ member }),
+        MembersActions.fetchFilteredMembersRequested(),
       );
     });
   });
@@ -249,6 +257,7 @@ describe('MembersPageComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: expect.any(Function),
         inputs: {
+          confirmAction: expect.any(Function),
           membersWithNewRatings: expect.any(Array),
           unmatchedMembers: expect.any(Array),
         },
@@ -256,8 +265,33 @@ describe('MembersPageComponent', () => {
       });
     });
 
-    it('should dispatch updateMemberRatingsRequested when dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should update the ratings from the confirmation dialog', async () => {
+      parseCsvSpy.mockResolvedValue([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
+      store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
+      store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
+      store.refreshState();
+
+      await component.onMemberRatingChangesFileSelected(mockEvent);
+      const confirmAction = dialogOpenSpy.mock.lastCall?.[0].inputs?.[
+        'confirmAction'
+      ] as () => Promise<unknown>;
+      await confirmAction();
+
+      expect(storeRequestSpy).toHaveBeenCalledWith(
+        MembersActions.updateMemberRatingsRequested({
+          membersWithNewRatings: [
+            { ...MOCK_MEMBERS[0], newRating: '2860', newPeakRating: '2882' },
+          ],
+        }),
+        [
+          MembersActions.updateMemberRatingsSucceeded,
+          MembersActions.updateMemberRatingsFailed,
+        ],
+      );
+    });
+
+    it('should not update any ratings until the dialog is confirmed', async () => {
+      dialogOpenSpy.mockResolvedValue('cancel');
       parseCsvSpy.mockResolvedValue([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
       store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
@@ -265,27 +299,75 @@ describe('MembersPageComponent', () => {
 
       await component.onMemberRatingChangesFileSelected(mockEvent);
 
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.updateMemberRatingsRequested({
-          membersWithNewRatings: expect.any(Array),
-        }),
-      );
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
 
-    it('should not dispatch updateMemberRatingsRequested when dialog is cancelled', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
-      parseCsvSpy.mockResolvedValue(['Magnus', 'Carlsen', '2850', '2860', '2882']);
+    it('should show the upload button as loading while the ratings are prepared', async () => {
+      let resolveParsing: (rows: string[][]) => void = () => undefined;
+      parseCsvSpy.mockReturnValue(new Promise(resolve => (resolveParsing = resolve)));
       store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
+      const selection = component.onMemberRatingChangesFileSelected(mockEvent);
+
+      expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(true);
+      expect(dialogOpenSpy).not.toHaveBeenCalled();
+
+      resolveParsing([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
+      await selection;
+
+      expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(false);
+      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stop loading when the file cannot be parsed', async () => {
+      parseCsvSpy.mockResolvedValue({ name: 'LCCError', message: 'Invalid CSV format' });
+
       await component.onMemberRatingChangesFileSelected(mockEvent);
 
-      expect(dispatchSpy).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: '[Members] Update Member Ratings Requested',
-        }),
-      );
+      expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(false);
+    });
+
+    describe('when only public member records are loaded', () => {
+      beforeEach(() => {
+        parseCsvSpy.mockResolvedValue([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
+        store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
+        store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
+        store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
+        store.refreshState();
+      });
+
+      it('should fetch the full records before matching the ratings', async () => {
+        storeRequestSpy.mockResolvedValue(
+          MembersActions.fetchAllMembersSucceeded({
+            members: MOCK_MEMBERS,
+            totalCount: MOCK_MEMBERS.length,
+            scope: 'admin',
+          }),
+        );
+
+        await component.onMemberRatingChangesFileSelected(mockEvent);
+
+        expect(storeRequestSpy).toHaveBeenCalledWith(
+          MembersActions.fetchAllMembersRequested(),
+          [MembersActions.fetchAllMembersSucceeded, MembersActions.fetchAllMembersFailed],
+        );
+        expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it('should not open the dialog when the full records fail to load', async () => {
+        storeRequestSpy.mockResolvedValue(
+          MembersActions.fetchAllMembersFailed({
+            error: { name: 'LCCError', message: 'Unable to load members.' },
+          }),
+        );
+
+        await component.onMemberRatingChangesFileSelected(mockEvent);
+
+        expect(dialogOpenSpy).not.toHaveBeenCalled();
+        expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(false);
+      });
     });
 
     it('should handle members with new ratings correctly', async () => {
@@ -360,37 +442,36 @@ describe('MembersPageComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith({
         componentType: expect.any(Function),
         inputs: {
-          dialog: {
+          dialog: expect.objectContaining({
             title: 'Confirm',
             body: `Export all ${mockTotalCount} members to a CSV file?`,
             confirmButtonText: 'Export',
             confirmButtonType: 'primary',
-          },
+          }),
         },
         isModal: false,
       });
     });
 
-    it('should dispatch exportMembersToCsvRequested when dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
-
+    it('should export the members from the confirmation dialog', async () => {
       await component.onExportToCsv();
+      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dispatchSpy).toHaveBeenCalledWith(
+      expect(storeRequestSpy).toHaveBeenCalledWith(
         MembersActions.exportMembersToCsvRequested(),
+        [
+          MembersActions.exportMembersToCsvSucceeded,
+          MembersActions.exportMembersToCsvFailed,
+        ],
       );
     });
 
-    it('should not dispatch exportMembersToCsvRequested when dialog is cancelled', async () => {
+    it('should not export anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onExportToCsv();
 
-      expect(dispatchSpy).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: '[Members] Export Members To CSV Requested',
-        }),
-      );
+      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -409,6 +490,7 @@ describe('MembersPageComponent', () => {
         tooltip: 'Update member ratings from CSV',
         icon: UploadIconComponent,
         action: expect.any(Function),
+        isLoading: expect.any(Function),
       });
 
       expect(component.exportToCsvButton).toEqual({
@@ -471,6 +553,40 @@ describe('MembersPageComponent', () => {
 
         expect(query(fixture.debugElement, 'input[type="file"]')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
+      });
+    });
+
+    describe('while the members load', () => {
+      it('should render the members table as a skeleton', () => {
+        store.overrideSelector(MembersSelectors.selectFilteredMembersStatus, 'loading');
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, 'lcc-members-table').componentInstance.isLoading,
+        ).toBe(true);
+      });
+    });
+
+    describe('when the members fail to load', () => {
+      beforeEach(() => {
+        store.overrideSelector(MembersSelectors.selectFilteredMembersStatus, 'failed');
+        store.refreshState();
+        fixture.detectChanges();
+      });
+
+      it('should render a failure panel in place of the members table', () => {
+        expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-members-table')).toBeFalsy();
+        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+      });
+
+      it('should fetch the members again on retry', () => {
+        query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          MembersActions.fetchFilteredMembersRequested(),
+        );
       });
     });
   });

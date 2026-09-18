@@ -1,0 +1,22 @@
+<button
+  class="cancel-button lcc-secondary-button lcc-dark-button"
+  type="button"
+  [disabled]="pending()"
+  (click)="result.emit('cancel')">
+  {{ cancelText() }}
+</button>
+<button
+  class="confirm-button"
+  type="button"
+  [attr.aria-busy]="pending()"
+  [class.confirm-button--pending]="pending()"
+  [disabled]="confirmDisabled() || pending()"
+  [ngClass]="confirmVariant() === 'warning' ? 'lcc-warning-button' : 'lcc-primary-button'"
+  (click)="confirm()">
+  <span class="confirm-button__label">{{ confirmText() }}</span>
+  @if (pending()) {
+    <ea-spinner
+      class="confirm-button__spinner"
+      size="xs" />
+  }
+</button>

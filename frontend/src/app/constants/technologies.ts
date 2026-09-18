@@ -3,7 +3,6 @@ import { Technology } from '@app/models';
 // Mirrors the "Under the hood" table in README.md
 export const TECHNOLOGIES: Technology[] = [
   { name: 'Angular', purpose: 'frontend framework', icon: 'angular' },
-  { name: 'Chart.js', purpose: 'charts for game and player stats', icon: 'chartjs' },
   { name: 'Clerk', purpose: 'user management and authentication', icon: 'clerk' },
   {
     name: 'Cloudflare R2',

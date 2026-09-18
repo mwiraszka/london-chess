@@ -3,18 +3,12 @@ import moment from 'moment-timezone';
 
 import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { CallState, DataPaginationOptions, Member, MemberFormData } from '@app/models';
+import { DataPaginationOptions, Member, MemberFormData } from '@app/models';
 
 import { MembersState, membersAdapter } from './members.reducer';
 import * as MembersSelectors from './members.selectors';
 
 describe('Members Selectors', () => {
-  const mockCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
   const mockOptions: DataPaginationOptions<Member> = {
     page: 1,
     pageSize: 10,
@@ -46,7 +40,7 @@ describe('Members Selectors', () => {
 
   const mockMembersState: MembersState = {
     ...membersAdapter.getInitialState({
-      callState: mockCallState,
+      failedLoads: [],
       newMemberFormData: INITIAL_MEMBER_FORM_DATA,
       recordsScope: 'admin',
       lastFullFetch: '2025-01-15T10:00:00.000Z',
@@ -69,10 +63,74 @@ describe('Members Selectors', () => {
     ids: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
   };
 
-  describe('selectCallState', () => {
-    it('should select the call state', () => {
-      const result = MembersSelectors.selectCallState.projector(mockMembersState);
-      expect(result).toEqual(mockCallState);
+  describe('selectFilteredMembersStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = MembersSelectors.selectFilteredMembersStatus.projector(null, [
+        'member',
+      ]);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the first results could not be loaded', () => {
+      const result = MembersSelectors.selectFilteredMembersStatus.projector(null, [
+        'filtered',
+      ]);
+
+      expect(result).toBe('failed');
+    });
+
+    it('should stay loaded when a later refresh fails', () => {
+      const result = MembersSelectors.selectFilteredMembersStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['filtered'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectMemberProfileStatus', () => {
+    it('should be loaded once the member is stored', () => {
+      const selector = MembersSelectors.selectMemberProfileStatus(0);
+
+      const result = selector.projector(MOCK_MEMBERS[0], ['member']);
+
+      expect(result).toBe('loaded');
+    });
+
+    it('should be failed when the member could not be loaded', () => {
+      const selector = MembersSelectors.selectMemberProfileStatus(0);
+
+      const result = selector.projector(null, ['member']);
+
+      expect(result).toBe('failed');
+    });
+  });
+
+  describe('selectEditableMemberStatus', () => {
+    it('should be loaded once the admin record is stored', () => {
+      const selector = MembersSelectors.selectEditableMemberStatus(MOCK_MEMBERS[0].id);
+
+      const result = selector.projector(MOCK_MEMBERS[0], 'admin', []);
+
+      expect(result).toBe('loaded');
+    });
+
+    it('should keep loading while only a public record is stored', () => {
+      const selector = MembersSelectors.selectEditableMemberStatus(MOCK_MEMBERS[0].id);
+
+      const result = selector.projector(MOCK_MEMBERS[0], 'public', []);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the admin record could not be loaded', () => {
+      const selector = MembersSelectors.selectEditableMemberStatus(MOCK_MEMBERS[0].id);
+
+      const result = selector.projector(null, 'public', ['member']);
+
+      expect(result).toBe('failed');
     });
   });
 

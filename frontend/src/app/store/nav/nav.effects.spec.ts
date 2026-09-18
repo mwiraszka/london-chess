@@ -14,6 +14,7 @@ import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DialogService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { EventsActions } from '@app/store/events';
+import { GamesActions } from '@app/store/games';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { MembersActions } from '@app/store/members';
 
@@ -226,45 +227,38 @@ describe('NavEffects', () => {
     const failed = { name: 'LCCError' as const, message: 'Failed' };
     const notFound = { name: 'LCCError' as const, message: 'Not found', status: 404 };
 
-    it('should navigate to members when a member fails to load', () =>
+    it.each([
+      ['an article', ArticlesActions.fetchArticleFailed],
+      ['an event', EventsActions.fetchEventFailed],
+      ['a game', GamesActions.fetchGameFailed],
+      ['a member', MembersActions.fetchMemberFailed],
+    ])('should navigate home when %s does not exist', (_, fetchFailed) =>
       withDone(done => {
-        actions$.next(MembersActions.fetchMemberFailed({ error: failed }));
-
-        effects.leaveMissingRecord$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
-          done();
-        });
-      }));
-
-    it('should navigate to schedule when an event fails to load', () =>
-      withDone(done => {
-        actions$.next(EventsActions.fetchEventFailed({ error: failed }));
-
-        effects.leaveMissingRecord$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
-          done();
-        });
-      }));
-
-    it('should navigate to news when an article fails to load', () =>
-      withDone(done => {
-        actions$.next(ArticlesActions.fetchArticleFailed({ error: failed }));
-
-        effects.leaveMissingRecord$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
-          done();
-        });
-      }));
-
-    it('should navigate home when the record does not exist', () =>
-      withDone(done => {
-        actions$.next(MembersActions.fetchMemberFailed({ error: notFound }));
+        actions$.next(fetchFailed({ error: notFound }));
 
         effects.leaveMissingRecord$.subscribe(action => {
           expect(action).toEqual(NavActions.navigationRequested({ path: '/' }));
           done();
         });
-      }));
+      }),
+    );
+
+    it.each([
+      ['an article', ArticlesActions.fetchArticleFailed],
+      ['an event', EventsActions.fetchEventFailed],
+      ['a game', GamesActions.fetchGameFailed],
+      ['a member', MembersActions.fetchMemberFailed],
+    ])(
+      'should stay on the page when %s fails to load for another reason',
+      (_, fetchFailed) => {
+        const emitted: Action[] = [];
+        effects.leaveMissingRecord$.subscribe(action => emitted.push(action));
+
+        actions$.next(fetchFailed({ error: failed }));
+
+        expect(emitted).toEqual([]);
+      },
+    );
   });
 
   describe('navigateToSchedule$', () => {

@@ -10,6 +10,7 @@ import {
   Input,
   OnInit,
   Output,
+  inject,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -33,7 +34,8 @@ import {
   MemberFormData,
   MemberFormGroup,
 } from '@app/models';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { MembersActions } from '@app/store/members';
 import {
   emailValidator,
   phoneNumberValidator,
@@ -69,11 +71,6 @@ export class MemberFormComponent implements OnInit {
     memberId: Id | null;
     formData: Partial<MemberFormData>;
   }>();
-  @Output() requestAddMember = new EventEmitter<{ notifyMember: boolean }>();
-  @Output() requestUpdateMember = new EventEmitter<{
-    memberId: Id;
-    notifyMember: boolean;
-  }>();
   @Output() restore = new EventEmitter<Id | null>();
 
   public form!: FormGroup<MemberFormGroup>;
@@ -92,6 +89,8 @@ export class MemberFormComponent implements OnInit {
       ? 'Email the member about these changes'
       : "Create the member's account and email them their login details";
   }
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -148,25 +147,29 @@ export class MemberFormComponent implements OnInit {
       title: 'Confirm',
       body: this.getConfirmationMessage(notifyMember),
       confirmButtonText: this.originalMember ? 'Update' : 'Add',
+      confirmAction: () => this.save(notifyMember),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: false,
-      },
-    );
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: false,
+    });
+  }
 
-    if (result !== 'confirm') {
-      return;
-    }
-
-    if (this.originalMember) {
-      this.requestUpdateMember.emit({ memberId: this.originalMember.id, notifyMember });
-    } else {
-      this.requestAddMember.emit({ notifyMember });
-    }
+  private save(notifyMember: boolean): Promise<unknown> {
+    return this.originalMember
+      ? this.storeRequests.dispatch(
+          MembersActions.updateMemberRequested({
+            memberId: this.originalMember.id,
+            notifyMember,
+          }),
+          [MembersActions.updateMemberSucceeded, MembersActions.updateMemberFailed],
+        )
+      : this.storeRequests.dispatch(MembersActions.addMemberRequested({ notifyMember }), [
+          MembersActions.addMemberSucceeded,
+          MembersActions.addMemberFailed,
+        ]);
   }
 
   private getConfirmationMessage(notifyMember: boolean): string {

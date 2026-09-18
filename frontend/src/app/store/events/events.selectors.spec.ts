@@ -2,18 +2,12 @@ import moment from 'moment-timezone';
 
 import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { CallState, DataPaginationOptions, Event, EventFormData } from '@app/models';
+import { DataPaginationOptions, Event, EventFormData } from '@app/models';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 import * as EventsSelectors from './events.selectors';
 
 describe('Events Selectors', () => {
-  const mockCallState: CallState = {
-    status: 'idle',
-    error: null,
-    loadStart: null,
-  };
-
   const mockOptions: DataPaginationOptions<Event> = {
     page: 1,
     pageSize: 10,
@@ -38,9 +32,8 @@ describe('Events Selectors', () => {
 
   const mockEventsState: EventsState = {
     ...eventsAdapter.getInitialState({
-      callState: mockCallState,
+      failedLoads: [],
       newEventFormData: INITIAL_EVENT_FORM_DATA,
-      lastFullFetch: '2025-01-15T10:00:00.000Z',
       lastHomePageFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
       homePageEvents: [MOCK_EVENTS[0], MOCK_EVENTS[1]],
@@ -63,17 +56,75 @@ describe('Events Selectors', () => {
     ids: [MOCK_EVENTS[0].id, MOCK_EVENTS[1].id],
   };
 
-  describe('selectCallState', () => {
-    it('should select the call state', () => {
-      const result = EventsSelectors.selectCallState.projector(mockEventsState);
-      expect(result).toEqual(mockCallState);
+  describe('selectHomePageEventsStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = EventsSelectors.selectHomePageEventsStatus.projector(null, [
+        'filtered',
+      ]);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the first results could not be loaded', () => {
+      const result = EventsSelectors.selectHomePageEventsStatus.projector(null, [
+        'homePage',
+      ]);
+
+      expect(result).toBe('failed');
+    });
+
+    it('should stay loaded when a later refresh fails', () => {
+      const result = EventsSelectors.selectHomePageEventsStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['homePage'],
+      );
+
+      expect(result).toBe('loaded');
     });
   });
 
-  describe('selectLastFullFetch', () => {
-    it('should select the last full fetch timestamp', () => {
-      const result = EventsSelectors.selectLastFullFetch.projector(mockEventsState);
-      expect(result).toBe('2025-01-15T10:00:00.000Z');
+  describe('selectFilteredEventsStatus', () => {
+    it('should be loading until the first results arrive', () => {
+      const result = EventsSelectors.selectFilteredEventsStatus.projector(null, [
+        'homePage',
+      ]);
+
+      expect(result).toBe('loading');
+    });
+
+    it('should be failed when the first results could not be loaded', () => {
+      const result = EventsSelectors.selectFilteredEventsStatus.projector(null, [
+        'filtered',
+      ]);
+
+      expect(result).toBe('failed');
+    });
+
+    it('should stay loaded when a later refresh fails', () => {
+      const result = EventsSelectors.selectFilteredEventsStatus.projector(
+        '2025-01-15T10:00:00.000Z',
+        ['filtered'],
+      );
+
+      expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectEventStatus', () => {
+    it('should be loaded once the event is stored', () => {
+      const selector = EventsSelectors.selectEventStatus(MOCK_EVENTS[0].id);
+
+      const result = selector.projector(MOCK_EVENTS[0], ['event']);
+
+      expect(result).toBe('loaded');
+    });
+
+    it('should be failed when the event could not be loaded', () => {
+      const selector = EventsSelectors.selectEventStatus(MOCK_EVENTS[0].id);
+
+      const result = selector.projector(null, ['event']);
+
+      expect(result).toBe('failed');
     });
   });
 

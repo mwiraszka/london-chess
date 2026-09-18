@@ -1,4 +1,5 @@
 import { Type } from '@angular/core';
+import { Params } from '@angular/router';
 
 import { Id } from './core.model';
 import { NavPath } from './nav-path.model';
@@ -15,10 +16,12 @@ export type InternalPath = NavPath | [NavPath, ControlMode] | [NavPath, ControlM
 
 export interface InternalLink extends BaseLink {
   internalPath: InternalPath;
+  queryParams?: Params;
   externalPath?: never;
 }
 
 export interface ExternalLink extends BaseLink {
   externalPath: string | null;
+  queryParams?: never;
   internalPath?: never;
 }

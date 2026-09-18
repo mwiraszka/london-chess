@@ -7,6 +7,7 @@ import { logger } from './middlewares/logger.middleware';
 import { version } from './middlewares/version.middleware';
 import { articlesRouter } from './routers/articles.router';
 import { eventsRouter } from './routers/events.router';
+import { gamesRouter } from './routers/games.router';
 import { imagesRouter } from './routers/images.router';
 import { adminMembersRouter, publicMembersRouter } from './routers/members.router';
 import { usersRouter } from './routers/users.router';
@@ -27,6 +28,7 @@ const router = Router()
   .use('/v1/version', version)
   .use('/v1/articles', articlesRouter)
   .use('/v1/events', eventsRouter)
+  .use('/v1/games', gamesRouter)
   .use('/v1/images', imagesRouter)
   .use('/v1/public/members', publicMembersRouter)
   .use('/v1/admin/members', adminMembersRouter)

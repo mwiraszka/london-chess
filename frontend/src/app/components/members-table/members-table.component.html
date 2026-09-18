@@ -1,5 +1,5 @@
 <div class="lcc-table-wrapper">
-  @if (members.length) {
+  @if (members.length || isLoading) {
     <table
       class="members-table lcc-table"
       [class.lcc-show-admin-columns]="isAdmin && !isSafeMode">
@@ -31,7 +31,24 @@
         </tr>
       </thead>
 
-      <tbody>
+      <tbody [attr.aria-busy]="isLoading && !members.length">
+        @if (!members.length) {
+          @for (row of skeletonRows; track row) {
+            <tr class="skeleton-row">
+              <td class="row-number">{{ startIndex + row }}</td>
+              @for (
+                header of isAdmin && !isSafeMode
+                  ? ADMIN_TABLE_HEADERS
+                  : DEFAULT_TABLE_HEADERS;
+                track header
+              ) {
+                <td [ngClass]="header | kebabCase">
+                  <lcc-text-skeleton width="60%" />
+                </td>
+              }
+            </tr>
+          }
+        }
         @for (member of members; track member.id; let i = $index; let last = $last) {
           <tr
             [adminControls]="isAdmin ? getAdminControlsConfig(member) : null"

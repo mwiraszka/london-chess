@@ -9,13 +9,20 @@ import { Observable, combineLatest, firstValueFrom } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
 import { EventsCalendarGridComponent } from '@app/components/events-calendar-grid/events-calendar-grid.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/schedule-toolbar.component';
 import {
@@ -25,8 +32,9 @@ import {
   Dialog,
   Event,
   InternalLink,
+  LoadStatus,
 } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 
@@ -63,17 +71,20 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
         (toggleScheduleView)="onToggleScheduleView()">
       </lcc-schedule-toolbar>
 
-      @if (vm.filteredCount || vm.isLoadingEvents) {
+      @if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load the schedule"
+          (retry)="onRetry()" />
+      } @else if (vm.filteredCount || vm.status === 'loading') {
         <lcc-events-table
           class="schedule-view"
           [class.active]="vm.scheduleView === 'list'"
           [events]="vm.filteredEvents"
           [isAdmin]="vm.isAdmin"
-          [isLoading]="vm.isLoadingEvents"
+          [isLoading]="vm.status === 'loading'"
           [nextEvent]="vm.nextEvent"
           [options]="vm.options"
-          [showModificationInfo]="vm.isAdmin"
-          (requestDeleteEvent)="onRequestDeleteEvent($event)">
+          [showModificationInfo]="vm.isAdmin">
         </lcc-events-table>
 
         <lcc-events-calendar-grid
@@ -81,8 +92,8 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           [class.active]="vm.scheduleView === 'calendar'"
           [events]="vm.filteredEvents"
           [isAdmin]="vm.isAdmin"
-          [options]="vm.options"
-          (requestDeleteEvent)="onRequestDeleteEvent($event)">
+          [isLoading]="vm.status === 'loading'"
+          [options]="vm.options">
         </lcc-events-calendar-grid>
       }
     }
@@ -105,6 +116,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
     DataToolbarComponent,
     EventsCalendarGridComponent,
     EventsTableComponent,
+    LoadFailedComponent,
     PageHeaderComponent,
     ScheduleToolbarComponent,
   ],
@@ -133,12 +145,14 @@ export class SchedulePageComponent implements OnInit {
     filteredCount: number | null;
     filteredEvents: Event[];
     isAdmin: boolean;
-    isLoadingEvents: boolean;
     nextEvent: Event | null;
     options: DataPaginationOptions<Event>;
     scheduleView: 'list' | 'calendar';
+    status: LoadStatus;
     totalCount: number;
   }>;
+
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -160,7 +174,7 @@ export class SchedulePageComponent implements OnInit {
       this.store.select(EventsSelectors.selectOptions),
       this.store.select(EventsSelectors.selectScheduleView),
       this.store.select(EventsSelectors.selectTotalCount),
-      this.store.select(EventsSelectors.selectLastFilteredFetch),
+      this.store.select(EventsSelectors.selectFilteredEventsStatus),
     ]).pipe(
       untilDestroyed(this),
       map(
@@ -172,15 +186,15 @@ export class SchedulePageComponent implements OnInit {
           options,
           scheduleView,
           totalCount,
-          lastFilteredFetch,
+          status,
         ]) => ({
           filteredCount,
           filteredEvents,
           isAdmin,
-          isLoadingEvents: lastFilteredFetch === null,
           nextEvent,
           options,
           scheduleView,
+          status,
           totalCount,
         }),
       ),
@@ -202,30 +216,26 @@ export class SchedulePageComponent implements OnInit {
       body: `Export all ${eventCount} events to a CSV file?`,
       confirmButtonText: 'Export',
       confirmButtonType: 'primary',
+      confirmAction: () =>
+        this.storeRequests.dispatch(EventsActions.exportEventsToCsvRequested(), [
+          EventsActions.exportEventsToCsvSucceeded,
+          EventsActions.exportEventsToCsvFailed,
+        ]),
     };
 
-    const dialogResult = await this.dialogService.open<
-      BasicDialogComponent,
-      BasicDialogResult
-    >({
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
       componentType: BasicDialogComponent,
       inputs: { dialog },
       isModal: false,
     });
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
-    this.store.dispatch(EventsActions.exportEventsToCsvRequested());
   }
 
   public onOptionsChange(options: DataPaginationOptions<Event>, fetch = true): void {
     this.store.dispatch(EventsActions.paginationOptionsChanged({ options, fetch }));
   }
 
-  public onRequestDeleteEvent(event: Event): void {
-    this.store.dispatch(EventsActions.deleteEventRequested({ event }));
+  public onRetry(): void {
+    this.store.dispatch(EventsActions.fetchFilteredEventsRequested());
   }
 
   public onToggleScheduleView(): void {

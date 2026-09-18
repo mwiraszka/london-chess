@@ -4,164 +4,170 @@
 </lcc-page-header>
 
 @if (viewModel$ | async; as vm) {
-  @let member = vm.member ?? placeholderMember;
-  <div
-    class="profile"
-    [class.profile--loading]="!vm.member"
-    [attr.aria-busy]="!vm.member">
-    <div class="profile-card">
-      <ea-card
-        class="identity-card"
-        [fullWidth]="true">
-        <div class="summary">
-          <div class="identity">
-            <div class="member-summary">
-              <ea-avatar
-                size="lg"
-                [alt]="fullName(member) + '\'s avatar'"
-                [initials]="initials(member)"
-                [src]="member.avatarUrl ?? undefined" />
-              <div class="identity-text">
-                <h3 class="member-name">
-                  <span
-                    #memberName
-                    class="member-name__text"
-                    [tooltip]="isNameTruncated() ? fullName(member) : null">
-                    <span class="member-name__first">
-                      {{ member.firstName }}
+  @if (vm.status === 'failed') {
+    <lcc-load-failed
+      title="Unable to load this profile"
+      (retry)="onRetry(vm.memberNumber)" />
+  } @else {
+    @let member = vm.member ?? placeholderMember;
+    <div
+      class="profile"
+      [class.profile--loading]="!vm.member"
+      [attr.aria-busy]="!vm.member">
+      <div class="profile-card">
+        <ea-card
+          class="identity-card"
+          [fullWidth]="true">
+          <div class="summary">
+            <div class="identity">
+              <div class="member-summary">
+                <ea-avatar
+                  size="lg"
+                  [alt]="fullName(member) + '\'s avatar'"
+                  [initials]="initials(member)"
+                  [src]="member.avatarUrl ?? undefined" />
+                <div class="identity-text">
+                  <h3 class="member-name">
+                    <span
+                      #memberName
+                      class="member-name__text"
+                      [tooltip]="isNameTruncated() ? fullName(member) : null">
+                      <span class="member-name__first">
+                        {{ member.firstName }}
+                      </span>
+                      <span class="member-name__last">
+                        {{ member.lastName }}
+                      </span>
                     </span>
-                    <span class="member-name__last">
-                      {{ member.lastName }}
-                    </span>
-                  </span>
-                  @if (member.isAdmin) {
-                    <ea-icon-shield-check
-                      class="admin-icon"
-                      tooltip="Club admin" />
-                  }
-                  @if (isCityChampion(member)) {
-                    <a
-                      class="champion-link"
-                      routerLink="/city-champion"
-                      tooltip="2025 City Champion">
-                      <ea-icon-trophy class="champion-icon" />
-                    </a>
-                  }
-                </h3>
-                <div class="identity-badges">
-                  <ea-badge
-                    class="status-badge"
-                    [class.inactive]="!member.isActive"
-                    [variant]="member.isActive ? 'success' : 'warning'">
-                    {{ member.isActive ? 'Active member' : 'Inactive member' }}
-                  </ea-badge>
+                    @if (member.isAdmin) {
+                      <ea-icon-shield-check
+                        class="admin-icon"
+                        tooltip="Club admin" />
+                    }
+                    @if (isCityChampion(member)) {
+                      <a
+                        class="champion-link"
+                        routerLink="/city-champion"
+                        tooltip="2025 City Champion">
+                        <ea-icon-trophy class="champion-icon" />
+                      </a>
+                    }
+                  </h3>
+                  <div class="identity-badges">
+                    <ea-badge
+                      class="status-badge"
+                      [class.inactive]="!member.isActive"
+                      [variant]="member.isActive ? 'success' : 'warning'">
+                      {{ member.isActive ? 'Active member' : 'Inactive member' }}
+                    </ea-badge>
+                  </div>
                 </div>
+              </div>
+
+              <div class="rating">
+                <span class="rating__label">London &amp; Region chess rating</span>
+                <span class="rating__value">{{ member.rating }}</span>
               </div>
             </div>
 
-            <div class="rating">
-              <span class="rating__label">London &amp; Region chess rating</span>
-              <span class="rating__value">{{ member.rating }}</span>
-            </div>
-          </div>
-
-          <div class="facts">
-            <dl class="stats">
-              <div class="stat">
-                <dt class="stat__label">Peak rating</dt>
-                <dd class="stat__value">{{ member.peakRating }}</dd>
-              </div>
-              @if (member.city) {
+            <div class="facts">
+              <dl class="stats">
                 <div class="stat">
-                  <dt class="stat__label">City</dt>
-                  <dd class="stat__value">{{ member.city }}</dd>
+                  <dt class="stat__label">Peak rating</dt>
+                  <dd class="stat__value">{{ member.peakRating }}</dd>
                 </div>
-              }
-              @if (yearJoined(member); as year) {
-                <div class="stat">
-                  <dt class="stat__label">Member since</dt>
-                  <dd class="stat__value">{{ year }}</dd>
-                </div>
-              }
-              @if (member.showYearOfBirth && member.yearOfBirth) {
-                <div class="stat">
-                  <dt class="stat__label">Year of birth</dt>
-                  <dd class="stat__value">{{ member.yearOfBirth }}</dd>
-                </div>
-              }
-            </dl>
-
-            @if (member.chessComUsername || member.lichessUsername) {
-              <dl class="chess-accounts">
-                @if (member.chessComUsername) {
-                  <dt class="platform">
-                    <img
-                      class="platform-logo"
-                      src="assets/club-link-icons/chesscom.svg"
-                      alt=""
-                      aria-hidden="true" />
-                    Chess.com
-                  </dt>
-                  <dd>
-                    <a
-                      class="lcc-link"
-                      [href]="chessComUrl(member)"
-                      rel="noopener noreferrer"
-                      target="_blank">
-                      <span>{{ member.chessComUsername }}</span>
-                      <ea-icon-external-link class="external-link-icon" />
-                    </a>
-                  </dd>
+                @if (member.city) {
+                  <div class="stat">
+                    <dt class="stat__label">City</dt>
+                    <dd class="stat__value">{{ member.city }}</dd>
+                  </div>
                 }
-                @if (member.lichessUsername) {
-                  <dt class="platform">
-                    <img
-                      class="platform-logo platform-logo--lichess"
-                      src="assets/club-link-icons/lichess.svg"
-                      alt=""
-                      aria-hidden="true" />
-                    Lichess
-                  </dt>
-                  <dd>
-                    <a
-                      class="lcc-link"
-                      [href]="lichessUrl(member)"
-                      rel="noopener noreferrer"
-                      target="_blank">
-                      <span>{{ member.lichessUsername }}</span>
-                      <ea-icon-external-link class="external-link-icon" />
-                    </a>
-                  </dd>
+                @if (yearJoined(member); as year) {
+                  <div class="stat">
+                    <dt class="stat__label">Member since</dt>
+                    <dd class="stat__value">{{ year }}</dd>
+                  </div>
+                }
+                @if (member.showYearOfBirth && member.yearOfBirth) {
+                  <div class="stat">
+                    <dt class="stat__label">Year of birth</dt>
+                    <dd class="stat__value">{{ member.yearOfBirth }}</dd>
+                  </div>
                 }
               </dl>
-            }
-          </div>
-        </div>
-      </ea-card>
-      @if (!vm.member) {
-        <ea-skeleton
-          variant="rect"
-          width="100%"
-          height="100%" />
-      }
-    </div>
 
-    <div class="profile-card">
-      <ea-card
-        class="rating-progression-card"
-        [fullWidth]="true">
-        <h3 slot="header">Rating progression</h3>
-        <div class="rating-progression-placeholder">
-          <ea-icon-bar-chart class="placeholder-icon" />
-          <p>A graph of this member's rating over time is coming soon.</p>
-        </div>
-      </ea-card>
-      @if (!vm.member) {
-        <ea-skeleton
-          variant="rect"
-          width="100%"
-          height="100%" />
-      }
+              @if (member.chessComUsername || member.lichessUsername) {
+                <dl class="chess-accounts">
+                  @if (member.chessComUsername) {
+                    <dt class="platform">
+                      <img
+                        class="platform-logo"
+                        src="assets/club-link-icons/chesscom.svg"
+                        alt=""
+                        aria-hidden="true" />
+                      Chess.com
+                    </dt>
+                    <dd>
+                      <a
+                        class="lcc-link"
+                        [href]="chessComUrl(member)"
+                        rel="noopener noreferrer"
+                        target="_blank">
+                        <span>{{ member.chessComUsername }}</span>
+                        <ea-icon-external-link class="external-link-icon" />
+                      </a>
+                    </dd>
+                  }
+                  @if (member.lichessUsername) {
+                    <dt class="platform">
+                      <img
+                        class="platform-logo platform-logo--lichess"
+                        src="assets/club-link-icons/lichess.svg"
+                        alt=""
+                        aria-hidden="true" />
+                      Lichess
+                    </dt>
+                    <dd>
+                      <a
+                        class="lcc-link"
+                        [href]="lichessUrl(member)"
+                        rel="noopener noreferrer"
+                        target="_blank">
+                        <span>{{ member.lichessUsername }}</span>
+                        <ea-icon-external-link class="external-link-icon" />
+                      </a>
+                    </dd>
+                  }
+                </dl>
+              }
+            </div>
+          </div>
+        </ea-card>
+        @if (!vm.member) {
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
+        }
+      </div>
+
+      <div class="profile-card">
+        <ea-card
+          class="rating-progression-card"
+          [fullWidth]="true">
+          <h3 slot="header">Rating progression</h3>
+          <div class="rating-progression-placeholder">
+            <ea-icon-bar-chart class="placeholder-icon" />
+            <p>A graph of this member's rating over time is coming soon.</p>
+          </div>
+        </ea-card>
+        @if (!vm.member) {
+          <ea-skeleton
+            variant="rect"
+            width="100%"
+            height="100%" />
+        }
+      </div>
     </div>
-  </div>
+  }
 }

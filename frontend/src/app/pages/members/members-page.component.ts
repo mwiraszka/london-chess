@@ -7,7 +7,7 @@ import {
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, firstValueFrom } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -17,11 +17,13 @@ import {
   OnInit,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MembersTableComponent } from '@app/components/members-table/members-table.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingChangesComponent } from '@app/components/rating-changes/rating-changes.component';
@@ -31,10 +33,11 @@ import {
   DataPaginationOptions,
   Dialog,
   InternalLink,
+  LoadStatus,
   Member,
   MemberWithNewRatings,
 } from '@app/models';
-import { DialogService, MetaAndTitleService } from '@app/services';
+import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -73,20 +76,27 @@ import { isLccError } from '@app/utils';
         (optionsChangeNoFetch)="onOptionsChange($event, false)">
       </lcc-data-toolbar>
 
-      <lcc-members-table
-        [isAdmin]="vm.isAdmin"
-        [isSafeMode]="vm.isSafeMode"
-        [members]="vm.filteredMembers"
-        [options]="vm.options"
-        (optionsChange)="onOptionsChange($event)"
-        (requestDeleteMember)="onRequestDeleteMember($event)">
-      </lcc-members-table>
+      @if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load members"
+          (retry)="onRetry()" />
+      } @else {
+        <lcc-members-table
+          [isAdmin]="vm.isAdmin"
+          [isLoading]="vm.status === 'loading'"
+          [isSafeMode]="vm.isSafeMode"
+          [members]="vm.filteredMembers"
+          [options]="vm.options"
+          (optionsChange)="onOptionsChange($event)">
+        </lcc-members-table>
+      }
     }
   `,
   imports: [
     AdminToolbarComponent,
     CommonModule,
     DataToolbarComponent,
+    LoadFailedComponent,
     MembersTableComponent,
     PageHeaderComponent,
   ],
@@ -104,11 +114,14 @@ export class MembersPageComponent implements OnInit {
     icon: PlusCircleIconComponent,
   };
 
+  private readonly isPreparingRatingChanges = signal(false);
+
   public readonly updateRatingsFromCsvButton: AdminButton = {
     id: 'update-ratings-from-csv',
     tooltip: 'Update member ratings from CSV',
     icon: UploadIconComponent,
     action: () => this.memberRatingChangesFileInput?.nativeElement.click(),
+    isLoading: this.isPreparingRatingChanges,
   };
 
   public readonly exportToCsvButton: AdminButton = {
@@ -124,10 +137,12 @@ export class MembersPageComponent implements OnInit {
     isAdmin: boolean;
     isSafeMode: boolean;
     options: DataPaginationOptions<Member>;
+    status: LoadStatus;
     totalCount: number;
   }>;
 
   private readonly parseCsv = inject(PARSE_CSV);
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -148,15 +163,25 @@ export class MembersPageComponent implements OnInit {
       this.store.select(AppSelectors.selectIsSafeMode),
       this.store.select(MembersSelectors.selectOptions),
       this.store.select(MembersSelectors.selectTotalCount),
+      this.store.select(MembersSelectors.selectFilteredMembersStatus),
     ]).pipe(
       untilDestroyed(this),
       map(
-        ([filteredCount, filteredMembers, isAdmin, isSafeMode, options, totalCount]) => ({
+        ([
           filteredCount,
           filteredMembers,
           isAdmin,
           isSafeMode,
           options,
+          totalCount,
+          status,
+        ]) => ({
+          filteredCount,
+          filteredMembers,
+          isAdmin,
+          isSafeMode,
+          options,
+          status,
           totalCount,
         }),
       ),
@@ -167,8 +192,8 @@ export class MembersPageComponent implements OnInit {
     this.store.dispatch(MembersActions.paginationOptionsChanged({ options, fetch }));
   }
 
-  public onRequestDeleteMember(member: Member): void {
-    this.store.dispatch(MembersActions.deleteMemberRequested({ member }));
+  public onRetry(): void {
+    this.store.dispatch(MembersActions.fetchFilteredMembersRequested());
   }
 
   public async onMemberRatingChangesFileSelected(event: Event): Promise<void> {
@@ -180,6 +205,38 @@ export class MembersPageComponent implements OnInit {
       return;
     }
 
+    this.isPreparingRatingChanges.set(true);
+    const ratingChanges = await this.prepareRatingChanges(file).finally(() =>
+      this.isPreparingRatingChanges.set(false),
+    );
+
+    if (!ratingChanges) {
+      return;
+    }
+
+    const { membersWithNewRatings, unmatchedMembers } = ratingChanges;
+    await this.dialogService.open<RatingChangesComponent, BasicDialogResult>({
+      componentType: RatingChangesComponent,
+      inputs: {
+        confirmAction: () =>
+          this.storeRequests.dispatch(
+            MembersActions.updateMemberRatingsRequested({ membersWithNewRatings }),
+            [
+              MembersActions.updateMemberRatingsSucceeded,
+              MembersActions.updateMemberRatingsFailed,
+            ],
+          ),
+        membersWithNewRatings,
+        unmatchedMembers,
+      },
+      isModal: false,
+    });
+  }
+
+  private async prepareRatingChanges(file: File): Promise<{
+    membersWithNewRatings: MemberWithNewRatings[];
+    unmatchedMembers: string[];
+  } | null> {
     const expectedHeadersInCsv = ['first name', 'last name', 'old', 'new', 'peak'];
     const parsingResult = await this.parseCsv(file, expectedHeadersInCsv, 5);
 
@@ -187,26 +244,13 @@ export class MembersPageComponent implements OnInit {
       this.store.dispatch(
         MembersActions.parseMemberRatingsFromCsvFailed({ error: parsingResult }),
       );
-      return;
+      return null;
     }
 
-    // Ensure all members have been fetched to compare against
-    const allMembers = await firstValueFrom(
-      combineLatest([
-        this.store.select(MembersSelectors.selectAllMembers),
-        this.store.select(MembersSelectors.selectTotalCount),
-      ]).pipe(
-        tap(([members, totalCount]) => {
-          if (totalCount > 0 && members.length !== totalCount) {
-            this.store.dispatch(MembersActions.fetchAllMembersRequested());
-          }
-        }),
-        filter(
-          ([members, totalCount]) => totalCount > 0 && members.length === totalCount,
-        ),
-        map(([members]) => members),
-      ),
-    );
+    const allMembers = await this.loadAllMembers();
+    if (!allMembers) {
+      return null;
+    }
 
     const membersWithNewRatings: MemberWithNewRatings[] = [];
     const unmatchedMembers: string[] = [];
@@ -231,22 +275,31 @@ export class MembersPageComponent implements OnInit {
       }
     });
 
-    const dialogResult = await this.dialogService.open<
-      RatingChangesComponent,
-      'confirm' | 'cancel'
-    >({
-      componentType: RatingChangesComponent,
-      inputs: { membersWithNewRatings, unmatchedMembers },
-      isModal: false,
-    });
+    return { membersWithNewRatings, unmatchedMembers };
+  }
 
-    if (dialogResult !== 'confirm') {
-      return;
+  // Rating updates save every detail of each member, so only full admin records will do
+  private async loadAllMembers(): Promise<Member[] | null> {
+    const [members, totalCount, recordsScope] = await firstValueFrom(
+      combineLatest([
+        this.store.select(MembersSelectors.selectAllMembers),
+        this.store.select(MembersSelectors.selectTotalCount),
+        this.store.select(MembersSelectors.selectRecordsScope),
+      ]),
+    );
+
+    if (recordsScope === 'admin' && totalCount > 0 && members.length === totalCount) {
+      return members;
     }
 
-    this.store.dispatch(
-      MembersActions.updateMemberRatingsRequested({ membersWithNewRatings }),
+    const outcome = await this.storeRequests.dispatch(
+      MembersActions.fetchAllMembersRequested(),
+      [MembersActions.fetchAllMembersSucceeded, MembersActions.fetchAllMembersFailed],
     );
+
+    return outcome.type === MembersActions.fetchAllMembersSucceeded.type
+      ? firstValueFrom(this.store.select(MembersSelectors.selectAllMembers))
+      : null;
   }
 
   public async onExportToCsv(): Promise<void> {
@@ -267,21 +320,17 @@ export class MembersPageComponent implements OnInit {
       body: `Export all ${memberCount} members to a CSV file?`,
       confirmButtonText: 'Export',
       confirmButtonType: 'primary',
+      confirmAction: () =>
+        this.storeRequests.dispatch(MembersActions.exportMembersToCsvRequested(), [
+          MembersActions.exportMembersToCsvSucceeded,
+          MembersActions.exportMembersToCsvFailed,
+        ]),
     };
 
-    const dialogResult = await this.dialogService.open<
-      BasicDialogComponent,
-      BasicDialogResult
-    >({
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
       componentType: BasicDialogComponent,
       inputs: { dialog },
       isModal: false,
     });
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
-    this.store.dispatch(MembersActions.exportMembersToCsvRequested());
   }
 }

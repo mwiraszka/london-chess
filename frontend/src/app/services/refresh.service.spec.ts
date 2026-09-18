@@ -1,22 +1,52 @@
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { Subject } from 'rxjs';
+
 import { TestBed } from '@angular/core/testing';
 
+import { AppActions } from '@app/store/app';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
 
+import { PendingRequestsService } from './pending-requests.service';
 import { RefreshService } from './refresh.service';
 
 describe('RefreshService', () => {
   let service: RefreshService;
   let mockMainElement: HTMLElement;
+  let pendingRequests: PendingRequestsService;
+  let store: MockStore;
+
+  let dispatchSpy: MockInstance;
+
+  function pull(fromY: number, toY: number): void {
+    mockMainElement.dispatchEvent(
+      new TouchEvent('touchstart', { touches: [{ clientY: fromY } as Touch] }),
+    );
+    mockMainElement.dispatchEvent(
+      new TouchEvent('touchmove', { touches: [{ clientY: toY } as Touch] }),
+    );
+  }
+
+  function release(): void {
+    mockMainElement.dispatchEvent(new TouchEvent('touchend'));
+  }
 
   beforeEach(() => {
     mockMainElement = document.createElement('main');
     document.body.appendChild(mockMainElement);
 
     TestBed.configureTestingModule({
-      providers: [RefreshService, { provide: IS_TOUCH_DEVICE, useValue: vi.fn() }],
+      providers: [
+        RefreshService,
+        { provide: IS_TOUCH_DEVICE, useValue: vi.fn() },
+        provideMockStore(),
+      ],
     });
 
     service = TestBed.inject(RefreshService);
+    pendingRequests = TestBed.inject(PendingRequestsService);
+    store = TestBed.inject(MockStore);
+
+    dispatchSpy = vi.spyOn(store, 'dispatch');
   });
 
   afterEach(() => {
@@ -87,18 +117,6 @@ describe('RefreshService', () => {
     });
   });
 
-  describe('completeRefresh', () => {
-    it('should reset state and emit isRefreshing false', () => {
-      const isRefreshingSpy = vi.fn();
-
-      service.isRefreshing$.subscribe(isRefreshingSpy);
-
-      service.completeRefresh();
-
-      expect(isRefreshingSpy).toHaveBeenCalledWith(false);
-    });
-  });
-
   describe('touch gestures', () => {
     beforeEach(() => {
       vi.mocked(TestBed.inject(IS_TOUCH_DEVICE)).mockReturnValue(true);
@@ -110,124 +128,98 @@ describe('RefreshService', () => {
       });
     });
 
-    it('should track pull distance internally when pulling down from top', () => {
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
+    it('should report pull progress towards the refresh threshold', () => {
+      pull(100, 200);
 
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [{ clientY: 200 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchMoveEvent);
-
-      // Pull of 100px with 0.5 resistance = 50px
-      expect(service['currentPullDistancePx']).toBe(50);
+      expect(service['pullDistancePx']()).toBe(50);
+      expect(service.pullProgress()).toBe(50 / 80);
     });
 
-    it('should apply resistance and cap at maximum pull distance', () => {
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
+    it('should apply resistance and cap the pull distance', () => {
+      pull(100, 400);
 
-      // Pull 300px which exceeds max of 120px (after resistance)
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [{ clientY: 400 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchMoveEvent);
-
-      // Should be capped at 120px max
-      expect(service['currentPullDistancePx']).toBe(120);
+      expect(service['pullDistancePx']()).toBe(120);
+      expect(service.pullProgress()).toBe(1);
     });
 
-    it('should trigger refresh when pulled past threshold', () => {
-      const isRefreshingSpy = vi.fn();
-      service.isRefreshing$.subscribe(isRefreshingSpy);
+    it('should refresh the app when pulled past the threshold', () => {
+      pull(100, 280);
+      release();
 
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
-
-      // Pull 180px = 90px after resistance (exceeds 80px threshold)
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [{ clientY: 280 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchMoveEvent);
-
-      const touchEndEvent = new TouchEvent('touchend');
-      mockMainElement.dispatchEvent(touchEndEvent);
-
-      expect(isRefreshingSpy).toHaveBeenCalledWith(true);
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy).toHaveBeenCalledWith(AppActions.refreshAppRequested());
+      expect(service.isRefreshing()).toBe(true);
+      expect(service.pullProgress()).toBe(0);
     });
 
-    it('should not trigger refresh when pulled below threshold', () => {
-      const isRefreshingSpy = vi.fn();
-      service.isRefreshing$.subscribe(isRefreshingSpy);
+    it('should not refresh the app when released below the threshold', () => {
+      pull(100, 200);
+      release();
 
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
-
-      // Pull 100px = 50px after resistance (below 80px threshold)
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [{ clientY: 200 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchMoveEvent);
-
-      const touchEndEvent = new TouchEvent('touchend');
-      mockMainElement.dispatchEvent(touchEndEvent);
-
-      expect(isRefreshingSpy).not.toHaveBeenCalledWith(true);
-      expect(service['currentPullDistancePx']).toBe(0);
+      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(service.isRefreshing()).toBe(false);
+      expect(service.pullProgress()).toBe(0);
     });
 
-    it('should not track pull when not at top of scroll', () => {
-      Object.defineProperty(mockMainElement, 'scrollTop', {
-        value: 50,
-        writable: true,
-        configurable: true,
-      });
+    it('should not track a pull when the page is scrolled down', () => {
+      mockMainElement.scrollTop = 50;
 
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
+      pull(100, 200);
 
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [{ clientY: 200 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchMoveEvent);
-
-      expect(service['currentPullDistancePx']).toBe(0);
-    });
-
-    it('should not track pull when already refreshing', () => {
-      service['isRefreshing$'].next(true);
-
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
-
-      expect(service['touchStartY']).toBe(0);
+      expect(service.pullProgress()).toBe(0);
     });
 
     it('should ignore pull-up gestures', () => {
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [{ clientY: 200 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchStartEvent);
+      pull(200, 100);
 
-      // Pull up (negative distance)
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [{ clientY: 100 } as Touch],
-      });
-      mockMainElement.dispatchEvent(touchMoveEvent);
+      expect(service.pullProgress()).toBe(0);
+    });
 
-      expect(service['currentPullDistancePx']).toBe(0);
+    describe('while refreshing', () => {
+      let request$: Subject<void>;
+
+      beforeEach(() => {
+        request$ = new Subject<void>();
+        dispatchSpy.mockImplementation(() =>
+          pendingRequests.track(request$).subscribe({ error: () => undefined }),
+        );
+
+        pull(100, 280);
+        release();
+        TestBed.tick();
+      });
+
+      it('should keep refreshing until the requests it started have settled', () => {
+        expect(service.isRefreshing()).toBe(true);
+
+        request$.complete();
+        TestBed.tick();
+
+        expect(service.isRefreshing()).toBe(false);
+      });
+
+      it('should stop refreshing when those requests fail', () => {
+        request$.error(new Error('Network error'));
+        TestBed.tick();
+
+        expect(service.isRefreshing()).toBe(false);
+      });
+
+      it('should ignore further pulls', () => {
+        pull(100, 280);
+        release();
+
+        expect(dispatchSpy).toHaveBeenCalledTimes(1);
+        expect(service.pullProgress()).toBe(0);
+      });
+    });
+
+    it('should stop refreshing straight away when no request was needed', () => {
+      pull(100, 280);
+      release();
+      TestBed.tick();
+
+      expect(service.isRefreshing()).toBe(false);
     });
   });
 });

@@ -24,6 +24,7 @@ import { EnvironmentTagComponent } from '@app/components/environment-tag/environ
 import { FooterComponent } from '@app/components/footer/footer.component';
 import { HeaderComponent } from '@app/components/header/header.component';
 import { NavigationBarComponent } from '@app/components/navigation-bar/navigation-bar.component';
+import { PullToRefreshIndicatorComponent } from '@app/components/pull-to-refresh-indicator/pull-to-refresh-indicator.component';
 import { UpcomingEventBannerComponent } from '@app/components/upcoming-event-banner/upcoming-event-banner.component';
 import { GIT_BRANCH_NAME } from '@app/constants/git-branch.generated';
 import { Event, IsoDate } from '@app/models';
@@ -38,10 +39,6 @@ import { environment } from '@env';
   selector: 'app-root',
   template: `
     @if (viewModel$ | async; as vm) {
-      @if (vm.isLoading) {
-        <div class="lcc-loader"><div></div></div>
-      }
-
       @if (vm.showUpcomingEventBanner && vm.nextEvents.length) {
         <lcc-upcoming-event-banner
           [nextEvents]="vm.nextEvents"
@@ -52,6 +49,8 @@ import { environment } from '@env';
       <lcc-header></lcc-header>
 
       <lcc-navigation-bar></lcc-navigation-bar>
+
+      <lcc-pull-to-refresh-indicator />
 
       <main
         #mainElement
@@ -80,6 +79,7 @@ import { environment } from '@env';
     FooterComponent,
     HeaderComponent,
     NavigationBarComponent,
+    PullToRefreshIndicatorComponent,
     RouterOutlet,
     ToastComponent,
     UpcomingEventBannerComponent,
@@ -98,7 +98,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     isDarkMode: boolean;
     isDesktopView: boolean;
     isWideView: boolean;
-    isLoading: boolean;
     nextEvents: Event[];
     showUpcomingEventBanner: boolean;
   }>;
@@ -115,14 +114,12 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   public ngOnInit(): void {
     this.touchEventsService.listenForTouchEvents();
-    this.initRefreshListener();
 
     this.viewModel$ = combineLatest([
       this.store.select(AppSelectors.selectBannerLastCleared),
       this.store.select(AppSelectors.selectIsDarkMode),
       this.store.select(AppSelectors.selectIsDesktopView),
       this.store.select(AppSelectors.selectIsWideView),
-      this.store.select(AppSelectors.selectIsLoading),
       this.store.select(EventsSelectors.selectConcurrentNextEvents),
       this.store.select(AppSelectors.selectShowUpcomingEventBanner),
     ]).pipe(
@@ -133,7 +130,6 @@ export class AppComponent implements OnInit, AfterViewInit {
           isDarkMode,
           isDesktopView,
           isWideView,
-          isLoading,
           nextEvents,
           showUpcomingEventBanner,
         ]) => ({
@@ -141,7 +137,6 @@ export class AppComponent implements OnInit, AfterViewInit {
           isDarkMode,
           isDesktopView,
           isWideView,
-          isLoading,
           nextEvents,
           showUpcomingEventBanner,
         }),
@@ -193,29 +188,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.store.dispatch(AppActions.upcomingEventBannerCleared());
   }
 
-  private initRefreshListener(): void {
-    this.refreshService.isRefreshing$
-      .pipe(
-        untilDestroyed(this),
-        filter(isRefreshing => isRefreshing),
-      )
-      .subscribe(() => {
-        this.store.dispatch(AppActions.refreshAppRequested());
-      });
-
-    this.store
-      .select(AppSelectors.selectIsLoading)
-      .pipe(
-        untilDestroyed(this),
-        filter(isLoading => !isLoading && this.refreshService.isRefreshing$.value),
-      )
-      .subscribe(() => {
-        this.refreshService.completeRefresh();
-      });
-  }
-
   private initNavigationListenerForScrollingBackToTop(): void {
-    this.routingService.fragment$
+    this.routingService.pageNavigated$
       .pipe(
         untilDestroyed(this),
         filter(fragment => !fragment),

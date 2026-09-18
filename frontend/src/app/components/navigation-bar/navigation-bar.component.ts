@@ -1,6 +1,6 @@
 import {
+  ArchiveIconComponent,
   AvatarComponent,
-  BarChartIconComponent,
   CalendarDaysIconComponent,
   CameraIconComponent,
   HomeIconComponent,
@@ -88,7 +88,7 @@ export class NavigationBarComponent {
     {
       text: 'Game Archives',
       internalPath: 'game-archives',
-      icon: BarChartIconComponent,
+      icon: ArchiveIconComponent,
     },
   ];
 

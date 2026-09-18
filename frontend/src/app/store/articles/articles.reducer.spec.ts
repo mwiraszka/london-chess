@@ -30,12 +30,8 @@ describe('Articles Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        callState: {
-          status: 'idle',
-          error: null,
-          loadStart: null,
-        },
         newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
+        failedLoads: [],
         lastHomePageFetch: null,
         lastFilteredFetch: null,
         homePageArticles: [],
@@ -54,130 +50,51 @@ describe('Articles Reducer', () => {
     });
   });
 
-  describe('loading states', () => {
-    it('should set loading state on fetchHomePageArticlesRequested', () => {
-      const action = ArticlesActions.fetchHomePageArticlesRequested();
-      const state = articlesReducer(initialState, action);
+  describe('failed loads', () => {
+    it('should record each load whose request fails', () => {
+      const actions = [
+        ArticlesActions.fetchHomePageArticlesFailed({ error: mockError }),
+        ArticlesActions.fetchFilteredArticlesFailed({ error: mockError }),
+        ArticlesActions.fetchArticleFailed({ error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('loading');
-      expect(state.callState.loadStart).toBeTruthy();
-      expect(state.callState.error).toBeNull();
+      const state = actions.reduce(articlesReducer, initialState);
+
+      expect(state.failedLoads).toEqual(['homePage', 'filtered', 'article']);
     });
 
-    it('should set loading state on fetchFilteredArticlesRequested', () => {
-      const action = ArticlesActions.fetchFilteredArticlesRequested();
-      const state = articlesReducer(initialState, action);
+    it('should forget a failure once its load is attempted again', () => {
+      const previousState: ArticlesState = {
+        ...initialState,
+        failedLoads: ['homePage', 'filtered'],
+      };
 
-      expect(state.callState.status).toBe('loading');
-      expect(state.callState.loadStart).toBeTruthy();
+      const state = articlesReducer(
+        previousState,
+        ArticlesActions.fetchHomePageArticlesRequested(),
+      );
+
+      expect(state.failedLoads).toEqual(['filtered']);
     });
 
-    it('should set loading state on fetchArticleRequested', () => {
-      const action = ArticlesActions.fetchArticleRequested({
-        articleId: MOCK_ARTICLES[0].id,
-      });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on publishArticleRequested', () => {
-      const action = ArticlesActions.publishArticleRequested();
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on updateArticleRequested', () => {
-      const action = ArticlesActions.updateArticleRequested({
-        articleId: MOCK_ARTICLES[0].id,
-      });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on updateArticleBookmarkRequested', () => {
-      const action = ArticlesActions.updateArticleBookmarkRequested({
-        articleId: MOCK_ARTICLES[0].id,
-        bookmark: true,
-      });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-
-    it('should set loading state on deleteArticleRequested', () => {
-      const action = ArticlesActions.deleteArticleRequested({
-        article: MOCK_ARTICLES[0],
-      });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('loading');
-    });
-  });
-
-  describe('background loading states', () => {
-    it('should set background-loading state on fetchHomePageArticlesInBackgroundRequested', () => {
-      const action = ArticlesActions.fetchHomePageArticlesInBackgroundRequested();
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('background-loading');
-      expect(state.callState.loadStart).toBeTruthy();
-    });
-
-    it('should set background-loading state on fetchFilteredArticlesInBackgroundRequested', () => {
-      const action = ArticlesActions.fetchFilteredArticlesInBackgroundRequested();
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('background-loading');
-    });
-  });
-
-  describe('error states', () => {
-    it('should set error state on fetchHomePageArticlesFailed', () => {
-      const action = ArticlesActions.fetchHomePageArticlesFailed({ error: mockError });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual(mockError);
-      expect(state.callState.loadStart).toBeNull();
-    });
-
-    it('should set error state on fetchFilteredArticlesFailed', () => {
-      const action = ArticlesActions.fetchFilteredArticlesFailed({ error: mockError });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual(mockError);
-    });
-
-    it('should set error state on fetchArticleFailed', () => {
+    it('should record a repeated failure only once', () => {
       const action = ArticlesActions.fetchArticleFailed({ error: mockError });
-      const state = articlesReducer(initialState, action);
 
-      expect(state.callState.status).toBe('error');
+      const state = articlesReducer(articlesReducer(initialState, action), action);
+
+      expect(state.failedLoads).toEqual(['article']);
     });
 
-    it('should set error state on publishArticleFailed', () => {
-      const action = ArticlesActions.publishArticleFailed({ error: mockError });
-      const state = articlesReducer(initialState, action);
+    it('should leave loads untouched when a change fails to save', () => {
+      const actions = [
+        ArticlesActions.publishArticleFailed({ error: mockError }),
+        ArticlesActions.updateArticleFailed({ error: mockError }),
+        ArticlesActions.deleteArticleFailed({ error: mockError }),
+      ];
 
-      expect(state.callState.status).toBe('error');
-    });
+      const state = actions.reduce(articlesReducer, initialState);
 
-    it('should set error state on updateArticleFailed', () => {
-      const action = ArticlesActions.updateArticleFailed({ error: mockError });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-    });
-
-    it('should set error state on deleteArticleFailed', () => {
-      const action = ArticlesActions.deleteArticleFailed({ error: mockError });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
+      expect(state).toEqual(initialState);
     });
   });
 
@@ -196,26 +113,6 @@ describe('Articles Reducer', () => {
       expect(state.homePageArticles).toEqual(articles);
       expect(state.totalCount).toBe(2);
       expect(state.lastHomePageFetch).toBeTruthy();
-    });
-
-    it('should reset callState to idle', () => {
-      const previousState: ArticlesState = {
-        ...initialState,
-        callState: {
-          status: 'loading',
-          loadStart: new Date().toISOString(),
-          error: null,
-        },
-      };
-
-      const action = ArticlesActions.fetchHomePageArticlesSucceeded({
-        articles: [MOCK_ARTICLES[0]],
-        totalCount: 1,
-      });
-      const state = articlesReducer(previousState, action);
-
-      expect(state.callState.status).toBe('idle');
-      expect(state.callState.error).toBeNull();
     });
 
     it('should preserve formData with unsaved changes', () => {
@@ -290,17 +187,6 @@ describe('Articles Reducer', () => {
       expect(state.totalCount).toBe(10);
       expect(state.lastFilteredFetch).toBeTruthy();
     });
-
-    it('should reset callState', () => {
-      const action = ArticlesActions.fetchFilteredArticlesSucceeded({
-        articles: [],
-        filteredCount: 0,
-        totalCount: 0,
-      });
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('idle');
-    });
   });
 
   describe('paginationOptionsChanged', () => {
@@ -321,7 +207,7 @@ describe('Articles Reducer', () => {
       expect(state.options.pageSize).toBe(20);
     });
 
-    it('should reset lastFilteredFetch', () => {
+    it('should keep the shown page loaded until the next one arrives', () => {
       const previousState: ArticlesState = {
         ...initialState,
         lastFilteredFetch: '2025-01-01T00:00:00.000Z',
@@ -329,11 +215,11 @@ describe('Articles Reducer', () => {
 
       const action = ArticlesActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: false,
+        fetch: true,
       });
       const state = articlesReducer(previousState, action);
 
-      expect(state.lastFilteredFetch).toBeNull();
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -343,7 +229,6 @@ describe('Articles Reducer', () => {
       const state = articlesReducer(initialState, action);
 
       expect(state.entities['a7b8c9d0e1f2a3b4']?.article).toEqual(MOCK_ARTICLES[0]);
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should preserve existing formData when article already exists', () => {
@@ -376,7 +261,6 @@ describe('Articles Reducer', () => {
       const state = articlesReducer(initialState, action);
 
       expect(state.entities['a7b8c9d0e1f2a3b4']?.article).toEqual(MOCK_ARTICLES[0]);
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should reset newArticleFormData', () => {
@@ -397,7 +281,7 @@ describe('Articles Reducer', () => {
       expect(state.newArticleFormData).toEqual(INITIAL_ARTICLE_FORM_DATA);
     });
 
-    it('should reset fetch timestamps', () => {
+    it('should keep the shown lists loaded while they refresh', () => {
       const previousState: ArticlesState = {
         ...initialState,
         lastHomePageFetch: '2025-01-01T00:00:00.000Z',
@@ -409,8 +293,8 @@ describe('Articles Reducer', () => {
       });
       const state = articlesReducer(previousState, action);
 
-      expect(state.lastHomePageFetch).toBeNull();
-      expect(state.lastFilteredFetch).toBeNull();
+      expect(state.lastHomePageFetch).toBe('2025-01-01T00:00:00.000Z');
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -436,7 +320,6 @@ describe('Articles Reducer', () => {
       const state = articlesReducer(previousState, action);
 
       expect(state.entities['a7b8c9d0e1f2a3b4']?.article.title).toBe('Updated Title');
-      expect(state.callState.status).toBe('idle');
     });
 
     it('should update formData to match article', () => {
@@ -459,7 +342,7 @@ describe('Articles Reducer', () => {
       expect(state.entities['a7b8c9d0e1f2a3b4']?.formData.title).toBe('New Title');
     });
 
-    it('should reset fetch timestamps', () => {
+    it('should keep the shown lists loaded while they refresh', () => {
       const previousState: ArticlesState = {
         ...initialState,
         lastHomePageFetch: '2025-01-01T00:00:00.000Z',
@@ -472,8 +355,8 @@ describe('Articles Reducer', () => {
       });
       const state = articlesReducer(previousState, action);
 
-      expect(state.lastHomePageFetch).toBeNull();
-      expect(state.lastFilteredFetch).toBeNull();
+      expect(state.lastHomePageFetch).toBe('2025-01-01T00:00:00.000Z');
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 
@@ -499,10 +382,9 @@ describe('Articles Reducer', () => {
 
       expect(state.entities['a7b8c9d0e1f2a3b4']).toBeUndefined();
       expect(state.ids.length).toBe(0);
-      expect(state.callState.status).toBe('idle');
     });
 
-    it('should reset fetch timestamps', () => {
+    it('should take the article off the lists shown without reloading them', () => {
       const previousState: ArticlesState = articlesAdapter.upsertOne(
         {
           article: MOCK_ARTICLES[0],
@@ -514,6 +396,8 @@ describe('Articles Reducer', () => {
         },
         {
           ...initialState,
+          homePageArticles: [MOCK_ARTICLES[0], MOCK_ARTICLES[1]],
+          filteredArticles: [MOCK_ARTICLES[0]],
           lastHomePageFetch: '2025-01-01T00:00:00.000Z',
           lastFilteredFetch: '2025-01-01T00:00:00.000Z',
         },
@@ -525,21 +409,10 @@ describe('Articles Reducer', () => {
       });
       const state = articlesReducer(previousState, action);
 
-      expect(state.lastHomePageFetch).toBeNull();
-      expect(state.lastFilteredFetch).toBeNull();
-    });
-  });
-
-  describe('requestTimedOut', () => {
-    it('should set timeout error', () => {
-      const action = ArticlesActions.requestTimedOut();
-      const state = articlesReducer(initialState, action);
-
-      expect(state.callState.status).toBe('error');
-      expect(state.callState.error).toEqual({
-        name: 'LCCError',
-        message: 'Request timed out',
-      });
+      expect(state.homePageArticles).toEqual([MOCK_ARTICLES[1]]);
+      expect(state.filteredArticles).toEqual([]);
+      expect(state.lastHomePageFetch).toBe('2025-01-01T00:00:00.000Z');
+      expect(state.lastFilteredFetch).toBe('2025-01-01T00:00:00.000Z');
     });
   });
 

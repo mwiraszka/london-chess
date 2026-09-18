@@ -5,17 +5,16 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
   Input,
   OnChanges,
   OnInit,
-  Output,
   SimpleChanges,
   inject,
 } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import {
@@ -28,7 +27,8 @@ import {
   Event,
 } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService } from '@app/services';
+import { DialogService, StoreRequestService } from '@app/services';
+import { EventsActions } from '@app/store/events';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
 import { customSort } from '@app/utils';
 
@@ -45,6 +45,7 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
+    TextSkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -54,9 +55,13 @@ export class EventsCalendarGridComponent implements OnInit, OnChanges {
   @Input({ required: true }) public events!: Event[];
   @Input({ required: true }) public isAdmin!: boolean;
 
+  @Input() public isLoading = false;
   @Input() public options?: DataPaginationOptions<Event>;
 
-  @Output() public readonly requestDeleteEvent = new EventEmitter<Event>();
+  protected readonly daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  protected readonly skeletonMonths = [0, 1, 2];
+  // Six weeks, the most a month can span
+  protected readonly skeletonDays = Array.from({ length: 42 }, (_, index) => index);
 
   // Cache computed values to avoid recalculation
   public calendarMonths: CalendarMonth[] = [];
@@ -64,6 +69,7 @@ export class EventsCalendarGridComponent implements OnInit, OnChanges {
   private cachedEventsJson = '';
 
   private readonly isTouchDeviceFn = inject(IS_TOUCH_DEVICE);
+  private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
     private readonly dialogService: DialogService,
@@ -96,19 +102,18 @@ export class EventsCalendarGridComponent implements OnInit, OnChanges {
       body: `Delete ${event.title}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(EventsActions.deleteEventRequested({ event }), [
+          EventsActions.deleteEventSucceeded,
+          EventsActions.deleteEventFailed,
+        ]),
     };
 
-    const result = await this.dialogService.open<BasicDialogComponent, BasicDialogResult>(
-      {
-        componentType: BasicDialogComponent,
-        inputs: { dialog },
-        isModal: true,
-      },
-    );
-
-    if (result === 'confirm') {
-      this.requestDeleteEvent.emit(event);
-    }
+    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
+      componentType: BasicDialogComponent,
+      inputs: { dialog },
+      isModal: true,
+    });
   }
 
   public async onEventIndicator(event: Event): Promise<void> {

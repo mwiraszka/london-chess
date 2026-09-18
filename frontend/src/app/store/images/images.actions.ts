@@ -183,6 +183,11 @@ export const albumFormDataRestored = createAction(
   props<{ album: string | null }>(),
 );
 
+export const imageUploadsProgressed = createAction(
+  '[Images] Image uploads progressed',
+  props<{ uploaded: number; total: number }>(),
+);
+
 export const imageFileActionFailed = createAction(
   '[Images] Image file action failed',
   props<{ error: LccError }>(),
@@ -194,5 +199,3 @@ export const newImageRemoved = createAction(
 );
 
 export const allNewImagesRemoved = createAction('[Images] All new images removed');
-
-export const requestTimedOut = createAction('[Images] Request timed out');

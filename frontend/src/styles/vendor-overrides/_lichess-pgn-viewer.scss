@@ -1,3 +1,5 @@
+@use '../abstracts/mixins' as *;
+
 lcc-pgn-viewer {
   cg-board {
     background-color: var(--lcc-color--pgnViewer-board);
@@ -21,6 +23,28 @@ lcc-pgn-viewer {
     .lpv__fbt {
       padding: 0.5em;
       font-size: 0.9em;
+    }
+  }
+
+  // Below the width the board and its move list need side by side, the moves go under it
+  @include respond-to('lt-sm') {
+    .lpv.lpv--moves-auto {
+      grid-template-areas:
+        'board'
+        'controls'
+        'side';
+      grid-template-columns: minmax(200px, 1fr);
+      grid-template-rows: auto var(--controls-height) 6em;
+
+      &.lpv--players {
+        grid-template-areas:
+          'player-top'
+          'board'
+          'player-bot'
+          'controls'
+          'side';
+        grid-template-rows: 2em auto 2em var(--controls-height) 6em;
+      }
     }
   }
 
