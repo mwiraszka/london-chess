@@ -11,6 +11,7 @@ import {
   PaginatorState,
   SegmentedComponent,
   SelectOption,
+  TooltipDirective,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
@@ -31,7 +32,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationExtras, Params, Router } from '@angular/router';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
@@ -53,7 +54,7 @@ import {
   GamesQuery,
   GamesSortBy,
 } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import {
   formatPartialDate,
@@ -73,6 +74,7 @@ export interface GameRow {
   whiteName: string;
   black: GamePlayer | null;
   blackName: string;
+  result: string;
   event: string;
   opening: string;
   moves: number | null;
@@ -86,6 +88,7 @@ const LOADING_ROW: Omit<GameRow, 'id'> = {
   whiteName: '',
   black: null,
   blackName: '',
+  result: '',
   event: '',
   opening: '',
   moves: null,
@@ -101,6 +104,7 @@ function toGameRow(game: Game): GameRow {
     whiteName: playerName(game.white),
     black: game.black,
     blackName: playerName(game.black),
+    result: game.result,
     event: game.tournament,
     opening: game.eco,
     moves: Math.ceil(game.plyCount / 2),
@@ -153,7 +157,7 @@ interface Figure {
   label: string;
 }
 
-const FIGURE_LABELS = ['games', 'years', 'players', 'tournaments'];
+const FIGURE_LABELS = ['games', 'players', 'tournaments', 'years'];
 
 // Counts the figures up from nothing, quickly at first and settling on the amounts
 function countUp(figures: Figure[]): Observable<Figure[]> {
@@ -169,6 +173,9 @@ function countUp(figures: Figure[]): Observable<Figure[]> {
 
 const SORT_COLUMNS: Record<GamesSortBy, string> = {
   date: 'date',
+  white: 'whiteName',
+  result: 'result',
+  black: 'blackName',
   tournament: 'event',
   eco: 'opening',
   moves: 'moves',
@@ -192,6 +199,7 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
     PaginatorComponent,
     SegmentedComponent,
     TextSkeletonComponent,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -241,9 +249,9 @@ export class GameArchivesPageComponent implements OnInit {
     const years = firstYear !== null && lastYear !== null ? lastYear - firstYear + 1 : 0;
     const amounts = [
       summary.gameCount,
-      years,
       summary.playerCount,
       summary.tournamentCount,
+      years,
     ];
     return FIGURE_LABELS.map((label, index) => ({ label, value: amounts[index] }));
   });
@@ -254,9 +262,16 @@ export class GameArchivesPageComponent implements OnInit {
     () => this.status() === 'loading' && !this.games().length,
   );
 
+  // The table holds the height it had while the next page loads, so the page below it
+  // stays where it is
+  private readonly rowCount = linkedSignal<number, number>({
+    source: () => this.games().length,
+    computation: (count, previous) => count || previous?.value || this.query().pageSize,
+  });
+
   protected readonly rows = computed<GameRow[]>(() => {
     if (this.loading()) {
-      return Array.from({ length: this.query().pageSize }, (_, index) => ({
+      return Array.from({ length: this.rowCount() }, (_, index) => ({
         ...LOADING_ROW,
         id: `loading-${index}`,
       }));
@@ -285,9 +300,15 @@ export class GameArchivesPageComponent implements OnInit {
     }
     return [
       { key: 'date', label: 'Date', sortable: true, cellTemplate: cells.date },
-      { key: 'white', label: 'White', cellTemplate: cells.white },
-      { key: 'result', label: 'Result', align: 'center', cellTemplate: cells.result },
-      { key: 'black', label: 'Black', cellTemplate: cells.black },
+      { key: 'whiteName', label: 'White', sortable: true, cellTemplate: cells.white },
+      {
+        key: 'result',
+        label: 'Result',
+        sortable: true,
+        align: 'center',
+        cellTemplate: cells.result,
+      },
+      { key: 'blackName', label: 'Black', sortable: true, cellTemplate: cells.black },
       { key: 'event', label: 'Event', sortable: true, cellTemplate: cells.event },
       { key: 'opening', label: 'Opening', sortable: true, cellTemplate: cells.opening },
       {
@@ -351,7 +372,13 @@ export class GameArchivesPageComponent implements OnInit {
     );
 
     this.route.queryParams
-      .pipe(map(parseGamesQuery), distinctUntilChanged(isEqual), untilDestroyed(this))
+      .pipe(
+        map((params, index) =>
+          index ? parseGamesQuery(params) : this.arrivalQuery(params),
+        ),
+        distinctUntilChanged(isEqual),
+        untilDestroyed(this),
+      )
       .subscribe(query => this.store.dispatch(GamesActions.queryChanged({ query })));
 
     this.archiveFigures$
@@ -421,10 +448,24 @@ export class GameArchivesPageComponent implements OnInit {
     this.navigateTo({ ...query, page: 1, filters: { ...query.filters, ...changes } });
   }
 
-  private navigateTo(query: GamesQuery): void {
+  // An address that asks for nothing in particular opens the archives as they were
+  // last left, and is brought up to date to say so
+  private arrivalQuery(params: Params): GamesQuery {
+    const requested = parseGamesQuery(params);
+    const remembered = this.query();
+    if (!isEqual(requested, INITIAL_GAMES_QUERY) || isEqual(remembered, requested)) {
+      return requested;
+    }
+    this.navigateTo(remembered, { replaceUrl: true });
+    return remembered;
+  }
+
+  private navigateTo(query: GamesQuery, extras: NavigationExtras = {}): void {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: gamesQueryParams(query),
+      info: KEEP_SCROLL,
+      ...extras,
     });
   }
 }

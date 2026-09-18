@@ -16,6 +16,7 @@ import {
 import * as AuthActions from './auth/auth.actions';
 import { AuthState } from './auth/auth.reducer';
 import { EventsState, initialState as eventsInitialState } from './events/events.reducer';
+import { GamesState, initialState as gamesInitialState } from './games/games.reducer';
 import { ImagesState, initialState as imagesInitialState } from './images/images.reducer';
 import {
   MembersState,
@@ -28,6 +29,7 @@ export interface MetaState {
   articlesState?: ArticlesState;
   authState?: AuthState;
   eventsState?: EventsState;
+  gamesState?: GamesState;
   imagesState?: ImagesState;
   membersState?: MembersState;
   navState?: NavState;
@@ -38,6 +40,7 @@ const hydratedStates = [
   'appState',
   'articlesState',
   'eventsState',
+  'gamesState',
   'imagesState',
   'membersState',
   'navState',
@@ -50,10 +53,12 @@ const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   membersState: [6, 1, 0],
 };
 
-// Request outcomes only describe the current visit, so every visit starts from these
+// What only describes the current visit, so every visit starts from these
 const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
   articlesState: pick(articlesInitialState, 'failedLoads'),
   eventsState: pick(eventsInitialState, 'failedLoads'),
+  // Of the archives, only how they were last queried carries over to the next visit
+  gamesState: omit(gamesInitialState, 'query'),
   imagesState: pick(imagesInitialState, ['failedLoads', 'uploadProgress']),
   membersState: pick(membersInitialState, 'failedLoads'),
 };
