@@ -1,50 +1,12 @@
-import { Page, Route, expect, test } from '@playwright/test';
+import { Page, expect, test } from '@playwright/test';
+
+import { failRequests, holdRequests } from './requests';
 
 const ARTICLES = /\/v1\/articles(\?|$)/;
 const EVENTS = /\/v1\/events(\?|$)/;
 const MEMBERS = /\/v1\/public\/members(\?|$)/;
 const IMAGES_METADATA = /\/v1\/images\/all-metadata$/;
 const LISTS = /\/v1\/(articles|events|images\/all-metadata|public\/members)(\?|$)/;
-
-interface HeldRequests {
-  count: () => number;
-  release: () => Promise<void>;
-}
-
-// Holds matching requests until released, so a test can inspect the page mid-load
-async function holdRequests(page: Page, url: RegExp): Promise<HeldRequests> {
-  const held: Route[] = [];
-  let isReleased = false;
-
-  await page.route(url, route => {
-    if (isReleased) {
-      return route.fallback();
-    }
-    held.push(route);
-  });
-
-  return {
-    count: () => held.length,
-    release: async () => {
-      isReleased = true;
-      await Promise.all(held.splice(0).map(route => route.fallback()));
-    },
-  };
-}
-
-async function failRequests(page: Page, url: RegExp): Promise<() => void> {
-  let isFailing = true;
-
-  await page.route(url, route =>
-    isFailing
-      ? route.fulfill({ status: 503, json: { message: 'Service unavailable.' } })
-      : route.fallback(),
-  );
-
-  return () => {
-    isFailing = false;
-  };
-}
 
 // Makes the stored articles due for a refresh from the next page load on
 async function expireStoredArticles(page: Page): Promise<void> {
