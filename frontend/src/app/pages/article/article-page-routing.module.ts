@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
+import { articleGuard } from '@app/guards/article.guard';
 import { accessGuard } from '@app/guards/auth.guard';
 import { collectionIdGuard } from '@app/guards/collection-id.guard';
 import { unsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
@@ -12,7 +13,7 @@ const routes: Routes = [
   {
     path: 'view/:article_id',
     component: ArticleViewerPageComponent,
-    canActivate: [collectionIdGuard('article_id')],
+    canActivate: [articleGuard('article_id')],
   },
   {
     path: 'add',

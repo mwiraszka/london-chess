@@ -59,5 +59,5 @@ export { isAccountSection } from './type-guards/is-account-section.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';
-export { isMemberNumber } from './type-guards/is-member-number.util';
+export { isRecordNumber } from './type-guards/is-record-number.util';
 export { isString } from './type-guards/is-string.util';

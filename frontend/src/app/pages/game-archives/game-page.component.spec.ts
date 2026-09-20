@@ -165,10 +165,8 @@ describe('GamePageComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should fetch it', () => {
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        GamesActions.fetchGameRequested({ gameId: MOCK_GAMES[1].id }),
-      );
+    it('should leave fetching it to the guard on its route', () => {
+      expect(dispatchSpy).not.toHaveBeenCalled();
     });
 
     it('should hold the page layout with skeletons until the game arrives', () => {

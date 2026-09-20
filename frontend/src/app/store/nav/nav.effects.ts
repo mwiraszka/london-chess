@@ -1,7 +1,7 @@
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
-import { Store } from '@ngrx/store';
+import { Action, Store } from '@ngrx/store';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 
 import { Injectable } from '@angular/core';
@@ -151,7 +151,7 @@ export class NavEffects {
       map(({ payload }) => payload.event.url.split('#')[0]),
       distinctUntilChanged(),
       filter(requestedPath => isEntity(requestedPath.split('/').slice(1)[0])),
-      map(requestedPath => {
+      map((requestedPath): Action | null => {
         const [entity, controlMode, encodedId] = requestedPath.split('/').slice(1);
         const id = encodedId ? decodeURIComponent(encodedId) : null;
 
@@ -167,7 +167,10 @@ export class NavEffects {
           case 'article':
             if (controlMode === 'add' && !isDefined(id)) {
               return ArticlesActions.createAnArticleSelected();
-            } else if (['edit', 'view'].includes(controlMode) && isCollectionId(id)) {
+            } else if (controlMode === 'view' && isCollectionId(id)) {
+              // The route's guard loads the article before the page shows
+              return null;
+            } else if (controlMode === 'edit' && isCollectionId(id)) {
               return ArticlesActions.fetchArticleRequested({ articleId: id });
             }
             return NavActions.navigationRequested({ path: 'news' });
@@ -205,6 +208,7 @@ export class NavEffects {
             });
         }
       }),
+      filter(isDefined),
     ),
   );
 

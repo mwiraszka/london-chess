@@ -451,22 +451,18 @@ describe('NavEffects', () => {
   });
 
   describe('handleEntityRouteNavigationRequest$', () => {
-    it('should fetch article when navigating to article view', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
-        store.refreshState();
+    it('should leave an article view to the guard on its route', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.refreshState();
+      const emitted: Action[] = [];
+      effects.handleEntityRouteNavigationRequest$.subscribe(action =>
+        emitted.push(action),
+      );
 
-        actions$.next(mockNavigatedAction('/article/view/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      actions$.next(mockNavigatedAction('/article/view/a7b8c9d0e1f2a3b4c5d6e7f8'));
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchArticleRequested({
-              articleId: 'a7b8c9d0e1f2a3b4c5d6e7f8',
-            }),
-          );
-          done();
-        });
-      }));
+      expect(emitted).toEqual([]);
+    });
 
     it('should fetch article when navigating to article edit', () =>
       withDone(done => {
