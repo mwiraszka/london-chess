@@ -40,7 +40,7 @@ export interface ArchivePlayer extends GamePlayer {
   gameCount: number;
 }
 
-export interface Tournament {
+export interface ArchiveTournament {
   name: string;
   sections: string[];
   years: number[];

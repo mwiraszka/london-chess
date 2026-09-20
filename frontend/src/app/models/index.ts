@@ -37,7 +37,7 @@ export type {
   GamesQuery,
   GamesSortBy,
   GamesSummary,
-  Tournament,
+  ArchiveTournament,
 } from './game.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {

@@ -7,9 +7,9 @@ import { TestBed } from '@angular/core/testing';
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
+  MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
-  MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
 import { ApiResponse, Game, PaginatedItems } from '@app/models';
 
@@ -100,7 +100,9 @@ describe('GamesApiService', () => {
     it('should request the tournaments', () => {
       service.getTournaments().subscribe();
 
-      httpMock.expectOne(`${apiBaseUrl}/tournaments`).flush({ data: MOCK_TOURNAMENTS });
+      httpMock
+        .expectOne(`${apiBaseUrl}/tournaments`)
+        .flush({ data: MOCK_ARCHIVE_TOURNAMENTS });
     });
 
     it('should request the summary', () => {

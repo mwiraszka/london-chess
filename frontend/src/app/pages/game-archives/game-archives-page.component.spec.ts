@@ -13,9 +13,9 @@ import {
 } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
+  MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
-  MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
 import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
@@ -70,7 +70,7 @@ describe('GameArchivesPageComponent', () => {
     store.overrideSelector(GamesSelectors.selectFilteredCount, 3);
     store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loaded');
     store.overrideSelector(GamesSelectors.selectPlayers, MOCK_ARCHIVE_PLAYERS);
-    store.overrideSelector(GamesSelectors.selectTournaments, MOCK_TOURNAMENTS);
+    store.overrideSelector(GamesSelectors.selectTournaments, MOCK_ARCHIVE_TOURNAMENTS);
     store.overrideSelector(GamesSelectors.selectSummary, MOCK_GAMES_SUMMARY);
     store.overrideSelector(GamesSelectors.selectReferenceStatus, 'loaded');
     store.refreshState();

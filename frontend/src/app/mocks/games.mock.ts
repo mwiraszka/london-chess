@@ -1,4 +1,4 @@
-import { ArchivePlayer, Game, GamesSummary, Tournament } from '@app/models';
+import { ArchivePlayer, ArchiveTournament, Game, GamesSummary } from '@app/models';
 
 import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';
 
@@ -108,7 +108,7 @@ export const MOCK_ARCHIVE_PLAYERS: ArchivePlayer[] = [
   { ...MOCK_GAMES[2].white, gameCount: 1 },
 ];
 
-export const MOCK_TOURNAMENTS: Tournament[] = [
+export const MOCK_ARCHIVE_TOURNAMENTS: ArchiveTournament[] = [
   {
     name: 'Club Championship',
     sections: ['A1', 'B1'],

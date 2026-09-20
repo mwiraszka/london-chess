@@ -47,7 +47,7 @@ export type GameResponse = Omit<Game, 'whitePlayerId' | 'blackPlayerId'> & {
   black: GamePlayer;
 };
 
-export interface Tournament {
+export interface ArchiveTournament {
   name: string;
   sections: string[];
   years: number[];

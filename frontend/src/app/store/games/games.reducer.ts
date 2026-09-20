@@ -4,11 +4,11 @@ import { createReducer, on } from '@ngrx/store';
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   ArchivePlayer,
+  ArchiveTournament,
   Game,
   GamesQuery,
   GamesSummary,
   IsoDate,
-  Tournament,
 } from '@app/models';
 
 import * as GamesActions from './games.actions';
@@ -24,7 +24,7 @@ export interface GamesState extends EntityState<Game> {
   filteredCount: number | null;
   query: GamesQuery;
   players: ArchivePlayer[];
-  tournaments: Tournament[];
+  tournaments: ArchiveTournament[];
   summary: GamesSummary | null;
 }
 
