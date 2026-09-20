@@ -1,0 +1,82 @@
+<ea-card
+  class="member-tournaments"
+  [fullWidth]="true">
+  <h3 slot="header">Tournaments</h3>
+
+  @if (status() === 'failed') {
+    <lcc-load-failed
+      title="Unable to load tournaments"
+      (retry)="onRetry()" />
+  } @else {
+    <ea-data-table
+      class="results"
+      aria-label="Tournaments played"
+      density="compact"
+      noDataText="No tournaments on record yet."
+      trackBy="id"
+      [clickable]="!loading()"
+      [columns]="columns()"
+      [data]="rows()"
+      [nowrap]="true"
+      [rowHref]="rowHref"
+      [sizingRows]="sizingRows"
+      [striped]="true"
+      (rowActivate)="onOpenTournament($event)">
+      @if (resultCount() > pageSizes[0]) {
+        <ea-paginator
+          size="sm"
+          [page]="page()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="pageSizes"
+          [showRangeLabel]="true"
+          [totalItems]="resultCount()"
+          (changed)="onPageChanged($event)" />
+      }
+    </ea-data-table>
+  }
+</ea-card>
+
+<ng-template
+  #textCell
+  let-row
+  let-value="value">
+  @if (row.result) {
+    {{ value }}
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #tournamentCell
+  let-row>
+  @if (row.result) {
+    {{ row.tournament }}
+    @if (row.section) {
+      <span class="results__section">({{ row.section }})</span>
+    }
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #ratingCell
+  let-row>
+  @if (row.result) {
+    @if (row.rating !== null) {
+      {{ row.rating }}
+      @if (row.provisionalGames) {
+        <span
+          class="results__secondary"
+          [eaTooltip]="'Provisional, from ' + row.provisionalGames + ' games'">
+          P{{ row.provisionalGames }}
+        </span>
+      }
+    } @else {
+      <span class="results__secondary">Unrated</span>
+    }
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>

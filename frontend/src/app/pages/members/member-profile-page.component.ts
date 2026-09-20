@@ -27,6 +27,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
+import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -47,6 +48,7 @@ import { isCityChampion } from '@app/utils';
     CommonModule,
     ExternalLinkIconComponent,
     LoadFailedComponent,
+    MemberTournamentsComponent,
     PageHeaderComponent,
     RouterLink,
     ShieldCheckIconComponent,

@@ -1,0 +1,26 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: block;
+}
+
+// Capped at the card so a wider table scrolls sideways within itself rather than
+// being clipped by it
+.results {
+  max-width: 100%;
+  @include data-table-colors;
+}
+
+// A loading cell's placeholder fills the cell, and as a block sits centred in it
+.results lcc-text-skeleton {
+  display: block;
+}
+
+.results__section,
+.results__secondary {
+  color: var(--color-text-secondary);
+}
+
+.results__secondary {
+  font-size: 12px;
+}

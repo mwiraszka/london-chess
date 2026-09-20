@@ -168,6 +168,10 @@
             height="100%" />
         }
       </div>
+
+      @if (vm.member) {
+        <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
+      }
     </div>
   }
 }

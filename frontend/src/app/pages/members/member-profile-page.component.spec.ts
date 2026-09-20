@@ -1,9 +1,11 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
+import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 
+import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
@@ -15,6 +17,11 @@ import {
 import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { MemberProfilePageComponent } from './member-profile-page.component';
+
+@Component({ selector: 'lcc-member-tournaments', template: '' })
+class MemberTournamentsStubComponent {
+  readonly memberNumber = input.required<number>();
+}
 
 describe('MemberProfilePageComponent', () => {
   let fixture: ComponentFixture<MemberProfilePageComponent>;
@@ -49,7 +56,12 @@ describe('MemberProfilePageComponent', () => {
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
       ],
-    }).compileComponents();
+    })
+      .overrideComponent(MemberProfilePageComponent, {
+        remove: { imports: [MemberTournamentsComponent] },
+        add: { imports: [MemberTournamentsStubComponent] },
+      })
+      .compileComponents();
 
     store = TestBed.inject(MockStore);
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
@@ -61,6 +73,15 @@ describe('MemberProfilePageComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should list the member's tournaments", () => {
+    const tournaments: MemberTournamentsStubComponent = query(
+      fixture.debugElement,
+      'lcc-member-tournaments',
+    ).componentInstance;
+
+    expect(tournaments.memberNumber()).toBe(member.number);
   });
 
   it('should render the member name and ratings', () => {
