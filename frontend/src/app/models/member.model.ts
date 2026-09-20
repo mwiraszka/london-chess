@@ -34,6 +34,9 @@ export interface Member {
 // The number, avatar and account belong to the server, so admins never write them
 export type EditableMember = MemberFormData & Pick<Member, 'modificationInfo'>;
 
+// How a person's name is written: "First Last" or "Last, First"
+export type NameOrder = 'first-last' | 'last-first';
+
 export interface MemberProfile {
   number: number;
   firstName: string;

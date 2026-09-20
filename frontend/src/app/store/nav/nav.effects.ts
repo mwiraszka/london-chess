@@ -14,6 +14,7 @@ import * as EventsActions from '@app/store/events/events.actions';
 import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
+import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
 import { isCollectionId, isDefined, isEntity, isString } from '@app/utils';
 
 import * as NavActions from './nav.actions';
@@ -24,6 +25,7 @@ const RECORD_FETCH_FAILURES = [
   EventsActions.fetchEventFailed,
   GamesActions.fetchGameFailed,
   MembersActions.fetchMemberFailed,
+  TournamentsActions.fetchTournamentFailed,
 ] as const;
 
 function isMissingRecord(action: ReturnType<(typeof RECORD_FETCH_FAILURES)[number]>) {

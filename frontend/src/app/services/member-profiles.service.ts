@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 
-import { MemberProfile } from '@app/models';
+import { MemberProfile, NameOrder } from '@app/models';
 import { ApiService } from '@app/services/api.service';
 
 /**
@@ -42,9 +42,19 @@ export class MemberProfilesService {
     return this.profileFor(number)?.avatarUrl ?? undefined;
   }
 
-  // A member's current name, or the name stored with a record when they have no profile
-  nameFor(number: number | null, storedName: string): string {
+  // A member's current name, in the order the stored name is given in, or the name
+  // stored with a record when they have no profile
+  nameFor(
+    number: number | null,
+    storedName: string,
+    order: NameOrder = 'first-last',
+  ): string {
     const profile = this.profileFor(number);
-    return profile ? `${profile.firstName} ${profile.lastName}` : storedName;
+    if (!profile) {
+      return storedName;
+    }
+    return order === 'last-first'
+      ? `${profile.lastName}, ${profile.firstName}`
+      : `${profile.firstName} ${profile.lastName}`;
   }
 }

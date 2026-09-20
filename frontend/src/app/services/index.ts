@@ -18,4 +18,5 @@ export { RefreshService } from './refresh.service';
 export { KEEP_SCROLL, RoutingService } from './routing.service';
 export { StoreRequestService } from './store-request.service';
 export { TouchEventsService } from './touch-events.service';
+export { TournamentsApiService } from './api/tournaments-api.service';
 export { UserService } from './user.service';

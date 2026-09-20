@@ -1,0 +1,95 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.details__list {
+  display: grid;
+  align-items: baseline;
+  gap: 8px 16px;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+
+  dt {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+    color: var(--color-text-primary);
+  }
+}
+
+.details__extra,
+.details__separator {
+  color: var(--color-text-secondary);
+}
+
+// Holds the room the details take, so the tournament slots into place when it arrives
+.details--loading {
+  height: 176px;
+}
+
+// The page centres each block at its own width, so the block is capped at the page
+// for the table inside it to be narrower than its columns and scroll them sideways
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 16px;
+}
+
+.section__heading,
+.section__games-heading {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.section__games-heading {
+  margin-top: 8px;
+}
+
+.section__heading-extra {
+  font-weight: normal;
+  color: var(--color-text-secondary);
+}
+
+// Capped at the page so a wider table scrolls sideways within itself rather than
+// being clipped by the page
+.crosstable,
+.games {
+  max-width: 100%;
+  @include data-table-colors;
+}
+
+// A loading cell's placeholder fills the cell, and as a block sits centred in it
+.crosstable lcc-text-skeleton {
+  display: block;
+}
+
+.crosstable__provisional,
+.crosstable__unrated {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.crosstable__round {
+  font-variant-numeric: tabular-nums;
+}
+
+.crosstable__score,
+.games__result--decisive {
+  font-weight: bold;
+}

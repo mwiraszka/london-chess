@@ -1,0 +1,161 @@
+<lcc-page-header
+  heading="Tournaments"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+<ea-card
+  class="intro"
+  [fullWidth]="true">
+  <div class="intro__body">
+    <div class="intro__layout">
+      <img
+        class="intro__image"
+        src="assets/tournaments.webp"
+        width="1200"
+        height="621"
+        alt="" />
+      <div class="intro__text">
+        <p>
+          Here you will find the standings for every tournament run at the club since
+          2019, from our weekly blitz nights to the club championship. Select a tournament
+          to see the round-by-round crosstables and link to any games stored in our game
+          archives (applies to rated games only).
+        </p>
+        <p>
+          Our tournaments are run by tournament director
+          <lcc-member-link
+            name="Ryan Sarson"
+            appearance="link"
+            [memberNumber]="1" />. If you spot anything that needs correcting, please
+          email us at
+          <a
+            href="mailto:archives@londonchess.ca?subject=LCC%20Website%20-%20Tournaments"
+            class="lcc-link"
+            rel="noopener noreferrer"
+            target="_blank">
+            archives&#64;londonchess.ca</a
+          >.
+        </p>
+      </div>
+    </div>
+    <div class="trophies">
+      @for (trophy of trophies; track $index) {
+        <img
+          class="trophy"
+          [class.trophy--small]="trophy.size === 'small'"
+          [src]="'assets/' + trophy.file"
+          [alt]="trophy.label" />
+      }
+    </div>
+  </div>
+</ea-card>
+
+<div class="filters">
+  <ea-dropdown
+    class="filters__year"
+    label="Year"
+    [options]="yearOptions()"
+    [value]="filters().year"
+    (changed)="onFilterChanged('year', $event)" />
+  <ea-dropdown
+    class="filters__time-control"
+    label="Time control"
+    [options]="timeControlOptions()"
+    [value]="filters().timeControl"
+    (changed)="onFilterChanged('timeControl', $event)" />
+  <ea-dropdown
+    class="filters__format"
+    label="Format"
+    [options]="formatOptions()"
+    [value]="filters().format"
+    (changed)="onFilterChanged('format', $event)" />
+  <ea-button
+    class="filters__clear"
+    variant="ghost"
+    size="md"
+    [disabled]="!hasFilters()"
+    (clicked)="onClearFilters()">
+    Clear filters
+  </ea-button>
+</div>
+
+@if (status() === 'failed') {
+  <lcc-load-failed
+    title="Unable to load tournaments"
+    (retry)="onRetry()" />
+} @else {
+  <ea-data-table
+    class="tournaments"
+    aria-label="Tournaments"
+    density="compact"
+    noDataText="No tournaments match these filters."
+    trackBy="id"
+    [clickable]="!loading()"
+    [columns]="columns()"
+    [data]="rows()"
+    [nowrap]="true"
+    [rowHref]="rowHref"
+    [sizingRows]="sizingRows"
+    [sort]="sortState()"
+    [striped]="true"
+    (rowActivate)="onOpenTournament($event)"
+    (sorted)="onSorted($event)">
+    <ea-paginator
+      size="sm"
+      [page]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizes"
+      [showRangeLabel]="!loading()"
+      [totalItems]="filteredCount()"
+      (changed)="onPageChanged($event)" />
+  </ea-data-table>
+}
+
+<ng-template
+  #dateCell
+  let-row>
+  @if (row.summary) {
+    {{ row.dateLabel }}
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #nameCell
+  let-row>
+  @if (row.summary) {
+    <span
+      class="tournaments__name"
+      [eaTooltip]="row.subtitle ? row.name + ' (' + row.subtitle + ')' : ''"
+      [whenClipped]="true">
+      {{ row.name }}
+      @if (row.subtitle) {
+        <span class="tournaments__subtitle">({{ row.subtitle }})</span>
+      }
+    </span>
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #timeControlCell
+  let-row>
+  @if (row.summary) {
+    {{ row.timeControl }}
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #textCell
+  let-row
+  let-value="value">
+  @if (row.summary) {
+    {{ value }}
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>

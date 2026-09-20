@@ -1,10 +1,22 @@
 export { isStorageSupported } from './browser/is-storage-supported.util';
 
 export { buildPgn } from './chess/build-pgn.util';
+export {
+  formatScore,
+  parseSubtitlePeople,
+  roundResultDescription,
+  roundResultLabel,
+  shortenSubtitle,
+} from './chess/crosstable.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
 export { isCityChampion } from './chess/is-city-champion.util';
-export { playerName, playerScores, resultLabel } from './chess/player-name.util';
+export {
+  playerName,
+  playerNameLastFirst,
+  playerScores,
+  resultLabel,
+} from './chess/player-name.util';
 
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';
@@ -14,6 +26,7 @@ export { generateUuid } from './common/generate-uuid.util';
 export { takeRandomly } from './common/take-randomly.util';
 
 export { formatDate } from './datetime/format-date.util';
+export { formatDateRange } from './datetime/format-date-range.util';
 export { formatPartialDate } from './datetime/format-partial-date.util';
 export { isExpired } from './datetime/is-expired.util';
 export { isValidIsoDate } from './datetime/is-valid-iso-date.util';

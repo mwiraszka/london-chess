@@ -1,0 +1,250 @@
+@if (viewModel(); as vm) {
+  @if (vm.status === 'failed') {
+    <lcc-load-failed
+      title="Unable to load this tournament"
+      (retry)="onRetry(vm.tournamentNumber)" />
+  } @else if (vm.tournament; as tournament) {
+    <lcc-page-header
+      [heading]="tournament.name"
+      [icon]="pageIcon">
+    </lcc-page-header>
+
+    <ea-card
+      class="details"
+      [fullWidth]="true">
+      <dl class="details__list">
+        <dt>{{ tournament.endDate ? 'Dates' : 'Date' }}</dt>
+        <dd>{{ formatDateRange(tournament.date, tournament.endDate) }}</dd>
+
+        @if (tournament.subtitle) {
+          <dt>{{ subtitleLabels[tournament.format] }}</dt>
+          <dd>
+            @if (subtitlePeople(); as subtitle) {
+              @for (person of subtitle.people; track person.name; let last = $last) {
+                <span class="details__person">
+                  {{ person.name }}
+                  @if (person.rating !== null) {
+                    <span class="details__extra">({{ person.rating }})</span>
+                  }
+                </span>
+                @if (!last) {
+                  <span class="details__separator">{{ subtitle.separator }}</span>
+                }
+              }
+            } @else {
+              {{ tournament.subtitle }}
+            }
+          </dd>
+        }
+
+        <dt>Format</dt>
+        <dd>
+          {{ formatLabels[tournament.format] }}
+          <span class="details__extra"
+            >({{ tournament.isRated ? 'rated' : 'unrated' }})</span
+          >
+        </dd>
+
+        @if (tournament.timeControl) {
+          <dt>Time control</dt>
+          <dd>{{ tournament.timeControl }}</dd>
+        }
+
+        <dt>Players</dt>
+        <dd>{{ playerCount() }}</dd>
+      </dl>
+    </ea-card>
+
+    @for (section of sections(); track section.key) {
+      <section class="section">
+        @if (section.heading; as heading) {
+          <h3 class="section__heading">
+            {{ heading.text }}
+            @if (heading.extra) {
+              <span class="section__heading-extra">({{ heading.extra }})</span>
+            }
+          </h3>
+        }
+
+        <ea-data-table
+          class="crosstable"
+          density="compact"
+          trackBy="id"
+          [aria-label]="
+            section.heading ? 'Standings, ' + section.heading.text : 'Standings'
+          "
+          [columns]="sectionColumns().get(section.key) ?? []"
+          [data]="section.rows"
+          [nowrap]="true"
+          [sizingRows]="sizingRows"
+          [striped]="true" />
+
+        @if (section.games.length) {
+          <h4 class="section__games-heading">Games in the archive</h4>
+          <ea-data-table
+            class="games"
+            density="compact"
+            trackBy="id"
+            [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
+            [clickable]="true"
+            [columns]="gameColumns()"
+            [data]="section.games"
+            [nowrap]="true"
+            [rowHref]="gameHref"
+            [sizingRows]="gameSizingRows"
+            [striped]="true"
+            (rowActivate)="onOpenGame($event)" />
+        }
+      </section>
+    }
+  } @else {
+    <lcc-page-header
+      [heading]="null"
+      [icon]="pageIcon">
+    </lcc-page-header>
+
+    <div
+      class="details details--loading"
+      aria-busy="true">
+      <ea-skeleton
+        variant="rect"
+        width="100%"
+        height="100%" />
+    </div>
+
+    <section class="section">
+      <ea-data-table
+        class="crosstable"
+        aria-label="Standings"
+        density="compact"
+        trackBy="id"
+        [columns]="loadingColumns()"
+        [data]="loadingRows"
+        [nowrap]="true"
+        [sizingRows]="sizingRows"
+        [striped]="true" />
+    </section>
+  }
+
+  <lcc-link-list
+    class="links"
+    [links]="links()">
+  </lcc-link-list>
+}
+
+<ng-template
+  #rankCell
+  let-row>
+  @if (row.entry) {
+    {{ row.rank }}
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #playerCell
+  let-row>
+  @if (row.entry; as entry) {
+    <lcc-member-link
+      nameOrder="last-first"
+      [memberNumber]="entry.player.memberNumber"
+      [name]="row.player" />
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #ratingCell
+  let-row>
+  @if (row.entry) {
+    @if (row.rating !== null) {
+      {{ row.rating }}
+      @if (row.provisionalGames) {
+        <span
+          class="crosstable__provisional"
+          [eaTooltip]="'Provisional, from ' + row.provisionalGames + ' games'">
+          P{{ row.provisionalGames }}
+        </span>
+      }
+    } @else {
+      <span class="crosstable__unrated">Unrated</span>
+    }
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #roundCell
+  let-row
+  let-value="value">
+  @if (row.entry) {
+    @if (value; as cell) {
+      @if (cell.result.gameId) {
+        <a
+          class="crosstable__round lcc-link"
+          [attr.aria-label]="cell.description"
+          [eaTooltip]="cell.description"
+          [routerLink]="['/game-archives', cell.result.gameId]">
+          {{ cell.label }}
+        </a>
+      } @else {
+        <span
+          class="crosstable__round"
+          [eaTooltip]="cell.description">
+          {{ cell.label }}
+        </span>
+      }
+    }
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #scoreCell
+  let-row>
+  @if (row.entry) {
+    <span class="crosstable__score">{{ formatScore(row.score) }}</span>
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #noteCell
+  let-row>
+  @if (row.entry) {
+    {{ row.resultNote }}
+  } @else {
+    <lcc-text-skeleton width="100%" />
+  }
+</ng-template>
+
+<ng-template
+  #whiteCell
+  let-row>
+  <lcc-member-link
+    [memberNumber]="row.game.white.memberNumber"
+    [name]="row.white" />
+</ng-template>
+
+<ng-template
+  #blackCell
+  let-row>
+  <lcc-member-link
+    [memberNumber]="row.game.black.memberNumber"
+    [name]="row.black" />
+</ng-template>
+
+<ng-template
+  #resultCell
+  let-row>
+  <span
+    class="games__result"
+    [class.games__result--decisive]="row.result !== '1/2-1/2'">
+    {{ row.result === '1/2-1/2' ? '½-½' : row.result }}
+  </span>
+</ng-template>

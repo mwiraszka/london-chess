@@ -132,6 +132,13 @@ const routes: Routes = [
       ),
   },
   {
+    path: 'tournaments',
+    loadChildren: () =>
+      import('./pages/tournaments/tournaments-page-routing.module').then(
+        m => m.TournamentsPageRoutingModule,
+      ),
+  },
+  {
     path: 'website-changelog',
     loadComponent: () =>
       import('./pages/website-changelog/website-changelog-page.component').then(

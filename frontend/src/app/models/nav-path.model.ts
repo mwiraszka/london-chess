@@ -14,4 +14,5 @@ export type NavPath =
   | 'news'
   | 'photo-gallery'
   | 'schedule'
+  | 'tournaments'
   | 'website-changelog';

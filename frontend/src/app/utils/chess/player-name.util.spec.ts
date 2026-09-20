@@ -1,6 +1,11 @@
 import { MOCK_GAMES } from '@app/mocks/games.mock';
 
-import { playerName, playerScores, resultLabel } from './player-name.util';
+import {
+  playerName,
+  playerNameLastFirst,
+  playerScores,
+  resultLabel,
+} from './player-name.util';
 
 describe('playerName', () => {
   it('should join the parts of a name that are present', () => {
@@ -9,6 +14,16 @@ describe('playerName', () => {
       'J. Jung Sr',
     );
     expect(playerName({ ...MOCK_GAMES[0].black, firstName: '' })).toBe('Jung');
+  });
+});
+
+describe('playerNameLastFirst', () => {
+  it('should put the surname first', () => {
+    expect(playerNameLastFirst(MOCK_GAMES[0].white)).toBe('Litchfield, Gerry');
+    expect(
+      playerNameLastFirst({ ...MOCK_GAMES[0].black, firstName: 'J.', suffix: 'Sr' }),
+    ).toBe('Jung, J. Sr');
+    expect(playerNameLastFirst({ ...MOCK_GAMES[0].black, firstName: '' })).toBe('Jung');
   });
 });
 

@@ -63,6 +63,7 @@ export type {
   MemberProfile,
   MemberRatingsUpdate,
   MemberWithNewRatings,
+  NameOrder,
 } from './member.model';
 export type { ModificationInfo } from './modification-info.model';
 export type { NavPath } from './nav-path.model';
@@ -70,4 +71,18 @@ export type { DataPaginationOptions, Filter } from './pagination.model';
 export type { RouteAccess } from './route-access.model';
 export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
+export type {
+  MemberTournamentResult,
+  PieceColor,
+  RoundOutcome,
+  RoundResult,
+  Tournament,
+  TournamentEntry,
+  TournamentFormat,
+  TournamentGame,
+  TournamentSection,
+  TournamentSizing,
+  TournamentSummary,
+  Trophy,
+} from './tournament.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';
