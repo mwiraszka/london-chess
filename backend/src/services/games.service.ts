@@ -174,7 +174,7 @@ export async function resolvePlayers(playerIds: Id[]): Promise<Map<Id, GamePlaye
   );
 }
 
-const UNKNOWN_PLAYER: Omit<GamePlayer, 'id'> = {
+export const UNKNOWN_PLAYER: Omit<GamePlayer, 'id'> = {
   firstName: '',
   lastName: 'Unknown',
   suffix: '',

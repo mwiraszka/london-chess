@@ -10,6 +10,7 @@ import { eventsRouter } from './routers/events.router';
 import { gamesRouter } from './routers/games.router';
 import { imagesRouter } from './routers/images.router';
 import { adminMembersRouter, publicMembersRouter } from './routers/members.router';
+import { tournamentsRouter } from './routers/tournaments.router';
 import { usersRouter } from './routers/users.router';
 import { webhooksRouter } from './routers/webhooks.router';
 import { connectToDatabase } from './services/mongo-db.service';
@@ -32,6 +33,7 @@ const router = Router()
   .use('/v1/images', imagesRouter)
   .use('/v1/public/members', publicMembersRouter)
   .use('/v1/admin/members', adminMembersRouter)
+  .use('/v1/tournaments', tournamentsRouter)
   .use('/v1/users', usersRouter);
 
 const corsOptions: CorsOptions = {
