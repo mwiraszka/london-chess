@@ -5,7 +5,7 @@ import {
   CameraIconComponent,
   HomeIconComponent,
   InfoIconComponent,
-  MapIconComponent,
+  NewspaperIconComponent,
   SettingsIconComponent,
   TrophyIconComponent,
   UsersIconComponent,
@@ -73,7 +73,7 @@ export class NavigationBarComponent {
     {
       text: 'News',
       internalPath: 'news',
-      icon: MapIconComponent,
+      icon: NewspaperIconComponent,
     },
     {
       text: 'City Champion',

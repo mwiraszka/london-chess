@@ -1,4 +1,4 @@
-import { MapIconComponent } from '@eagami/ui';
+import { NewspaperIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
@@ -68,7 +68,7 @@ export class ArticleViewerPageComponent implements OnInit {
   public readonly newsPageLink: InternalLink = {
     text: 'More articles',
     internalPath: 'news',
-    icon: MapIconComponent,
+    icon: NewspaperIconComponent,
   };
   public viewModel$?: Observable<{
     article: Article | null;

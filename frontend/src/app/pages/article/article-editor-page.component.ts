@@ -1,4 +1,4 @@
-import { MapIconComponent, ShieldCheckIconComponent } from '@eagami/ui';
+import { NewspaperIconComponent, ShieldCheckIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, of } from 'rxjs';
@@ -81,7 +81,7 @@ export class ArticleEditorPageComponent implements EditorPage, OnInit {
   public readonly newsPageLink: InternalLink = {
     text: 'See all articles',
     internalPath: 'news',
-    icon: MapIconComponent,
+    icon: NewspaperIconComponent,
   };
   public viewModel$?: Observable<{
     articleId: Id | null;

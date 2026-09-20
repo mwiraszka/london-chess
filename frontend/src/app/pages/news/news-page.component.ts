@@ -1,4 +1,4 @@
-import { MapIconComponent, PlusCircleIconComponent } from '@eagami/ui';
+import { NewspaperIconComponent, PlusCircleIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
@@ -74,7 +74,7 @@ import { combinedLoadStatus } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewsPageComponent implements OnInit {
-  protected readonly pageIcon = MapIconComponent;
+  protected readonly pageIcon = NewspaperIconComponent;
 
   public createArticleLink: InternalLink = {
     internalPath: ['article', 'add'],
