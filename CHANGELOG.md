@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.2.0] - 2026-09-21
+
+### Added
+
+- Add a Tournaments page, linked from the footer, listing every tournament run at the club since 2019 with filters by year, time control and format, and a page for each tournament with its details, round-by-round crosstables, standings and the games held in the game archives
+- List the tournaments a member has played in on their profile, each linked to its crosstable
+- Give the home page links icons
+
+### Changed
+
+- Redirect straight to the home page when a game, article or member profile does not exist, instead of showing a placeholder first
+- Use a newspaper icon for news and articles
+- Show Katie Dunford, Francisco Salguero and Ibrehim Mirza under their correct names in the game archives
+
 ## [v6.1.1] - 2026-09-18
 
 ### Added
@@ -1890,6 +1904,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.2.0]: https://github.com/mwiraszka/london-chess/compare/v6.1.1...v6.2.0
 [v6.1.1]: https://github.com/mwiraszka/london-chess/compare/v6.1.0...v6.1.1
 [v6.1.0]: https://github.com/mwiraszka/london-chess/compare/v6.0.4...v6.1.0
 [v6.0.4]: https://github.com/mwiraszka/london-chess/compare/v6.0.3...v6.0.4
