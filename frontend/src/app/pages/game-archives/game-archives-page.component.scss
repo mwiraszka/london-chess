@@ -162,23 +162,11 @@
   }
 }
 
-// Coloured like the app's other tables, and capped at the page so a wider table
-// scrolls sideways within itself rather than being clipped by the page
+// Capped at the page so a wider table scrolls sideways within itself rather than
+// being clipped by the page
 .games {
   max-width: 100%;
-  --ea-data-table-background-color: var(--lcc-color--table-rowBackgroundOdd);
-  --ea-data-table-row-stripe-background-color: var(--lcc-color--table-rowBackgroundEven);
-  --ea-data-table-row-hover-background-color: var(
-    --lcc-color--table-rowBackgroundOnHover
-  );
-  --ea-data-table-color: var(--lcc-color--table-rowForeground);
-  --ea-data-table-header-background-color: var(--lcc-color--table-headerBackground);
-  --ea-data-table-header-color: var(--lcc-color--table-headerForeground);
-  --ea-data-table-header-hover-background-color: var(
-    --lcc-color--table-headerBackgroundOnHover
-  );
-  --ea-data-table-header-hover-color: var(--lcc-color--table-headerForeground);
-  --ea-data-table-header-sorted-color: var(--lcc-color--table-headerForeground);
+  @include data-table-colors;
 }
 
 // A loading cell's placeholder fills the cell, and as a block sits centred in it
