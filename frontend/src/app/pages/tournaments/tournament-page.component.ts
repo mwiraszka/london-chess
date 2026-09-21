@@ -390,9 +390,9 @@ export class TournamentPageComponent implements OnInit {
     }
     return [
       { key: 'round', label: 'Round', align: 'right' },
-      { key: 'white', label: 'White', cellTemplate: white },
+      { key: 'white', label: 'White player', cellTemplate: white },
       { key: 'result', label: 'Result', align: 'center', cellTemplate: result },
-      { key: 'black', label: 'Black', cellTemplate: black },
+      { key: 'black', label: 'Black player', cellTemplate: black },
     ];
   });
 
@@ -456,7 +456,7 @@ export class TournamentPageComponent implements OnInit {
         align: 'right',
         cellTemplate: rank,
       },
-      { key: 'player', label: 'Name', sortable: true, cellTemplate: player },
+      { key: 'player', label: 'Player', sortable: true, cellTemplate: player },
       {
         key: 'rating',
         label: 'Rating',

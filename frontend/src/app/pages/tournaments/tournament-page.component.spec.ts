@@ -112,7 +112,7 @@ describe('TournamentPageComponent', () => {
 
       expect(headers(table)).toEqual([
         '#',
-        'Name',
+        'Player',
         'Rating',
         'Rd 1',
         'Rd 2',
@@ -233,7 +233,7 @@ describe('TournamentPageComponent', () => {
     it('should list each board with its result', () => {
       const table = query(fixture.debugElement, '.crosstable');
 
-      expect(headers(table)).toEqual(['Board', 'Name', 'Rating', 'Result']);
+      expect(headers(table)).toEqual(['Board', 'Player', 'Rating', 'Result']);
       expect(tableRows(table)).toEqual([
         ['1', 'Chen, Sasha', '1640', 'Draw'],
         ['2', 'Okafor, Robin', 'Unrated', 'Loss'],
@@ -285,7 +285,7 @@ describe('TournamentPageComponent', () => {
         'A1',
         'U1500',
       ]);
-      expect(headers(tables[0])).toEqual(['#', 'Name', 'Rating', 'Total']);
+      expect(headers(tables[0])).toEqual(['#', 'Player', 'Rating', 'Total']);
       expect(tableRows(tables[1])).toEqual([['1', 'Okafor, Robin', '1320', '4']]);
     });
 
