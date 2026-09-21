@@ -186,13 +186,13 @@ export class MembersTableComponent {
       { key: 'city', label: 'City', sortable: true, cellTemplate: this.highlightCell() },
       {
         key: 'chessComUsername',
-        label: 'Chess.com',
+        label: 'Chess.com username',
         sortable: true,
         cellTemplate: this.highlightCell(),
       },
       {
         key: 'lichessUsername',
-        label: 'Lichess',
+        label: 'Lichess username',
         sortable: true,
         cellTemplate: this.highlightCell(),
       },

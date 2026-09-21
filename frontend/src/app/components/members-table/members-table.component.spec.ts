@@ -102,8 +102,8 @@ describe('MembersTableComponent', () => {
         'Rating',
         'Peak rating',
         'City',
-        'Chess.com',
-        'Lichess',
+        'Chess.com username',
+        'Lichess username',
       ]);
     });
 
@@ -196,8 +196,8 @@ describe('MembersTableComponent', () => {
         'Rating',
         'Peak rating',
         'City',
-        'Chess.com',
-        'Lichess',
+        'Chess.com username',
+        'Lichess username',
         'Last updated',
         'Born',
         'Email',
