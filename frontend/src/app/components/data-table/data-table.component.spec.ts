@@ -62,7 +62,7 @@ class HostComponent {
   readonly columns = () => {
     const columns: DataTableColumn<Row>[] = [
       { key: 'name', label: 'Name', sortable: true, cellTemplate: this.nameCell() },
-      { key: 'score', label: 'Score', align: 'right' },
+      { key: 'score', label: 'Score', align: 'right', format: score => `${score} pts` },
     ];
     return columns;
   };
@@ -93,6 +93,10 @@ describe('DataTableComponent', () => {
     expect(
       queryAll(bodyRows()[0], '.name').map(b => b.nativeElement.textContent),
     ).toEqual(['Ann']);
+    expect(
+      queryAll(bodyRows()[0], '.ea-data-table__cell')[1].nativeElement.textContent.trim(),
+    ).toBe('3 pts');
+    expect(query(fixture.debugElement, '.ea-data-table__sizing .name')).toBeTruthy();
     expect(table.componentInstance.sizingRows()).toBe(host.sizingRows);
     expect(table.componentInstance.nowrap()).toBe(true);
     expect(table.componentInstance.striped()).toBe(true);
@@ -133,6 +137,21 @@ describe('DataTableComponent', () => {
       expect(bodyRows()).toHaveLength(4);
       expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(2);
       expect(query(bodyRows()[0], '.name')).toBeFalsy();
+    });
+
+    it('should keep the columns sized by the widest content', () => {
+      const sizingCells = queryAll(
+        fixture.debugElement,
+        '.ea-data-table__sizing .ea-data-table__cell',
+      );
+
+      expect(query(sizingCells[0], '.name').nativeElement.textContent).toBe(
+        'Bartholomew',
+      );
+      expect(sizingCells[1].nativeElement.textContent.trim()).toBe('100 pts');
+      expect(
+        query(fixture.debugElement, '.ea-data-table__sizing lcc-text-skeleton'),
+      ).toBeFalsy();
     });
 
     it('should neither link nor activate the placeholder rows', () => {

@@ -4,14 +4,17 @@ import {
   DataTableComponent as EaDataTableComponent,
 } from '@eagami/ui';
 
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  Directive,
   TemplateRef,
   computed,
+  inject,
   input,
   output,
-  viewChild,
+  viewChildren,
 } from '@angular/core';
 
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
@@ -20,17 +23,30 @@ export const NO_SORT: DataTableSortState = { column: '', direction: null };
 
 type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
 
+// A cell template only receives its row and value, so each column gets a template of
+// its own that knows which column it renders
+@Directive({ selector: 'ng-template[lccDataTableCell]' })
+export class DataTableCellDirective<T> {
+  public readonly key = input.required<string>({ alias: 'lccDataTableCell' });
+  public readonly template: CellTemplate<T> = inject(TemplateRef);
+}
+
 /**
  * The app's take on the library's data table: compact, striped, coloured like its
  * other tables, never wrapping a cell, scrolling sideways within itself, and sized
  * by the widest content each column can show. While loading it holds rows of
- * placeholders shaped like that content.
+ * placeholders in columns still sized by that content.
  */
 @Component({
   selector: 'lcc-data-table',
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
-  imports: [EaDataTableComponent, TextSkeletonComponent],
+  imports: [
+    DataTableCellDirective,
+    EaDataTableComponent,
+    NgTemplateOutlet,
+    TextSkeletonComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataTableComponent<T extends { id: string }> {
@@ -49,7 +65,7 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly sorted = output<DataTableSortState>();
   public readonly rowActivate = output<T>();
 
-  private readonly skeletonCell = viewChild.required<CellTemplate<T>>('skeletonCell');
+  private readonly cells = viewChildren(DataTableCellDirective<T>);
 
   protected readonly trackBy: keyof T = 'id';
 
@@ -66,13 +82,20 @@ export class DataTableComponent<T extends { id: string }> {
       : [];
   });
 
-  protected readonly shownColumns = computed<DataTableColumn<T>[]>(() =>
-    this.loading()
-      ? this.columns().map(column => ({ ...column, cellTemplate: this.skeletonCell() }))
-      : this.columns(),
-  );
+  protected readonly shownColumns = computed<DataTableColumn<T>[]>(() => {
+    const cells = new Map(this.cells().map(cell => [cell.key(), cell.template]));
+    return this.columns().map(column => ({
+      ...column,
+      cellTemplate: cells.get(column.key) ?? column.cellTemplate,
+    }));
+  });
 
   protected readonly rowHrefWhenLoaded = computed(() =>
     this.loading() ? undefined : this.rowHref(),
   );
+
+  // The sizing rows keep their content while loading, so the columns keep their widths
+  protected isPlaceholder(row: T): boolean {
+    return this.loading() && !this.sizingRows().includes(row);
+  }
 }

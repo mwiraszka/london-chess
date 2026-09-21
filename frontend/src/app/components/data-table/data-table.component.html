@@ -18,6 +18,21 @@
     ngProjectAs="ea-paginator" />
 </ea-data-table>
 
-<ng-template #skeletonCell>
-  <lcc-text-skeleton width="100%" />
-</ng-template>
+@for (column of columns(); track column.key) {
+  <ng-template
+    let-row
+    let-value="value"
+    [lccDataTableCell]="column.key">
+    @if (isPlaceholder(row)) {
+      <lcc-text-skeleton width="100%" />
+    } @else if (column.cellTemplate) {
+      <ng-container
+        [ngTemplateOutlet]="column.cellTemplate"
+        [ngTemplateOutletContext]="{ $implicit: row, value: value }" />
+    } @else if (column.format) {
+      {{ column.format(value) }}
+    } @else {
+      {{ value }}
+    }
+  </ng-template>
+}
