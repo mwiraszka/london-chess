@@ -9,6 +9,7 @@ import { firstValueFrom, take } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { SEARCH_DEBOUNCE } from '@app/constants/members-table';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   DataPaginationOptions,
@@ -525,17 +526,17 @@ describe('MembersPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
         expect(query(fixture.debugElement, 'input[type="file"]')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeFalsy();
+        expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeFalsy();
       });
     });
 
     describe('when viewModel$ is defined', () => {
-      it('should render page header, data toolbar, and members table', () => {
+      it('should render the page header, the filters and the members table', () => {
         fixture.detectChanges();
 
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+        expect(query(fixture.debugElement, '.filters')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeTruthy();
       });
 
@@ -563,7 +564,7 @@ describe('MembersPageComponent', () => {
         fixture.detectChanges();
 
         expect(
-          query(fixture.debugElement, 'lcc-members-table').componentInstance.isLoading,
+          query(fixture.debugElement, 'lcc-members-table').componentInstance.isLoading(),
         ).toBe(true);
       });
     });
@@ -578,7 +579,7 @@ describe('MembersPageComponent', () => {
       it('should render a failure panel in place of the members table', () => {
         expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+        expect(query(fixture.debugElement, '.filters')).toBeTruthy();
       });
 
       it('should fetch the members again on retry', () => {
@@ -588,6 +589,109 @@ describe('MembersPageComponent', () => {
           MembersActions.fetchFilteredMembersRequested(),
         );
       });
+    });
+  });
+
+  describe('the filters', () => {
+    it('should search once typing pauses', () => {
+      vi.useFakeTimers();
+      fixture.detectChanges();
+
+      component['searchControl'].setValue('car');
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE - 1);
+      const dispatchedEarly = dispatchSpy.mock.calls.length;
+      vi.advanceTimersByTime(1);
+      vi.useRealTimers();
+
+      expect(dispatchedEarly).toBe(0);
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        MembersActions.paginationOptionsChanged({
+          options: { ...mockOptions, search: 'car', page: 1 },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should show the search in force', () => {
+      store.overrideSelector(MembersSelectors.selectOptions, {
+        ...mockOptions,
+        search: 'polgar',
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(component['searchControl'].value).toBe('polgar');
+    });
+
+    it('should show or hide inactive members', () => {
+      fixture.detectChanges();
+
+      query(fixture.debugElement, '.filters__inactive').triggerEventHandler(
+        'changed',
+        false,
+      );
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        MembersActions.paginationOptionsChanged({
+          options: {
+            ...mockOptions,
+            page: 1,
+            filters: {
+              showInactiveMembers: {
+                ...mockOptions.filters.showInactiveMembers,
+                value: false,
+              },
+            },
+          },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should clear every filter at once', () => {
+      store.overrideSelector(MembersSelectors.selectOptions, {
+        ...mockOptions,
+        search: 'polgar',
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      query(fixture.debugElement, '.filters__clear').triggerEventHandler('clicked');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        MembersActions.paginationOptionsChanged({
+          options: {
+            ...mockOptions,
+            page: 1,
+            search: '',
+            filters: {
+              showInactiveMembers: {
+                ...mockOptions.filters.showInactiveMembers,
+                value: false,
+              },
+            },
+          },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should have nothing to clear without a search or inactive members shown', () => {
+      store.overrideSelector(MembersSelectors.selectOptions, {
+        ...mockOptions,
+        filters: {
+          showInactiveMembers: {
+            ...mockOptions.filters.showInactiveMembers,
+            value: false,
+          },
+        },
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(
+        query(fixture.debugElement, '.filters__clear').componentInstance.disabled(),
+      ).toBe(true);
     });
   });
 });

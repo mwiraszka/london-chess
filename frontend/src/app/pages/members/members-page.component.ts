@@ -1,13 +1,17 @@
 import {
+  ButtonComponent,
   DownloadIconComponent,
+  InputComponent,
   PlusCircleIconComponent,
+  SearchIconComponent,
+  SwitchComponent,
   UploadIconComponent,
   UsersIconComponent,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, firstValueFrom } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -19,14 +23,15 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MembersTableComponent } from '@app/components/members-table/members-table.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingChangesComponent } from '@app/components/rating-changes/rating-changes.component';
+import { SEARCH_DEBOUNCE } from '@app/constants/members-table';
 import {
   AdminButton,
   BasicDialogResult,
@@ -67,14 +72,27 @@ import { isLccError } from '@app/utils';
         </lcc-admin-toolbar>
       }
 
-      <lcc-data-toolbar
-        entity="member"
-        [filteredCount]="vm.filteredCount"
-        [options]="vm.options"
-        searchPlaceholder="Search by name, city or username"
-        (optionsChange)="onOptionsChange($event)"
-        (optionsChangeNoFetch)="onOptionsChange($event, false)">
-      </lcc-data-toolbar>
+      <div class="filters">
+        <ea-input
+          class="filters__search"
+          label="Search"
+          placeholder="Search by name, city or username"
+          [formControl]="searchControl"
+          [icon]="searchIcon" />
+        <ea-switch
+          class="filters__inactive"
+          label="Show inactive members"
+          [checked]="vm.options.filters.showInactiveMembers.value"
+          (changed)="onToggleInactiveMembers($event, vm.options)" />
+        <ea-button
+          class="filters__clear"
+          variant="ghost"
+          size="md"
+          [disabled]="!hasFilters(vm.options)"
+          (clicked)="onClearFilters(vm.options)">
+          Clear filters
+        </ea-button>
+      </div>
 
       @if (vm.status === 'failed') {
         <lcc-load-failed
@@ -82,6 +100,7 @@ import { isLccError } from '@app/utils';
           (retry)="onRetry()" />
       } @else {
         <lcc-members-table
+          [filteredCount]="vm.filteredCount"
           [isAdmin]="vm.isAdmin"
           [isLoading]="vm.status === 'loading'"
           [isSafeMode]="vm.isSafeMode"
@@ -92,18 +111,24 @@ import { isLccError } from '@app/utils';
       }
     }
   `,
+  styleUrl: './members-page.component.scss',
   imports: [
     AdminToolbarComponent,
+    ButtonComponent,
     CommonModule,
-    DataToolbarComponent,
+    InputComponent,
     LoadFailedComponent,
     MembersTableComponent,
     PageHeaderComponent,
+    ReactiveFormsModule,
+    SwitchComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersPageComponent implements OnInit {
   protected readonly pageIcon = UsersIconComponent;
+  protected readonly searchIcon = SearchIconComponent;
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   @ViewChild('memberRatingChangesFileInput')
   public memberRatingChangesFileInput?: ElementRef<HTMLInputElement>;
@@ -156,6 +181,26 @@ export class MembersPageComponent implements OnInit {
       'Club ratings and other members information',
     );
 
+    // The box shows the search in force, wherever it was set, and sends new text on a pause
+    this.store
+      .select(MembersSelectors.selectOptions)
+      .pipe(untilDestroyed(this))
+      .subscribe(({ search }) => {
+        if (this.searchControl.value !== search) {
+          this.searchControl.setValue(search, { emitEvent: false });
+        }
+      });
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(SEARCH_DEBOUNCE),
+        distinctUntilChanged(),
+        withLatestFrom(this.store.select(MembersSelectors.selectOptions)),
+        untilDestroyed(this),
+      )
+      .subscribe(([search, options]) =>
+        this.onOptionsChange({ ...options, search, page: 1 }),
+      );
+
     this.viewModel$ = combineLatest([
       this.store.select(MembersSelectors.selectFilteredCount),
       this.store.select(MembersSelectors.selectFilteredMembers),
@@ -190,6 +235,37 @@ export class MembersPageComponent implements OnInit {
 
   public onOptionsChange(options: DataPaginationOptions<Member>, fetch = true): void {
     this.store.dispatch(MembersActions.paginationOptionsChanged({ options, fetch }));
+  }
+
+  public onToggleInactiveMembers(
+    showInactiveMembers: boolean,
+    options: DataPaginationOptions<Member>,
+  ): void {
+    this.onOptionsChange({
+      ...options,
+      page: 1,
+      filters: {
+        showInactiveMembers: {
+          ...options.filters.showInactiveMembers,
+          value: showInactiveMembers,
+        },
+      },
+    });
+  }
+
+  public onClearFilters(options: DataPaginationOptions<Member>): void {
+    this.onOptionsChange({
+      ...options,
+      page: 1,
+      search: '',
+      filters: {
+        showInactiveMembers: { ...options.filters.showInactiveMembers, value: false },
+      },
+    });
+  }
+
+  protected hasFilters({ search, filters }: DataPaginationOptions<Member>): boolean {
+    return search !== '' || filters.showInactiveMembers.value;
   }
 
   public onRetry(): void {

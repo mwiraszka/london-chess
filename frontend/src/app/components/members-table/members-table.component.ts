@@ -1,140 +1,275 @@
 import {
-  ArrowDownIconComponent,
-  ArrowUpIconComponent,
+  ButtonComponent,
+  DataTableColumn,
+  DataTableSortState,
+  EditIconComponent,
+  PaginatorComponent,
+  PaginatorState,
+  TrashIconComponent,
   TrophyIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy } from '@ngneat/until-destroy';
-import { camelCase } from 'lodash';
 
-import { CommonModule } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
-  Output,
+  TemplateRef,
+  computed,
   inject,
+  input,
+  output,
+  viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
-import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import {
-  AdminControlsConfig,
-  BasicDialogResult,
-  DataPaginationOptions,
-  Dialog,
-  Member,
-} from '@app/models';
-import { CamelCasePipe, FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
+  MEMBERS_PAGE_SIZES,
+  WIDEST_MEMBER,
+  WIDEST_ROW_NUMBER,
+} from '@app/constants/members-table';
+import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { BasicDialogResult, DataPaginationOptions, Dialog, Member } from '@app/models';
+import { FormatDatePipe, HighlightPipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
 import { isCityChampion } from '@app/utils';
 
-@UntilDestroy()
+// The sort keys hold what the server sorts by, so a page keeps the order it came in
+export interface MemberRow {
+  id: string;
+  member: Member;
+  number: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  rating: string;
+  peakRating: string;
+  city: string;
+  chessComUsername: string;
+  lichessUsername: string;
+  lastUpdated: string;
+  born: string;
+  email: string;
+  phoneNumber: string;
+  dateJoined: string;
+}
+
+function toMemberRow(member: Member, number: number): MemberRow {
+  return {
+    id: member.id || `row-${number}`,
+    member,
+    number,
+    name: `${member.lastName}, ${member.firstName}`,
+    firstName: member.firstName,
+    lastName: member.lastName,
+    rating: member.rating,
+    peakRating: member.peakRating,
+    city: member.city,
+    chessComUsername: member.chessComUsername,
+    lichessUsername: member.lichessUsername,
+    lastUpdated: member.modificationInfo.dateLastEdited,
+    born: member.yearOfBirth,
+    email: member.email,
+    phoneNumber: member.phoneNumber,
+    dateJoined: member.dateJoined,
+  };
+}
+
+const SIZING_ROWS: MemberRow[] = [toMemberRow(WIDEST_MEMBER, WIDEST_ROW_NUMBER)];
+
+// The columns whose highest value comes first when they are first sorted
+const DESCENDING_FIRST: string[] = ['rating', 'peakRating'];
+
+type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
+
 @Component({
   selector: 'lcc-members-table',
   templateUrl: './members-table.component.html',
   styleUrl: './members-table.component.scss',
   imports: [
-    AdminControlsDirective,
-    ArrowDownIconComponent,
-    ArrowUpIconComponent,
-    CamelCasePipe,
-    CommonModule,
+    ButtonComponent,
+    DataTableComponent,
     FormatDatePipe,
     HighlightPipe,
-    KebabCasePipe,
+    NgTemplateOutlet,
+    PaginatorComponent,
     RouterLink,
     SafeModeNoticeComponent,
-    TextSkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersTableComponent {
-  public readonly isCityChampion = isCityChampion;
+  public readonly isAdmin = input.required<boolean>();
+  public readonly isSafeMode = input.required<boolean>();
+  public readonly members = input.required<Member[]>();
+  public readonly options = input.required<DataPaginationOptions<Member>>();
+  public readonly filteredCount = input.required<number | null>();
+  public readonly isLoading = input(false);
 
-  public readonly DEFAULT_TABLE_HEADERS = [
-    'Name',
-    'Rating',
-    'Peak Rating',
-    'City',
-    'Chess.com Username',
-    'Lichess Username',
-  ];
+  public readonly optionsChange = output<DataPaginationOptions<Member>>();
 
-  public readonly ADMIN_TABLE_HEADERS = [
-    'First Name',
-    'Last Name',
-    'Rating',
-    'Peak Rating',
-    'City',
-    'Chess.com Username',
-    'Lichess Username',
-    'Last Updated',
-    'Born',
-    'Email',
-    'Phone Number',
-    'Date Joined',
-  ];
-
-  @Input({ required: true }) isAdmin!: boolean;
-  @Input({ required: true }) options!: DataPaginationOptions<Member>;
-  @Input({ required: true }) isSafeMode!: boolean;
-  @Input({ required: true }) members!: Member[];
-  @Input() isLoading = false;
-
-  @Output() public optionsChange = new EventEmitter<DataPaginationOptions<Member>>();
-
-  // A page size of -1 shows every member, so the skeleton stops at a screenful
-  protected get skeletonRows(): number[] {
-    const rowCount = this.options.pageSize > 0 ? this.options.pageSize : 50;
-    return Array.from({ length: rowCount }, (_, index) => index);
-  }
-
-  public get startIndex(): number {
-    return this.options.pageSize * (this.options.page - 1) + 1;
-  }
-
+  private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
   private readonly storeRequests = inject(StoreRequestService);
 
-  constructor(private readonly dialogService: DialogService) {}
+  private readonly nameCell = viewChild.required<CellTemplate>('nameCell');
+  private readonly firstNameCell = viewChild.required<CellTemplate>('firstNameCell');
+  private readonly lastNameCell = viewChild.required<CellTemplate>('lastNameCell');
+  private readonly ratingCell = viewChild.required<CellTemplate>('ratingCell');
+  private readonly peakRatingCell = viewChild.required<CellTemplate>('peakRatingCell');
+  private readonly highlightCell = viewChild.required<CellTemplate>('highlightCell');
+  private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
+  private readonly actionsCell = viewChild.required<CellTemplate>('actionsCell');
 
-  public onSelectTableHeader(headerLabel: string): void {
-    const header = camelCase(headerLabel) as keyof Member;
-    const isSameHeader = this.options.sortBy === header;
+  protected readonly editIcon = EditIconComponent;
+  protected readonly deleteIcon = TrashIconComponent;
+  protected readonly isCityChampion = isCityChampion;
+  protected readonly pageSizes = MEMBERS_PAGE_SIZES;
+  protected readonly sizingRows = SIZING_ROWS;
 
-    let sortOrder: 'asc' | 'desc';
+  // Admins see every detail and the controls to change it, unless safe mode hides them
+  protected readonly showsDetails = computed(() => this.isAdmin() && !this.isSafeMode());
 
-    if (isSameHeader) {
-      sortOrder = this.options.sortOrder === 'asc' ? 'desc' : 'asc';
-    } else {
-      sortOrder = ['rating', 'peakRating'].includes(header) ? 'desc' : 'asc';
-    }
+  protected readonly loading = computed(() => this.isLoading() && !this.members().length);
 
-    this.optionsChange.emit({
-      ...this.options,
-      sortBy: header,
-      page: 1,
-      sortOrder,
-    });
-  }
+  private readonly startIndex = computed(() => {
+    const { page, pageSize } = this.options();
+    return pageSize * (page - 1) + 1;
+  });
 
-  public getAdminControlsConfig(member: Member): AdminControlsConfig {
-    return {
-      editPath: ['member', 'edit', member.id!],
-      buttonSize: 31,
-      itemName: `${member.firstName} ${member.lastName}`,
-      deleteCb: () => this.onDeleteMember(member),
+  protected readonly rows = computed<MemberRow[]>(() =>
+    this.members().map((member, index) => toMemberRow(member, this.startIndex() + index)),
+  );
+
+  protected readonly columns = computed<DataTableColumn<MemberRow>[]>(() => {
+    const number: DataTableColumn<MemberRow> = {
+      key: 'number',
+      label: '#',
+      align: 'right',
     };
+    const names: DataTableColumn<MemberRow>[] = this.showsDetails()
+      ? [
+          {
+            key: 'firstName',
+            label: 'First name',
+            sortable: true,
+            cellTemplate: this.firstNameCell(),
+          },
+          {
+            key: 'lastName',
+            label: 'Last name',
+            sortable: true,
+            cellTemplate: this.lastNameCell(),
+          },
+        ]
+      : [{ key: 'name', label: 'Name', sortable: true, cellTemplate: this.nameCell() }];
+    const ratings: DataTableColumn<MemberRow>[] = [
+      {
+        key: 'rating',
+        label: 'Rating',
+        sortable: true,
+        align: 'right',
+        cellTemplate: this.ratingCell(),
+      },
+      {
+        key: 'peakRating',
+        label: 'Peak rating',
+        sortable: true,
+        align: 'right',
+        cellTemplate: this.peakRatingCell(),
+      },
+      { key: 'city', label: 'City', sortable: true, cellTemplate: this.highlightCell() },
+      {
+        key: 'chessComUsername',
+        label: 'Chess.com',
+        sortable: true,
+        cellTemplate: this.highlightCell(),
+      },
+      {
+        key: 'lichessUsername',
+        label: 'Lichess',
+        sortable: true,
+        cellTemplate: this.highlightCell(),
+      },
+    ];
+    const details: DataTableColumn<MemberRow>[] = this.showsDetails()
+      ? [
+          {
+            key: 'lastUpdated',
+            label: 'Last updated',
+            sortable: true,
+            align: 'right',
+            cellTemplate: this.dateCell(),
+          },
+          { key: 'born', label: 'Born', sortable: true, align: 'right' },
+          { key: 'email', label: 'Email', sortable: true },
+          { key: 'phoneNumber', label: 'Phone number', sortable: true },
+          {
+            key: 'dateJoined',
+            label: 'Date joined',
+            sortable: true,
+            align: 'right',
+            cellTemplate: this.dateCell(),
+          },
+          {
+            key: 'actions',
+            label: '',
+            align: 'center',
+            cellTemplate: this.actionsCell(),
+          },
+        ]
+      : [];
+    return [number, ...names, ...ratings, ...details];
+  });
+
+  protected readonly sortState = computed<DataTableSortState>(() => ({
+    column: this.options().sortBy,
+    direction: this.options().sortOrder,
+  }));
+
+  // Rows lead to the member's profile, except for admins, whose rows hold controls
+  protected readonly rowHref = computed(() =>
+    this.showsDetails()
+      ? undefined
+      : ({ member }: MemberRow) =>
+          member.number === null ? null : `/members/${member.number}`,
+  );
+
+  public onSorted({ column }: DataTableSortState): void {
+    const options = this.options();
+    const sortBy = column as keyof Member;
+    const sortOrder =
+      options.sortBy === sortBy
+        ? options.sortOrder === 'asc'
+          ? 'desc'
+          : 'asc'
+        : DESCENDING_FIRST.includes(column)
+          ? 'desc'
+          : 'asc';
+
+    this.optionsChange.emit({ ...options, sortBy, sortOrder, page: 1 });
   }
 
-  private async onDeleteMember(member: Member): Promise<void> {
+  public onPageChanged({ page, pageSize }: PaginatorState): void {
+    this.optionsChange.emit({ ...this.options(), page, pageSize });
+  }
+
+  public onOpenProfile({ member }: MemberRow): void {
+    if (member.number !== null) {
+      this.router.navigate(['/members', member.number]);
+    }
+  }
+
+  public onEditMember({ member }: MemberRow): void {
+    this.router.navigate(['/member', 'edit', member.id]);
+  }
+
+  public async onDeleteMember({ member }: MemberRow): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
       body: `Delete ${member.firstName} ${member.lastName}?`,

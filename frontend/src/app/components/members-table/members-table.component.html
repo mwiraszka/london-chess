@@ -1,158 +1,135 @@
-<div class="lcc-table-wrapper">
-  @if (members.length || isLoading) {
-    <table
-      class="members-table lcc-table"
-      [class.lcc-show-admin-columns]="isAdmin && !isSafeMode">
-      <thead>
-        <tr>
-          <th class="row-number"></th>
-          @for (
-            header of isAdmin && !isSafeMode
-              ? ADMIN_TABLE_HEADERS
-              : DEFAULT_TABLE_HEADERS;
-            track header
-          ) {
-            <th
-              [ngClass]="header | kebabCase"
-              class="sortable-header"
-              (click)="onSelectTableHeader(header)">
-              <span>{{ header }}</span>
-              <div class="sort-icon-container">
-                @if (options.sortBy === (header | camelCase)) {
-                  @if (options.sortOrder === 'desc') {
-                    <ea-icon-arrow-down class="sort-icon" />
-                  } @else {
-                    <ea-icon-arrow-up class="sort-icon" />
-                  }
-                }
-              </div>
-            </th>
-          }
-        </tr>
-      </thead>
+<lcc-data-table
+  class="members"
+  aria-label="Members"
+  noDataText="No members match these filters."
+  [clickable]="!showsDetails()"
+  [columns]="columns()"
+  [data]="rows()"
+  [loading]="loading()"
+  [loadingRowCount]="options().pageSize"
+  [rowHref]="rowHref()"
+  [sizingRows]="sizingRows"
+  [sort]="sortState()"
+  (rowActivate)="onOpenProfile($event)"
+  (sorted)="onSorted($event)">
+  <ea-paginator
+    size="sm"
+    [page]="options().page"
+    [pageSize]="options().pageSize"
+    [pageSizeOptions]="pageSizes"
+    [showRangeLabel]="filteredCount() !== null"
+    [totalItems]="filteredCount() ?? 0"
+    (changed)="onPageChanged($event)" />
+</lcc-data-table>
 
-      <tbody [attr.aria-busy]="isLoading && !members.length">
-        @if (!members.length) {
-          @for (row of skeletonRows; track row) {
-            <tr class="skeleton-row">
-              <td class="row-number">{{ startIndex + row }}</td>
-              @for (
-                header of isAdmin && !isSafeMode
-                  ? ADMIN_TABLE_HEADERS
-                  : DEFAULT_TABLE_HEADERS;
-                track header
-              ) {
-                <td [ngClass]="header | kebabCase">
-                  <lcc-text-skeleton width="60%" />
-                </td>
-              }
-            </tr>
-          }
-        }
-        @for (member of members; track member.id; let i = $index; let last = $last) {
-          <tr
-            [adminControls]="isAdmin ? getAdminControlsConfig(member) : null"
-            [ngClass]="{ 'last-row': last }"
-            [class.inactive]="!member.isActive">
-            <td class="row-number">{{ startIndex + i }}</td>
-            @if (isAdmin && !isSafeMode) {
-              <td
-                class="first-name lcc-truncate"
-                [tooltip]="member.isActive ? null : 'Inactive member'">
-                @if (isCityChampion(member)) {
-                  <a
-                    class="city-champion-link before-name"
-                    routerLink="/city-champion"
-                    tooltip="2025 City Champion">
-                    <ea-icon-trophy class="city-champion-icon" />
-                  </a>
-                }
-                <ng-container
-                  [ngTemplateOutlet]="memberName"
-                  [ngTemplateOutletContext]="{
-                    number: member.number,
-                    text: member.firstName,
-                  }">
-                </ng-container>
-              </td>
-              <td class="last-name lcc-truncate">
-                <ng-container
-                  [ngTemplateOutlet]="memberName"
-                  [ngTemplateOutletContext]="{
-                    number: member.number,
-                    text: member.lastName,
-                  }">
-                </ng-container>
-              </td>
-            } @else {
-              <td
-                class="name lcc-truncate"
-                [tooltip]="member.isActive ? null : 'Inactive member'">
-                <ng-container
-                  [ngTemplateOutlet]="memberName"
-                  [ngTemplateOutletContext]="{
-                    number: member.number,
-                    text: member.firstName + ' ' + member.lastName,
-                  }">
-                </ng-container>
-                @if (isCityChampion(member)) {
-                  <a
-                    class="city-champion-link after-name"
-                    routerLink="/city-champion"
-                    tooltip="2025 City Champion">
-                    <ea-icon-trophy class="city-champion-icon" />
-                  </a>
-                }
-              </td>
-            }
-            <td class="rating">{{ member.rating }}</td>
-            <td class="peak-rating">{{ member.peakRating }}</td>
-            <td
-              class="city lcc-truncate"
-              [innerHTML]="member.city | highlight: options.search">
-            </td>
-            <td
-              class="chess-com-username lcc-truncate"
-              [innerHTML]="member.chessComUsername | highlight: options.search">
-            </td>
-            <td
-              class="lichess-username lcc-truncate"
-              [innerHTML]="member.lichessUsername | highlight: options.search">
-            </td>
-
-            @if (isAdmin && !isSafeMode) {
-              <td class="last-updated lcc-truncate">
-                {{ member.modificationInfo.dateLastEdited | formatDate: 'short no-time' }}
-              </td>
-              <td class="born">{{ member.yearOfBirth }}</td>
-              <td class="email lcc-truncate">{{ member.email }}</td>
-              <td class="phone-number">{{ member.phoneNumber }}</td>
-              <td class="date-joined">
-                {{ member.dateJoined | formatDate: 'short no-time' }}
-              </td>
-            }
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
-</div>
-
-@if (isAdmin && isSafeMode) {
+@if (isAdmin() && isSafeMode()) {
   <lcc-safe-mode-notice entity="members'"></lcc-safe-mode-notice>
 }
 
 <ng-template
+  #nameCell
+  let-row>
+  <span
+    class="members__name"
+    [class.members__name--inactive]="!row.member.isActive"
+    [tooltip]="row.member.isActive ? null : 'Inactive member'">
+    <ng-container
+      *ngTemplateOutlet="
+        memberName;
+        context: { $implicit: row, text: row.firstName + ' ' + row.lastName }
+      " />
+    @if (isCityChampion(row.member)) {
+      <a
+        class="members__champion-link"
+        routerLink="/city-champion"
+        tooltip="2025 City Champion">
+        <ea-icon-trophy class="members__champion-icon" />
+      </a>
+    }
+  </span>
+</ng-template>
+
+<ng-template
+  #firstNameCell
+  let-row>
+  <span
+    class="members__name"
+    [class.members__name--inactive]="!row.member.isActive"
+    [tooltip]="row.member.isActive ? null : 'Inactive member'">
+    @if (isCityChampion(row.member)) {
+      <a
+        class="members__champion-link"
+        routerLink="/city-champion"
+        tooltip="2025 City Champion">
+        <ea-icon-trophy class="members__champion-icon" />
+      </a>
+    }
+    <ng-container
+      *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.firstName }" />
+  </span>
+</ng-template>
+
+<ng-template
+  #lastNameCell
+  let-row>
+  <ng-container
+    *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.lastName }" />
+</ng-template>
+
+<ng-template
   #memberName
-  let-number="number"
+  let-row
   let-text="text">
-  @if (number !== null) {
+  @if (row.member.number !== null) {
     <a
-      class="member-name-link"
-      [routerLink]="['/members', number]"
-      [innerHTML]="text | highlight: options.search">
+      class="members__profile-link"
+      [routerLink]="['/members', row.member.number]"
+      [innerHTML]="text | highlight: options().search">
     </a>
   } @else {
-    <span [innerHTML]="text | highlight: options.search"></span>
+    <span [innerHTML]="text | highlight: options().search"></span>
   }
+</ng-template>
+
+<ng-template
+  #ratingCell
+  let-row>
+  {{ row.member.rating }}
+</ng-template>
+
+<ng-template
+  #peakRatingCell
+  let-row>
+  {{ row.member.peakRating }}
+</ng-template>
+
+<ng-template
+  #highlightCell
+  let-value="value">
+  <span [innerHTML]="value | highlight: options().search"></span>
+</ng-template>
+
+<ng-template
+  #dateCell
+  let-value="value">
+  {{ value | formatDate: 'short no-time' }}
+</ng-template>
+
+<ng-template
+  #actionsCell
+  let-row>
+  <span class="members__actions">
+    <ea-button
+      variant="ghost"
+      size="sm"
+      ariaLabel="Edit"
+      [icon]="editIcon"
+      (clicked)="onEditMember(row)" />
+    <ea-button
+      variant="ghost"
+      size="sm"
+      ariaLabel="Delete"
+      [icon]="deleteIcon"
+      (clicked)="onDeleteMember(row)" />
+  </span>
 </ng-template>

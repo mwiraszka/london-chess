@@ -1,0 +1,39 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.filters {
+  display: grid;
+  align-items: end;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  margin: 24px 0;
+
+  @include respond-to('gt-sm') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include respond-to('gt-lg') {
+    grid-template-columns: 2fr max-content auto;
+  }
+}
+
+// Until the filters fit one row, the clear button takes a row
+.filters__clear {
+  align-self: end;
+  justify-self: center;
+
+  @include respond-to('lt-lg') {
+    grid-column: 1 / -1;
+  }
+
+  @include respond-to('gt-lg') {
+    justify-self: start;
+  }
+}

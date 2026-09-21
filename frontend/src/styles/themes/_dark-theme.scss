@@ -246,10 +246,8 @@ body[data-theme='dark'] {
 
   --lcc-color--membersTable-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--membersTable-cityChampionIconHover: #{clr(secondary, lighter)};
-  --lcc-color--membersTable-headerBackgroundOnHover: #{clr(primary, dark)};
   --lcc-color--membersTable-inactiveMemberAsterisk: #{clr(grayscale, gray-75)};
   --lcc-color--membersTable-inactiveMemberText: #{clr(grayscale, gray-65, 0.8)};
-  --lcc-color--membersTable-tableControlsText: #{clr(grayscale, white-85)};
 
   --lcc-color--modificationInfo-background: #{clr(primary, base, 0.5)};
   --lcc-color--modificationInfo-border: #{clr(grayscale, gray-75, 0.2)};
