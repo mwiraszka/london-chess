@@ -3,28 +3,8 @@ import { TournamentSizing } from '@app/models';
 export const TOURNAMENT_SIZING: TournamentSizing = {
   tournaments: [
     {
-      name: 'Tandem Simul',
-      subtitle: 'Ivanchuk, Serhii 2208 / Ehrman, Carl 2026 / Hampson, Adam 1440',
-    },
-    {
-      name: 'Tandem Simul',
-      subtitle: 'Demmery, Steve 2222 / Ruelland, Geoffrey 2161',
-    },
-    {
-      name: 'Tandem Simul',
-      subtitle: 'Ruelland, Geoffrey 2162 / Ehrman, Carl 2087',
-    },
-    {
-      name: 'Tandem Simul',
-      subtitle: 'Gibson, Kevin 2302 / Ivanchuk, Serhii 2189',
-    },
-    {
       name: 'COVID-19 Match',
       subtitle: 'Gajiwala, Kiritkumar vs. Sarson, Ryan',
-    },
-    {
-      name: 'Tandem Simul',
-      subtitle: 'Gibson, Kevin 2302 / Ehrman, Carl 2075',
     },
     {
       name: 'Blitz',
@@ -95,7 +75,28 @@ export const TOURNAMENT_SIZING: TournamentSizing = {
       suffix: '',
     },
   ],
-  sections: ['Ivanchuk, Serhii 2208', 'Hampson, Adam 1440', 'Ehrman, Carl 2026'],
+  results: [
+    {
+      name: 'Tandem Simul 2025',
+      section: 'Ivanchuk, Serhii 2208',
+    },
+    {
+      name: 'Tandem Simul 2025',
+      section: 'Hampson, Adam 1440',
+    },
+    {
+      name: 'Tandem Simul 2025',
+      section: 'Ehrman, Carl 2026',
+    },
+    {
+      name: 'London Junior Chess Championship',
+      section: '',
+    },
+    {
+      name: 'Vassili Zolotovski Memorial',
+      section: '',
+    },
+  ],
   resultNotes: [
     'Game incomplete, Winning on board',
     'Draw by mutual agreement',

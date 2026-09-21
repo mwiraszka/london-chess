@@ -253,6 +253,25 @@ function readTournament(
   };
 }
 
+// Simuls are all recorded under one name, so each is named for when it was held
+function nameSimuls(tournaments: PendingTournament[]): void {
+  const simuls = tournaments.filter(({ format }) => format === 'tandem-simul');
+  for (const simul of simuls) {
+    const year = simul.date.slice(0, 4);
+    const inYear = simuls.filter(({ date }) => date.startsWith(year));
+    const month = new Date(simul.date).toLocaleString('en-CA', {
+      month: 'long',
+      timeZone: 'UTC',
+    });
+    simul.name =
+      inYear.length > 1 ? `${simul.name} - ${month} ${year}` : `${simul.name} ${year}`;
+  }
+}
+
+// A simul's givers show only on its own page
+const showsSubtitle = ({ subtitle, format }: PendingTournament): boolean =>
+  subtitle !== '' && format !== 'tandem-simul';
+
 const displayName = ({ firstName, lastName, suffix }: PendingPlayer): string =>
   [firstName, lastName, suffix].filter(part => part !== '').join(' ');
 
@@ -266,15 +285,15 @@ function writeTournamentSizing(
     // Subtitles are shortened on the site, so every one is kept for measuring
     tournaments: [
       ...longest(
-        tournaments.filter(({ subtitle }) => subtitle !== ''),
+        tournaments.filter(showsSubtitle),
         ({ name, subtitle }) => `${name} (${subtitle})`,
         Infinity,
-      ),
+      ).map(({ name, subtitle }) => ({ name, subtitle })),
       ...longest(
-        tournaments.filter(({ subtitle }) => subtitle === ''),
+        tournaments.filter(tournament => !showsSubtitle(tournament)),
         ({ name }) => name,
-      ),
-    ].map(({ name, subtitle }) => ({ name, subtitle })),
+      ).map(({ name }) => ({ name, subtitle: '' })),
+    ],
     timeControls: longest(
       tournaments.map(({ timeControl }) => timeControl),
       timeControl => timeControl,
@@ -283,10 +302,11 @@ function writeTournamentSizing(
     players: longest([...players.values()], displayName).map(
       ({ firstName, lastName, suffix }) => ({ firstName, lastName, suffix }),
     ),
-    sections: longest(
-      sections.map(({ name, ratingBand }) => ratingBand || name),
-      label => label,
-      3,
+    results: longest(
+      tournaments.flatMap(({ name, sections }) =>
+        sections.map(section => ({ name, section: section.name })),
+      ),
+      ({ name, section }) => (section ? `${name} (${section})` : name),
     ),
     resultNotes: longest(
       entries.map(({ resultNote }) => resultNote),
@@ -371,6 +391,7 @@ async function main(): Promise<void> {
   const tournaments = [...groupBy(rows, row => row['event #']).values()].map(eventRows =>
     readTournament(eventRows, players, report),
   );
+  nameSimuls(tournaments);
   const endDates = inferEndDates(
     tournaments.map(({ number, date, format, timeControl, sections }) => ({
       number,

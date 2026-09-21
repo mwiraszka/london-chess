@@ -145,7 +145,7 @@ describe('MemberTournamentsComponent', () => {
             ...MOCK_MEMBER_TOURNAMENT_RESULTS[0],
             tournament: {
               ...MOCK_MEMBER_TOURNAMENT_RESULTS[0].tournament,
-              name: 'Tandem Simul',
+              name: 'Tandem Simul 2024',
               endDate: null,
               format: 'tandem-simul',
               timeControl: '3 hours',
@@ -165,7 +165,7 @@ describe('MemberTournamentsComponent', () => {
 
     expect(queryAll(bodyRows()[0], '.ea-data-table__cell').map(textOf)).toEqual([
       'September 12, 2024',
-      'Tandem Simul',
+      'Tandem Simul 2024',
       'Tandem simul (unrated)',
       '3 hours',
       'Board 4',

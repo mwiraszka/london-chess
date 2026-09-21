@@ -71,7 +71,8 @@ function toTournamentRow(summary: TournamentSummary): TournamentRow {
     date: summary.date,
     dateLabel: formatDateRange(summary.date, summary.endDate),
     name: summary.name,
-    subtitle: shortenSubtitle(summary.subtitle),
+    // A simul's givers show only on its own page
+    subtitle: summary.format === 'tandem-simul' ? '' : shortenSubtitle(summary.subtitle),
     format: TOURNAMENT_FORMAT_LABELS[summary.format],
     timeControl: summary.timeControl,
     thinkingTime: timeControlMinutes(summary.timeControl),

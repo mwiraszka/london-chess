@@ -168,7 +168,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
   },
   {
     number: 111,
-    name: 'Tandem Simul',
+    name: 'Tandem Simul 2024',
     subtitle: 'Gibson, Kevin 2302 / Ivanchuk, Serhii 2189',
     date: '2024-06-27',
     endDate: null,
@@ -302,7 +302,7 @@ export const MOCK_TOURNAMENT_SUMMARIES: TournamentSummary[] = [
   },
   {
     number: 111,
-    name: 'Tandem Simul',
+    name: 'Tandem Simul 2024',
     subtitle: 'Gibson, Kevin 2302 / Ivanchuk, Serhii 2189',
     date: '2024-06-27',
     endDate: null,

@@ -100,9 +100,8 @@ function cycle<T>(items: T[], index: number, fallback: T): T {
 
 const SIZING_ROWS: ResultRow[] = (() => {
   const {
-    tournaments,
+    results,
     timeControls,
-    sections,
     resultNotes,
     maxSectionPlayers,
     maxRating,
@@ -111,28 +110,23 @@ const SIZING_ROWS: ResultRow[] = (() => {
     hasDateRanges,
   } = TOURNAMENT_SIZING;
   const formats = Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[];
-  const count = Math.max(
-    tournaments.length,
-    timeControls.length,
-    sections.length,
-    formats.length,
-  );
+  const count = Math.max(results.length, timeControls.length, formats.length);
 
   return Array.from({ length: count }, (_, index) => {
-    const tournament = cycle(tournaments, index, { name: '', subtitle: '' });
+    const played = cycle(results, index, { name: '', section: '' });
     const row = toResultRow(
       {
         tournament: {
           number: index,
-          name: tournament.name,
-          subtitle: tournament.subtitle,
+          name: played.name,
+          subtitle: '',
           date: WIDEST_DATE,
           endDate: hasDateRanges ? WIDEST_END_DATE : null,
           format: cycle(formats, index, 'swiss'),
           timeControl: cycle(timeControls, index, ''),
           isRated: false,
         },
-        section: cycle(sections, index, ''),
+        section: played.section,
         roundCount: 0,
         playerCount: maxSectionPlayers,
         rank: maxSectionPlayers,

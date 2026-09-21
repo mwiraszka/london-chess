@@ -142,14 +142,7 @@ describe('TournamentsPageComponent', () => {
         '3',
         '3',
       ],
-      [
-        'June 27, 2024',
-        'Tandem Simul (Gibson, K. / Ivanchuk, S.)',
-        'Tandem simul',
-        '3 hours',
-        '1',
-        '2',
-      ],
+      ['June 27, 2024', 'Tandem Simul 2024', 'Tandem simul', '3 hours', '1', '2'],
       ['October 19, 2023', 'Fall Active', 'Swiss', 'G25', '3', '3'],
     ]);
   });

@@ -116,7 +116,8 @@ export interface TournamentSizing {
   tournaments: Pick<Tournament, 'name' | 'subtitle'>[];
   timeControls: string[];
   players: Pick<GamePlayer, 'firstName' | 'lastName' | 'suffix'>[];
-  sections: string[];
+  // A tournament with the section a result in it names
+  results: { name: string; section: string }[];
   resultNotes: string[];
   maxRounds: number;
   maxPlayers: number;
