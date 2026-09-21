@@ -50,7 +50,7 @@ const hydratedStates = [
 const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   articlesState: [6, 1, 0],
   eventsState: [6, 1, 0],
-  membersState: [6, 1, 0],
+  membersState: [6, 2, 0],
 };
 
 // What only describes the current visit, so every visit starts from these
@@ -104,8 +104,11 @@ export function updateStateVersionsInLocalStorageMetaReducer(
         const [major, minor] = (version || '').split('.').map(Number);
         const isStaleVersion = major < 5 || (major === 5 && minor <= 12);
         const firstCompatibleVersion = FIRST_COMPATIBLE_VERSIONS[stateName];
+        // A cached older build may load after a newer one has saved its state
         const isIncompatible =
-          !!firstCompatibleVersion && isOlderThan(version || '', firstCompatibleVersion);
+          (!!firstCompatibleVersion &&
+            isOlderThan(version || '', firstCompatibleVersion)) ||
+          isOlderThan(currentVersion, (version || '').split('.').map(Number));
 
         // Remove the old key first to free up space before writing the new one
         localStorage.removeItem(key);
