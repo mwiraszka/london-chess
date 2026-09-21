@@ -96,13 +96,20 @@ describe('TournamentsPageComponent', () => {
     expect(query(fixture.debugElement, '.intro__text')).toBeTruthy();
   });
 
-  it('should credit the tournament director and say where to send corrections', () => {
+  it('should credit the organisers and say where to send questions', () => {
     fixture.detectChanges();
 
-    const director = query(fixture.debugElement, '.intro__text lcc-member-link');
+    const organisers = queryAll(fixture.debugElement, '.intro__text lcc-member-link');
 
-    expect(director.componentInstance.name()).toBe('Ryan Sarson');
-    expect(director.componentInstance.memberNumber()).toBe(1);
+    expect(
+      organisers.map(link => [
+        link.componentInstance.name(),
+        link.componentInstance.memberNumber(),
+      ]),
+    ).toEqual([
+      ['Ryan Sarson', 1],
+      ['Gerry Litchfield', 2],
+    ]);
     expect(query(fixture.debugElement, '.intro__text a[href^="mailto:"]')).toBeTruthy();
   });
 
