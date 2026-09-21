@@ -71,6 +71,19 @@ $breakpoints: (
   }
 }
 
+// The underline a link shows on hover, for links coloured like their surroundings
+@mixin lcc-link-underline {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 0.5px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 300ms;
+
+  &:hover {
+    text-decoration-color: var(--lcc-color--linkUnderline);
+  }
+}
+
 @mixin icon-size($size) {
   vertical-align: text-bottom;
   width: $size;

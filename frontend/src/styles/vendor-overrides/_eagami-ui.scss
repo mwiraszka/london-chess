@@ -1,3 +1,5 @@
+@use '../abstracts/mixins' as *;
+
 // @eagami/ui's stock neutral ramp is blue-tinted (Tailwind gray), which reads
 // as dark blue on field and card surfaces. Repaint it as pure grayscale at the
 // same lightness ladder; every semantic surface, border, and text token
@@ -70,6 +72,11 @@ body[data-theme='dark'] ea-skeleton .ea-skeleton {
 // stands out on both
 .ea-data-table lcc-text-skeleton .ea-skeleton {
   background-color: var(--lcc-color--table-skeleton);
+}
+
+// A row that is a link brings up the underline links have, cell by cell
+.ea-data-table .ea-data-table__row-link {
+  @include lcc-link-underline;
 }
 
 // The skeleton host is inline by default, which collapses to nothing inside

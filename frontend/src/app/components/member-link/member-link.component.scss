@@ -1,11 +1,15 @@
-// Names read as plain text unless styled as a link, so a profile link otherwise
-// shows only through the pointer
+@use '../../../styles/abstracts/mixins' as *;
+
+// Names read as plain text unless styled as a link, so a profile link shows only
+// through the pointer and the underline it brings up
 .member-link:not(.lcc-link) {
   text-decoration: none;
   color: inherit;
 }
 
-a.member-link {
+a.member-link:not(.lcc-link) {
+  @include lcc-link-underline;
+
   cursor: pointer;
 }
 
