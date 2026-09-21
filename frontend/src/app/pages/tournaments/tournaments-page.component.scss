@@ -135,16 +135,6 @@ $side-by-side-from: 800px;
   }
 }
 
-.tournaments {
-  max-width: 100%;
-  @include data-table-colors;
-}
-
-// As a block the placeholder sits centred in its cell
-.tournaments lcc-text-skeleton {
-  display: block;
-}
-
 .tournaments__name {
   overflow: hidden;
   display: block;

@@ -175,7 +175,10 @@ describe('TournamentPageComponent', () => {
     });
 
     it('should describe each round in its tooltip', () => {
-      const [first] = queryAll(fixture.debugElement, '.crosstable__round');
+      const [first] = queryAll(
+        fixture.debugElement,
+        '.ea-data-table__body .crosstable__round',
+      );
 
       expect(first.attributes['aria-label']).toBe('Won with white against Sasha Chen.');
     });

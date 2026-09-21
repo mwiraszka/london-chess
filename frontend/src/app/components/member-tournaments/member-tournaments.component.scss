@@ -4,16 +4,6 @@
   display: block;
 }
 
-.results {
-  max-width: 100%;
-  @include data-table-colors;
-}
-
-// As a block the placeholder sits centred in its cell
-.results lcc-text-skeleton {
-  display: block;
-}
-
 .results__section,
 .results__secondary {
   color: var(--color-text-secondary);

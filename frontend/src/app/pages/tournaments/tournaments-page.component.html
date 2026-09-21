@@ -87,20 +87,17 @@
     title="Unable to load tournaments"
     (retry)="onRetry()" />
 } @else {
-  <ea-data-table
+  <lcc-data-table
     class="tournaments"
     aria-label="Tournaments"
-    density="compact"
     noDataText="No tournaments match these filters."
-    trackBy="id"
-    [clickable]="!loading()"
+    [clickable]="true"
     [columns]="columns()"
     [data]="rows()"
-    [nowrap]="true"
+    [loading]="loading()"
     [rowHref]="rowHref"
     [sizingRows]="sizingRows"
     [sort]="sortState()"
-    [striped]="true"
     (rowActivate)="onOpenTournament($event)"
     (sorted)="onSorted($event)">
     <ea-paginator
@@ -111,54 +108,38 @@
       [showRangeLabel]="!loading()"
       [totalItems]="filteredCount()"
       (changed)="onPageChanged($event)" />
-  </ea-data-table>
+  </lcc-data-table>
 }
 
 <ng-template
   #dateCell
   let-row>
-  @if (row.summary) {
-    {{ row.dateLabel }}
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  {{ row.dateLabel }}
 </ng-template>
 
 <ng-template
   #nameCell
   let-row>
-  @if (row.summary) {
-    <span
-      class="tournaments__name"
-      [eaTooltip]="row.subtitle ? row.name + ' (' + row.subtitle + ')' : ''"
-      [whenClipped]="true">
-      {{ row.name }}
-      @if (row.subtitle) {
-        <span class="tournaments__subtitle">({{ row.subtitle }})</span>
-      }
-    </span>
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  <span
+    class="tournaments__name"
+    [eaTooltip]="row.subtitle ? row.name + ' (' + row.subtitle + ')' : ''"
+    [whenClipped]="true">
+    {{ row.name }}
+    @if (row.subtitle) {
+      <span class="tournaments__subtitle">({{ row.subtitle }})</span>
+    }
+  </span>
 </ng-template>
 
 <ng-template
   #timeControlCell
   let-row>
-  @if (row.summary) {
-    {{ row.timeControl }}
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  {{ row.timeControl }}
 </ng-template>
 
 <ng-template
   #textCell
   let-row
   let-value="value">
-  @if (row.summary) {
-    {{ value }}
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  {{ value }}
 </ng-template>

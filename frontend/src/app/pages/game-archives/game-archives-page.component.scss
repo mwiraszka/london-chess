@@ -162,18 +162,6 @@
   }
 }
 
-// Capped at the page so a wider table scrolls sideways within itself rather than
-// being clipped by the page
-.games {
-  max-width: 100%;
-  @include data-table-colors;
-}
-
-// A loading cell's placeholder fills the cell, and as a block sits centred in it
-.games lcc-text-skeleton {
-  display: block;
-}
-
 .games__result--decisive {
   font-weight: bold;
 }

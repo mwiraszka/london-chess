@@ -1,7 +1,6 @@
 import {
   AwardIconComponent,
   DataTableColumn,
-  DataTableComponent,
   NewspaperIconComponent,
   TooltipDirective,
 } from '@eagami/ui';
@@ -22,6 +21,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
@@ -131,18 +131,29 @@ const SIZING_ROWS: CrosstableRow[] = (() => {
   const count = Math.max(players.length, resultNotes.length);
 
   return Array.from({ length: count }, (_, index) => {
-    const row: CrosstableRow = {
-      id: `sizing-${index}`,
-      entry: null,
+    const entry: TournamentEntry = {
       rank: maxSectionPlayers,
-      player: playerNameLastFirst({
+      player: {
         ...PLACEHOLDER_GAME.white,
         ...cycle(players, index, PLACEHOLDER_GAME.white),
-      }),
+      },
       rating: maxRating,
       provisionalGames: maxProvisionalGames,
+      performanceRating: null,
       score: Math.floor(maxScore) + 0.5,
+      tiebreak: null,
+      rounds: [],
       resultNote: cycle(resultNotes, index, ''),
+    };
+    const row: CrosstableRow = {
+      id: `sizing-${index}`,
+      entry,
+      rank: entry.rank,
+      player: playerNameLastFirst(entry.player),
+      rating: entry.rating,
+      provisionalGames: entry.provisionalGames,
+      score: entry.score,
+      resultNote: entry.resultNote,
     };
     for (let round = 1; round <= maxRounds; round++) {
       row[roundKey(round)] = {
@@ -154,11 +165,6 @@ const SIZING_ROWS: CrosstableRow[] = (() => {
     return row;
   });
 })();
-
-const LOADING_ROWS: CrosstableRow[] = Array.from(
-  { length: LOADING_ENTRY_COUNT },
-  (_, index) => ({ ...SIZING_ROWS[0], id: `loading-${index}`, entry: null }),
-);
 
 const GAME_SIZING_ROWS: GameRow[] = ARCHIVE_SIZING.players.map((player, index) => {
   const white = { ...PLACEHOLDER_GAME.white, ...player };
@@ -299,7 +305,7 @@ export class TournamentPageComponent implements OnInit {
   };
 
   protected readonly sizingRows = SIZING_ROWS;
-  protected readonly loadingRows = LOADING_ROWS;
+  protected readonly loadingRowCount = LOADING_ENTRY_COUNT;
   protected readonly gameSizingRows = GAME_SIZING_ROWS;
 
   private readonly tournamentNumber$ = this.route.paramMap.pipe(

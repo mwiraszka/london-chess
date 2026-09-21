@@ -1,7 +1,6 @@
 import {
   CardComponent,
   DataTableColumn,
-  DataTableComponent,
   PaginatorComponent,
   PaginatorState,
   TooltipDirective,
@@ -24,8 +23,8 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
+import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
-import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
 import {
   LOADING_RESULT_COUNT,
@@ -37,10 +36,9 @@ import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import { formatDateRange, formatScore, shortenSubtitle } from '@app/utils';
 
-// A row with no result stands in while results load
 export interface ResultRow {
   id: string;
-  result: MemberTournamentResult | null;
+  result: MemberTournamentResult;
   date: string;
   tournament: string;
   section: string;
@@ -81,26 +79,34 @@ const SIZING_ROWS: ResultRow[] = (() => {
   } = TOURNAMENT_SIZING;
   const count = Math.max(tournaments.length, sections.length);
 
-  return Array.from({ length: count }, (_, index) => ({
-    id: `sizing-${index}`,
-    result: null,
-    date: formatDateRange(WIDEST_DATE, hasDateRanges ? WIDEST_END_DATE : null),
-    tournament: cycle(tournaments, index, { name: '', subtitle: '' }).name,
-    section: shortenSubtitle(cycle(sections, index, '')),
-    place: `${maxSectionPlayers} of ${maxSectionPlayers}`,
-    score: formatScore(Math.floor(maxScore) + 0.5),
-    rating: maxRating,
-    provisionalGames: maxProvisionalGames,
-  }));
+  return Array.from({ length: count }, (_, index) => {
+    const tournament = cycle(tournaments, index, { name: '', subtitle: '' });
+    const row = toResultRow(
+      {
+        tournament: {
+          number: index,
+          name: tournament.name,
+          subtitle: tournament.subtitle,
+          date: WIDEST_DATE,
+          endDate: hasDateRanges ? WIDEST_END_DATE : null,
+          format: 'swiss',
+          isRated: true,
+        },
+        section: cycle(sections, index, ''),
+        roundCount: 0,
+        playerCount: maxSectionPlayers,
+        rank: maxSectionPlayers,
+        rating: maxRating,
+        provisionalGames: maxProvisionalGames,
+        performanceRating: null,
+        score: Math.floor(maxScore) + 0.5,
+        resultNote: '',
+      },
+      index,
+    );
+    return { ...row, id: `sizing-${index}` };
+  });
 })();
-
-const LOADING_ROWS: ResultRow[] = Array.from(
-  { length: LOADING_RESULT_COUNT },
-  (_, index) => ({
-    ...SIZING_ROWS[0],
-    id: `loading-${index}`,
-  }),
-);
 
 type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
 
@@ -113,7 +119,6 @@ type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
     DataTableComponent,
     LoadFailedComponent,
     PaginatorComponent,
-    TextSkeletonComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -130,6 +135,7 @@ export class MemberTournamentsComponent {
 
   protected readonly pageSizes = MEMBER_TOURNAMENTS_PAGE_SIZES;
   protected readonly sizingRows = SIZING_ROWS;
+  protected readonly loadingRowCount = LOADING_RESULT_COUNT;
 
   private readonly memberNumber$ = toObservable(this.memberNumber);
 
@@ -164,9 +170,6 @@ export class MemberTournamentsComponent {
   });
 
   protected readonly rows = computed(() => {
-    if (this.loading()) {
-      return LOADING_ROWS;
-    }
     const start = (this.page() - 1) * this.pageSize();
     return this.allRows().slice(start, start + this.pageSize());
   });
@@ -187,8 +190,8 @@ export class MemberTournamentsComponent {
     ];
   });
 
-  protected readonly rowHref = ({ result }: ResultRow): string | null =>
-    result ? `/tournaments/${result.tournament.number}` : null;
+  protected readonly rowHref = ({ result }: ResultRow): string =>
+    `/tournaments/${result.tournament.number}`;
 
   constructor() {
     // Fetched once a visit, as tournaments only change by import
@@ -217,9 +220,7 @@ export class MemberTournamentsComponent {
   }
 
   public onOpenTournament({ result }: ResultRow): void {
-    if (result) {
-      this.router.navigate(['/tournaments', result.tournament.number]);
-    }
+    this.router.navigate(['/tournaments', result.tournament.number]);
   }
 
   public onRetry(): void {

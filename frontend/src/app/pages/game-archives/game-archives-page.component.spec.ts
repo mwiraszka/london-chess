@@ -498,13 +498,13 @@ describe('GameArchivesPageComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should render a skeleton row for each game on the page', () => {
+      it('should hold a skeleton row for each game the table showed', () => {
         const rows = queryAll(
           fixture.debugElement,
           '.ea-data-table__body .ea-data-table__row',
         );
 
-        expect(rows).toHaveLength(25);
+        expect(rows).toHaveLength(3);
         expect(queryAll(rows[0], 'lcc-text-skeleton')).toHaveLength(7);
       });
 

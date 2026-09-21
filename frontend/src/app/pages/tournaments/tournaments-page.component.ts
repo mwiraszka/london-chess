@@ -3,7 +3,6 @@ import {
   ButtonComponent,
   CardComponent,
   DataTableColumn,
-  DataTableComponent,
   DataTableSortState,
   DropdownComponent,
   PaginatorComponent,
@@ -27,10 +26,10 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 
+import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
 import {
   TOURNAMENTS_PAGE_SIZES,
@@ -44,10 +43,10 @@ import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import { formatDateRange, shortenSubtitle } from '@app/utils';
 
-// A row with no summary stands in while tournaments load; sort keys hold raw values
+// The sort keys hold raw values, so the table orders the rows the way the page does
 export interface TournamentRow {
   id: string;
-  summary: TournamentSummary | null;
+  summary: TournamentSummary;
   date: string;
   dateLabel: string;
   name: string;
@@ -85,8 +84,6 @@ function toTournamentRow(summary: TournamentSummary): TournamentRow {
   };
 }
 
-const LOADING_ROW_COUNT = 10;
-
 const INITIAL_SORT: DataTableSortState = { column: 'date', direction: 'desc' };
 
 function cycle<T>(items: T[], index: number, fallback: T): T {
@@ -114,15 +111,6 @@ const SIZING_ROWS: TournamentRow[] = (() => {
     }),
   );
 })();
-
-const LOADING_ROWS: TournamentRow[] = Array.from(
-  { length: LOADING_ROW_COUNT },
-  (_, index) => ({
-    ...SIZING_ROWS[0],
-    id: `loading-${index}`,
-    summary: null,
-  }),
-);
 
 function compareRows(a: TournamentRow, b: TournamentRow, column: string): number {
   const key = column as keyof TournamentRow;
@@ -164,7 +152,6 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
     MemberLinkComponent,
     PageHeaderComponent,
     PaginatorComponent,
-    TextSkeletonComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -261,17 +248,14 @@ export class TournamentsPageComponent implements OnInit {
   protected readonly filteredCount = computed(() => this.filteredRows().length);
 
   protected readonly rows = computed<TournamentRow[]>(() => {
-    if (this.loading()) {
-      return LOADING_ROWS;
-    }
     const start = (this.page() - 1) * this.pageSize();
     return this.filteredRows().slice(start, start + this.pageSize());
   });
 
   protected readonly sizingRows = SIZING_ROWS;
 
-  protected readonly rowHref = ({ summary }: TournamentRow): string | null =>
-    summary ? `/tournaments/${summary.number}` : null;
+  protected readonly rowHref = ({ summary }: TournamentRow): string =>
+    `/tournaments/${summary.number}`;
 
   protected readonly columns = computed<DataTableColumn<TournamentRow>[]>(() => {
     const cells = {
@@ -341,9 +325,7 @@ export class TournamentsPageComponent implements OnInit {
   }
 
   public onOpenTournament({ summary }: TournamentRow): void {
-    if (summary) {
-      this.router.navigate(['/tournaments', summary.number]);
-    }
+    this.router.navigate(['/tournaments', summary.number]);
   }
 
   public onRetry(): void {

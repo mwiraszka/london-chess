@@ -66,17 +66,6 @@
   color: var(--color-text-secondary);
 }
 
-.crosstable,
-.games {
-  max-width: 100%;
-  @include data-table-colors;
-}
-
-// As a block the placeholder sits centred in its cell
-.crosstable lcc-text-skeleton {
-  display: block;
-}
-
 .crosstable__provisional,
 .crosstable__unrated {
   font-size: 12px;

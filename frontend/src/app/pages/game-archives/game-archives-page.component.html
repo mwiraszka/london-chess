@@ -96,20 +96,18 @@
     title="Unable to load games"
     (retry)="onRetry()" />
 } @else {
-  <ea-data-table
+  <lcc-data-table
     class="games"
     aria-label="Games"
-    density="compact"
     noDataText="No games match these filters."
-    trackBy="id"
-    [clickable]="!loading()"
+    [clickable]="true"
     [columns]="columns()"
     [data]="rows()"
-    [nowrap]="true"
+    [loading]="loading()"
+    [loadingRowCount]="rowCount()"
     [rowHref]="rowHref"
     [sizingRows]="sizingRows"
     [sort]="sortState()"
-    [striped]="true"
     (rowActivate)="onOpenGame($event)"
     (sorted)="onSorted($event)">
     <ea-paginator
@@ -120,94 +118,66 @@
       [showRangeLabel]="filteredCount() !== null"
       [totalItems]="filteredCount() ?? 0"
       (changed)="onPageChanged($event)" />
-  </ea-data-table>
+  </lcc-data-table>
 }
 
 <ng-template
   #dateCell
   let-row>
-  @if (row.game; as game) {
-    <span class="games__date">{{ row.dateLabel }}</span>
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  <span class="games__date">{{ row.dateLabel }}</span>
 </ng-template>
 
 <ng-template
   #whiteCell
   let-row>
-  @if (row.white; as player) {
-    <lcc-member-link
-      [memberNumber]="player.memberNumber"
-      [name]="row.whiteName" />
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  <lcc-member-link
+    [memberNumber]="row.white.memberNumber"
+    [name]="row.whiteName" />
 </ng-template>
 
 <ng-template
   #blackCell
   let-row>
-  @if (row.black; as player) {
-    <lcc-member-link
-      [memberNumber]="player.memberNumber"
-      [name]="row.blackName" />
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  <lcc-member-link
+    [memberNumber]="row.black.memberNumber"
+    [name]="row.blackName" />
 </ng-template>
 
 <ng-template
   #resultCell
   let-row>
-  @if (row.game; as game) {
-    <span
-      class="games__result"
-      [class.games__result--decisive]="game.result !== '1/2-1/2'">
-      {{ game.result === '1/2-1/2' ? '½-½' : game.result }}
-    </span>
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  <span
+    class="games__result"
+    [class.games__result--decisive]="row.game.result !== '1/2-1/2'">
+    {{ row.game.result === '1/2-1/2' ? '½-½' : row.game.result }}
+  </span>
 </ng-template>
 
 <ng-template
   #eventCell
   let-row>
-  @if (row.game; as game) {
-    <span class="games__event">{{ game.tournament || 'Unknown event' }}</span>
-    @if (game.section) {
-      <span class="games__section"> ({{ game.section }})</span>
-    }
-  } @else {
-    <lcc-text-skeleton width="100%" />
+  <span class="games__event">{{ row.game.tournament || 'Unknown event' }}</span>
+  @if (row.game.section) {
+    <span class="games__section"> ({{ row.game.section }})</span>
   }
 </ng-template>
 
 <ng-template
   #openingCell
   let-row>
-  @if (row.game; as game) {
-    <span
-      class="games__opening-cell"
-      [eaTooltip]="game.opening"
-      [whenClipped]="true">
-      @if (game.eco) {
-        <span class="games__eco">{{ game.eco }}</span>
-      }
-      <span class="games__opening">{{ game.opening }}</span>
-    </span>
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  <span
+    class="games__opening-cell"
+    [eaTooltip]="row.game.opening"
+    [whenClipped]="true">
+    @if (row.game.eco) {
+      <span class="games__eco">{{ row.game.eco }}</span>
+    }
+    <span class="games__opening">{{ row.game.opening }}</span>
+  </span>
 </ng-template>
 
 <ng-template
   #movesCell
   let-row>
-  @if (row.game; as game) {
-    {{ row.moves }}
-  } @else {
-    <lcc-text-skeleton width="100%" />
-  }
+  {{ row.moves }}
 </ng-template>

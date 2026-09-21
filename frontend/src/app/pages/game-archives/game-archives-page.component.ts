@@ -4,7 +4,6 @@ import {
   ButtonComponent,
   CardComponent,
   DataTableColumn,
-  DataTableComponent,
   DataTableSortState,
   DropdownComponent,
   PaginatorComponent,
@@ -34,10 +33,10 @@ import {
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationExtras, Params, Router } from '@angular/router';
 
+import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
 import {
   FIGURE_COUNT_UP_DURATION,
@@ -63,36 +62,21 @@ import {
   playerName,
 } from '@app/utils';
 
-// A row stands in for a game that is still loading when it has none. The sort
-// keys carry raw values so the table orders a page the way the server did.
+// The sort keys carry raw values so the table orders a page the way the server did
 export interface GameRow {
   id: string;
-  game: Game | null;
+  game: Game;
   date: string;
   dateLabel: string;
-  white: GamePlayer | null;
+  white: GamePlayer;
   whiteName: string;
-  black: GamePlayer | null;
+  black: GamePlayer;
   blackName: string;
   result: string;
   event: string;
   opening: string;
-  moves: number | null;
+  moves: number;
 }
-
-const LOADING_ROW: Omit<GameRow, 'id'> = {
-  game: null,
-  date: '',
-  dateLabel: '',
-  white: null,
-  whiteName: '',
-  black: null,
-  blackName: '',
-  result: '',
-  event: '',
-  opening: '',
-  moves: null,
-};
 
 function toGameRow(game: Game): GameRow {
   return {
@@ -198,7 +182,6 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
     PageHeaderComponent,
     PaginatorComponent,
     SegmentedComponent,
-    TextSkeletonComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -264,26 +247,17 @@ export class GameArchivesPageComponent implements OnInit {
 
   // The table holds the height it had while the next page loads, so the page below it
   // stays where it is
-  private readonly rowCount = linkedSignal<number, number>({
+  protected readonly rowCount = linkedSignal<number, number>({
     source: () => this.games().length,
     computation: (count, previous) => count || previous?.value || this.query().pageSize,
   });
 
-  protected readonly rows = computed<GameRow[]>(() => {
-    if (this.loading()) {
-      return Array.from({ length: this.rowCount() }, (_, index) => ({
-        ...LOADING_ROW,
-        id: `loading-${index}`,
-      }));
-    }
-    return this.games().map(toGameRow);
-  });
+  protected readonly rows = computed<GameRow[]>(() => this.games().map(toGameRow));
 
   protected readonly sizingRows = SIZING_ROWS;
 
   // Rows are real links to their games, so the browser shows and can open them
-  protected readonly rowHref = ({ game }: GameRow): string | null =>
-    game ? `/game-archives/${game.id}` : null;
+  protected readonly rowHref = ({ game }: GameRow): string => `/game-archives/${game.id}`;
 
   protected readonly columns = computed<DataTableColumn<GameRow>[]>(() => {
     const cells = {
@@ -431,9 +405,7 @@ export class GameArchivesPageComponent implements OnInit {
   }
 
   public onOpenGame({ game }: GameRow): void {
-    if (game) {
-      this.router.navigate(['/game-archives', game.id]);
-    }
+    this.router.navigate(['/game-archives', game.id]);
   }
 
   public onRetry(): void {
