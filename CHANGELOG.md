@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Redirect straight to the home page when a game, article or member profile does not exist, instead of showing a placeholder first
 - Use a newspaper icon for news and articles
-- Show Katie Dunford, Francisco Salguero and Ibrehim Mirza under their correct names in the game archives
 - Rebuild the members table on the site's shared table, with a search box and a switch for inactive members above it, columns sized to their widest content and sideways scrolling where the table does not fit
 - Underline links to member profiles and archived games in tables when hovered over
 
