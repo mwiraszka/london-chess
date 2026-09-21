@@ -1,0 +1,19 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+// Centred at its own width, and capped at its container so a wider table scrolls
+// sideways within itself
+:host {
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+}
+
+ea-data-table {
+  max-width: 100%;
+  @include data-table-colors;
+}
+
+// As a block the placeholder sits centred in its cell
+lcc-text-skeleton {
+  display: block;
+}

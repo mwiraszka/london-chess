@@ -1,0 +1,23 @@
+<ea-data-table
+  density="compact"
+  [aria-label]="ariaLabel()"
+  [clickable]="clickable() && !loading()"
+  [columns]="shownColumns()"
+  [data]="rows()"
+  [noDataText]="noDataText()"
+  [nowrap]="true"
+  [rowHref]="rowHrefWhenLoaded()"
+  [sizingRows]="sizingRows()"
+  [sort]="sort()"
+  [striped]="true"
+  [trackBy]="trackBy"
+  (rowActivate)="rowActivate.emit($event)"
+  (sorted)="sorted.emit($event)">
+  <ng-content
+    select="ea-paginator"
+    ngProjectAs="ea-paginator" />
+</ea-data-table>
+
+<ng-template #skeletonCell>
+  <lcc-text-skeleton width="100%" />
+</ng-template>
