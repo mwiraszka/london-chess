@@ -1,10 +1,8 @@
 import {
   AwardIconComponent,
-  CardComponent,
   DataTableColumn,
   DataTableComponent,
   NewspaperIconComponent,
-  SkeletonComponent,
   TooltipDirective,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
@@ -65,8 +63,7 @@ export interface RoundCell {
   description: string;
 }
 
-// A crosstable row, holding each column's value under its key, each round's included.
-// A row stands in for an entry that is still loading when it has none.
+// A row with no entry stands in while the tournament loads
 export interface CrosstableRow {
   id: string;
   entry: TournamentEntry | null;
@@ -88,7 +85,6 @@ export interface GameRow {
   black: string;
 }
 
-// A section's heading and whatever qualifies it, such as a simul giver's rating
 export interface SectionHeading {
   text: string;
   extra: string;
@@ -103,7 +99,7 @@ export interface SectionView {
   games: GameRow[];
 }
 
-// Where the club's own site hosts a tournament report, it opens here as an article
+// Reports on the club's own site open as articles
 const SITE_ARTICLE_URL = /^https:\/\/londonchess\.ca\/article\/view\/([\da-f]{24})$/;
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
@@ -112,8 +108,7 @@ function cycle<T>(items: T[], index: number, fallback: T): T {
   return items.length ? items[index % items.length] : fallback;
 }
 
-// Rows holding the widest content each crosstable column shows in any tournament,
-// shared by every crosstable on the page so their columns line up
+// Shared by every crosstable on the page, so their columns line up
 const SIZING_ROWS: CrosstableRow[] = (() => {
   const {
     players,
@@ -182,7 +177,6 @@ const GAME_SIZING_ROWS: GameRow[] = ARCHIVE_SIZING.players.map((player, index) =
   };
 });
 
-// A simul's sections are its givers, shown with the rating recorded beside each
 function sectionHeading(section: TournamentSection): SectionHeading | null {
   if (section.ratingBand) {
     return { text: section.ratingBand, extra: '' };
@@ -266,14 +260,12 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   templateUrl: './tournament-page.component.html',
   styleUrl: './tournament-page.component.scss',
   imports: [
-    CardComponent,
     DataTableComponent,
     LinkListComponent,
     LoadFailedComponent,
     MemberLinkComponent,
     PageHeaderComponent,
     RouterLink,
-    SkeletonComponent,
     TextSkeletonComponent,
     TooltipDirective,
   ],
@@ -349,7 +341,6 @@ export class TournamentPageComponent implements OnInit {
       ).size,
   );
 
-  // The people a subtitle names, shown with their ratings set apart
   protected readonly subtitlePeople = computed(() =>
     parseSubtitlePeople(this.viewModel()?.tournament?.subtitle ?? ''),
   );

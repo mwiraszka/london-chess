@@ -9,51 +9,44 @@
       [icon]="pageIcon">
     </lcc-page-header>
 
-    <ea-card
-      class="details"
-      [fullWidth]="true">
-      <dl class="details__list">
-        <dt>{{ tournament.endDate ? 'Dates' : 'Date' }}</dt>
-        <dd>{{ formatDateRange(tournament.date, tournament.endDate) }}</dd>
+    <p class="details">
+      <span class="details__item">
+        {{ formatDateRange(tournament.date, tournament.endDate) }}
+      </span>
+      <span class="details__item">
+        {{ formatLabels[tournament.format] }}
+        <span class="details__extra">
+          ({{ tournament.isRated ? 'rated' : 'unrated' }})
+        </span>
+      </span>
+      @if (tournament.timeControl) {
+        <span class="details__item">{{ tournament.timeControl }}</span>
+      }
+      <span class="details__item">
+        {{ playerCount() }} {{ playerCount() === 1 ? 'player' : 'players' }}
+      </span>
+    </p>
 
-        @if (tournament.subtitle) {
-          <dt>{{ subtitleLabels[tournament.format] }}</dt>
-          <dd>
-            @if (subtitlePeople(); as subtitle) {
-              @for (person of subtitle.people; track person.name; let last = $last) {
-                <span class="details__person">
-                  {{ person.name }}
-                  @if (person.rating !== null) {
-                    <span class="details__extra">({{ person.rating }})</span>
-                  }
-                </span>
-                @if (!last) {
-                  <span class="details__separator">{{ subtitle.separator }}</span>
-                }
+    @if (tournament.subtitle) {
+      <p class="details details__subtitle">
+        <span class="details__label">{{ subtitleLabels[tournament.format] }}:</span>
+        @if (subtitlePeople(); as subtitle) {
+          @for (person of subtitle.people; track person.name; let last = $last) {
+            <span class="details__person">
+              {{ person.name }}
+              @if (person.rating !== null) {
+                <span class="details__extra">({{ person.rating }})</span>
               }
-            } @else {
-              {{ tournament.subtitle }}
+            </span>
+            @if (!last) {
+              <span class="details__separator">{{ subtitle.separator }}</span>
             }
-          </dd>
+          }
+        } @else {
+          {{ tournament.subtitle }}
         }
-
-        <dt>Format</dt>
-        <dd>
-          {{ formatLabels[tournament.format] }}
-          <span class="details__extra"
-            >({{ tournament.isRated ? 'rated' : 'unrated' }})</span
-          >
-        </dd>
-
-        @if (tournament.timeControl) {
-          <dt>Time control</dt>
-          <dd>{{ tournament.timeControl }}</dd>
-        }
-
-        <dt>Players</dt>
-        <dd>{{ playerCount() }}</dd>
-      </dl>
-    </ea-card>
+      </p>
+    }
 
     @for (section of sections(); track section.key) {
       <section class="section">
@@ -103,14 +96,11 @@
       [icon]="pageIcon">
     </lcc-page-header>
 
-    <div
+    <p
       class="details details--loading"
       aria-busy="true">
-      <ea-skeleton
-        variant="rect"
-        width="100%"
-        height="100%" />
-    </div>
+      <lcc-text-skeleton width="320px" />
+    </p>
 
     <section class="section">
       <ea-data-table

@@ -97,19 +97,14 @@ describe('TournamentPageComponent', () => {
       );
     });
 
-    it('should list the details', () => {
-      expect(queryAll(fixture.debugElement, '.details dt').map(textOf)).toEqual([
-        'Date',
-        'Format',
-        'Time control',
-        'Players',
-      ]);
-      expect(queryAll(fixture.debugElement, '.details dd').map(textOf)).toEqual([
+    it('should list the details in a line under the heading', () => {
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toEqual([
         'October 19, 2023',
         'Swiss (rated)',
         'G25',
-        '3',
+        '3 players',
       ]);
+      expect(query(fixture.debugElement, '.details__subtitle')).toBeFalsy();
     });
 
     it('should lay out the crosstable round by round', () => {
@@ -221,12 +216,11 @@ describe('TournamentPageComponent', () => {
     beforeEach(() => open(111));
 
     it('should name the simul givers with their ratings set apart', () => {
-      const [, givers] = queryAll(fixture.debugElement, '.details dd');
+      const givers = query(fixture.debugElement, '.details__subtitle');
 
-      expect(queryAll(fixture.debugElement, '.details dt').map(textOf)).toContain(
-        'Simul givers',
+      expect(textOf(givers)).toBe(
+        'Simul givers: Gibson, Kevin (2302) / Ivanchuk, Serhii (2189)',
       );
-      expect(textOf(givers)).toBe('Gibson, Kevin (2302) / Ivanchuk, Serhii (2189)');
       expect(queryAll(givers, '.details__extra').map(textOf)).toEqual([
         '(2302)',
         '(2189)',
@@ -276,10 +270,7 @@ describe('TournamentPageComponent', () => {
     beforeEach(() => open(118));
 
     it('should date the tournament from its first day to its last', () => {
-      const [dates] = queryAll(fixture.debugElement, '.details dt');
-
-      expect(textOf(dates)).toBe('Dates');
-      expect(textOf(queryAll(fixture.debugElement, '.details dd')[0])).toBe(
+      expect(textOf(query(fixture.debugElement, '.details__item'))).toBe(
         'September 12 – November 14, 2024',
       );
     });
@@ -317,7 +308,9 @@ describe('TournamentPageComponent', () => {
       );
 
       expect(query(fixture.debugElement, '.page-heading lcc-text-skeleton')).toBeTruthy();
-      expect(query(fixture.debugElement, '.details--loading ea-skeleton')).toBeTruthy();
+      expect(
+        query(fixture.debugElement, '.details--loading lcc-text-skeleton'),
+      ).toBeTruthy();
       expect(rows).toHaveLength(10);
       expect(queryAll(rows[0], 'lcc-text-skeleton')).toHaveLength(10);
     });
