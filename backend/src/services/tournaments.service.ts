@@ -181,6 +181,7 @@ export function toMemberTournamentResults(
               date: record.date,
               endDate: record.endDate,
               format: record.format,
+              timeControl: record.timeControl,
               isRated: record.isRated,
             },
             section: section.name,

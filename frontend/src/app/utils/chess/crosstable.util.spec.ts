@@ -7,6 +7,7 @@ import {
   roundResultDescription,
   roundResultLabel,
   shortenSubtitle,
+  timeControlMinutes,
 } from './crosstable.util';
 
 const result = (overrides: Partial<RoundResult>): RoundResult => ({
@@ -32,6 +33,20 @@ describe('formatScore', () => {
 
   it('should show a dash for a score that was not recorded', () => {
     expect(formatScore(null)).toBe('–');
+  });
+});
+
+describe('timeControlMinutes', () => {
+  it('should count a game in one time as its minutes', () => {
+    expect(timeControlMinutes('G25')).toBe(25);
+  });
+
+  it('should add an increment as a minute per second', () => {
+    expect(timeControlMinutes('G90+30')).toBe(90.5);
+  });
+
+  it('should count a session by the hour', () => {
+    expect(timeControlMinutes('3 hours')).toBe(180);
   });
 });
 

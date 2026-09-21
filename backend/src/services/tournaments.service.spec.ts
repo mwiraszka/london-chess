@@ -248,6 +248,7 @@ describe('toMemberTournamentResults', () => {
         date: '2024-09-12',
         endDate: null,
         format: 'round-robin',
+        timeControl: 'G80',
       },
       roundCount: 2,
       playerCount: 2,

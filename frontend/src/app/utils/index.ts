@@ -7,6 +7,7 @@ export {
   roundResultDescription,
   roundResultLabel,
   shortenSubtitle,
+  timeControlMinutes,
 } from './chess/crosstable.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
@@ -20,6 +21,7 @@ export {
 
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';
+export { compareCells } from './common/compare-cells.util';
 export { customSort } from './common/custom-sort.util';
 export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';

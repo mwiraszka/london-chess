@@ -122,7 +122,14 @@ export type MemberTournamentResult = Pick<
 > & {
   tournament: Pick<
     Tournament,
-    'number' | 'name' | 'subtitle' | 'date' | 'endDate' | 'format' | 'isRated'
+    | 'number'
+    | 'name'
+    | 'subtitle'
+    | 'date'
+    | 'endDate'
+    | 'format'
+    | 'timeControl'
+    | 'isRated'
   >;
   section: string;
   roundCount: number;

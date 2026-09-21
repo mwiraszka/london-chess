@@ -64,13 +64,36 @@ describe('MemberTournamentsComponent', () => {
       expect(dispatchSpy).not.toHaveBeenCalled();
     });
 
-    it('should list each tournament with its days, place, score and rating', () => {
+    it('should list each tournament with its days, format, time control, place, score and rating', () => {
       expect(
         bodyRows().map(row => queryAll(row, '.ea-data-table__cell').map(textOf)),
       ).toEqual([
-        ['September 12 – November 14, 2024', 'Championship (A1)', '1 of 2', '3½', '1850'],
-        ['October 19, 2023', 'Fall Active', '1 of 3', '2½', '1850'],
+        [
+          'September 12 – November 14, 2024',
+          'Championship (A1)',
+          'Round robin',
+          'G80',
+          '1 of 2',
+          '3½',
+          '1850',
+        ],
+        ['October 19, 2023', 'Fall Active', 'Swiss', 'G25', '1 of 3', '2½', '1850'],
       ]);
+      expect(textOf(query(bodyRows()[0], '.results__note'))).toBe('(A1)');
+    });
+
+    it('should start with the newest tournament and let every column be sorted', () => {
+      const table = query(fixture.debugElement, 'ea-data-table');
+
+      expect(table.componentInstance.sort()).toEqual({
+        column: 'date',
+        direction: 'desc',
+      });
+      expect(
+        queryAll(fixture.debugElement, '.ea-data-table__cell--header').map(
+          header => header.classes['ea-data-table__cell--sortable'],
+        ),
+      ).toEqual([true, true, true, true, true, true, true]);
     });
 
     it('should line the dates up on the right', () => {
@@ -86,8 +109,8 @@ describe('MemberTournamentsComponent', () => {
         'ea-data-table',
       ).componentInstance.sizingRows();
 
-      expect(sizingRows[0].date).toBe('September 30 – November 30, 2000');
-      expect(sizingRows[0].place).toBe(
+      expect(sizingRows[0].dateLabel).toBe('September 30 – November 30, 2000');
+      expect(sizingRows[0].placeLabel).toBe(
         `${TOURNAMENT_SIZING.maxSectionPlayers} of ${TOURNAMENT_SIZING.maxSectionPlayers}`,
       );
       expect(sizingRows[0].rating).toBe(TOURNAMENT_SIZING.maxRating);
@@ -125,6 +148,8 @@ describe('MemberTournamentsComponent', () => {
               name: 'Tandem Simul',
               endDate: null,
               format: 'tandem-simul',
+              timeControl: '3 hours',
+              isRated: false,
             },
             section: '',
             rank: 4,
@@ -141,10 +166,59 @@ describe('MemberTournamentsComponent', () => {
     expect(queryAll(bodyRows()[0], '.ea-data-table__cell').map(textOf)).toEqual([
       'September 12, 2024',
       'Tandem Simul',
+      'Tandem simul (unrated)',
+      '3 hours',
       'Board 4',
       'Draw',
       'Unrated',
     ]);
+    expect(textOf(query(bodyRows()[0], '.results__note'))).toBe('(unrated)');
+  });
+
+  describe('sorting', () => {
+    const placed = (rank: number, playerCount: number): MemberTournamentResult => ({
+      ...MOCK_MEMBER_TOURNAMENT_RESULTS[1],
+      tournament: {
+        ...MOCK_MEMBER_TOURNAMENT_RESULTS[1].tournament,
+        number: playerCount,
+      },
+      rank,
+      playerCount,
+    });
+
+    const placeCells = () =>
+      bodyRows().map(row => textOf(queryAll(row, '.ea-data-table__cell')[4]));
+
+    beforeEach(() => {
+      store.setState(stateWith({ 2: [placed(1, 2), placed(2, 3), placed(1, 12)] }));
+      render(2);
+    });
+
+    it('should rank a place among more players above the same place among fewer', () => {
+      query(fixture.debugElement, 'ea-data-table').triggerEventHandler('sorted', {
+        column: 'place',
+        direction: 'asc',
+      });
+      fixture.detectChanges();
+
+      expect(placeCells()).toEqual(['1 of 12', '1 of 2', '2 of 3']);
+    });
+
+    it('should turn the order around, and fall back to the newest first', () => {
+      const table = query(fixture.debugElement, 'ea-data-table');
+
+      table.triggerEventHandler('sorted', { column: 'place', direction: 'desc' });
+      fixture.detectChanges();
+      const reversed = placeCells();
+      table.triggerEventHandler('sorted', { column: 'place', direction: null });
+      fixture.detectChanges();
+
+      expect(reversed).toEqual(['2 of 3', '1 of 2', '1 of 12']);
+      expect(table.componentInstance.sort()).toEqual({
+        column: 'date',
+        direction: 'desc',
+      });
+    });
   });
 
   it('should page a long list', () => {
@@ -158,6 +232,29 @@ describe('MemberTournamentsComponent', () => {
 
     expect(bodyRows()).toHaveLength(10);
     expect(query(fixture.debugElement, 'ea-paginator')).toBeTruthy();
+  });
+
+  it('should go back to the first page when the order changes', () => {
+    store.setState(
+      stateWith({
+        2: Array.from({ length: 12 }, () => MOCK_MEMBER_TOURNAMENT_RESULTS[1]),
+      }),
+    );
+    render(2);
+    query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
+      page: 2,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    query(fixture.debugElement, 'ea-data-table').triggerEventHandler('sorted', {
+      column: 'rating',
+      direction: 'asc',
+    });
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'ea-paginator').componentInstance.page()).toBe(1);
+    expect(bodyRows()).toHaveLength(10);
   });
 
   it('should say when a member has no tournaments on record', () => {
@@ -184,7 +281,7 @@ describe('MemberTournamentsComponent', () => {
 
     it('should hold the table with skeleton rows', () => {
       expect(bodyRows()).toHaveLength(3);
-      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(5);
+      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(7);
     });
 
     it('should not open skeleton rows', () => {

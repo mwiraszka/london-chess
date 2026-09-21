@@ -13,6 +13,16 @@ export function formatScore(score: number | null): string {
   return whole || !half ? `${whole}${half}` : half;
 }
 
+// The thinking time a control gives, in minutes, taking an increment as a minute per second
+export function timeControlMinutes(timeControl: string): number {
+  const hours = timeControl.match(/^(\d+) hours?$/);
+  if (hours) {
+    return Number(hours[1]) * 60;
+  }
+  const [base, increment] = timeControl.replace(/^G/, '').split('+').map(Number);
+  return base + (increment || 0) / 60;
+}
+
 // X and F mark forfeits won and lost; B, H and U byes and a round not played
 export function roundResultLabel({
   outcome,

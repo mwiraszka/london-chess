@@ -41,7 +41,12 @@ import {
 import { TournamentFormat, TournamentSummary } from '@app/models';
 import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
-import { formatDateRange, shortenSubtitle } from '@app/utils';
+import {
+  compareCells,
+  formatDateRange,
+  shortenSubtitle,
+  timeControlMinutes,
+} from '@app/utils';
 
 // The sort keys hold raw values, so the table orders the rows the way the page does
 export interface TournamentRow {
@@ -57,15 +62,6 @@ export interface TournamentRow {
   thinkingTime: number;
   rounds: number;
   players: number;
-}
-
-function timeControlMinutes(timeControl: string): number {
-  const hours = timeControl.match(/^(\d+) hours?$/);
-  if (hours) {
-    return Number(hours[1]) * 60;
-  }
-  const [base, increment] = timeControl.replace(/^G/, '').split('+').map(Number);
-  return base + (increment || 0) / 60;
 }
 
 function toTournamentRow(summary: TournamentSummary): TournamentRow {
@@ -111,15 +107,6 @@ const SIZING_ROWS: TournamentRow[] = (() => {
     }),
   );
 })();
-
-function compareRows(a: TournamentRow, b: TournamentRow, column: string): number {
-  const key = column as keyof TournamentRow;
-  const [left, right] = [a[key], b[key]];
-  if (typeof left === 'number' && typeof right === 'number') {
-    return left - right;
-  }
-  return String(left).localeCompare(String(right));
-}
 
 export interface TournamentFilters {
   year: string;
@@ -240,7 +227,7 @@ export class TournamentsPageComponent implements OnInit {
       .map(toTournamentRow)
       .sort(
         (a, b) =>
-          order * compareRows(a, b, column) ||
+          order * compareCells(a, b, column) ||
           Number(b.summary?.number) - Number(a.summary?.number),
       );
   });

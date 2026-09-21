@@ -19,7 +19,9 @@
       [loadingRowCount]="loadingRowCount"
       [rowHref]="rowHref"
       [sizingRows]="sizingRows"
-      (rowActivate)="onOpenTournament($event)">
+      [sort]="sortState()"
+      (rowActivate)="onOpenTournament($event)"
+      (sorted)="onSorted($event)">
       @if (resultCount() > pageSizes[0]) {
         <ea-paginator
           size="sm"
@@ -35,10 +37,9 @@
 </ea-card>
 
 <ng-template
-  #textCell
-  let-row
-  let-value="value">
-  {{ value }}
+  #dateCell
+  let-row>
+  {{ row.dateLabel }}
 </ng-template>
 
 <ng-template
@@ -46,8 +47,40 @@
   let-row>
   {{ row.tournament }}
   @if (row.section) {
-    <span class="results__section">({{ row.section }})</span>
+    <span class="results__note">({{ row.section }})</span>
   }
+</ng-template>
+
+<ng-template
+  #formatCell
+  let-row>
+  {{ row.format }}
+  @if (!row.result.tournament.isRated) {
+    <span class="results__note">(unrated)</span>
+  }
+</ng-template>
+
+<ng-template
+  #timeControlCell
+  let-row>
+  {{ row.timeControl }}
+</ng-template>
+
+<ng-template
+  #placeCell
+  let-row>
+  {{ row.placeLabel }}
+</ng-template>
+
+<ng-template
+  #scoreCell
+  let-row>
+  <span
+    class="results__score"
+    [eaTooltip]="row.scoreLabel"
+    [whenClipped]="true">
+    {{ row.scoreLabel }}
+  </span>
 </ng-template>
 
 <ng-template

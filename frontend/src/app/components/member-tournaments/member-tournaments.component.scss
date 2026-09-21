@@ -4,11 +4,20 @@
   display: block;
 }
 
-.results__section,
+.results__note,
 .results__secondary {
   color: var(--color-text-secondary);
 }
 
 .results__secondary {
   font-size: 12px;
+}
+
+// A simul board's result is a note; longer than the column, it is read from its tooltip
+.results__score {
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: bottom;
+  max-width: 64px;
+  text-overflow: ellipsis;
 }
