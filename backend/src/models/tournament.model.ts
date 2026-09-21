@@ -13,10 +13,10 @@ export type PieceColor = 'white' | 'black';
 export interface RoundResult {
   round: number;
   outcome: RoundOutcome;
-  // Each game's score for this player: two in a round of two games, none without a game
+  // One score per game of the round, none for a bye
   scores: number[];
   points: number;
-  // The opponent's rank in the section, when it was recorded
+  // Null when not recorded
   opponentRank: number | null;
   color: PieceColor | null;
 }
@@ -24,47 +24,46 @@ export interface RoundResult {
 export interface TournamentEntry {
   rank: number;
   playerId: Id;
-  // The rating the player brought to the tournament, or null when unrated
+  // Null when unrated
   rating: number | null;
-  // Set when the rating was provisional, to the number of games it rested on
+  // The games a provisional rating rests on
   provisionalGames: number | null;
   performanceRating: number | null;
   score: number | null;
   tiebreak: number | null;
-  // Empty when only the standings were recorded
+  // Empty when only standings were recorded
   rounds: RoundResult[];
-  // A simul board's result, in the words it was recorded in
+  // A simul board's result, as recorded
   resultNote: string;
 }
 
 export interface TournamentSection {
-  // Empty for a tournament with a single section
+  // Empty for a single section
   name: string;
   ratingBand: string;
   roundCount: number;
-  // Every pairing plays two games, one with each color
   isDoubleRound: boolean;
-  // The game archive sections that hold this section's games
+  // The archive sections holding this section's games
   gameArchiveSections: string[];
   entries: TournamentEntry[];
 }
 
 export interface Tournament {
   id: Id;
-  // The club's own numbering, in the order the tournaments were played
+  // The club's own numbering
   number: number;
   name: string;
-  // An opening theme, the simul givers or the match-up
+  // A theme, the simul givers or the match-up
   subtitle: string;
   // YYYY-MM-DD
   date: string;
-  // The last day of a tournament played over several, or null for one played in a day
+  // Null for a tournament played in a day
   endDate: string | null;
   format: TournamentFormat;
   timeControl: string;
   isRated: boolean;
   articleUrl: Url | null;
-  // The game archive's name for this tournament, when its games are in the archive
+  // The archive's name for the tournament, when its games are archived
   gameArchiveTournament: string | null;
   sections: TournamentSection[];
 }
@@ -93,7 +92,7 @@ export type TournamentGame = Pick<
 >;
 
 export type RoundResultResponse = RoundResult & {
-  // The game in the archive, when it was recorded
+  // Null when the game was not archived
   gameId: Id | null;
 };
 
@@ -110,7 +109,6 @@ export type TournamentSectionResponse = Omit<
   games: TournamentGame[];
 };
 
-// A tournament as sent to clients, with its players resolved and its games attached
 export type TournamentResponse = Omit<
   Tournament,
   'id' | 'gameArchiveTournament' | 'sections'
@@ -118,7 +116,6 @@ export type TournamentResponse = Omit<
   sections: TournamentSectionResponse[];
 };
 
-// One member's showing in one tournament
 export type MemberTournamentResult = Pick<
   TournamentEntry,
   'rank' | 'rating' | 'provisionalGames' | 'performanceRating' | 'score' | 'resultNote'

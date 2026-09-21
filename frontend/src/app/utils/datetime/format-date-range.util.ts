@@ -2,8 +2,7 @@ import moment from 'moment-timezone';
 
 import { formatPartialDate } from './format-partial-date.util';
 
-// The days a tournament ran, from YYYY-MM-DD dates: one day as it is, and a span
-// with an en dash, closed up within a month and spaced once the months differ
+// An en dash closed up within a month and spaced across months
 export function formatDateRange(start: string, end: string | null): string {
   if (!end || end === start) {
     return formatPartialDate(start);

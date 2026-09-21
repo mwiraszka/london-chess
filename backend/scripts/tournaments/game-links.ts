@@ -3,9 +3,8 @@ import { GameArchiveLink } from './mappings.model';
 const sameSections = (...names: string[]): Record<string, string[]> =>
   Object.fromEntries(names.map(name => [name, [name]]));
 
-// The tournaments whose games are in the game archive, keyed by tournament number.
-// The archive files a year's championship finals, matches and playoffs under the
-// championship itself.
+// Keyed by tournament number. The archive files a year's finals, matches and
+// playoffs under the championship itself.
 export const GAME_ARCHIVE_LINKS: Record<number, GameArchiveLink> = {
   9: {
     tournament: 'Team Tournament',

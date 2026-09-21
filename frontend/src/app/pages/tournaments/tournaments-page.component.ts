@@ -44,8 +44,7 @@ import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import { formatDateRange, shortenSubtitle } from '@app/utils';
 
-// A row stands in for a tournament that is still loading when it has none. The sort
-// keys carry raw values, so the table orders them the way the page does.
+// A row with no summary stands in while tournaments load; sort keys hold raw values
 export interface TournamentRow {
   id: string;
   summary: TournamentSummary | null;
@@ -55,13 +54,12 @@ export interface TournamentRow {
   subtitle: string;
   format: string;
   timeControl: string;
-  // The time control in minutes, which is what it sorts by
+  // Minutes, so time controls sort by length
   thinkingTime: number;
   rounds: number;
   players: number;
 }
 
-// Time controls in order of the thinking time they allow
 function timeControlMinutes(timeControl: string): number {
   const hours = timeControl.match(/^(\d+) hours?$/);
   if (hours) {
@@ -95,8 +93,6 @@ function cycle<T>(items: T[], index: number, fallback: T): T {
   return items.length ? items[index % items.length] : fallback;
 }
 
-// Rows holding the widest content each column shows in any tournament, so the columns
-// are sized once rather than by whichever tournaments are on screen
 const SIZING_ROWS: TournamentRow[] = (() => {
   const { tournaments, timeControls, maxRounds, maxPlayers, hasDateRanges } =
     TOURNAMENT_SIZING;
@@ -207,7 +203,7 @@ export class TournamentsPageComponent implements OnInit {
 
   protected readonly pageSize = signal(TOURNAMENTS_PAGE_SIZES[0]);
 
-  // New filters or a new order start again from the first page
+  // New filters or order start at the first page
   protected readonly page = linkedSignal<[TournamentFilters, DataTableSortState], number>(
     {
       source: () => [this.filters(), this.sortState()],
@@ -274,7 +270,6 @@ export class TournamentsPageComponent implements OnInit {
 
   protected readonly sizingRows = SIZING_ROWS;
 
-  // Rows are real links to their tournaments, so the browser shows and can open them
   protected readonly rowHref = ({ summary }: TournamentRow): string | null =>
     summary ? `/tournaments/${summary.number}` : null;
 
@@ -355,7 +350,6 @@ export class TournamentsPageComponent implements OnInit {
     this.store.dispatch(TournamentsActions.fetchTournamentsRequested());
   }
 
-  // Only the filters that are set are kept in the address
   private applyFilters(filters: TournamentFilters): void {
     this.router.navigate([], {
       relativeTo: this.route,

@@ -31,13 +31,8 @@ import { longest, writeSizing } from './shared/sizing';
 import { GAME_ARCHIVE_LINKS } from './tournaments/game-links';
 import { TOURNAMENT_PLAYER_MERGES } from './tournaments/players';
 
-// Loads the club's tournament history, exported from its pairing software as a Mac
-// Roman CSV with a row per player per tournament, into the tournaments collection. A
-// tournament played over several weeks ends on the day the club's calendar implies,
-// unless the file dates it with an "event end date" column.
-// Players are found by name among those the game archive holds, and new ones are
-// linked to members by name. Dry run by default; --apply writes, replacing any
-// tournament already stored under the same number.
+// Dry run by default; --apply writes, replacing any tournament stored under the same
+// number. An "event end date" column overrides the end date inferred from the calendar.
 //
 //   npx tsx --env-file=.env scripts/import-tournaments.ts <tournaments.csv> [--apply] [--dev]
 
@@ -70,7 +65,6 @@ const FORMATS: Record<string, TournamentFormat> = {
 
 type Row = Record<string, string> & { line: string };
 
-// Splits the file into rows of cells, honoring quoted cells and the quotes doubled inside them
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -210,8 +204,7 @@ function readTournament(
   }
   const link = GAME_ARCHIVE_LINKS[number];
 
-  // A simul whose givers each took their own boards is recorded with the giver on
-  // every row, and is shown as a section per giver
+  // Givers who took separate boards are recorded per row, and get a section each
   const givers = [...new Set(rows.map(row => row['event2']))].filter(
     subtitle => subtitle !== '',
   );
@@ -270,8 +263,7 @@ function writeTournamentSizing(
   const sections = tournaments.flatMap(({ sections }) => sections);
   const entries = sections.flatMap(({ entries }) => entries);
   const sizing = {
-    // Every name carrying a subtitle, since the site shortens subtitles before showing
-    // them, and the longest names without one
+    // Subtitles are shortened on the site, so every one is kept for measuring
     tournaments: [
       ...longest(
         tournaments.filter(({ subtitle }) => subtitle !== ''),
@@ -322,17 +314,13 @@ function writeTournamentSizing(
   };
   return writeSizing({
     file: 'tournament-sizing.ts',
-    script: 'import-tournaments.ts',
-    purpose:
-      'the tournament tables show, so their columns are sized before anything is fetched',
     name: 'TOURNAMENT_SIZING',
     type: 'TournamentSizing',
     value: sizing,
   });
 }
 
-// How many of each linked section's results find their game in the archive, using the
-// ids of players already stored, so a first import reports only what it can check
+// Only players already stored have ids to match games by
 async function reportGameLinks(
   tournaments: PendingTournament[],
   storedIds: Map<string, string>,

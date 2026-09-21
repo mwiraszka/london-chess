@@ -1,5 +1,5 @@
 export interface GameArchiveLink {
   tournament: string;
-  // The game archive's sections for each section of the tournament, keyed by its name
+  // The archive sections holding each tournament section's games, by section name
   sections: Record<string, string[]>;
 }

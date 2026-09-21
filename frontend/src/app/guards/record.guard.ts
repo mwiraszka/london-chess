@@ -22,16 +22,12 @@ export interface RecordGuardConfig<T> {
   select: (value: string) => MemoizedSelector<object, T | null>;
   request: (value: string) => Action;
   failed: ActionCreator<string, (props: { error: LccError }) => FailedAction>;
-  // Whether a stored record is fetched again as it shows, for records that change
+  // Fetch a stored record again as it shows
   refreshes: boolean;
 }
 
-/**
- * Holds the navigation until the record is known to exist. One already in the store
- * shows at once, one that is not is fetched first, and one the server does not have
- * goes home without the page ever showing. Any other failure lets the page show, so it
- * can offer to try again.
- */
+// A stored record shows at once; a missing one is fetched first, and a 404 goes home
+// without the page showing
 export function recordGuard<T>(config: RecordGuardConfig<T>): CanActivateFn {
   return (route: ActivatedRouteSnapshot): Observable<boolean | UrlTree> | UrlTree => {
     const value = route.paramMap.get(config.param);
@@ -67,7 +63,7 @@ export function recordGuard<T>(config: RecordGuardConfig<T>): CanActivateFn {
           ),
         ).pipe(take(1));
 
-        // The outcome is awaited before the request goes out, so a reply is never missed
+        // Subscribed before the request, so a synchronous reply is not missed
         return merge(
           settled$,
           defer(() => {

@@ -4,7 +4,6 @@ export function playerName({ firstName, lastName, suffix }: GamePlayer): string 
   return [firstName, lastName, suffix].filter(part => part !== '').join(' ');
 }
 
-// A name as lists sorted by surname show it: "Last, First"
 export function playerNameLastFirst({ firstName, lastName, suffix }: GamePlayer): string {
   const given = [firstName, suffix].filter(part => part !== '').join(' ');
   return given ? `${lastName}, ${given}` : lastName;

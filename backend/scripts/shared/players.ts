@@ -7,8 +7,7 @@ import { isCollectionId } from '../../src/util/is-collection-id.util';
 import { ParsedPlayerName, parsePlayerName } from '../../src/util/pgn.util';
 import { PLAYER_MERGES } from '../game-archive/players';
 
-// The archive's players, loaded by both the game and the tournament imports. Each
-// writes players by name, so the two share one record per person.
+// Both imports write players by name, so a person gets one record between them
 
 export const fold = (value: string): string =>
   value
@@ -28,7 +27,6 @@ function merged(
   return target ? parsePlayerName(target) : name;
 }
 
-// The name every source should record a player under, once its own merges are applied
 export function canonicalPlayer(
   raw: string,
   sourceMerges: Record<string, string> = {},
@@ -38,7 +36,6 @@ export function canonicalPlayer(
 
 export type MemberMatch = { memberId: string } | { ambiguous: number } | null;
 
-// Finds the one member a full name belongs to; a name given only as an initial never matches
 export async function loadMemberMatcher(): Promise<
   (name: ParsedPlayerName) => MemberMatch
 > {
@@ -65,12 +62,8 @@ export async function loadMemberMatcher(): Promise<
 
 export type PendingPlayer = Omit<Player, 'id'>;
 
-/**
- * Writes the players by name, keeping the id of any already stored so whatever points
- * at it stays linked. A stored member link is never replaced, only filled in. With
- * `countsGames`, the pending game counts become the stored ones, and players missing
- * from them are left with none. Returns each name's id.
- */
+// Stored players keep their ids, and a stored member link is never replaced. With
+// countsGames, players absent from the map are left with no games.
 export async function savePlayers(
   players: Map<string, PendingPlayer>,
   { countsGames }: { countsGames: boolean },
@@ -125,7 +118,7 @@ export async function savePlayers(
   return ids;
 }
 
-// Drops the players nothing refers to any longer, such as spellings since merged away
+// Spellings merged away leave players nothing refers to
 export async function removeUnreferencedPlayers(): Promise<number> {
   const referenced = await TournamentModel.distinct('sections.entries.playerId');
   const { deletedCount } = await PlayerModel.deleteMany({

@@ -6,21 +6,18 @@ export interface ScheduledTournament {
   date: string;
   format: TournamentFormat;
   timeControl: string;
-  // Each section's rounds
   roundCounts: number[];
 }
 
 const DAY = 24 * 60 * 60 * 1000;
 const WEEK = 7 * DAY;
 
-// A tournament played over more weeks than this beyond what its rounds need was not
-// still running the whole time, so only the weeks its rounds need count
+// Weeks a tournament may run past what its rounds need, for holidays
 const SPARE_WEEKS = 2;
 
 const toDate = (date: string): number => Date.parse(`${date}T00:00:00Z`);
 const toIso = (time: number): string => new Date(time).toISOString().slice(0, 10);
 
-// The minutes each player has for a game, from a time control such as "G40" or "G90+30"
 function baseMinutes(timeControl: string): number {
   const hours = timeControl.match(/^(\d+) hours?$/);
   if (hours) {
@@ -29,7 +26,6 @@ function baseMinutes(timeControl: string): number {
   return Number(timeControl.replace(/^G/, '').split('+')[0]);
 }
 
-// How many rounds the club fits into one evening for a time control
 function roundsPerWeek({ format, timeControl }: ScheduledTournament): number {
   if (format === 'round-robin' || format === 'match') {
     return 1;
@@ -37,8 +33,7 @@ function roundsPerWeek({ format, timeControl }: ScheduledTournament): number {
   return baseMinutes(timeControl) >= 40 ? 2 : 3;
 }
 
-// The round count most sections play, since a section on its own schedule says nothing
-// about the club's evenings
+// The mode, since a section on its own schedule says nothing about the evenings
 function typicalRounds(roundCounts: number[]): number {
   const counts = new Map<number, number>();
   for (const rounds of roundCounts) {
@@ -47,7 +42,7 @@ function typicalRounds(roundCounts: number[]): number {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
 }
 
-// Blitz nights and simuls are over in an evening; anything slower runs for weeks
+// Blitz nights and simuls take one evening
 function weeksNeeded(tournament: ScheduledTournament): number {
   if (tournament.format === 'tandem-simul' || baseMinutes(tournament.timeControl) < 25) {
     return 1;
@@ -56,13 +51,9 @@ function weeksNeeded(tournament: ScheduledTournament): number {
 }
 
 /**
- * The last day of each tournament, worked out from the club's calendar: a tournament
- * that runs for weeks keeps its weekday until the next tournament starts, so the free
- * weekdays before that start are its evenings, with a week or two spare for holidays.
- * Where the next tournament started before the rounds could have been played, the
- * evenings that no other tournament took continue past it. Tournaments starting the
- * same day, such as a championship and its finals, run together. A tournament over in
- * an evening has no end date.
+ * A tournament keeps its weekday until the next tournament starts, so the free weekdays
+ * before then are its evenings, with a couple spare for holidays. If the next started
+ * before its rounds could finish, the evenings no other tournament took carry on past it.
  */
 export function inferEndDates(
   tournaments: ScheduledTournament[],

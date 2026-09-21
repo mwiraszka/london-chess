@@ -21,10 +21,8 @@ import {
 } from './shared/players';
 import { longest, writeSizing } from './shared/sizing';
 
-// Loads the club's game archive into the games collection, and its players into the
-// players collection by name, linking them to members by name. Dry run by default;
-// --apply writes, and only into an empty games collection unless --replace drops the
-// games first. Players are kept, so the tournaments that refer to them stay linked.
+// Dry run by default; --apply writes into an empty games collection, or --replace
+// empties it first. Players are kept, so tournaments stay linked to them.
 //
 //   npx tsx --env-file=.env scripts/import-games.ts <archive.pgn> [--apply] [--replace] [--dev]
 
@@ -211,9 +209,6 @@ function writeArchiveSizing(games: ResolvedGame[], players: PendingPlayer[]): st
   };
   return writeSizing({
     file: 'game-archive-sizing.ts',
-    script: 'import-games.ts',
-    purpose:
-      'the game archives table shows, so its columns are sized before any game is fetched',
     name: 'ARCHIVE_SIZING',
     type: 'ArchiveSizing',
     value: sizing,

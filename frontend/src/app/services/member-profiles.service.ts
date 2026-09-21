@@ -42,8 +42,7 @@ export class MemberProfilesService {
     return this.profileFor(number)?.avatarUrl ?? undefined;
   }
 
-  // A member's current name, in the order the stored name is given in, or the name
-  // stored with a record when they have no profile
+  // The member's current name in the given order, or the stored name without a profile
   nameFor(
     number: number | null,
     storedName: string,

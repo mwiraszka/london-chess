@@ -4,14 +4,12 @@
   display: block;
 }
 
-// Capped at the card so a wider table scrolls sideways within itself rather than
-// being clipped by it
 .results {
   max-width: 100%;
   @include data-table-colors;
 }
 
-// A loading cell's placeholder fills the cell, and as a block sits centred in it
+// As a block the placeholder sits centred in its cell
 .results lcc-text-skeleton {
   display: block;
 }

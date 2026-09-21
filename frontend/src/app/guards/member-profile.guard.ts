@@ -6,7 +6,7 @@ import { isRecordNumber } from '@app/utils';
 
 import { recordGuard } from './record.guard';
 
-// A member is fetched again as they show, so a rating update reaches every visitor
+// Refetched so a rating update reaches every visitor
 export function memberProfileGuard(param: string): CanActivateFn {
   return recordGuard<Member>({
     param,

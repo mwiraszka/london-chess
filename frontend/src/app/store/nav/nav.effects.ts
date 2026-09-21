@@ -170,7 +170,7 @@ export class NavEffects {
             if (controlMode === 'add' && !isDefined(id)) {
               return ArticlesActions.createAnArticleSelected();
             } else if (controlMode === 'view' && isCollectionId(id)) {
-              // The route's guard loads the article before the page shows
+              // The route's guard fetches the article
               return null;
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return ArticlesActions.fetchArticleRequested({ articleId: id });

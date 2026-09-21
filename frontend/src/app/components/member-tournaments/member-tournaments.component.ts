@@ -37,7 +37,7 @@ import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import { formatDateRange, formatScore, shortenSubtitle } from '@app/utils';
 
-// A row stands in for a result that is still loading when it has none
+// A row with no result stands in while results load
 export interface ResultRow {
   id: string;
   result: MemberTournamentResult | null;
@@ -69,7 +69,6 @@ function cycle<T>(items: T[], index: number, fallback: T): T {
   return items.length ? items[index % items.length] : fallback;
 }
 
-// Rows holding the widest content each column shows for any member
 const SIZING_ROWS: ResultRow[] = (() => {
   const {
     tournaments,
@@ -105,7 +104,6 @@ const LOADING_ROWS: ResultRow[] = Array.from(
 
 type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
 
-// Every tournament a member has played in, newest first, each linked to its crosstable
 @Component({
   selector: 'lcc-member-tournaments',
   templateUrl: './member-tournaments.component.html',
@@ -159,7 +157,7 @@ export class MemberTournamentsComponent {
 
   protected readonly pageSize = signal(MEMBER_TOURNAMENTS_PAGE_SIZES[0]);
 
-  // Another member's results start again from the first page
+  // A new member starts at the first page
   protected readonly page = linkedSignal<number, number>({
     source: () => this.memberNumber(),
     computation: () => 1,
@@ -189,12 +187,11 @@ export class MemberTournamentsComponent {
     ];
   });
 
-  // Rows are real links to their tournaments, so the browser shows and can open them
   protected readonly rowHref = ({ result }: ResultRow): string | null =>
     result ? `/tournaments/${result.tournament.number}` : null;
 
   constructor() {
-    // Kept for the rest of the visit once fetched, as tournaments only arrive by import
+    // Fetched once a visit, as tournaments only change by import
     this.memberNumber$
       .pipe(
         switchMap(memberNumber =>

@@ -79,7 +79,6 @@ $breakpoints: (
   font-size: $size;
 }
 
-/// Colors an eagami data table like the app's other tables
 @mixin data-table-colors {
   --ea-data-table-background-color: var(--lcc-color--table-rowBackgroundOdd);
   --ea-data-table-row-stripe-background-color: var(--lcc-color--table-rowBackgroundEven);

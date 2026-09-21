@@ -17,7 +17,6 @@ export interface TournamentsState extends EntityState<Tournament> {
   failedLoads: TournamentsLoad[];
   summaries: TournamentSummary[];
   lastSummariesFetch: IsoDate | null;
-  // Each member's results, by member number
   memberResults: Record<number, MemberTournamentResult[]>;
 }
 

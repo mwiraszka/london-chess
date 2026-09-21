@@ -6,7 +6,7 @@ import { isCollectionId } from '@app/utils';
 
 import { recordGuard } from './record.guard';
 
-// An article is fetched again as it shows, so an edit made elsewhere reaches every reader
+// Refetched so an edit made elsewhere reaches every reader
 export function articleGuard(param: string): CanActivateFn {
   return recordGuard<Article>({
     param,

@@ -16,7 +16,6 @@ export type ArchiveGame = Pick<
   '_id' | 'section' | 'round' | 'date' | 'whitePlayerId' | 'blackPlayerId' | 'result'
 >;
 
-// Every tournament's details and headcounts, without its entries, newest first
 export const TOURNAMENT_SUMMARY_PIPELINE: PipelineStage[] = [
   {
     $project: {
@@ -50,7 +49,7 @@ export const TOURNAMENT_SUMMARY_PIPELINE: PipelineStage[] = [
   { $sort: { date: -1, number: -1 } },
 ];
 
-// A game's round may also name its board, as in "3.2"
+// A round may also carry a board number
 function roundNumber(round: string): number | null {
   const match = round.match(/^\d+/);
   return match ? Number(match[0]) : null;
@@ -60,10 +59,7 @@ const pairKey = (a: Id, b: Id): string => [a, b].sort().join('|');
 
 export const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
 
-/**
- * Finds the archive game behind each result, keyed by the entry's rank and the round.
- * A pairing met only once needs nothing more; one met more often needs the round.
- */
+// A pairing met more than once is told apart by round
 export function matchRoundGames(
   entries: TournamentEntry[],
   games: ArchiveGame[],
@@ -168,7 +164,6 @@ export async function toTournamentResponse(
   };
 }
 
-// Every entry the given players made, newest tournament first
 export function toMemberTournamentResults(
   records: TournamentRecord[],
   playerIds: Set<Id>,

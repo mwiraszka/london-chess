@@ -30,7 +30,6 @@ describe('TournamentsEffects', () => {
   const mockParseError = vi.fn();
   const mockError: LccError = { name: 'LCCError', message: 'Test error' };
 
-  // The effect reads only the navigation event's URL
   const navigatedTo = (url: string): Action & { payload: { event: NavigationEnd } } => ({
     type: routerNavigatedAction.type,
     payload: { event: new NavigationEnd(1, url, url) },

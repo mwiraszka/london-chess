@@ -61,7 +61,7 @@ export class MemberLinkComponent implements OnInit {
   public readonly showAvatar = input(false);
   // Running prose shows the name as a link; everywhere else it reads as plain text
   public readonly appearance = input<'plain' | 'link'>('plain');
-  // The order the given name is in, which a member's current name then follows
+  // The order the given name is in, followed by the member's current name
   public readonly nameOrder = input<NameOrder>('first-last');
 
   private readonly memberProfiles = inject(MemberProfilesService);

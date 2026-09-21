@@ -21,13 +21,7 @@ const BYE_CELL = /^([BHU])(?:---|—)(?: \(-\))?$/;
 const sum = (values: number[]): number =>
   values.reduce((total, value) => total + value, 0);
 
-/**
- * Reads one crosstable cell as the club's pairing software exports it: "W12 (b)" is a
- * win with black against the player ranked 12th, "WL3" two games against one opponent,
- * "D0" a draw against an opponent nobody recorded, "L4 (-)" a forfeit, and "B---",
- * "H---" and "U---" a full-point bye, a half-point bye and a round not played. A round
- * is worth `roundValue` points. Returns null for a cell in any other form.
- */
+// In the pairing software's notation, opponent "0" means not recorded and "(-)" a forfeit
 export function parseRoundCell(
   cell: string,
   round: number,
@@ -74,13 +68,8 @@ function byePoints(outcome: RoundOutcome, roundValue: number): number {
   }
 }
 
-/**
- * Brings a player's byes in line with their score where the two disagree. Byes in
- * rounds of two games were sometimes written as full-point byes while scoring a single
- * point, which only the score gives away, so the byes share whatever the score leaves
- * over the games. Standings recorded without their rounds have nothing to check.
- * Returns null when no share of the score accounts for it.
- */
+// Byes in double rounds were sometimes recorded as full-point while scoring one
+// point, which only the total reveals
 export function reconcileByes(
   rounds: RoundResult[],
   score: number | null,
@@ -121,10 +110,6 @@ interface RatedGame {
   score: number;
 }
 
-/**
- * The rating a set of results was worth: the opponents' average rating, plus 400
- * points per game for every win beyond the losses.
- */
 export function performanceRating(games: RatedGame[]): number | null {
   if (!games.length) {
     return null;
@@ -136,11 +121,7 @@ export function performanceRating(games: RatedGame[]): number | null {
   return Math.round(averageRating + (400 * margin) / games.length);
 }
 
-/**
- * Sets each entry's performance rating from its games against rated opponents. Round
- * robins recorded only as standings are worked out from the score instead, since
- * every entry played every other, but only when all of them were rated and finished.
- */
+// Standings-only round robins are rated from the score, as every entry played every other
 export function withPerformanceRatings<
   T extends Pick<
     TournamentEntry,
@@ -171,7 +152,7 @@ export function withPerformanceRatings<
       return { ...entry, performanceRating: null };
     }
 
-    // Wins beyond losses follow from the score once every game is known to be played
+    // With every game played, wins minus losses is twice the score less the games
     const gameCount = opponents.length * gamesPerPairing;
     const averageRating =
       sum(opponents.map(({ rating }) => rating ?? 0)) / opponents.length;
