@@ -101,8 +101,7 @@ export type MemberTournamentResult = Pick<
 export interface Trophy {
   file: string;
   label: string;
-  // Small trophies stand lower in the row
-  size: 'regular' | 'small';
+  shape: 'cup' | 'bowl' | 'chalice';
 }
 
 // The widest values the tables show, for sizing columns before anything loads

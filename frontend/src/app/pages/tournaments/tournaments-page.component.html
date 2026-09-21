@@ -45,8 +45,7 @@
     <div class="trophies">
       @for (trophy of trophies; track $index) {
         <img
-          class="trophy"
-          [class.trophy--small]="trophy.size === 'small'"
+          [class]="'trophy trophy--' + trophy.shape"
           [src]="'assets/' + trophy.file"
           [alt]="trophy.label" />
       }

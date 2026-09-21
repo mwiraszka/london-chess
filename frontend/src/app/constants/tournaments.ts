@@ -1,15 +1,15 @@
 import { TournamentFormat, Trophy } from '@app/models';
 
-const CUP: Trophy = { file: 'trophy-cup.svg', label: 'Gold cup trophy', size: 'regular' };
+const CUP: Trophy = { file: 'trophy-cup.svg', label: 'Gold cup trophy', shape: 'cup' };
 const BOWL: Trophy = {
   file: 'trophy-bowl.svg',
   label: 'Gold bowl trophy with blue and red tassels',
-  size: 'regular',
+  shape: 'bowl',
 };
 const CHALICE: Trophy = {
   file: 'trophy-chalice.svg',
   label: 'Gold chalice trophy',
-  size: 'small',
+  shape: 'chalice',
 };
 
 // In the order they stand in a row

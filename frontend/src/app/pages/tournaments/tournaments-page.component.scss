@@ -1,13 +1,16 @@
-@use 'sass:map';
 @use 'sass:math';
 @use '../../../styles/abstracts/mixins' as *;
 
-// The trophies stand at this height with this much between them from the lg viewport
-// up, and shrink with the viewport below it, so the row never wraps
+// The trophies at full size, which they shrink from together once the card is narrower
 $trophy-height: 140px;
-$small-trophy-height: $trophy-height * 0.8;
 $trophy-gap: 8px;
-$viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
+$cup-width: $trophy-height * math.div(220, 300);
+$bowl-width: $trophy-height;
+$chalice-width: $trophy-height * 0.8 * math.div(160, 300);
+$trophies-width: 4 * $chalice-width + $bowl-width + $cup-width + 5 * $trophy-gap;
+
+// The photo and text sit side by side from here up
+$side-by-side-from: 800px;
 
 :host {
   display: flex;
@@ -21,7 +24,7 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
 }
 
 .intro__layout {
@@ -30,15 +33,14 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   gap: 16px;
   width: 100%;
 
-  @include respond-to('gt-lg') {
+  @media (min-width: $side-by-side-from) {
     flex-direction: row;
     align-items: stretch;
     gap: 32px;
   }
 }
 
-// Stacked, the photo keeps a banner's height; beside the text it shares the row and
-// stretches to the text's height, cropping rather than distorting
+// Beside the text the photo takes the text's height, cropping rather than distorting
 .intro__image {
   object-fit: cover;
   width: 100%;
@@ -46,7 +48,7 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   max-height: 240px;
   border-radius: var(--lcc-borderRadius--large);
 
-  @include respond-to('gt-lg') {
+  @media (min-width: $side-by-side-from) {
     flex: 1 1 0;
     min-width: 0;
     min-height: 0;
@@ -63,6 +65,11 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   font-size: 16px;
   color: var(--color-text-primary);
 
+  // Two thirds of the card once there is room, the photo taking the rest
+  @include respond-to('gt-xl') {
+    flex-grow: 2;
+  }
+
   p {
     margin: 0;
   }
@@ -71,21 +78,28 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
 .trophies {
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  gap: min($trophy-gap, calc(100vw * #{math.div($trophy-gap, $viewport-lg)}));
+  gap: $trophy-gap;
   width: 100%;
+  max-width: $trophies-width;
 }
 
+// Each shrinks in proportion to its full width, so the row keeps its shape
 .trophy {
-  width: auto;
-  height: min($trophy-height, calc(100vw * #{math.div($trophy-height, $viewport-lg)}));
+  flex: 0 1 auto;
+  min-width: 0;
+  height: auto;
 }
 
-.trophy--small {
-  height: min(
-    $small-trophy-height,
-    calc(100vw * #{math.div($small-trophy-height, $viewport-lg)})
-  );
+.trophy--cup {
+  flex-basis: $cup-width;
+}
+
+.trophy--bowl {
+  flex-basis: $bowl-width;
+}
+
+.trophy--chalice {
+  flex-basis: $chalice-width;
 }
 
 .filters {
@@ -93,7 +107,6 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   align-items: end;
   gap: 12px;
   grid-template-columns: 1fr;
-  // Room above and below the filters, on top of the page gap
   margin: 24px 0;
 
   @include respond-to('gt-sm') {
@@ -105,7 +118,7 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   }
 }
 
-// Until the filters fit one row, the format and the clear button each take a row
+// Below lg the format and the clear button take a row each
 .filters__format,
 .filters__clear {
   @include respond-to('lt-lg') {
@@ -122,19 +135,16 @@ $viewport-lg: map.get(map.get($breakpoints, 'gt-lg'), min-width);
   }
 }
 
-// Capped at the page so a wider table scrolls sideways within itself rather than
-// being clipped by the page
 .tournaments {
   max-width: 100%;
   @include data-table-colors;
 }
 
-// A loading cell's placeholder fills the cell, and as a block sits centred in it
+// As a block the placeholder sits centred in its cell
 .tournaments lcc-text-skeleton {
   display: block;
 }
 
-// A long theme or list of simul givers is cut short and read in full from its tooltip
 .tournaments__name {
   overflow: hidden;
   display: block;
