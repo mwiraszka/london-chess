@@ -7,6 +7,7 @@ export {
   roundResultDescription,
   roundResultLabel,
   shortenSubtitle,
+  simulScore,
   timeControlMinutes,
 } from './chess/crosstable.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';

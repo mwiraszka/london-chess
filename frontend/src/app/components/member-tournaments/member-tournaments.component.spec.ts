@@ -137,7 +137,7 @@ describe('MemberTournamentsComponent', () => {
     });
   });
 
-  it('should show a simul board and its result in place of a place and score', () => {
+  it('should score a simul board from its note and give it no place', () => {
     store.setState(
       stateWith({
         7: [
@@ -168,8 +168,8 @@ describe('MemberTournamentsComponent', () => {
       'Tandem Simul 2024',
       'Tandem simul (unrated)',
       '3 hours',
-      'Board 4',
-      'Draw',
+      'N/A',
+      '½',
       'Unrated',
     ]);
     expect(textOf(query(bodyRows()[0], '.results__note'))).toBe('(unrated)');

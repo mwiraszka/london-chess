@@ -13,6 +13,21 @@ export function formatScore(score: number | null): string {
   return whole || !half ? `${whole}${half}` : half;
 }
 
+// A simul board's result is recorded as a note, whose first word gives the score
+export function simulScore(resultNote: string): number | null {
+  const [word] = resultNote.trim().toLowerCase().split(/[\s(]/);
+  if (['w', 'win', 'won'].includes(word)) {
+    return 1;
+  }
+  if (['d', 'draw', 'drawn'].includes(word)) {
+    return 0.5;
+  }
+  if (['l', 'loss', 'lost'].includes(word)) {
+    return 0;
+  }
+  return null;
+}
+
 // The thinking time a control gives, in minutes, taking an increment as a minute per second
 export function timeControlMinutes(timeControl: string): number {
   const hours = timeControl.match(/^(\d+) hours?$/);

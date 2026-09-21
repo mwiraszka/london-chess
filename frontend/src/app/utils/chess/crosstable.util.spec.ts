@@ -7,6 +7,7 @@ import {
   roundResultDescription,
   roundResultLabel,
   shortenSubtitle,
+  simulScore,
   timeControlMinutes,
 } from './crosstable.util';
 
@@ -33,6 +34,24 @@ describe('formatScore', () => {
 
   it('should show a dash for a score that was not recorded', () => {
     expect(formatScore(null)).toBe('–');
+  });
+});
+
+describe('simulScore', () => {
+  it('should read a win, draw or loss however it was noted', () => {
+    expect(['Win', 'won', 'W (b)'].map(simulScore)).toEqual([1, 1, 1]);
+    expect(['Draw', 'draw', 'D (b)', 'Draw by mutual agreement'].map(simulScore)).toEqual(
+      [0.5, 0.5, 0.5, 0.5],
+    );
+    expect(['Loss', 'loss', 'L (b)'].map(simulScore)).toEqual([0, 0, 0]);
+  });
+
+  it('should have no score for a game without a result', () => {
+    expect(
+      ['', 'adjourned', 'Game incomplete', 'Game incomplete, Winning on board'].map(
+        simulScore,
+      ),
+    ).toEqual([null, null, null, null]);
   });
 });
 

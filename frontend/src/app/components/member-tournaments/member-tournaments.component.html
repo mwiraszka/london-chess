@@ -75,12 +75,7 @@
 <ng-template
   #scoreCell
   let-row>
-  <span
-    class="results__score"
-    [eaTooltip]="row.scoreLabel"
-    [whenClipped]="true">
-    {{ row.scoreLabel }}
-  </span>
+  {{ row.scoreLabel }}
 </ng-template>
 
 <ng-template

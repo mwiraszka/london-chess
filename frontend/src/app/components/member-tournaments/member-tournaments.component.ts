@@ -41,6 +41,7 @@ import {
   formatDateRange,
   formatScore,
   shortenSubtitle,
+  simulScore,
   timeControlMinutes,
 } from '@app/utils';
 
@@ -57,7 +58,7 @@ export interface ResultRow {
   // Minutes, so time controls sort by length
   thinkingTime: number;
   // Rank first, then the field: a rank among more players is the better result
-  place: number;
+  place: number | null;
   placeLabel: string;
   score: number | null;
   scoreLabel: string;
@@ -71,6 +72,7 @@ const RANK_WEIGHT = 1000;
 function toResultRow(result: MemberTournamentResult, index: number): ResultRow {
   const { tournament } = result;
   const isSimul = tournament.format === 'tandem-simul';
+  const score = isSimul ? simulScore(result.resultNote) : result.score;
   return {
     id: `${index}-${tournament.number}`,
     result,
@@ -81,12 +83,10 @@ function toResultRow(result: MemberTournamentResult, index: number): ResultRow {
     format: TOURNAMENT_FORMAT_LABELS[tournament.format],
     timeControl: tournament.timeControl,
     thinkingTime: timeControlMinutes(tournament.timeControl),
-    place: result.rank * RANK_WEIGHT - result.playerCount,
-    placeLabel: isSimul
-      ? `Board ${result.rank}`
-      : `${result.rank} of ${result.playerCount}`,
-    score: result.score,
-    scoreLabel: isSimul ? result.resultNote : formatScore(result.score),
+    place: isSimul ? null : result.rank * RANK_WEIGHT - result.playerCount,
+    placeLabel: isSimul ? 'N/A' : `${result.rank} of ${result.playerCount}`,
+    score,
+    scoreLabel: formatScore(score),
     rating: result.rating,
     provisionalGames: result.provisionalGames,
   };
@@ -102,7 +102,6 @@ const SIZING_ROWS: ResultRow[] = (() => {
   const {
     results,
     timeControls,
-    resultNotes,
     maxSectionPlayers,
     maxRating,
     maxProvisionalGames,
@@ -134,7 +133,7 @@ const SIZING_ROWS: ResultRow[] = (() => {
         provisionalGames: maxProvisionalGames,
         performanceRating: null,
         score: Math.floor(maxScore) + 0.5,
-        resultNote: cycle(resultNotes, index, ''),
+        resultNote: '',
       },
       index,
     );
