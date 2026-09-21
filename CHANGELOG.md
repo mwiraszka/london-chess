@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add a Tournaments page, linked from the footer, listing every tournament run at the club since 2019 with filters by year, time control and format, and a page for each tournament with its details, round-by-round crosstables, standings and the games held in the game archives
-- List the tournaments a member has played in on their profile, each linked to its crosstable
+- List the tournaments a member has played in on their profile, with the format, time control, place, score and rating of each, sortable by any column and linked to its crosstable
 - Give the home page links icons
 
 ### Changed
@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redirect straight to the home page when a game, article or member profile does not exist, instead of showing a placeholder first
 - Use a newspaper icon for news and articles
 - Rebuild the members table on the site's shared table, with a search box and a switch for inactive members above it, columns sized to their widest content and sideways scrolling where the table does not fit
-- Underline links to member profiles and archived games in tables when hovered over
+- Underline a member's name in a table when it links to their profile and is hovered over
 
 ### Fixed
 
