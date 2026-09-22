@@ -33,6 +33,11 @@ export function parsePaginationParams(req: Request): PaginationParams {
   };
 }
 
+// A search term matches literally, never as a pattern
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function buildPaginationQuery<T = unknown>(
   params: PaginationParams,
   config?: SortingConfig,
@@ -55,7 +60,8 @@ export function buildPaginationQuery<T = unknown>(
 
   // Add global search filter
   if (search.trim() && config?.searchableFields?.length) {
-    const searchRegex = { $regex: search.trim(), $options: 'i' };
+    const searchTerm = escapeRegex(search.trim());
+    const searchRegex = { $regex: searchTerm, $options: 'i' };
     const orConditions: unknown[] = config.searchableFields.map(field => ({
       [field]: searchRegex,
     }));
@@ -69,7 +75,7 @@ export function buildPaginationQuery<T = unknown>(
         $expr: {
           $regexMatch: {
             input: { $concat: ['$firstName', ' ', '$lastName'] },
-            regex: search.trim(),
+            regex: searchTerm,
             options: 'i',
           },
         },
@@ -79,7 +85,7 @@ export function buildPaginationQuery<T = unknown>(
         $expr: {
           $regexMatch: {
             input: { $concat: ['$lastName', ', ', '$firstName'] },
-            regex: search.trim(),
+            regex: searchTerm,
             options: 'i',
           },
         },
@@ -89,7 +95,7 @@ export function buildPaginationQuery<T = unknown>(
         $expr: {
           $regexMatch: {
             input: { $concat: ['$lastName', ' ', '$firstName'] },
-            regex: search.trim(),
+            regex: searchTerm,
             options: 'i',
           },
         },

@@ -93,6 +93,19 @@ describe('buildPaginationQuery', () => {
       expect(result.filter.$or).toBeUndefined();
     });
 
+    it('should match regex characters in the search literally', () => {
+      const params: PaginationParams = { ...baseParams, search: 'a.b (c) \\' };
+
+      const result = buildPaginationQuery(params, configWithNames);
+
+      const orConditions = result.filter.$or as Record<string, unknown>[];
+      expect(orConditions).toContainEqual({
+        city: { $regex: 'a\\.b \\(c\\) \\\\', $options: 'i' },
+      });
+      const expr = orConditions[3]['$expr'] as { $regexMatch: { regex: string } };
+      expect(expr.$regexMatch.regex).toBe('a\\.b \\(c\\) \\\\');
+    });
+
     it('should handle whitespace-only search string', () => {
       const params: PaginationParams = { ...baseParams, search: '   ' };
 
