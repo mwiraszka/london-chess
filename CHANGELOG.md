@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.2.1] - 2026-09-22
+
+### Added
+
+- Offer an "All" page size on every paginator, which shows every item on a single page
+
+### Changed
+
+- Count the news page's page size in articles rather than rows
+- Give the icon beside a link's text a little more room, and sit it level with the text
+
+### Fixed
+
+- Bring the schedule's today row fully into view below the table's header, with the today line above it, when the Today button is pressed
+- Show only the arrow while pulling to refresh, and nothing once it is released
+- Keep a table's rows plain on hover when they neither link anywhere nor do anything when clicked, including a member's row when they have no profile
+
 ## [v6.2.0] - 2026-09-22
 
 ### Added
@@ -1920,6 +1937,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.2.1]: https://github.com/mwiraszka/london-chess/compare/v6.2.0...v6.2.1
 [v6.2.0]: https://github.com/mwiraszka/london-chess/compare/v6.1.1...v6.2.0
 [v6.1.1]: https://github.com/mwiraszka/london-chess/compare/v6.1.0...v6.1.1
 [v6.1.0]: https://github.com/mwiraszka/london-chess/compare/v6.0.4...v6.1.0
