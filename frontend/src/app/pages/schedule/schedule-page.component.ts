@@ -2,6 +2,8 @@ import {
   ButtonComponent,
   CalendarDaysIconComponent,
   DownloadIconComponent,
+  EmptyStateComponent,
+  FilterXIconComponent,
   InputComponent,
   PlusCircleIconComponent,
   SearchIconComponent,
@@ -99,7 +101,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
         <lcc-load-failed
           title="Unable to load the schedule"
           (retry)="onRetry()" />
-      } @else if (vm.filteredCount || vm.status === 'loading') {
+      } @else if (vm.filteredCount || vm.status === 'loading' || vm.isFetching) {
         <lcc-events-table
           class="schedule-view"
           [class.active]="vm.scheduleView === 'list'"
@@ -120,6 +122,10 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           [isLoading]="vm.status === 'loading' || vm.isFetching"
           [options]="vm.options">
         </lcc-events-calendar-grid>
+      } @else {
+        <ea-empty-state
+          description="No events match these filters."
+          [icon]="emptyIcon" />
       }
     }
   `,
@@ -128,6 +134,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
     AdminToolbarComponent,
     ButtonComponent,
     CommonModule,
+    EmptyStateComponent,
     EventsCalendarGridComponent,
     EventsTableComponent,
     InputComponent,
@@ -141,6 +148,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
 })
 export class SchedulePageComponent implements OnInit {
   protected readonly pageIcon = CalendarDaysIconComponent;
+  protected readonly emptyIcon = FilterXIconComponent;
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 

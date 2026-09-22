@@ -5,6 +5,7 @@ import { firstValueFrom, take } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
@@ -72,6 +73,7 @@ describe('NewsPageComponent', () => {
     store.overrideSelector(ImagesSelectors.selectAllImages, mockImages);
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
     store.overrideSelector(ArticlesSelectors.selectOptions, mockOptions);
+    store.overrideSelector(ArticlesSelectors.selectIsFetchingFiltered, false);
     store.overrideSelector(ArticlesSelectors.selectFilteredArticlesStatus, 'loaded');
     store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loaded');
     store.refreshState();
@@ -100,6 +102,7 @@ describe('NewsPageComponent', () => {
         filteredCount: mockFilteredCount,
         images: mockImages,
         isAdmin: mockIsAdmin,
+        isFetching: false,
         options: mockOptions,
         status: 'loaded',
       });
@@ -190,7 +193,7 @@ describe('NewsPageComponent', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeFalsy();
+        expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-article-grid')).toBeFalsy();
       });
     });
@@ -200,10 +203,43 @@ describe('NewsPageComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should render page header, data toolbar and article grid', () => {
+      it('should render page header, search, article grid and paginator', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+        expect(query(fixture.debugElement, '.filters__search')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-article-grid')).toBeTruthy();
+        expect(query(fixture.debugElement, 'ea-paginator')).toBeTruthy();
+      });
+
+      it('should search once typing pauses', () => {
+        vi.useFakeTimers();
+
+        component['searchControl'].setValue('blitz');
+        vi.advanceTimersByTime(SEARCH_DEBOUNCE - 1);
+        const dispatchedEarly = dispatchSpy.mock.calls.length;
+        vi.advanceTimersByTime(1);
+        vi.useRealTimers();
+
+        expect(dispatchedEarly).toBe(0);
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ArticlesActions.paginationOptionsChanged({
+            options: { ...mockOptions, search: 'blitz', page: 1 },
+            fetch: true,
+          }),
+        );
+      });
+
+      it('should turn the pages', () => {
+        query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
+          page: 2,
+          pageSize: 20,
+        });
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          ArticlesActions.paginationOptionsChanged({
+            options: { ...mockOptions, page: 2, pageSize: 20 },
+            fetch: true,
+          }),
+        );
       });
 
       it('should render admin toolbar when admin', () => {
@@ -229,7 +265,7 @@ describe('NewsPageComponent', () => {
       it('should render a failure panel in place of the article grid', () => {
         expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-article-grid')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+        expect(query(fixture.debugElement, '.filters')).toBeTruthy();
       });
 
       it('should fetch everything again on retry', () => {

@@ -1,29 +1,32 @@
 @if (viewModel$ | async; as vm) {
   <lcc-admin-toolbar [adminLinks]="[addImageLink]"></lcc-admin-toolbar>
 
-  <lcc-data-toolbar
-    entity="image"
-    [filteredCount]="vm.filteredCount"
-    [options]="vm.options"
-    searchPlaceholder="Search by caption, filename or album"
-    (optionsChange)="onOptionsChange($event)"
-    (optionsChangeNoFetch)="onOptionsChange($event, false)">
-  </lcc-data-toolbar>
+  <div class="filters">
+    <ea-input
+      class="filters__search"
+      label="Search"
+      placeholder="Search by caption, file or album"
+      [formControl]="searchControl"
+      [icon]="searchIcon" />
+  </div>
 
   @if (vm.status === 'failed') {
     <lcc-load-failed
       title="Unable to load images"
       (retry)="onRetry()" />
+  } @else if (!vm.isLoading && !vm.images.length) {
+    <ea-empty-state
+      class="image-explorer__empty"
+      description="No images match your search."
+      [icon]="emptyIcon" />
   } @else {
     <div class="image-grid-wrapper">
       <div
         class="image-grid"
-        [attr.aria-busy]="vm.status === 'loading'"
-        [attr.card-count]="
-          vm.status === 'loading' ? vm.skeletonCards.length : vm.images.length
-        "
+        [attr.aria-busy]="vm.isLoading"
+        [attr.card-count]="vm.isLoading ? vm.skeletonCards.length : vm.images.length"
         cdkScrollable>
-        @if (vm.status === 'loading') {
+        @if (vm.isLoading) {
           @for (card of vm.skeletonCards; track card) {
             <div class="image-card">
               <div class="image-container">
@@ -32,14 +35,40 @@
                   width="100%"
                   height="100%" />
               </div>
-              @for (line of [0, 1, 2]; track line) {
-                <div class="skeleton-line">
-                  <ea-skeleton
-                    variant="text"
-                    width="100%"
-                    height="100%" />
-                </div>
-              }
+
+              <div class="caption">
+                <label>Caption:</label>
+                <lcc-text-skeleton width="14ch" />
+              </div>
+
+              <div class="filename">
+                <label>Filename:</label>
+                <lcc-text-skeleton width="12ch" />
+              </div>
+
+              <div class="file-size">
+                <label>File size:</label>
+                <lcc-text-skeleton width="6ch" />
+              </div>
+
+              <div class="dimensions">
+                <label>Dimensions:</label>
+                <lcc-text-skeleton width="9ch" />
+              </div>
+
+              <div class="upload-date">
+                <label>Upload date:</label>
+                <lcc-text-skeleton width="16ch" />
+              </div>
+
+              <div class="album">
+                <label>Album:</label>
+                <lcc-text-skeleton width="10ch" />
+              </div>
+
+              <div class="article-appearances">
+                <lcc-text-skeleton width="19ch" />
+              </div>
             </div>
           }
         } @else {
@@ -113,6 +142,17 @@
           }
         }
       </div>
+    </div>
+    <div class="paginator">
+      <ea-paginator
+        align="center"
+        size="sm"
+        [page]="vm.options.page"
+        [pageSize]="vm.options.pageSize"
+        [pageSizeOptions]="pageSizes"
+        [showRangeLabel]="vm.filteredCount !== null"
+        [totalItems]="vm.filteredCount ?? 0"
+        (changed)="onPageChanged($event, vm.options)" />
     </div>
   }
 }

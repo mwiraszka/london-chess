@@ -1,7 +1,6 @@
 <lcc-data-table
   class="events"
   aria-label="Events"
-  noDataText="No events match these filters."
   [columns]="columns()"
   [fullWidth]="true"
   [data]="rows()"
@@ -10,6 +9,7 @@
   [sizingRows]="sizingRows">
   @if (options(); as options) {
     <ea-paginator
+      align="center"
       size="sm"
       [page]="options.page"
       [pageSize]="options.pageSize"

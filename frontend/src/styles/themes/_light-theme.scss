@@ -99,11 +99,6 @@
 
   --lcc-color--clubLinks-boxShadow: #{clr(grayscale, white-85, 0.7)};
 
-  --lcc-color--dataToolbar-background: #{clr(primary, base)};
-  --lcc-color--dataToolbar-buttonBorder: #{clr(grayscale, gray-75)};
-  --lcc-color--dataToolbar-selectedButtonBorder: #{clr(secondary, base)};
-  --lcc-color--dataToolbar-text: #{clr(grayscale, white-90)};
-
   --lcc-color--datePicker-buttonsBackground: #{clr(primary, base)};
   --lcc-color--datePicker-buttonsBackgroundOnHover: #{clr(primary, light)};
   --lcc-color--datePicker-cellBorderOnHover: #{clr(grayscale, gray-75, 0.3)};
@@ -200,6 +195,12 @@
   --lcc-color--imageExplorer-articleAppearancesText: #{clr(primary, base)};
   --lcc-color--imageExplorer-controlsHeaderBackground: #{clr(grayscale, gray-25)};
   --lcc-color--imageExplorer-gridBackground: #{clr(grayscale, white-95)};
+  --lcc-color--imageExplorer-controlBackground: #{clr(grayscale, white-98)};
+  --lcc-color--imageExplorer-controlBackgroundOnHover: #{clr(grayscale, white-92)};
+  --lcc-color--imageExplorer-controlBorder: #{clr(grayscale, white-85)};
+  --lcc-color--imageExplorer-controlText: #{clr(grayscale, black-10)};
+  --lcc-color--imageExplorer-controlSecondaryText: #{clr(grayscale, gray-35)};
+  --lcc-color--imageExplorer-skeleton: #{clr(grayscale, white-85)};
   --lcc-color--imageExplorer-imageBackgroundOnHover: #{clr(grayscale, gray-75, 0.5)};
   --lcc-color--imageExplorer-imageBorderOnHover: #{clr(primary, base)};
   --lcc-color--imageExplorer-text: #{clr(grayscale, black-20)};

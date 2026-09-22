@@ -1,9 +1,8 @@
 @use '../abstracts/mixins' as *;
 
-// Scoped to the app's own form contexts so these legacy rules never restyle
-// the native inputs inside @eagami/ui components
-.lcc-form,
-lcc-data-toolbar {
+// Scoped to the app's own forms so these legacy rules never restyle the native
+// inputs inside @eagami/ui components
+.lcc-form {
   input[type='text'],
   input[type='password'],
   textarea {

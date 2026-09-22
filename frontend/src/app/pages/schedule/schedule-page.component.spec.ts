@@ -377,6 +377,9 @@ describe('SchedulePageComponent', () => {
 
         expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeFalsy();
+        expect(
+          query(fixture.debugElement, 'ea-empty-state').nativeElement.textContent,
+        ).toContain('No events match these filters.');
       });
 
       it('should render both schedule views as skeletons while the events load', () => {

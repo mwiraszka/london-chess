@@ -6,6 +6,8 @@ import {
   DataTableColumn,
   DataTableSortState,
   DropdownComponent,
+  EmptyStateComponent,
+  FilterXIconComponent,
   PaginatorComponent,
   PaginatorState,
   SegmentedComponent,
@@ -177,6 +179,7 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
     DataTableComponent,
     DecimalPipe,
     DropdownComponent,
+    EmptyStateComponent,
     LoadFailedComponent,
     MemberLinkComponent,
     PageHeaderComponent,
@@ -201,6 +204,7 @@ export class GameArchivesPageComponent implements OnInit {
   private readonly movesCell = viewChild<CellTemplate>('movesCell');
 
   protected readonly pageIcon = ArchiveIconComponent;
+  protected readonly emptyIcon = FilterXIconComponent;
   protected readonly pageSizes = GAMES_PAGE_SIZES;
   protected readonly figures = signal<Figure[]>(
     FIGURE_LABELS.map(label => ({ label, value: 0 })),
@@ -213,6 +217,9 @@ export class GameArchivesPageComponent implements OnInit {
   );
   protected readonly status = this.store.selectSignal(
     GamesSelectors.selectFilteredGamesStatus,
+  );
+  private readonly isFetching = this.store.selectSignal(
+    GamesSelectors.selectIsFetchingFiltered,
   );
   protected readonly players = this.store.selectSignal(GamesSelectors.selectPlayers);
   protected readonly tournaments = this.store.selectSignal(
@@ -241,9 +248,12 @@ export class GameArchivesPageComponent implements OnInit {
 
   private readonly archiveFigures$ = toObservable(this.archiveFigures);
 
+  // Placeholders replace the games during every fetch, so a change of filters shows at once
   protected readonly loading = computed(
-    () => this.status() === 'loading' && !this.games().length,
+    () => this.status() === 'loading' || this.isFetching(),
   );
+
+  protected readonly empty = computed(() => !this.loading() && !this.games().length);
 
   // The table holds the height it had while the next page loads, so the page below it
   // stays where it is

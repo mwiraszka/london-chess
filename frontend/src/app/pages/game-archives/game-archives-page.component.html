@@ -95,11 +95,14 @@
   <lcc-load-failed
     title="Unable to load games"
     (retry)="onRetry()" />
+} @else if (empty()) {
+  <ea-empty-state
+    description="No games match these filters."
+    [icon]="pageIcon" />
 } @else {
   <lcc-data-table
     class="games"
     aria-label="Games"
-    noDataText="No games match these filters."
     [clickable]="true"
     [columns]="columns()"
     [data]="rows()"
@@ -111,6 +114,7 @@
     (rowActivate)="onOpenGame($event)"
     (sorted)="onSorted($event)">
     <ea-paginator
+      align="center"
       size="sm"
       [page]="query().page"
       [pageSize]="query().pageSize"

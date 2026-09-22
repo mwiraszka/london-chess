@@ -1,8 +1,17 @@
-import { PlusCircleIconComponent, SkeletonComponent } from '@eagami/ui';
+import {
+  EmptyStateComponent,
+  FilterXIconComponent,
+  InputComponent,
+  PaginatorComponent,
+  PaginatorState,
+  PlusCircleIconComponent,
+  SearchIconComponent,
+  SkeletonComponent,
+} from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
 
 import { CdkScrollable, CdkScrollableModule } from '@angular/cdk/scrolling';
 import { CommonModule } from '@angular/common';
@@ -15,12 +24,14 @@ import {
   Output,
   inject,
 } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import { PAGE_SIZES, SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -48,13 +59,17 @@ import * as ImagesSelectors from '@app/store/images/images.selectors';
     AdminToolbarComponent,
     CdkScrollableModule,
     CommonModule,
-    DataToolbarComponent,
+    EmptyStateComponent,
     FormatBytesPipe,
     FormatDatePipe,
     HighlightPipe,
     ImageComponent,
+    InputComponent,
     LoadFailedComponent,
+    PaginatorComponent,
+    ReactiveFormsModule,
     SkeletonComponent,
+    TextSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   hostDirectives: [CdkScrollable],
@@ -67,6 +82,7 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
   public viewModel$?: Observable<{
     images: Image[];
     filteredCount: number | null;
+    isLoading: boolean;
     options: DataPaginationOptions<Image>;
     skeletonCards: number[];
     status: LoadStatus;
@@ -81,6 +97,11 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
 
   private readonly storeRequests = inject(StoreRequestService);
 
+  protected readonly searchIcon = SearchIconComponent;
+  protected readonly emptyIcon = FilterXIconComponent;
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly pageSizes = PAGE_SIZES;
+
   constructor(
     private readonly dialogService: DialogService,
     private readonly store: Store,
@@ -89,23 +110,41 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
   public ngOnInit(): void {
     this.store.dispatch(ImagesActions.fetchFilteredThumbnailsRequested());
 
+    // The box shows the search in force, wherever it was set, and sends new text on a pause
+    this.store
+      .select(ImagesSelectors.selectOptions)
+      .pipe(untilDestroyed(this))
+      .subscribe(({ search }) => {
+        if (this.searchControl.value !== search) {
+          this.searchControl.setValue(search, { emitEvent: false });
+        }
+      });
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(SEARCH_DEBOUNCE),
+        distinctUntilChanged(),
+        withLatestFrom(this.store.select(ImagesSelectors.selectOptions)),
+        untilDestroyed(this),
+      )
+      .subscribe(([search, options]) =>
+        this.onOptionsChange({ ...options, search, page: 1 }),
+      );
+
     this.viewModel$ = combineLatest([
       this.store.select(ImagesSelectors.selectFilteredImages),
       this.store.select(ImagesSelectors.selectFilteredCount),
       this.store.select(ImagesSelectors.selectOptions),
       this.store.select(ImagesSelectors.selectTotalCount),
       this.store.select(ImagesSelectors.selectFilteredThumbnailsStatus),
+      this.store.select(ImagesSelectors.selectIsFetchingFiltered),
     ]).pipe(
       untilDestroyed(this),
-      map(([images, filteredCount, options, totalCount, status]) => ({
+      map(([images, filteredCount, options, totalCount, status, isFetching]) => ({
         images,
         filteredCount,
+        isLoading: status === 'loading' || isFetching,
         options,
-        // A page size of -1 shows every image, so the skeleton stops at a screenful
-        skeletonCards: Array.from(
-          { length: options.pageSize > 0 ? options.pageSize : 20 },
-          (_, index) => index,
-        ),
+        skeletonCards: Array.from({ length: options.pageSize }, (_, index) => index),
         status,
         totalCount,
       })),
@@ -150,5 +189,12 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
 
   public onOptionsChange(options: DataPaginationOptions<Image>, fetch = true): void {
     this.store.dispatch(ImagesActions.paginationOptionsChanged({ options, fetch }));
+  }
+
+  public onPageChanged(
+    { page, pageSize }: PaginatorState,
+    options: DataPaginationOptions<Image>,
+  ): void {
+    this.onOptionsChange({ ...options, page, pageSize });
   }
 }

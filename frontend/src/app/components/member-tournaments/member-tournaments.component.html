@@ -24,6 +24,7 @@
       (sorted)="onSorted($event)">
       @if (resultCount() > pageSizes[0]) {
         <ea-paginator
+          align="center"
           size="sm"
           [page]="page()"
           [pageSize]="pageSize()"

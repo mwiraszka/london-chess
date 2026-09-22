@@ -69,6 +69,7 @@ describe('GameArchivesPageComponent', () => {
     store.overrideSelector(GamesSelectors.selectFilteredGames, MOCK_GAMES);
     store.overrideSelector(GamesSelectors.selectFilteredCount, 3);
     store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loaded');
+    store.overrideSelector(GamesSelectors.selectIsFetchingFiltered, false);
     store.overrideSelector(GamesSelectors.selectPlayers, MOCK_ARCHIVE_PLAYERS);
     store.overrideSelector(GamesSelectors.selectTournaments, MOCK_ARCHIVE_TOURNAMENTS);
     store.overrideSelector(GamesSelectors.selectSummary, MOCK_GAMES_SUMMARY);
@@ -518,15 +519,17 @@ describe('GameArchivesPageComponent', () => {
       });
     });
 
-    it('should keep the games on screen while they refresh', () => {
-      store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+    it('should show placeholders in place of the games while they refresh', () => {
+      store.overrideSelector(GamesSelectors.selectIsFetchingFiltered, true);
       store.refreshState();
       fixture.detectChanges();
 
       expect(
         queryAll(fixture.debugElement, '.ea-data-table__body .ea-data-table__row'),
       ).toHaveLength(3);
-      expect(query(fixture.debugElement, 'lcc-text-skeleton')).toBeFalsy();
+      expect(
+        query(fixture.debugElement, '.ea-data-table__body lcc-text-skeleton'),
+      ).toBeTruthy();
     });
 
     it('should say when no games match', () => {
@@ -535,9 +538,10 @@ describe('GameArchivesPageComponent', () => {
       store.refreshState();
       fixture.detectChanges();
 
-      expect(queryTextContent(fixture.debugElement, '.ea-data-table__cell--empty')).toBe(
-        'No games match these filters.',
-      );
+      expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
+      expect(
+        query(fixture.debugElement, 'ea-empty-state').nativeElement.textContent,
+      ).toContain('No games match these filters.');
     });
 
     describe('when the games fail to load', () => {

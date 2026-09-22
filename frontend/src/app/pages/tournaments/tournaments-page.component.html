@@ -86,11 +86,14 @@
   <lcc-load-failed
     title="Unable to load tournaments"
     (retry)="onRetry()" />
+} @else if (empty()) {
+  <ea-empty-state
+    description="No tournaments match these filters."
+    [icon]="emptyIcon" />
 } @else {
   <lcc-data-table
     class="tournaments"
     aria-label="Tournaments"
-    noDataText="No tournaments match these filters."
     [clickable]="true"
     [columns]="columns()"
     [data]="rows()"
@@ -101,6 +104,7 @@
     (rowActivate)="onOpenTournament($event)"
     (sorted)="onSorted($event)">
     <ea-paginator
+      align="center"
       size="sm"
       [page]="page()"
       [pageSize]="pageSize()"

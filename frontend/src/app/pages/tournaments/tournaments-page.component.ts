@@ -5,6 +5,8 @@ import {
   DataTableColumn,
   DataTableSortState,
   DropdownComponent,
+  EmptyStateComponent,
+  FilterXIconComponent,
   PaginatorComponent,
   PaginatorState,
   SelectOption,
@@ -136,6 +138,7 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
     CardComponent,
     DataTableComponent,
     DropdownComponent,
+    EmptyStateComponent,
     LoadFailedComponent,
     MemberLinkComponent,
     PageHeaderComponent,
@@ -156,6 +159,7 @@ export class TournamentsPageComponent implements OnInit {
   private readonly textCell = viewChild<CellTemplate>('textCell');
 
   protected readonly pageIcon = AwardIconComponent;
+  protected readonly emptyIcon = FilterXIconComponent;
   protected readonly pageSizes = TOURNAMENTS_PAGE_SIZES;
   protected readonly trophies = TROPHIES;
 
@@ -213,6 +217,8 @@ export class TournamentsPageComponent implements OnInit {
   protected readonly loading = computed(
     () => this.status() === 'loading' && !this.summaries().length,
   );
+
+  protected readonly empty = computed(() => !this.loading() && !this.rows().length);
 
   private readonly filteredRows = computed<TournamentRow[]>(() => {
     const { year, timeControl, format } = this.filters();
