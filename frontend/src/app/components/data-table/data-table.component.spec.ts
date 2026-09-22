@@ -25,13 +25,13 @@ interface Row {
     <lcc-data-table
       aria-label="Rows"
       noDataText="Nothing here."
-      [clickable]="true"
+      [clickable]="clickable()"
       [columns]="columns()"
       [data]="rows()"
       [loading]="loading()"
       [loadingRowCount]="4"
       [rowControls]="rowControls"
-      [rowHref]="rowHref"
+      [rowHref]="rowHref()"
       [sizingRows]="sizingRows"
       [sort]="sort()"
       (rowActivate)="activated.push($event)"
@@ -66,9 +66,10 @@ class HostComponent {
     { id: 'b', name: 'Bob', score: 1 },
   ]);
   readonly loading = signal(false);
+  readonly clickable = signal(true);
   readonly sort = signal<DataTableSortState>({ column: '', direction: null });
   readonly sizingRows: Row[] = [{ id: 'widest', name: 'Bartholomew', score: 100 }];
-  readonly rowHref = (row: Row): string => `/rows/${row.id}`;
+  readonly rowHref = signal<((row: Row) => string) | undefined>(row => `/rows/${row.id}`);
   readonly rowControls = (row: Row): AdminControlsConfig => ({
     buttonSize: 31,
     deleteCb: () => undefined,
@@ -131,6 +132,27 @@ describe('DataTableComponent', () => {
     expect(table.componentInstance.striped()).toBe(true);
     expect(table.componentInstance.density()).toBe('compact');
     expect(table.componentInstance.ariaLabel()).toBe('Rows');
+  });
+
+  it('should highlight rows on hover only while they link or act', () => {
+    const table = query(fixture.debugElement, 'ea-data-table');
+
+    expect(table.componentInstance.hoverable()).toBe(true);
+
+    host.clickable.set(false);
+    host.rowHref.set(undefined);
+    fixture.detectChanges();
+
+    expect(table.componentInstance.hoverable()).toBe(false);
+  });
+
+  it('should not highlight placeholder rows on hover', () => {
+    const table = query(fixture.debugElement, 'ea-data-table');
+
+    host.loading.set(true);
+    fixture.detectChanges();
+
+    expect(table.componentInstance.hoverable()).toBe(false);
   });
 
   it('should sit at its content width unless asked to fill its container', () => {

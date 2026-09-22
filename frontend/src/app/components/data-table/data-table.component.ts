@@ -86,7 +86,6 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly sort = input<DataTableSortState>(NO_SORT);
   public readonly rowHref = input<(row: T) => string | null>();
   public readonly clickable = input(false);
-  public readonly hoverable = input(true);
   // Fills its container rather than sitting centred at its content's width
   public readonly fullWidth = input(false);
   // Keeps the header in view for as long as any row is
@@ -130,6 +129,11 @@ export class DataTableComponent<T extends { id: string }> {
 
   protected readonly rowHrefWhenLoaded = computed(() =>
     this.loading() ? undefined : this.rowHref(),
+  );
+
+  // Rows are highlighted on hover only while they lead somewhere or act on a click
+  protected readonly hoverable = computed(
+    () => (this.clickable() && !this.loading()) || !!this.rowHrefWhenLoaded(),
   );
 
   // The sizing rows keep their content while loading, so the columns keep their widths
