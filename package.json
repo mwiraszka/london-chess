@@ -1,6 +1,6 @@
 {
   "name": "london-chess",
-  "version": "6.0.0",
+  "version": "6.2.1",
   "description": "London Chess Club monorepo: Angular frontend + Node/Express backend",
   "author": "Michal Wiraszka",
   "license": "MIT",
