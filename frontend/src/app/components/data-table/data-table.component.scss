@@ -27,9 +27,46 @@ ea-data-table {
   position: relative;
 }
 
-// A row scrolled to the top of the page stops below the header moved over it
-:host ::ng-deep .ea-data-table__body .ea-data-table__row {
+// The table names the timeline from its place in the page, so the header keeps
+// following it wherever the content above the table grows or shrinks
+:host(.data-table--sticky-head) {
+  view-timeline-name: --lcc-data-table;
+}
+
+// A row scrolled to the top of the page stops below the header riding over it
+:host(.data-table--sticky-head) ::ng-deep .ea-data-table__body .ea-data-table__row {
   scroll-margin-top: var(--lcc-data-table-head-height, 0px);
+}
+
+// The header travels down its table at the rate the page scrolls, over exactly the
+// distance it has before it would cover the last row, and holds there. The range is
+// measured from the table crossing the top of the page rather than leaving it, since
+// a table taller than the page only counts as leaving once its end is in view, which
+// would set the header off late by the difference. Without the timeline the animation
+// would have no duration and would land on its final frame at once, so the whole rule
+// waits on support for it. It sets off a border late, where the header's own top edge
+// crosses rather than the table's, and a pixel later still, so the header comes to rest
+// tucked a pixel under the top of the page: an edge that lands on a fraction of a
+// device pixel is drawn blended with the rows beneath, which reads as a hairline gap,
+// and tucking the edge out of view keeps that pixel inside the header's own colour
+@supports (animation-timeline: view()) {
+  :host(.data-table--sticky-head) ::ng-deep .ea-data-table__head {
+    animation: lcc-data-table-head-follow linear both;
+    animation-timeline: --lcc-data-table;
+    animation-range: exit-crossing calc(var(--border-width-thin, 1px) + 1px) exit-crossing
+      calc(var(--lcc-data-table-head-travel, 0px) + var(--border-width-thin, 1px) + 1px);
+    will-change: transform;
+  }
+}
+
+@keyframes lcc-data-table-head-follow {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(var(--lcc-data-table-head-travel, 0px));
+  }
 }
 
 // Laid out as a run of text, so a placeholder row is exactly as tall as a row of text
