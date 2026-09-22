@@ -1,26 +1,34 @@
-<lcc-data-table
-  class="members"
-  aria-label="Members"
-  noDataText="No members match these filters."
-  [clickable]="!showsDetails()"
-  [columns]="columns()"
-  [data]="rows()"
-  [loading]="loading()"
-  [loadingRowCount]="options().pageSize"
-  [rowHref]="rowHref()"
-  [sizingRows]="sizingRows"
-  [sort]="sortState()"
-  (rowActivate)="onOpenProfile($event)"
-  (sorted)="onSorted($event)">
-  <ea-paginator
-    size="sm"
-    [page]="options().page"
-    [pageSize]="options().pageSize"
-    [pageSizeOptions]="pageSizes"
-    [showRangeLabel]="filteredCount() !== null"
-    [totalItems]="filteredCount() ?? 0"
-    (changed)="onPageChanged($event)" />
-</lcc-data-table>
+@if (empty()) {
+  <ea-empty-state
+    class="members__empty"
+    description="No members match these filters."
+    [icon]="emptyIcon" />
+} @else {
+  <lcc-data-table
+    class="members"
+    aria-label="Members"
+    [clickable]="!showsDetails()"
+    [columns]="columns()"
+    [rowControls]="showsDetails() ? rowControls : undefined"
+    [data]="rows()"
+    [loading]="loading()"
+    [loadingRowCount]="options().pageSize"
+    [rowHref]="rowHref()"
+    [sizingRows]="sizingRows"
+    [sort]="sortState()"
+    (rowActivate)="onOpenProfile($event)"
+    (sorted)="onSorted($event)">
+    <ea-paginator
+      align="center"
+      size="sm"
+      [page]="options().page"
+      [pageSize]="options().pageSize"
+      [pageSizeOptions]="pageSizes"
+      [showRangeLabel]="filteredCount() !== null"
+      [totalItems]="filteredCount() ?? 0"
+      (changed)="onPageChanged($event)" />
+  </lcc-data-table>
+}
 
 @if (isAdmin() && isSafeMode()) {
   <lcc-safe-mode-notice entity="members'"></lcc-safe-mode-notice>
@@ -56,14 +64,6 @@
     class="members__name"
     [class.members__name--inactive]="!row.member.isActive"
     [tooltip]="row.member.isActive ? null : 'Inactive member'">
-    @if (isCityChampion(row.member)) {
-      <a
-        class="members__champion-link"
-        routerLink="/city-champion"
-        tooltip="2025 City Champion">
-        <ea-icon-trophy class="members__champion-icon" />
-      </a>
-    }
     <ng-container
       *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.firstName }" />
   </span>
@@ -72,8 +72,21 @@
 <ng-template
   #lastNameCell
   let-row>
-  <ng-container
-    *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.lastName }" />
+  <span
+    class="members__name"
+    [class.members__name--inactive]="!row.member.isActive"
+    [tooltip]="row.member.isActive ? null : 'Inactive member'">
+    <ng-container
+      *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.lastName }" />
+    @if (isCityChampion(row.member)) {
+      <a
+        class="members__champion-link"
+        routerLink="/city-champion"
+        tooltip="2025 City Champion">
+        <ea-icon-trophy class="members__champion-icon" />
+      </a>
+    }
+  </span>
 </ng-template>
 
 <ng-template
@@ -113,23 +126,4 @@
   #dateCell
   let-value="value">
   {{ value | formatDate: 'short no-time' }}
-</ng-template>
-
-<ng-template
-  #actionsCell
-  let-row>
-  <span class="members__actions">
-    <ea-button
-      variant="ghost"
-      size="sm"
-      ariaLabel="Edit"
-      [icon]="editIcon"
-      (clicked)="onEditMember(row)" />
-    <ea-button
-      variant="ghost"
-      size="sm"
-      ariaLabel="Delete"
-      [icon]="deleteIcon"
-      (clicked)="onDeleteMember(row)" />
-  </span>
 </ng-template>

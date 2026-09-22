@@ -9,9 +9,7 @@
 }
 
 .members__name {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  white-space: nowrap;
 }
 
 // An inactive member reads in italics with an asterisk after the name
@@ -34,22 +32,20 @@
   cursor: pointer;
 }
 
+// The trophy sits on the text's line, so the row stays as tall as any other
 .members__champion-link {
-  display: inline-flex;
+  display: inline;
+  margin: 0 4px;
 }
 
 .members__champion-icon {
   @include icon-size(16px);
 
+  vertical-align: middle;
   color: var(--lcc-color--membersTable-cityChampionIcon);
   transition: color 1s ease;
 
   .members__champion-link:hover & {
     color: var(--lcc-color--membersTable-cityChampionIconHover);
   }
-}
-
-.members__actions {
-  display: inline-flex;
-  gap: 4px;
 }

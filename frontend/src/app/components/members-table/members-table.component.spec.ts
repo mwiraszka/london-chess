@@ -7,8 +7,8 @@ import { Router, provideRouter } from '@angular/router';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { MEMBERS_PAGE_SIZES, WIDEST_MEMBER } from '@app/constants/members-table';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { DataPaginationOptions, Member } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
+import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
 import { MembersActions, initialState as membersInitialState } from '@app/store/members';
 import { CITY_CHAMPION, lastOpenedDialog, query, queryAll } from '@app/utils';
 
@@ -20,6 +20,7 @@ describe('MembersTableComponent', () => {
   let router: Router;
 
   let dialogOpenSpy: MockInstance;
+  let openSpy: Mock;
   let optionsChangeSpy: MockInstance;
   let storeRequestSpy: Mock;
 
@@ -52,6 +53,14 @@ describe('MembersTableComponent', () => {
   const cellTexts = (row: DebugElement) =>
     queryAll(row, '.ea-data-table__cell').map(textOf);
 
+  // The controls a right click on the row hands to the service
+  const controlsOf = (row: DebugElement): AdminControlsConfig => {
+    query(row, '.members__name').nativeElement.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+    );
+    return openSpy.mock.calls.at(-1)?.[0] as AdminControlsConfig;
+  };
+
   const render = (inputs: Partial<Record<string, unknown>> = {}) => {
     const values = {
       isAdmin: false,
@@ -74,6 +83,7 @@ describe('MembersTableComponent', () => {
       providers: [
         provideMockStore({ initialState: { membersState: membersInitialState } }),
         provideRouter([]),
+        { provide: AdminControlsService, useValue: { open: vi.fn() } },
         { provide: DialogService, useValue: { open: vi.fn() } },
         {
           provide: StoreRequestService,
@@ -87,6 +97,7 @@ describe('MembersTableComponent', () => {
     router = TestBed.inject(Router);
 
     dialogOpenSpy = vi.spyOn(TestBed.inject(DialogService), 'open');
+    openSpy = vi.mocked(TestBed.inject(AdminControlsService).open);
     optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     TestBed.inject(MockStore);
@@ -188,7 +199,7 @@ describe('MembersTableComponent', () => {
   describe('for admins', () => {
     beforeEach(() => render({ isAdmin: true }));
 
-    it('should show every detail and the controls', () => {
+    it('should show every detail', () => {
       expect(headers()).toEqual([
         '#',
         'First name',
@@ -203,7 +214,6 @@ describe('MembersTableComponent', () => {
         'Email',
         'Phone number',
         'Date joined',
-        '',
       ]);
       expect(cellTexts(bodyRows()[0]).slice(1, 4)).toEqual(['Magnus', 'Carlsen', '2850']);
       expect(cellTexts(bodyRows()[0]).slice(9)).toEqual([
@@ -211,9 +221,7 @@ describe('MembersTableComponent', () => {
         'magnus.carlsen@example.com',
         '555-123-4567',
         'Thu, May 10, 2018',
-        '',
       ]);
-      expect(queryAll(bodyRows()[0], '.members__actions ea-button')).toHaveLength(2);
     });
 
     it('should not make the rows links, as they hold the controls', () => {
@@ -221,22 +229,27 @@ describe('MembersTableComponent', () => {
       expect(query(bodyRows()[0], 'a.members__profile-link')).toBeTruthy();
     });
 
-    it('should open the editor for a member', () => {
-      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    it('should offer the controls of a member on a right click on their row', () => {
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
 
-      queryAll(bodyRows()[0], '.members__actions ea-button')[0].triggerEventHandler(
-        'clicked',
+      query(bodyRows()[0], '.members__name').nativeElement.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          editPath: ['member', 'edit', members[0].id],
+          itemName: `${members[0].firstName} ${members[0].lastName}`,
+        }),
+        bodyRows()[0].nativeElement,
+        undefined,
+        'center',
       );
-
-      expect(navigateSpy).toHaveBeenCalledWith(['/member', 'edit', MOCK_MEMBERS[0].id]);
     });
 
     it('should delete a member from the confirmation dialog', async () => {
-      const member = MOCK_MEMBERS[0];
+      const member = members[0];
 
-      queryAll(bodyRows()[0], '.members__actions ea-button')[1].triggerEventHandler(
-        'clicked',
-      );
+      controlsOf(bodyRows()[0]).deleteCb();
       await fixture.whenStable();
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
@@ -261,9 +274,7 @@ describe('MembersTableComponent', () => {
     it('should not delete anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
 
-      queryAll(bodyRows()[0], '.members__actions ea-button')[1].triggerEventHandler(
-        'clicked',
-      );
+      controlsOf(bodyRows()[0]).deleteCb();
       await fixture.whenStable();
 
       expect(storeRequestSpy).not.toHaveBeenCalled();
@@ -345,11 +356,20 @@ describe('MembersTableComponent', () => {
       expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(7);
     });
 
-    it('should keep showing members already loaded while refreshing', () => {
+    it('should show placeholders in place of the members already loaded', () => {
       render({ isLoading: true });
 
-      expect(bodyRows()).toHaveLength(5);
-      expect(query(fixture.debugElement, 'lcc-text-skeleton')).toBeFalsy();
+      expect(bodyRows()).toHaveLength(10);
+      expect(query(fixture.debugElement, '.ea-data-table__body a')).toBeFalsy();
+    });
+
+    it('should say when no member matches, once the members have loaded', () => {
+      render({ members: [], filteredCount: 0 });
+
+      expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
+      expect(
+        query(fixture.debugElement, 'ea-empty-state').nativeElement.textContent,
+      ).toContain('No members match these filters.');
     });
   });
 });

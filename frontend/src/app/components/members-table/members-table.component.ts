@@ -1,11 +1,10 @@
 import {
-  ButtonComponent,
   DataTableColumn,
   DataTableSortState,
-  EditIconComponent,
+  EmptyStateComponent,
+  FilterXIconComponent,
   PaginatorComponent,
   PaginatorState,
-  TrashIconComponent,
   TrophyIconComponent,
 } from '@eagami/ui';
 
@@ -31,7 +30,13 @@ import {
   WIDEST_ROW_NUMBER,
 } from '@app/constants/members-table';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
-import { BasicDialogResult, DataPaginationOptions, Dialog, Member } from '@app/models';
+import {
+  AdminControlsConfig,
+  BasicDialogResult,
+  DataPaginationOptions,
+  Dialog,
+  Member,
+} from '@app/models';
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
@@ -90,8 +95,8 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
   templateUrl: './members-table.component.html',
   styleUrl: './members-table.component.scss',
   imports: [
-    ButtonComponent,
     DataTableComponent,
+    EmptyStateComponent,
     FormatDatePipe,
     HighlightPipe,
     NgTemplateOutlet,
@@ -124,10 +129,8 @@ export class MembersTableComponent {
   private readonly peakRatingCell = viewChild.required<CellTemplate>('peakRatingCell');
   private readonly highlightCell = viewChild.required<CellTemplate>('highlightCell');
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
-  private readonly actionsCell = viewChild.required<CellTemplate>('actionsCell');
 
-  protected readonly editIcon = EditIconComponent;
-  protected readonly deleteIcon = TrashIconComponent;
+  protected readonly emptyIcon = FilterXIconComponent;
   protected readonly isCityChampion = isCityChampion;
   protected readonly pageSizes = MEMBERS_PAGE_SIZES;
   protected readonly sizingRows = SIZING_ROWS;
@@ -135,7 +138,10 @@ export class MembersTableComponent {
   // Admins see every detail and the controls to change it, unless safe mode hides them
   protected readonly showsDetails = computed(() => this.isAdmin() && !this.isSafeMode());
 
-  protected readonly loading = computed(() => this.isLoading() && !this.members().length);
+  // Placeholders replace the members during every fetch, so a change of filters shows at once
+  protected readonly loading = computed(() => this.isLoading());
+
+  protected readonly empty = computed(() => !this.loading() && !this.members().length);
 
   private readonly startIndex = computed(() => {
     const { page, pageSize } = this.options();
@@ -216,12 +222,6 @@ export class MembersTableComponent {
             align: 'right',
             cellTemplate: this.dateCell(),
           },
-          {
-            key: 'actions',
-            label: '',
-            align: 'center',
-            cellTemplate: this.actionsCell(),
-          },
         ]
       : [];
     return [number, ...names, ...ratings, ...details];
@@ -231,6 +231,14 @@ export class MembersTableComponent {
     column: this.options().sortBy,
     direction: this.options().sortOrder,
   }));
+
+  // A right click on a row offers admins its member's controls
+  protected readonly rowControls = ({ member }: MemberRow): AdminControlsConfig => ({
+    buttonSize: 31,
+    deleteCb: () => this.onDeleteMember(member),
+    editPath: ['member', 'edit', member.id],
+    itemName: `${member.firstName} ${member.lastName}`,
+  });
 
   // Rows lead to the member's profile, except for admins, whose rows hold controls
   protected readonly rowHref = computed(() =>
@@ -265,11 +273,7 @@ export class MembersTableComponent {
     }
   }
 
-  public onEditMember({ member }: MemberRow): void {
-    this.router.navigate(['/member', 'edit', member.id]);
-  }
-
-  public async onDeleteMember({ member }: MemberRow): Promise<void> {
+  public async onDeleteMember(member: Member): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
       body: `Delete ${member.firstName} ${member.lastName}?`,
