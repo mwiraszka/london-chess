@@ -13,6 +13,7 @@ export type NavPath =
   | 'members'
   | 'news'
   | 'photo-gallery'
+  | 'regional-clubs'
   | 'schedule'
   | 'tournaments'
   | 'website-changelog';

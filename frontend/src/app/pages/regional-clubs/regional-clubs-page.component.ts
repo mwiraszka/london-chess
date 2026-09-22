@@ -1,4 +1,4 @@
-import { UsersIconComponent } from '@eagami/ui';
+import { MapIconComponent } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
@@ -26,7 +26,7 @@ import { MetaAndTitleService } from '@app/services';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegionalClubsPageComponent implements OnInit {
-  protected readonly pageIcon = UsersIconComponent;
+  protected readonly pageIcon = MapIconComponent;
 
   public readonly REGIONAL_CLUBS = REGIONAL_CLUBS;
 

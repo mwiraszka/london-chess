@@ -8,18 +8,7 @@
     class="location-and-schedule"
     heading="📍 Location and schedule">
     <lcc-club-card [club]="lccClub"> </lcc-club-card>
-    <br />
-    <a
-      class="lcc-link"
-      routerLink="/schedule">
-      Scheduled events
-    </a>
-    <br />
-    <a
-      class="lcc-link"
-      routerLink="/regional-clubs">
-      More chess clubs in the region
-    </a>
+    <lcc-link-list [links]="[schedulePageLink, regionalClubsPageLink]"></lcc-link-list>
   </lcc-expansion-panel>
 
   <lcc-expansion-panel heading="👋 First visit">
