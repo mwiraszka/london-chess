@@ -266,14 +266,16 @@
   .release-link {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: 14px;
     line-height: 1;
     white-space: nowrap;
 
     .external-link-icon {
-      display: inline-flex;
       @include icon-size(13px);
+      @include link-icon-lift;
+
+      display: inline-flex;
     }
   }
 }
@@ -386,7 +388,7 @@
   .page-link__title {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: 14px;
     font-weight: 600;
 

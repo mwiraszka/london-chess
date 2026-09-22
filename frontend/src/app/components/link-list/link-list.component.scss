@@ -27,7 +27,7 @@
       a {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
         margin: 4px;
         text-align: center;
         white-space: nowrap;
@@ -37,7 +37,9 @@
 
   .link-icon,
   .external-link-icon {
-    display: inline-flex;
     @include icon-size(16px);
+    @include link-icon-lift;
+
+    display: inline-flex;
   }
 }

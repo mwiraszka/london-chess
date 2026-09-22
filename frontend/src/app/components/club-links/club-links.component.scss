@@ -30,9 +30,11 @@ a {
   display: inline-flex;
   vertical-align: middle;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 
   .image-container {
+    @include link-icon-lift;
+
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -46,6 +48,7 @@ a {
 
   ea-icon-external-link {
     @include icon-size(16px);
+    @include link-icon-lift;
   }
 }
 

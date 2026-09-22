@@ -73,9 +73,9 @@
 
         .external-link-icon {
           @include icon-size(16px);
+          @include link-icon-lift;
 
-          margin-bottom: 1px;
-          margin-left: 4px;
+          margin-left: 6px;
         }
       }
     }

@@ -35,11 +35,12 @@
 // The trophy sits on the text's line, so the row stays as tall as any other
 .members__champion-link {
   display: inline;
-  margin: 0 4px;
+  margin: 0 6px;
 }
 
 .members__champion-icon {
   @include icon-size(16px);
+  @include link-icon-lift;
 
   vertical-align: middle;
   color: var(--lcc-color--membersTable-cityChampionIcon);
