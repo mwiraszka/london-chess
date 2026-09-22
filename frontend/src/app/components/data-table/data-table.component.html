@@ -4,6 +4,7 @@
   [clickable]="clickable() && !loading()"
   [columns]="shownColumns()"
   [data]="rows()"
+  [hoverable]="hoverable()"
   [noDataText]="noDataText()"
   [nowrap]="true"
   [rowHref]="rowHrefWhenLoaded()"
@@ -24,11 +25,17 @@
     let-value="value"
     [lccDataTableCell]="column.key">
     @if (isPlaceholder(row)) {
-      <lcc-text-skeleton width="100%" />
+      @if (column.placeholderTemplate) {
+        <ng-container
+          [ngTemplateOutlet]="column.placeholderTemplate"
+          [ngTemplateOutletContext]="cellContext(row, value, column)" />
+      } @else {
+        <lcc-text-skeleton width="100%" />
+      }
     } @else if (column.cellTemplate) {
       <ng-container
         [ngTemplateOutlet]="column.cellTemplate"
-        [ngTemplateOutletContext]="{ $implicit: row, value: value }" />
+        [ngTemplateOutletContext]="cellContext(row, value, column)" />
     } @else if (column.format) {
       {{ column.format(value) }}
     } @else {

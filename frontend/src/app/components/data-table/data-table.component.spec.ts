@@ -1,4 +1,4 @@
-import { DataTableColumn, DataTableSortState, PaginatorComponent } from '@eagami/ui';
+import { DataTableSortState, PaginatorComponent } from '@eagami/ui';
 
 import { Component, TemplateRef, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -6,7 +6,11 @@ import { provideRouter } from '@angular/router';
 
 import { query, queryAll } from '@app/utils';
 
-import { DataTableComponent } from './data-table.component';
+import {
+  DataTableCellContext,
+  DataTableComponent,
+  LccDataTableColumn,
+} from './data-table.component';
 
 interface Row {
   id: string;
@@ -41,12 +45,18 @@ interface Row {
       let-row>
       <b class="name">{{ row.name }}</b>
     </ng-template>
+
+    <ng-template #namePlaceholder>
+      <i class="name-placeholder"></i>
+    </ng-template>
   `,
   imports: [DataTableComponent, PaginatorComponent],
 })
 class HostComponent {
   readonly nameCell =
     viewChild.required<TemplateRef<{ $implicit: Row; value: unknown }>>('nameCell');
+  readonly namePlaceholder =
+    viewChild.required<TemplateRef<DataTableCellContext<Row>>>('namePlaceholder');
 
   readonly rows = signal<Row[]>([
     { id: 'a', name: 'Ann', score: 3 },
@@ -60,8 +70,14 @@ class HostComponent {
   readonly sorts: DataTableSortState[] = [];
 
   readonly columns = () => {
-    const columns: DataTableColumn<Row>[] = [
-      { key: 'name', label: 'Name', sortable: true, cellTemplate: this.nameCell() },
+    const columns: LccDataTableColumn<Row>[] = [
+      {
+        key: 'name',
+        label: 'Name',
+        sortable: true,
+        cellTemplate: this.nameCell(),
+        placeholderTemplate: this.namePlaceholder(),
+      },
       { key: 'score', label: 'Score', align: 'right', format: score => `${score} pts` },
     ];
     return columns;
@@ -104,6 +120,12 @@ describe('DataTableComponent', () => {
     expect(table.componentInstance.ariaLabel()).toBe('Rows');
   });
 
+  it('should sit at its content width unless asked to fill its container', () => {
+    expect(
+      query(fixture.debugElement, 'lcc-data-table').classes['data-table--full-width'],
+    ).toBeFalsy();
+  });
+
   it('should link each row and pass on its activation', () => {
     expect(query(bodyRows()[1], 'a.ea-data-table__row-link').attributes['href']).toBe(
       '/rows/b',
@@ -135,7 +157,8 @@ describe('DataTableComponent', () => {
 
     it('should hold placeholder rows shaped like the widest content', () => {
       expect(bodyRows()).toHaveLength(4);
-      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(2);
+      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(1);
+      expect(query(bodyRows()[0], '.name-placeholder')).toBeTruthy();
       expect(query(bodyRows()[0], '.name')).toBeFalsy();
     });
 

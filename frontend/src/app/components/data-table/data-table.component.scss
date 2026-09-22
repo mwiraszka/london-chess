@@ -13,6 +13,14 @@ ea-data-table {
   @include data-table-colors;
 }
 
+:host.data-table--full-width {
+  width: 100%;
+
+  ea-data-table {
+    width: 100%;
+  }
+}
+
 // As a block the placeholder sits centred in its cell
 lcc-text-skeleton {
   display: block;

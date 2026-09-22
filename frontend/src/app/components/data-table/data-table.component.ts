@@ -21,7 +21,19 @@ import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skelet
 
 export const NO_SORT: DataTableSortState = { column: '', direction: null };
 
-type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
+// What a cell template is given: its row and value, and the column it renders
+export interface DataTableCellContext<T> {
+  $implicit: T;
+  value: unknown;
+  column: DataTableColumn<T>;
+}
+
+type CellTemplate<T> = TemplateRef<DataTableCellContext<T>>;
+
+// A column may shape its own placeholder, where a line of text would not match its content
+export interface LccDataTableColumn<T> extends DataTableColumn<T> {
+  placeholderTemplate?: CellTemplate<T>;
+}
 
 // A cell template only receives its row and value, so each column gets a template of
 // its own that knows which column it renders
@@ -47,11 +59,12 @@ export class DataTableCellDirective<T> {
     NgTemplateOutlet,
     TextSkeletonComponent,
   ],
+  host: { '[class.data-table--full-width]': 'fullWidth()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataTableComponent<T extends { id: string }> {
   public readonly ariaLabel = input.required<string>({ alias: 'aria-label' });
-  public readonly columns = input.required<DataTableColumn<T>[]>();
+  public readonly columns = input.required<LccDataTableColumn<T>[]>();
   public readonly data = input.required<T[]>();
   // Rows holding each column's widest content, which also shape the loading rows
   public readonly sizingRows = input<T[]>([]);
@@ -61,6 +74,9 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly sort = input<DataTableSortState>(NO_SORT);
   public readonly rowHref = input<(row: T) => string | null>();
   public readonly clickable = input(false);
+  public readonly hoverable = input(true);
+  // Fills its container rather than sitting centred at its content's width
+  public readonly fullWidth = input(false);
 
   public readonly sorted = output<DataTableSortState>();
   public readonly rowActivate = output<T>();
@@ -86,7 +102,7 @@ export class DataTableComponent<T extends { id: string }> {
     const cells = new Map(this.cells().map(cell => [cell.key(), cell.template]));
     return this.columns().map(column => ({
       ...column,
-      cellTemplate: cells.get(column.key) ?? column.cellTemplate,
+      cellTemplate: cells.get(column.key),
     }));
   });
 
@@ -97,5 +113,13 @@ export class DataTableComponent<T extends { id: string }> {
   // The sizing rows keep their content while loading, so the columns keep their widths
   protected isPlaceholder(row: T): boolean {
     return this.loading() && !this.sizingRows().includes(row);
+  }
+
+  protected cellContext(
+    row: T,
+    value: unknown,
+    column: DataTableColumn<T>,
+  ): DataTableCellContext<T> {
+    return { $implicit: row, value, column };
   }
 }
