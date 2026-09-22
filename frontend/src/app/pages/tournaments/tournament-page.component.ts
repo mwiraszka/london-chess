@@ -190,10 +190,21 @@ function sectionHeading(section: TournamentSection): SectionHeading | null {
   if (!section.name) {
     return null;
   }
-  const [giver] = parseSubtitlePeople(section.name)?.people ?? [];
-  return giver
-    ? { text: giver.name, extra: giver.rating === null ? '' : String(giver.rating) }
-    : { text: section.name, extra: '' };
+  const givers = parseSubtitlePeople(section.name);
+  if (!givers) {
+    return { text: section.name, extra: '' };
+  }
+  const [giver, ...others] = givers.people;
+  // A pair who gave their boards together are named side by side, ratings and all
+  if (others.length) {
+    return {
+      text: givers.people
+        .map(({ name, rating }) => (rating === null ? name : `${name} (${rating})`))
+        .join(givers.separator),
+      extra: '',
+    };
+  }
+  return { text: giver.name, extra: giver.rating === null ? '' : String(giver.rating) };
 }
 
 function sectionKind(
