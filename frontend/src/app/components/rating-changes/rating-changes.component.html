@@ -4,44 +4,21 @@
   updates.
 </p>
 
-@if (membersWithNewRatings?.length) {
-  <table class="rating-changes-table lcc-table">
-    <thead>
-      <tr>
-        <th>First Name</th>
-        <th>Last Name</th>
-        <th>Old Rating</th>
-        <th>New Rating</th>
-        <th>Old Peak Rating</th>
-        <th>New Peak Rating</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (member of membersWithNewRatings; track member) {
-        <tr>
-          <td>{{ member.firstName }}</td>
-          <td>{{ member.lastName }}</td>
-          <td>{{ member.rating }}</td>
-          <td [class.changed]="member.rating !== member.newRating">
-            {{ member.newRating }}
-          </td>
-          <td>{{ member.peakRating }}</td>
-          <td [class.changed]="member.peakRating !== member.newPeakRating">
-            {{ member.newPeakRating }}
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
+@if (rows().length) {
+  <lcc-data-table
+    class="rating-changes"
+    aria-label="Rating changes"
+    [columns]="columns()"
+    [data]="rows()" />
 } @else {
   <p>No valid rating changes found.</p>
 }
 
-@if (unmatchedMembers?.length) {
+@if (unmatchedMembers()?.length) {
   <section class="unmatched-section">
     <p>The following CSV entries could not be matched to existing members:</p>
     <ul class="unmatched-member-list">
-      @for (memberName of unmatchedMembers; track memberName) {
+      @for (memberName of unmatchedMembers(); track memberName) {
         <li>{{ memberName }}</li>
       }
     </ul>
@@ -55,6 +32,26 @@
 
 <lcc-dialog-buttons
   confirmText="Update members"
-  [confirmAction]="confirmAction"
-  [confirmDisabled]="!membersWithNewRatings?.length"
+  [confirmAction]="confirmAction()"
+  [confirmDisabled]="!rows().length"
   (result)="dialogResult.emit($event)" />
+
+<ng-template
+  #newRatingCell
+  let-row>
+  <span
+    class="rating-changes__value"
+    [class.rating-changes__value--changed]="row.newRating !== row.rating">
+    {{ row.newRating }}
+  </span>
+</ng-template>
+
+<ng-template
+  #newPeakRatingCell
+  let-row>
+  <span
+    class="rating-changes__value"
+    [class.rating-changes__value--changed]="row.newPeakRating !== row.peakRating">
+    {{ row.newPeakRating }}
+  </span>
+</ng-template>

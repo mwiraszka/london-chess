@@ -99,39 +99,6 @@ section {
         margin: 4px 0 8px;
         border-bottom: 1px solid var(--lcc-color--general-dividerLine);
       }
-
-      table {
-        width: 100%;
-
-        tbody tr .winner-cell {
-          width: 100%;
-        }
-
-        tfoot tr td {
-          text-align: center;
-
-          &.clickable {
-            color: var(--lcc-color--championPage-linkText);
-            cursor: pointer;
-          }
-        }
-
-        .championship-icon {
-          @include icon-size(16px);
-
-          margin-right: 4px;
-          color: var(--lcc-color--championPage-championshipIcon);
-        }
-      }
-    }
-
-    .winner-peak-rating {
-      position: relative;
-      top: 2px;
-      vertical-align: text-bottom;
-      margin-left: 4px;
-      font-size: 80%;
-      color: var(--lcc-color--championPage-secondaryText);
     }
   }
 }

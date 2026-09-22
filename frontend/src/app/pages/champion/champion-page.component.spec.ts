@@ -120,12 +120,5 @@ describe('ChampionPageComponent', () => {
       expect(component.juniorChampionships.length).toBeGreaterThan(0);
       expect(component.speedChampionships.length).toBeGreaterThan(0);
     });
-
-    it('should initialize "see full table" flags to false', () => {
-      expect(component.seeFullActiveTable).toBe(false);
-      expect(component.seeFullJuniorTable).toBe(false);
-      expect(component.seeFullSpeedTable).toBe(false);
-      expect(component.seeFullStandardTable).toBe(false);
-    });
   });
 });

@@ -1,5 +1,11 @@
-import { DownloadIconComponent, FileTextIconComponent } from '@eagami/ui';
+import {
+  DataTableColumn,
+  DataTableSortState,
+  DownloadIconComponent,
+  FileTextIconComponent,
+} from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { Store } from '@ngrx/store';
 import moment from 'moment-timezone';
 
 import {
@@ -8,15 +14,36 @@ import {
   DOCUMENT,
   Inject,
   OnInit,
+  TemplateRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Router, RouterLink } from '@angular/router';
 
+import {
+  DataTableComponent,
+  NO_SORT,
+} from '@app/components/data-table/data-table.component';
 import { DocumentViewerComponent } from '@app/components/document-viewer/document-viewer.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { ClubDocument } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 import { DialogService, MetaAndTitleService, RoutingService } from '@app/services';
+import { AppSelectors } from '@app/store/app';
+
+export interface DocumentRow {
+  id: string;
+  document: ClubDocument;
+  title: string;
+  published: string;
+  lastModified: string;
+}
+
+type CellTemplate = TemplateRef<{ $implicit: DocumentRow; value: unknown }>;
 
 @UntilDestroy()
 @Component({
@@ -24,6 +51,7 @@ import { DialogService, MetaAndTitleService, RoutingService } from '@app/service
   templateUrl: './documents-page.component.html',
   styleUrl: './documents-page.component.scss',
   imports: [
+    DataTableComponent,
     DownloadIconComponent,
     FileTextIconComponent,
     FormatDatePipe,
@@ -76,6 +104,52 @@ export class DocumentsPageComponent implements OnInit {
   ];
   public currentPath!: string;
 
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
+
+  // In the wide view the table spans the page, the document taking the surplus
+  protected readonly isWideView = toSignal(
+    this.store.select(AppSelectors.selectIsWideView),
+    { initialValue: false },
+  );
+
+  private readonly documentCell = viewChild.required<CellTemplate>('documentCell');
+  private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
+
+  protected readonly sort = signal<DataTableSortState>(NO_SORT);
+
+  protected readonly rows: DocumentRow[] = this.documents.map(document => ({
+    id: document.fileName,
+    document,
+    title: document.title,
+    published: document.datePublished,
+    lastModified: document.dateLastModified,
+  }));
+
+  protected readonly columns = computed<DataTableColumn<DocumentRow>[]>(() => [
+    {
+      key: 'title',
+      label: 'Document',
+      sortable: true,
+      width: this.isWideView() ? '100%' : undefined,
+      cellTemplate: this.documentCell(),
+    },
+    {
+      key: 'published',
+      label: 'Published',
+      sortable: true,
+      align: 'right',
+      cellTemplate: this.dateCell(),
+    },
+    {
+      key: 'lastModified',
+      label: 'Last modified',
+      sortable: true,
+      align: 'right',
+      cellTemplate: this.dateCell(),
+    },
+  ]);
+
   constructor(
     private readonly dialogService: DialogService,
     @Inject(DOCUMENT) private _document: Document,
@@ -83,6 +157,18 @@ export class DocumentsPageComponent implements OnInit {
     private readonly routingService: RoutingService,
   ) {
     this.currentPath = this._document.location.pathname;
+  }
+
+  // A row leads where its title does: the document, named in the fragment
+  protected readonly rowHref = ({ document }: DocumentRow): string =>
+    `${this.currentPath}#${document.fileName}`;
+
+  public onSorted(sort: DataTableSortState): void {
+    this.sort.set(sort);
+  }
+
+  public onOpenDocument({ document }: DocumentRow): void {
+    this.router.navigate([this.currentPath], { fragment: document.fileName });
   }
 
   public ngOnInit(): void {
