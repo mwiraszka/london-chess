@@ -17,6 +17,8 @@ export interface ImagesState extends EntityState<{
   newImagesFormData: Record<string, ImageFormData>;
   // Loads whose latest attempt failed, which are never persisted
   failedLoads: ImagesLoad[];
+  // Whether a page of filtered thumbnails is on its way, never persisted
+  isFetchingFiltered: boolean;
   // Progress of the image uploads in flight, which is never persisted
   uploadProgress: { uploaded: number; total: number } | null;
   lastMetadataFetch: IsoDate | null;
@@ -40,6 +42,7 @@ export const imagesAdapter = createEntityAdapter<{
 export const initialState: ImagesState = imagesAdapter.getInitialState({
   newImagesFormData: {},
   failedLoads: [],
+  isFetchingFiltered: false,
   uploadProgress: null,
   lastMetadataFetch: null,
   lastFilteredThumbnailsFetch: null,
@@ -86,12 +89,14 @@ export const imagesReducer = createReducer(
     withFailedLoad(state, 'metadata'),
   ),
 
-  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState =>
-    withLoadAttempt(state, 'filteredThumbnails'),
-  ),
-  on(ImagesActions.fetchFilteredThumbnailsFailed, (state): ImagesState =>
-    withFailedLoad(state, 'filteredThumbnails'),
-  ),
+  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState => ({
+    ...withLoadAttempt(state, 'filteredThumbnails'),
+    isFetchingFiltered: true,
+  })),
+  on(ImagesActions.fetchFilteredThumbnailsFailed, (state): ImagesState => ({
+    ...withFailedLoad(state, 'filteredThumbnails'),
+    isFetchingFiltered: false,
+  })),
 
   on(ImagesActions.fetchMainImageRequested, (state): ImagesState =>
     withLoadAttempt(state, 'mainImage'),
@@ -155,6 +160,7 @@ export const imagesReducer = createReducer(
         }),
         {
           ...state,
+          isFetchingFiltered: false,
           lastFilteredThumbnailsFetch: new Date(Date.now()).toISOString(),
           filteredImages: images,
           filteredCount,

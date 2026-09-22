@@ -106,6 +106,7 @@ describe('MembersPageComponent', () => {
     store.overrideSelector(MembersSelectors.selectOptions, mockOptions);
     store.overrideSelector(MembersSelectors.selectTotalCount, mockTotalCount);
     store.overrideSelector(MembersSelectors.selectFilteredMembersStatus, 'loaded');
+    store.overrideSelector(MembersSelectors.selectIsFetchingFiltered, false);
     store.overrideSelector(MembersSelectors.selectRecordsScope, 'admin');
     store.refreshState();
   });
@@ -132,6 +133,7 @@ describe('MembersPageComponent', () => {
         filteredCount: mockFilteredCount,
         filteredMembers: mockFilteredMembers,
         isAdmin: mockIsAdmin,
+        isFetching: false,
         isSafeMode: mockIsSafeMode,
         options: mockOptions,
         status: 'loaded',

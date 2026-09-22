@@ -22,6 +22,7 @@ describe('Games Reducer', () => {
       ids: [],
       entities: {},
       failedLoads: [],
+      isFetchingFiltered: false,
       lastFilteredFetch: null,
       lastReferenceFetch: null,
       filteredGames: [],
@@ -126,6 +127,22 @@ describe('Games Reducer', () => {
       expect(state.filteredCount).toBe(3);
       expect(state.lastFilteredFetch).toBeNull();
       expect(state.entities[MOCK_GAMES[0].id]).toEqual(MOCK_GAMES[0]);
+    });
+  });
+  describe('a fetch of filtered games', () => {
+    it('should be marked as under way until it succeeds or fails', () => {
+      const fetching = gamesReducer(
+        initialState,
+        GamesActions.fetchFilteredGamesRequested(),
+      );
+
+      expect(fetching.isFetchingFiltered).toBe(true);
+      expect(
+        gamesReducer(
+          fetching,
+          GamesActions.fetchFilteredGamesFailed({ error: mockError }),
+        ).isFetchingFiltered,
+      ).toBe(false);
     });
   });
 });

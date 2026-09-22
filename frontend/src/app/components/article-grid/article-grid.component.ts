@@ -66,6 +66,9 @@ export class ArticleGridComponent implements OnChanges {
 
   public visibleRows: ArticleRow[] = [];
 
+  // Whether the first load has come in, after which the cards no longer fade in
+  private settled = false;
+
   private readonly skeletonRow: ArticleRow = {
     article: {} as Article,
     bannerImage: null,
@@ -79,29 +82,31 @@ export class ArticleGridComponent implements OnChanges {
     return !!this.isLoading;
   }
 
+  public get entering(): boolean {
+    return this.showSkeleton && !this.settled;
+  }
+
   public get displayItems(): ArticleRow[] {
     if (this.showSkeleton) {
-      const count = this.isHomePage
-        ? 10
-        : this.options?.pageSize !== -1
-          ? (this.options?.pageSize ?? 100)
-          : 100;
+      const count = this.isHomePage ? 10 : (this.options?.pageSize ?? 100);
       return Array.from({ length: count }, () => this.skeletonRow);
     }
     return this.visibleRows;
   }
 
   public ngOnChanges(changes: SimpleChanges<ArticleGridComponent>): void {
+    if (changes.isLoading?.previousValue && !this.isLoading) {
+      this.settled = true;
+    }
     if (changes.articles || changes.images || changes.options) {
       this.visibleRows = this.buildVisibleRows();
     }
   }
 
   private buildVisibleRows(): ArticleRow[] {
-    const sliced =
-      !this.options || this.options.pageSize === -1
-        ? this.articles
-        : this.articles.slice(0, this.options.pageSize);
+    const sliced = this.options
+      ? this.articles.slice(0, this.options.pageSize)
+      : this.articles;
 
     const imagesById = new Map<Id, Image>();
     this.images.forEach(image => imagesById.set(image.id, image));

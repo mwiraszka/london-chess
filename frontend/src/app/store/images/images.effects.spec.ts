@@ -90,6 +90,7 @@ describe('ImagesEffects', () => {
       {},
     ),
     failedLoads: [],
+    isFetchingFiltered: false,
     uploadProgress: null,
     newImageFormData: null,
     newImagesFormData: {},

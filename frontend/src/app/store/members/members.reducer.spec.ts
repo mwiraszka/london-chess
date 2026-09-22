@@ -54,6 +54,7 @@ describe('Members Reducer', () => {
         entities: {},
         newMemberFormData: INITIAL_MEMBER_FORM_DATA,
         failedLoads: [],
+        isFetchingFiltered: false,
         recordsScope: null,
         lastFullFetch: null,
         lastFilteredFetch: null,
@@ -569,6 +570,22 @@ describe('Members Reducer', () => {
 
       expect(previousState).toEqual(originalState);
       expect(state).not.toBe(previousState);
+    });
+  });
+  describe('a fetch of filtered members', () => {
+    it('should be marked as under way until it succeeds or fails', () => {
+      const fetching = membersReducer(
+        initialState,
+        MembersActions.fetchFilteredMembersRequested(),
+      );
+
+      expect(fetching.isFetchingFiltered).toBe(true);
+      expect(
+        membersReducer(
+          fetching,
+          MembersActions.fetchFilteredMembersFailed({ error: mockError }),
+        ).isFetchingFiltered,
+      ).toBe(false);
     });
   });
 });

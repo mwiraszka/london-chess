@@ -18,6 +18,8 @@ export type GamesLoad = 'filtered' | 'game' | 'reference';
 export interface GamesState extends EntityState<Game> {
   // Loads whose latest attempt failed
   failedLoads: GamesLoad[];
+  // Whether a page of filtered games is on its way, never persisted
+  isFetchingFiltered: boolean;
   lastFilteredFetch: IsoDate | null;
   lastReferenceFetch: IsoDate | null;
   filteredGames: Game[];
@@ -32,6 +34,7 @@ export const gamesAdapter = createEntityAdapter<Game>();
 
 export const initialState: GamesState = gamesAdapter.getInitialState({
   failedLoads: [],
+  isFetchingFiltered: false,
   lastFilteredFetch: null,
   lastReferenceFetch: null,
   filteredGames: [],
@@ -53,17 +56,20 @@ function withFailedLoad(state: GamesState, load: GamesLoad): GamesState {
 export const gamesReducer = createReducer(
   initialState,
 
-  on(GamesActions.fetchFilteredGamesRequested, (state): GamesState =>
-    withLoadAttempt(state, 'filtered'),
-  ),
-  on(GamesActions.fetchFilteredGamesFailed, (state): GamesState =>
-    withFailedLoad(state, 'filtered'),
-  ),
+  on(GamesActions.fetchFilteredGamesRequested, (state): GamesState => ({
+    ...withLoadAttempt(state, 'filtered'),
+    isFetchingFiltered: true,
+  })),
+  on(GamesActions.fetchFilteredGamesFailed, (state): GamesState => ({
+    ...withFailedLoad(state, 'filtered'),
+    isFetchingFiltered: false,
+  })),
   on(
     GamesActions.fetchFilteredGamesSucceeded,
     (state, { games, filteredCount }): GamesState =>
       gamesAdapter.upsertMany(games, {
         ...state,
+        isFetchingFiltered: false,
         filteredGames: games,
         filteredCount,
         lastFilteredFetch: new Date().toISOString(),

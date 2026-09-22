@@ -64,3 +64,8 @@ export const selectGameStatus = (id: Id) =>
   createSelector(selectGameById(id), selectFailedLoads, (game, failedLoads) =>
     loadStatus(!!game, failedLoads.includes('game')),
   );
+
+export const selectIsFetchingFiltered = createSelector(
+  selectGamesState,
+  state => state.isFetchingFiltered,
+);

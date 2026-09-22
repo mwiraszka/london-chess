@@ -33,6 +33,7 @@ describe('Images Selectors', () => {
   const mockImagesState: ImagesState = {
     ...imagesAdapter.getInitialState({
       failedLoads: [],
+      isFetchingFiltered: false,
       uploadProgress: { uploaded: 1, total: 3 },
       newImagesFormData: {},
       lastMetadataFetch: '2025-01-15T10:00:00.000Z',

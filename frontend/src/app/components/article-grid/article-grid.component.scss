@@ -91,7 +91,7 @@ $grid-gap: 8px;
       box-shadow 0.3s ease,
       background-color 0.3s ease;
 
-    &.skeleton {
+    &.article--entering {
       opacity: 0;
       animation: fade-in-over 0.6s ease-out forwards;
     }

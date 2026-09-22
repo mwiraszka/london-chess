@@ -102,7 +102,7 @@ import { isLccError } from '@app/utils';
         <lcc-members-table
           [filteredCount]="vm.filteredCount"
           [isAdmin]="vm.isAdmin"
-          [isLoading]="vm.status === 'loading'"
+          [isLoading]="vm.status === 'loading' || vm.isFetching"
           [isSafeMode]="vm.isSafeMode"
           [members]="vm.filteredMembers"
           [options]="vm.options"
@@ -160,6 +160,7 @@ export class MembersPageComponent implements OnInit {
     filteredCount: number | null;
     filteredMembers: Member[];
     isAdmin: boolean;
+    isFetching: boolean;
     isSafeMode: boolean;
     options: DataPaginationOptions<Member>;
     status: LoadStatus;
@@ -205,6 +206,7 @@ export class MembersPageComponent implements OnInit {
       this.store.select(MembersSelectors.selectFilteredCount),
       this.store.select(MembersSelectors.selectFilteredMembers),
       this.store.select(AuthSelectors.selectIsAdmin),
+      this.store.select(MembersSelectors.selectIsFetchingFiltered),
       this.store.select(AppSelectors.selectIsSafeMode),
       this.store.select(MembersSelectors.selectOptions),
       this.store.select(MembersSelectors.selectTotalCount),
@@ -216,6 +218,7 @@ export class MembersPageComponent implements OnInit {
           filteredCount,
           filteredMembers,
           isAdmin,
+          isFetching,
           isSafeMode,
           options,
           totalCount,
@@ -224,6 +227,7 @@ export class MembersPageComponent implements OnInit {
           filteredCount,
           filteredMembers,
           isAdmin,
+          isFetching,
           isSafeMode,
           options,
           status,

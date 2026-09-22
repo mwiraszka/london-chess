@@ -36,6 +36,7 @@ describe('Images Reducer', () => {
         entities: {},
         newImagesFormData: {},
         failedLoads: [],
+        isFetchingFiltered: false,
         uploadProgress: null,
         filteredImages: [],
         filteredCount: null,
@@ -803,6 +804,22 @@ describe('Images Reducer', () => {
 
       expect(previousState).toEqual(originalState);
       expect(state).not.toBe(previousState);
+    });
+  });
+  describe('a fetch of filtered thumbnails', () => {
+    it('should be marked as under way until it succeeds or fails', () => {
+      const fetching = imagesReducer(
+        initialState,
+        ImagesActions.fetchFilteredThumbnailsRequested(),
+      );
+
+      expect(fetching.isFetchingFiltered).toBe(true);
+      expect(
+        imagesReducer(
+          fetching,
+          ImagesActions.fetchFilteredThumbnailsFailed({ error: mockError }),
+        ).isFetchingFiltered,
+      ).toBe(false);
     });
   });
 });

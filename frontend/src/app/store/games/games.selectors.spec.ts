@@ -13,6 +13,7 @@ describe('Games Selectors', () => {
   const loadedState: GamesState = gamesAdapter.setAll(MOCK_GAMES, {
     ...initialState,
     lastFilteredFetch: '2026-01-15T10:00:00.000Z',
+    isFetchingFiltered: false,
     lastReferenceFetch: '2026-01-15T10:00:00.000Z',
     filteredGames: MOCK_GAMES,
     filteredCount: 3,

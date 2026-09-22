@@ -41,6 +41,7 @@ describe('Members Selectors', () => {
   const mockMembersState: MembersState = {
     ...membersAdapter.getInitialState({
       failedLoads: [],
+      isFetchingFiltered: false,
       newMemberFormData: INITIAL_MEMBER_FORM_DATA,
       recordsScope: 'admin',
       lastFullFetch: '2025-01-15T10:00:00.000Z',

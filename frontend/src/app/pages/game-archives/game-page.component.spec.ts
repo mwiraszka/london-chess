@@ -47,6 +47,7 @@ describe('GamePageComponent', () => {
       filteredGames: games,
       filteredCount: games.length || null,
       lastFilteredFetch: games.length ? '2026-01-15T10:00:00.000Z' : null,
+      isFetchingFiltered: false,
       query: {
         ...INITIAL_GAMES_QUERY,
         filters: { ...INITIAL_GAMES_QUERY.filters, year: 1994 },

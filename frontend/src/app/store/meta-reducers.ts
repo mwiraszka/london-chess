@@ -48,19 +48,24 @@ const hydratedStates = [
 
 // State saved by an app version older than these no longer fits its reducer
 const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
-  articlesState: [6, 1, 0],
-  eventsState: [6, 1, 0],
+  articlesState: [6, 2, 0],
+  eventsState: [6, 2, 0],
+  imagesState: [6, 2, 0],
   membersState: [6, 2, 0],
 };
 
 // What only describes the current visit, so every visit starts from these
 const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
-  articlesState: pick(articlesInitialState, 'failedLoads'),
+  articlesState: pick(articlesInitialState, ['failedLoads', 'isFetchingFiltered']),
   eventsState: pick(eventsInitialState, ['failedLoads', 'isFetchingFiltered']),
   // Of the archives, only how they were last queried carries over to the next visit
   gamesState: omit(gamesInitialState, 'query'),
-  imagesState: pick(imagesInitialState, ['failedLoads', 'uploadProgress']),
-  membersState: pick(membersInitialState, 'failedLoads'),
+  imagesState: pick(imagesInitialState, [
+    'failedLoads',
+    'isFetchingFiltered',
+    'uploadProgress',
+  ]),
+  membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
 };
 
 function isOlderThan(version: string, minimum: number[]): boolean {

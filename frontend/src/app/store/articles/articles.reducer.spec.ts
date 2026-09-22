@@ -32,6 +32,7 @@ describe('Articles Reducer', () => {
         entities: {},
         newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
         failedLoads: [],
+        isFetchingFiltered: false,
         lastHomePageFetch: null,
         lastFilteredFetch: null,
         homePageArticles: [],
@@ -514,6 +515,22 @@ describe('Articles Reducer', () => {
 
       expect(previousState).toEqual(originalState);
       expect(state).not.toBe(previousState);
+    });
+  });
+  describe('a fetch of filtered articles', () => {
+    it('should be marked as under way until it succeeds or fails', () => {
+      const fetching = articlesReducer(
+        initialState,
+        ArticlesActions.fetchFilteredArticlesRequested(),
+      );
+
+      expect(fetching.isFetchingFiltered).toBe(true);
+      expect(
+        articlesReducer(
+          fetching,
+          ArticlesActions.fetchFilteredArticlesFailed({ error: mockError }),
+        ).isFetchingFiltered,
+      ).toBe(false);
     });
   });
 });

@@ -85,22 +85,22 @@ describe('Meta Reducers', () => {
     });
 
     it('should drop record state saved in an incompatible shape', () => {
-      const staleKeys = ['articlesState', 'eventsState', 'membersState'];
-      staleKeys.forEach(key => localStorage.setItem(`${key}_v6.0.4`, '{"entities": {}}'));
+      const staleKeys = ['articlesState', 'eventsState', 'imagesState', 'membersState'];
+      staleKeys.forEach(key => localStorage.setItem(`${key}_v6.1.1`, '{"entities": {}}'));
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
       staleKeys.forEach(key => {
-        expect(localStorage.getItem(`${key}_v6.0.4`)).toBeNull();
+        expect(localStorage.getItem(`${key}_v6.1.1`)).toBeNull();
         expect(localStorage.getItem(`${key}_v${version}`)).toBeNull();
       });
     });
 
     it('should keep event state saved in a compatible shape', () => {
       const oldEventsState = JSON.stringify({ entities: {} });
-      localStorage.setItem('eventsState_v6.1.1', oldEventsState);
+      localStorage.setItem('eventsState_v6.2.0', oldEventsState);
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
