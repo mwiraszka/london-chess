@@ -119,6 +119,7 @@
       [page]="query().page"
       [pageSize]="query().pageSize"
       [pageSizeOptions]="pageSizes"
+      [showAllOption]="true"
       [showRangeLabel]="filteredCount() !== null"
       [totalItems]="filteredCount() ?? 0"
       (changed)="onPageChanged($event)" />

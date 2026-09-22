@@ -40,7 +40,7 @@ import {
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
-import { isCityChampion } from '@app/utils';
+import { isCityChampion, pageRowCount } from '@app/utils';
 
 // The sort keys hold what the server sorts by, so a page keeps the order it came in
 export interface MemberRow {
@@ -142,6 +142,10 @@ export class MembersTableComponent {
   protected readonly loading = computed(() => this.isLoading());
 
   protected readonly empty = computed(() => !this.loading() && !this.members().length);
+
+  protected readonly loadingRowCount = computed(() =>
+    pageRowCount(this.options().pageSize, this.filteredCount() ?? MEMBERS_PAGE_SIZES[0]),
+  );
 
   private readonly startIndex = computed(() => {
     const { page, pageSize } = this.options();

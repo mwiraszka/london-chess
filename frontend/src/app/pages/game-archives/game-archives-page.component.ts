@@ -60,6 +60,7 @@ import { GamesActions, GamesSelectors } from '@app/store/games';
 import {
   formatPartialDate,
   gamesQueryParams,
+  pageRowCount,
   parseGamesQuery,
   playerName,
 } from '@app/utils';
@@ -259,7 +260,10 @@ export class GameArchivesPageComponent implements OnInit {
   // stays where it is
   protected readonly rowCount = linkedSignal<number, number>({
     source: () => this.games().length,
-    computation: (count, previous) => count || previous?.value || this.query().pageSize,
+    computation: (count, previous) =>
+      count ||
+      previous?.value ||
+      pageRowCount(this.query().pageSize, this.filteredCount() ?? GAMES_PAGE_SIZES[0]),
   });
 
   protected readonly rows = computed<GameRow[]>(() => this.games().map(toGameRow));

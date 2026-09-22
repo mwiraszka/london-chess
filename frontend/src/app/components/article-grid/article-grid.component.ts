@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageComponent } from '@app/components/image/image.component';
+import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -30,7 +31,7 @@ import {
 } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
-import { isDefined } from '@app/utils';
+import { isDefined, pageOf, pageRowCount } from '@app/utils';
 
 interface ArticleRow {
   article: Article;
@@ -60,6 +61,7 @@ export class ArticleGridComponent implements OnChanges {
   @Input({ required: true }) images!: Image[];
   @Input({ required: true }) isAdmin!: boolean;
 
+  @Input() filteredCount: number | null = null;
   @Input() isHomePage?: boolean;
   @Input() isLoading?: boolean;
   @Input() options?: DataPaginationOptions<Article>;
@@ -88,8 +90,7 @@ export class ArticleGridComponent implements OnChanges {
 
   public get displayItems(): ArticleRow[] {
     if (this.showSkeleton) {
-      const count = this.isHomePage ? 10 : (this.options?.pageSize ?? 100);
-      return Array.from({ length: count }, () => this.skeletonRow);
+      return Array.from({ length: this.skeletonCount }, () => this.skeletonRow);
     }
     return this.visibleRows;
   }
@@ -103,9 +104,20 @@ export class ArticleGridComponent implements OnChanges {
     }
   }
 
+  // As many placeholders as the page will hold, as far as is known before it loads
+  private get skeletonCount(): number {
+    if (this.isHomePage) {
+      return 10;
+    }
+    if (!this.options) {
+      return 100;
+    }
+    return pageRowCount(this.options.pageSize, this.filteredCount ?? PAGE_SIZES[0]);
+  }
+
   private buildVisibleRows(): ArticleRow[] {
     const sliced = this.options
-      ? this.articles.slice(0, this.options.pageSize)
+      ? pageOf(this.articles, 1, this.options.pageSize)
       : this.articles;
 
     const imagesById = new Map<Id, Image>();

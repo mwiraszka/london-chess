@@ -1,3 +1,5 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
+
 import { Params } from '@angular/router';
 
 import {
@@ -23,9 +25,10 @@ export function parseGamesQuery(params: Params): GamesQuery {
 
   return {
     page: Number.isInteger(page) && page > 0 ? page : INITIAL_GAMES_QUERY.page,
-    pageSize: GAMES_PAGE_SIZES.includes(pageSize)
-      ? pageSize
-      : INITIAL_GAMES_QUERY.pageSize,
+    pageSize:
+      GAMES_PAGE_SIZES.includes(pageSize) || pageSize === PAGE_SIZE_ALL
+        ? pageSize
+        : INITIAL_GAMES_QUERY.pageSize,
     sortBy: GAMES_SORT_FIELDS.includes(sortBy) ? sortBy : INITIAL_GAMES_QUERY.sortBy,
     sortOrder: single(params['order']) === 'asc' ? 'asc' : 'desc',
     filters: {

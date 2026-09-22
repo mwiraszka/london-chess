@@ -12,7 +12,7 @@
     [rowControls]="showsDetails() ? rowControls : undefined"
     [data]="rows()"
     [loading]="loading()"
-    [loadingRowCount]="options().pageSize"
+    [loadingRowCount]="loadingRowCount()"
     [rowHref]="rowHref()"
     [sizingRows]="sizingRows"
     [sort]="sortState()"
@@ -24,6 +24,7 @@
       [page]="options().page"
       [pageSize]="options().pageSize"
       [pageSizeOptions]="pageSizes"
+      [showAllOption]="true"
       [showRangeLabel]="filteredCount() !== null"
       [totalItems]="filteredCount() ?? 0"
       (changed)="onPageChanged($event)" />

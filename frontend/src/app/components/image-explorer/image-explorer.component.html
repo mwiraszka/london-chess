@@ -150,6 +150,7 @@
         [page]="vm.options.page"
         [pageSize]="vm.options.pageSize"
         [pageSizeOptions]="pageSizes"
+        [showAllOption]="true"
         [showRangeLabel]="vm.filteredCount !== null"
         [totalItems]="vm.filteredCount ?? 0"
         (changed)="onPageChanged($event, vm.options)" />

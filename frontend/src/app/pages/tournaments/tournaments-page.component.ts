@@ -46,6 +46,7 @@ import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments
 import {
   compareCells,
   formatDateRange,
+  pageOf,
   shortenSubtitle,
   timeControlMinutes,
 } from '@app/utils';
@@ -241,10 +242,9 @@ export class TournamentsPageComponent implements OnInit {
 
   protected readonly filteredCount = computed(() => this.filteredRows().length);
 
-  protected readonly rows = computed<TournamentRow[]>(() => {
-    const start = (this.page() - 1) * this.pageSize();
-    return this.filteredRows().slice(start, start + this.pageSize());
-  });
+  protected readonly rows = computed<TournamentRow[]>(() =>
+    pageOf(this.filteredRows(), this.page(), this.pageSize()),
+  );
 
   protected readonly sizingRows = SIZING_ROWS;
 

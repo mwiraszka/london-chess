@@ -48,6 +48,7 @@ import { FormatBytesPipe, FormatDatePipe, HighlightPipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as ImagesSelectors from '@app/store/images/images.selectors';
+import { pageRowCount } from '@app/utils';
 
 @UntilDestroy()
 @Component({
@@ -144,7 +145,10 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
         filteredCount,
         isLoading: status === 'loading' || isFetching,
         options,
-        skeletonCards: Array.from({ length: options.pageSize }, (_, index) => index),
+        skeletonCards: Array.from(
+          { length: pageRowCount(options.pageSize, filteredCount ?? PAGE_SIZES[0]) },
+          (_, index) => index,
+        ),
         status,
         totalCount,
       })),
