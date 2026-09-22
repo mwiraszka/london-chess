@@ -31,7 +31,6 @@ describe('PullToRefreshIndicatorComponent', () => {
 
   it('should render nothing while the page is at rest', () => {
     expect(query(fixture.debugElement, '.indicator')).toBeFalsy();
-    expect(host().classList).not.toContain('refreshing');
   });
 
   it('should follow the pull with a refresh icon', () => {
@@ -39,29 +38,17 @@ describe('PullToRefreshIndicatorComponent', () => {
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, 'ea-icon-refresh-cw.indicator')).toBeTruthy();
-    expect(query(fixture.debugElement, 'ea-spinner')).toBeFalsy();
     expect(host().style.getPropertyValue('--lcc-pull-progress')).toBe('0.5');
   });
 
-  it('should show a labelled spinner while refreshing', () => {
-    isRefreshing.set(true);
+  it('should show nothing once the pull is released and the refresh runs', () => {
+    pullProgress.set(1);
     fixture.detectChanges();
 
-    const spinner = query(fixture.debugElement, 'ea-spinner.indicator');
-    expect(spinner).toBeTruthy();
-    expect(spinner.componentInstance.label()).toBe('Refreshing');
-    expect(query(fixture.debugElement, 'ea-icon-refresh-cw')).toBeFalsy();
-    expect(host().classList).toContain('refreshing');
-  });
-
-  it('should disappear once the refresh ends', () => {
+    pullProgress.set(0);
     isRefreshing.set(true);
-    fixture.detectChanges();
-
-    isRefreshing.set(false);
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.indicator')).toBeFalsy();
-    expect(host().classList).not.toContain('refreshing');
   });
 });

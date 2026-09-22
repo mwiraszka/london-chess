@@ -77,12 +77,10 @@ export class ScheduleToolbarComponent {
   }
 
   public onToday(): void {
-    if (this.todayScrollPoint) {
-      this.todayScrollPoint.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
+    const point = this.todayScrollPoint;
+    // The row the point sits in, so the line along its top edge comes into view too
+    const target = point?.closest('tr') ?? point;
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   public async onExportToIcal(): Promise<void> {

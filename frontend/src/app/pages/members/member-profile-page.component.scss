@@ -226,10 +226,11 @@
   a {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 
     .external-link-icon {
       @include icon-size(14px);
+      @include link-icon-lift;
     }
   }
 }

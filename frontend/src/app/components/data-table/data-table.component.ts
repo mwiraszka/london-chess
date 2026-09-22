@@ -12,6 +12,7 @@ import {
   Directive,
   ElementRef,
   Renderer2,
+  RendererStyleFlags2,
   TemplateRef,
   afterNextRender,
   computed,
@@ -85,7 +86,6 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly sort = input<DataTableSortState>(NO_SORT);
   public readonly rowHref = input<(row: T) => string | null>();
   public readonly clickable = input(false);
-  public readonly hoverable = input(true);
   // Fills its container rather than sitting centred at its content's width
   public readonly fullWidth = input(false);
   // Keeps the header in view for as long as any row is
@@ -131,6 +131,11 @@ export class DataTableComponent<T extends { id: string }> {
     this.loading() ? undefined : this.rowHref(),
   );
 
+  // Rows are highlighted on hover only while they lead somewhere or act on a click
+  protected readonly hoverable = computed(
+    () => (this.clickable() && !this.loading()) || !!this.rowHrefWhenLoaded(),
+  );
+
   // The sizing rows keep their content while loading, so the columns keep their widths
   protected isPlaceholder(row: T): boolean {
     return this.loading() && !this.sizingRows().includes(row);
@@ -149,7 +154,9 @@ export class DataTableComponent<T extends { id: string }> {
   }
 
   // The header is moved down over the rows as the page scrolls past it, which keeps
-  // working inside the table's own scroll boxes, where sticky positioning cannot
+  // working inside the table's own scroll boxes, where sticky positioning cannot.
+  // Its height is published for the rows' scroll margin, so a row scrolled to the
+  // top of the page lands below it
   private followScroll(): void {
     const table = this.table()?.nativeElement.querySelector('.ea-data-table__table');
     const head = table?.querySelector('.ea-data-table__head');
@@ -158,6 +165,7 @@ export class DataTableComponent<T extends { id: string }> {
     if (!(table instanceof HTMLElement) || !(head instanceof HTMLElement) || !scroller) {
       return;
     }
+    let headHeight: number | null = null;
     const update = () => {
       const top =
         table.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
@@ -168,6 +176,16 @@ export class DataTableComponent<T extends { id: string }> {
         this.renderer.setStyle(head, 'transform', `translateY(${offset}px)`);
       } else {
         this.renderer.removeStyle(head, 'transform');
+      }
+      const height = this.stickyHeader() ? head.offsetHeight : 0;
+      if (height !== headHeight) {
+        headHeight = height;
+        this.renderer.setStyle(
+          this.host.nativeElement,
+          '--lcc-data-table-head-height',
+          `${height}px`,
+          RendererStyleFlags2.DashCase,
+        );
       }
     };
     this.destroyRef.onDestroy(this.renderer.listen(scroller, 'scroll', update));

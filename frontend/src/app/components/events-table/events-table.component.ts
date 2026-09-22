@@ -37,7 +37,7 @@ import {
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
-import { customSort, isUpcomingEvent } from '@app/utils';
+import { customSort, isUpcomingEvent, pageRowCount } from '@app/utils';
 
 // A row holds a day and every event of that day, latest edited first
 export interface EventRow {
@@ -116,9 +116,13 @@ export class EventsTableComponent {
   // Placeholders replace the events during every fetch, so a change of filters shows at once
   protected readonly loading = computed(() => this.isLoading());
 
-  protected readonly loadingRowCount = computed(
-    () => this.dateLimit() ?? this.options()?.pageSize ?? EVENTS_PAGE_SIZES[0],
-  );
+  protected readonly loadingRowCount = computed(() => {
+    const pageSize = this.options()?.pageSize ?? EVENTS_PAGE_SIZES[0];
+    return (
+      this.dateLimit() ??
+      pageRowCount(pageSize, this.filteredCount() ?? EVENTS_PAGE_SIZES[0])
+    );
+  });
 
   protected readonly rows = computed<EventRow[]>(() =>
     toEventRows(this.events()).slice(0, this.dateLimit()),

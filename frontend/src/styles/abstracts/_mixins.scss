@@ -84,6 +84,13 @@ $breakpoints: (
   }
 }
 
+// An icon beside link text, raised off the line's centre so it sits level with the
+// text rather than with the text and the underline below it
+@mixin link-icon-lift {
+  position: relative;
+  top: -1px;
+}
+
 // As tall as a field's box, so a switch beside one sits centred on that box
 @mixin switch-beside-field {
   display: flex;

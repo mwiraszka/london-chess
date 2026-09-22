@@ -71,6 +71,7 @@ import { combinedLoadStatus } from '@app/utils';
       } @else {
         <lcc-article-grid
           [articles]="vm.filteredArticles"
+          [filteredCount]="vm.filteredCount"
           [images]="vm.images"
           [isAdmin]="vm.isAdmin"
           [isLoading]="vm.status === 'loading' || vm.isFetching"
@@ -79,10 +80,12 @@ import { combinedLoadStatus } from '@app/utils';
         <div class="paginator">
           <ea-paginator
             align="center"
+            pageSizeLabel="articles"
             size="sm"
             [page]="vm.options.page"
             [pageSize]="vm.options.pageSize"
             [pageSizeOptions]="pageSizes"
+            [showAllOption]="true"
             [showRangeLabel]="vm.filteredCount !== null"
             [totalItems]="vm.filteredCount ?? 0"
             (changed)="onPageChanged($event, vm.options)" />

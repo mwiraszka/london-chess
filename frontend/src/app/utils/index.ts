@@ -71,6 +71,9 @@ export {
   splitMarkdownTables,
 } from './markdown/split-markdown-tables.util';
 
+export { pageOf } from './pagination/page-of.util';
+export { pageRowCount } from './pagination/page-row-count.util';
+
 export { gamesQueryParams, parseGamesQuery } from './route/games-query.util';
 export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';
 

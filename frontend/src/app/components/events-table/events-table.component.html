@@ -14,6 +14,7 @@
       [page]="options.page"
       [pageSize]="options.pageSize"
       [pageSizeOptions]="pageSizes"
+      [showAllOption]="true"
       [showRangeLabel]="filteredCount() !== null"
       [totalItems]="filteredCount() ?? 0"
       (changed)="onPageChanged($event)" />

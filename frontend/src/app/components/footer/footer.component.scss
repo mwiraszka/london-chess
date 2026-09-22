@@ -134,9 +134,10 @@
 
           ea-icon-external-link {
             @include icon-size(14px);
+            @include link-icon-lift;
 
             vertical-align: text-bottom;
-            margin-left: 4px;
+            margin-left: 6px;
           }
         }
       }

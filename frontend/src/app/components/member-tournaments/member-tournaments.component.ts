@@ -40,6 +40,7 @@ import {
   compareCells,
   formatDateRange,
   formatScore,
+  pageOf,
   shortenSubtitle,
   simulScore,
   timeControlMinutes,
@@ -212,10 +213,9 @@ export class MemberTournamentsComponent {
     computation: () => 1,
   });
 
-  protected readonly rows = computed(() => {
-    const start = (this.page() - 1) * this.pageSize();
-    return this.allRows().slice(start, start + this.pageSize());
-  });
+  protected readonly rows = computed(() =>
+    pageOf(this.allRows(), this.page(), this.pageSize()),
+  );
 
   protected readonly columns = computed<DataTableColumn<ResultRow>[]>(() => {
     const cells = {
