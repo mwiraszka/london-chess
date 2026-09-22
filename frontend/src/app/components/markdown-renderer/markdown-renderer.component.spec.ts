@@ -6,6 +6,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, RouterLink, RouterModule } from '@angular/router';
 
 import { RoutingService } from '@app/services';
+import { query, queryAll } from '@app/utils';
 
 import { MarkdownRendererComponent } from './markdown-renderer.component';
 
@@ -26,7 +27,6 @@ describe('MarkdownRendererComponent', () => {
   let addAnchorIdsToHeadingsSpy: MockInstance;
   let addBlockquoteIconsSpy: MockInstance;
   let scrollToAnchorSpy: MockInstance;
-  let wrapMarkdownTablesSpy: MockInstance;
 
   const mockMarkdownText = `
   ## Heading 1
@@ -73,8 +73,6 @@ describe('MarkdownRendererComponent', () => {
     addBlockquoteIconsSpy = vi.spyOn(component, 'addBlockquoteIcons');
     // @ts-expect-error Private class member
     scrollToAnchorSpy = vi.spyOn(component, 'scrollToAnchor');
-    // @ts-expect-error Private class member
-    wrapMarkdownTablesSpy = vi.spyOn(component, 'wrapMarkdownTables');
 
     fixture.detectChanges();
   });
@@ -116,10 +114,24 @@ describe('MarkdownRendererComponent', () => {
       expect(component.data).toBe(mockMarkdownText);
     });
 
-    it('should add custom blockquote icons, wrap tables, and add anchor ids to headings', () => {
+    it('should add custom blockquote icons and anchor ids to headings', () => {
       expect(addBlockquoteIconsSpy).toHaveBeenCalledTimes(1);
-      expect(wrapMarkdownTablesSpy).toHaveBeenCalledTimes(1);
       expect(addAnchorIdsToHeadingsSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should render the tables as sortable tables between the text', () => {
+      const markdowns = queryAll(fixture.debugElement, 'markdown');
+
+      expect(markdowns.map(markdown => markdown.componentInstance.data.trim())).toEqual([
+        '## Heading 1\n  \n  Some text here.\n  \n  ## Heading 2\n  \n  More text here.',
+        '> This is a blockquote',
+      ]);
+      expect(
+        queryAll(
+          query(fixture.debugElement, 'lcc-markdown-table'),
+          '.ea-data-table__cell--header',
+        ).map(header => header.nativeElement.textContent.trim()),
+      ).toEqual(['Column 1', 'Column 2']);
     });
   });
 

@@ -61,6 +61,13 @@ export {
   calculateAspectRatio,
   calculateDecimalAspectRatio,
 } from './image/calculate-aspect-ratio.util';
+export {
+  type MarkdownSegment,
+  type MarkdownTable,
+  type MarkdownTableColumn,
+  type MarkdownTableRow,
+  splitMarkdownTables,
+} from './markdown/split-markdown-tables.util';
 
 export { gamesQueryParams, parseGamesQuery } from './route/games-query.util';
 export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';

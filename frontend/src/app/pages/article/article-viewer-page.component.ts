@@ -41,8 +41,7 @@ import { ImagesSelectors } from '@app/store/images';
           [adminControls]="vm.isAdmin ? getAdminControlsConfig(article) : null"
           [article]="article"
           [bannerImage]="vm.bannerImage"
-          [bodyImages]="vm.bodyImages"
-          [isWideView]="vm.isWideView">
+          [bodyImages]="vm.bodyImages">
         </lcc-article>
         <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
       } @else if (vm.status === 'failed') {

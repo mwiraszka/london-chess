@@ -1,0 +1,14 @@
+<lcc-data-table
+  [aria-label]="label()"
+  [columns]="columns()"
+  [data]="rows()"
+  [hoverable]="false"
+  [sort]="sort()"
+  (sorted)="onSorted($event)" />
+
+<ng-template
+  #cell
+  let-row
+  let-column="column">
+  <span [innerHTML]="row.html[column.key]"></span>
+</ng-template>
