@@ -716,6 +716,7 @@ function newAccount(clerkUserId: string, temporaryPasswordHash: string): MemberA
     avatarUrl: null,
     avatarOriginalUrl: null,
     avatarManagedByApp: false,
+    clerkImagePending: false,
     avatarCropState: null,
     avatarUpdatedAt: null,
     temporaryPasswordHash,

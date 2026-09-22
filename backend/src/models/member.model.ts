@@ -17,6 +17,9 @@ export interface MemberAccount {
   avatarUrl: string | null;
   avatarOriginalUrl: string | null;
   avatarManagedByApp: boolean;
+  // Set while the app changes the Clerk photo itself, so the webhook it raises is not
+  // taken for a change made in Clerk
+  clerkImagePending: boolean;
   avatarCropState: AvatarCropState | null;
   avatarUpdatedAt: IsoDate | null;
   // Set while the member still uses the password the site emailed them
@@ -65,6 +68,7 @@ const accountSchema = new Schema<MemberAccount>(
     avatarUrl: { type: String, default: null },
     avatarOriginalUrl: { type: String, default: null },
     avatarManagedByApp: { type: Boolean, default: false },
+    clerkImagePending: { type: Boolean, default: false },
     avatarCropState: {
       type: { zoom: Number, offsetX: Number, offsetY: Number },
       default: null,

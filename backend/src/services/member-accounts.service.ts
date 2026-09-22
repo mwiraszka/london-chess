@@ -132,6 +132,7 @@ export async function linkClerkUser(
     avatarUrl: null,
     avatarOriginalUrl: null,
     avatarManagedByApp: false,
+    clerkImagePending: false,
     avatarCropState: null,
     avatarUpdatedAt: null,
     temporaryPasswordHash: null,
@@ -192,14 +193,21 @@ export async function syncClerkUser(profile: ClerkProfile): Promise<void> {
     'account.clerkImageUrl': clerkImageUrl,
   };
 
-  if (imageChanged && profile.hasImage && !member.account.avatarManagedByApp) {
-    // Avatar was set via the Clerk dashboard (not the app), so sync it to R2
+  if (imageChanged && member.account.clerkImagePending) {
+    // The app changed the photo itself and records the rest once Clerk answers
+    await updateLinkedMember(profile.id, {
+      ...syncedFields,
+      'account.clerkImagePending': false,
+    });
+  } else if (imageChanged && profile.hasImage) {
+    // A photo set in Clerk replaces whatever the app held, crop and all
     try {
       const url = await uploadClerkImage(profile.id, profile.imageUrl);
       await updateLinkedMember(profile.id, {
         ...syncedFields,
         'account.avatarUrl': url,
         'account.avatarOriginalUrl': url,
+        'account.avatarManagedByApp': false,
         'account.avatarCropState': { zoom: 1, offsetX: 0, offsetY: 0 },
         'account.avatarUpdatedAt': new Date().toISOString(),
       });

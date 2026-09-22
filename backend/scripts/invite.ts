@@ -75,6 +75,7 @@ async function invite(member: MemberRecord): Promise<void> {
       avatarUrl: null,
       avatarOriginalUrl: null,
       avatarManagedByApp: false,
+      clerkImagePending: false,
       avatarCropState: null,
       avatarUpdatedAt: null,
       temporaryPasswordHash: hashTemporaryPassword(temporaryPassword),
