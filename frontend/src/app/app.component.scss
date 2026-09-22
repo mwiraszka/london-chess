@@ -34,8 +34,9 @@
       gap: 8px;
       width: 100%;
       max-width: var(--lcc-width--appContent);
-      // 6px top + 2px at bottom of Nav component = 8px;
-      padding: 6px 4px 8px;
+      // Holds the whole space below the nav, which keeps none of its own, so that a
+      // table heading following the page's scroll comes to rest against it
+      padding: 8px 4px;
 
       // Margin needed to prevent scrollbar-gutter style
       // from cutting off page content

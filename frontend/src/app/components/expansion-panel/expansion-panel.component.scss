@@ -1,7 +1,9 @@
 @use '../../../styles/abstracts/mixins' as *;
 
+// Clipped rather than hidden, which would make the panel a scroll container and take
+// a table inside it off the page's own scroll, where its header follows along
 .expansion-panel {
-  overflow: hidden;
+  overflow: clip;
   width: 100%;
   border-radius: 4px;
   background-color: var(--lcc-color--expansionPanel-background);

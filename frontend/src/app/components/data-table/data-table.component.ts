@@ -26,7 +26,6 @@ import {
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { AdminControlsConfig } from '@app/models';
 import { AdminControlsService } from '@app/services';
-import { scrollParentOf } from '@app/utils';
 
 export const NO_SORT: DataTableSortState = { column: '', direction: null };
 
@@ -70,6 +69,7 @@ export class DataTableCellDirective<T> {
   ],
   host: {
     '[class.data-table--full-width]': 'fullWidth()',
+    '[class.data-table--sticky-head]': 'stickyHeader()',
     '(contextmenu)': 'onContextMenu($event)',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -150,48 +150,45 @@ export class DataTableComponent<T extends { id: string }> {
   }
 
   constructor() {
-    afterNextRender(() => this.followScroll());
+    afterNextRender(() => this.trackHeadMetrics());
   }
 
-  // The header is moved down over the rows as the page scrolls past it, which keeps
-  // working inside the table's own scroll boxes, where sticky positioning cannot.
-  // Its height is published for the rows' scroll margin, so a row scrolled to the
-  // top of the page lands below it
-  private followScroll(): void {
+  // The header rides over the rows on a scroll-driven animation, which the browser
+  // runs against the scroller itself rather than a scroll listener that can only
+  // catch up a frame later. All it needs from here are the two lengths the
+  // animation is measured in, which change with the table rather than with scrolling:
+  // how far the header may travel before it reaches the last row, and its own height,
+  // which a row scrolled to the top of the page clears
+  private trackHeadMetrics(): void {
     const table = this.table()?.nativeElement.querySelector('.ea-data-table__table');
     const head = table?.querySelector('.ea-data-table__head');
-    // From outside the table, whose own sideways scroll box would be found first
-    const scroller = scrollParentOf(this.host.nativeElement);
-    if (!(table instanceof HTMLElement) || !(head instanceof HTMLElement) || !scroller) {
+    if (!(table instanceof HTMLElement) || !(head instanceof HTMLElement)) {
       return;
     }
-    let headHeight: number | null = null;
+    let published = '';
     const update = () => {
-      const top =
-        table.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
-      const offset = this.stickyHeader()
-        ? Math.min(Math.max(-top, 0), Math.max(table.offsetHeight - head.offsetHeight, 0))
-        : 0;
-      if (offset) {
-        this.renderer.setStyle(head, 'transform', `translateY(${offset}px)`);
-      } else {
-        this.renderer.removeStyle(head, 'transform');
+      const height = head.offsetHeight;
+      const travel = Math.max(table.offsetHeight - height, 0);
+      if (`${height}/${travel}` === published) {
+        return;
       }
-      const height = this.stickyHeader() ? head.offsetHeight : 0;
-      if (height !== headHeight) {
-        headHeight = height;
-        this.renderer.setStyle(
-          this.host.nativeElement,
-          '--lcc-data-table-head-height',
-          `${height}px`,
-          RendererStyleFlags2.DashCase,
-        );
-      }
+      published = `${height}/${travel}`;
+      this.setLength('--lcc-data-table-head-height', height);
+      this.setLength('--lcc-data-table-head-travel', travel);
     };
-    this.destroyRef.onDestroy(this.renderer.listen(scroller, 'scroll', update));
+    update();
     const observer = new ResizeObserver(update);
     observer.observe(table);
     this.destroyRef.onDestroy(() => observer.disconnect());
+  }
+
+  private setLength(name: string, value: number): void {
+    this.renderer.setStyle(
+      this.host.nativeElement,
+      name,
+      `${value}px`,
+      RendererStyleFlags2.DashCase,
+    );
   }
 
   protected onContextMenu(event: MouseEvent): void {

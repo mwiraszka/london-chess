@@ -77,6 +77,10 @@ export const TOURNAMENT_SIZING: TournamentSizing = {
   ],
   results: [
     {
+      name: 'Tandem Simul 2026',
+      section: 'Cloutier, Annabelle 1847 / Hampson, Adam 1432',
+    },
+    {
       name: 'Tandem Simul 2025',
       section: 'Ivanchuk, Serhii 2208',
     },

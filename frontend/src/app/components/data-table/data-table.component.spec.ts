@@ -100,6 +100,11 @@ describe('DataTableComponent', () => {
   const bodyRows = () =>
     queryAll(fixture.debugElement, '.ea-data-table__body .ea-data-table__row');
 
+  const elementOf = (selector: string): HTMLElement =>
+    query(fixture.debugElement, selector).nativeElement;
+
+  let resized: (() => void)[] = [];
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
@@ -109,11 +114,29 @@ describe('DataTableComponent', () => {
       ],
     }).compileComponents();
 
+    // Held so a test can resize the table, which is what the component measures on
+    resized = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resized.push(callback);
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+
     fixture = TestBed.createComponent(HostComponent);
     host = fixture.componentInstance;
     // The host stands in for the page's scrolling area
     fixture.nativeElement.style.overflowY = 'auto';
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('should show the rows through the given columns, sized by the sizing rows', () => {
@@ -186,32 +209,30 @@ describe('DataTableComponent', () => {
     );
   });
 
-  it('should keep the header in view while the rows scroll past it', () => {
-    const scroller: HTMLElement = fixture.nativeElement;
-    const table: HTMLElement = query(
-      fixture.debugElement,
-      '.ea-data-table__table',
-    ).nativeElement;
-    const head: HTMLElement = query(
-      fixture.debugElement,
-      '.ea-data-table__head',
-    ).nativeElement;
-    Object.defineProperty(table, 'offsetHeight', { value: 300 });
-    Object.defineProperty(head, 'offsetHeight', { value: 40 });
-    vi.spyOn(scroller, 'getBoundingClientRect').mockReturnValue({ top: 0 } as DOMRect);
-    const tableRect = vi.spyOn(table, 'getBoundingClientRect');
+  it('should measure out the header animation against the table', () => {
+    const table = elementOf('.ea-data-table__table');
+    const head = elementOf('.ea-data-table__head');
+    const element = elementOf('lcc-data-table');
+    Object.defineProperty(head, 'offsetHeight', { value: 40, configurable: true });
+    Object.defineProperty(table, 'offsetHeight', { value: 300, configurable: true });
 
-    tableRect.mockReturnValue({ top: -100 } as DOMRect);
-    scroller.dispatchEvent(new Event('scroll'));
-    expect(head.style.transform).toBe('translateY(100px)');
+    resized.forEach(resize => resize());
 
-    tableRect.mockReturnValue({ top: -280 } as DOMRect);
-    scroller.dispatchEvent(new Event('scroll'));
-    expect(head.style.transform).toBe('translateY(260px)');
+    expect(element.classList).toContain('data-table--sticky-head');
+    expect(element.style.getPropertyValue('--lcc-data-table-head-height')).toBe('40px');
+    expect(element.style.getPropertyValue('--lcc-data-table-head-travel')).toBe('260px');
+  });
 
-    tableRect.mockReturnValue({ top: 20 } as DOMRect);
-    scroller.dispatchEvent(new Event('scroll'));
-    expect(head.style.transform).toBe('');
+  it('should leave the header nowhere to travel on a table no taller than it', () => {
+    const table = elementOf('.ea-data-table__table');
+    const head = elementOf('.ea-data-table__head');
+    const element = elementOf('lcc-data-table');
+    Object.defineProperty(head, 'offsetHeight', { value: 40, configurable: true });
+    Object.defineProperty(table, 'offsetHeight', { value: 30, configurable: true });
+
+    resized.forEach(resize => resize());
+
+    expect(element.style.getPropertyValue('--lcc-data-table-head-travel')).toBe('0px');
   });
 
   it('should pass on a sort', () => {

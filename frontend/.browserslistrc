@@ -1,6 +1,8 @@
-last 2 Chrome versions
-last 2 Firefox versions
-last 2 Edge versions
-last 2 Safari versions
-Firefox ESR
-not IE 11
+# The oldest browsers the site supports, set from its own visitor analytics to keep
+# roughly 98% of visits, and no lower than Angular's floor for the version in use,
+# which the build warns about when a browser here falls outside it
+Chrome >= 119
+Edge >= 119
+Firefox >= 119
+Safari >= 17
+iOS >= 17

@@ -262,6 +262,33 @@ describe('TournamentPageComponent', () => {
       expect(queryAll(fixture.debugElement, '.crosstable')).toHaveLength(2);
     });
 
+    it('should name a pair who gave their boards together side by side', () => {
+      const [simul] = MOCK_TOURNAMENTS.filter(({ number }) => number === 111);
+      const [section] = simul.sections;
+      const byPair = {
+        ...simul,
+        subtitle: 'Doe, John 2302 / Smith, Jane 2189 / Bloggs, Joe 1500',
+        sections: [
+          { ...section, name: 'Doe, John 2302', entries: [section.entries[0]] },
+          {
+            ...section,
+            name: 'Smith, Jane 2189 / Bloggs, Joe 1500',
+            entries: [section.entries[1]],
+          },
+        ],
+      };
+      store.setState(stateWith([byPair]));
+      fixture.detectChanges();
+
+      expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
+        'Doe, John (2302)',
+        'Smith, Jane (2189) / Bloggs, Joe (1500)',
+      ]);
+      expect(
+        queryAll(fixture.debugElement, '.section__heading-extra').map(textOf),
+      ).toEqual(['(2302)']);
+    });
+
     it('should offer only the way back without an article', () => {
       expect(links()).toEqual([{ text: 'Back to tournaments', path: '/tournaments' }]);
     });
