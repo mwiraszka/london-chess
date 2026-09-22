@@ -15,7 +15,6 @@ import {
   OnInit,
   Output,
   Renderer2,
-  ViewChild,
   inject,
 } from '@angular/core';
 
@@ -31,7 +30,7 @@ import {
   Id,
   Image,
 } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { isPresignedUrlExpired } from '@app/utils';
 
@@ -53,8 +52,6 @@ import { isPresignedUrlExpired } from '@app/utils';
 export class ImageViewerComponent
   implements OnInit, AfterViewInit, OnDestroy, DialogOutput<null>
 {
-  @ViewChild(AdminControlsDirective) adminControlsDirective?: AdminControlsDirective;
-
   @Input({ required: true }) album!: string;
   @Input({ required: true }) images!: Image[];
   @Input({ required: true }) isAdmin!: boolean;
@@ -76,6 +73,7 @@ export class ImageViewerComponent
 
   private indexSubject = new BehaviorSubject<number>(0);
 
+  private readonly adminControls = inject(AdminControlsService);
   private readonly storeRequests = inject(StoreRequestService);
 
   constructor(
@@ -109,13 +107,13 @@ export class ImageViewerComponent
   }
 
   public onPreviousImage(): void {
-    this.adminControlsDirective?.detach();
+    this.adminControls.close();
     const newIndex = this.index > 0 ? this.index - 1 : this.images.length - 1;
     this.indexSubject.next(newIndex);
   }
 
   public onNextImage(): void {
-    this.adminControlsDirective?.detach();
+    this.adminControls.close();
     const newIndex = this.index < this.images.length - 1 ? this.index + 1 : 0;
     this.indexSubject.next(newIndex);
   }

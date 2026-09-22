@@ -14,10 +14,10 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { ADMIN_CONTROLS_CONFIG_TOKEN } from '@app/directives/admin-controls.directive';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { AdminControlsConfig } from '@app/models/admin-controls-config.model';
 import { IsDefinedPipe, RouterLinkPipe } from '@app/pipes';
+import { ADMIN_CONTROLS_CONFIG_TOKEN } from '@app/services';
 import { KeyStateService } from '@app/services';
 import { isTouchDevice } from '@app/utils';
 

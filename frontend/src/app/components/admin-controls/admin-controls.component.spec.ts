@@ -3,8 +3,8 @@ import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 
-import { ADMIN_CONTROLS_CONFIG_TOKEN } from '@app/directives/admin-controls.directive';
 import { AdminControlsConfig } from '@app/models/admin-controls-config.model';
+import { ADMIN_CONTROLS_CONFIG_TOKEN } from '@app/services';
 import { KeyStateService } from '@app/services';
 import { query } from '@app/utils';
 

@@ -1,3 +1,7 @@
+export {
+  ADMIN_CONTROLS_CONFIG_TOKEN,
+  AdminControlsService,
+} from './admin-controls.service';
 export { ApiError, ApiService } from './api.service';
 export { ArticlesApiService } from './api/articles-api.service';
 export { AuthDrawerService } from './auth-drawer.service';

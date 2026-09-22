@@ -1,248 +1,86 @@
-import { Overlay, OverlayModule } from '@angular/cdk/overlay';
-import { Component, DebugElement } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 
 import { AdminControlsConfig } from '@app/models';
-import { DialogService } from '@app/services';
+import { AdminControlsService } from '@app/services';
+import { query } from '@app/utils';
 
 import { AdminControlsDirective } from './admin-controls.directive';
 
 @Component({
   template: `
     <div
-      [adminControls]="config"
-      style="width: 100px; height: 100px;">
+      class="item"
+      [adminControls]="config()">
+      Item
     </div>
   `,
   imports: [AdminControlsDirective],
 })
-class TestComponent {
-  config: AdminControlsConfig = {
+class HostComponent {
+  readonly config = signal<AdminControlsConfig | null>({
     buttonSize: 34,
     deleteCb: vi.fn(),
     editPath: ['event', 'edit'],
     itemName: 'Test Item',
-  };
+  });
 }
 
 describe('AdminControlsDirective', () => {
-  let fixture: ComponentFixture<TestComponent>;
-  let component: TestComponent;
+  let fixture: ComponentFixture<HostComponent>;
+  let host: HostComponent;
 
-  let directiveElement: DebugElement;
-  let directive: AdminControlsDirective;
+  let openSpy: Mock;
 
-  let mockDialogService: Partial<DialogService>;
+  const rightClick = (): MouseEvent => {
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    query(fixture.debugElement, '.item').nativeElement.dispatchEvent(event);
+    return event;
+  };
 
   beforeEach(async () => {
-    mockDialogService = {
-      topDialogRef: null,
-    };
-
     await TestBed.configureTestingModule({
-      imports: [TestComponent, OverlayModule],
-      providers: [Overlay, { provide: DialogService, useValue: mockDialogService }],
+      imports: [HostComponent],
+      providers: [{ provide: AdminControlsService, useValue: { open: vi.fn() } }],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TestComponent);
-    component = fixture.componentInstance;
-
-    directiveElement = fixture.debugElement.query(By.directive(AdminControlsDirective));
-    directive = directiveElement.injector.get(AdminControlsDirective);
-
+    fixture = TestBed.createComponent(HostComponent);
+    host = fixture.componentInstance;
+    openSpy = vi.mocked(TestBed.inject(AdminControlsService).open);
     fixture.detectChanges();
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  afterEach(() => vi.restoreAllMocks());
+
+  it('should open the controls at the item on a right click, in place of the menu', () => {
+    const event = rightClick();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      host.config(),
+      query(fixture.debugElement, '.item').nativeElement,
+      expect.anything(),
+    );
   });
 
-  it('should create', () => {
-    expect(directive).toBeTruthy();
+  it('should leave the menu to selected text', () => {
+    vi.spyOn(window, 'getSelection').mockReturnValue({
+      toString: () => 'Item',
+    } as Selection);
+
+    const event = rightClick();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
   });
 
-  describe('onContextMenu', () => {
-    let attachSpy: MockInstance;
-    let preventDefaultSpy: MockInstance;
-    let event: MouseEvent;
+  it('should do nothing without a config', () => {
+    host.config.set(null);
+    fixture.detectChanges();
 
-    beforeEach(() => {
-      event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    const event = rightClick();
 
-      // @ts-expect-error Private class member
-      attachSpy = vi.spyOn(directive, 'attach');
-      preventDefaultSpy = vi.spyOn(event, 'preventDefault');
-    });
-
-    it('should prevent default and attach controls when config is provided', () => {
-      Object.defineProperty(window, 'getSelection', {
-        writable: true,
-        value: vi.fn().mockReturnValue({
-          toString: () => '',
-        }),
-      });
-
-      directiveElement.nativeElement.dispatchEvent(event);
-
-      expect(preventDefaultSpy).toHaveBeenCalled();
-      expect(attachSpy).toHaveBeenCalled();
-    });
-
-    it('should not prevent default when text is selected', () => {
-      Object.defineProperty(window, 'getSelection', {
-        writable: true,
-        value: vi.fn().mockReturnValue({
-          toString: () => 'selected text',
-        }),
-      });
-
-      directiveElement.nativeElement.dispatchEvent(event);
-
-      expect(preventDefaultSpy).not.toHaveBeenCalled();
-      expect(attachSpy).not.toHaveBeenCalled();
-    });
-
-    it('should not attach when config is null', () => {
-      component.config = null!;
-      fixture.detectChanges();
-
-      event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
-      vi.spyOn(event, 'preventDefault');
-
-      directiveElement.nativeElement.dispatchEvent(event);
-
-      expect(event.preventDefault).not.toHaveBeenCalled();
-      expect(attachSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('attach', () => {
-    let detachSpy: MockInstance;
-
-    beforeEach(() => {
-      detachSpy = vi.spyOn(directive, 'detach');
-    });
-
-    it('should create overlay and attach admin controls component', () => {
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      // @ts-expect-error Private class member
-      expect(directive.overlayRef.hasAttached()).toBe(true);
-      // @ts-expect-error Private class member
-      expect(directive.adminControlsComponentRef).toBeTruthy();
-    });
-
-    it('should subscribe to component destroyed event', () => {
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      // @ts-expect-error Private class member
-      directive.adminControlsComponentRef!.instance.destroyed.emit();
-
-      expect(detachSpy).toHaveBeenCalled();
-    });
-
-    it('should set correct z-index when dialog is open', () => {
-      Object.defineProperty(mockDialogService, 'topDialogRef', {
-        value: {},
-        writable: true,
-      });
-
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      const overlayContainer = document.querySelector(
-        '.cdk-overlay-container',
-      ) as HTMLElement;
-
-      expect(overlayContainer.style.zIndex).toBe('1100');
-    });
-
-    it('should set correct z-index when no dialog is open', () => {
-      Object.defineProperty(mockDialogService, 'topDialogRef', {
-        value: null,
-        writable: true,
-      });
-
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      const overlayContainer = document.querySelector(
-        '.cdk-overlay-container',
-      ) as HTMLElement;
-
-      expect(overlayContainer.style.zIndex).toBe('900');
-    });
-  });
-
-  describe('detach', () => {
-    it('should detach overlay and remove event listeners', () => {
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      // @ts-expect-error Private class member
-      const overlayDetachSpy = vi.spyOn(directive.overlayRef, 'detach');
-
-      directive.detach();
-
-      expect(overlayDetachSpy).toHaveBeenCalled();
-    });
-
-    it('should handle detach when overlay is not attached', () => {
-      expect(() => directive.detach()).not.toThrow();
-    });
-  });
-
-  describe('ngOnDestroy', () => {
-    it('should dispose overlay on destroy', () => {
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      // @ts-expect-error Private class member
-      const overlayDisposeSpy = vi.spyOn(directive.overlayRef, 'dispose');
-
-      directive.ngOnDestroy();
-
-      expect(overlayDisposeSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('event listeners', () => {
-    let detachSpy: MockInstance;
-
-    beforeEach(() => {
-      vi.useFakeTimers();
-
-      // @ts-expect-error Private class member
-      directive.attach();
-
-      vi.runAllTimers();
-
-      detachSpy = vi.spyOn(directive, 'detach');
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should detach on document click', () => {
-      document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-      expect(detachSpy).toHaveBeenCalled();
-    });
-
-    it('should detach on escape key', () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-
-      expect(detachSpy).toHaveBeenCalled();
-    });
-
-    it('should detach on context menu', () => {
-      document.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
-
-      expect(detachSpy).toHaveBeenCalled();
-    });
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });
