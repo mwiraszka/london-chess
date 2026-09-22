@@ -1,0 +1,9 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+@include filters-search-switch;
+
+.paginator {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}

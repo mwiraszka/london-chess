@@ -1,0 +1,206 @@
+@if (viewModel(); as vm) {
+  @if (vm.status === 'failed') {
+    <lcc-load-failed
+      title="Unable to load this tournament"
+      (retry)="onRetry(vm.tournamentNumber)" />
+  } @else if (vm.tournament; as tournament) {
+    <lcc-page-header
+      [heading]="tournament.name"
+      [icon]="pageIcon">
+    </lcc-page-header>
+
+    <p class="details">
+      <span class="details__item">
+        {{ formatDateRange(tournament.date, tournament.endDate) }}
+      </span>
+      <span class="details__item">
+        {{ formatLabels[tournament.format] }}
+        <span class="details__extra">
+          ({{ tournament.isRated ? 'rated' : 'unrated' }})
+        </span>
+      </span>
+      @if (tournament.timeControl) {
+        <span class="details__item">{{ tournament.timeControl }}</span>
+      }
+      <span class="details__item">
+        {{ playerCount() }} {{ playerCount() === 1 ? 'player' : 'players' }}
+      </span>
+    </p>
+
+    @if (tournament.subtitle) {
+      <p class="details details__subtitle">
+        <span class="details__label">{{ subtitleLabels[tournament.format] }}:</span>
+        @if (subtitlePeople(); as subtitle) {
+          @for (person of subtitle.people; track person.name; let last = $last) {
+            <span class="details__person">
+              {{ person.name }}
+              @if (person.rating !== null) {
+                <span class="details__extra">({{ person.rating }})</span>
+              }
+            </span>
+            @if (!last) {
+              <span class="details__separator">{{ subtitle.separator }}</span>
+            }
+          }
+        } @else {
+          {{ tournament.subtitle }}
+        }
+      </p>
+    }
+
+    @for (section of sections(); track section.key) {
+      <section class="section">
+        @if (section.heading; as heading) {
+          <h3 class="section__heading">
+            {{ heading.text }}
+            @if (heading.extra) {
+              <span class="section__heading-extra">({{ heading.extra }})</span>
+            }
+          </h3>
+        }
+
+        <lcc-data-table
+          class="crosstable"
+          [aria-label]="
+            section.heading ? 'Standings, ' + section.heading.text : 'Standings'
+          "
+          [columns]="sectionColumns().get(section.key) ?? []"
+          [data]="section.rows"
+          [sizingRows]="sizingRows" />
+
+        @if (section.games.length) {
+          <h4 class="section__games-heading">Games in the archive</h4>
+          <lcc-data-table
+            class="games"
+            [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
+            [clickable]="true"
+            [columns]="gameColumns()"
+            [data]="section.games"
+            [rowHref]="gameHref"
+            [sizingRows]="gameSizingRows"
+            (rowActivate)="onOpenGame($event)" />
+        }
+      </section>
+    }
+  } @else {
+    <lcc-page-header
+      [heading]="null"
+      [icon]="pageIcon">
+    </lcc-page-header>
+
+    <p
+      class="details details--loading"
+      aria-busy="true">
+      <lcc-text-skeleton width="320px" />
+    </p>
+
+    <section class="section">
+      <lcc-data-table
+        class="crosstable"
+        aria-label="Standings"
+        [columns]="loadingColumns()"
+        [data]="[]"
+        [loading]="true"
+        [loadingRowCount]="loadingRowCount"
+        [sizingRows]="sizingRows" />
+    </section>
+  }
+
+  <lcc-link-list
+    class="links"
+    [links]="links()">
+  </lcc-link-list>
+}
+
+<ng-template
+  #rankCell
+  let-row>
+  {{ row.rank }}
+</ng-template>
+
+<ng-template
+  #playerCell
+  let-row>
+  <lcc-member-link
+    nameOrder="last-first"
+    [memberNumber]="row.entry.player.memberNumber"
+    [name]="row.player" />
+</ng-template>
+
+<ng-template
+  #ratingCell
+  let-row>
+  @if (row.rating !== null) {
+    {{ row.rating }}
+    @if (row.provisionalGames) {
+      <span
+        class="crosstable__provisional"
+        [eaTooltip]="'Provisional, from ' + row.provisionalGames + ' games'">
+        P{{ row.provisionalGames }}
+      </span>
+    }
+  } @else {
+    <span class="crosstable__unrated">Unrated</span>
+  }
+</ng-template>
+
+<ng-template
+  #roundCell
+  let-row
+  let-value="value">
+  @if (value; as cell) {
+    @if (cell.result.gameId) {
+      <a
+        class="crosstable__round lcc-link"
+        [attr.aria-label]="cell.description"
+        [eaTooltip]="cell.description"
+        [routerLink]="['/game-archives', cell.result.gameId]">
+        {{ cell.label }}
+      </a>
+    } @else {
+      <span
+        class="crosstable__round"
+        [eaTooltip]="cell.description">
+        {{ cell.label }}
+      </span>
+    }
+  }
+</ng-template>
+
+<ng-template
+  #scoreCell
+  let-row>
+  <span class="crosstable__score">{{ formatScore(row.score) }}</span>
+</ng-template>
+
+<ng-template
+  #noteCell
+  let-row>
+  {{ row.resultNote }}
+</ng-template>
+
+<ng-template
+  #whiteCell
+  let-row>
+  <lcc-member-link
+    [memberNumber]="row.game.white.memberNumber"
+    [name]="row.white" />
+</ng-template>
+
+<ng-template
+  #blackCell
+  let-row>
+  <lcc-member-link
+    [memberNumber]="row.game.black.memberNumber"
+    [name]="row.black" />
+</ng-template>
+
+<ng-template
+  #resultCell
+  let-row>
+  <span
+    class="games__result"
+    [class.games__result--decisive]="row.result !== '1/2-1/2'">
+    {{ row.result === '1/2-1/2' ? '½-½' : row.result }}
+  </span>
+</ng-template>

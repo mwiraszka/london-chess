@@ -18,7 +18,6 @@ import { ArticleComponent } from './article.component';
 class MockMarkdownRendererComponent {
   @Input() data = '';
   @Input() images: Image[] = [];
-  @Input() isWideView = false;
   @Input() disableSanitizer = false;
 }
 

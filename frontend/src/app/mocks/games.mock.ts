@@ -1,4 +1,4 @@
-import { ArchivePlayer, Game, GamesSummary, Tournament } from '@app/models';
+import { ArchivePlayer, ArchiveTournament, Game, GamesSummary } from '@app/models';
 
 import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';
 
@@ -13,15 +13,15 @@ export const MOCK_GAMES: Game[] = [
     round: '3',
     white: {
       id: '64b7f0c2a1d3e4f5a6b7c8a1',
-      firstName: 'Gerry',
-      lastName: 'Litchfield',
+      firstName: 'John',
+      lastName: 'Doe',
       suffix: '',
       memberNumber: 2,
     },
     black: {
       id: '64b7f0c2a1d3e4f5a6b7c8a2',
       firstName: 'H.',
-      lastName: 'Jung',
+      lastName: 'Roe',
       suffix: '',
       memberNumber: null,
     },
@@ -32,7 +32,7 @@ export const MOCK_GAMES: Game[] = [
     opening: 'Sicilian Defence, Alapin Variation',
     plyCount: 5,
     moves: '1. e4 c5 2. c3 { A comment } 2... d5 3. exd5 1-0',
-    annotator: 'Litchfield, G.',
+    annotator: 'Doe, J.',
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
   },
   {
@@ -45,15 +45,15 @@ export const MOCK_GAMES: Game[] = [
     round: '1',
     white: {
       id: '64b7f0c2a1d3e4f5a6b7c8a3',
-      firstName: 'Sasha',
-      lastName: 'Chen',
+      firstName: 'Jane',
+      lastName: 'Smith',
       suffix: '',
       memberNumber: null,
     },
     black: {
       id: '64b7f0c2a1d3e4f5a6b7c8a1',
-      firstName: 'Gerry',
-      lastName: 'Litchfield',
+      firstName: 'John',
+      lastName: 'Doe',
       suffix: '',
       memberNumber: 2,
     },
@@ -78,14 +78,14 @@ export const MOCK_GAMES: Game[] = [
     white: {
       id: '64b7f0c2a1d3e4f5a6b7c8a4',
       firstName: '',
-      lastName: 'Oraha',
+      lastName: 'Public',
       suffix: '',
       memberNumber: null,
     },
     black: {
       id: '64b7f0c2a1d3e4f5a6b7c8a3',
-      firstName: 'Sasha',
-      lastName: 'Chen',
+      firstName: 'Jane',
+      lastName: 'Smith',
       suffix: '',
       memberNumber: null,
     },
@@ -108,7 +108,7 @@ export const MOCK_ARCHIVE_PLAYERS: ArchivePlayer[] = [
   { ...MOCK_GAMES[2].white, gameCount: 1 },
 ];
 
-export const MOCK_TOURNAMENTS: Tournament[] = [
+export const MOCK_ARCHIVE_TOURNAMENTS: ArchiveTournament[] = [
   {
     name: 'Club Championship',
     sections: ['A1', 'B1'],

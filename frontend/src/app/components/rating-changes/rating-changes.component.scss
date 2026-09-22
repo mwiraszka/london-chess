@@ -13,11 +13,11 @@
   border-bottom: 1px solid var(--lcc-color--basicDialog-dividerLine);
 }
 
-.rating-changes-table {
-  td.changed {
-    font-weight: 600;
-    background: var(--lcc-color--ratingChanges-changedCellBackground);
-  }
+.rating-changes__value--changed {
+  padding: 2px 4px;
+  font-weight: 600;
+  border-radius: var(--lcc-borderRadius--small);
+  background: var(--lcc-color--ratingChanges-changedCellBackground);
 }
 
 .unmatched-section {

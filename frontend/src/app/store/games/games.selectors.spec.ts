@@ -1,9 +1,9 @@
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
+  MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
-  MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
 
 import { GamesState, gamesAdapter, initialState } from './games.reducer';
@@ -13,12 +13,13 @@ describe('Games Selectors', () => {
   const loadedState: GamesState = gamesAdapter.setAll(MOCK_GAMES, {
     ...initialState,
     lastFilteredFetch: '2026-01-15T10:00:00.000Z',
+    isFetchingFiltered: false,
     lastReferenceFetch: '2026-01-15T10:00:00.000Z',
     filteredGames: MOCK_GAMES,
     filteredCount: 3,
     query: { ...INITIAL_GAMES_QUERY, page: 2 },
     players: MOCK_ARCHIVE_PLAYERS,
-    tournaments: MOCK_TOURNAMENTS,
+    tournaments: MOCK_ARCHIVE_TOURNAMENTS,
     summary: MOCK_GAMES_SUMMARY,
   });
 
@@ -34,7 +35,7 @@ describe('Games Selectors', () => {
     expect(GamesSelectors.selectFilteredGames(state)).toEqual(MOCK_GAMES);
     expect(GamesSelectors.selectFilteredCount(state)).toBe(3);
     expect(GamesSelectors.selectPlayers(state)).toEqual(MOCK_ARCHIVE_PLAYERS);
-    expect(GamesSelectors.selectTournaments(state)).toEqual(MOCK_TOURNAMENTS);
+    expect(GamesSelectors.selectTournaments(state)).toEqual(MOCK_ARCHIVE_TOURNAMENTS);
     expect(GamesSelectors.selectSummary(state)).toEqual(MOCK_GAMES_SUMMARY);
   });
 

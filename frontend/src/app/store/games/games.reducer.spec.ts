@@ -1,9 +1,9 @@
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
+  MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
-  MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
 import { LccError } from '@app/models';
 
@@ -22,6 +22,7 @@ describe('Games Reducer', () => {
       ids: [],
       entities: {},
       failedLoads: [],
+      isFetchingFiltered: false,
       lastFilteredFetch: null,
       lastReferenceFetch: null,
       filteredGames: [],
@@ -96,13 +97,13 @@ describe('Games Reducer', () => {
         initialState,
         GamesActions.fetchArchiveReferenceSucceeded({
           players: MOCK_ARCHIVE_PLAYERS,
-          tournaments: MOCK_TOURNAMENTS,
+          tournaments: MOCK_ARCHIVE_TOURNAMENTS,
           summary: MOCK_GAMES_SUMMARY,
         }),
       );
 
       expect(state.players).toEqual(MOCK_ARCHIVE_PLAYERS);
-      expect(state.tournaments).toEqual(MOCK_TOURNAMENTS);
+      expect(state.tournaments).toEqual(MOCK_ARCHIVE_TOURNAMENTS);
       expect(state.summary).toEqual(MOCK_GAMES_SUMMARY);
       expect(state.lastReferenceFetch).not.toBeNull();
     });
@@ -126,6 +127,22 @@ describe('Games Reducer', () => {
       expect(state.filteredCount).toBe(3);
       expect(state.lastFilteredFetch).toBeNull();
       expect(state.entities[MOCK_GAMES[0].id]).toEqual(MOCK_GAMES[0]);
+    });
+  });
+  describe('a fetch of filtered games', () => {
+    it('should be marked as under way until it succeeds or fails', () => {
+      const fetching = gamesReducer(
+        initialState,
+        GamesActions.fetchFilteredGamesRequested(),
+      );
+
+      expect(fetching.isFetchingFiltered).toBe(true);
+      expect(
+        gamesReducer(
+          fetching,
+          GamesActions.fetchFilteredGamesFailed({ error: mockError }),
+        ).isFetchingFiltered,
+      ).toBe(false);
     });
   });
 });

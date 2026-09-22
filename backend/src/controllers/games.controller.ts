@@ -3,12 +3,12 @@ import { Request, Response } from 'express';
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import {
+  ArchiveTournament,
   GameModel,
   GamePlayer,
   GameRecord,
   GameResponse,
   GamesSummary,
-  Tournament,
   gameSortingConfig,
 } from '../models/game.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
@@ -112,7 +112,7 @@ export async function getPlayers(
 
 export async function getTournaments(
   _req: Request,
-  res: Response<ApiResponse<Tournament[]>>,
+  res: Response<ApiResponse<ArchiveTournament[]>>,
 ): Promise<void> {
   try {
     const groups = await GameModel.aggregate<{
@@ -133,7 +133,7 @@ export async function getTournaments(
       { $sort: { _id: 1 } },
     ]);
 
-    const tournaments: Tournament[] = groups.map(group => ({
+    const tournaments: ArchiveTournament[] = groups.map(group => ({
       name: group._id,
       sections: group.sections.filter(section => section !== '').sort(),
       years: group.years.sort((a, b) => b - a),

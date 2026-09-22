@@ -58,6 +58,7 @@ describe('ArticlesEffects', () => {
       {},
     ),
     failedLoads: [],
+    isFetchingFiltered: false,
     newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
     lastHomePageFetch: null,
     lastFilteredFetch: null,

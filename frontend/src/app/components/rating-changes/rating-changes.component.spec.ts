@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MemberWithNewRatings } from '@app/models';
-import { query, queryAll, queryTextContent } from '@app/utils';
+import { query, queryAll } from '@app/utils';
 
 import { RatingChangesComponent } from './rating-changes.component';
 
@@ -46,38 +46,34 @@ describe('RatingChangesComponent', () => {
   });
 
   describe('template rendering', () => {
-    it('should render table rows for each member with new ratings', () => {
-      const rows = queryAll(fixture.debugElement, 'tbody tr');
-      expect(rows.length).toBe(mockMembersWithNewRatings.length);
+    it('should list each member with their old and new ratings, marking the changes', () => {
+      const rows = queryAll(
+        fixture.debugElement,
+        '.ea-data-table__body .ea-data-table__row',
+      );
 
+      expect(rows).toHaveLength(mockMembersWithNewRatings.length);
       rows.forEach((row, i) => {
-        const cells = queryAll(row, 'td');
-        expect(queryTextContent(row, 'td:nth-child(1)')).toBe(
-          mockMembersWithNewRatings[i].firstName,
+        const member = mockMembersWithNewRatings[i];
+        const [newRating, newPeakRating] = queryAll(row, '.rating-changes__value');
+
+        expect(
+          queryAll(row, '.ea-data-table__cell').map(cell =>
+            cell.nativeElement.textContent.trim(),
+          ),
+        ).toEqual([
+          member.firstName,
+          member.lastName,
+          member.rating,
+          member.newRating,
+          member.peakRating,
+          member.newPeakRating,
+        ]);
+        expect(!!newRating.classes['rating-changes__value--changed']).toBe(
+          member.rating !== member.newRating,
         );
-        expect(queryTextContent(row, 'td:nth-child(2)')).toBe(
-          mockMembersWithNewRatings[i].lastName,
-        );
-        expect(queryTextContent(row, 'td:nth-child(3)')).toBe(
-          mockMembersWithNewRatings[i].rating,
-        );
-        expect(queryTextContent(row, 'td:nth-child(4)')).toBe(
-          mockMembersWithNewRatings[i].newRating,
-        );
-        expect(queryTextContent(row, 'td:nth-child(5)')).toBe(
-          mockMembersWithNewRatings[i].peakRating,
-        );
-        expect(queryTextContent(row, 'td:nth-child(6)')).toBe(
-          mockMembersWithNewRatings[i].newPeakRating,
-        );
-        const ratingClass = cells[3].attributes['class'] || '';
-        const peakClass = cells[5].attributes['class'] || '';
-        expect(ratingClass.includes('changed')).toBe(
-          mockMembersWithNewRatings[i].rating !== mockMembersWithNewRatings[i].newRating,
-        );
-        expect(peakClass.includes('changed')).toBe(
-          mockMembersWithNewRatings[i].peakRating !==
-            mockMembersWithNewRatings[i].newPeakRating,
+        expect(!!newPeakRating.classes['rating-changes__value--changed']).toBe(
+          member.peakRating !== member.newPeakRating,
         );
       });
     });

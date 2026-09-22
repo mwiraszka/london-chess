@@ -1,0 +1,52 @@
+<lcc-data-table
+  class="champions"
+  [aria-label]="label()"
+  [columns]="columns()"
+  [fullWidth]="true"
+  [data]="rows()"
+  [sort]="sort()"
+  (sorted)="onSorted($event)" />
+
+@if (hasMore()) {
+  <ea-button
+    class="champions__show-all"
+    variant="ghost"
+    size="sm"
+    (clicked)="onShowAll()">
+    Show all {{ championships().length }} years
+  </ea-button>
+} @else if (footnote()) {
+  <p class="champions__footnote">{{ footnote() }}</p>
+}
+
+<ng-template
+  #yearCell
+  let-row>
+  <span
+    class="champions__cell"
+    [class.champions__cell--current]="row.championship.isCurrent"
+    [class.champions__cell--note]="row.championship.isNote">
+    {{ row.year }}
+  </span>
+</ng-template>
+
+<ng-template
+  #winnerCell
+  let-row>
+  <span
+    class="champions__cell"
+    [class.champions__cell--current]="row.championship.isCurrent"
+    [class.champions__cell--note]="row.championship.isNote">
+    @if (trophy() && row.championship.isCurrent) {
+      <ea-icon-trophy class="champions__trophy" />
+    }
+    @for (winner of row.championship.winners; track winner.name) {
+      <span class="champions__winner">
+        <lcc-member-link [name]="winner.name" />
+        @if (winner.peakRating) {
+          <span class="champions__peak-rating">{{ ratingLabel(winner) }}</span>
+        }
+      </span>
+    }
+  </span>
+</ng-template>

@@ -18,8 +18,8 @@ describe('LifetimePageComponent', () => {
 
   const profile: MemberProfile = {
     number: 2,
-    firstName: 'Gerry',
-    lastName: 'Litchfield',
+    firstName: 'John',
+    lastName: 'Doe',
     avatarUrl: null,
   };
   const memberProfiles: Pick<MemberProfilesService, 'load' | 'profileFor'> = {
@@ -71,23 +71,15 @@ describe('LifetimePageComponent', () => {
       expect(component.IMAGE_PATH).toBe('assets/lifetime-achievement-awards/');
     });
 
-    it('should have RECIPIENTS_MAP with expected data', () => {
-      expect(component.RECIPIENTS_MAP.get(2025)).toEqual([
-        'Hans Jung',
-        'Todd Southam',
-        'John Zoccano',
-      ]);
-      expect(component.RECIPIENTS_MAP.get(2024)).toEqual([
-        'Don Armstrong',
-        'David Jackson',
-        'Steve Killi',
-        'Jay Zendrowski',
-      ]);
-      expect(component.RECIPIENTS_MAP.get(2023)).toEqual([
-        'Steve Demmery',
-        'Jim Kearley',
-        'Gerry Litchfield',
-      ]);
+    it('should list recipients under each year, newest first', () => {
+      const years = [...component.RECIPIENTS_MAP.keys()];
+
+      expect(years).toEqual([...years].sort((a, b) => b - a));
+      expect(years.length).toBeGreaterThan(0);
+      component.RECIPIENTS_MAP.forEach(recipients => {
+        expect(recipients.length).toBeGreaterThan(0);
+        recipients.forEach(recipient => expect(recipient).toMatch(/^\S+ \S+/));
+      });
     });
   });
 

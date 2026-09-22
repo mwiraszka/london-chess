@@ -1,11 +1,31 @@
-import { SkeletonComponent, TrophyIconComponent } from '@eagami/ui';
+import {
+  PaginatorComponent,
+  PaginatorState,
+  SkeletonComponent,
+  TrophyIconComponent,
+} from '@eagami/ui';
 
-import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
+import { NgClass } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  TemplateRef,
+  computed,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import {
+  DataTableCellContext,
+  DataTableComponent,
+  LccDataTableColumn,
+} from '@app/components/data-table/data-table.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import { EVENTS_PAGE_SIZES, WIDEST_EVENT } from '@app/constants/events-table';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -17,7 +37,35 @@ import {
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
-import { customSort } from '@app/utils';
+import { customSort, isUpcomingEvent } from '@app/utils';
+
+// A row holds a day and every event of that day, latest edited first
+export interface EventRow {
+  id: string;
+  date: string;
+  events: Event[];
+}
+
+function toEventRows(events: Event[]): EventRow[] {
+  const rows: EventRow[] = [];
+  for (const event of events) {
+    const date = event.eventDate.slice(0, 10);
+    const row = rows.find(row => row.date === date);
+    if (row) {
+      row.events.push(event);
+    } else {
+      rows.push({ id: date, date, events: [event] });
+    }
+  }
+  rows.forEach(({ events }) =>
+    events.sort((a, b) => customSort(a, b, 'modificationInfo.dateLastEdited', true)),
+  );
+  return rows;
+}
+
+const SIZING_ROWS: EventRow[] = toEventRows([WIDEST_EVENT]);
+
+type CellTemplate = TemplateRef<DataTableCellContext<EventRow>>;
 
 @Component({
   selector: 'lcc-events-table',
@@ -25,10 +73,12 @@ import { customSort } from '@app/utils';
   styleUrl: './events-table.component.scss',
   imports: [
     AdminControlsDirective,
-    CommonModule,
+    DataTableComponent,
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
+    NgClass,
+    PaginatorComponent,
     RouterLink,
     SkeletonComponent,
     TextSkeletonComponent,
@@ -37,79 +87,65 @@ import { customSort } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventsTableComponent {
-  @Input({ required: true }) public events!: Event[];
-  @Input({ required: true }) public isAdmin!: boolean;
-  @Input({ required: true }) public nextEvent!: Event | null;
+  public readonly events = input.required<Event[]>();
+  public readonly isAdmin = input.required<boolean>();
+  // The events of the first so many days are shown, when given
+  public readonly dateLimit = input<number>();
+  public readonly isLoading = input(false);
+  // With the options the table pages its events, through their change
+  public readonly options = input<DataPaginationOptions<Event>>();
+  public readonly filteredCount = input<number | null>(null);
+  public readonly showModificationInfo = input(false);
 
-  @Input() public dateLimit?: number;
-  @Input() public isLoading?: boolean;
-  @Input() public options?: DataPaginationOptions<Event>;
-  @Input() public showModificationInfo?: boolean;
+  public readonly optionsChange = output<DataPaginationOptions<Event>>();
 
-  private readonly skeletonGroup = (i: number) => ({
-    dateKey: `skeleton-${i}`,
-    events: [{ id: `skeleton-${i}` } as Event],
-    hasNextEvent: false,
-  });
-
+  private readonly dialogService = inject(DialogService);
   private readonly storeRequests = inject(StoreRequestService);
 
-  constructor(private readonly dialogService: DialogService) {}
+  private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
+  private readonly entryCell = viewChild.required<CellTemplate>('entryCell');
+  private readonly datePlaceholder = viewChild.required<CellTemplate>('datePlaceholder');
+  private readonly entryPlaceholder =
+    viewChild.required<CellTemplate>('entryPlaceholder');
 
-  public get showSkeleton(): boolean {
-    return !!this.isLoading;
-  }
+  protected readonly pageSizes = EVENTS_PAGE_SIZES;
+  protected readonly sizingRows = SIZING_ROWS;
 
-  public get displayGroups(): {
-    dateKey: string;
-    events: Event[];
-    hasNextEvent: boolean;
-  }[] {
-    if (this.showSkeleton) {
-      let count: number;
-      if (this.dateLimit != null) {
-        count = this.dateLimit;
-      } else if (!this.options || this.options.pageSize === -1) {
-        count = this.options?.filters?.showPastEvents?.value ? 200 : 50;
-      } else {
-        count = this.options.pageSize;
-      }
-      return Array.from({ length: count }, (_, i) => this.skeletonGroup(i));
-    }
-    return this.groupedEvents;
-  }
+  protected readonly search = computed(() => this.options()?.search ?? '');
 
-  public get groupedEvents(): {
-    dateKey: string;
-    events: Event[];
-    hasNextEvent: boolean;
-  }[] {
-    const groups: { dateKey: string; events: Event[]; hasNextEvent: boolean }[] = [];
-    for (const event of this.events) {
-      const dateKey = event.eventDate.slice(0, 10);
-      const lastGroup = groups[groups.length - 1];
-      if (lastGroup && lastGroup.dateKey === dateKey) {
-        lastGroup.events.push(event);
-        if (event.id === this.nextEvent?.id) {
-          lastGroup.hasNextEvent = true;
-        }
-      } else {
-        groups.push({
-          dateKey,
-          events: [event],
-          hasNextEvent: event.id === this.nextEvent?.id,
-        });
-      }
-    }
-    groups.forEach(group => {
-      if (group.events.length > 1) {
-        group.events.sort((a, b) =>
-          customSort(a, b, 'modificationInfo.dateLastEdited', true),
-        );
-      }
-    });
-    return this.dateLimit !== undefined ? groups.slice(0, this.dateLimit) : groups;
-  }
+  // Placeholders replace the events during every fetch, so a change of filters shows at once
+  protected readonly loading = computed(() => this.isLoading());
+
+  protected readonly loadingRowCount = computed(
+    () => this.dateLimit() ?? this.options()?.pageSize ?? EVENTS_PAGE_SIZES[0],
+  );
+
+  protected readonly rows = computed<EventRow[]>(() =>
+    toEventRows(this.events()).slice(0, this.dateLimit()),
+  );
+
+  protected readonly columns = computed<LccDataTableColumn<EventRow>[]>(() => [
+    {
+      key: 'date',
+      label: 'Event',
+      cellTemplate: this.dateCell(),
+      placeholderTemplate: this.datePlaceholder(),
+    },
+    // Takes the width the day does not need, so the day sits by its date
+    {
+      key: 'events',
+      label: '',
+      width: '100%',
+      cellTemplate: this.entryCell(),
+      placeholderTemplate: this.entryPlaceholder(),
+    },
+  ]);
+
+  // The first day shown that is still to come: the line above it parts it from the
+  // past, and the schedule scrolls to it
+  protected readonly todayRowId = computed(
+    () => this.rows().find(({ events }) => events.some(isUpcomingEvent))?.id ?? null,
+  );
 
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
@@ -118,6 +154,13 @@ export class EventsTableComponent {
       editPath: ['event', 'edit', event.id],
       itemName: event.title,
     };
+  }
+
+  public onPageChanged({ page, pageSize }: PaginatorState): void {
+    const options = this.options();
+    if (options) {
+      this.optionsChange.emit({ ...options, page, pageSize });
+    }
   }
 
   public async onDeleteEvent(event: Event): Promise<void> {

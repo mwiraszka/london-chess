@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { MemberProfile } from '@app/models';
+import { MemberProfile, NameOrder } from '@app/models';
 import { ApiService } from '@app/services/api.service';
 import { MemberProfilesService } from '@app/services/member-profiles.service';
 import { query, queryTextContent } from '@app/utils';
@@ -15,7 +15,8 @@ import { MemberLinkComponent } from './member-link.component';
       [memberNumber]="memberNumber"
       [name]="name"
       [showAvatar]="showAvatar"
-      [appearance]="appearance" />
+      [appearance]="appearance"
+      [nameOrder]="nameOrder" />
   `,
   imports: [MemberLinkComponent],
 })
@@ -24,6 +25,7 @@ class HostComponent {
   public name = 'Stored Name';
   public showAvatar = false;
   public appearance: 'plain' | 'link' = 'plain';
+  public nameOrder: NameOrder = 'first-last';
 }
 
 describe('MemberLinkComponent', () => {
@@ -45,6 +47,20 @@ describe('MemberLinkComponent', () => {
 
     fixture = TestBed.createComponent(HostComponent);
     host = fixture.componentInstance;
+  });
+
+  it("should show a member's current name surname first when the given name is", async () => {
+    host.memberNumber = 0;
+    host.name = 'Name, Stored';
+    host.nameOrder = 'last-first';
+
+    fixture.detectChanges();
+    await TestBed.inject(MemberProfilesService).load();
+    fixture.detectChanges();
+
+    expect(queryTextContent(fixture.debugElement, 'a.member-link')).toBe(
+      'Carlsen, Magnus',
+    );
   });
 
   it("should show a member's current name, linked to their profile, including member 0", async () => {

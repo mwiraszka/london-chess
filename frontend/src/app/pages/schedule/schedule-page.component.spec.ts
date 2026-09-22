@@ -5,6 +5,7 @@ import { firstValueFrom, take } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
 import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
@@ -87,6 +88,7 @@ describe('SchedulePageComponent', () => {
     store.overrideSelector(EventsSelectors.selectFilteredCount, mockFilteredCount);
     store.overrideSelector(EventsSelectors.selectFilteredEvents, mockFilteredEvents);
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
+    store.overrideSelector(EventsSelectors.selectIsFetchingFiltered, false);
     store.overrideSelector(EventsSelectors.selectNextEvent, mockNextEvent);
     store.overrideSelector(EventsSelectors.selectOptions, mockOptions);
     store.overrideSelector(EventsSelectors.selectScheduleView, mockScheduleView);
@@ -123,6 +125,7 @@ describe('SchedulePageComponent', () => {
         filteredCount: mockFilteredCount,
         filteredEvents: mockFilteredEvents,
         isAdmin: mockIsAdmin,
+        isFetching: false,
         nextEvent: mockNextEvent,
         options: mockOptions,
         scheduleView: mockScheduleView,
@@ -325,7 +328,7 @@ describe('SchedulePageComponent', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeFalsy();
+        expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeFalsy();
@@ -333,11 +336,11 @@ describe('SchedulePageComponent', () => {
     });
 
     describe('when viewModel$ is defined', () => {
-      it('should render page header, data toolbar, and schedule toolbar', () => {
+      it('should render page header, filters, and schedule toolbar', () => {
         fixture.detectChanges();
 
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+        expect(query(fixture.debugElement, '.filters')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeTruthy();
       });
 
@@ -374,6 +377,9 @@ describe('SchedulePageComponent', () => {
 
         expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeFalsy();
+        expect(
+          query(fixture.debugElement, 'ea-empty-state').nativeElement.textContent,
+        ).toContain('No events match these filters.');
       });
 
       it('should render both schedule views as skeletons while the events load', () => {
@@ -383,7 +389,21 @@ describe('SchedulePageComponent', () => {
         fixture.detectChanges();
 
         expect(
-          query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading,
+          query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading(),
+        ).toBe(true);
+        expect(
+          query(fixture.debugElement, 'lcc-events-calendar-grid').componentInstance
+            .isLoading,
+        ).toBe(true);
+      });
+
+      it('should show both schedule views as loading while another page is fetched', () => {
+        store.overrideSelector(EventsSelectors.selectIsFetchingFiltered, true);
+        store.refreshState();
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading(),
         ).toBe(true);
         expect(
           query(fixture.debugElement, 'lcc-events-calendar-grid').componentInstance
@@ -413,6 +433,86 @@ describe('SchedulePageComponent', () => {
           EventsActions.fetchFilteredEventsRequested(),
         );
       });
+    });
+  });
+
+  describe('the filters', () => {
+    it('should search once typing pauses', () => {
+      vi.useFakeTimers();
+      fixture.detectChanges();
+
+      component['searchControl'].setValue('blitz');
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE - 1);
+      const dispatchedEarly = dispatchSpy.mock.calls.length;
+      vi.advanceTimersByTime(1);
+      vi.useRealTimers();
+
+      expect(dispatchedEarly).toBe(0);
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        EventsActions.paginationOptionsChanged({
+          options: { ...mockOptions, search: 'blitz', page: 1 },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should show the search in force', () => {
+      store.overrideSelector(EventsSelectors.selectOptions, {
+        ...mockOptions,
+        search: 'lecture',
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(component['searchControl'].value).toBe('lecture');
+    });
+
+    it('should show or hide past events', () => {
+      fixture.detectChanges();
+
+      query(fixture.debugElement, '.filters__switch').triggerEventHandler(
+        'changed',
+        true,
+      );
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        EventsActions.paginationOptionsChanged({
+          options: {
+            ...mockOptions,
+            page: 1,
+            filters: {
+              showPastEvents: { ...mockOptions.filters.showPastEvents, value: true },
+            },
+          },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should clear every filter at once', () => {
+      store.overrideSelector(EventsSelectors.selectOptions, {
+        ...mockOptions,
+        search: 'lecture',
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      query(fixture.debugElement, '.filters__clear').triggerEventHandler('clicked');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        EventsActions.paginationOptionsChanged({
+          options: { ...mockOptions, page: 1, search: '' },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should offer to clear the filters only while some are in force', () => {
+      fixture.detectChanges();
+
+      expect(
+        query(fixture.debugElement, '.filters__clear').componentInstance.disabled(),
+      ).toBe(true);
     });
   });
 });

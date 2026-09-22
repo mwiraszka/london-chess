@@ -7,7 +7,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { DialogService, StoreRequestService } from '@app/services';
+import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { lastOpenedDialog, query, queryTextContent } from '@app/utils';
 
@@ -20,7 +20,7 @@ describe('ImageViewerComponent', () => {
   let dialogService: DialogService;
   let store: MockStore;
 
-  let adminControlsDetachSpy: MockInstance;
+  let adminControlsCloseSpy: MockInstance;
   let dialogOpenSpy: MockInstance;
   let dialogResultSpy: MockInstance;
   let dispatchSpy: MockInstance;
@@ -76,9 +76,7 @@ describe('ImageViewerComponent', () => {
     component.isAdmin = true;
     fixture.detectChanges();
 
-    // ViewChild available after first change detection
-    // @ts-expect-error Private class member
-    adminControlsDetachSpy = vi.spyOn(component.adminControlsDirective, 'detach');
+    adminControlsCloseSpy = vi.spyOn(TestBed.inject(AdminControlsService), 'close');
   });
 
   it('should create', () => {
@@ -253,7 +251,7 @@ describe('ImageViewerComponent', () => {
       component.onPreviousImage();
       fixture.detectChanges();
 
-      expect(adminControlsDetachSpy).toHaveBeenCalledTimes(1);
+      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(1);
       expect(indexSubjectNextSpy).toHaveBeenCalledTimes(1);
       expect(indexSubjectNextSpy).toHaveBeenCalledWith(MOCK_IMAGES.length - 1);
     });
@@ -262,7 +260,7 @@ describe('ImageViewerComponent', () => {
       component.onNextImage();
       fixture.detectChanges();
 
-      expect(adminControlsDetachSpy).toHaveBeenCalledTimes(1);
+      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(1);
       expect(indexSubjectNextSpy).toHaveBeenCalledTimes(1);
       expect(indexSubjectNextSpy).toHaveBeenCalledWith(1);
     });

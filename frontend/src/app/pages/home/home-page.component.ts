@@ -1,4 +1,11 @@
-import { DownloadIconComponent, PlusCircleIconComponent } from '@eagami/ui';
+import {
+  CalendarDaysIconComponent,
+  CameraIconComponent,
+  DownloadIconComponent,
+  InfoIconComponent,
+  NewspaperIconComponent,
+  PlusCircleIconComponent,
+} from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, firstValueFrom } from 'rxjs';
@@ -72,6 +79,7 @@ export class HomePageComponent implements OnInit {
   public aboutPageLink: InternalLink = {
     text: 'More about the London Chess Club',
     internalPath: 'about',
+    icon: InfoIconComponent,
   };
   public readonly addEventLink: InternalLink = {
     text: 'Add an event',
@@ -86,14 +94,17 @@ export class HomePageComponent implements OnInit {
   public newsPageLink: InternalLink = {
     text: 'More news',
     internalPath: 'news',
+    icon: NewspaperIconComponent,
   };
   public photoGalleryPageLink: InternalLink = {
     text: 'More photos',
     internalPath: 'photo-gallery',
+    icon: CameraIconComponent,
   };
   public schedulePageLink: InternalLink = {
     text: 'All scheduled events',
     internalPath: 'schedule',
+    icon: CalendarDaysIconComponent,
   };
 
   public exportToCsvButton: AdminButton = {

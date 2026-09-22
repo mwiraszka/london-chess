@@ -142,9 +142,18 @@ describe('FooterComponent', () => {
 
         expect(aboutLinks.length).toBe(4);
         expect(eventsLinks.length).toBe(3);
-        expect(archivesLinks.length).toBe(2);
+        expect(archivesLinks.length).toBe(3);
         expect(documentsLinks.length).toBe(3);
         expect(websiteLinks.length).toBe(4);
+      });
+
+      it('should link to the tournaments', () => {
+        expect(
+          queryTextContent(
+            fixture.debugElement,
+            '.archives a[routerLink="/tournaments"]',
+          ),
+        ).toBe('Tournaments');
       });
 
       it('should have correct router links for document links', () => {

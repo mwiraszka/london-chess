@@ -1,0 +1,35 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+// Centred at its own width, and capped at its container so a wider table scrolls
+// sideways within itself
+:host {
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+}
+
+ea-data-table {
+  max-width: 100%;
+  @include data-table-colors;
+}
+
+:host.data-table--full-width {
+  width: 100%;
+
+  ea-data-table {
+    width: 100%;
+  }
+}
+
+// The header is moved over the rows as the page scrolls, so it paints above them
+:host ::ng-deep .ea-data-table__head {
+  z-index: 1;
+  position: relative;
+}
+
+// Laid out as a run of text, so a placeholder row is exactly as tall as a row of text
+lcc-text-skeleton {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.4em;
+}

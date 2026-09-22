@@ -1,3 +1,7 @@
+export {
+  ADMIN_CONTROLS_CONFIG_TOKEN,
+  AdminControlsService,
+} from './admin-controls.service';
 export { ApiError, ApiService } from './api.service';
 export { ArticlesApiService } from './api/articles-api.service';
 export { AuthDrawerService } from './auth-drawer.service';
@@ -18,4 +22,5 @@ export { RefreshService } from './refresh.service';
 export { KEEP_SCROLL, RoutingService } from './routing.service';
 export { StoreRequestService } from './store-request.service';
 export { TouchEventsService } from './touch-events.service';
+export { TournamentsApiService } from './api/tournaments-api.service';
 export { UserService } from './user.service';

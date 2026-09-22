@@ -1,4 +1,4 @@
-import { MapIconComponent } from '@eagami/ui';
+import { NewspaperIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
@@ -41,8 +41,7 @@ import { ImagesSelectors } from '@app/store/images';
           [adminControls]="vm.isAdmin ? getAdminControlsConfig(article) : null"
           [article]="article"
           [bannerImage]="vm.bannerImage"
-          [bodyImages]="vm.bodyImages"
-          [isWideView]="vm.isWideView">
+          [bodyImages]="vm.bodyImages">
         </lcc-article>
         <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
       } @else if (vm.status === 'failed') {
@@ -68,7 +67,7 @@ export class ArticleViewerPageComponent implements OnInit {
   public readonly newsPageLink: InternalLink = {
     text: 'More articles',
     internalPath: 'news',
-    icon: MapIconComponent,
+    icon: NewspaperIconComponent,
   };
   public viewModel$?: Observable<{
     article: Article | null;

@@ -13,9 +13,9 @@ import {
 } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
+  MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
-  MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
 import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
@@ -69,8 +69,9 @@ describe('GameArchivesPageComponent', () => {
     store.overrideSelector(GamesSelectors.selectFilteredGames, MOCK_GAMES);
     store.overrideSelector(GamesSelectors.selectFilteredCount, 3);
     store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loaded');
+    store.overrideSelector(GamesSelectors.selectIsFetchingFiltered, false);
     store.overrideSelector(GamesSelectors.selectPlayers, MOCK_ARCHIVE_PLAYERS);
-    store.overrideSelector(GamesSelectors.selectTournaments, MOCK_TOURNAMENTS);
+    store.overrideSelector(GamesSelectors.selectTournaments, MOCK_ARCHIVE_TOURNAMENTS);
     store.overrideSelector(GamesSelectors.selectSummary, MOCK_GAMES_SUMMARY);
     store.overrideSelector(GamesSelectors.selectReferenceStatus, 'loaded');
     store.refreshState();
@@ -163,10 +164,10 @@ describe('GameArchivesPageComponent', () => {
 
     it('should offer the players by surname', () => {
       expect(component['playerOptions']().map(option => option.label)).toEqual([
-        'Chen, Sasha',
-        'Jung, H.',
-        'Litchfield, Gerry',
-        'Oraha, ',
+        'Smith, Jane',
+        'Roe, H.',
+        'Doe, John',
+        'Public, ',
       ]);
     });
 
@@ -178,7 +179,7 @@ describe('GameArchivesPageComponent', () => {
       store.refreshState();
       fixture.detectChanges();
 
-      expect(component['playerText']()).toBe('Litchfield, Gerry');
+      expect(component['playerText']()).toBe('Doe, John');
     });
 
     it('should offer every year in the archive', () => {
@@ -193,7 +194,7 @@ describe('GameArchivesPageComponent', () => {
     it('should put a chosen player in the URL and start from the first page', () => {
       component.onPlayerSelected({
         value: MOCK_GAMES[0].white.id,
-        label: 'Litchfield, Gerry',
+        label: 'Doe, John',
       });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
@@ -386,7 +387,7 @@ describe('GameArchivesPageComponent', () => {
       expect(queryTextContent(rows[0], '.games__date')).toBe('December 7, 2023');
       expect(
         queryAll(rows[0], 'lcc-member-link').map(link => link.componentInstance.name()),
-      ).toEqual(['Sasha Chen', 'Gerry Litchfield']);
+      ).toEqual(['Jane Smith', 'John Doe']);
       expect(queryTextContent(rows[0], '.games__result')).toBe('½-½');
       expect(queryTextContent(rows[0], '.games__event')).toBe('Club Championship');
       expect(queryTextContent(rows[0], '.games__section')).toBe('(A1)');
@@ -498,13 +499,13 @@ describe('GameArchivesPageComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should render a skeleton row for each game on the page', () => {
+      it('should hold a skeleton row for each game the table showed', () => {
         const rows = queryAll(
           fixture.debugElement,
           '.ea-data-table__body .ea-data-table__row',
         );
 
-        expect(rows).toHaveLength(25);
+        expect(rows).toHaveLength(3);
         expect(queryAll(rows[0], 'lcc-text-skeleton')).toHaveLength(7);
       });
 
@@ -518,15 +519,17 @@ describe('GameArchivesPageComponent', () => {
       });
     });
 
-    it('should keep the games on screen while they refresh', () => {
-      store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+    it('should show placeholders in place of the games while they refresh', () => {
+      store.overrideSelector(GamesSelectors.selectIsFetchingFiltered, true);
       store.refreshState();
       fixture.detectChanges();
 
       expect(
         queryAll(fixture.debugElement, '.ea-data-table__body .ea-data-table__row'),
       ).toHaveLength(3);
-      expect(query(fixture.debugElement, 'lcc-text-skeleton')).toBeFalsy();
+      expect(
+        query(fixture.debugElement, '.ea-data-table__body lcc-text-skeleton'),
+      ).toBeTruthy();
     });
 
     it('should say when no games match', () => {
@@ -535,9 +538,10 @@ describe('GameArchivesPageComponent', () => {
       store.refreshState();
       fixture.detectChanges();
 
-      expect(queryTextContent(fixture.debugElement, '.ea-data-table__cell--empty')).toBe(
-        'No games match these filters.',
-      );
+      expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
+      expect(
+        query(fixture.debugElement, 'ea-empty-state').nativeElement.textContent,
+      ).toContain('No games match these filters.');
     });
 
     describe('when the games fail to load', () => {

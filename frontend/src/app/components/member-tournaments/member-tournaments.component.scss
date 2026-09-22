@@ -1,0 +1,14 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: block;
+}
+
+.results__note,
+.results__secondary {
+  color: var(--color-text-secondary);
+}
+
+.results__secondary {
+  font-size: 12px;
+}

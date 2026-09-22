@@ -84,6 +84,7 @@ describe('MembersEffects', () => {
         {},
       ),
       failedLoads: [],
+      isFetchingFiltered: false,
       newMemberFormData: INITIAL_MEMBER_FORM_DATA,
       recordsScope: 'admin' as const,
       lastFullFetch: null,

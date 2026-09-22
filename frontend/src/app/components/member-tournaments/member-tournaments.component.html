@@ -1,0 +1,97 @@
+<ea-card
+  class="member-tournaments"
+  [fullWidth]="true">
+  <h3 slot="header">Tournaments</h3>
+
+  @if (status() === 'failed') {
+    <lcc-load-failed
+      title="Unable to load tournaments"
+      (retry)="onRetry()" />
+  } @else {
+    <lcc-data-table
+      class="results"
+      aria-label="Tournaments played"
+      noDataText="No tournaments on record yet."
+      [clickable]="true"
+      [columns]="columns()"
+      [data]="rows()"
+      [loading]="loading()"
+      [loadingRowCount]="loadingRowCount"
+      [rowHref]="rowHref"
+      [sizingRows]="sizingRows"
+      [sort]="sortState()"
+      (rowActivate)="onOpenTournament($event)"
+      (sorted)="onSorted($event)">
+      @if (resultCount() > pageSizes[0]) {
+        <ea-paginator
+          align="center"
+          size="sm"
+          [page]="page()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="pageSizes"
+          [showRangeLabel]="true"
+          [totalItems]="resultCount()"
+          (changed)="onPageChanged($event)" />
+      }
+    </lcc-data-table>
+  }
+</ea-card>
+
+<ng-template
+  #dateCell
+  let-row>
+  {{ row.dateLabel }}
+</ng-template>
+
+<ng-template
+  #tournamentCell
+  let-row>
+  {{ row.tournament }}
+  @if (row.section) {
+    <span class="results__note">({{ row.section }})</span>
+  }
+</ng-template>
+
+<ng-template
+  #formatCell
+  let-row>
+  {{ row.format }}
+  @if (!row.result.tournament.isRated) {
+    <span class="results__note">(unrated)</span>
+  }
+</ng-template>
+
+<ng-template
+  #timeControlCell
+  let-row>
+  {{ row.timeControl }}
+</ng-template>
+
+<ng-template
+  #placeCell
+  let-row>
+  {{ row.placeLabel }}
+</ng-template>
+
+<ng-template
+  #scoreCell
+  let-row>
+  {{ row.scoreLabel }}
+</ng-template>
+
+<ng-template
+  #ratingCell
+  let-row>
+  @if (row.rating !== null) {
+    {{ row.rating }}
+    @if (row.provisionalGames) {
+      <span
+        class="results__secondary"
+        [eaTooltip]="'Provisional, from ' + row.provisionalGames + ' games'">
+        P{{ row.provisionalGames }}
+      </span>
+    }
+  } @else {
+    <span class="results__secondary">Unrated</span>
+  }
+</ng-template>

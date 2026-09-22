@@ -12,16 +12,16 @@ import {
   Inject,
   Input,
   OnChanges,
-  OnDestroy,
   Renderer2,
   SimpleChanges,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { MarkdownTableComponent } from '@app/components/markdown-table/markdown-table.component';
 import { Image } from '@app/models';
 import { KebabCasePipe } from '@app/pipes';
 import { RoutingService } from '@app/services';
-import { isCollectionId } from '@app/utils';
+import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils';
 
 @UntilDestroy()
 @Component({
@@ -37,25 +37,29 @@ import { isCollectionId } from '@app/utils';
         </a>
       }
     </div>
-    <markdown
-      [data]="processedData"
-      [disableSanitizer]="true">
-    </markdown>
+    @for (segment of segments; track $index) {
+      @if (segment.kind === 'table') {
+        <lcc-markdown-table [table]="segment.table" />
+      } @else {
+        <markdown
+          [data]="segment.text"
+          [disableSanitizer]="true">
+        </markdown>
+      }
+    }
   `,
   styleUrl: './markdown-renderer.component.scss',
-  imports: [KebabCasePipe, MarkdownComponent, RouterLink],
+  imports: [KebabCasePipe, MarkdownComponent, MarkdownTableComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MarkdownRendererComponent implements AfterViewInit, OnChanges, OnDestroy {
+export class MarkdownRendererComponent implements AfterViewInit, OnChanges {
   @Input() public data?: string;
   @Input() public images: Image[] = [];
-  @Input() public isWideView = false;
 
   public currentPath: string;
   public headings: string[] = [];
-  public processedData?: string;
-
-  private resizeObserverMap = new Map<HTMLElement, ResizeObserver>();
+  // The text between the tables, and the tables, in order
+  public segments: MarkdownSegment[] = [];
 
   constructor(
     @Inject(DOCUMENT) private _document: Document,
@@ -70,27 +74,21 @@ export class MarkdownRendererComponent implements AfterViewInit, OnChanges, OnDe
   public ngOnChanges(changes: SimpleChanges<MarkdownRendererComponent>): void {
     if (changes.data || changes.images) {
       // Preprocess images BEFORE markdown rendering
-      this.processedData = this.preprocessImages(this.data || '');
+      this.segments = splitMarkdownTables(this.preprocessImages(this.data || ''));
 
-      const markdownElement = this.elementRef.nativeElement.querySelector('markdown');
-      if (markdownElement) {
-        this.renderer.setStyle(markdownElement, 'visibility', 'hidden');
-      }
+      const markdownElements: HTMLElement[] = Array.from(
+        this.elementRef.nativeElement.querySelectorAll('markdown'),
+      );
+      markdownElements.forEach(element =>
+        this.renderer.setStyle(element, 'visibility', 'hidden'),
+      );
 
       setTimeout(() => {
-        this.wrapMarkdownTables();
         this.addBlockquoteIcons();
         this.addAnchorIdsToHeadings();
-        if (markdownElement) {
-          this.renderer.removeStyle(markdownElement, 'visibility');
-        }
-        this.changeDetectorRef.markForCheck();
-      });
-    }
-
-    if (changes.isWideView) {
-      setTimeout(() => {
-        this.updateTableStickyColumns();
+        markdownElements.forEach(element =>
+          this.renderer.removeStyle(element, 'visibility'),
+        );
         this.changeDetectorRef.markForCheck();
       });
     }
@@ -103,11 +101,6 @@ export class MarkdownRendererComponent implements AfterViewInit, OnChanges, OnDe
         .pipe(untilDestroyed(this))
         .subscribe(fragment => this.scrollToAnchor(fragment));
     });
-  }
-
-  public ngOnDestroy(): void {
-    this.resizeObserverMap.forEach(observer => observer.disconnect());
-    this.resizeObserverMap.clear();
   }
 
   private preprocessImages(text: string): string {
@@ -132,79 +125,6 @@ export class MarkdownRendererComponent implements AfterViewInit, OnChanges, OnDe
 
       return `\n\n<div class="markdown-image-container" style="max-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}" onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
     });
-  }
-
-  private wrapMarkdownTables(): void {
-    const tableElements =
-      this.elementRef.nativeElement.querySelectorAll('markdown table');
-
-    if (tableElements) {
-      tableElements.forEach((tableElement: HTMLElement) => {
-        if (!Array.from(tableElement?.classList ?? []).includes('lcc-table')) {
-          tableElement.classList.add('lcc-table');
-
-          const wrapperElement = this._document.createElement('div');
-          wrapperElement.classList.add('lcc-table-wrapper');
-
-          tableElement?.parentNode?.insertBefore(wrapperElement, tableElement);
-          wrapperElement.appendChild(tableElement);
-
-          this.configureStickyColumns(wrapperElement);
-        }
-      });
-    }
-  }
-
-  private updateTableStickyColumns(): void {
-    const wrappers = this.elementRef.nativeElement.querySelectorAll('.lcc-table-wrapper');
-
-    wrappers.forEach((wrapperElement: HTMLElement) => {
-      this.configureStickyColumns(wrapperElement);
-    });
-  }
-
-  private configureStickyColumns(wrapperElement: HTMLElement): void {
-    const tableElement = wrapperElement.querySelector('table');
-    const firstHeaderCell = tableElement?.querySelector('thead th:first-child');
-
-    const shouldFixFirstTwoColumnWidths =
-      firstHeaderCell?.textContent?.trim() === '#' &&
-      firstHeaderCell?.nextElementSibling?.textContent?.trim() === 'Name';
-    const hasFixedFirstTwoColumnWidths = wrapperElement.classList.contains(
-      'lcc-results-table-wrapper',
-    );
-
-    const shouldHaveSticky = shouldFixFirstTwoColumnWidths && !this.isWideView;
-    const hasSticky = wrapperElement.classList.contains('lcc-has-sticky-columns');
-
-    // Handle fixed column widths
-    if (shouldFixFirstTwoColumnWidths && !hasFixedFirstTwoColumnWidths) {
-      wrapperElement.classList.add('lcc-results-table-wrapper');
-
-      const updateColumnWidths = () => {
-        const wrapperWidth = wrapperElement.offsetWidth || 0;
-        const col2Width = Math.min(220, Math.max(140, wrapperWidth - 570));
-        wrapperElement.style.setProperty('--lcc-sticky-col-1-width', '52px');
-        wrapperElement.style.setProperty('--lcc-sticky-col-2-width', `${col2Width}px`);
-      };
-
-      requestAnimationFrame(() => updateColumnWidths());
-
-      const resizeObserver = new ResizeObserver(() => updateColumnWidths());
-      resizeObserver.observe(wrapperElement);
-      this.resizeObserverMap.set(wrapperElement, resizeObserver);
-    }
-
-    // Handle sticky behavior
-    if (shouldHaveSticky === hasSticky) {
-      return;
-    }
-
-    if (shouldHaveSticky) {
-      wrapperElement.classList.add('lcc-has-sticky-columns');
-    } else {
-      wrapperElement.classList.remove('lcc-has-sticky-columns');
-    }
   }
 
   private addBlockquoteIcons(): void {

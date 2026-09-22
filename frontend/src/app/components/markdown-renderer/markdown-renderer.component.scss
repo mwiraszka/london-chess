@@ -26,36 +26,12 @@
     }
   }
 
+  // Tables keep the flow's own spacing; only tables set side by side are parted
+  lcc-markdown-table + lcc-markdown-table {
+    margin-top: 16px;
+  }
+
   markdown ::ng-deep {
-    table {
-      // Hide until app-specific markdown styles have been applied
-      &:not(.lcc-table) {
-        visibility: hidden;
-      }
-
-      [align='right'] {
-        text-align: right;
-      }
-
-      [align='left'] {
-        text-align: left;
-      }
-    }
-
-    .lcc-results-table-wrapper table {
-      th:nth-child(1),
-      td:nth-child(1) {
-        min-width: var(--lcc-sticky-col-1-width);
-        max-width: var(--lcc-sticky-col-1-width);
-      }
-
-      th:nth-child(2),
-      td:nth-child(2) {
-        min-width: var(--lcc-sticky-col-2-width);
-        max-width: var(--lcc-sticky-col-2-width);
-      }
-    }
-
     a {
       @include link.lcc-link;
     }

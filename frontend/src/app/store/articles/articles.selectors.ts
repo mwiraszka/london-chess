@@ -98,3 +98,8 @@ export const selectHasUnsavedChanges = (id: Id | null) =>
       return !areSame(formPropertiesOfOriginalArticle, articleFormData);
     },
   );
+
+export const selectIsFetchingFiltered = createSelector(
+  selectArticlesState,
+  state => state.isFetchingFiltered,
+);

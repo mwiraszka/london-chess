@@ -1,0 +1,15 @@
+@use '../../../styles/components/link';
+
+:host {
+  display: block;
+}
+
+// In the wide view the text runs from the left edge, and the tables line up with it
+:host-context(body[data-wide-view='true']) lcc-data-table {
+  justify-content: flex-start;
+}
+
+// Cells are rendered markdown, so their links are styled like the article's
+:host ::ng-deep a {
+  @include link.lcc-link;
+}

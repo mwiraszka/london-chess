@@ -2,12 +2,12 @@ import { createAction, props } from '@ngrx/store';
 
 import {
   ArchivePlayer,
+  ArchiveTournament,
   Game,
   GamesQuery,
   GamesSummary,
   Id,
   LccError,
-  Tournament,
 } from '@app/models';
 
 export const fetchFilteredGamesRequested = createAction(
@@ -40,7 +40,11 @@ export const fetchArchiveReferenceRequested = createAction(
 );
 export const fetchArchiveReferenceSucceeded = createAction(
   '[Games] Fetch archive reference succeeded',
-  props<{ players: ArchivePlayer[]; tournaments: Tournament[]; summary: GamesSummary }>(),
+  props<{
+    players: ArchivePlayer[];
+    tournaments: ArchiveTournament[];
+    summary: GamesSummary;
+  }>(),
 );
 export const fetchArchiveReferenceFailed = createAction(
   '[Games] Fetch archive reference failed',

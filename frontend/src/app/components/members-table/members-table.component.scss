@@ -8,140 +8,44 @@
   width: 100%;
 }
 
-.members-table {
-  margin: auto;
+.members__name {
+  white-space: nowrap;
+}
 
-  @include respond-to('lt-sm') {
-    font-size: 13px;
-  }
+// An inactive member reads in italics with an asterisk after the name
+.members__name--inactive {
+  font-style: italic;
+  color: var(--lcc-color--membersTable-inactiveMemberText);
 
-  &:not(.lcc-show-admin-columns) {
-    .born,
-    .email,
-    .phone-number,
-    .date-joined {
-      display: none !important;
-    }
-  }
-
-  thead {
-    .sortable-header {
-      .sort-icon-container {
-        display: inline-flex;
-        width: 14px;
-        height: 14px;
-        margin-left: 4px;
-
-        .sort-icon {
-          @include icon-size(16px);
-          height: 100%;
-        }
-      }
-
-      &:hover:not(.row-number) {
-        background-color: var(--lcc-color--membersTable-headerBackgroundOnHover);
-        cursor: pointer;
-      }
-    }
-  }
-
-  tbody {
-    tr {
-      &.inactive {
-        :not(.row-number) {
-          font-style: italic;
-          color: var(--lcc-color--membersTable-inactiveMemberText);
-        }
-
-        .first-name::after,
-        .name::after {
-          color: var(--lcc-color--membersTable-inactiveMemberAsterisk);
-          content: ' *';
-        }
-      }
-
-      td {
-        white-space: nowrap;
-
-        &.lcc-truncate {
-          display: table-cell;
-          text-overflow: ellipsis;
-        }
-
-        &.row-number {
-          // Enough space to fit 3-digit numbers
-          min-width: 58px;
-          max-width: 58px;
-          text-align: right;
-        }
-
-        &.name {
-          min-width: 220px;
-          max-width: 220px;
-        }
-
-        &.first-name,
-        &.last-name {
-          min-width: 150px;
-          max-width: 150px;
-        }
-
-        &.city {
-          min-width: 130px;
-          max-width: 130px;
-        }
-
-        &.email {
-          min-width: 250px;
-          max-width: 250px;
-        }
-
-        &.date-joined,
-        &.last-updated {
-          min-width: 160px;
-          max-width: 160px;
-          text-align: right;
-        }
-
-        &.first-name,
-        &.name {
-          .city-champion-link {
-            display: inline-block;
-
-            &.before-name {
-              padding-right: 4px;
-            }
-
-            &.after-name {
-              padding-left: 4px;
-            }
-
-            .city-champion-icon {
-              @include icon-size(16px);
-
-              display: inline-block;
-              vertical-align: middle;
-              color: var(--lcc-color--membersTable-cityChampionIcon);
-              transition: color 1s ease;
-              // Fine-tune vertical alignment
-              transform: translateY(-2px);
-            }
-
-            &:hover {
-              .city-champion-icon {
-                color: var(--lcc-color--membersTable-cityChampionIconHover);
-              }
-            }
-          }
-        }
-      }
-    }
+  &::after {
+    color: var(--lcc-color--membersTable-inactiveMemberAsterisk);
+    content: '*';
   }
 }
 
-// Member names read as plain text, so a profile link shows only through the pointer
-.member-name-link {
-  text-decoration: none;
+// Names read as plain text, so a profile link shows only through the pointer and
+// the underline it brings up
+.members__profile-link {
+  @include lcc-link-underline;
+
   color: inherit;
   cursor: pointer;
+}
+
+// The trophy sits on the text's line, so the row stays as tall as any other
+.members__champion-link {
+  display: inline;
+  margin: 0 4px;
+}
+
+.members__champion-icon {
+  @include icon-size(16px);
+
+  vertical-align: middle;
+  color: var(--lcc-color--membersTable-cityChampionIcon);
+  transition: color 1s ease;
+
+  .members__champion-link:hover & {
+    color: var(--lcc-color--membersTable-cityChampionIconHover);
+  }
 }

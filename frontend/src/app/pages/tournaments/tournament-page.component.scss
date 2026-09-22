@@ -1,0 +1,82 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.details__item {
+  white-space: nowrap;
+}
+
+.details__item + .details__item::before {
+  margin: 0 8px;
+  color: var(--color-text-secondary);
+  content: '·';
+}
+
+.details__subtitle {
+  gap: 0 4px;
+}
+
+.details__label,
+.details__extra,
+.details__separator {
+  color: var(--color-text-secondary);
+}
+
+.details--loading {
+  display: block;
+}
+
+// The page centres blocks at their own width, so the block is capped for its table to scroll
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 16px;
+}
+
+.section__heading,
+.section__games-heading {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.section__games-heading {
+  margin-top: 8px;
+}
+
+.section__heading-extra {
+  font-weight: normal;
+  color: var(--color-text-secondary);
+}
+
+.crosstable__provisional,
+.crosstable__unrated {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.crosstable__round {
+  font-variant-numeric: tabular-nums;
+}
+
+.crosstable__score,
+.games__result--decisive {
+  font-weight: bold;
+}

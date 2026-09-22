@@ -4,11 +4,11 @@ import { take } from 'rxjs/operators';
 
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
+import { ChampionsTableComponent } from '@app/components/champions-table/champions-table.component';
 import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PhotoCarouselComponent } from '@app/components/photo-carousel/photo-carousel.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { ChampionshipTableRowData, Image } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -19,12 +19,11 @@ import { isExpired } from '@app/utils';
   templateUrl: './champion-page.component.html',
   styleUrl: './champion-page.component.scss',
   imports: [
+    ChampionsTableComponent,
     ExpansionPanelComponent,
     MemberLinkComponent,
     PageHeaderComponent,
     PhotoCarouselComponent,
-    TooltipDirective,
-    TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -117,7 +116,7 @@ export class ChampionPageComponent implements OnInit {
     {
       year: 2026,
       winners: [{ name: 'Akshaj Achyuth', peakRating: '2021' }],
-      textStyle: 'font-weight: bold;',
+      isCurrent: true,
     },
     { year: 2025, winners: [{ name: 'Akshaj Achyuth', peakRating: '2009' }] },
     { year: 2011, winners: [{ name: 'Kevin Gibson', peakRating: '2244' }] },
@@ -190,7 +189,7 @@ export class ChampionPageComponent implements OnInit {
     {
       year: 2025,
       winners: [{ name: 'Rene Bartar', peakRating: '2027' }],
-      textStyle: 'font-weight: bold;',
+      isCurrent: true,
     },
     {
       year: 2024,
@@ -201,12 +200,12 @@ export class ChampionPageComponent implements OnInit {
     {
       year: 2021,
       winners: [{ name: 'Cancelled due to pandemic' }],
-      textStyle: 'font-style: italic;',
+      isNote: true,
     },
     {
       year: 2020,
       winners: [{ name: 'Cancelled due to pandemic' }],
-      textStyle: 'font-style: italic;',
+      isNote: true,
     },
     { year: 2019, winners: [{ name: 'Kevin Gibson', peakRating: '2244' }] },
     { year: 2018, winners: [{ name: 'Kevin Gibson', peakRating: '2244' }] },
@@ -280,11 +279,6 @@ export class ChampionPageComponent implements OnInit {
     { year: 1968, winners: [{ name: 'Peter Murray', peakRating: '2289' }] },
     { year: 1967, winners: [{ name: 'Peter Murray', peakRating: '2289' }] },
   ];
-
-  public seeFullActiveTable = false;
-  public seeFullJuniorTable = false;
-  public seeFullSpeedTable = false;
-  public seeFullStandardTable = false;
 
   constructor(
     private readonly metaAndTitleService: MetaAndTitleService,

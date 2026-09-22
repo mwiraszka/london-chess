@@ -69,6 +69,7 @@ describe('EventsEffects', () => {
         {},
       ),
       failedLoads: [],
+      isFetchingFiltered: false,
       newEventFormData: INITIAL_EVENT_FORM_DATA,
       lastFullFetch: null,
       lastHomePageFetch: null,

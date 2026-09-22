@@ -282,3 +282,8 @@ export const selectImageIdsByArticleId = (articleId: Id | null) =>
       return uniq(imageIds);
     },
   );
+
+export const selectIsFetchingFiltered = createSelector(
+  selectImagesState,
+  state => state.isFetchingFiltered,
+);

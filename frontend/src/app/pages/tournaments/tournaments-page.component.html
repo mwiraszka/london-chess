@@ -1,0 +1,149 @@
+<lcc-page-header
+  heading="Tournaments"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+<ea-card
+  class="intro"
+  [fullWidth]="true">
+  <div class="intro__body">
+    <div class="intro__layout">
+      <img
+        class="intro__image"
+        src="assets/tournaments.webp"
+        width="1200"
+        height="621"
+        alt="" />
+      <div class="intro__text">
+        <p>
+          Here you will find the standings for every tournament run at the club since
+          2019, from our weekly blitz nights to the club championship. Select a tournament
+          to see the round-by-round crosstables and link to any games stored in our game
+          archives (applies to rated games only).
+        </p>
+        <p>
+          Our tournaments are run by tournament director
+          <lcc-member-link
+            name="Ryan Sarson"
+            appearance="link"
+            [memberNumber]="1" />, and championship tournaments organized by
+          <lcc-member-link
+            name="Gerry Litchfield"
+            appearance="link"
+            [memberNumber]="2" />. If you have any questions about a past tournament or
+          spot anything that needs correcting, please email us at
+          <a
+            href="mailto:archives@londonchess.ca?subject=LCC%20Website%20-%20Tournaments"
+            class="lcc-link"
+            rel="noopener noreferrer"
+            target="_blank">
+            archives&#64;londonchess.ca</a
+          >.
+        </p>
+      </div>
+    </div>
+    <div class="trophies">
+      @for (trophy of trophies; track $index) {
+        <img
+          [class]="'trophy trophy--' + trophy.shape"
+          [src]="'assets/' + trophy.file"
+          [alt]="trophy.label" />
+      }
+    </div>
+  </div>
+</ea-card>
+
+<div class="filters">
+  <ea-dropdown
+    class="filters__year"
+    label="Year"
+    [options]="yearOptions()"
+    [value]="filters().year"
+    (changed)="onFilterChanged('year', $event)" />
+  <ea-dropdown
+    class="filters__time-control"
+    label="Time control"
+    [options]="timeControlOptions()"
+    [value]="filters().timeControl"
+    (changed)="onFilterChanged('timeControl', $event)" />
+  <ea-dropdown
+    class="filters__format"
+    label="Format"
+    [options]="formatOptions()"
+    [value]="filters().format"
+    (changed)="onFilterChanged('format', $event)" />
+  <ea-button
+    class="filters__clear"
+    variant="ghost"
+    size="md"
+    [disabled]="!hasFilters()"
+    (clicked)="onClearFilters()">
+    Clear filters
+  </ea-button>
+</div>
+
+@if (status() === 'failed') {
+  <lcc-load-failed
+    title="Unable to load tournaments"
+    (retry)="onRetry()" />
+} @else if (empty()) {
+  <ea-empty-state
+    description="No tournaments match these filters."
+    [icon]="emptyIcon" />
+} @else {
+  <lcc-data-table
+    class="tournaments"
+    aria-label="Tournaments"
+    [clickable]="true"
+    [columns]="columns()"
+    [data]="rows()"
+    [loading]="loading()"
+    [rowHref]="rowHref"
+    [sizingRows]="sizingRows"
+    [sort]="sortState()"
+    (rowActivate)="onOpenTournament($event)"
+    (sorted)="onSorted($event)">
+    <ea-paginator
+      align="center"
+      size="sm"
+      [page]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizes"
+      [showRangeLabel]="!loading()"
+      [totalItems]="filteredCount()"
+      (changed)="onPageChanged($event)" />
+  </lcc-data-table>
+}
+
+<ng-template
+  #dateCell
+  let-row>
+  {{ row.dateLabel }}
+</ng-template>
+
+<ng-template
+  #nameCell
+  let-row>
+  <span
+    class="tournaments__name"
+    [eaTooltip]="row.subtitle ? row.name + ' (' + row.subtitle + ')' : ''"
+    [whenClipped]="true">
+    {{ row.name }}
+    @if (row.subtitle) {
+      <span class="tournaments__subtitle">({{ row.subtitle }})</span>
+    }
+  </span>
+</ng-template>
+
+<ng-template
+  #timeControlCell
+  let-row>
+  {{ row.timeControl }}
+</ng-template>
+
+<ng-template
+  #textCell
+  let-row
+  let-value="value">
+  {{ value }}
+</ng-template>

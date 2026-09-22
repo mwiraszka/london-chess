@@ -1,7 +1,7 @@
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
-import { Store } from '@ngrx/store';
+import { Action, Store } from '@ngrx/store';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 
 import { Injectable } from '@angular/core';
@@ -14,6 +14,7 @@ import * as EventsActions from '@app/store/events/events.actions';
 import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
+import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
 import { isCollectionId, isDefined, isEntity, isString } from '@app/utils';
 
 import * as NavActions from './nav.actions';
@@ -24,6 +25,7 @@ const RECORD_FETCH_FAILURES = [
   EventsActions.fetchEventFailed,
   GamesActions.fetchGameFailed,
   MembersActions.fetchMemberFailed,
+  TournamentsActions.fetchTournamentFailed,
 ] as const;
 
 function isMissingRecord(action: ReturnType<(typeof RECORD_FETCH_FAILURES)[number]>) {
@@ -151,7 +153,7 @@ export class NavEffects {
       map(({ payload }) => payload.event.url.split('#')[0]),
       distinctUntilChanged(),
       filter(requestedPath => isEntity(requestedPath.split('/').slice(1)[0])),
-      map(requestedPath => {
+      map((requestedPath): Action | null => {
         const [entity, controlMode, encodedId] = requestedPath.split('/').slice(1);
         const id = encodedId ? decodeURIComponent(encodedId) : null;
 
@@ -167,7 +169,10 @@ export class NavEffects {
           case 'article':
             if (controlMode === 'add' && !isDefined(id)) {
               return ArticlesActions.createAnArticleSelected();
-            } else if (['edit', 'view'].includes(controlMode) && isCollectionId(id)) {
+            } else if (controlMode === 'view' && isCollectionId(id)) {
+              // The route's guard fetches the article
+              return null;
+            } else if (controlMode === 'edit' && isCollectionId(id)) {
               return ArticlesActions.fetchArticleRequested({ articleId: id });
             }
             return NavActions.navigationRequested({ path: 'news' });
@@ -205,6 +210,7 @@ export class NavEffects {
             });
         }
       }),
+      filter(isDefined),
     ),
   );
 

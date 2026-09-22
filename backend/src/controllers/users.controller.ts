@@ -401,6 +401,7 @@ export async function uploadUserAvatar(
       uploadAvatar(req.user.id, cropped.buffer, cropped.mimetype, 'cropped'),
     ]);
 
+    await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
     const clerkUser = await clerkClient.users.updateUserProfileImage(req.user.id, {
       file: new Blob([new Uint8Array(cropped.buffer)], { type: cropped.mimetype }),
     });
@@ -410,6 +411,7 @@ export async function uploadUserAvatar(
       'account.avatarOriginalUrl': originalUrl,
       'account.avatarCropState': cropState,
       'account.avatarManagedByApp': true,
+      'account.clerkImagePending': false,
       'account.clerkImageUrl': clerkUser.imageUrl,
       'account.avatarUpdatedAt': new Date().toISOString(),
     });
@@ -445,6 +447,7 @@ export async function updateCroppedAvatar(
       'cropped',
     );
 
+    await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
     const clerkUser = await clerkClient.users.updateUserProfileImage(req.user.id, {
       file: new Blob([new Uint8Array(cropped.buffer)], { type: cropped.mimetype }),
     });
@@ -452,6 +455,7 @@ export async function updateCroppedAvatar(
     const member = await updateLinkedMember(req.user.id, {
       'account.avatarUrl': croppedUrl,
       'account.avatarCropState': cropState,
+      'account.clerkImagePending': false,
       'account.clerkImageUrl': clerkUser.imageUrl,
       'account.avatarUpdatedAt': new Date().toISOString(),
     });
@@ -473,6 +477,7 @@ export async function deleteUserAvatar(
   try {
     await deleteAvatar(req.user.id);
 
+    await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
     await clerkClient.users.deleteUserProfileImage(req.user.id);
     const clerkUser = await clerkClient.users.getUser(req.user.id);
 
@@ -481,6 +486,7 @@ export async function deleteUserAvatar(
       'account.avatarOriginalUrl': null,
       'account.avatarCropState': null,
       'account.avatarManagedByApp': false,
+      'account.clerkImagePending': false,
       // Without a photo, Clerk reports a placeholder imageUrl; store null so
       // clients fall back to initials
       'account.clerkImageUrl': clerkUser.hasImage ? clerkUser.imageUrl : null,

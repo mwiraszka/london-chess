@@ -1,0 +1,147 @@
+@use 'sass:math';
+@use '../../../styles/abstracts/mixins' as *;
+
+// The trophies at full size, which they shrink from together once the card is narrower
+$trophy-height: 140px;
+$trophy-gap: 8px;
+$cup-width: $trophy-height * math.div(220, 300);
+$bowl-width: $trophy-height;
+$chalice-width: $trophy-height * 0.8 * math.div(160, 300);
+$trophies-width: 4 * $chalice-width + $bowl-width + $cup-width + 5 * $trophy-gap;
+
+// The photo and text sit side by side from here up
+$side-by-side-from: 800px;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.intro__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.intro__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: $side-by-side-from) {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 32px;
+  }
+}
+
+// Beside the text the photo takes the text's height, cropping rather than distorting
+.intro__image {
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  border-radius: var(--lcc-borderRadius--large);
+
+  @media (min-width: $side-by-side-from) {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    max-height: none;
+  }
+}
+
+.intro__text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  font-size: 16px;
+  color: var(--color-text-primary);
+
+  // Two thirds of the card once there is room, the photo taking the rest
+  @include respond-to('gt-xl') {
+    flex-grow: 2;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.trophies {
+  display: flex;
+  align-items: flex-end;
+  gap: $trophy-gap;
+  width: 100%;
+  max-width: $trophies-width;
+}
+
+// Each shrinks in proportion to its full width, so the row keeps its shape
+.trophy {
+  flex: 0 1 auto;
+  min-width: 0;
+  height: auto;
+}
+
+.trophy--cup {
+  flex-basis: $cup-width;
+}
+
+.trophy--bowl {
+  flex-basis: $bowl-width;
+}
+
+.trophy--chalice {
+  flex-basis: $chalice-width;
+}
+
+.filters {
+  display: grid;
+  align-items: end;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  margin: 24px 0;
+
+  @include respond-to('gt-sm') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include respond-to('gt-lg') {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  }
+}
+
+// Below lg the format and the clear button take a row each
+.filters__format,
+.filters__clear {
+  @include respond-to('lt-lg') {
+    grid-column: 1 / -1;
+  }
+}
+
+.filters__clear {
+  align-self: end;
+  justify-self: center;
+
+  @include respond-to('gt-lg') {
+    justify-self: start;
+  }
+}
+
+.tournaments__name {
+  overflow: hidden;
+  display: block;
+  max-width: 400px;
+  text-overflow: ellipsis;
+}
+
+.tournaments__subtitle {
+  color: var(--color-text-secondary);
+}

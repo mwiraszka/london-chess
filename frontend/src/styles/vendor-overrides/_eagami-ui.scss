@@ -66,9 +66,25 @@ body[data-theme='dark'] ea-skeleton .ea-skeleton {
   background-color: var(--color-bg-emphasis);
 }
 
+// In a table of links, a row that leads nowhere neither lights up nor invites a
+// click; the library's own rules come later in the cascade, so these outrank them
+.ea-data-table.ea-data-table--clickable
+  .ea-data-table__body
+  .ea-data-table__row:not(:has(.ea-data-table__row-link)) {
+  cursor: default;
+
+  &:hover {
+    background-color: transparent;
+  }
+
+  &:nth-child(2n):hover {
+    background-color: var(--ea-data-table-row-stripe-background-color);
+  }
+}
+
 // Table rows alternate between two tones, so their placeholders take a fill that
 // stands out on both
-.ea-data-table lcc-text-skeleton .ea-skeleton {
+.ea-data-table ea-skeleton .ea-skeleton {
   background-color: var(--lcc-color--table-skeleton);
 }
 

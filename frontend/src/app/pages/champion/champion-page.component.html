@@ -46,59 +46,11 @@
   <div class="standard-championship">
     <h3>Past champions</h3>
     <hr />
-    <table class="lcc-table">
-      <thead>
-        <th>Year</th>
-        <th>Winner</th>
-      </thead>
-      <tbody>
-        @for (
-          championship of standardChampionships.slice(
-            0,
-            seeFullStandardTable ? undefined : 10
-          );
-          track championship.year;
-          let first = $first
-        ) {
-          <tr>
-            <td [style]="championship.textStyle">{{ championship.year }}</td>
-            <td
-              class="winner-cell"
-              [style]="championship.textStyle">
-              @if (first) {
-                <ea-icon-trophy class="championship-icon" />
-              }
-              @for (winner of championship.winners; track winner.name; let last = $last) {
-                <span class="winner-name">
-                  <lcc-member-link [name]="winner.name" />
-                  @if (winner.peakRating) {
-                    <span class="winner-peak-rating">({{ winner.peakRating }})</span>
-                  }
-                  @if (!last) {
-                    <span>, </span>
-                  }
-                </span>
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-      <tfoot>
-        <tr>
-          <td
-            colspan="100%"
-            [class.clickable]="!seeFullStandardTable"
-            [tooltip]="
-              seeFullStandardTable
-                ? null
-                : 'Show full list of champions going back to 1967'
-            "
-            (click)="seeFullStandardTable = true">
-            {{ seeFullStandardTable ? 'Club formed c.1965' : '. . .' }}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+    <lcc-champions-table
+      label="Past champions"
+      footnote="Club formed c.1965"
+      [championships]="standardChampionships"
+      [trophy]="true" />
   </div>
 
   <div class="other-championships">
@@ -113,58 +65,9 @@
             (1996&ndash;2011, 2025&ndash;present)
           </h4>
         </ng-container>
-        <table class="lcc-table">
-          <thead>
-            <th>Year</th>
-            <th>Winner</th>
-          </thead>
-          <tbody>
-            @for (
-              championship of juniorChampionships.slice(
-                0,
-                seeFullJuniorTable ? undefined : 10
-              );
-              track championship.year;
-              let first = $first
-            ) {
-              <tr>
-                <td [style]="championship.textStyle">{{ championship.year }}</td>
-                <td
-                  class="winner-cell"
-                  [style]="championship.textStyle">
-                  @for (
-                    winner of championship.winners;
-                    track winner.name;
-                    let last = $last
-                  ) {
-                    <span class="winner-name">
-                      <lcc-member-link [name]="winner.name" />
-                      @if (winner.peakRating) {
-                        <span class="winner-peak-rating">({{ winner.peakRating }})</span>
-                      }
-                      @if (!last) {
-                        <span>, </span>
-                      }
-                    </span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td
-                colspan="100%"
-                [class.clickable]="!seeFullJuniorTable"
-                [tooltip]="
-                  seeFullJuniorTable ? null : 'Show full list of junior champions'
-                "
-                (click)="seeFullJuniorTable = true">
-                {{ seeFullJuniorTable ? '' : '. . .' }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+        <lcc-champions-table
+          label="Past junior champions"
+          [championships]="juniorChampionships" />
       </lcc-expansion-panel>
 
       <lcc-expansion-panel class="active-champions">
@@ -175,122 +78,20 @@
             (1994&ndash;2019, 2023&ndash;2024)
           </h4>
         </ng-container>
-        <table class="lcc-table">
-          <thead>
-            <th>Year</th>
-            <th>Winner</th>
-          </thead>
-          <tbody>
-            @for (
-              championship of activeChampionships.slice(
-                0,
-                seeFullActiveTable ? undefined : 10
-              );
-              track championship.year;
-              let first = $first
-            ) {
-              <tr>
-                <td [style]="championship.textStyle">{{ championship.year }}</td>
-                <td
-                  class="winner-cell"
-                  [style]="championship.textStyle">
-                  @for (
-                    winner of championship.winners;
-                    track winner.name;
-                    let last = $last
-                  ) {
-                    <span class="winner-name">
-                      <lcc-member-link [name]="winner.name" />
-                      @if (winner.peakRating) {
-                        <span class="winner-peak-rating">({{ winner.peakRating }})</span>
-                      }
-                      @if (!last) {
-                        <span>, </span>
-                      }
-                    </span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td
-                colspan="100%"
-                [class.clickable]="!seeFullActiveTable"
-                [tooltip]="
-                  seeFullActiveTable ? null : 'Show full list of active champions'
-                "
-                (click)="seeFullActiveTable = true">
-                {{
-                  seeFullActiveTable
-                    ? '* peak active rating (no longer maintained)'
-                    : '. . .'
-                }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+        <lcc-champions-table
+          label="Past active champions"
+          [championships]="activeChampionships" />
       </lcc-expansion-panel>
 
       <lcc-expansion-panel class="speed-champions">
         <ng-container header>
           <h4>Past winners of <b>Speed Championship</b> (1993&ndash;2019)</h4>
         </ng-container>
-        <table class="lcc-table">
-          <thead>
-            <th>Year</th>
-            <th>Winner</th>
-          </thead>
-          <tbody>
-            @for (
-              championship of speedChampionships.slice(
-                0,
-                seeFullSpeedTable ? undefined : 10
-              );
-              track championship.year;
-              let first = $first
-            ) {
-              <tr>
-                <td [style]="championship.textStyle">{{ championship.year }}</td>
-                <td
-                  class="winner-cell"
-                  [style]="championship.textStyle">
-                  @for (
-                    winner of championship.winners;
-                    track winner.name;
-                    let last = $last
-                  ) {
-                    <span class="winner-name">
-                      <lcc-member-link [name]="winner.name" />
-                      @if (winner.peakRating) {
-                        <span class="winner-peak-rating">({{ winner.peakRating }}*)</span>
-                      }
-                      @if (!last) {
-                        <span>, </span>
-                      }
-                    </span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td
-                colspan="100%"
-                [class.clickable]="!seeFullSpeedTable"
-                [tooltip]="seeFullSpeedTable ? null : 'Show full list of speed champions'"
-                (click)="seeFullSpeedTable = true">
-                {{
-                  seeFullSpeedTable
-                    ? '* peak active rating (no longer maintained)'
-                    : '. . .'
-                }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+        <lcc-champions-table
+          label="Past speed champions"
+          footnote="* peak active rating (no longer maintained)"
+          ratingNote="*"
+          [championships]="speedChampionships" />
       </lcc-expansion-panel>
     </div>
   </div>

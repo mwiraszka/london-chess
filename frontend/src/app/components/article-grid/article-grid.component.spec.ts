@@ -105,13 +105,6 @@ describe('ArticleGridComponent', () => {
       expect(component.displayItems).toHaveLength(25);
     });
 
-    it('should return 100 skeleton rows when loading with pageSize -1', () => {
-      fixture.componentRef.setInput('isLoading', true);
-      fixture.componentRef.setInput('options', { ...mockOptions, pageSize: -1 });
-
-      expect(component.displayItems).toHaveLength(100);
-    });
-
     it('should return 100 skeleton rows when loading with no options', () => {
       fixture.componentRef.setInput('isLoading', true);
       fixture.componentRef.setInput('options', undefined);

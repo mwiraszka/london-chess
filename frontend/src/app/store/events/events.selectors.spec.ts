@@ -33,6 +33,7 @@ describe('Events Selectors', () => {
   const mockEventsState: EventsState = {
     ...eventsAdapter.getInitialState({
       failedLoads: [],
+      isFetchingFiltered: false,
       newEventFormData: INITIAL_EVENT_FORM_DATA,
       lastHomePageFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',

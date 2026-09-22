@@ -1,14 +1,19 @@
-import { InfoIconComponent } from '@eagami/ui';
+import {
+  CalendarDaysIconComponent,
+  InfoIconComponent,
+  MapIconComponent,
+} from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { ClubCardComponent } from '@app/components/club-card/club-card.component';
 import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
+import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { LCC } from '@app/constants/clubs';
-import { Club } from '@app/models';
+import { Club, InternalLink } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 
 @Component({
@@ -18,6 +23,7 @@ import { MetaAndTitleService } from '@app/services';
   imports: [
     ClubCardComponent,
     ExpansionPanelComponent,
+    LinkListComponent,
     MemberLinkComponent,
     PageHeaderComponent,
     RouterLink,
@@ -28,6 +34,16 @@ export class AboutPageComponent implements OnInit {
   protected readonly pageIcon = InfoIconComponent;
 
   public readonly lccClub: Club = LCC;
+  public readonly schedulePageLink: InternalLink = {
+    text: 'Scheduled events',
+    internalPath: 'schedule',
+    icon: CalendarDaysIconComponent,
+  };
+  public readonly regionalClubsPageLink: InternalLink = {
+    text: 'More chess clubs in the region',
+    internalPath: 'regional-clubs',
+    icon: MapIconComponent,
+  };
 
   constructor(private readonly metaAndTitleService: MetaAndTitleService) {}
 

@@ -6,7 +6,8 @@
     <a
       class="article"
       [class.skeleton]="showSkeleton"
-      [style.animation-delay.s]="showSkeleton ? $index * 0.1 : null"
+      [class.article--entering]="entering"
+      [style.animation-delay.s]="entering ? $index * 0.1 : null"
       [attr.aria-hidden]="showSkeleton || null"
       [adminControls]="
         !showSkeleton && isAdmin ? getAdminControlsConfig(row.article) : null

@@ -4,10 +4,9 @@ import {
   MicroscopeIconComponent,
   SkeletonComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
-import { map, switchMap, take, tap } from 'rxjs/operators';
+import { map, switchMap, tap } from 'rxjs/operators';
 
 import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
@@ -87,7 +86,6 @@ function toGameView(game: Game): GameView {
   };
 }
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-game-page',
   templateUrl: './game-page.component.html',
@@ -126,23 +124,6 @@ export class GamePageComponent implements OnInit {
 
   public ngOnInit(): void {
     const gameId$ = this.route.paramMap.pipe(map(params => params.get('id') ?? ''));
-
-    // A game reached by link is not in the store yet
-    gameId$
-      .pipe(
-        switchMap(gameId =>
-          this.store.select(GamesSelectors.selectGameById(gameId)).pipe(
-            take(1),
-            map(game => ({ gameId, game })),
-          ),
-        ),
-        untilDestroyed(this),
-      )
-      .subscribe(({ gameId, game }) => {
-        if (!game) {
-          this.store.dispatch(GamesActions.fetchGameRequested({ gameId }));
-        }
-      });
 
     this.viewModel$ = gameId$.pipe(
       switchMap(gameId =>

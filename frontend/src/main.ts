@@ -39,6 +39,7 @@ import { ImagesStoreModule } from '@app/store/images';
 import { MembersStoreModule } from '@app/store/members';
 import { MetaState, metaReducers } from '@app/store/meta-reducers';
 import { NavStoreModule } from '@app/store/nav';
+import { TournamentsStoreModule } from '@app/store/tournaments';
 import { actionSanitizer } from '@app/utils';
 
 import { environment } from '@env';
@@ -103,6 +104,7 @@ bootstrapApplication(AppComponent, {
         actionSanitizer,
       }),
       StoreRouterConnectingModule.forRoot(),
+      TournamentsStoreModule,
     ),
     provideHttpClient(withXhr(), withInterceptorsFromDi(), withJsonpSupport()),
     provideEagamiUi(),

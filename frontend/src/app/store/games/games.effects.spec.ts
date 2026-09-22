@@ -10,9 +10,9 @@ import { NavigationEnd } from '@angular/router';
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
+  MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
-  MOCK_TOURNAMENTS,
 } from '@app/mocks/games.mock';
 import { LccError } from '@app/models';
 import { GamesApiService } from '@app/services';
@@ -182,7 +182,9 @@ describe('GamesEffects', () => {
     it('should fetch the players, tournaments and summary together', () =>
       withDone(done => {
         gamesApiService.getPlayers.mockReturnValue(of({ data: MOCK_ARCHIVE_PLAYERS }));
-        gamesApiService.getTournaments.mockReturnValue(of({ data: MOCK_TOURNAMENTS }));
+        gamesApiService.getTournaments.mockReturnValue(
+          of({ data: MOCK_ARCHIVE_TOURNAMENTS }),
+        );
         gamesApiService.getSummary.mockReturnValue(of({ data: MOCK_GAMES_SUMMARY }));
 
         actions$.next(GamesActions.fetchArchiveReferenceRequested());
@@ -191,7 +193,7 @@ describe('GamesEffects', () => {
           expect(action).toEqual(
             GamesActions.fetchArchiveReferenceSucceeded({
               players: MOCK_ARCHIVE_PLAYERS,
-              tournaments: MOCK_TOURNAMENTS,
+              tournaments: MOCK_ARCHIVE_TOURNAMENTS,
               summary: MOCK_GAMES_SUMMARY,
             }),
           );

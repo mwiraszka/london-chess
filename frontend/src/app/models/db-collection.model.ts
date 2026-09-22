@@ -1,2 +1,2 @@
 export type DbCollection =
-  'articles' | 'events' | 'games' | 'images' | 'members' | 'users';
+  'articles' | 'events' | 'games' | 'images' | 'members' | 'tournaments' | 'users';

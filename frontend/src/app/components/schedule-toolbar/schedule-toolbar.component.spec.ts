@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DialogService } from '@app/services';
 import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
+import { query } from '@app/utils';
 
 import { ScheduleToolbarComponent } from './schedule-toolbar.component';
 
@@ -76,10 +77,12 @@ describe('ScheduleToolbarComponent', () => {
       fixture.componentRef.setInput('filteredEvents', []);
       fixture.detectChanges();
 
-      const button = fixture.debugElement.nativeElement.querySelector(
-        '.export-to-ical-button',
-      );
-      expect(button?.disabled).toBe(true);
+      expect(
+        query(
+          fixture.debugElement,
+          '.schedule-toolbar__export',
+        ).componentInstance.disabled(),
+      ).toBe(true);
     });
 
     it('should generate filename with current date', async () => {
@@ -126,8 +129,12 @@ describe('ScheduleToolbarComponent', () => {
       // Force change detection to pick up the new mock value
       component.changeDetectorRef.detectChanges();
 
-      const button = fixture.debugElement.nativeElement.querySelector('.today-button');
-      expect(button?.disabled).toBe(true);
+      expect(
+        query(
+          fixture.debugElement,
+          '.schedule-toolbar__today',
+        ).componentInstance.disabled(),
+      ).toBe(true);
     });
 
     it('should enable today button when today scroll point exists', () => {
@@ -137,8 +144,12 @@ describe('ScheduleToolbarComponent', () => {
       // Force change detection to pick up the new mock value
       component.changeDetectorRef.detectChanges();
 
-      const button = fixture.debugElement.nativeElement.querySelector('.today-button');
-      expect(button?.disabled).toBe(false);
+      expect(
+        query(
+          fixture.debugElement,
+          '.schedule-toolbar__today',
+        ).componentInstance.disabled(),
+      ).toBe(false);
     });
   });
 
@@ -146,9 +157,10 @@ describe('ScheduleToolbarComponent', () => {
     it('should emit toggleScheduleView event', () => {
       vi.spyOn(component.toggleScheduleView, 'emit');
 
-      const toggleButton =
-        fixture.debugElement.nativeElement.querySelector('lcc-toggle-switch');
-      toggleButton?.dispatchEvent(new CustomEvent('toggle'));
+      query(fixture.debugElement, '.schedule-toolbar__view').triggerEventHandler(
+        'changed',
+        true,
+      );
 
       expect(component.toggleScheduleView.emit).toHaveBeenCalled();
     });

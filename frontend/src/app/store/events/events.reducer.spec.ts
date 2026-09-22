@@ -32,6 +32,7 @@ describe('Events Reducer', () => {
         entities: {},
         newEventFormData: INITIAL_EVENT_FORM_DATA,
         failedLoads: [],
+        isFetchingFiltered: false,
         lastHomePageFetch: null,
         lastFilteredFetch: null,
         homePageEvents: [],
@@ -134,6 +135,33 @@ describe('Events Reducer', () => {
 
       expect(state.entities['f6a7b8c9d0e1f2a3']?.formData).toEqual(modifiedFormData);
       expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(updatedEvent);
+    });
+  });
+
+  describe('a fetch of filtered events', () => {
+    it('should be marked as under way until it succeeds or fails', () => {
+      const fetching = eventsReducer(
+        initialState,
+        EventsActions.fetchFilteredEventsRequested(),
+      );
+
+      expect(fetching.isFetchingFiltered).toBe(true);
+      expect(
+        eventsReducer(
+          fetching,
+          EventsActions.fetchFilteredEventsSucceeded({
+            events: [],
+            filteredCount: 0,
+            totalCount: 0,
+          }),
+        ).isFetchingFiltered,
+      ).toBe(false);
+      expect(
+        eventsReducer(
+          fetching,
+          EventsActions.fetchFilteredEventsFailed({ error: mockError }),
+        ).isFetchingFiltered,
+      ).toBe(false);
     });
   });
 

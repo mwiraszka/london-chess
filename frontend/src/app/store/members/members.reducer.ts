@@ -27,6 +27,8 @@ export interface MembersState extends EntityState<MemberEntity> {
   newMemberFormData: MemberFormData;
   // Loads whose latest attempt failed, which are never persisted
   failedLoads: MembersLoad[];
+  // Whether a page of filtered members is on its way, never persisted
+  isFetchingFiltered: boolean;
   // Public records leave out private details, so records from both APIs are never mixed
   recordsScope: ApiScope | null;
   lastFullFetch: IsoDate | null;
@@ -44,6 +46,7 @@ export const membersAdapter = createEntityAdapter<MemberEntity>({
 export const initialState: MembersState = membersAdapter.getInitialState({
   newMemberFormData: INITIAL_MEMBER_FORM_DATA,
   failedLoads: [],
+  isFetchingFiltered: false,
   recordsScope: null,
   lastFullFetch: null,
   lastFilteredFetch: null,
@@ -134,12 +137,14 @@ function withUpdatedMembers(members: Member[], updates: Member[]): Member[] {
 export const membersReducer = createReducer(
   initialState,
 
-  on(MembersActions.fetchFilteredMembersRequested, (state): MembersState =>
-    withLoadAttempt(state, 'filtered'),
-  ),
-  on(MembersActions.fetchFilteredMembersFailed, (state): MembersState =>
-    withFailedLoad(state, 'filtered'),
-  ),
+  on(MembersActions.fetchFilteredMembersRequested, (state): MembersState => ({
+    ...withLoadAttempt(state, 'filtered'),
+    isFetchingFiltered: true,
+  })),
+  on(MembersActions.fetchFilteredMembersFailed, (state): MembersState => ({
+    ...withFailedLoad(state, 'filtered'),
+    isFetchingFiltered: false,
+  })),
 
   on(
     MembersActions.fetchMemberRequested,
@@ -185,6 +190,7 @@ export const membersReducer = createReducer(
         members.map(member => mergedEntity(scopedState.entities[member.id], member)),
         {
           ...scopedState,
+          isFetchingFiltered: false,
           lastFilteredFetch: new Date(Date.now()).toISOString(),
           filteredMembers: members,
           filteredCount,

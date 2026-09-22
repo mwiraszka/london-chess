@@ -1,0 +1,41 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.champions__cell--current {
+  font-weight: bold;
+}
+
+.champions__cell--note {
+  font-style: italic;
+}
+
+.champions__trophy {
+  @include icon-size(16px);
+
+  margin-right: 4px;
+  color: var(--lcc-color--championPage-championshipIcon);
+}
+
+// Winners of a shared title are listed with commas
+.champions__winner:not(:last-child)::after {
+  content: ', ';
+}
+
+.champions__peak-rating {
+  margin-left: 4px;
+  font-size: calc(1em - 2px);
+  color: var(--color-text-secondary);
+}
+
+.champions__footnote {
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}

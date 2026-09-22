@@ -1,4 +1,11 @@
-import { DownloadIconComponent, PlusCircleIconComponent } from '@eagami/ui';
+import {
+  CalendarDaysIconComponent,
+  CameraIconComponent,
+  DownloadIconComponent,
+  InfoIconComponent,
+  NewspaperIconComponent,
+  PlusCircleIconComponent,
+} from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { firstValueFrom, take } from 'rxjs';
 
@@ -255,6 +262,7 @@ describe('HomePageComponent', () => {
       expect(component.aboutPageLink).toStrictEqual({
         text: 'More about the London Chess Club',
         internalPath: 'about',
+        icon: InfoIconComponent,
       });
 
       expect(component.addEventLink).toStrictEqual({
@@ -272,16 +280,19 @@ describe('HomePageComponent', () => {
       expect(component.newsPageLink).toStrictEqual({
         text: 'More news',
         internalPath: 'news',
+        icon: NewspaperIconComponent,
       });
 
       expect(component.photoGalleryPageLink).toStrictEqual({
         text: 'More photos',
         internalPath: 'photo-gallery',
+        icon: CameraIconComponent,
       });
 
       expect(component.schedulePageLink).toStrictEqual({
         text: 'All scheduled events',
         internalPath: 'schedule',
+        icon: CalendarDaysIconComponent,
       });
     });
 

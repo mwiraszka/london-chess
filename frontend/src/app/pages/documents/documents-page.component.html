@@ -3,49 +3,48 @@
   [icon]="pageIcon">
 </lcc-page-header>
 
-<div class="lcc-table-wrapper">
-  <table class="lcc-table documents-table">
-    <thead>
-      <th class="document">Document</th>
-      <th class="published">Published</th>
-      <th class="last-modified">Last Modified</th>
-    </thead>
-    <tbody>
-      @for (document of documents; track document.title) {
-        <tr>
-          <td class="document">
-            <div
-              class="document-label-container"
-              [fragment]="document.fileName"
-              [routerLink]="currentPath">
-              <ea-icon-file-text class="file-icon" />
-              <span class="document-title">{{ document.title }}</span>
-            </div>
+<lcc-data-table
+  class="documents"
+  aria-label="Documents"
+  [clickable]="true"
+  [columns]="columns()"
+  [fullWidth]="isWideView()"
+  [data]="rows"
+  [rowHref]="rowHref"
+  [sort]="sort()"
+  (rowActivate)="onOpenDocument($event)"
+  (sorted)="onSorted($event)" />
 
-            <a
-              [href]="'assets/documents/' + document.fileName"
-              class="download-link"
-              [download]="document.title"
-              [tooltip]="tooltipContent"
-              (click)="$event.stopPropagation()">
-              <ea-icon-download class="download-icon" />
-            </a>
+<ng-template
+  #documentCell
+  let-row>
+  <span class="documents__document">
+    <a
+      class="documents__label"
+      [fragment]="row.document.fileName"
+      [routerLink]="currentPath">
+      <ea-icon-file-text class="documents__icon" />
+      <span class="documents__title">{{ row.title }}</span>
+    </a>
 
-            <ng-template #tooltipContent>
-              <span>Download</span>
-              <i class="tooltip-item-name">{{ document.title }}</i>
-            </ng-template>
-          </td>
+    <a
+      [href]="'assets/documents/' + row.document.fileName"
+      class="documents__download"
+      [download]="row.title"
+      [tooltip]="tooltipContent"
+      (click)="$event.stopPropagation()">
+      <ea-icon-download class="documents__icon" />
+    </a>
 
-          <td class="published">
-            {{ document.datePublished | formatDate: 'short no-time' }}
-          </td>
+    <ng-template #tooltipContent>
+      <span>Download</span>
+      <i class="tooltip-item-name">{{ row.title }}</i>
+    </ng-template>
+  </span>
+</ng-template>
 
-          <td class="last-modified">
-            {{ document.dateLastModified | formatDate: 'short no-time' }}
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
-</div>
+<ng-template
+  #dateCell
+  let-value="value">
+  {{ value | formatDate: 'short no-time' }}
+</ng-template>

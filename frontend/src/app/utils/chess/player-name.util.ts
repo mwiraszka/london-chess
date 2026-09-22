@@ -4,6 +4,11 @@ export function playerName({ firstName, lastName, suffix }: GamePlayer): string 
   return [firstName, lastName, suffix].filter(part => part !== '').join(' ');
 }
 
+export function playerNameLastFirst({ firstName, lastName, suffix }: GamePlayer): string {
+  const given = [firstName, suffix].filter(part => part !== '').join(' ');
+  return given ? `${lastName}, ${given}` : lastName;
+}
+
 export type PlayerScore = '1' | '½' | '0' | '*';
 
 export function playerScores(result: GameResult): {

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { NameOrder } from '@app/models';
 import { MemberProfilesService } from '@app/services/member-profiles.service';
 import { getInitials } from '@app/utils';
 
@@ -60,6 +61,8 @@ export class MemberLinkComponent implements OnInit {
   public readonly showAvatar = input(false);
   // Running prose shows the name as a link; everywhere else it reads as plain text
   public readonly appearance = input<'plain' | 'link'>('plain');
+  // The order the given name is in, followed by the member's current name
+  public readonly nameOrder = input<NameOrder>('first-last');
 
   private readonly memberProfiles = inject(MemberProfilesService);
 
@@ -67,7 +70,7 @@ export class MemberLinkComponent implements OnInit {
     this.memberProfiles.profileFor(this.memberNumber()),
   );
   protected readonly displayName = computed(() =>
-    this.memberProfiles.nameFor(this.memberNumber(), this.name()),
+    this.memberProfiles.nameFor(this.memberNumber(), this.name(), this.nameOrder()),
   );
   protected readonly avatarUrl = computed(() =>
     this.memberProfiles.avatarUrlFor(this.memberNumber()),

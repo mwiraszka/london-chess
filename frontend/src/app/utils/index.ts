@@ -1,21 +1,39 @@
 export { isStorageSupported } from './browser/is-storage-supported.util';
+export { scrollParentOf } from './browser/scroll-parent.util';
 
 export { buildPgn } from './chess/build-pgn.util';
+export {
+  formatScore,
+  parseSubtitlePeople,
+  roundResultDescription,
+  roundResultLabel,
+  shortenSubtitle,
+  simulScore,
+  timeControlMinutes,
+} from './chess/crosstable.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
-export { isCityChampion } from './chess/is-city-champion.util';
-export { playerName, playerScores, resultLabel } from './chess/player-name.util';
+export { CITY_CHAMPION, isCityChampion } from './chess/is-city-champion.util';
+export {
+  playerName,
+  playerNameLastFirst,
+  playerScores,
+  resultLabel,
+} from './chess/player-name.util';
 
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';
+export { compareCells } from './common/compare-cells.util';
 export { customSort } from './common/custom-sort.util';
 export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';
 export { takeRandomly } from './common/take-randomly.util';
 
 export { formatDate } from './datetime/format-date.util';
+export { formatDateRange } from './datetime/format-date-range.util';
 export { formatPartialDate } from './datetime/format-partial-date.util';
 export { isExpired } from './datetime/is-expired.util';
+export { isUpcomingEvent } from './datetime/is-upcoming-event.util';
 export { isValidIsoDate } from './datetime/is-valid-iso-date.util';
 export { isValidTime } from './datetime/is-valid-time.util';
 
@@ -45,6 +63,13 @@ export {
   calculateAspectRatio,
   calculateDecimalAspectRatio,
 } from './image/calculate-aspect-ratio.util';
+export {
+  type MarkdownSegment,
+  type MarkdownTable,
+  type MarkdownTableColumn,
+  type MarkdownTableRow,
+  splitMarkdownTables,
+} from './markdown/split-markdown-tables.util';
 
 export { gamesQueryParams, parseGamesQuery } from './route/games-query.util';
 export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';
@@ -59,5 +84,5 @@ export { isAccountSection } from './type-guards/is-account-section.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';
-export { isMemberNumber } from './type-guards/is-member-number.util';
+export { isRecordNumber } from './type-guards/is-record-number.util';
 export { isString } from './type-guards/is-string.util';

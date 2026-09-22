@@ -1,9 +1,11 @@
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { Subject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { DialogService, MetaAndTitleService, RoutingService } from '@app/services';
+import { AppSelectors } from '@app/store/app';
 import { query } from '@app/utils';
 
 import { DocumentsPageComponent } from './documents-page.component';
@@ -60,9 +62,12 @@ describe('DocumentsPageComponent', () => {
             removeFragment: vi.fn(),
           },
         },
+        provideMockStore(),
         provideRouter([]),
       ],
     }).compileComponents();
+
+    TestBed.inject(MockStore).overrideSelector(AppSelectors.selectIsWideView, false);
 
     fixture = TestBed.createComponent(DocumentsPageComponent);
     component = fixture.componentInstance;
@@ -176,10 +181,34 @@ describe('DocumentsPageComponent', () => {
 
     it('should render document labels with router links', () => {
       const documentLabels = fixture.debugElement.queryAll(
-        selector => selector.classes['document-label-container'],
+        selector => selector.classes['documents__label'],
       );
 
       expect(documentLabels).toHaveLength(component.documents.length);
+    });
+
+    it('should open a document from its row, but not from its download link', () => {
+      const navigateSpy = vi
+        .spyOn(TestBed.inject(Router), 'navigate')
+        .mockResolvedValue(true);
+      const [row] = fixture.debugElement.queryAll(
+        selector =>
+          selector.classes['ea-data-table__row'] &&
+          !!selector.parent?.classes['ea-data-table__body'],
+      );
+      const { fileName } = component.documents[0];
+
+      expect(query(row, 'a.ea-data-table__row-link').attributes['href']).toBe(
+        `/#${fileName}`,
+      );
+
+      query(row, '.documents__download').triggerEventHandler('click', {
+        stopPropagation: vi.fn(),
+      });
+      expect(navigateSpy).not.toHaveBeenCalled();
+
+      row.triggerEventHandler('click');
+      expect(navigateSpy).toHaveBeenCalledWith(['/'], { fragment: fileName });
     });
   });
 });

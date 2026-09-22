@@ -71,7 +71,7 @@ describe('Meta Reducers', () => {
 
     it('should preserve state from previous version', () => {
       const oldAppState = JSON.stringify({ theme: 'dark' });
-      localStorage.setItem('appState_v10.50.0', oldAppState);
+      localStorage.setItem('appState_v6.1.1', oldAppState);
 
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
@@ -85,28 +85,39 @@ describe('Meta Reducers', () => {
     });
 
     it('should drop record state saved in an incompatible shape', () => {
-      const staleKeys = ['articlesState', 'eventsState', 'membersState'];
-      staleKeys.forEach(key => localStorage.setItem(`${key}_v6.0.4`, '{"entities": {}}'));
+      const staleKeys = ['articlesState', 'eventsState', 'imagesState', 'membersState'];
+      staleKeys.forEach(key => localStorage.setItem(`${key}_v6.1.1`, '{"entities": {}}'));
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
       staleKeys.forEach(key => {
-        expect(localStorage.getItem(`${key}_v6.0.4`)).toBeNull();
+        expect(localStorage.getItem(`${key}_v6.1.1`)).toBeNull();
         expect(localStorage.getItem(`${key}_v${version}`)).toBeNull();
       });
     });
 
-    it('should keep member state saved in a compatible shape', () => {
-      const oldMembersState = JSON.stringify({ entities: {} });
-      localStorage.setItem('membersState_v10.50.0', oldMembersState);
+    it('should keep event state saved in a compatible shape', () => {
+      const oldEventsState = JSON.stringify({ entities: {} });
+      localStorage.setItem('eventsState_v6.2.0', oldEventsState);
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
-      expect(localStorage.getItem(`membersState_v${version}`)).toBe(oldMembersState);
+      expect(localStorage.getItem(`eventsState_v${version}`)).toBe(oldEventsState);
+    });
+
+    it('should drop state saved by a newer version of the app', () => {
+      localStorage.setItem('appState_v10.50.0', '{"theme": "dark"}');
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(localStorage.getItem('appState_v10.50.0')).toBeNull();
+      expect(localStorage.getItem(`appState_v${version}`)).toBeNull();
     });
 
     it('should not remove keys with current version', () => {

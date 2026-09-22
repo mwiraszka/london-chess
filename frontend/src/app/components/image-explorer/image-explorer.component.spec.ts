@@ -70,6 +70,7 @@ describe('ImageExplorerComponent', () => {
     store.overrideSelector(ImagesSelectors.selectTotalCount, mockImages.length);
     store.overrideSelector(ImagesSelectors.selectOptions, mockOptions);
     store.overrideSelector(ImagesSelectors.selectFilteredThumbnailsStatus, 'loaded');
+    store.overrideSelector(ImagesSelectors.selectIsFetchingFiltered, false);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
@@ -96,18 +97,6 @@ describe('ImageExplorerComponent', () => {
     });
 
     it('should size the skeleton to the page size', async () => {
-      component.ngOnInit();
-
-      const vm = await firstValueFrom(component.viewModel$!);
-
-      expect(vm.skeletonCards).toHaveLength(20);
-    });
-
-    it('should cap the skeleton at a screenful when showing every image', async () => {
-      store.overrideSelector(ImagesSelectors.selectOptions, {
-        ...mockOptions,
-        pageSize: -1,
-      });
       component.ngOnInit();
 
       const vm = await firstValueFrom(component.viewModel$!);
@@ -254,8 +243,9 @@ describe('ImageExplorerComponent', () => {
       it('should render a skeleton card for each image on the page', () => {
         expect(queryAll(fixture.debugElement, '.image-card')).toHaveLength(20);
         expect(queryAll(fixture.debugElement, '.image-card ea-skeleton')).toHaveLength(
-          20 * 4,
+          20 * 8,
         );
+        expect(queryAll(fixture.debugElement, '.image-card label')).toHaveLength(20 * 6);
         expect(query(fixture.debugElement, 'lcc-image')).toBeFalsy();
       });
 
@@ -282,7 +272,7 @@ describe('ImageExplorerComponent', () => {
       it('should render a failure panel in place of the image grid', () => {
         expect(query(fixture.debugElement, 'lcc-load-failed')).toBeTruthy();
         expect(query(fixture.debugElement, '.image-grid')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-data-toolbar')).toBeTruthy();
+        expect(query(fixture.debugElement, '.filters')).toBeTruthy();
       });
 
       it('should fetch the thumbnails again on retry', () => {

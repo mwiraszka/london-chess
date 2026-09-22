@@ -6,13 +6,13 @@ import { Injectable, inject } from '@angular/core';
 import {
   ApiResponse,
   ArchivePlayer,
+  ArchiveTournament,
   DbCollection,
   Game,
   GamesQuery,
   GamesSummary,
   Id,
   PaginatedItems,
-  Tournament,
 } from '@app/models';
 
 import { environment } from '@env';
@@ -45,8 +45,8 @@ export class GamesApiService {
     );
   }
 
-  public getTournaments(): Observable<ApiResponse<Tournament[]>> {
-    return this.http.get<ApiResponse<Tournament[]>>(
+  public getTournaments(): Observable<ApiResponse<ArchiveTournament[]>> {
+    return this.http.get<ApiResponse<ArchiveTournament[]>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/tournaments`,
     );
   }

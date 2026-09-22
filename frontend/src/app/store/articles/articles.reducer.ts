@@ -17,6 +17,8 @@ export interface ArticlesState extends EntityState<{
   newArticleFormData: ArticleFormData;
   // Loads whose latest attempt failed, which are never persisted
   failedLoads: ArticlesLoad[];
+  // Whether a page of filtered articles is on its way, never persisted
+  isFetchingFiltered: boolean;
   lastHomePageFetch: IsoDate | null;
   lastFilteredFetch: IsoDate | null;
   homePageArticles: Article[];
@@ -36,6 +38,7 @@ export const articlesAdapter = createEntityAdapter<{
 export const initialState: ArticlesState = articlesAdapter.getInitialState({
   newArticleFormData: INITIAL_ARTICLE_FORM_DATA,
   failedLoads: [],
+  isFetchingFiltered: false,
   lastHomePageFetch: null,
   lastFilteredFetch: null,
   homePageArticles: [],
@@ -70,12 +73,14 @@ export const articlesReducer = createReducer(
     withFailedLoad(state, 'homePage'),
   ),
 
-  on(ArticlesActions.fetchFilteredArticlesRequested, (state): ArticlesState =>
-    withLoadAttempt(state, 'filtered'),
-  ),
-  on(ArticlesActions.fetchFilteredArticlesFailed, (state): ArticlesState =>
-    withFailedLoad(state, 'filtered'),
-  ),
+  on(ArticlesActions.fetchFilteredArticlesRequested, (state): ArticlesState => ({
+    ...withLoadAttempt(state, 'filtered'),
+    isFetchingFiltered: true,
+  })),
+  on(ArticlesActions.fetchFilteredArticlesFailed, (state): ArticlesState => ({
+    ...withFailedLoad(state, 'filtered'),
+    isFetchingFiltered: false,
+  })),
 
   on(ArticlesActions.fetchArticleRequested, (state): ArticlesState =>
     withLoadAttempt(state, 'article'),
@@ -137,6 +142,7 @@ export const articlesReducer = createReducer(
         }),
         {
           ...state,
+          isFetchingFiltered: false,
           filteredArticles: articles,
           lastFilteredFetch: new Date().toISOString(),
           filteredCount,

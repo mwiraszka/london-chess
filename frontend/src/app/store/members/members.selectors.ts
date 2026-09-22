@@ -100,3 +100,8 @@ export const selectMemberFormDataById = (id: Id | null) =>
 
 export const selectHasUnsavedChanges = (id: Id | null) =>
   createSelector(selectMemberById(id), selectMemberFormDataById(id), hasFormChanges);
+
+export const selectIsFetchingFiltered = createSelector(
+  selectMembersState,
+  state => state.isFetchingFiltered,
+);

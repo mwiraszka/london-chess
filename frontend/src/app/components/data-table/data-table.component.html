@@ -1,0 +1,49 @@
+<ea-data-table
+  density="compact"
+  [aria-label]="ariaLabel()"
+  [clickable]="clickable() && !loading()"
+  [columns]="shownColumns()"
+  [data]="rows()"
+  [hoverable]="hoverable()"
+  [noDataText]="noDataText()"
+  [nowrap]="true"
+  [rowHref]="rowHrefWhenLoaded()"
+  [sizingRows]="sizingRows()"
+  [sort]="sort()"
+  [striped]="true"
+  [trackBy]="trackBy"
+  (rowActivate)="rowActivate.emit($event)"
+  (sorted)="sorted.emit($event)">
+  <ng-content
+    select="ea-paginator"
+    ngProjectAs="ea-paginator" />
+</ea-data-table>
+
+@for (column of columns(); track column.key) {
+  <ng-template
+    let-row
+    let-value="value"
+    [lccDataTableCell]="column.key">
+    <span
+      class="data-table__cell"
+      [attr.data-row-id]="row.id">
+      @if (isPlaceholder(row)) {
+        @if (column.placeholderTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.placeholderTemplate"
+            [ngTemplateOutletContext]="cellContext(row, value, column)" />
+        } @else {
+          <lcc-text-skeleton width="100%" />
+        }
+      } @else if (column.cellTemplate) {
+        <ng-container
+          [ngTemplateOutlet]="column.cellTemplate"
+          [ngTemplateOutletContext]="cellContext(row, value, column)" />
+      } @else if (column.format) {
+        {{ column.format(value) }}
+      } @else {
+        {{ value }}
+      }
+    </span>
+  </ng-template>
+}

@@ -35,7 +35,6 @@ class MockArticleComponent {
   @Input({ required: true }) article!: Article;
   @Input({ required: true }) bannerImage!: Image | null;
   @Input() bodyImages: Image[] = [];
-  @Input() isWideView = false;
 }
 
 describe('ArticleViewerPageComponent', () => {

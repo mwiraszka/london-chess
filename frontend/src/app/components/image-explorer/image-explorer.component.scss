@@ -6,10 +6,42 @@ $card-max-width: 270px;
 $card-padding: 8px;
 $side-padding: 8px;
 
+@include filters-search-switch;
+
+:host-context(body[data-theme='dark']) .filters__search {
+  --color-bg-base: var(--lcc-color--imageExplorer-controlBackground);
+}
+
+.paginator ea-paginator {
+  --color-bg-base: var(--lcc-color--imageExplorer-controlBackground);
+
+  // The paginator's own top line would double the edge of the grid above it
+  ::ng-deep .ea-paginator {
+    border-top: none;
+  }
+}
+
+.paginator {
+  display: flex;
+  justify-content: center;
+  padding: 0 $side-padding 8px;
+}
+
 :host {
+  // The dialog stays light in either theme, so its library controls do too
+  --color-bg-base: var(--lcc-color--imageExplorer-controlBackground);
+  --color-bg-muted: var(--lcc-color--imageExplorer-controlBackgroundOnHover);
+  --color-state-hover: var(--lcc-color--imageExplorer-controlBackgroundOnHover);
+  --color-text-primary: var(--lcc-color--imageExplorer-controlText);
+  --color-text-secondary: var(--lcc-color--imageExplorer-controlSecondaryText);
+  --color-text-tertiary: var(--lcc-color--imageExplorer-controlSecondaryText);
+  --color-border-default: var(--lcc-color--imageExplorer-controlBorder);
+  --color-border-subtle: var(--lcc-color--imageExplorer-controlBorder);
+
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: min(90vw, var(--lcc-width--appContent));
   height: 90dvh;
   background-color: var(--lcc-color--imageExplorer-gridBackground);
 
@@ -18,17 +50,18 @@ $side-padding: 8px;
     margin: 8px 8px 0;
   }
 
-  lcc-data-toolbar {
-    width: calc(100% - #{$side-padding * 2});
-    margin: 0 $side-padding;
-  }
-
   .image-grid-wrapper {
     overflow: auto;
     display: flex;
     container-type: inline-size;
     justify-content: center;
-    min-width: min(90vw, var(--lcc-width--appContent));
+  }
+
+  .image-explorer__empty {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
   }
 
   .image-grid {
@@ -114,15 +147,21 @@ $side-padding: 8px;
       b {
         margin: 0.3em;
       }
+
+      // Stands in for the value, which sits on its own line below the label
+      lcc-text-skeleton {
+        display: block;
+        line-height: 1.4em;
+      }
     }
 
     .article-appearances {
       color: var(--lcc-color--imageExplorer-articleAppearancesText);
     }
 
-    .skeleton-line {
-      height: 12px;
-      margin-top: 8px;
+    // Placeholders take a fill that reads on the light card in either theme
+    ::ng-deep ea-skeleton .ea-skeleton {
+      background-color: var(--lcc-color--imageExplorer-skeleton);
     }
   }
 }

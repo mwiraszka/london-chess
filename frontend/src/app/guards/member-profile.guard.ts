@@ -1,23 +1,20 @@
-import { Store } from '@ngrx/store';
+import { CanActivateFn } from '@angular/router';
 
-import { inject } from '@angular/core';
-import { ActivatedRouteSnapshot, type CanActivateFn, Router } from '@angular/router';
+import { Member } from '@app/models';
+import { MembersActions, MembersSelectors } from '@app/store/members';
+import { isRecordNumber } from '@app/utils';
 
-import { MembersActions } from '@app/store/members';
-import { isMemberNumber } from '@app/utils';
+import { recordGuard } from './record.guard';
 
-// A malformed number goes home without a request. Any other member loads while the page
-// shows, and a missing one is left to the effect that navigates away from missing records
+// Refetched so a rating update reaches every visitor
 export function memberProfileGuard(param: string): CanActivateFn {
-  return (route: ActivatedRouteSnapshot) => {
-    const value = route.paramMap.get(param);
-    if (!isMemberNumber(value)) {
-      return inject(Router).createUrlTree(['/']);
-    }
-
-    inject(Store).dispatch(
+  return recordGuard<Member>({
+    param,
+    isWellFormed: isRecordNumber,
+    select: value => MembersSelectors.selectMemberByNumber(Number(value)),
+    request: value =>
       MembersActions.fetchMemberByNumberRequested({ memberNumber: Number(value) }),
-    );
-    return true;
-  };
+    failed: MembersActions.fetchMemberFailed,
+    refreshes: true,
+  });
 }
