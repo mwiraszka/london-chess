@@ -4,9 +4,6 @@ import { PLACEHOLDER_PROFILE_MEMBER } from './member-profile';
 
 export const MEMBERS_PAGE_SIZES = [10, 20, 50, 100];
 
-// How long typing pauses before the members are searched, in milliseconds
-export const SEARCH_DEBOUNCE = 300;
-
 // The widest values the members table shows, so its columns are sized before any
 // member is fetched
 export const WIDEST_MEMBER: Member = {

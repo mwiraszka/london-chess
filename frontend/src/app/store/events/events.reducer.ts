@@ -17,6 +17,8 @@ export interface EventsState extends EntityState<{
   newEventFormData: EventFormData;
   // Loads whose latest attempt failed, which are never persisted
   failedLoads: EventsLoad[];
+  // Whether a page of filtered events is on its way, never persisted
+  isFetchingFiltered: boolean;
   lastHomePageFetch: IsoDate | null;
   lastFilteredFetch: IsoDate | null;
   homePageEvents: Event[];
@@ -37,6 +39,7 @@ export const eventsAdapter = createEntityAdapter<{
 export const initialState: EventsState = eventsAdapter.getInitialState({
   newEventFormData: INITIAL_EVENT_FORM_DATA,
   failedLoads: [],
+  isFetchingFiltered: false,
   lastHomePageFetch: null,
   lastFilteredFetch: null,
   homePageEvents: [],
@@ -77,12 +80,14 @@ export const eventsReducer = createReducer(
     withFailedLoad(state, 'homePage'),
   ),
 
-  on(EventsActions.fetchFilteredEventsRequested, (state): EventsState =>
-    withLoadAttempt(state, 'filtered'),
-  ),
-  on(EventsActions.fetchFilteredEventsFailed, (state): EventsState =>
-    withFailedLoad(state, 'filtered'),
-  ),
+  on(EventsActions.fetchFilteredEventsRequested, (state): EventsState => ({
+    ...withLoadAttempt(state, 'filtered'),
+    isFetchingFiltered: true,
+  })),
+  on(EventsActions.fetchFilteredEventsFailed, (state): EventsState => ({
+    ...withFailedLoad(state, 'filtered'),
+    isFetchingFiltered: false,
+  })),
 
   on(EventsActions.fetchEventRequested, (state): EventsState =>
     withLoadAttempt(state, 'event'),
@@ -139,6 +144,7 @@ export const eventsReducer = createReducer(
         }),
         {
           ...state,
+          isFetchingFiltered: false,
           filteredEvents: events,
           lastFilteredFetch: new Date().toISOString(),
           filteredCount,

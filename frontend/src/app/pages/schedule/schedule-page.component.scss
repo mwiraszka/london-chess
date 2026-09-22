@@ -1,0 +1,19 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+@include filters-search-switch;
+
+// The toolbar row follows at the same spacing
+.filters {
+  margin-bottom: 0;
+}
+
+.schedule-view {
+  visibility: hidden;
+  display: none;
+
+  &.active {
+    visibility: visible;
+    position: relative;
+    display: block;
+  }
+}

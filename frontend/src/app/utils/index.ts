@@ -32,6 +32,7 @@ export { formatDate } from './datetime/format-date.util';
 export { formatDateRange } from './datetime/format-date-range.util';
 export { formatPartialDate } from './datetime/format-partial-date.util';
 export { isExpired } from './datetime/is-expired.util';
+export { isUpcomingEvent } from './datetime/is-upcoming-event.util';
 export { isValidIsoDate } from './datetime/is-valid-iso-date.util';
 export { isValidTime } from './datetime/is-valid-time.util';
 

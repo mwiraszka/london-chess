@@ -56,7 +56,7 @@ const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
 // What only describes the current visit, so every visit starts from these
 const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
   articlesState: pick(articlesInitialState, 'failedLoads'),
-  eventsState: pick(eventsInitialState, 'failedLoads'),
+  eventsState: pick(eventsInitialState, ['failedLoads', 'isFetchingFiltered']),
   // Of the archives, only how they were last queried carries over to the next visit
   gamesState: omit(gamesInitialState, 'query'),
   imagesState: pick(imagesInitialState, ['failedLoads', 'uploadProgress']),

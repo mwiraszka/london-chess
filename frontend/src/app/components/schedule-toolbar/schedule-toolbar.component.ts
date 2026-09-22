@@ -1,7 +1,8 @@
 import {
+  ButtonComponent,
   CalendarCheckIconComponent,
-  GridIconComponent,
-  RowsIconComponent,
+  CalendarIconComponent,
+  SwitchComponent,
 } from '@eagami/ui';
 import { UntilDestroy } from '@ngneat/until-destroy';
 
@@ -16,8 +17,6 @@ import {
 } from '@angular/core';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { ToggleSwitchComponent } from '@app/components/toggle-switch/toggle-switch.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { BasicDialogResult, Dialog, Event } from '@app/models';
 import { DialogService } from '@app/services';
 import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
@@ -26,33 +25,34 @@ import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
 @Component({
   selector: 'lcc-schedule-toolbar',
   template: `
-    <button
-      class="today-button lcc-secondary-button"
+    <ea-button
+      class="schedule-toolbar__today"
+      variant="ghost"
+      size="md"
       [disabled]="!todayScrollPoint"
-      tooltip="Scroll to today"
-      (click)="onToday()">
-      today
-    </button>
+      [icon]="todayIcon"
+      (clicked)="onToday()">
+      Today
+    </ea-button>
 
-    <lcc-toggle-switch
-      [iconWhenOff]="listViewIcon"
-      [iconWhenOn]="calendarViewIcon"
-      [switchedOn]="scheduleView === 'calendar'"
-      tooltipWhenOff="View as calendar"
-      tooltipWhenOn="View as list"
-      (toggle)="toggleScheduleView.emit()">
-    </lcc-toggle-switch>
+    <ea-switch
+      class="schedule-toolbar__view"
+      label="Calendar view"
+      [checked]="scheduleView === 'calendar'"
+      (changed)="toggleScheduleView.emit()" />
 
-    <button
-      class="export-to-ical-button lcc-secondary-button"
+    <ea-button
+      class="schedule-toolbar__export"
+      variant="ghost"
+      size="md"
       [disabled]="!filteredEvents.length"
-      (click)="onExportToIcal()"
-      tooltip="Export events to iCalendar">
-      <ea-icon-calendar-check />
-    </button>
+      [icon]="exportIcon"
+      (clicked)="onExportToIcal()">
+      Export to iCalendar
+    </ea-button>
   `,
   styleUrl: './schedule-toolbar.component.scss',
-  imports: [CalendarCheckIconComponent, ToggleSwitchComponent, TooltipDirective],
+  imports: [ButtonComponent, SwitchComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScheduleToolbarComponent {
@@ -62,8 +62,8 @@ export class ScheduleToolbarComponent {
 
   @Output() public readonly toggleScheduleView = new EventEmitter<void>();
 
-  protected readonly calendarViewIcon = GridIconComponent;
-  protected readonly listViewIcon = RowsIconComponent;
+  protected readonly todayIcon = CalendarIconComponent;
+  protected readonly exportIcon = CalendarCheckIconComponent;
 
   private readonly exportEventsToIcal = inject(EXPORT_EVENTS_TO_ICAL);
 

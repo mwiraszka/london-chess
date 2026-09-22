@@ -1,12 +1,22 @@
 import {
+  ButtonComponent,
   CalendarDaysIconComponent,
   DownloadIconComponent,
+  InputComponent,
   PlusCircleIconComponent,
+  SearchIconComponent,
+  SwitchComponent,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, firstValueFrom } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  tap,
+  withLatestFrom,
+} from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -16,15 +26,16 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { DataToolbarComponent } from '@app/components/data-toolbar/data-toolbar.component';
 import { EventsCalendarGridComponent } from '@app/components/events-calendar-grid/events-calendar-grid.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/schedule-toolbar.component';
+import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import {
   AdminButton,
   BasicDialogResult,
@@ -55,14 +66,27 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
         </lcc-admin-toolbar>
       }
 
-      <lcc-data-toolbar
-        entity="event"
-        [filteredCount]="vm.filteredCount"
-        [options]="vm.options"
-        searchPlaceholder="Search by event type or name"
-        (optionsChange)="onOptionsChange($event)"
-        (optionsChangeNoFetch)="onOptionsChange($event, false)">
-      </lcc-data-toolbar>
+      <div class="filters">
+        <ea-input
+          class="filters__search"
+          label="Search"
+          placeholder="Search by event type or name"
+          [formControl]="searchControl"
+          [icon]="searchIcon" />
+        <ea-switch
+          class="filters__switch"
+          label="Show past events"
+          [checked]="vm.options.filters.showPastEvents.value"
+          (changed)="onTogglePastEvents($event, vm.options)" />
+        <ea-button
+          class="filters__clear"
+          variant="ghost"
+          size="md"
+          [disabled]="!hasFilters(vm.options)"
+          (clicked)="onClearFilters(vm.options)">
+          Clear filters
+        </ea-button>
+      </div>
 
       <lcc-schedule-toolbar
         [filteredEvents]="vm.filteredEvents"
@@ -80,11 +104,12 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           class="schedule-view"
           [class.active]="vm.scheduleView === 'list'"
           [events]="vm.filteredEvents"
+          [filteredCount]="vm.filteredCount"
           [isAdmin]="vm.isAdmin"
-          [isLoading]="vm.status === 'loading'"
-          [nextEvent]="vm.nextEvent"
+          [isLoading]="vm.status === 'loading' || vm.isFetching"
           [options]="vm.options"
-          [showModificationInfo]="vm.isAdmin">
+          [showModificationInfo]="vm.isAdmin"
+          (optionsChange)="onOptionsChange($event)">
         </lcc-events-table>
 
         <lcc-events-calendar-grid
@@ -92,38 +117,32 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           [class.active]="vm.scheduleView === 'calendar'"
           [events]="vm.filteredEvents"
           [isAdmin]="vm.isAdmin"
-          [isLoading]="vm.status === 'loading'"
+          [isLoading]="vm.status === 'loading' || vm.isFetching"
           [options]="vm.options">
         </lcc-events-calendar-grid>
       }
     }
   `,
-  styles: `
-    .schedule-view {
-      visibility: hidden;
-      display: none;
-
-      &.active {
-        visibility: visible;
-        position: relative;
-        display: block;
-      }
-    }
-  `,
+  styleUrl: './schedule-page.component.scss',
   imports: [
     AdminToolbarComponent,
+    ButtonComponent,
     CommonModule,
-    DataToolbarComponent,
     EventsCalendarGridComponent,
     EventsTableComponent,
+    InputComponent,
     LoadFailedComponent,
     PageHeaderComponent,
+    ReactiveFormsModule,
     ScheduleToolbarComponent,
+    SwitchComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulePageComponent implements OnInit {
   protected readonly pageIcon = CalendarDaysIconComponent;
+  protected readonly searchIcon = SearchIconComponent;
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
 
   @ViewChild(ScheduleToolbarComponent)
   private scheduleToolbar!: ScheduleToolbarComponent;
@@ -145,6 +164,7 @@ export class SchedulePageComponent implements OnInit {
     filteredCount: number | null;
     filteredEvents: Event[];
     isAdmin: boolean;
+    isFetching: boolean;
     nextEvent: Event | null;
     options: DataPaginationOptions<Event>;
     scheduleView: 'list' | 'calendar';
@@ -166,10 +186,31 @@ export class SchedulePageComponent implements OnInit {
       'Scheduled events at the London Chess Club',
     );
 
+    // The box shows the search in force, wherever it was set, and sends new text on a pause
+    this.store
+      .select(EventsSelectors.selectOptions)
+      .pipe(untilDestroyed(this))
+      .subscribe(({ search }) => {
+        if (this.searchControl.value !== search) {
+          this.searchControl.setValue(search, { emitEvent: false });
+        }
+      });
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(SEARCH_DEBOUNCE),
+        distinctUntilChanged(),
+        withLatestFrom(this.store.select(EventsSelectors.selectOptions)),
+        untilDestroyed(this),
+      )
+      .subscribe(([search, options]) =>
+        this.onOptionsChange({ ...options, search, page: 1 }),
+      );
+
     this.viewModel$ = combineLatest([
       this.store.select(EventsSelectors.selectFilteredCount),
       this.store.select(EventsSelectors.selectFilteredEvents),
       this.store.select(AuthSelectors.selectIsAdmin),
+      this.store.select(EventsSelectors.selectIsFetchingFiltered),
       this.store.select(EventsSelectors.selectNextEvent),
       this.store.select(EventsSelectors.selectOptions),
       this.store.select(EventsSelectors.selectScheduleView),
@@ -182,6 +223,7 @@ export class SchedulePageComponent implements OnInit {
           filteredCount,
           filteredEvents,
           isAdmin,
+          isFetching,
           nextEvent,
           options,
           scheduleView,
@@ -191,6 +233,7 @@ export class SchedulePageComponent implements OnInit {
           filteredCount,
           filteredEvents,
           isAdmin,
+          isFetching,
           nextEvent,
           options,
           scheduleView,
@@ -232,6 +275,32 @@ export class SchedulePageComponent implements OnInit {
 
   public onOptionsChange(options: DataPaginationOptions<Event>, fetch = true): void {
     this.store.dispatch(EventsActions.paginationOptionsChanged({ options, fetch }));
+  }
+
+  public onTogglePastEvents(
+    showPastEvents: boolean,
+    options: DataPaginationOptions<Event>,
+  ): void {
+    this.onOptionsChange({
+      ...options,
+      page: 1,
+      filters: {
+        showPastEvents: { ...options.filters.showPastEvents, value: showPastEvents },
+      },
+    });
+  }
+
+  public onClearFilters(options: DataPaginationOptions<Event>): void {
+    this.onOptionsChange({
+      ...options,
+      page: 1,
+      search: '',
+      filters: { showPastEvents: { ...options.filters.showPastEvents, value: false } },
+    });
+  }
+
+  public hasFilters({ search, filters }: DataPaginationOptions<Event>): boolean {
+    return search !== '' || filters.showPastEvents.value;
   }
 
   public onRetry(): void {

@@ -84,7 +84,7 @@ body[data-theme='dark'] ea-skeleton .ea-skeleton {
 
 // Table rows alternate between two tones, so their placeholders take a fill that
 // stands out on both
-.ea-data-table lcc-text-skeleton .ea-skeleton {
+.ea-data-table ea-skeleton .ea-skeleton {
   background-color: var(--lcc-color--table-skeleton);
 }
 

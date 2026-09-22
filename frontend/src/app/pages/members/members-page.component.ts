@@ -31,7 +31,7 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { MembersTableComponent } from '@app/components/members-table/members-table.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingChangesComponent } from '@app/components/rating-changes/rating-changes.component';
-import { SEARCH_DEBOUNCE } from '@app/constants/members-table';
+import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import {
   AdminButton,
   BasicDialogResult,
@@ -80,7 +80,7 @@ import { isLccError } from '@app/utils';
           [formControl]="searchControl"
           [icon]="searchIcon" />
         <ea-switch
-          class="filters__inactive"
+          class="filters__switch"
           label="Show inactive members"
           [checked]="vm.options.filters.showInactiveMembers.value"
           (changed)="onToggleInactiveMembers($event, vm.options)" />

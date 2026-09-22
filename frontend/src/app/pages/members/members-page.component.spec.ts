@@ -9,7 +9,7 @@ import { firstValueFrom, take } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { SEARCH_DEBOUNCE } from '@app/constants/members-table';
+import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   DataPaginationOptions,
@@ -626,7 +626,7 @@ describe('MembersPageComponent', () => {
     it('should show or hide inactive members', () => {
       fixture.detectChanges();
 
-      query(fixture.debugElement, '.filters__inactive').triggerEventHandler(
+      query(fixture.debugElement, '.filters__switch').triggerEventHandler(
         'changed',
         false,
       );

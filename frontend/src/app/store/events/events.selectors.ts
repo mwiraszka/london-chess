@@ -1,10 +1,9 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { pick } from 'lodash';
-import moment from 'moment-timezone';
 
 import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
 import { Id } from '@app/models';
-import { areSame, customSort, loadStatus } from '@app/utils';
+import { areSame, customSort, isUpcomingEvent, loadStatus } from '@app/utils';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 
@@ -33,6 +32,11 @@ export const selectFilteredEvents = createSelector(
 );
 
 export const selectOptions = createSelector(selectEventsState, state => state.options);
+
+export const selectIsFetchingFiltered = createSelector(
+  selectEventsState,
+  state => state.isFetchingFiltered,
+);
 
 export const selectFilteredCount = createSelector(
   selectEventsState,
@@ -111,9 +115,7 @@ export const selectNextEvent = createSelector(selectHomePageEvents, homePageEven
       .sort((a, b) =>
         customSort(a, b, 'eventDate', false, 'modificationInfo.dateLastEdited', true),
       )
-      .find(event =>
-        moment(event.eventDate).add(3, 'hours').isAfter(moment.tz('America/Toronto')),
-      ) ?? null
+      .find(isUpcomingEvent) ?? null
   );
 });
 
@@ -124,9 +126,7 @@ export const selectConcurrentNextEvents = createSelector(
       .sort((a, b) =>
         customSort(a, b, 'eventDate', false, 'modificationInfo.dateLastEdited', true),
       )
-      .filter(event =>
-        moment(event.eventDate).add(3, 'hours').isAfter(moment.tz('America/Toronto')),
-      );
+      .filter(isUpcomingEvent);
 
     return sortedFutureEvents.filter(
       event => event.eventDate === sortedFutureEvents[0].eventDate,
