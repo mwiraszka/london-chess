@@ -1,18 +1,5 @@
 @use '../abstracts/mixins';
 
-.lcc-table-wrapper {
-  overflow-x: auto;
-  width: 100%;
-  padding-bottom: 4px; // Gap above scrollbar and space for box-shadow
-
-  // Offset the scrollbar track so it doesn't appear under the sticky columns
-  &.lcc-has-sticky-columns::-webkit-scrollbar-track {
-    margin-left: calc(
-      var(--lcc-sticky-col-1-width, 0px) + var(--lcc-sticky-col-2-width, 0px)
-    );
-  }
-}
-
 .lcc-table {
   display: table;
   width: auto;
@@ -45,27 +32,6 @@
         border-top-right-radius: var(--lcc-borderRadius--small);
       }
     }
-
-    .lcc-has-sticky-columns & {
-      th {
-        &:first-child,
-        &:nth-child(2) {
-          position: sticky;
-          z-index: 2;
-          background-color: var(--lcc-color--table-headerBackground);
-        }
-
-        &:first-child {
-          left: 0;
-          border-top-left-radius: var(--lcc-borderRadius--small);
-        }
-
-        &:nth-child(2) {
-          left: var(--lcc-sticky-col-1-width, 0);
-          box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
-        }
-      }
-    }
   }
 
   tbody {
@@ -82,26 +48,6 @@
 
         @include mixins.respond-to('gt-sm') {
           padding: 8px 16px;
-        }
-      }
-    }
-
-    .lcc-has-sticky-columns & {
-      tr td {
-        &:first-child,
-        &:nth-child(2) {
-          position: sticky;
-          z-index: 1;
-          background-color: inherit;
-        }
-
-        &:first-child {
-          left: 0;
-        }
-
-        &:nth-child(2) {
-          left: var(--lcc-sticky-col-1-width, 0);
-          box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
         }
       }
     }
