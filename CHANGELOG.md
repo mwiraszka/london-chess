@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.2.0] - 2026-09-21
+## [v6.2.0] - 2026-09-22
 
 ### Added
 
@@ -17,12 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Redirect straight to the home page when a game, article or member profile does not exist, instead of showing a placeholder first
 - Use a newspaper icon for news and articles
-- Rebuild the members table on the site's shared table, with a search box and a switch for inactive members above it, columns sized to their widest content and sideways scrolling where the table does not fit
+- Rebuild every table (members, schedule, documents, city champions, rating changes and the tables in articles) on the site's shared table, with columns sized to their widest content, sideways scrolling where a table does not fit, and sortable columns wherever sorting makes sense
+- Add a search box and a switch for past events above the schedule, and for inactive members above the members table
 - Underline a member's name in a table when it links to their profile and is hovered over
+- Swap the schedule for placeholder rows while another page or filter loads, so a change shows at once
+- Open a document from anywhere on its row of the documents table
+- Give the regional clubs page a map icon, and link it and the schedule from the about page's location card
 
 ### Fixed
 
 - Recover when a browser loads an older version of the site than the one that last ran on it, instead of failing to show the page
+- Draw the schedule's today line above the first event still to come on the page, rather than only when the very next event is shown
 
 ## [v6.1.1] - 2026-09-18
 
