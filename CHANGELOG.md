@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.2.2] - 2026-09-23
 
+### Changed
+
+- Head a tandem simul's boards by both givers where a pair gave them together
+
 ### Fixed
 
 - Keep a table's heading pinned flush under the nav as its rows scroll past, including the tables in articles, without it trailing behind and catching up on a fast scroll or leaving a hairline above it
