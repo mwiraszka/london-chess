@@ -9,21 +9,21 @@ import {
 
 describe('playerName', () => {
   it('should join the parts of a name that are present', () => {
-    expect(playerName(MOCK_GAMES[0].white)).toBe('Gerry Litchfield');
+    expect(playerName(MOCK_GAMES[0].white)).toBe('John Doe');
     expect(playerName({ ...MOCK_GAMES[0].black, firstName: 'J.', suffix: 'Sr' })).toBe(
-      'J. Jung Sr',
+      'J. Roe Sr',
     );
-    expect(playerName({ ...MOCK_GAMES[0].black, firstName: '' })).toBe('Jung');
+    expect(playerName({ ...MOCK_GAMES[0].black, firstName: '' })).toBe('Roe');
   });
 });
 
 describe('playerNameLastFirst', () => {
   it('should put the surname first', () => {
-    expect(playerNameLastFirst(MOCK_GAMES[0].white)).toBe('Litchfield, Gerry');
+    expect(playerNameLastFirst(MOCK_GAMES[0].white)).toBe('Doe, John');
     expect(
       playerNameLastFirst({ ...MOCK_GAMES[0].black, firstName: 'J.', suffix: 'Sr' }),
-    ).toBe('Jung, J. Sr');
-    expect(playerNameLastFirst({ ...MOCK_GAMES[0].black, firstName: '' })).toBe('Jung');
+    ).toBe('Roe, J. Sr');
+    expect(playerNameLastFirst({ ...MOCK_GAMES[0].black, firstName: '' })).toBe('Roe');
   });
 });
 

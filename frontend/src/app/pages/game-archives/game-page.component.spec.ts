@@ -98,7 +98,7 @@ describe('GamePageComponent', () => {
 
     it('should head the page with the players', () => {
       expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe(
-        'Sasha Chen vs Gerry Litchfield',
+        'Jane Smith vs John Doe',
       );
     });
 
@@ -113,15 +113,15 @@ describe('GamePageComponent', () => {
         'Club Championship (A1)',
         'December 7, 2023 (Round 1)',
         MOCK_GAMES[1].location,
-        'Sasha Chen (2000)',
-        'Gerry Litchfield',
+        'Jane Smith (2000)',
+        'John Doe',
         '½-½ (Draw)',
         'London System (D02)',
         '2',
       ]);
-      expect(white.componentInstance.name()).toBe('Sasha Chen');
+      expect(white.componentInstance.name()).toBe('Jane Smith');
       expect(white.componentInstance.memberNumber()).toBeNull();
-      expect(black.componentInstance.name()).toBe('Gerry Litchfield');
+      expect(black.componentInstance.name()).toBe('John Doe');
       expect(black.componentInstance.memberNumber()).toBe(2);
       expect(queryAll(fixture.debugElement, '.details dt')).toHaveLength(8);
     });
@@ -154,7 +154,7 @@ describe('GamePageComponent', () => {
 
     it('should update the page title', () => {
       expect(TestBed.inject(MetaAndTitleService).updateTitle).toHaveBeenCalledWith(
-        'Sasha Chen vs Gerry Litchfield',
+        'Jane Smith vs John Doe',
       );
     });
   });
@@ -227,7 +227,7 @@ describe('GamePageComponent', () => {
     fixture.detectChanges();
 
     expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe(
-      'Gerry Litchfield vs H. Jung',
+      'John Doe vs H. Roe',
     );
   });
 });

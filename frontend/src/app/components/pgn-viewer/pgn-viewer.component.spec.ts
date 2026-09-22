@@ -55,9 +55,9 @@ describe('PgnViewerComponent', () => {
   });
 
   it('should label each player with their name and score', () => {
-    expect(person('bottom').getAttribute('data-name')).toBe('Gerry Litchfield');
+    expect(person('bottom').getAttribute('data-name')).toBe('John Doe');
     expect(person('bottom').getAttribute('data-score')).toBe('1');
-    expect(person('top').getAttribute('data-name')).toBe('H. Jung');
+    expect(person('top').getAttribute('data-name')).toBe('H. Roe');
     expect(person('top').getAttribute('data-score')).toBe('0');
   });
 
@@ -70,9 +70,9 @@ describe('PgnViewerComponent', () => {
       expect.any(HTMLElement),
       expect.objectContaining({ pgn: buildPgn(MOCK_GAMES[1]) }),
     );
-    expect(person('bottom').getAttribute('data-name')).toBe('Sasha Chen');
+    expect(person('bottom').getAttribute('data-name')).toBe('Jane Smith');
     expect(person('bottom').getAttribute('data-score')).toBe('½');
-    expect(person('top').getAttribute('data-name')).toBe('Gerry Litchfield');
+    expect(person('top').getAttribute('data-name')).toBe('John Doe');
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('.lpv')).toHaveLength(
       1,
     );

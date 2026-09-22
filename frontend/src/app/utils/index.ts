@@ -12,7 +12,7 @@ export {
 } from './chess/crosstable.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
-export { isCityChampion } from './chess/is-city-champion.util';
+export { CITY_CHAMPION, isCityChampion } from './chess/is-city-champion.util';
 export {
   playerName,
   playerNameLastFirst,

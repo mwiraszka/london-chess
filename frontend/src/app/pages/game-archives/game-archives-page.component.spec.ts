@@ -163,10 +163,10 @@ describe('GameArchivesPageComponent', () => {
 
     it('should offer the players by surname', () => {
       expect(component['playerOptions']().map(option => option.label)).toEqual([
-        'Chen, Sasha',
-        'Jung, H.',
-        'Litchfield, Gerry',
-        'Oraha, ',
+        'Smith, Jane',
+        'Roe, H.',
+        'Doe, John',
+        'Public, ',
       ]);
     });
 
@@ -178,7 +178,7 @@ describe('GameArchivesPageComponent', () => {
       store.refreshState();
       fixture.detectChanges();
 
-      expect(component['playerText']()).toBe('Litchfield, Gerry');
+      expect(component['playerText']()).toBe('Doe, John');
     });
 
     it('should offer every year in the archive', () => {
@@ -193,7 +193,7 @@ describe('GameArchivesPageComponent', () => {
     it('should put a chosen player in the URL and start from the first page', () => {
       component.onPlayerSelected({
         value: MOCK_GAMES[0].white.id,
-        label: 'Litchfield, Gerry',
+        label: 'Doe, John',
       });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
@@ -386,7 +386,7 @@ describe('GameArchivesPageComponent', () => {
       expect(queryTextContent(rows[0], '.games__date')).toBe('December 7, 2023');
       expect(
         queryAll(rows[0], 'lcc-member-link').map(link => link.componentInstance.name()),
-      ).toEqual(['Sasha Chen', 'Gerry Litchfield']);
+      ).toEqual(['Jane Smith', 'John Doe']);
       expect(queryTextContent(rows[0], '.games__result')).toBe('½-½');
       expect(queryTextContent(rows[0], '.games__event')).toBe('Club Championship');
       expect(queryTextContent(rows[0], '.games__section')).toBe('(A1)');

@@ -10,7 +10,7 @@ import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DataPaginationOptions, Member } from '@app/models';
 import { DialogService, StoreRequestService } from '@app/services';
 import { MembersActions, initialState as membersInitialState } from '@app/store/members';
-import { lastOpenedDialog, query, queryAll } from '@app/utils';
+import { CITY_CHAMPION, lastOpenedDialog, query, queryAll } from '@app/utils';
 
 import { MemberRow, MembersTableComponent } from './members-table.component';
 
@@ -160,7 +160,7 @@ describe('MembersTableComponent', () => {
 
     it('should mark the city champion', () => {
       render({
-        members: [{ ...MOCK_MEMBERS[0], firstName: 'Rene', lastName: 'Bartar' }],
+        members: [{ ...MOCK_MEMBERS[0], ...CITY_CHAMPION }],
       });
 
       expect(query(bodyRows()[0], '.members__champion-link')).toBeTruthy();

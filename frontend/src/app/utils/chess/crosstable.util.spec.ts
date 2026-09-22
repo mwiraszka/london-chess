@@ -133,20 +133,20 @@ describe('roundResultDescription', () => {
 
 describe('parseSubtitlePeople', () => {
   it('should read the simul givers with their ratings', () => {
-    expect(parseSubtitlePeople('Gibson, Kevin 2302 / Ivanchuk, Serhii 2189')).toEqual({
+    expect(parseSubtitlePeople('Doe, John 2302 / Smith, Jane 2189')).toEqual({
       people: [
-        { name: 'Gibson, Kevin', rating: 2302 },
-        { name: 'Ivanchuk, Serhii', rating: 2189 },
+        { name: 'Doe, John', rating: 2302 },
+        { name: 'Smith, Jane', rating: 2189 },
       ],
       separator: ' / ',
     });
   });
 
   it('should read the two sides of a match, rated or not', () => {
-    expect(parseSubtitlePeople('Gajiwala, Kiritkumar vs. Sarson, Ryan')).toEqual({
+    expect(parseSubtitlePeople('Doe, Jane vs. Smith, John')).toEqual({
       people: [
-        { name: 'Gajiwala, Kiritkumar', rating: null },
-        { name: 'Sarson, Ryan', rating: null },
+        { name: 'Doe, Jane', rating: null },
+        { name: 'Smith, John', rating: null },
       ],
       separator: ' vs. ',
     });
@@ -165,12 +165,10 @@ describe('parseSubtitlePeople', () => {
 
 describe('shortenSubtitle', () => {
   it('should name people by surname and initial, without ratings', () => {
-    expect(shortenSubtitle('Gibson, Kevin 2302 / Ivanchuk, Serhii 2189')).toBe(
-      'Gibson, K. / Ivanchuk, S.',
+    expect(shortenSubtitle('Doe, John 2302 / Smith, Jane 2189')).toBe(
+      'Doe, J. / Smith, J.',
     );
-    expect(shortenSubtitle('Gajiwala, Kiritkumar vs. Sarson, Ryan')).toBe(
-      'Gajiwala, K. vs. Sarson, R.',
-    );
+    expect(shortenSubtitle('Doe, Jane vs. Smith, John')).toBe('Doe, J. vs. Smith, J.');
     expect(shortenSubtitle('Hampson, Adam 1440')).toBe('Hampson, A.');
   });
 

@@ -12,9 +12,9 @@ const player = (
   memberNumber: number | null = null,
 ): GamePlayer => ({ id, firstName, lastName, suffix: '', memberNumber });
 
-const GERRY = player('64b7f0c2a1d3e4f5a6b7c8a1', 'Gerry', 'Litchfield', 2);
-const SASHA = player('64b7f0c2a1d3e4f5a6b7c8a3', 'Sasha', 'Chen');
-const ROBIN = player('64b7f0c2a1d3e4f5a6b7c8a4', 'Robin', 'Okafor', 7);
+const JOHN = player('64b7f0c2a1d3e4f5a6b7c8a1', 'John', 'Doe', 2);
+const JANE = player('64b7f0c2a1d3e4f5a6b7c8a3', 'Jane', 'Smith');
+const JOE = player('64b7f0c2a1d3e4f5a6b7c8a4', 'Joe', 'Bloggs', 7);
 
 export const MOCK_TOURNAMENTS: Tournament[] = [
   {
@@ -36,7 +36,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
         entries: [
           {
             rank: 1,
-            player: GERRY,
+            player: JOHN,
             rating: 1850,
             provisionalGames: null,
             performanceRating: 1990,
@@ -75,7 +75,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
           },
           {
             rank: 2,
-            player: SASHA,
+            player: JANE,
             rating: 1640,
             provisionalGames: 6,
             performanceRating: 1450,
@@ -114,7 +114,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
           },
           {
             rank: 3,
-            player: ROBIN,
+            player: JOE,
             rating: null,
             provisionalGames: null,
             performanceRating: 1245,
@@ -158,8 +158,8 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
             section: '',
             round: '1',
             date: '2023-10-19',
-            white: GERRY,
-            black: SASHA,
+            white: JOHN,
+            black: JANE,
             result: '1-0',
           },
         ],
@@ -169,7 +169,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
   {
     number: 111,
     name: 'Tandem Simul 2024',
-    subtitle: 'Gibson, Kevin 2302 / Ivanchuk, Serhii 2189',
+    subtitle: 'Doe, John 2302 / Smith, Jane 2189',
     date: '2024-06-27',
     endDate: null,
     format: 'tandem-simul',
@@ -185,7 +185,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
         entries: [
           {
             rank: 1,
-            player: SASHA,
+            player: JANE,
             rating: 1640,
             provisionalGames: null,
             performanceRating: null,
@@ -196,7 +196,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
           },
           {
             rank: 2,
-            player: ROBIN,
+            player: JOE,
             rating: null,
             provisionalGames: null,
             performanceRating: null,
@@ -229,7 +229,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
         entries: [
           {
             rank: 1,
-            player: GERRY,
+            player: JOHN,
             rating: 1850,
             provisionalGames: null,
             performanceRating: 1900,
@@ -240,7 +240,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
           },
           {
             rank: 2,
-            player: SASHA,
+            player: JANE,
             rating: 1640,
             provisionalGames: null,
             performanceRating: 1700,
@@ -256,8 +256,8 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
             section: 'A1',
             round: '1',
             date: '2024-09-12',
-            white: SASHA,
-            black: GERRY,
+            white: JANE,
+            black: JOHN,
             result: '1/2-1/2',
           },
         ],
@@ -270,7 +270,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
         entries: [
           {
             rank: 1,
-            player: ROBIN,
+            player: JOE,
             rating: 1320,
             provisionalGames: null,
             performanceRating: null,
@@ -303,7 +303,7 @@ export const MOCK_TOURNAMENT_SUMMARIES: TournamentSummary[] = [
   {
     number: 111,
     name: 'Tandem Simul 2024',
-    subtitle: 'Gibson, Kevin 2302 / Ivanchuk, Serhii 2189',
+    subtitle: 'Doe, John 2302 / Smith, Jane 2189',
     date: '2024-06-27',
     endDate: null,
     format: 'tandem-simul',

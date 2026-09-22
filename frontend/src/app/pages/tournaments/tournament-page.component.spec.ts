@@ -120,9 +120,9 @@ describe('TournamentPageComponent', () => {
         'Total',
       ]);
       expect(tableRows(table)).toEqual([
-        ['1', 'Litchfield, Gerry', '1850', 'W2', 'H', 'W3', '2½'],
-        ['2', 'Chen, Sasha', '1640 P6', 'L1', 'W3', 'U', '1'],
-        ['3', 'Okafor, Robin', 'Unrated', 'B', 'L2', 'L1', '0'],
+        ['1', 'Doe, John', '1850', 'W2', 'H', 'W3', '2½'],
+        ['2', 'Smith, Jane', '1640 P6', 'L1', 'W3', 'U', '1'],
+        ['3', 'Bloggs, Joe', 'Unrated', 'B', 'L2', 'L1', '0'],
       ]);
     });
 
@@ -148,9 +148,9 @@ describe('TournamentPageComponent', () => {
       fixture.detectChanges();
 
       expect(tableRows(table).map(([, name]) => name)).toEqual([
-        'Chen, Sasha',
-        'Litchfield, Gerry',
-        'Okafor, Robin',
+        'Bloggs, Joe',
+        'Doe, John',
+        'Smith, Jane',
       ]);
     });
 
@@ -180,7 +180,7 @@ describe('TournamentPageComponent', () => {
         '.ea-data-table__body .crosstable__round',
       );
 
-      expect(first.attributes['aria-label']).toBe('Won with white against Sasha Chen.');
+      expect(first.attributes['aria-label']).toBe('Won with white against Jane Smith.');
     });
 
     it('should link a round to its game when the archive has it', () => {
@@ -200,7 +200,7 @@ describe('TournamentPageComponent', () => {
         'click',
       );
 
-      expect(tableRows(table)).toEqual([['1', 'Gerry Litchfield', '1-0', 'Sasha Chen']]);
+      expect(tableRows(table)).toEqual([['1', 'John Doe', '1-0', 'Jane Smith']]);
       expect(navigateSpy).toHaveBeenCalledWith([
         '/game-archives',
         '64b7f0c2a1d3e4f5a6b7c8d2',
@@ -221,9 +221,7 @@ describe('TournamentPageComponent', () => {
     it('should name the simul givers with their ratings set apart', () => {
       const givers = query(fixture.debugElement, '.details__subtitle');
 
-      expect(textOf(givers)).toBe(
-        'Simul givers: Gibson, Kevin (2302) / Ivanchuk, Serhii (2189)',
-      );
+      expect(textOf(givers)).toBe('Simul givers: Doe, John (2302) / Smith, Jane (2189)');
       expect(queryAll(givers, '.details__extra').map(textOf)).toEqual([
         '(2302)',
         '(2189)',
@@ -235,8 +233,8 @@ describe('TournamentPageComponent', () => {
 
       expect(headers(table)).toEqual(['Board', 'Player', 'Rating', 'Result']);
       expect(tableRows(table)).toEqual([
-        ['1', 'Chen, Sasha', '1640', 'Draw'],
-        ['2', 'Okafor, Robin', 'Unrated', 'Loss'],
+        ['1', 'Smith, Jane', '1640', 'Draw'],
+        ['2', 'Bloggs, Joe', 'Unrated', 'Loss'],
       ]);
     });
 
@@ -245,18 +243,18 @@ describe('TournamentPageComponent', () => {
       const [section] = simul.sections;
       const byGiver = {
         ...simul,
-        subtitle: 'Gibson, Kevin 2302 / Ivanchuk, Serhii 2189',
+        subtitle: 'Doe, John 2302 / Smith, Jane 2189',
         sections: [
-          { ...section, name: 'Gibson, Kevin 2302', entries: [section.entries[0]] },
-          { ...section, name: 'Ivanchuk, Serhii 2189', entries: [section.entries[1]] },
+          { ...section, name: 'Doe, John 2302', entries: [section.entries[0]] },
+          { ...section, name: 'Smith, Jane 2189', entries: [section.entries[1]] },
         ],
       };
       store.setState(stateWith([byGiver]));
       fixture.detectChanges();
 
       expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
-        'Gibson, Kevin (2302)',
-        'Ivanchuk, Serhii (2189)',
+        'Doe, John (2302)',
+        'Smith, Jane (2189)',
       ]);
       expect(
         queryAll(fixture.debugElement, '.section__heading-extra').map(textOf),
@@ -286,7 +284,7 @@ describe('TournamentPageComponent', () => {
         'U1500',
       ]);
       expect(headers(tables[0])).toEqual(['#', 'Player', 'Rating', 'Total']);
-      expect(tableRows(tables[1])).toEqual([['1', 'Okafor, Robin', '1320', '4']]);
+      expect(tableRows(tables[1])).toEqual([['1', 'Bloggs, Joe', '1320', '4']]);
     });
 
     it("should list only the sections' own games", () => {
