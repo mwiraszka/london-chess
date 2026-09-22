@@ -8,16 +8,24 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   Directive,
+  ElementRef,
+  Renderer2,
   TemplateRef,
+  afterNextRender,
   computed,
   inject,
   input,
   output,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import { AdminControlsConfig } from '@app/models';
+import { AdminControlsService } from '@app/services';
+import { scrollParentOf } from '@app/utils';
 
 export const NO_SORT: DataTableSortState = { column: '', direction: null };
 
@@ -59,7 +67,10 @@ export class DataTableCellDirective<T> {
     NgTemplateOutlet,
     TextSkeletonComponent,
   ],
-  host: { '[class.data-table--full-width]': 'fullWidth()' },
+  host: {
+    '[class.data-table--full-width]': 'fullWidth()',
+    '(contextmenu)': 'onContextMenu($event)',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataTableComponent<T extends { id: string }> {
@@ -77,11 +88,21 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly hoverable = input(true);
   // Fills its container rather than sitting centred at its content's width
   public readonly fullWidth = input(false);
+  // Keeps the header in view for as long as any row is
+  public readonly stickyHeader = input(true);
+  // The admin controls of a row, opened by a right click on it
+  public readonly rowControls = input<(row: T) => AdminControlsConfig | null>();
 
   public readonly sorted = output<DataTableSortState>();
   public readonly rowActivate = output<T>();
 
   private readonly cells = viewChildren(DataTableCellDirective<T>);
+  private readonly table = viewChild(EaDataTableComponent, { read: ElementRef });
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly adminControls = inject(AdminControlsService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly renderer = inject(Renderer2);
 
   protected readonly trackBy: keyof T = 'id';
 
@@ -121,5 +142,51 @@ export class DataTableComponent<T extends { id: string }> {
     column: DataTableColumn<T>,
   ): DataTableCellContext<T> {
     return { $implicit: row, value, column };
+  }
+
+  constructor() {
+    afterNextRender(() => this.followScroll());
+  }
+
+  // The header is moved down over the rows as the page scrolls past it, which keeps
+  // working inside the table's own scroll boxes, where sticky positioning cannot
+  private followScroll(): void {
+    const table = this.table()?.nativeElement.querySelector('.ea-data-table__table');
+    const head = table?.querySelector('.ea-data-table__head');
+    // From outside the table, whose own sideways scroll box would be found first
+    const scroller = scrollParentOf(this.host.nativeElement);
+    if (!(table instanceof HTMLElement) || !(head instanceof HTMLElement) || !scroller) {
+      return;
+    }
+    const update = () => {
+      const top =
+        table.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      const offset = this.stickyHeader()
+        ? Math.min(Math.max(-top, 0), Math.max(table.offsetHeight - head.offsetHeight, 0))
+        : 0;
+      if (offset) {
+        this.renderer.setStyle(head, 'transform', `translateY(${offset}px)`);
+      } else {
+        this.renderer.removeStyle(head, 'transform');
+      }
+    };
+    this.destroyRef.onDestroy(this.renderer.listen(scroller, 'scroll', update));
+    const observer = new ResizeObserver(update);
+    observer.observe(table);
+    this.destroyRef.onDestroy(() => observer.disconnect());
+  }
+
+  protected onContextMenu(event: MouseEvent): void {
+    const controlsFor = this.rowControls();
+    const target = event.target instanceof Element ? event.target : null;
+    const rowElement = target?.closest('.ea-data-table__body .ea-data-table__row');
+    const id = rowElement?.querySelector('[data-row-id]')?.getAttribute('data-row-id');
+    const row = this.rows().find(row => row.id === id);
+    const config = controlsFor && row && !this.loading() ? controlsFor(row) : null;
+    if (!rowElement || !config || window.getSelection()?.toString().trim()) {
+      return;
+    }
+    event.preventDefault();
+    this.adminControls.open(config, rowElement, undefined, 'center');
   }
 }

@@ -24,22 +24,26 @@
     let-row
     let-value="value"
     [lccDataTableCell]="column.key">
-    @if (isPlaceholder(row)) {
-      @if (column.placeholderTemplate) {
+    <span
+      class="data-table__cell"
+      [attr.data-row-id]="row.id">
+      @if (isPlaceholder(row)) {
+        @if (column.placeholderTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.placeholderTemplate"
+            [ngTemplateOutletContext]="cellContext(row, value, column)" />
+        } @else {
+          <lcc-text-skeleton width="100%" />
+        }
+      } @else if (column.cellTemplate) {
         <ng-container
-          [ngTemplateOutlet]="column.placeholderTemplate"
+          [ngTemplateOutlet]="column.cellTemplate"
           [ngTemplateOutletContext]="cellContext(row, value, column)" />
+      } @else if (column.format) {
+        {{ column.format(value) }}
       } @else {
-        <lcc-text-skeleton width="100%" />
+        {{ value }}
       }
-    } @else if (column.cellTemplate) {
-      <ng-container
-        [ngTemplateOutlet]="column.cellTemplate"
-        [ngTemplateOutletContext]="cellContext(row, value, column)" />
-    } @else if (column.format) {
-      {{ column.format(value) }}
-    } @else {
-      {{ value }}
-    }
+    </span>
   </ng-template>
 }

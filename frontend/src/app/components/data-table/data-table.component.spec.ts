@@ -4,6 +4,8 @@ import { Component, TemplateRef, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { AdminControlsConfig } from '@app/models';
+import { AdminControlsService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
 import {
@@ -28,6 +30,7 @@ interface Row {
       [data]="rows()"
       [loading]="loading()"
       [loadingRowCount]="4"
+      [rowControls]="rowControls"
       [rowHref]="rowHref"
       [sizingRows]="sizingRows"
       [sort]="sort()"
@@ -66,6 +69,11 @@ class HostComponent {
   readonly sort = signal<DataTableSortState>({ column: '', direction: null });
   readonly sizingRows: Row[] = [{ id: 'widest', name: 'Bartholomew', score: 100 }];
   readonly rowHref = (row: Row): string => `/rows/${row.id}`;
+  readonly rowControls = (row: Row): AdminControlsConfig => ({
+    buttonSize: 31,
+    deleteCb: () => undefined,
+    itemName: row.name,
+  });
   readonly activated: Row[] = [];
   readonly sorts: DataTableSortState[] = [];
 
@@ -94,11 +102,16 @@ describe('DataTableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: AdminControlsService, useValue: { open: vi.fn() } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HostComponent);
     host = fixture.componentInstance;
+    // The host stands in for the page's scrolling area
+    fixture.nativeElement.style.overflowY = 'auto';
     fixture.detectChanges();
   });
 
@@ -134,6 +147,49 @@ describe('DataTableComponent', () => {
     bodyRows()[1].triggerEventHandler('click');
 
     expect(host.activated).toEqual([host.rows()[1]]);
+  });
+
+  it('should offer a row its controls on a right click', () => {
+    const openSpy = vi.mocked(TestBed.inject(AdminControlsService).open);
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+
+    query(bodyRows()[1], '.name').nativeElement.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ itemName: 'Bob' }),
+      bodyRows()[1].nativeElement,
+      undefined,
+      'center',
+    );
+  });
+
+  it('should keep the header in view while the rows scroll past it', () => {
+    const scroller: HTMLElement = fixture.nativeElement;
+    const table: HTMLElement = query(
+      fixture.debugElement,
+      '.ea-data-table__table',
+    ).nativeElement;
+    const head: HTMLElement = query(
+      fixture.debugElement,
+      '.ea-data-table__head',
+    ).nativeElement;
+    Object.defineProperty(table, 'offsetHeight', { value: 300 });
+    Object.defineProperty(head, 'offsetHeight', { value: 40 });
+    vi.spyOn(scroller, 'getBoundingClientRect').mockReturnValue({ top: 0 } as DOMRect);
+    const tableRect = vi.spyOn(table, 'getBoundingClientRect');
+
+    tableRect.mockReturnValue({ top: -100 } as DOMRect);
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(head.style.transform).toBe('translateY(100px)');
+
+    tableRect.mockReturnValue({ top: -280 } as DOMRect);
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(head.style.transform).toBe('translateY(260px)');
+
+    tableRect.mockReturnValue({ top: 20 } as DOMRect);
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(head.style.transform).toBe('');
   });
 
   it('should pass on a sort', () => {

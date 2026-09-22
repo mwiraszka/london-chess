@@ -1,4 +1,5 @@
 export { isStorageSupported } from './browser/is-storage-supported.util';
+export { scrollParentOf } from './browser/scroll-parent.util';
 
 export { buildPgn } from './chess/build-pgn.util';
 export {

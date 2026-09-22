@@ -21,7 +21,15 @@ ea-data-table {
   }
 }
 
-// As a block the placeholder sits centred in its cell
+// The header is moved over the rows as the page scrolls, so it paints above them
+:host ::ng-deep .ea-data-table__head {
+  z-index: 1;
+  position: relative;
+}
+
+// Laid out as a run of text, so a placeholder row is exactly as tall as a row of text
 lcc-text-skeleton {
-  display: block;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.4em;
 }
