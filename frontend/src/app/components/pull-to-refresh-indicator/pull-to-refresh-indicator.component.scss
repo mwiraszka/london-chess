@@ -22,7 +22,3 @@
   transform: translateY(calc(var(--lcc-pull-progress) * 16px))
     rotate(calc(var(--lcc-pull-progress) * 270deg));
 }
-
-:host(.refreshing) .indicator {
-  transform: translateY(16px);
-}
