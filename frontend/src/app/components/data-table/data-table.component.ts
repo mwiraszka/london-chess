@@ -12,6 +12,7 @@ import {
   Directive,
   ElementRef,
   Renderer2,
+  RendererStyleFlags2,
   TemplateRef,
   afterNextRender,
   computed,
@@ -149,7 +150,9 @@ export class DataTableComponent<T extends { id: string }> {
   }
 
   // The header is moved down over the rows as the page scrolls past it, which keeps
-  // working inside the table's own scroll boxes, where sticky positioning cannot
+  // working inside the table's own scroll boxes, where sticky positioning cannot.
+  // Its height is published for the rows' scroll margin, so a row scrolled to the
+  // top of the page lands below it
   private followScroll(): void {
     const table = this.table()?.nativeElement.querySelector('.ea-data-table__table');
     const head = table?.querySelector('.ea-data-table__head');
@@ -158,6 +161,7 @@ export class DataTableComponent<T extends { id: string }> {
     if (!(table instanceof HTMLElement) || !(head instanceof HTMLElement) || !scroller) {
       return;
     }
+    let headHeight: number | null = null;
     const update = () => {
       const top =
         table.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
@@ -168,6 +172,16 @@ export class DataTableComponent<T extends { id: string }> {
         this.renderer.setStyle(head, 'transform', `translateY(${offset}px)`);
       } else {
         this.renderer.removeStyle(head, 'transform');
+      }
+      const height = this.stickyHeader() ? head.offsetHeight : 0;
+      if (height !== headHeight) {
+        headHeight = height;
+        this.renderer.setStyle(
+          this.host.nativeElement,
+          '--lcc-data-table-head-height',
+          `${height}px`,
+          RendererStyleFlags2.DashCase,
+        );
       }
     };
     this.destroyRef.onDestroy(this.renderer.listen(scroller, 'scroll', update));

@@ -108,19 +108,41 @@ describe('ScheduleToolbarComponent', () => {
   });
 
   describe('onToday', () => {
-    it('should scroll to today scroll point when it exists', () => {
-      const mockElement = {
-        scrollIntoView: vi.fn(),
-      };
-      todayScrollPointSpy.mockReturnValue(mockElement as unknown as Element);
+    it('should scroll the row holding the today scroll point into view', () => {
+      const row = document.createElement('tr');
+      const point = row
+        .appendChild(document.createElement('td'))
+        .appendChild(document.createElement('div'));
+      row.scrollIntoView = vi.fn();
+      point.scrollIntoView = vi.fn();
+      todayScrollPointSpy.mockReturnValue(point);
 
       component.onToday();
 
-      expect(mockElement.scrollIntoView).toHaveBeenCalledTimes(1);
-      expect(mockElement.scrollIntoView).toHaveBeenCalledWith({
+      expect(row.scrollIntoView).toHaveBeenCalledWith({
         behavior: 'smooth',
         block: 'start',
       });
+      expect(point.scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('should scroll the today scroll point itself when it is not in a table', () => {
+      const point = document.createElement('div');
+      point.scrollIntoView = vi.fn();
+      todayScrollPointSpy.mockReturnValue(point);
+
+      component.onToday();
+
+      expect(point.scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+
+    it('should do nothing when there is no today scroll point', () => {
+      todayScrollPointSpy.mockReturnValue(null);
+
+      expect(() => component.onToday()).not.toThrow();
     });
 
     it('should disable today button when today scroll point does not exist', () => {
