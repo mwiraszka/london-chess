@@ -6,6 +6,7 @@ import { Id } from '../models/core.model';
 import { Event, EventModel, eventSortingConfig, eventTypes } from '../models/event.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
 import { findEditor } from '../services/member-accounts.service';
+import { widestEventIds } from '../services/widest.service';
 import { isCollectionId } from '../util/is-collection-id.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
@@ -51,6 +52,23 @@ export async function getEvents(
         filteredCount,
         totalCount,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+// The events holding the widest text of each column, for sizing the table before a page loads
+export async function getWidestEvents(
+  _req: Request,
+  res: Response<ApiResponse<Event[]>>,
+): Promise<void> {
+  try {
+    const records = await EventModel.find({
+      _id: { $in: await widestEventIds() },
+    }).lean();
+    res.status(200).json({
+      data: records.map(({ _id, ...event }) => ({ ...event, id: _id.toString() })),
     });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });

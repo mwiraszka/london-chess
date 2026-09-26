@@ -20,6 +20,7 @@ import {
   resolvePlayers,
   toGameResponses,
 } from '../services/games.service';
+import { widestGameIds } from '../services/widest.service';
 import { isCollectionId } from '../util/is-collection-id.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 
@@ -172,6 +173,21 @@ export async function getSummary(
         lastYear: last?.year ?? null,
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+// The games holding the widest text of each column, for sizing the table before a page loads
+export async function getWidestGames(
+  _req: Request,
+  res: Response<ApiResponse<GameResponse[]>>,
+): Promise<void> {
+  try {
+    const records = await GameModel.find({ _id: { $in: await widestGameIds() } }).lean<
+      GameRecord[]
+    >();
+    res.status(200).json({ data: await toGameResponses(records) });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }
