@@ -33,8 +33,9 @@ jobs:
       - name: Check Formatting
         run: pnpm format:check
 
-      - name: Test
-        run: pnpm test
+      # The thresholds in angular.json fail this step below 90% coverage
+      - name: Test With Coverage
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build:prod
@@ -68,5 +69,13 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test
-        run: pnpm test
+      # The in-memory database the tests run against downloads its binary on first use
+      - name: Cache MongoDB Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('backend/package.json') }}
+
+      # The thresholds in vitest.config.ts fail this step below 90% coverage
+      - name: Test With Coverage
+        run: pnpm test:coverage
