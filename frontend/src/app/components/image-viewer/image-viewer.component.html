@@ -4,6 +4,7 @@
       class="previous-image-button lcc-secondary-button lcc-light-button"
       [class.active]="isPreviousImageButtonActive"
       [disabled]="images().length === 1"
+      aria-label="Previous image"
       tooltip="Previous image"
       (click)="onPreviousImage()">
       <ea-icon-chevron-left />
@@ -15,6 +16,7 @@
       class="next-image-button lcc-secondary-button lcc-light-button"
       [class.active]="isNextImageButtonActive"
       [disabled]="images().length === 1"
+      aria-label="Next image"
       tooltip="Next image"
       (click)="onNextImage()">
       <ea-icon-chevron-right />

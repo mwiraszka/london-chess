@@ -20,6 +20,7 @@ import { DIALOG_CONFIG_TOKEN } from '@app/services';
     <header>
       <button
         class="close-button lcc-icon-button"
+        aria-label="Close dialog"
         (click)="result.emit('close')">
         <ea-icon-x />
       </button>

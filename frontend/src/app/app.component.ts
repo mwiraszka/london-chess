@@ -2,7 +2,7 @@ import { ToastComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import moment from 'moment-timezone';
-import { Observable, combineLatest } from 'rxjs';
+import { Observable, combineLatest, fromEvent } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 
 import { CdkScrollableModule } from '@angular/cdk/scrolling';
@@ -168,7 +168,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.refreshService.initialize(this.mainElement().nativeElement);
     this.initNavigationListenerForScrollingBackToTop();
     this.measureScrollbarInset();
-    window.addEventListener('resize', () => this.measureScrollbarInset());
+    fromEvent(window, 'resize')
+      .pipe(untilDestroyed(this))
+      .subscribe(() => this.measureScrollbarInset());
   }
 
   // The classic scrollbar's width varies by browser; publishing it as a

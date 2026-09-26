@@ -202,6 +202,20 @@ describe('AppComponent', () => {
         document.documentElement.style.getPropertyValue('--lcc-scrollbar-inset'),
       ).toBe('15px');
     });
+
+    it('should stop measuring on resize once the app is torn down', () => {
+      fixture.detectChanges();
+      const main: HTMLElement = component.mainElement().nativeElement;
+      fixture.destroy();
+
+      Object.defineProperty(main, 'offsetWidth', { configurable: true, value: 815 });
+      Object.defineProperty(main, 'clientWidth', { configurable: true, value: 800 });
+      window.dispatchEvent(new Event('resize'));
+
+      expect(
+        document.documentElement.style.getPropertyValue('--lcc-scrollbar-inset'),
+      ).toBe('0px');
+    });
   });
 
   describe('onClearBanner', () => {

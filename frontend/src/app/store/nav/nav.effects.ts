@@ -231,7 +231,9 @@ export class NavEffects {
       }),
       map(([, currentPath]) => {
         const [entity, , idWithFragment] = currentPath!.split('/').slice(1);
-        const id = idWithFragment ? idWithFragment.split('#')[0] : null;
+        const id = idWithFragment
+          ? decodeURIComponent(idWithFragment.split('#')[0])
+          : null;
 
         switch (entity) {
           case 'album':

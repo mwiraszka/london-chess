@@ -147,8 +147,6 @@ export class CreateAccountFormComponent {
   }
 
   private toErrorMessage(e: unknown): string {
-    return e instanceof ApiError
-      ? e.message.replace(/\.$/, '')
-      : 'Something went wrong, please try again';
+    return e instanceof ApiError ? e.message : 'Something went wrong – please try again.';
   }
 }

@@ -85,7 +85,7 @@ describe('LoginFormComponent', () => {
             logIn: logInSpy,
             verifyLoginCode: verifyLoginCodeSpy,
             completeNewPassword: completeNewPasswordSpy,
-            extractError: () => 'Incorrect email or password',
+            extractError: () => 'Incorrect email or password.',
             isLoggedIn,
             logOut: logOutSpy,
             user: clerkUser,
@@ -177,7 +177,7 @@ describe('LoginFormComponent', () => {
       fixture.detectChanges();
 
       expect(authDrawer.isCompletingLogin()).toBe(false);
-      expect(errorText()).toBe('Incorrect email or password');
+      expect(errorText()).toBe('Incorrect email or password.');
     });
 
     it('should switch to the create account and forgot password forms', () => {
@@ -319,7 +319,7 @@ describe('LoginFormComponent', () => {
       await setNewPassword();
       fixture.detectChanges();
 
-      expect(errorText()).toBe('Incorrect email or password');
+      expect(errorText()).toBe('Incorrect email or password.');
     });
   });
 

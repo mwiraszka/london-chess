@@ -260,5 +260,30 @@ describe('DialogService', () => {
       expect(service['dialogComponentRefs'].length).toBe(1);
       expect(service['overlayRefs'].length).toBe(1);
     });
+
+    it('should stop listening to the document once every dialog is closed', () => {
+      service.open<TestDialogComponent, string>(testDialogConfig);
+      vi.runAllTimers();
+      const listeners = [service['documentClickListener'], service['keydownListener']];
+      const unlistenSpies = listeners.map(listener => vi.fn(listener));
+      service['documentClickListener'] = unlistenSpies[0];
+      service['keydownListener'] = unlistenSpies[1];
+
+      service.closeAll();
+
+      unlistenSpies.forEach(spy => expect(spy).toHaveBeenCalledTimes(1));
+    });
+
+    it('should not start listening when every dialog closed before the opening click passed', () => {
+      const listenSpy = vi.spyOn(service['renderer'], 'listen');
+      service.open<TestDialogComponent, string>(testDialogConfig);
+
+      service.closeAll();
+      vi.runAllTimers();
+
+      expect(listenSpy.mock.calls.filter(([target]) => target === 'document')).toEqual(
+        [],
+      );
+    });
   });
 });

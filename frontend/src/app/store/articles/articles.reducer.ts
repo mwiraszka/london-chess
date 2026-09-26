@@ -73,10 +73,9 @@ export const articlesReducer = createReducer(
     withFailedLoad(state, 'homePage'),
   ),
 
-  on(ArticlesActions.fetchFilteredArticlesRequested, (state): ArticlesState => ({
-    ...withLoadAttempt(state, 'filtered'),
-    isFetchingFiltered: true,
-  })),
+  on(ArticlesActions.fetchFilteredArticlesRequested, (state): ArticlesState =>
+    withLoadAttempt(state, 'filtered'),
+  ),
   on(ArticlesActions.fetchFilteredArticlesFailed, (state): ArticlesState => ({
     ...withFailedLoad(state, 'filtered'),
     isFetchingFiltered: false,
@@ -151,10 +150,16 @@ export const articlesReducer = createReducer(
       ),
   ),
 
-  on(ArticlesActions.paginationOptionsChanged, (state, { options }): ArticlesState => ({
-    ...state,
-    options,
-  })),
+  // Only a page or search the reader asked for swaps the articles for placeholders, so a
+  // refresh in the background leaves the ones on screen in place
+  on(
+    ArticlesActions.paginationOptionsChanged,
+    (state, { options, fetch }): ArticlesState => ({
+      ...state,
+      options,
+      isFetchingFiltered: state.isFetchingFiltered || fetch,
+    }),
+  ),
 
   on(ArticlesActions.fetchArticleSucceeded, (state, { article }): ArticlesState => {
     const previousFormData = state.entities[article.id]?.formData;

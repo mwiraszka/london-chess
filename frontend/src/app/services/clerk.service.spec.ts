@@ -609,10 +609,10 @@ describe('ClerkService', () => {
       expect(unknownEmail).toBe(wrongPassword);
     });
 
-    it('should fall back to the Clerk message without its trailing period', () => {
+    it('should fall back to the Clerk message as written', () => {
       const message = service.extractError(clerkError('other_code', 'Try again later.'));
 
-      expect(message).toBe('Try again later');
+      expect(message).toBe('Try again later.');
     });
 
     it('should return a generic message for an error that is not from Clerk', () => {

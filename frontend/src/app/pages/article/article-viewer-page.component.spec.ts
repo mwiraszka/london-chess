@@ -244,7 +244,7 @@ describe('ArticleViewerPageComponent', () => {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
-            body: `Update ${mockArticle.title}?`,
+            body: `Delete ${mockArticle.title}?`,
             confirmButtonText: 'Delete',
             confirmButtonType: 'warning',
           }),

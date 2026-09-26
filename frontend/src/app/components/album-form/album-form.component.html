@@ -3,7 +3,11 @@
   [formGroup]="form"
   (ngSubmit)="onSubmit()">
   <div class="lcc-form-fields">
-    <label class="lcc-required-field">Album title:</label>
+    <label
+      for="album-input"
+      class="lcc-required-field">
+      Album title:
+    </label>
     <input
       id="album-input"
       class="album-input"
@@ -31,7 +35,7 @@
 
         <div class="cover-image-input-container">
           <input
-            [id]="'cover-image-radio-' + i"
+            [id]="'existing-cover-radio-' + i"
             class="cover-image-input"
             type="radio"
             name="coverImage"
@@ -39,18 +43,18 @@
             (change)="onSetAlbumCover(imageControl.controls.id.value)" />
           <label
             class="cover-image-label"
-            [for]="'cover-radio-' + i">
+            [for]="'existing-cover-radio-' + i">
             Use as album cover
           </label>
         </div>
 
         <label
-          [for]="'caption-input-' + i"
+          [for]="'existing-caption-input-' + i"
           class="lcc-required-field">
           Caption:
         </label>
         <input
-          [id]="'caption-input-' + i"
+          [id]="'existing-caption-input-' + i"
           type="text"
           formControlName="caption"
           maxlength="120" />
@@ -58,12 +62,12 @@
         </lcc-form-error-icon>
 
         <label
-          [for]="'album-ordinality-input-' + i"
+          [for]="'existing-ordinality-input-' + i"
           class="lcc-required-field">
           Ordinality:
         </label>
         <input
-          [id]="'album-orginality-input-' + i"
+          [id]="'existing-ordinality-input-' + i"
           class="album-ordinality-input"
           type="text"
           formControlName="albumOrdinality"
@@ -136,7 +140,7 @@
 
         <div class="album-cover-input-container full-span">
           <input
-            [id]="'album-cover-radio-' + i"
+            [id]="'new-cover-radio-' + i"
             class="album-cover-input"
             type="radio"
             name="albumCover"
@@ -144,18 +148,18 @@
             (change)="onSetAlbumCover(imageControl.controls.id.value)" />
           <label
             class="album-cover-label"
-            [for]="'album-cover-radio-' + i">
+            [for]="'new-cover-radio-' + i">
             Use as album cover
           </label>
         </div>
 
         <label
-          [for]="'caption-input-' + i"
+          [for]="'new-caption-input-' + i"
           class="lcc-required-field">
           Caption:
         </label>
         <input
-          [id]="'caption-input-' + i"
+          [id]="'new-caption-input-' + i"
           type="text"
           formControlName="caption"
           maxlength="120" />
@@ -163,12 +167,12 @@
         </lcc-form-error-icon>
 
         <label
-          [for]="'album-ordinality-input-' + i"
+          [for]="'new-ordinality-input-' + i"
           class="lcc-required-field">
           Ordinality:
         </label>
         <input
-          [id]="'album-orginality-input-' + i"
+          [id]="'new-ordinality-input-' + i"
           class="album-ordinality-input"
           type="text"
           formControlName="albumOrdinality"

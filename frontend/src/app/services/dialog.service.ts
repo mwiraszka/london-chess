@@ -124,9 +124,17 @@ export class DialogService {
     for (const overlayRef of overlaysToClose) {
       overlayRef.dispose();
     }
+
+    this.removeEventListeners();
   }
 
+  // Attached a tick after the first dialog opens, by which time every dialog may be closed
   private initEventListeners(): void {
+    this.removeEventListeners();
+    if (!this.overlayRefs.length) {
+      return;
+    }
+
     this.documentClickListener = this.renderer.listen(
       'document',
       'click',
@@ -172,10 +180,15 @@ export class DialogService {
       overlayRef.dispose();
     }
 
-    // Only remove listeners when there are no more overlays
     if (this.overlayRefs.length === 0) {
-      this.documentClickListener?.();
-      this.keydownListener?.();
+      this.removeEventListeners();
     }
+  }
+
+  private removeEventListeners(): void {
+    this.documentClickListener?.();
+    this.keydownListener?.();
+    this.documentClickListener = undefined;
+    this.keydownListener = undefined;
   }
 }

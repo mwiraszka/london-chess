@@ -61,7 +61,18 @@
                             : null
                         "
                         [tooltipContext]="event"
-                        (click)="onEventIndicator(event)">
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-label]="
+                          event.title +
+                          ', ' +
+                          (event.eventDate | formatDate: 'long no-time')
+                        "
+                        (click)="onEventIndicator(event)"
+                        (keydown.enter)="onEventIndicator(event)"
+                        (keydown.space)="
+                          $event.preventDefault(); onEventIndicator(event)
+                        ">
                       </a>
                     }
                   </div>

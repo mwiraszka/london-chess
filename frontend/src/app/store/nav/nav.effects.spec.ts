@@ -753,7 +753,7 @@ describe('NavEffects', () => {
 
         effects.restoreFormDataOnNavigationAwayFromEntityRoute$.subscribe(action => {
           expect(action).toEqual(
-            ImagesActions.albumFormDataRestored({ album: 'Test%20Album' }),
+            ImagesActions.albumFormDataRestored({ album: 'Test Album' }),
           );
           done();
         });

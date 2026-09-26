@@ -229,26 +229,26 @@ export class ClerkService {
   // problem would confirm to a stranger which addresses hold accounts.
   private friendlyMessage(code?: string, fallback?: string): string {
     const messages: Record<string, string> = {
-      form_identifier_not_found: 'Incorrect email or password',
-      form_password_incorrect: 'Incorrect email or password',
+      form_identifier_not_found: 'Incorrect email or password.',
+      form_password_incorrect: 'Incorrect email or password.',
       form_password_pwned:
-        'This password has been found in a data breach, please choose a different one',
-      form_password_length_too_short: 'Password must be at least 8 characters',
-      form_identifier_exists: 'An account with that email already exists',
-      form_code_incorrect: 'Incorrect verification code',
-      form_param_format_invalid: 'Please enter a valid email address',
+        'This password has been found in a data breach – please choose a different one.',
+      form_password_length_too_short: 'Password must be at least 8 characters.',
+      form_identifier_exists: 'An account with that email already exists.',
+      form_code_incorrect: 'Incorrect verification code.',
+      form_param_format_invalid: 'Please enter a valid email address.',
       form_password_not_strong_enough:
-        'Password is not strong enough, please choose a stronger one',
-      form_param_nil: 'Please fill in all required fields',
-      strategy_for_user_invalid: 'Incorrect email or password',
-      identifier_invalid: 'Please enter a valid email address',
+        'Password is not strong enough – please choose a stronger one.',
+      form_param_nil: 'Please fill in all required fields.',
+      strategy_for_user_invalid: 'Incorrect email or password.',
+      identifier_invalid: 'Please enter a valid email address.',
     };
 
     if (code && messages[code]) {
       return messages[code];
     }
 
-    return fallback?.replace(/\.$/, '') ?? 'Something went wrong, please try again';
+    return fallback ?? 'Something went wrong – please try again.';
   }
 
   private syncState(): void {

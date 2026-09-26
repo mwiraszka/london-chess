@@ -129,7 +129,7 @@ describe('CreateAccountFormComponent', () => {
       );
     });
 
-    it('should show an API error without its trailing period', async () => {
+    it('should show an API error as written', async () => {
       fillForm();
       postSpy.mockRejectedValue(new ApiError('Email already has an account.', 409));
 
@@ -137,7 +137,7 @@ describe('CreateAccountFormComponent', () => {
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, 'lcc-member-account-fields')).toBeTruthy();
-      expect(errorText()).toBe('Email already has an account');
+      expect(errorText()).toBe('Email already has an account.');
     });
 
     it('should show a generic error for an unexpected failure', async () => {
@@ -210,7 +210,7 @@ describe('CreateAccountFormComponent', () => {
       await verifyAndSubmit();
       fixture.detectChanges();
 
-      expect(codeInput().errorMsg()).toBe('Incorrect code');
+      expect(codeInput().errorMsg()).toBe('Incorrect code.');
       expect(authDrawer.open()).toBe(true);
     });
 
