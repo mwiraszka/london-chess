@@ -1,3 +1,5 @@
 src/app/pages/game-archives/pgns/*.ts
 src/app/pages/website-changelog/changelog.generated.ts
 src/app/constants/git-branch.generated.ts
+test-results
+playwright-report

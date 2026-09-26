@@ -1,5 +1,4 @@
-import { Page, expect, test } from '@playwright/test';
-
+import { Page, expect, test } from './fixtures';
 import { failRequests, holdRequests } from './requests';
 
 const ARTICLES = /\/v1\/articles(\?|$)/;
@@ -11,7 +10,9 @@ const LISTS = /\/v1\/(articles|events|images\/all-metadata|public\/members)(\?|$
 // Makes the stored articles due for a refresh from the next page load on
 async function expireStoredArticles(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const key = Object.keys(localStorage).find(key => key.startsWith('articlesState'));
+    const key = Object.keys(localStorage).find(key =>
+      key.startsWith('lcc.articlesState.'),
+    );
     if (!key) {
       throw new Error('No articles are stored.');
     }
@@ -21,20 +22,23 @@ async function expireStoredArticles(page: Page): Promise<void> {
   });
 }
 
-async function pullDown(page: Page, distancePx: number): Promise<void> {
-  await page.locator('main').evaluate((main, distance) => {
-    const touchAt = (clientY: number) =>
-      new Touch({ identifier: 1, target: main, clientX: 100, clientY });
-    const init = { bubbles: true, cancelable: true };
-
-    main.dispatchEvent(
-      new TouchEvent('touchstart', { ...init, touches: [touchAt(100)] }),
-    );
-    main.dispatchEvent(
-      new TouchEvent('touchmove', { ...init, touches: [touchAt(100 + distance)] }),
-    );
-    main.dispatchEvent(new TouchEvent('touchend', { ...init, touches: [] }));
-  }, distancePx);
+async function touch(
+  page: Page,
+  type: 'touchstart' | 'touchmove' | 'touchend',
+  clientY?: number,
+): Promise<void> {
+  await page.locator('main').evaluate(
+    (main, { type, clientY }) => {
+      const touches =
+        clientY === undefined
+          ? []
+          : [new Touch({ identifier: 1, target: main, clientX: 100, clientY })];
+      main.dispatchEvent(
+        new TouchEvent(type, { bubbles: true, cancelable: true, touches }),
+      );
+    },
+    { type, clientY },
+  );
 }
 
 test.describe('loading states', () => {
@@ -154,22 +158,27 @@ test.describe('pull to refresh', () => {
     hasTouch: true,
   });
 
-  test('shows a spinner until the refreshed data arrives', async ({ page }) => {
+  test('shows the arrow only while pulling, then refreshes the data', async ({
+    page,
+  }) => {
     await page.goto('/');
     const articleCards = page.locator('.articles-section a.article:not(.skeleton)');
     await expect(articleCards.first()).toBeVisible();
-    const indicator = page.locator('lcc-pull-to-refresh-indicator');
+    const arrow = page.locator('lcc-pull-to-refresh-indicator ea-icon-refresh-cw');
     const lists = await holdRequests(page, LISTS);
 
-    await pullDown(page, 200);
+    await touch(page, 'touchstart', 100);
+    await touch(page, 'touchmove', 300);
 
-    await expect(indicator.locator('ea-spinner')).toBeVisible();
+    await expect(arrow).toBeVisible();
+
+    await touch(page, 'touchend');
+
+    await expect(arrow).toHaveCount(0);
     await expect.poll(lists.count).toBeGreaterThan(0);
-    await expect(articleCards.first()).toBeVisible();
 
     await lists.release();
 
-    await expect(indicator.locator('ea-spinner')).toHaveCount(0);
     await expect(articleCards.first()).toBeVisible();
   });
 });

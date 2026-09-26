@@ -19,6 +19,7 @@
     "test": "pnpm -C frontend run test && pnpm -C backend run test",
     "test:fe": "pnpm -C frontend run test",
     "test:be": "pnpm -C backend run test",
+    "e2e": "pnpm -C frontend run e2e",
     "lint": "pnpm -C frontend run lint && pnpm -C backend run lint",
     "format": "pnpm -C frontend run format && pnpm -C backend run format",
     "bootstrap": "pnpm install && pnpm -C frontend install && pnpm -C backend install"
