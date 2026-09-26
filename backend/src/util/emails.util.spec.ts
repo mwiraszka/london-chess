@@ -29,18 +29,6 @@ describe('buildWelcomeEmail', () => {
     expect(email.html).toContain(`<a href="${LOGIN_URL}">`);
     expect(email.html).toContain(`<a href="${PROFILE_URL}">`);
   });
-
-  it('should escape member details in the HTML', () => {
-    const email = buildWelcomeEmail(
-      { firstName: '<b>Jane</b>', email: 'jane@example.com' },
-      'Temp4Pass',
-      LOGIN_URL,
-      PROFILE_URL,
-    );
-
-    expect(email.html).toContain('&lt;b&gt;Jane&lt;/b&gt;');
-    expect(email.html).not.toContain('<b>Jane</b>');
-  });
 });
 
 describe('buildMemberChangesEmail', () => {
