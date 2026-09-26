@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update all components to Angular's signal-based inputs, outputs and view queries
 
+### Fixed
+
+- Keep a browser that loads an older version of the site from picking up state saved by a newer one, so it starts cleanly instead of failing to show the page
+
 ## [v6.2.2] - 2026-09-23
 
 ### Changed
