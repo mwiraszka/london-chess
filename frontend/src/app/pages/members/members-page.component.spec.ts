@@ -506,9 +506,9 @@ describe('MembersPageComponent', () => {
 
     it('should trigger file input click when updateRatingsFromCsvButton action is called', () => {
       const mockClick = vi.fn();
-      component.memberRatingChangesFileInput = {
+      vi.spyOn(component, 'memberRatingChangesFileInput').mockReturnValue({
         nativeElement: { click: mockClick } as unknown as HTMLInputElement,
-      };
+      });
 
       component.updateRatingsFromCsvButton.action();
 

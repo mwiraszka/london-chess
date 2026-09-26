@@ -5,7 +5,6 @@ import {
   TrophyIconComponent,
 } from '@eagami/ui';
 
-import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -77,7 +76,6 @@ type CellTemplate = TemplateRef<DataTableCellContext<EventRow>>;
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
-    NgClass,
     PaginatorComponent,
     RouterLink,
     SkeletonComponent,

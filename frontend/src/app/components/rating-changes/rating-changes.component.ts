@@ -3,11 +3,10 @@ import { DataTableColumn } from '@eagami/ui';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Output,
   TemplateRef,
   computed,
   input,
+  output,
   viewChild,
 } from '@angular/core';
 
@@ -39,7 +38,7 @@ export class RatingChangesComponent implements DialogOutput<BasicDialogResult> {
   public readonly membersWithNewRatings = input<MemberWithNewRatings[]>();
   public readonly unmatchedMembers = input<string[]>();
 
-  @Output() dialogResult = new EventEmitter<BasicDialogResult | 'close'>();
+  readonly dialogResult = output<BasicDialogResult | 'close'>();
 
   private readonly newRatingCell = viewChild.required<CellTemplate>('newRatingCell');
   private readonly newPeakRatingCell =

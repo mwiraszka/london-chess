@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DialogOutput } from '@app/models';
@@ -11,9 +11,9 @@ import { DialogComponent } from './dialog.component';
   template: '<div>Test Content</div>',
 })
 export class MockContentComponent implements DialogOutput<string> {
-  @Input() public testInput?: string;
+  public readonly testInput = input<string>();
 
-  @Output() public dialogResult = new EventEmitter<string | 'close'>();
+  public readonly dialogResult = output<string | 'close'>();
 
   public emitResult(result: string): void {
     this.dialogResult.emit(result);

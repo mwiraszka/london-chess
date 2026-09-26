@@ -3,7 +3,7 @@ import { pick } from 'lodash';
 import { firstValueFrom, of } from 'rxjs';
 import { take } from 'rxjs/operators';
 
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
@@ -32,9 +32,9 @@ import { ArticleViewerPageComponent } from './article-viewer-page.component';
   standalone: true,
 })
 class MockArticleComponent {
-  @Input({ required: true }) article!: Article;
-  @Input({ required: true }) bannerImage!: Image | null;
-  @Input() bodyImages: Image[] = [];
+  readonly article = input.required<Article>();
+  readonly bannerImage = input.required<Image | null>();
+  readonly bodyImages = input<Image[]>([]);
 }
 
 describe('ArticleViewerPageComponent', () => {

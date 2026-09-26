@@ -21,7 +21,9 @@ export class KeyStateService implements OnDestroy {
 
   private readonly isMac = inject(IS_MAC);
 
-  constructor(rendererFactory: RendererFactory2) {
+  constructor() {
+    const rendererFactory = inject(RendererFactory2);
+
     this.renderer = rendererFactory.createRenderer(null, null);
     this.setupGlobalListeners();
   }

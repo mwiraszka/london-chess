@@ -1,4 +1,4 @@
-import { EventEmitter, Signal, Type } from '@angular/core';
+import { OutputRef, Signal, Type } from '@angular/core';
 
 export interface Dialog {
   title: 'Confirm' | 'Unsaved changes';
@@ -17,7 +17,7 @@ export type BasicDialogResult = 'cancel' | 'confirm';
  * Must be implemented by any component class dynamically rendered within the Dialog Component
  */
 export interface DialogOutput<TResult> {
-  dialogResult: EventEmitter<TResult | 'close'>;
+  dialogResult: OutputRef<TResult | 'close'>;
 }
 
 export interface DialogConfig<TComponent> {

@@ -26,7 +26,7 @@ describe('ModificationInfoComponent', () => {
     fixture = TestBed.createComponent(ModificationInfoComponent);
     component = fixture.componentInstance;
 
-    component.info = MOCK_MODIFICATION_INFOS[0];
+    fixture.componentRef.setInput('info', MOCK_MODIFICATION_INFOS[0]);
     fixture.detectChanges();
   });
 

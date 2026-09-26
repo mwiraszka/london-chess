@@ -67,7 +67,7 @@
     </lcc-date-picker>
     <lcc-form-error-icon [control]="form.controls.dateJoined"></lcc-form-error-icon>
 
-    @if (!isSafeMode) {
+    @if (!isSafeMode()) {
       <label for="email-input">Email:</label>
       <input
         id="email-input"
@@ -119,7 +119,7 @@
       maxlength="20" />
     <lcc-form-error-icon [control]="form.controls.lichessUsername"></lcc-form-error-icon>
 
-    @if (originalMember) {
+    @if (originalMember()) {
       <label for="is-active-input">Active:</label>
       <input
         id="is-active-input"
@@ -130,7 +130,7 @@
 
     <button
       class="restore-button lcc-secondary-button"
-      [disabled]="!hasUnsavedChanges"
+      [disabled]="!hasUnsavedChanges()"
       tooltip="Restore member to its original state"
       (click)="onRestore()">
       <ea-icon-history />
@@ -139,17 +139,17 @@
 
   <aside class="lcc-required-fields-legend">Required fields</aside>
 
-  @if (isSafeMode) {
+  @if (isSafeMode()) {
     <lcc-safe-mode-notice entity="member's"></lcc-safe-mode-notice>
   }
 
   <hr />
 
-  @if (originalMember?.modificationInfo; as info) {
+  @if (originalMember()?.modificationInfo; as info) {
     <lcc-modification-info [info]="info"></lcc-modification-info>
   }
 
-  @if (originalMember) {
+  @if (originalMember()) {
     <label
       class="notify-member"
       [tooltip]="
@@ -176,8 +176,8 @@
     <button
       class="submit-button lcc-primary-button"
       type="submit"
-      [disabled]="form.invalid || !hasUnsavedChanges">
-      {{ originalMember ? 'Update member' : 'Add member' }}
+      [disabled]="form.invalid || !hasUnsavedChanges()">
+      {{ originalMember() ? 'Update member' : 'Add member' }}
     </button>
   </div>
 </form>

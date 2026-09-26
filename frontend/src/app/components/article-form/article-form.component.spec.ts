@@ -1,7 +1,7 @@
 import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 
@@ -25,9 +25,9 @@ import { ArticleFormComponent } from './article-form.component';
   standalone: true,
 })
 class MockMarkdownRendererComponent {
-  @Input() data?: string;
-  @Input() images: Image[] = [];
-  @Input() isWideView = false;
+  readonly data = input<string>();
+  readonly images = input<Image[]>([]);
+  readonly isWideView = input(false);
 }
 
 describe('ArticleFormComponent', () => {
@@ -94,11 +94,14 @@ describe('ArticleFormComponent', () => {
     selectBannerImageSpy = vi.spyOn(component, 'onSelectBannerImage');
     submitSpy = vi.spyOn(component, 'onSubmit');
 
-    component.bannerImage = null;
-    component.bodyImages = [];
-    component.formData = pick(MOCK_ARTICLES[0], ARTICLE_FORM_DATA_PROPERTIES);
-    component.hasUnsavedChanges = false;
-    component.originalArticle = null;
+    fixture.componentRef.setInput('bannerImage', null);
+    fixture.componentRef.setInput('bodyImages', []);
+    fixture.componentRef.setInput(
+      'formData',
+      pick(MOCK_ARTICLES[0], ARTICLE_FORM_DATA_PROPERTIES),
+    );
+    fixture.componentRef.setInput('hasUnsavedChanges', false);
+    fixture.componentRef.setInput('originalArticle', null);
 
     fixture.detectChanges();
   });
@@ -111,7 +114,7 @@ describe('ArticleFormComponent', () => {
     describe('handling form data', () => {
       it('should initialize with provided formData', () => {
         for (const p of ARTICLE_FORM_DATA_PROPERTIES) {
-          expect(component.form.controls[p].value).toBe(component.formData[p]);
+          expect(component.form.controls[p].value).toBe(component.formData()[p]);
         }
       });
     });
@@ -131,7 +134,7 @@ describe('ArticleFormComponent', () => {
         component.ngOnInit();
 
         expect(requestFetchMainImageSpy).toHaveBeenCalledWith(
-          component.formData.bannerImageId,
+          component.formData().bannerImageId,
         );
       });
     });
@@ -225,7 +228,7 @@ describe('ArticleFormComponent', () => {
       for (const key of ARTICLE_FORM_DATA_PROPERTIES) {
         expect(component.form.controls[key].value).toBe(
           // @ts-expect-error index signature
-          component.originalArticle[key],
+          component.originalArticle()[key],
         );
       }
     });
@@ -548,7 +551,7 @@ describe('ArticleFormComponent', () => {
       });
     });
 
-    describe('ngOnChanges', () => {
+    describe('body images', () => {
       it('should replace image URLs with IDs but leave existing IDs alone', () => {
         const imageId1 = '507f1f77bcf86cd799439011';
         const imageId2 = '507f191e810c19729de860ea';
@@ -573,16 +576,8 @@ describe('ArticleFormComponent', () => {
           },
         ];
 
-        component.bodyImages = mockImages;
-
-        component.ngOnChanges({
-          bodyImages: {
-            previousValue: [],
-            currentValue: mockImages,
-            firstChange: false,
-            isFirstChange: () => false,
-          },
-        });
+        fixture.componentRef.setInput('bodyImages', mockImages);
+        fixture.detectChanges();
 
         const body = component.form.controls.body.value;
         // URL should be expanded

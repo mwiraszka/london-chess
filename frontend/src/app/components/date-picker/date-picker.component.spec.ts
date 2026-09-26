@@ -34,7 +34,7 @@ describe('DatePickerComponent', () => {
     renderCalendarSpy = vi.spyOn(component, 'renderCalendar');
 
     component.writeValue('2050-01-01T00:00:00.000Z');
-    component.screenWidth = 1000;
+    component.screenWidth.set(1000);
     fixture.detectChanges();
 
     vi.clearAllMocks();
@@ -59,7 +59,7 @@ describe('DatePickerComponent', () => {
       });
 
       it('should shorten the month text on small screens', () => {
-        // Simulate resize so HostListener updates value (some environments may override manual assignment)
+        // Simulate resize so the host listener updates value (some environments may override manual assignment)
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 300 });
         window.dispatchEvent(new Event('resize'));
         fixture.detectChanges();

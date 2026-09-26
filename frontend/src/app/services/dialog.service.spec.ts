@@ -1,5 +1,5 @@
 import { OverlayModule } from '@angular/cdk/overlay';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { DialogOutput } from '@app/models';
@@ -12,7 +12,7 @@ import { DialogService } from './dialog.service';
   standalone: true,
 })
 class TestDialogComponent implements DialogOutput<string> {
-  @Output() dialogResult = new EventEmitter<string | 'close'>();
+  readonly dialogResult = output<string | 'close'>();
 
   emitResult(value: string): void {
     this.dialogResult.emit(value);
@@ -25,11 +25,11 @@ class TestDialogComponent implements DialogOutput<string> {
   standalone: true,
 })
 class AnotherDialogComponent implements DialogOutput<number> {
-  @Input() numberInput?: number;
-  @Output() dialogResult = new EventEmitter<number | 'close'>();
+  readonly numberInput = input<number>();
+  readonly dialogResult = output<number | 'close'>();
 
   emitResult(value: number): void {
-    this.dialogResult.emit((this.numberInput ?? 0) + value);
+    this.dialogResult.emit((this.numberInput() ?? 0) + value);
   }
 }
 

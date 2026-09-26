@@ -78,17 +78,17 @@ describe('PhotoGridComponent', () => {
     it('should return true when isLoading is true', () => {
       fixture.componentRef.setInput('isLoading', true);
 
-      expect(component.showSkeleton).toBe(true);
+      expect(component.showSkeleton()).toBe(true);
     });
 
     it('should return false when isLoading is false', () => {
       fixture.componentRef.setInput('isLoading', false);
 
-      expect(component.showSkeleton).toBe(false);
+      expect(component.showSkeleton()).toBe(false);
     });
 
     it('should return false when isLoading is undefined', () => {
-      expect(component.showSkeleton).toBe(false);
+      expect(component.showSkeleton()).toBe(false);
     });
   });
 
@@ -96,13 +96,13 @@ describe('PhotoGridComponent', () => {
     it('should return visibleAlbumCovers when not loading', () => {
       fixture.componentRef.setInput('isLoading', false);
 
-      expect(component.displayCovers).toBe(component.visibleAlbumCovers);
+      expect(component.displayCovers()).toBe(component.visibleAlbumCovers());
     });
 
     it('should return 20 skeleton covers when loading', () => {
       fixture.componentRef.setInput('isLoading', true);
 
-      const covers = component.displayCovers;
+      const covers = component.displayCovers();
 
       expect(covers).toHaveLength(20);
       expect(covers.every(c => c.id === '' && c.album === '')).toBe(true);

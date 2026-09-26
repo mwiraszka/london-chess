@@ -13,9 +13,9 @@ import {
   Component,
   DOCUMENT,
   ElementRef,
-  Inject,
   OnInit,
-  ViewChild,
+  inject,
+  viewChild,
 } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
@@ -87,11 +87,16 @@ import { environment } from '@env';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  private readonly _document = inject<Document>(DOCUMENT);
+  private readonly refreshService = inject(RefreshService);
+  private readonly routingService = inject(RoutingService);
+  private readonly store = inject(Store);
+  private readonly touchEventsService = inject(TouchEventsService);
+
   protected readonly environment = environment;
   protected readonly gitBranchName = GIT_BRANCH_NAME;
 
-  @ViewChild('mainElement', { read: ElementRef })
-  public mainElement!: ElementRef<HTMLElement>;
+  public readonly mainElement = viewChild.required('mainElement', { read: ElementRef });
 
   public viewModel$?: Observable<{
     bannerLastCleared: IsoDate | null;
@@ -102,13 +107,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     showUpcomingEventBanner: boolean;
   }>;
 
-  constructor(
-    @Inject(DOCUMENT) private readonly _document: Document,
-    private readonly refreshService: RefreshService,
-    private readonly routingService: RoutingService,
-    private readonly store: Store,
-    private readonly touchEventsService: TouchEventsService,
-  ) {
+  constructor() {
     moment.tz.setDefault('America/Toronto');
   }
 
@@ -166,7 +165,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   public ngAfterViewInit(): void {
-    this.refreshService.initialize(this.mainElement.nativeElement);
+    this.refreshService.initialize(this.mainElement().nativeElement);
     this.initNavigationListenerForScrollingBackToTop();
     this.measureScrollbarInset();
     window.addEventListener('resize', () => this.measureScrollbarInset());
@@ -176,7 +175,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   // variable lets the scroller mirror it on its left edge and the nav apply
   // the same inset, keeping everything on one centre line
   private measureScrollbarInset(): void {
-    const main = this.mainElement.nativeElement;
+    const main = this.mainElement().nativeElement;
     const inset = main.offsetWidth - main.clientWidth;
     this._document.documentElement.style.setProperty(
       '--lcc-scrollbar-inset',
@@ -194,7 +193,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         untilDestroyed(this),
         filter(fragment => !fragment),
       )
-      .subscribe(() => this.mainElement.nativeElement.scrollTo({ top: 0 }));
+      .subscribe(() => this.mainElement().nativeElement.scrollTo({ top: 0 }));
   }
 
   private updateViewportForDesktopView(isDesktopView: boolean): void {

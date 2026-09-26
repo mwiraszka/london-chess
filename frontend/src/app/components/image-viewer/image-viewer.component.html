@@ -3,7 +3,7 @@
     <button
       class="previous-image-button lcc-secondary-button lcc-light-button"
       [class.active]="isPreviousImageButtonActive"
-      [disabled]="images.length === 1"
+      [disabled]="images().length === 1"
       tooltip="Previous image"
       (click)="onPreviousImage()">
       <ea-icon-chevron-left />
@@ -14,21 +14,21 @@
     <button
       class="next-image-button lcc-secondary-button lcc-light-button"
       [class.active]="isNextImageButtonActive"
-      [disabled]="images.length === 1"
+      [disabled]="images().length === 1"
       tooltip="Next image"
       (click)="onNextImage()">
       <ea-icon-chevron-right />
     </button>
   </div>
 
-  <figure [adminControls]="isAdmin ? getAdminControlsConfig(image) : null">
+  <figure [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
     <div class="image-container">
       <lcc-image
         [image]="image"
         (loaded)="displayedCaption = image.caption" />
     </div>
     <figcaption>
-      <div class="album-name lcc-truncate">{{ album }}</div>
+      <div class="album-name lcc-truncate">{{ album() }}</div>
       <hr />
       <div class="image-caption lcc-truncate">{{ displayedCaption }}</div>
     </figcaption>

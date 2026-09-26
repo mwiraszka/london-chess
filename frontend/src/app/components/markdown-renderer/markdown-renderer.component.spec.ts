@@ -1,7 +1,7 @@
 import { MarkdownComponent } from 'ngx-markdown';
 import { of } from 'rxjs';
 
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, RouterLink, RouterModule } from '@angular/router';
 
@@ -16,8 +16,8 @@ import { MarkdownRendererComponent } from './markdown-renderer.component';
   standalone: true,
 })
 class MockMarkdownComponent {
-  @Input() data = '';
-  @Input() disableSanitizer = false;
+  readonly data = input('');
+  readonly disableSanitizer = input(false);
 }
 
 describe('MarkdownRendererComponent', () => {
@@ -111,7 +111,7 @@ describe('MarkdownRendererComponent', () => {
     afterEach(() => vi.useRealTimers());
 
     it('should set data input', () => {
-      expect(component.data).toBe(mockMarkdownText);
+      expect(component.data()).toBe(mockMarkdownText);
     });
 
     it('should add custom blockquote icons and anchor ids to headings', () => {
@@ -122,10 +122,12 @@ describe('MarkdownRendererComponent', () => {
     it('should render the tables as sortable tables between the text', () => {
       const markdowns = queryAll(fixture.debugElement, 'markdown');
 
-      expect(markdowns.map(markdown => markdown.componentInstance.data.trim())).toEqual([
-        '## Heading 1\n  \n  Some text here.\n  \n  ## Heading 2\n  \n  More text here.',
-        '> This is a blockquote',
-      ]);
+      expect(markdowns.map(markdown => markdown.componentInstance.data().trim())).toEqual(
+        [
+          '## Heading 1\n  \n  Some text here.\n  \n  ## Heading 2\n  \n  More text here.',
+          '> This is a blockquote',
+        ],
+      );
       expect(
         queryAll(
           query(fixture.debugElement, 'lcc-markdown-table'),
@@ -137,9 +139,10 @@ describe('MarkdownRendererComponent', () => {
 
   describe('template rendering', () => {
     it('should expose headings for table of contents', () => {
-      component.headings = ['Heading 1', 'Heading 2', 'Heading 3'];
+      component.headings.set(['Heading 1', 'Heading 2', 'Heading 3']);
       fixture.detectChanges();
-      expect(component.headings).toEqual(['Heading 1', 'Heading 2', 'Heading 3']);
+
+      expect(component.headings()).toEqual(['Heading 1', 'Heading 2', 'Heading 3']);
     });
   });
 });

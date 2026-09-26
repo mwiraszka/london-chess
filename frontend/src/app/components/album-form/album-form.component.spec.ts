@@ -103,11 +103,11 @@ describe('AlbumFormComponent', () => {
     submitSpy = vi.spyOn(component, 'onSubmit');
     uuidSpy = TestBed.inject(GENERATE_UUID) as Mock;
 
-    component.album = null;
-    component.existingAlbums = [];
-    component.hasUnsavedChanges = false;
-    component.imageEntities = [];
-    component.newImagesFormData = {};
+    fixture.componentRef.setInput('album', null);
+    fixture.componentRef.setInput('existingAlbums', []);
+    fixture.componentRef.setInput('hasUnsavedChanges', false);
+    fixture.componentRef.setInput('imageEntities', []);
+    fixture.componentRef.setInput('newImagesFormData', {});
 
     fixture.detectChanges();
   });
@@ -301,10 +301,10 @@ describe('AlbumFormComponent', () => {
   describe('form validation', () => {
     beforeEach(() => {
       // Two images from the same album
-      component.newImagesFormData = {
+      fixture.componentRef.setInput('newImagesFormData', {
         [MOCK_IMAGES[0].id]: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
         [MOCK_IMAGES[3].id]: pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES),
-      };
+      });
       fixture.detectChanges();
 
       component.ngOnInit();
@@ -389,17 +389,20 @@ describe('AlbumFormComponent', () => {
 
   describe('mostRecentModificationInfo', () => {
     it('should return most recently modified image from imageEntities', () => {
-      component.imageEntities = MOCK_IMAGES.map(image => ({
-        image,
-        formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
-      }));
+      fixture.componentRef.setInput(
+        'imageEntities',
+        MOCK_IMAGES.map(image => ({
+          image,
+          formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+        })),
+      );
       fixture.detectChanges();
 
       expect(component.mostRecentModificationInfo).toBe(MOCK_IMAGES[13].modificationInfo);
     });
 
     it('should return null if imageEntities is empty', () => {
-      component.imageEntities = [];
+      fixture.componentRef.setInput('imageEntities', []);
       fixture.detectChanges();
 
       expect(component.mostRecentModificationInfo).toBeFalsy();
@@ -409,11 +412,11 @@ describe('AlbumFormComponent', () => {
   describe('onSetAlbumCover', () => {
     it('should correctly set albumCover to false on current image and to true on new image', () => {
       // Images from the same album
-      component.newImagesFormData = {
+      fixture.componentRef.setInput('newImagesFormData', {
         [MOCK_IMAGES[1].id]: pick(MOCK_IMAGES[1], IMAGE_FORM_DATA_PROPERTIES),
         [MOCK_IMAGES[2].id]: pick(MOCK_IMAGES[2], IMAGE_FORM_DATA_PROPERTIES),
         [MOCK_IMAGES[5].id]: pick(MOCK_IMAGES[5], IMAGE_FORM_DATA_PROPERTIES), // Current album cover
-      };
+      });
       fixture.detectChanges();
       component.ngOnInit();
 
@@ -435,11 +438,11 @@ describe('AlbumFormComponent', () => {
     it('should delete image, update form, and set new album cover (if needed) if confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('confirm');
       deleteImageSpy.mockResolvedValue('success');
-      component.newImagesFormData = {
+      fixture.componentRef.setInput('newImagesFormData', {
         [MOCK_IMAGES[1].id]: pick(MOCK_IMAGES[1], IMAGE_FORM_DATA_PROPERTIES),
         [MOCK_IMAGES[0].id]: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
         [MOCK_IMAGES[3].id]: pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES),
-      };
+      });
       component.newImageDataUrls = {
         [MOCK_IMAGES[1].id]: 'data:image/png;base64,abc',
         [MOCK_IMAGES[0].id]: 'data:image/png;base64,def',
@@ -487,9 +490,9 @@ describe('AlbumFormComponent', () => {
       };
       dialogOpenSpy.mockResolvedValue('confirm');
       deleteImageSpy.mockResolvedValue(error);
-      component.newImagesFormData = {
+      fixture.componentRef.setInput('newImagesFormData', {
         [MOCK_IMAGES[0].id]: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
-      };
+      });
       fixture.detectChanges();
       component.ngOnInit();
 
@@ -504,9 +507,9 @@ describe('AlbumFormComponent', () => {
 
     it('should not delete image if dialog is cancelled', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
-      component.newImagesFormData = {
+      fixture.componentRef.setInput('newImagesFormData', {
         [MOCK_IMAGES[0].id]: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
-      };
+      });
       fixture.detectChanges();
       component.ngOnInit();
 
@@ -595,16 +598,19 @@ describe('AlbumFormComponent', () => {
     });
 
     it('should process limit new image total to 20', async () => {
-      component.newImagesFormData = [
-        ...MOCK_IMAGES,
-        ...MOCK_IMAGES.slice(0, 5).map(image => ({ ...image, id: `_${image.id}` })),
-      ].reduce((acc: { [key: string]: ImageFormData }, image) => {
-        acc[image.id] = pick(image, IMAGE_FORM_DATA_PROPERTIES);
-        return acc;
-      }, {}); // 19 images
+      fixture.componentRef.setInput(
+        'newImagesFormData',
+        [
+          ...MOCK_IMAGES,
+          ...MOCK_IMAGES.slice(0, 5).map(image => ({ ...image, id: `_${image.id}` })),
+        ].reduce((acc: { [key: string]: ImageFormData }, image) => {
+          acc[image.id] = pick(image, IMAGE_FORM_DATA_PROPERTIES);
+          return acc;
+        }, {}),
+      ); // 19 images
       fixture.detectChanges();
 
-      expect(Object.keys(component.newImagesFormData).length).toBe(19);
+      expect(Object.keys(component.newImagesFormData()).length).toBe(19);
 
       const file20 = new File([':)'], 'new-file.20.jpg', { type: 'image/jpeg' });
       const file21 = new File([':)'], 'new-file.21.jpg', { type: 'image/jpeg' });
@@ -618,7 +624,7 @@ describe('AlbumFormComponent', () => {
       await component.onChooseFiles(event as unknown as Event);
       await fixture.whenStable();
 
-      expect(Object.keys(component.newImagesFormData).length).toBe(19);
+      expect(Object.keys(component.newImagesFormData()).length).toBe(19);
       expect(storeImageFileSpy).not.toHaveBeenCalled();
       expect(uuidSpy).not.toHaveBeenCalled();
       expect(fileInputElement.value).toBe('');
@@ -685,9 +691,9 @@ describe('AlbumFormComponent', () => {
 
   describe('onRestore', () => {
     beforeEach(() => {
-      component.hasUnsavedChanges = true;
-      component.album = 'My Awesome Album';
-      component.imageEntities = [
+      fixture.componentRef.setInput('hasUnsavedChanges', true);
+      fixture.componentRef.setInput('album', 'My Awesome Album');
+      fixture.componentRef.setInput('imageEntities', [
         {
           image: MOCK_IMAGES[0],
           formData: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
@@ -696,15 +702,15 @@ describe('AlbumFormComponent', () => {
           image: MOCK_IMAGES[1],
           formData: pick(MOCK_IMAGES[1], IMAGE_FORM_DATA_PROPERTIES),
         },
-      ];
+      ]);
       component.newImageDataUrls = {
         [MOCK_IMAGES[2].id]: 'data:image/png;base64,abc',
         [MOCK_IMAGES[3].id]: 'data:image/jpeg;base64,xyz',
       };
-      component.newImagesFormData = {
+      fixture.componentRef.setInput('newImagesFormData', {
         [MOCK_IMAGES[2].id]: pick(MOCK_IMAGES[2], IMAGE_FORM_DATA_PROPERTIES),
         [MOCK_IMAGES[3].id]: pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES),
-      };
+      });
       fixture.detectChanges();
 
       component.ngOnInit();
@@ -744,7 +750,7 @@ describe('AlbumFormComponent', () => {
     });
 
     it('should not emit change or restore event or re-initialize form if dialog is cancelled', async () => {
-      component.hasUnsavedChanges = true;
+      fixture.componentRef.setInput('hasUnsavedChanges', true);
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onRestore();
@@ -785,7 +791,9 @@ describe('AlbumFormComponent', () => {
     });
 
     it('should create a new album from the confirmation dialog', async () => {
-      component.newImagesFormData = { [MOCK_IMAGES[3].id]: MOCK_IMAGES[3] };
+      fixture.componentRef.setInput('newImagesFormData', {
+        [MOCK_IMAGES[3].id]: MOCK_IMAGES[3],
+      });
       fixture.detectChanges();
       component.ngOnInit(); // Initialize form with newImagesFormData
 
@@ -810,13 +818,13 @@ describe('AlbumFormComponent', () => {
     });
 
     it('should update an existing album from the confirmation dialog', async () => {
-      component.album = MOCK_IMAGES[3].album;
-      component.imageEntities = [
+      fixture.componentRef.setInput('album', MOCK_IMAGES[3].album);
+      fixture.componentRef.setInput('imageEntities', [
         {
           image: MOCK_IMAGES[3],
           formData: pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES),
         },
-      ];
+      ]);
       fixture.detectChanges();
       component.ngOnInit(); // Initialize form with imageEntities
 
@@ -842,8 +850,10 @@ describe('AlbumFormComponent', () => {
 
     it('should not save anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
-      component.hasUnsavedChanges = true;
-      component.newImagesFormData = { [MOCK_IMAGES[3].id]: MOCK_IMAGES[3] };
+      fixture.componentRef.setInput('hasUnsavedChanges', true);
+      fixture.componentRef.setInput('newImagesFormData', {
+        [MOCK_IMAGES[3].id]: MOCK_IMAGES[3],
+      });
       component.form.patchValue(pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES));
       fixture.detectChanges();
 

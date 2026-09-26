@@ -5,15 +5,15 @@ import { MarkdownComponent } from 'ngx-markdown';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   DOCUMENT,
   ElementRef,
-  Inject,
-  Input,
-  OnChanges,
   Renderer2,
-  SimpleChanges,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -28,7 +28,7 @@ import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils
   selector: 'lcc-markdown-renderer',
   template: `
     <div class="table-of-contents">
-      @for (heading of headings; track heading) {
+      @for (heading of headings(); track heading) {
         <a
           class="heading-link lcc-link"
           [fragment]="heading | kebabCase"
@@ -37,7 +37,7 @@ import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils
         </a>
       }
     </div>
-    @for (segment of segments; track $index) {
+    @for (segment of segments(); track $index) {
       @if (segment.kind === 'table') {
         <lcc-markdown-table [table]="segment.table" />
       } @else {
@@ -52,46 +52,27 @@ import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils
   imports: [KebabCasePipe, MarkdownComponent, MarkdownTableComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MarkdownRendererComponent implements AfterViewInit, OnChanges {
-  @Input() public data?: string;
-  @Input() public images: Image[] = [];
+export class MarkdownRendererComponent implements AfterViewInit {
+  private readonly _document = inject<Document>(DOCUMENT);
+  private readonly elementRef = inject(ElementRef);
+  private readonly renderer = inject(Renderer2);
+  private readonly routingService = inject(RoutingService);
 
-  public currentPath: string;
-  public headings: string[] = [];
+  public readonly data = input<string>();
+  public readonly images = input<Image[]>([]);
+
+  public readonly currentPath = this._document.location.pathname;
+  public readonly headings = signal<string[]>([]);
   // The text between the tables, and the tables, in order
-  public segments: MarkdownSegment[] = [];
+  public readonly segments = computed<MarkdownSegment[]>(() =>
+    splitMarkdownTables(this.preprocessImages(this.data() || '')),
+  );
 
-  constructor(
-    @Inject(DOCUMENT) private _document: Document,
-    private readonly elementRef: ElementRef,
-    private readonly renderer: Renderer2,
-    private readonly routingService: RoutingService,
-    private readonly changeDetectorRef: ChangeDetectorRef,
-  ) {
-    this.currentPath = this._document.location.pathname;
-  }
-
-  public ngOnChanges(changes: SimpleChanges<MarkdownRendererComponent>): void {
-    if (changes.data || changes.images) {
-      // Preprocess images BEFORE markdown rendering
-      this.segments = splitMarkdownTables(this.preprocessImages(this.data || ''));
-
-      const markdownElements: HTMLElement[] = Array.from(
-        this.elementRef.nativeElement.querySelectorAll('markdown'),
-      );
-      markdownElements.forEach(element =>
-        this.renderer.setStyle(element, 'visibility', 'hidden'),
-      );
-
-      setTimeout(() => {
-        this.addBlockquoteIcons();
-        this.addAnchorIdsToHeadings();
-        markdownElements.forEach(element =>
-          this.renderer.removeStyle(element, 'visibility'),
-        );
-        this.changeDetectorRef.markForCheck();
-      });
-    }
+  constructor() {
+    effect(() => {
+      this.segments();
+      this.decorateRenderedMarkdown();
+    });
   }
 
   public ngAfterViewInit(): void {
@@ -103,13 +84,30 @@ export class MarkdownRendererComponent implements AfterViewInit, OnChanges {
     });
   }
 
+  private decorateRenderedMarkdown(): void {
+    const markdownElements: HTMLElement[] = Array.from(
+      this.elementRef.nativeElement.querySelectorAll('markdown'),
+    );
+    markdownElements.forEach(element =>
+      this.renderer.setStyle(element, 'visibility', 'hidden'),
+    );
+
+    setTimeout(() => {
+      this.addBlockquoteIcons();
+      this.addAnchorIdsToHeadings();
+      markdownElements.forEach(element =>
+        this.renderer.removeStyle(element, 'visibility'),
+      );
+    });
+  }
+
   private preprocessImages(text: string): string {
     // Regular expression to match {{{src}}}(((width)))<<<caption>>> (width and caption optional)
     const imagePattern = /{{{([^}]+)}}}(?:\(\(\(([^)]*)\)\)\))?(?:<<<([\s\S]*?)>>>)?/g;
 
     return text.replace(imagePattern, (_, src, width, caption) => {
       const imageId = isCollectionId(src) ? src : src.match(/[a-f\d]{24}/)?.[0];
-      const image = imageId ? this.images.find(img => img.id === imageId) : null;
+      const image = imageId ? this.images().find(img => img.id === imageId) : null;
 
       const imageUrl =
         image?.mainUrl || (isCollectionId(src) ? 'assets/fallback-image.png' : src);
@@ -172,7 +170,7 @@ export class MarkdownRendererComponent implements AfterViewInit, OnChanges {
       });
     }
 
-    this.headings = newHeadings;
+    this.headings.set(newHeadings);
   }
 
   private scrollToAnchor(anchorId?: string | null): void {

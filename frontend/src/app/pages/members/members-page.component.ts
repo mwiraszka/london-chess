@@ -19,9 +19,9 @@ import {
   Component,
   ElementRef,
   OnInit,
-  ViewChild,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
@@ -126,12 +126,17 @@ import { isLccError } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersPageComponent implements OnInit {
+  private readonly dialogService = inject(DialogService);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly pageIcon = UsersIconComponent;
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  @ViewChild('memberRatingChangesFileInput')
-  public memberRatingChangesFileInput?: ElementRef<HTMLInputElement>;
+  public readonly memberRatingChangesFileInput = viewChild<ElementRef<HTMLInputElement>>(
+    'memberRatingChangesFileInput',
+  );
 
   public readonly addMemberLink: InternalLink = {
     internalPath: ['member', 'add'],
@@ -145,7 +150,7 @@ export class MembersPageComponent implements OnInit {
     id: 'update-ratings-from-csv',
     tooltip: 'Update member ratings from CSV',
     icon: UploadIconComponent,
-    action: () => this.memberRatingChangesFileInput?.nativeElement.click(),
+    action: () => this.memberRatingChangesFileInput()?.nativeElement.click(),
     isLoading: this.isPreparingRatingChanges,
   };
 
@@ -169,12 +174,6 @@ export class MembersPageComponent implements OnInit {
 
   private readonly parseCsv = inject(PARSE_CSV);
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Members');

@@ -27,7 +27,7 @@ describe('ClubMapComponent', () => {
 
     fixture = TestBed.createComponent(ClubMapComponent);
     component = fixture.componentInstance;
-    component.club = LCC;
+    fixture.componentRef.setInput('club', LCC);
 
     // @ts-expect-error Private class member
     initMapSpy = vi.spyOn(component, 'initMap').mockResolvedValue();

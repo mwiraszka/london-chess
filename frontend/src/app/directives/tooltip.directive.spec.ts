@@ -1,5 +1,5 @@
 import { Overlay, OverlayModule } from '@angular/cdk/overlay';
-import { Component, DebugElement, TemplateRef, ViewChild } from '@angular/core';
+import { Component, DebugElement, TemplateRef, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -8,8 +8,8 @@ import { TooltipDirective } from './tooltip.directive';
 @Component({
   template: `
     <button
-      [tooltip]="tooltipContent"
-      [tooltipContext]="context"
+      [tooltip]="tooltipContent()"
+      [tooltipContext]="context()"
       style="width: 50px; height: 50px;">
       Hover me
     </button>
@@ -22,11 +22,10 @@ import { TooltipDirective } from './tooltip.directive';
   imports: [TooltipDirective],
 })
 class TestComponent {
-  tooltipContent: string | TemplateRef<unknown> | null = 'Tooltip text';
-  context: unknown = null;
+  readonly tooltipContent = signal<string | TemplateRef<unknown> | null>('Tooltip text');
+  readonly context = signal<unknown>(null);
 
-  @ViewChild('customTemplate', { static: true })
-  customTemplate!: TemplateRef<unknown>;
+  readonly customTemplate = viewChild.required<TemplateRef<unknown>>('customTemplate');
 }
 
 describe('TooltipDirective', () => {
@@ -75,7 +74,8 @@ describe('TooltipDirective', () => {
     });
 
     it('should not attach when tooltip content is null', () => {
-      directive.tooltip = null;
+      component.tooltipContent.set(null);
+      fixture.detectChanges();
 
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
 
@@ -106,7 +106,7 @@ describe('TooltipDirective', () => {
     });
 
     it('should handle string tooltip content', () => {
-      component.tooltipContent = 'String tooltip';
+      component.tooltipContent.set('String tooltip');
       fixture.detectChanges();
 
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
@@ -116,8 +116,8 @@ describe('TooltipDirective', () => {
     });
 
     it('should handle template tooltip content', () => {
-      component.tooltipContent = component.customTemplate;
-      component.context = { message: 'Custom message' };
+      component.tooltipContent.set(component.customTemplate());
+      component.context.set({ message: 'Custom message' });
       fixture.detectChanges();
 
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
@@ -127,7 +127,8 @@ describe('TooltipDirective', () => {
     });
 
     it('should enable pointer events for template tooltips', () => {
-      directive.tooltip = component.customTemplate;
+      component.tooltipContent.set(component.customTemplate());
+      fixture.detectChanges();
 
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
 
@@ -224,8 +225,8 @@ describe('TooltipDirective', () => {
   describe('tooltip context', () => {
     it('should pass context to tooltip component', () => {
       const testContext = { message: 'Test message', value: 123 };
-      component.tooltipContent = component.customTemplate;
-      component.context = testContext;
+      component.tooltipContent.set(component.customTemplate());
+      component.context.set(testContext);
       fixture.detectChanges();
 
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
@@ -235,7 +236,7 @@ describe('TooltipDirective', () => {
     });
 
     it('should handle null context', () => {
-      component.context = null;
+      component.context.set(null);
       fixture.detectChanges();
 
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));

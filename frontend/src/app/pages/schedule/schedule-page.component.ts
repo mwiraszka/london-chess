@@ -25,8 +25,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
-  ViewChild,
   inject,
+  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
@@ -147,13 +147,16 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulePageComponent implements OnInit {
+  private readonly dialogService = inject(DialogService);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly pageIcon = CalendarDaysIconComponent;
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  @ViewChild(ScheduleToolbarComponent)
-  private scheduleToolbar!: ScheduleToolbarComponent;
+  private readonly scheduleToolbar = viewChild(ScheduleToolbarComponent);
 
   public readonly addEventLink: InternalLink = {
     text: 'Add an event',
@@ -181,12 +184,6 @@ export class SchedulePageComponent implements OnInit {
   }>;
 
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Schedule');
@@ -249,7 +246,9 @@ export class SchedulePageComponent implements OnInit {
           totalCount,
         }),
       ),
-      tap(() => setTimeout(() => this.scheduleToolbar?.changeDetectorRef.markForCheck())),
+      tap(() =>
+        setTimeout(() => this.scheduleToolbar()?.changeDetectorRef.markForCheck()),
+      ),
     );
   }
 

@@ -1,4 +1,4 @@
-@if (isLoading) {
+@if (isLoading()) {
   <div
     class="months-grid"
     aria-busy="true"
@@ -26,8 +26,8 @@
 } @else {
   <div
     class="months-grid"
-    [attr.month-count]="calendarMonths.length">
-    @for (calendarMonth of calendarMonths; track calendarMonth.monthYear) {
+    [attr.month-count]="calendarMonths().length">
+    @for (calendarMonth of calendarMonths(); track calendarMonth.monthYear) {
       <div
         class="month"
         [class.no-events]="!calendarMonth.hasEvents"
@@ -50,7 +50,7 @@
                   <div class="event-indicators">
                     @for (event of day.events; track event.id) {
                       <a
-                        [adminControls]="isAdmin ? getAdminControlsConfig(event) : null"
+                        [adminControls]="isAdmin() ? getAdminControlsConfig(event) : null"
                         class="event-indicator"
                         [class]="event.type | kebabCase"
                         [class.no-events]="!calendarMonth.hasEvents"
@@ -87,15 +87,15 @@
     <div class="event-title-and-type">
       <div
         class="event-title"
-        [innerHTML]="event.title | highlight: $safeNavigationMigration(options?.search)">
+        [innerHTML]="event.title | highlight: options()?.search">
       </div>
 
       <div
         class="event-type-wrapper"
-        [ngClass]="event.type | kebabCase">
+        [class]="event.type | kebabCase">
         <span
           class="event-type"
-          [innerHTML]="event.type | highlight: $safeNavigationMigration(options?.search)">
+          [innerHTML]="event.type | highlight: options()?.search">
         </span>
 
         @if ((event.type | kebabCase) === 'championship') {

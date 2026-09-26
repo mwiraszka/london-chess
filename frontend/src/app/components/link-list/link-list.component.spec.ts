@@ -98,7 +98,7 @@ describe('LinkListComponent', () => {
 
         if (mockInternalLinks[i].tooltip) {
           const tooltipDirective = linkElement.injector.get(TooltipDirective);
-          expect(tooltipDirective.tooltip).toBe(mockInternalLinks[i].tooltip);
+          expect(tooltipDirective.tooltip()).toBe(mockInternalLinks[i].tooltip);
         }
       });
     });
@@ -124,7 +124,7 @@ describe('LinkListComponent', () => {
 
         if (mockExternalLinks[i].tooltip) {
           const tooltipDirective = linkElement.injector.get(TooltipDirective);
-          expect(tooltipDirective.tooltip).toBe(mockExternalLinks[i].tooltip);
+          expect(tooltipDirective.tooltip()).toBe(mockExternalLinks[i].tooltip);
         }
       });
     });

@@ -32,7 +32,7 @@ describe('UpcomingEventBannerComponent', () => {
 
     clearBannerSpy = vi.spyOn(component.clearBanner, 'emit');
 
-    component.nextEvents = [MOCK_EVENTS[0]];
+    fixture.componentRef.setInput('nextEvents', [MOCK_EVENTS[0]]);
     fixture.detectChanges();
   });
 
@@ -50,15 +50,14 @@ describe('UpcomingEventBannerComponent', () => {
       });
 
       it('should not render a link for an event without an articleId', () => {
-        component.nextEvents = [MOCK_EVENTS[0]]; // articleId: ''
+        fixture.componentRef.setInput('nextEvents', [MOCK_EVENTS[0]]); // articleId: ''
         fixture.detectChanges();
 
         expect(query(fixture.debugElement, '.event-title-link')).toBeFalsy();
       });
 
       it('should render a link to the article for an event with an articleId', () => {
-        component.nextEvents = [MOCK_EVENTS[1]]; // has articleId
-        component['changeDetectorRef'].markForCheck();
+        fixture.componentRef.setInput('nextEvents', [MOCK_EVENTS[1]]); // has articleId
         fixture.detectChanges();
 
         const link = query(fixture.debugElement, '.event-title-link');
@@ -76,7 +75,7 @@ describe('UpcomingEventBannerComponent', () => {
       });
 
       it('should render single instance of content when not animating', () => {
-        component['shouldAnimate'] = false;
+        component['shouldAnimate'].set(false);
         fixture.detectChanges();
 
         const marqueeItems = queryAll(fixture.debugElement, '.marquee-item');
@@ -84,8 +83,7 @@ describe('UpcomingEventBannerComponent', () => {
       });
 
       it('should render duplicate content when animating', () => {
-        component['shouldAnimate'] = true;
-        component['changeDetectorRef'].markForCheck();
+        component['shouldAnimate'].set(true);
         fixture.detectChanges();
 
         const marqueeItems = queryAll(fixture.debugElement, '.marquee-item');
@@ -93,8 +91,7 @@ describe('UpcomingEventBannerComponent', () => {
       });
 
       it('should apply animate class when shouldAnimate is true', () => {
-        component['shouldAnimate'] = true;
-        component['changeDetectorRef'].markForCheck();
+        component['shouldAnimate'].set(true);
         fixture.detectChanges();
 
         const marqueeContent = query(fixture.debugElement, '.marquee-content');
@@ -102,7 +99,7 @@ describe('UpcomingEventBannerComponent', () => {
       });
 
       it('should not apply animate class when shouldAnimate is false', () => {
-        component['shouldAnimate'] = false;
+        component['shouldAnimate'].set(false);
         fixture.detectChanges();
 
         const marqueeContent = query(fixture.debugElement, '.marquee-content');

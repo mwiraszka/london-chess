@@ -6,7 +6,7 @@
     <label class="lcc-required-field">Banner Image:</label>
     <div class="image-section-container">
       <div class="image-container">
-        <lcc-image [image]="bannerImage" />
+        <lcc-image [image]="bannerImage()" />
       </div>
 
       <div class="image-controls-container">
@@ -22,7 +22,7 @@
           type="button"
           tooltip="Revert banner to original image"
           [disabled]="
-            (originalArticle?.bannerImageId ?? '') === form.controls.bannerImageId.value
+            (originalArticle()?.bannerImageId ?? '') === form.controls.bannerImageId.value
           "
           (click)="onRevertBannerImage()">
           <ea-icon-rotate-ccw />
@@ -77,7 +77,7 @@
 
     <button
       class="restore-button lcc-secondary-button"
-      [disabled]="!hasUnsavedChanges"
+      [disabled]="!hasUnsavedChanges()"
       tooltip="Restore article to its original state"
       (click)="onRestore()">
       <ea-icon-history />
@@ -93,13 +93,13 @@
       <div class="markdown-container">
         <lcc-markdown-renderer
           [data]="form.controls.body.value"
-          [images]="bodyImages">
+          [images]="bodyImages()">
         </lcc-markdown-renderer>
       </div>
     }
   </div>
 
-  @if (originalArticle?.modificationInfo; as info) {
+  @if (originalArticle()?.modificationInfo; as info) {
     <lcc-modification-info [info]="info"></lcc-modification-info>
   }
 
@@ -113,8 +113,8 @@
     <button
       class="submit-button lcc-primary-button"
       type="submit"
-      [disabled]="form.invalid || !hasUnsavedChanges">
-      {{ originalArticle ? 'Update article' : 'Publish article' }}
+      [disabled]="form.invalid || !hasUnsavedChanges()">
+      {{ originalArticle() ? 'Update article' : 'Publish article' }}
     </button>
   </div>
 </form>

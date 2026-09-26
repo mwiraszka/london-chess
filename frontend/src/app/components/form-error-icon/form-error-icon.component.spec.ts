@@ -86,7 +86,7 @@ describe('FormErrorIconComponent', () => {
         'ea-icon-alert-triangle',
       ).injector.get(TooltipDirective);
 
-      expect(tooltipDirective.tooltip).toBe('Invalid email');
+      expect(tooltipDirective.tooltip()).toBe('Invalid email');
 
       fixture.componentRef.setInput(
         'control',
@@ -96,7 +96,7 @@ describe('FormErrorIconComponent', () => {
       );
       fixture.detectChanges();
 
-      expect(tooltipDirective.tooltip).toBe('This field is required');
+      expect(tooltipDirective.tooltip()).toBe('This field is required');
     });
   });
 });

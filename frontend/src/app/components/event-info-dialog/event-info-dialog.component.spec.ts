@@ -21,7 +21,7 @@ describe('EventInfoDialogComponent', () => {
 
     dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
 
-    component.event = MOCK_EVENTS[4]; // Event with associated article
+    fixture.componentRef.setInput('event', MOCK_EVENTS[4]); // Event with associated article
     fixture.detectChanges();
   });
 

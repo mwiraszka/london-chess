@@ -9,13 +9,11 @@ import { debounceTime } from 'rxjs/operators';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
-  OnChanges,
   OnInit,
-  Output,
-  SimpleChanges,
+  effect,
   inject,
+  input,
+  output,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -65,20 +63,23 @@ import { textValidator } from '@app/validators';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArticleFormComponent implements OnInit, OnChanges {
-  @Input({ required: true }) bannerImage!: Image | null;
-  @Input({ required: true }) bodyImages!: Image[];
-  @Input({ required: true }) formData!: ArticleFormData;
-  @Input({ required: true }) hasUnsavedChanges!: boolean;
-  @Input({ required: true }) originalArticle!: Article | null;
+export class ArticleFormComponent implements OnInit {
+  private readonly dialogService = inject(DialogService);
+  private readonly formBuilder = inject(FormBuilder);
 
-  @Output() cancel = new EventEmitter<void>();
-  @Output() change = new EventEmitter<{
+  readonly bannerImage = input.required<Image | null>();
+  readonly bodyImages = input.required<Image[]>();
+  readonly formData = input.required<ArticleFormData>();
+  readonly hasUnsavedChanges = input.required<boolean>();
+  readonly originalArticle = input.required<Article | null>();
+
+  readonly cancel = output<void>();
+  readonly change = output<{
     articleId: Id | null;
     formData: Partial<ArticleFormData>;
   }>();
-  @Output() requestFetchMainImage = new EventEmitter<Id>();
-  @Output() restore = new EventEmitter<Id | null>();
+  readonly requestFetchMainImage = output<Id>();
+  readonly restore = output<Id | null>();
 
   public form!: FormGroup<ArticleFormGroup>;
   public readonly maxBodyImages = MAX_ARTICLE_BODY_IMAGES;
@@ -86,11 +87,6 @@ export class ArticleFormComponent implements OnInit, OnChanges {
   private lastCursorPosition = 0;
 
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly formBuilder: FormBuilder,
-  ) {}
 
   public get bodyImageCount(): number {
     const body = this.form?.controls.body.value || '';
@@ -104,57 +100,65 @@ export class ArticleFormComponent implements OnInit, OnChanges {
   }
 
   public ngOnInit(): void {
-    if (!this.bannerImage && this.formData.bannerImageId) {
-      this.requestFetchMainImage.emit(this.formData.bannerImageId);
+    const formData = this.formData();
+    if (!this.bannerImage() && formData.bannerImageId) {
+      this.requestFetchMainImage.emit(formData.bannerImageId);
     }
 
     this.initForm();
     this.initFormValueChangeListener();
 
-    if (this.hasUnsavedChanges) {
+    if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
     }
   }
 
-  public ngOnChanges(changes: SimpleChanges<ArticleFormComponent>): void {
-    if (changes.bodyImages && this.form) {
-      let body = this.form.controls.body.value;
+  constructor() {
+    effect(() => {
+      const bodyImages = this.bodyImages();
+      if (this.form) {
+        this.expandBodyImageTags(bodyImages);
+      }
+    });
+  }
 
-      // Match all image patterns in the body
-      const imagePattern = /{{{([^}]+)}}}(?:\(\(\(([^)]*)\)\)\))?(?:<<<([\s\S]*?)>>>)?/g;
-      let match: RegExpExecArray | null;
-      const replacements: Array<{ oldString: string; newString: string }> = [];
+  private expandBodyImageTags(bodyImages: Image[]): void {
+    let body = this.form.controls.body.value;
 
-      while ((match = imagePattern.exec(body)) !== null) {
-        const content = match[1];
-        const width = match[2];
-        const caption = match[3];
+    // Match all image patterns in the body
+    const imagePattern = /{{{([^}]+)}}}(?:\(\(\(([^)]*)\)\)\))?(?:<<<([\s\S]*?)>>>)?/g;
+    let match: RegExpExecArray | null;
+    const replacements: Array<{ oldString: string; newString: string }> = [];
 
-        const imageId = content.match(/[a-f\d]{24}/)?.[0];
+    while ((match = imagePattern.exec(body)) !== null) {
+      const content = match[1];
+      const width = match[2];
+      const caption = match[3];
 
-        if (imageId) {
-          const image = this.bodyImages.find(img => img.id === imageId);
+      const imageId = content.match(/[a-f\d]{24}/)?.[0];
 
-          if (image && !isCollectionId(content)) {
-            const newString = `{{{${imageId}}}}(((${width || image.mainWidth})))<<<${caption || image.caption}>>>`;
+      if (imageId) {
+        const image = bodyImages.find(img => img.id === imageId);
 
-            replacements.push({
-              oldString: match[0],
-              newString,
-            });
-          }
+        if (image && !isCollectionId(content)) {
+          const newString = `{{{${imageId}}}}(((${width || image.mainWidth})))<<<${caption || image.caption}>>>`;
+
+          replacements.push({
+            oldString: match[0],
+            newString,
+          });
         }
       }
+    }
 
-      // Apply all replacements
-      replacements.forEach(({ oldString, newString }) => {
-        body = body.replace(oldString, newString);
-      });
+    // Apply all replacements
+    replacements.forEach(({ oldString, newString }) => {
+      body = body.replace(oldString, newString);
+    });
 
-      // Update the form if any replacements were made
-      if (replacements.length > 0) {
-        this.form.patchValue({ body }, { emitEvent: false });
-      }
+    // Update the form if any replacements were made
+    if (replacements.length > 0) {
+      this.form.patchValue({ body }, { emitEvent: false });
     }
   }
 
@@ -179,7 +183,7 @@ export class ArticleFormComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.restore.emit(this.originalArticle?.id ?? null);
+    this.restore.emit(this.originalArticle()?.id ?? null);
 
     setTimeout(() => this.ngOnInit());
   }
@@ -198,7 +202,7 @@ export class ArticleFormComponent implements OnInit, OnChanges {
   }
 
   public onRevertBannerImage(): void {
-    this.form.patchValue({ bannerImageId: this.originalArticle?.bannerImageId ?? '' });
+    this.form.patchValue({ bannerImageId: this.originalArticle()?.bannerImageId ?? '' });
   }
 
   public async onInsertImage(): Promise<void> {
@@ -230,12 +234,13 @@ export class ArticleFormComponent implements OnInit, OnChanges {
       return;
     }
 
+    const originalArticle = this.originalArticle();
     const dialog: Dialog = {
       title: 'Confirm',
-      body: this.originalArticle?.title
-        ? `Update ${this.originalArticle.title} article?`
-        : `Publish ${this.formData.title} to News page?`,
-      confirmButtonText: this.originalArticle ? 'Update' : 'Publish',
+      body: originalArticle?.title
+        ? `Update ${originalArticle.title} article?`
+        : `Publish ${this.formData().title} to News page?`,
+      confirmButtonText: this.originalArticle() ? 'Update' : 'Publish',
       confirmAction: () => this.save(),
     };
 
@@ -247,9 +252,10 @@ export class ArticleFormComponent implements OnInit, OnChanges {
   }
 
   private save(): Promise<unknown> {
-    return this.originalArticle
+    const originalArticle = this.originalArticle();
+    return originalArticle
       ? this.storeRequests.dispatch(
-          ArticlesActions.updateArticleRequested({ articleId: this.originalArticle.id }),
+          ArticlesActions.updateArticleRequested({ articleId: originalArticle.id }),
           [ArticlesActions.updateArticleSucceeded, ArticlesActions.updateArticleFailed],
         )
       : this.storeRequests.dispatch(ArticlesActions.publishArticleRequested(), [
@@ -260,15 +266,15 @@ export class ArticleFormComponent implements OnInit, OnChanges {
 
   private initForm(): void {
     this.form = this.formBuilder.group<ArticleFormGroup>({
-      bannerImageId: new FormControl(this.formData.bannerImageId, {
+      bannerImageId: new FormControl(this.formData().bannerImageId, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      title: new FormControl(this.formData.title, {
+      title: new FormControl(this.formData().title, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      body: new FormControl(this.formData.body, {
+      body: new FormControl(this.formData().body, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
@@ -280,7 +286,7 @@ export class ArticleFormComponent implements OnInit, OnChanges {
       .pipe(debounceTime(250), untilDestroyed(this))
       .subscribe((formData: Partial<ArticleFormData>) => {
         this.change.emit({
-          articleId: this.originalArticle?.id ?? null,
+          articleId: this.originalArticle()?.id ?? null,
           formData,
         });
       });

@@ -78,7 +78,7 @@ describe('RegionalClubsPageComponent', () => {
       const clubCards = queryAll(fixture.debugElement, 'lcc-club-card');
 
       clubCards.forEach((clubCard, index) => {
-        expect(clubCard.componentInstance.club).toEqual(REGIONAL_CLUBS[index]);
+        expect(clubCard.componentInstance.club()).toEqual(REGIONAL_CLUBS[index]);
       });
     });
   });

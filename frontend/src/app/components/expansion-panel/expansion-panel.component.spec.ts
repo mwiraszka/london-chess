@@ -24,7 +24,7 @@ describe('ExpansionPanelComponent', () => {
   });
 
   it('should be collapsed by default', () => {
-    expect(component.expanded).toBe(false);
+    expect(component.expanded()).toBe(false);
     expect(fixture.debugElement.query(By.css('.expansion-content'))).toBeNull();
     expect(query(fixture.debugElement, 'ea-icon-chevron-down')).toBeTruthy();
   });
@@ -43,14 +43,14 @@ describe('ExpansionPanelComponent', () => {
     header.triggerEventHandler('click');
     fixture.detectChanges();
 
-    expect(component.expanded).toBe(true);
+    expect(component.expanded()).toBe(true);
     expect(fixture.debugElement.query(By.css('.expansion-content'))).toBeTruthy();
     expect(query(fixture.debugElement, 'ea-icon-chevron-up')).toBeTruthy();
 
     header.triggerEventHandler('click');
     fixture.detectChanges();
 
-    expect(component.expanded).toBe(false);
+    expect(component.expanded()).toBe(false);
     expect(fixture.debugElement.query(By.css('.expansion-content'))).toBeNull();
     expect(query(fixture.debugElement, 'ea-icon-chevron-down')).toBeTruthy();
   });
@@ -64,7 +64,7 @@ describe('ExpansionPanelComponent', () => {
   });
 
   it('should not render h4 if heading is not provided', () => {
-    component.heading = undefined;
+    fixture.componentRef.setInput('heading', undefined);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('h4'))).toBeNull();

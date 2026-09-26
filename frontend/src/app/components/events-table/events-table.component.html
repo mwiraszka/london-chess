@@ -99,7 +99,7 @@
             </h3>
             <div
               class="events__type"
-              [ngClass]="'events__type--' + (event.type | kebabCase)">
+              [class]="'events__type--' + (event.type | kebabCase)">
               <span [innerHTML]="event.type | highlight: search()"></span>
               @if (event.type === 'championship') {
                 <ea-icon-trophy class="events__championship-icon" />

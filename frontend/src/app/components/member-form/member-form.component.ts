@@ -6,11 +6,10 @@ import { debounceTime } from 'rxjs/operators';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
   OnInit,
-  Output,
   inject,
+  input,
+  output,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -61,17 +60,20 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberFormComponent implements OnInit {
-  @Input({ required: true }) formData!: MemberFormData;
-  @Input({ required: true }) hasUnsavedChanges!: boolean;
-  @Input({ required: true }) isSafeMode!: boolean;
-  @Input({ required: true }) originalMember!: Member | null;
+  private readonly dialogService = inject(DialogService);
+  private readonly formBuilder = inject(FormBuilder);
 
-  @Output() cancel = new EventEmitter<void>();
-  @Output() change = new EventEmitter<{
+  readonly formData = input.required<MemberFormData>();
+  readonly hasUnsavedChanges = input.required<boolean>();
+  readonly isSafeMode = input.required<boolean>();
+  readonly originalMember = input.required<Member | null>();
+
+  readonly cancel = output<void>();
+  readonly change = output<{
     memberId: Id | null;
     formData: Partial<MemberFormData>;
   }>();
-  @Output() restore = new EventEmitter<Id | null>();
+  readonly restore = output<Id | null>();
 
   public form!: FormGroup<MemberFormGroup>;
   // Kept out of the form group, so the choice is never saved with the member or
@@ -81,27 +83,22 @@ export class MemberFormComponent implements OnInit {
 
   // A member with an account changes their email address from the account page
   protected get isEmailManagedByAccount(): boolean {
-    return this.originalMember?.hasAccount === true;
+    return this.originalMember()?.hasAccount === true;
   }
 
   protected get notifyMemberLabel(): string {
-    return this.originalMember?.hasAccount
+    return this.originalMember()?.hasAccount
       ? 'Email the member about these changes'
       : "Create the member's account and email them their login details";
   }
 
   private readonly storeRequests = inject(StoreRequestService);
 
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly formBuilder: FormBuilder,
-  ) {}
-
   public ngOnInit(): void {
     this.initForm();
     this.initFormValueChangeListener();
 
-    if (this.hasUnsavedChanges) {
+    if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
     }
   }
@@ -127,7 +124,7 @@ export class MemberFormComponent implements OnInit {
       return;
     }
 
-    this.restore.emit(this.originalMember?.id ?? null);
+    this.restore.emit(this.originalMember()?.id ?? null);
 
     setTimeout(() => this.ngOnInit());
   }
@@ -146,7 +143,7 @@ export class MemberFormComponent implements OnInit {
     const dialog: Dialog = {
       title: 'Confirm',
       body: this.getConfirmationMessage(notifyMember),
-      confirmButtonText: this.originalMember ? 'Update' : 'Add',
+      confirmButtonText: this.originalMember() ? 'Update' : 'Add',
       confirmAction: () => this.save(notifyMember),
     };
 
@@ -158,10 +155,11 @@ export class MemberFormComponent implements OnInit {
   }
 
   private save(notifyMember: boolean): Promise<unknown> {
-    return this.originalMember
+    const originalMember = this.originalMember();
+    return originalMember
       ? this.storeRequests.dispatch(
           MembersActions.updateMemberRequested({
-            memberId: this.originalMember.id,
+            memberId: originalMember.id,
             notifyMember,
           }),
           [MembersActions.updateMemberSucceeded, MembersActions.updateMemberFailed],
@@ -173,66 +171,67 @@ export class MemberFormComponent implements OnInit {
   }
 
   private getConfirmationMessage(notifyMember: boolean): string {
-    if (!this.originalMember) {
-      const name = `${this.formData.firstName} ${this.formData.lastName}`;
+    const originalMember = this.originalMember();
+    if (!originalMember) {
+      const name = `${this.formData().firstName} ${this.formData().lastName}`;
       return notifyMember
         ? `Add ${name} and email them their login details?`
         : `Add ${name}?`;
     }
 
-    const name = `${this.originalMember.firstName} ${this.originalMember.lastName}`;
+    const name = `${originalMember.firstName} ${originalMember.lastName}`;
     if (!notifyMember) {
       return `Update ${name}?`;
     }
-    return this.originalMember.hasAccount
+    return originalMember.hasAccount
       ? `Update ${name} and email them the changes?`
       : `Update ${name}, create their account and email them their login details?`;
   }
 
   private initForm(): void {
     this.form = this.formBuilder.group<MemberFormGroup>({
-      firstName: new FormControl(this.formData.firstName, {
+      firstName: new FormControl(this.formData().firstName, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      lastName: new FormControl(this.formData.lastName, {
+      lastName: new FormControl(this.formData().lastName, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      city: new FormControl(this.formData.city, {
+      city: new FormControl(this.formData().city, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      rating: new FormControl(this.formData.rating, {
+      rating: new FormControl(this.formData().rating, {
         nonNullable: true,
         validators: [Validators.required, ratingValidator],
       }),
-      dateJoined: new FormControl(this.formData.dateJoined, {
+      dateJoined: new FormControl(this.formData().dateJoined, {
         nonNullable: true,
         validators: [Validators.required],
       }),
       email: new FormControl(
-        { value: this.formData.email, disabled: this.isEmailManagedByAccount },
+        { value: this.formData().email, disabled: this.isEmailManagedByAccount },
         { nonNullable: true, validators: emailValidator },
       ),
-      phoneNumber: new FormControl(this.formData.phoneNumber, {
+      phoneNumber: new FormControl(this.formData().phoneNumber, {
         nonNullable: true,
         validators: phoneNumberValidator,
       }),
-      yearOfBirth: new FormControl(this.formData.yearOfBirth, {
+      yearOfBirth: new FormControl(this.formData().yearOfBirth, {
         nonNullable: true,
         validators: yearOfBirthValidator,
       }),
-      chessComUsername: new FormControl(this.formData.chessComUsername, {
+      chessComUsername: new FormControl(this.formData().chessComUsername, {
         nonNullable: true,
         validators: textValidator,
       }),
-      lichessUsername: new FormControl(this.formData.lichessUsername, {
+      lichessUsername: new FormControl(this.formData().lichessUsername, {
         nonNullable: true,
         validators: textValidator,
       }),
-      isActive: new FormControl(this.formData.isActive, { nonNullable: true }),
-      peakRating: new FormControl(this.formData.peakRating, { nonNullable: true }),
+      isActive: new FormControl(this.formData().isActive, { nonNullable: true }),
+      peakRating: new FormControl(this.formData().peakRating, { nonNullable: true }),
     });
 
     this.notifyMember = this.createNotifyMemberControl();
@@ -264,7 +263,7 @@ export class MemberFormComponent implements OnInit {
       .pipe(debounceTime(250), untilDestroyed(this))
       .subscribe((formData: Partial<MemberFormData>) =>
         this.change.emit({
-          memberId: this.originalMember?.id ?? null,
+          memberId: this.originalMember()?.id ?? null,
           formData,
         }),
       );

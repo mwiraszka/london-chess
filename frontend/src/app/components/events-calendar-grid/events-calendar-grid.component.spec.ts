@@ -22,7 +22,6 @@ describe('EventsCalendarGridComponent', () => {
 
   let dialogOpenSpy: MockInstance;
   let storeRequestSpy: Mock;
-  let updateCalendarMonthsSpy: MockInstance;
 
   const mockEvents = MOCK_EVENTS.slice(0, 2);
   const mockIsAdmin = true;
@@ -71,8 +70,6 @@ describe('EventsCalendarGridComponent', () => {
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
-    // @ts-expect-error Private class member
-    updateCalendarMonthsSpy = vi.spyOn(component, 'updateCalendarMonths');
 
     fixture.componentRef.setInput('events', mockEvents);
     fixture.componentRef.setInput('isAdmin', mockIsAdmin);
@@ -86,44 +83,26 @@ describe('EventsCalendarGridComponent', () => {
   });
 
   describe('calendar months update', () => {
-    it('should update on init', () => {
-      updateCalendarMonthsSpy.mockClear();
-      component.ngOnInit();
-
-      expect(updateCalendarMonthsSpy).toHaveBeenCalledTimes(1);
-      expect(component.calendarMonths.length).toBeGreaterThan(0);
+    it('should build calendar months from the events', () => {
+      expect(component.calendarMonths().length).toBeGreaterThan(0);
     });
 
     it('should update when events change', () => {
-      const initialLength = component.calendarMonths.length;
+      const initialLength = component.calendarMonths().length;
 
       fixture.componentRef.setInput('events', MOCK_EVENTS.slice(0, 4));
-      component.ngOnChanges({
-        events: {
-          currentValue: MOCK_EVENTS.slice(0, 4),
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
       fixture.detectChanges();
 
-      expect(component.calendarMonths.length).toBeGreaterThan(initialLength);
+      expect(component.calendarMonths().length).toBeGreaterThan(initialLength);
     });
 
     it('should not update when non-events properties change', () => {
-      const initialCalendarMonths = component.calendarMonths;
+      const initialCalendarMonths = component.calendarMonths();
 
-      component.ngOnChanges({
-        isAdmin: {
-          currentValue: false,
-          previousValue: true,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
+      fixture.componentRef.setInput('isAdmin', false);
+      fixture.detectChanges();
 
-      expect(component.calendarMonths).toBe(initialCalendarMonths);
+      expect(component.calendarMonths()).toBe(initialCalendarMonths);
     });
   });
 
@@ -181,20 +160,11 @@ describe('EventsCalendarGridComponent', () => {
     it('should return empty array when no events', () => {
       fixture.componentRef.setInput('events', []);
 
-      component.ngOnChanges({
-        events: {
-          currentValue: [],
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
-
-      expect(component.monthYears).toEqual([]);
+      expect(component.monthYears()).toEqual([]);
     });
 
     it('should return correct month years for events', () => {
-      expect(component.monthYears).toEqual([
+      expect(component.monthYears()).toEqual([
         'January 2050',
         'February 2050',
         'March 2050',
@@ -213,9 +183,9 @@ describe('EventsCalendarGridComponent', () => {
     let calendarMonth: CalendarMonth;
 
     beforeEach(() => {
-      calendarMonth = component.calendarMonths.find(
-        month => month.monthYear === 'January 2050',
-      )!;
+      calendarMonth = component
+        .calendarMonths()
+        .find(month => month.monthYear === 'January 2050')!;
     });
 
     it('should generate calendar month with correct structure', () => {
@@ -248,36 +218,21 @@ describe('EventsCalendarGridComponent', () => {
 
   describe('caching behaviour', () => {
     it('should not regenerate calendar months if events have not changed', () => {
-      const initialCalendarMonths = component.calendarMonths;
+      const initialCalendarMonths = component.calendarMonths();
 
-      component.ngOnChanges({
-        events: {
-          currentValue: mockEvents,
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
+      fixture.detectChanges();
 
-      expect(component.calendarMonths).toBe(initialCalendarMonths);
+      expect(component.calendarMonths()).toBe(initialCalendarMonths);
     });
 
     it('should regenerate calendar months if events change', () => {
-      const initialCalendarMonths = component.calendarMonths;
+      const initialCalendarMonths = component.calendarMonths();
 
       const modifiedEvents = MOCK_EVENTS.slice(0, 5);
 
       fixture.componentRef.setInput('events', modifiedEvents);
-      component.ngOnChanges({
-        events: {
-          currentValue: modifiedEvents,
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
 
-      expect(component.calendarMonths.length).toBeGreaterThan(
+      expect(component.calendarMonths().length).toBeGreaterThan(
         initialCalendarMonths.length,
       );
     });
@@ -326,7 +281,7 @@ describe('EventsCalendarGridComponent', () => {
           const eventIndicator = query(localFixture.debugElement, '.event-indicator');
           const directiveInstance = eventIndicator.injector.get(TooltipDirective);
 
-          expect(directiveInstance.tooltip).toBeTruthy();
+          expect(directiveInstance.tooltip()).toBeTruthy();
         });
       });
 
@@ -349,7 +304,7 @@ describe('EventsCalendarGridComponent', () => {
           const eventIndicator = query(localFixture.debugElement, '.event-indicator');
           const directiveInstance = eventIndicator.injector.get(TooltipDirective);
 
-          expect(directiveInstance.tooltip).toBeFalsy();
+          expect(directiveInstance.tooltip()).toBeFalsy();
         });
       });
     });

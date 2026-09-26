@@ -85,7 +85,7 @@ describe('ImageExplorerComponent', () => {
   describe('initialization', () => {
     it('should be selectable by default', () => {
       fixture.detectChanges();
-      expect(component.selectable).toBe(true);
+      expect(component.selectable()).toBe(true);
     });
 
     it('should fetch the thumbnails for the current options', () => {
@@ -187,14 +187,14 @@ describe('ImageExplorerComponent', () => {
     });
 
     it('should apply selectable class when selectable is true', () => {
-      component.selectable = true;
+      fixture.componentRef.setInput('selectable', true);
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, '.image-card').classes['selectable']).toBe(true);
     });
 
     it('should not apply selectable class when selectable is false', () => {
-      component.selectable = false;
+      fixture.componentRef.setInput('selectable', false);
       changeDetectorRef.markForCheck();
       fixture.detectChanges();
 
@@ -204,7 +204,7 @@ describe('ImageExplorerComponent', () => {
     });
 
     it('should emit dialogResult with image id when clicked and selectable is true', () => {
-      component.selectable = true;
+      fixture.componentRef.setInput('selectable', true);
       fixture.detectChanges();
 
       query(fixture.debugElement, '.image-card').triggerEventHandler('click');
@@ -213,7 +213,7 @@ describe('ImageExplorerComponent', () => {
     });
 
     it('should not emit dialogResult when clicked and selectable is false', () => {
-      component.selectable = false;
+      fixture.componentRef.setInput('selectable', false);
       fixture.detectChanges();
 
       query(fixture.debugElement, '.image-card').triggerEventHandler('click');

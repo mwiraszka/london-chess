@@ -154,7 +154,7 @@
 
     <button
       class="restore-button lcc-secondary-button"
-      [disabled]="!hasUnsavedChanges"
+      [disabled]="!hasUnsavedChanges()"
       tooltip="Restore event to its original state"
       (click)="onRestore()">
       <ea-icon-history />
@@ -165,7 +165,7 @@
 
   <hr />
 
-  @if (originalEvent?.modificationInfo; as info) {
+  @if (originalEvent()?.modificationInfo; as info) {
     <lcc-modification-info [info]="info"></lcc-modification-info>
   }
 
@@ -179,8 +179,8 @@
     <button
       class="submit-button lcc-primary-button"
       type="submit"
-      [disabled]="form.invalid || !hasUnsavedChanges">
-      {{ originalEvent ? 'Update event' : 'Add event' }}
+      [disabled]="form.invalid || !hasUnsavedChanges()">
+      {{ originalEvent() ? 'Update event' : 'Add event' }}
     </button>
   </div>
 </form>

@@ -87,12 +87,7 @@ describe('AppComponent', () => {
 
     it('should scroll to top when navigation occurs without fragment', () => {
       const scrollToSpy = vi.fn();
-      component.mainElement = {
-        nativeElement: {
-          scrollTo: scrollToSpy,
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      component.mainElement().nativeElement.scrollTo = scrollToSpy;
 
       component.ngOnInit();
       mockFragmentSubject.next(null);
@@ -103,12 +98,7 @@ describe('AppComponent', () => {
 
     it('should not scroll to top when navigation occurs with fragment', () => {
       const scrollToSpy = vi.fn();
-      component.mainElement = {
-        nativeElement: {
-          scrollTo: scrollToSpy,
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      component.mainElement().nativeElement.scrollTo = scrollToSpy;
 
       component.ngOnInit();
       mockFragmentSubject.next('some-fragment');
@@ -216,8 +206,10 @@ describe('AppComponent', () => {
           fixture.detectChanges();
 
           expect(
-            query(fixture.debugElement, 'lcc-upcoming-event-banner').componentInstance
-              .nextEvents,
+            query(
+              fixture.debugElement,
+              'lcc-upcoming-event-banner',
+            ).componentInstance.nextEvents(),
           ).toEqual([MOCK_EVENTS[0]]);
         });
 

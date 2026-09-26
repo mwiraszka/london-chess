@@ -81,7 +81,7 @@ describe('FooterComponent', () => {
 
         expect(whatsappLink.nativeElement.href).toContain('bit.ly/LCC-NoticeBoard');
         expect(whatsappLink.nativeElement.target).toBe('_blank');
-        expect(whatsappLink.injector.get(TooltipDirective).tooltip).toBe(
+        expect(whatsappLink.injector.get(TooltipDirective).tooltip()).toBe(
           'Club noticeboard on WhatsApp',
         );
       });
@@ -93,7 +93,7 @@ describe('FooterComponent', () => {
           'instagram.com/londonchessclub_',
         );
         expect(instagramLink.nativeElement.target).toBe('_blank');
-        expect(instagramLink.injector.get(TooltipDirective).tooltip).toBe(
+        expect(instagramLink.injector.get(TooltipDirective).tooltip()).toBe(
           'Follow us on Instagram',
         );
       });
@@ -105,7 +105,7 @@ describe('FooterComponent', () => {
           'chess.com/club/london-chess-club-canada',
         );
         expect(chesscomLink.nativeElement.target).toBe('_blank');
-        expect(chesscomLink.injector.get(TooltipDirective).tooltip).toBeTruthy();
+        expect(chesscomLink.injector.get(TooltipDirective).tooltip()).toBeTruthy();
       });
 
       it('should properly render email link', () => {
@@ -113,7 +113,7 @@ describe('FooterComponent', () => {
 
         expect(emailLink.nativeElement.href).toContain('mailto:welcome@londonchess.ca');
         expect(emailLink.nativeElement.target).toBe('_blank');
-        expect(emailLink.injector.get(TooltipDirective).tooltip).toBeTruthy();
+        expect(emailLink.injector.get(TooltipDirective).tooltip()).toBeTruthy();
       });
     });
 

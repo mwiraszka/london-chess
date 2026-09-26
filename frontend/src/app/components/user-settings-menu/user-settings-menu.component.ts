@@ -9,12 +9,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   type ElementRef,
-  EventEmitter,
   OnInit,
-  Output,
   afterRenderEffect,
   computed,
   inject,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -43,7 +42,10 @@ import { isTouchDevice } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserSettingsMenuComponent implements OnInit {
-  @Output() public readonly close = new EventEmitter<void>();
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
+
+  public readonly close = output<void>();
 
   protected readonly warningIcon = AlertTriangleIconComponent;
 
@@ -80,10 +82,7 @@ export class UserSettingsMenuComponent implements OnInit {
   public readonly nameTruncated = signal(false);
   public readonly emailTruncated = signal(false);
 
-  constructor(
-    private readonly router: Router,
-    private readonly store: Store,
-  ) {
+  constructor() {
     afterRenderEffect(() => {
       const name = this.nameEl()?.nativeElement;
       const email = this.emailEl()?.nativeElement;

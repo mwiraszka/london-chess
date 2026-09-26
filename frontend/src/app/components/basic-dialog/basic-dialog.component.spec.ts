@@ -39,7 +39,7 @@ describe('BasicDialogComponent', () => {
 
     dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
 
-    component.dialog = mockDialog;
+    fixture.componentRef.setInput('dialog', mockDialog);
     fixture.detectChanges();
   });
 
@@ -83,7 +83,7 @@ describe('BasicDialogComponent', () => {
       fixture = TestBed.createComponent(BasicDialogComponent);
       component = fixture.componentInstance;
       dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
-      component.dialog = { ...mockDialog, confirmAction };
+      fixture.componentRef.setInput('dialog', { ...mockDialog, confirmAction });
       fixture.detectChanges();
     });
 
@@ -126,7 +126,7 @@ describe('BasicDialogComponent', () => {
       fixture.destroy();
       fixture = TestBed.createComponent(BasicDialogComponent);
       component = fixture.componentInstance;
-      component.dialog = { ...mockDialog, uploadProgress };
+      fixture.componentRef.setInput('dialog', { ...mockDialog, uploadProgress });
       fixture.detectChanges();
     });
 
@@ -161,7 +161,7 @@ describe('BasicDialogComponent', () => {
     it('should not render a progress bar for dialogs without uploads', () => {
       fixture.destroy();
       fixture = TestBed.createComponent(BasicDialogComponent);
-      fixture.componentInstance.dialog = mockDialog;
+      fixture.componentRef.setInput('dialog', mockDialog);
       fixture.detectChanges();
 
       expect(queryAll(fixture.debugElement, '.upload-progress')).toHaveLength(0);
@@ -175,7 +175,7 @@ describe('BasicDialogComponent', () => {
     });
 
     it('should use default cancel text if not provided', () => {
-      component.dialog = mockWarningDialog;
+      fixture.componentRef.setInput('dialog', mockWarningDialog);
       fixture.detectChanges();
 
       expect(queryTextContent(fixture.debugElement, '.cancel-button')).toBe('Cancel');

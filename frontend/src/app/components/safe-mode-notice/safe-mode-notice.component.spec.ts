@@ -13,6 +13,7 @@ describe('SafeModeNoticeComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(SafeModeNoticeComponent);
+    fixture.componentRef.setInput('entity', 'User');
     fixture.detectChanges();
   });
 

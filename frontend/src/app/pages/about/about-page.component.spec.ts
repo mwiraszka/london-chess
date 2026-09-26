@@ -85,7 +85,7 @@ describe('AboutPageComponent', () => {
       expect(panels.length).toBe(expectedHeadings.length);
 
       expectedHeadings.forEach((heading, index) => {
-        expect(panels[index].componentInstance.heading).toBe(heading);
+        expect(panels[index].componentInstance.heading()).toBe(heading);
       });
     });
 

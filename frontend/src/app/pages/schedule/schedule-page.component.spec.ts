@@ -143,7 +143,7 @@ describe('SchedulePageComponent', () => {
       // Create a spy on the scheduleToolbar's changeDetectorRef.markForCheck method
       const scheduleToolbarMarkForCheckSpy = vi.spyOn(
         // @ts-expect-error Private class member
-        component.scheduleToolbar.changeDetectorRef,
+        component.scheduleToolbar().changeDetectorRef,
         'markForCheck',
       );
 
@@ -174,7 +174,7 @@ describe('SchedulePageComponent', () => {
       // Don't trigger change detection to keep ViewChild undefined
 
       // Ensure scheduleToolbar is undefined
-      expect(component['scheduleToolbar']).toBeUndefined();
+      expect(component['scheduleToolbar']()).toBeUndefined();
 
       // This should not throw an error due to optional chaining
       expect(() => {
@@ -392,8 +392,10 @@ describe('SchedulePageComponent', () => {
           query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading(),
         ).toBe(true);
         expect(
-          query(fixture.debugElement, 'lcc-events-calendar-grid').componentInstance
-            .isLoading,
+          query(
+            fixture.debugElement,
+            'lcc-events-calendar-grid',
+          ).componentInstance.isLoading(),
         ).toBe(true);
       });
 
@@ -406,8 +408,10 @@ describe('SchedulePageComponent', () => {
           query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading(),
         ).toBe(true);
         expect(
-          query(fixture.debugElement, 'lcc-events-calendar-grid').componentInstance
-            .isLoading,
+          query(
+            fixture.debugElement,
+            'lcc-events-calendar-grid',
+          ).componentInstance.isLoading(),
         ).toBe(true);
       });
 

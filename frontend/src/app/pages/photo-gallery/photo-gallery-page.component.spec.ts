@@ -125,7 +125,7 @@ describe('PhotoGalleryPageComponent', () => {
       it('should render the photo grid as a skeleton', () => {
         const photoGrid = query(fixture.debugElement, 'lcc-photo-grid');
 
-        expect(photoGrid.componentInstance.isLoading).toBe(true);
+        expect(photoGrid.componentInstance.isLoading()).toBe(true);
         expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
       });
     });

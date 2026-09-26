@@ -2,12 +2,12 @@
   class="photo-container"
   role="region"
   aria-label="Photo carousel">
-  @for (photo of photos; track photo.id; let i = $index) {
+  @for (photo of photos(); track photo.id; let i = $index) {
     <div
       class="image-wrapper"
-      [class.active]="i === currentIndex"
+      [class.active]="i === currentIndex()"
       (click)="onNextPhoto()"
-      [tabindex]="i === currentIndex ? 0 : -1"
+      [tabindex]="i === currentIndex() ? 0 : -1"
       role="button"
       [attr.aria-label]="'View next photo, currently showing ' + photo.caption">
       <img
@@ -19,21 +19,21 @@
 </div>
 
 <div class="caption-container">
-  @for (photo of photos; track photo.id; let i = $index) {
+  @for (photo of photos(); track photo.id; let i = $index) {
     <label
       class="caption"
-      [class.active]="i === currentIndex">
+      [class.active]="i === currentIndex()">
       {{ photo.caption?.replace(': ', ': \n') }}
     </label>
   }
 </div>
 
 <div class="dots-container">
-  @for (photo of photos; track photo.id; let i = $index) {
+  @for (photo of photos(); track photo.id; let i = $index) {
     <div
       class="dot-button"
       role="button"
-      [class.active]="i === currentIndex"
+      [class.active]="i === currentIndex()"
       [attr.aria-label]="'View photo ' + (i + 1)"
       (click)="onSelectPhoto(i)">
     </div>

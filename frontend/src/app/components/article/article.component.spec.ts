@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
@@ -16,9 +16,9 @@ import { ArticleComponent } from './article.component';
   standalone: true,
 })
 class MockMarkdownRendererComponent {
-  @Input() data = '';
-  @Input() images: Image[] = [];
-  @Input() disableSanitizer = false;
+  readonly data = input('');
+  readonly images = input<Image[]>([]);
+  readonly disableSanitizer = input(false);
 }
 
 describe('ArticleComponent', () => {

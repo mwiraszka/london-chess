@@ -71,9 +71,9 @@ describe('ImageViewerComponent', () => {
     indexSubjectNextSpy = vi.spyOn(component.indexSubject, 'next');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
-    component.album = 'Mock Album';
-    component.images = MOCK_IMAGES;
-    component.isAdmin = true;
+    fixture.componentRef.setInput('album', 'Mock Album');
+    fixture.componentRef.setInput('images', MOCK_IMAGES);
+    fixture.componentRef.setInput('isAdmin', true);
     fixture.detectChanges();
 
     adminControlsCloseSpy = vi.spyOn(TestBed.inject(AdminControlsService), 'close');
@@ -151,7 +151,7 @@ describe('ImageViewerComponent', () => {
 
       it('should correctly handle albums with a single image', () => {
         vi.clearAllMocks();
-        component.images = [MOCK_IMAGES[0]];
+        fixture.componentRef.setInput('images', [MOCK_IMAGES[0]]);
 
         // @ts-expect-error Private class member
         component.prefetchAdjacentImages();
@@ -163,7 +163,7 @@ describe('ImageViewerComponent', () => {
 
       it('should correctly handle albums with two images', () => {
         vi.clearAllMocks();
-        component.images = [MOCK_IMAGES[0], MOCK_IMAGES[1]];
+        fixture.componentRef.setInput('images', [MOCK_IMAGES[0], MOCK_IMAGES[1]]);
 
         // @ts-expect-error Private class member
         component.prefetchAdjacentImages();
@@ -181,7 +181,11 @@ describe('ImageViewerComponent', () => {
 
       it('should correctly handle albums with three images', () => {
         vi.clearAllMocks();
-        component.images = [MOCK_IMAGES[0], MOCK_IMAGES[1], MOCK_IMAGES[2]];
+        fixture.componentRef.setInput('images', [
+          MOCK_IMAGES[0],
+          MOCK_IMAGES[1],
+          MOCK_IMAGES[2],
+        ]);
 
         // @ts-expect-error Private class member
         component.prefetchAdjacentImages();

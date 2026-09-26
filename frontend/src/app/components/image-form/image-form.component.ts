@@ -5,11 +5,10 @@ import { debounceTime } from 'rxjs/operators';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
   OnInit,
-  Output,
   inject,
+  input,
+  output,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -58,21 +57,27 @@ import { textValidator } from '@app/validators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageFormComponent implements OnInit {
-  @Input({ required: true }) public existingAlbums!: string[];
-  @Input({ required: true }) public hasUnsavedChanges!: boolean;
-  @Input({ required: true }) public imageEntity!: {
+  private readonly dialogService = inject(DialogService);
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly imageFileService = inject(ImageFileService);
+
+  public readonly existingAlbums = input.required<string[]>();
+  public readonly hasUnsavedChanges = input.required<boolean>();
+  public readonly imageEntity = input.required<{
     image: Image;
     formData: ImageFormData;
-  } | null;
-  @Input({ required: true }) public newImageFormData!: ImageFormData | null;
+  } | null>();
+  public readonly newImageFormData = input.required<ImageFormData | null>();
 
-  @Output() public readonly cancel = new EventEmitter<void>();
-  @Output() public readonly change = new EventEmitter<{
-    multipleFormData: (Partial<ImageFormData> & { id: Id })[];
+  public readonly cancel = output<void>();
+  public readonly change = output<{
+    multipleFormData: (Partial<ImageFormData> & {
+      id: Id;
+    })[];
   }>();
-  @Output() public readonly fileActionFail = new EventEmitter<LccError>();
-  @Output() public readonly requestFetchMainImage = new EventEmitter<Id>();
-  @Output() public readonly restore = new EventEmitter<Id>();
+  public readonly fileActionFail = output<LccError>();
+  public readonly requestFetchMainImage = output<Id>();
+  public readonly restore = output<Id>();
 
   public form!: FormGroup<ImageFormGroup>;
   public newAlbumValue!: string;
@@ -81,35 +86,27 @@ export class ImageFormComponent implements OnInit {
   private readonly generateUuid = inject(GENERATE_UUID);
   private readonly storeRequests = inject(StoreRequestService);
 
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly formBuilder: FormBuilder,
-    private readonly imageFileService: ImageFileService,
-  ) {}
-
   public ngOnInit(): void {
     this.initForm();
     this.initFormValueChangeListener();
 
-    if (this.newImageFormData) {
-      this.fetchNewImageDataUrl(this.newImageFormData.id);
+    const newImageFormData = this.newImageFormData();
+    if (newImageFormData) {
+      this.fetchNewImageDataUrl(newImageFormData.id);
     }
 
-    if (
-      this.imageEntity &&
-      !this.imageEntity.image.thumbnailUrl &&
-      !this.imageEntity.image.mainUrl
-    ) {
-      this.requestFetchMainImage.emit(this.imageEntity.image.id);
+    const imageEntity = this.imageEntity();
+    if (imageEntity && !imageEntity.image.thumbnailUrl && !imageEntity.image.mainUrl) {
+      this.requestFetchMainImage.emit(imageEntity.image.id);
     }
 
-    if (this.hasUnsavedChanges) {
+    if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
     }
   }
 
   get albumExists(): boolean {
-    return this.existingAlbums.some(album => album === this.form.controls.album.value);
+    return this.existingAlbums().some(album => album === this.form.controls.album.value);
   }
 
   public onNewAlbumInputChange(event: Event): void {
@@ -186,12 +183,13 @@ export class ImageFormComponent implements OnInit {
       return;
     }
 
+    const imageEntity = this.imageEntity();
     const dialog: Dialog = {
       title: 'Confirm',
-      body: this.imageEntity
-        ? `Update ${this.imageEntity.image.filename}?`
+      body: imageEntity
+        ? `Update ${imageEntity.image.filename}?`
         : `Add ${this.form.controls.filename.value} to ${this.form.controls.album.value}?`,
-      confirmButtonText: this.imageEntity ? 'Update' : 'Add',
+      confirmButtonText: this.imageEntity() ? 'Update' : 'Add',
       confirmAction: () => this.save(this.form.controls.id.value),
     };
 
@@ -203,7 +201,7 @@ export class ImageFormComponent implements OnInit {
   }
 
   private save(imageId: Id): Promise<unknown> {
-    return this.imageEntity
+    return this.imageEntity()
       ? this.storeRequests.dispatch(ImagesActions.updateImageRequested({ imageId }), [
           ImagesActions.updateImageSucceeded,
           ImagesActions.updateImageFailed,
@@ -225,8 +223,8 @@ export class ImageFormComponent implements OnInit {
   }
 
   private initForm(): void {
-    const formData: ImageFormData = this.imageEntity?.formData ??
-      this.newImageFormData ?? {
+    const formData: ImageFormData = this.imageEntity()?.formData ??
+      this.newImageFormData() ?? {
         ...INITIAL_IMAGE_FORM_DATA,
         id: `new-${this.generateUuid()}`,
       };
@@ -251,7 +249,7 @@ export class ImageFormComponent implements OnInit {
       albumOrdinality: new FormControl(formData.albumOrdinality, { nonNullable: true }),
     });
 
-    this.newAlbumValue = !this.existingAlbums.includes(formData.album)
+    this.newAlbumValue = !this.existingAlbums().includes(formData.album)
       ? formData.album
       : '';
   }

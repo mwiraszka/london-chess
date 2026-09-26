@@ -26,7 +26,7 @@
         class="lcc-form-fields"
         [formGroupName]="i">
         <div class="image-container full-span">
-          <lcc-image [image]="imageEntities[i].image" />
+          <lcc-image [image]="imageEntities()[i].image" />
         </div>
 
         <div class="cover-image-input-container">
@@ -74,7 +74,7 @@
     }
   </div>
 
-  @if (album) {
+  @if (album()) {
     <hr />
     <h3 class="new-images-header">New images</h3>
   }
@@ -83,11 +83,11 @@
     <label
       class="choose-files-button lcc-secondary-button"
       [tooltip]="
-        imageEntities.length || form.controls.newImages.length
+        imageEntities().length || form.controls.newImages.length
           ? 'Add more files'
           : 'Choose files'
       ">
-      @if (imageEntities.length) {
+      @if (imageEntities().length) {
         <ea-icon-image-plus />
       } @else {
         <ea-icon-image />
@@ -103,7 +103,7 @@
     <button
       class="restore-button lcc-secondary-button"
       type="button"
-      [disabled]="!hasUnsavedChanges"
+      [disabled]="!hasUnsavedChanges()"
       tooltip="Restore album to its original state"
       (click)="onRestore()">
       <ea-icon-history />
@@ -197,8 +197,8 @@
     <button
       class="submit-button lcc-primary-button"
       type="submit"
-      [disabled]="form.invalid || !hasUnsavedChanges">
-      {{ album ? 'Update album' : 'Create album' }}
+      [disabled]="form.invalid || !hasUnsavedChanges()">
+      {{ album() ? 'Update album' : 'Create album' }}
     </button>
   </div>
 </form>
