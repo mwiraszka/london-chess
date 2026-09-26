@@ -1,6 +1,5 @@
 import { SpinnerComponent } from '@eagami/ui';
 
-import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 
 import { BasicDialogResult } from '@app/models';
@@ -9,7 +8,7 @@ import { BasicDialogResult } from '@app/models';
   selector: 'lcc-dialog-buttons',
   templateUrl: './dialog-buttons.component.html',
   styleUrl: './dialog-buttons.component.scss',
-  imports: [NgClass, SpinnerComponent],
+  imports: [SpinnerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DialogButtonsComponent {

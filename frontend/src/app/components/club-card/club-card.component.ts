@@ -4,7 +4,7 @@ import {
   MapPinIconComponent,
 } from '@eagami/ui';
 
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { ClubMapComponent } from '@app/components/club-map/club-map.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -24,5 +24,5 @@ import { Club } from '@app/models';
   ],
 })
 export class ClubCardComponent {
-  @Input({ required: true }) club!: Club;
+  readonly club = input.required<Club>();
 }

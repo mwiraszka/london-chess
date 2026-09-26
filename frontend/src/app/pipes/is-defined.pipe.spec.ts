@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { IsDefinedPipe } from './is-defined.pipe';
 
 describe('IsDefinedPipe', () => {
-  const pipe = new IsDefinedPipe();
+  let pipe: IsDefinedPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [IsDefinedPipe] });
+    pipe = TestBed.inject(IsDefinedPipe);
+  });
 
   it('transforms values correctly', () => {
     expect(pipe.transform(undefined)).toBe(false);

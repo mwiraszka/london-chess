@@ -21,12 +21,12 @@ import { environment } from '@env';
   providedIn: 'root',
 })
 export class ImagesApiService {
+  private readonly http = inject(HttpClient);
+
   private readonly API_BASE_URL = environment.lccApiBaseUrl;
   private readonly COLLECTION: DbCollection = 'images';
 
   private readonly setPaginationParams = inject(SET_PAGINATION_PARAMS);
-
-  constructor(private readonly http: HttpClient) {}
 
   public getAllImagesMetadata(): Observable<ApiResponse<BaseImage[]>> {
     return this.http.get<ApiResponse<BaseImage[]>>(

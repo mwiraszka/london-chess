@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -19,12 +20,12 @@ import { environment } from '@env';
   providedIn: 'root',
 })
 export class EventsApiService {
+  private readonly http = inject(HttpClient);
+
   private readonly API_BASE_URL = environment.lccApiBaseUrl;
   private readonly COLLECTION: DbCollection = 'events';
 
   private readonly setPaginationParams = inject(SET_PAGINATION_PARAMS);
-
-  constructor(private readonly http: HttpClient) {}
 
   public getAllEvents(): Observable<ApiResponse<PaginatedItems<Event>>> {
     return this.http.get<ApiResponse<PaginatedItems<Event>>>(
@@ -66,5 +67,13 @@ export class EventsApiService {
     return this.http.delete<ApiResponse<Id>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/${id}`,
     );
+  }
+  // Asked for once a visit, as the widest values change only as rarely as the records do
+  private readonly widest$ = this.http
+    .get<ApiResponse<Event[]>>(`${this.API_BASE_URL}/${this.COLLECTION}/widest`)
+    .pipe(shareReplay({ bufferSize: 1, refCount: false }));
+
+  public getWidestEvents(): Observable<ApiResponse<Event[]>> {
+    return this.widest$;
   }
 }

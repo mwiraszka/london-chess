@@ -76,10 +76,6 @@ describe('AppComponent', () => {
     store.refreshState();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     beforeEach(() => {
       fixture.detectChanges();
@@ -87,12 +83,7 @@ describe('AppComponent', () => {
 
     it('should scroll to top when navigation occurs without fragment', () => {
       const scrollToSpy = vi.fn();
-      component.mainElement = {
-        nativeElement: {
-          scrollTo: scrollToSpy,
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      component.mainElement().nativeElement.scrollTo = scrollToSpy;
 
       component.ngOnInit();
       mockFragmentSubject.next(null);
@@ -103,12 +94,7 @@ describe('AppComponent', () => {
 
     it('should not scroll to top when navigation occurs with fragment', () => {
       const scrollToSpy = vi.fn();
-      component.mainElement = {
-        nativeElement: {
-          scrollTo: scrollToSpy,
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      component.mainElement().nativeElement.scrollTo = scrollToSpy;
 
       component.ngOnInit();
       mockFragmentSubject.next('some-fragment');
@@ -160,6 +146,61 @@ describe('AppComponent', () => {
       fixture.detectChanges();
 
       expect(setAttributeSpy).toHaveBeenCalledWith('data-wide-view', 'true');
+    });
+  });
+
+  describe('viewport', () => {
+    let viewport: HTMLMetaElement;
+
+    beforeEach(() => {
+      viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      document.head.appendChild(viewport);
+    });
+
+    afterEach(() => {
+      viewport.remove();
+    });
+
+    it('should fit the device width outside of desktop view', () => {
+      fixture.detectChanges();
+
+      expect(viewport.content).toBe('width=device-width, initial-scale=1.0');
+    });
+
+    it('should lay the page out at desktop width in desktop view', () => {
+      store.overrideSelector(AppSelectors.selectIsDesktopView, true);
+      store.refreshState();
+
+      fixture.detectChanges();
+
+      const scale = window.innerWidth / 1200;
+      expect(viewport.content).toBe(
+        `width=1200, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=3.0, user-scalable=yes`,
+      );
+    });
+  });
+
+  describe('scrollbar inset', () => {
+    afterEach(() => {
+      document.documentElement.style.removeProperty('--lcc-scrollbar-inset');
+    });
+
+    it('should publish the width of the main scrollbar, again on every resize', () => {
+      fixture.detectChanges();
+      const main: HTMLElement = component.mainElement().nativeElement;
+
+      expect(
+        document.documentElement.style.getPropertyValue('--lcc-scrollbar-inset'),
+      ).toBe('0px');
+
+      Object.defineProperty(main, 'offsetWidth', { configurable: true, value: 815 });
+      Object.defineProperty(main, 'clientWidth', { configurable: true, value: 800 });
+      window.dispatchEvent(new Event('resize'));
+
+      expect(
+        document.documentElement.style.getPropertyValue('--lcc-scrollbar-inset'),
+      ).toBe('15px');
     });
   });
 
@@ -216,8 +257,10 @@ describe('AppComponent', () => {
           fixture.detectChanges();
 
           expect(
-            query(fixture.debugElement, 'lcc-upcoming-event-banner').componentInstance
-              .nextEvents,
+            query(
+              fixture.debugElement,
+              'lcc-upcoming-event-banner',
+            ).componentInstance.nextEvents(),
           ).toEqual([MOCK_EVENTS[0]]);
         });
 

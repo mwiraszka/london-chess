@@ -1,8 +1,21 @@
+import express from 'express';
+import request from 'supertest';
+
 import { PaginationParams } from '../models/pagination.model';
-import { buildPaginationQuery } from './pagination.util';
+import { buildPaginationQuery, parsePaginationParams } from './pagination.util';
+
+const nameMatch = (fields: string[], separator: string, regex: string) => ({
+  $expr: {
+    $regexMatch: {
+      input: { $concat: [`$${fields[0]}`, separator, `$${fields[1]}`] },
+      regex,
+      options: 'i',
+    },
+  },
+});
 
 describe('buildPaginationQuery', () => {
-  describe('name combination search', () => {
+  describe('search', () => {
     const baseParams: PaginationParams = {
       page: 1,
       pageSize: 20,
@@ -16,120 +29,86 @@ describe('buildPaginationQuery', () => {
       searchableFields: ['firstName', 'lastName', 'city'],
     };
 
-    it('should add name combination conditions when both firstName and lastName are searchable', () => {
+    it('should also match full names in either order when both name fields are searchable', () => {
       const params: PaginationParams = { ...baseParams, search: 'John Doe' };
 
       const result = buildPaginationQuery(params, configWithNames);
 
-      expect(result.filter.$or).toHaveLength(6);
-
-      const orConditions = result.filter.$or as Record<string, unknown>[];
-
-      expect(orConditions).toContainEqual({
-        firstName: { $regex: 'John Doe', $options: 'i' },
+      expect(result.filter).toEqual({
+        $or: [
+          { firstName: { $regex: 'John Doe', $options: 'i' } },
+          { lastName: { $regex: 'John Doe', $options: 'i' } },
+          { city: { $regex: 'John Doe', $options: 'i' } },
+          nameMatch(['firstName', 'lastName'], ' ', 'John Doe'),
+          nameMatch(['lastName', 'firstName'], ', ', 'John Doe'),
+          nameMatch(['lastName', 'firstName'], ' ', 'John Doe'),
+        ],
       });
-      expect(orConditions).toContainEqual({
-        lastName: { $regex: 'John Doe', $options: 'i' },
-      });
-      expect(orConditions).toContainEqual({
-        city: { $regex: 'John Doe', $options: 'i' },
-      });
-
-      const exprConditions = orConditions.filter(cond => cond['$expr']);
-      expect(exprConditions).toHaveLength(3);
-
-      const concatInputs = exprConditions.map(cond => {
-        const expr = cond['$expr'] as { $regexMatch: { input: { $concat: string[] } } };
-        return expr.$regexMatch.input.$concat;
-      });
-      expect(concatInputs).toContainEqual(['$firstName', ' ', '$lastName']);
-      expect(concatInputs).toContainEqual(['$lastName', ', ', '$firstName']);
-      expect(concatInputs).toContainEqual(['$lastName', ' ', '$firstName']);
     });
 
-    it('should not add name combinations when only firstName is searchable', () => {
-      const configOnlyFirstName = {
-        searchableFields: ['firstName', 'city'],
-      };
-      const params: PaginationParams = { ...baseParams, search: 'John' };
-
-      const result = buildPaginationQuery(params, configOnlyFirstName);
-
-      expect(result.filter.$or).toHaveLength(2);
-
-      const orConditions = result.filter.$or as Record<string, unknown>[];
-      expect(orConditions).toContainEqual({
-        firstName: { $regex: 'John', $options: 'i' },
-      });
-      expect(orConditions).toContainEqual({ city: { $regex: 'John', $options: 'i' } });
-
-      const exprConditions = orConditions.filter(cond => cond['$expr']);
-      expect(exprConditions).toHaveLength(0);
-    });
-
-    it('should not add name combinations when only lastName is searchable', () => {
-      const configOnlyLastName = {
-        searchableFields: ['lastName', 'email'],
-      };
+    it('should match only the searchable fields when a name field is missing', () => {
       const params: PaginationParams = { ...baseParams, search: 'Doe' };
 
-      const result = buildPaginationQuery(params, configOnlyLastName);
+      const onlyFirstName = buildPaginationQuery(params, {
+        searchableFields: ['firstName', 'city'],
+      });
+      const onlyLastName = buildPaginationQuery(params, {
+        searchableFields: ['lastName', 'email'],
+      });
 
-      expect(result.filter.$or).toHaveLength(2);
-
-      const orConditions = result.filter.$or as Record<string, unknown>[];
-      expect(orConditions).toContainEqual({ lastName: { $regex: 'Doe', $options: 'i' } });
-      expect(orConditions).toContainEqual({ email: { $regex: 'Doe', $options: 'i' } });
-
-      const exprConditions = orConditions.filter(cond => cond['$expr']);
-      expect(exprConditions).toHaveLength(0);
+      expect(onlyFirstName.filter).toEqual({
+        $or: [
+          { firstName: { $regex: 'Doe', $options: 'i' } },
+          { city: { $regex: 'Doe', $options: 'i' } },
+        ],
+      });
+      expect(onlyLastName.filter).toEqual({
+        $or: [
+          { lastName: { $regex: 'Doe', $options: 'i' } },
+          { email: { $regex: 'Doe', $options: 'i' } },
+        ],
+      });
     });
 
-    it('should handle empty search string', () => {
-      const params: PaginationParams = { ...baseParams, search: '' };
+    it('should not filter on an empty or blank search', () => {
+      const empty = buildPaginationQuery({ ...baseParams, search: '' }, configWithNames);
+      const blank = buildPaginationQuery(
+        { ...baseParams, search: '   ' },
+        configWithNames,
+      );
 
-      const result = buildPaginationQuery(params, configWithNames);
-
-      expect(result.filter.$or).toBeUndefined();
+      expect(empty.filter).toEqual({});
+      expect(blank.filter).toEqual({});
     });
 
     it('should match regex characters in the search literally', () => {
       const params: PaginationParams = { ...baseParams, search: 'a.b (c) \\' };
 
-      const result = buildPaginationQuery(params, configWithNames);
+      const result = buildPaginationQuery(params, { searchableFields: ['city'] });
 
-      const orConditions = result.filter.$or as Record<string, unknown>[];
-      expect(orConditions).toContainEqual({
-        city: { $regex: 'a\\.b \\(c\\) \\\\', $options: 'i' },
+      expect(result.filter).toEqual({
+        $or: [{ city: { $regex: 'a\\.b \\(c\\) \\\\', $options: 'i' } }],
       });
-      const expr = orConditions[3]['$expr'] as { $regexMatch: { regex: string } };
-      expect(expr.$regexMatch.regex).toBe('a\\.b \\(c\\) \\\\');
-    });
-
-    it('should handle whitespace-only search string', () => {
-      const params: PaginationParams = { ...baseParams, search: '   ' };
-
-      const result = buildPaginationQuery(params, configWithNames);
-
-      expect(result.filter.$or).toBeUndefined();
     });
 
     it('should pass through pre-parsed filters in addition to search', () => {
       const params: PaginationParams = {
         ...baseParams,
-        search: 'John Doe',
+        search: 'London',
         filters: { isActive: true },
       };
 
-      const result = buildPaginationQuery(params, configWithNames);
+      const result = buildPaginationQuery(params, { searchableFields: ['city'] });
 
-      expect(result.filter.$or).toHaveLength(6);
-      expect(result.filter['isActive']).toBe(true);
+      expect(result.filter).toEqual({
+        $or: [{ city: { $regex: 'London', $options: 'i' } }],
+        isActive: true,
+      });
     });
   });
 
-  describe('existing functionality', () => {
-    it('should handle pagination correctly', () => {
+  describe('paging and sorting', () => {
+    it('should skip the earlier pages', () => {
       const params: PaginationParams = {
         page: 3,
         pageSize: 10,
@@ -145,32 +124,93 @@ describe('buildPaginationQuery', () => {
       expect(result.limit).toBe(10);
     });
 
-    it('should handle sorting with field mappings', () => {
+    it('should return everything when there is no page size', () => {
       const params: PaginationParams = {
-        page: 1,
-        pageSize: 20,
-        sortBy: 'name',
+        page: 3,
+        pageSize: -1,
+        sortBy: 'id',
         sortOrder: 'asc',
         search: '',
         filters: {},
       };
 
+      const result = buildPaginationQuery(params);
+
+      expect(result.skip).toBe(0);
+      expect(result.limit).toBeUndefined();
+    });
+
+    it('should sort by the mapped field and then by its secondary field', () => {
+      const params: PaginationParams = {
+        page: 1,
+        pageSize: 20,
+        sortBy: 'name',
+        sortOrder: 'desc',
+        search: '',
+        filters: {},
+      };
       const config = {
-        fieldMappings: {
-          name: 'lastName',
-        },
-        secondarySort: {
-          name: 'firstName',
-        },
+        fieldMappings: { name: 'lastName' },
+        secondarySort: { name: 'firstName' },
         searchableFields: [],
       };
 
       const result = buildPaginationQuery(params, config);
 
-      expect(result.sort).toEqual({
-        lastName: 1,
-        firstName: 1,
-      });
+      expect(result.sort).toEqual({ lastName: -1, firstName: -1 });
+    });
+  });
+});
+
+describe('parsePaginationParams', () => {
+  const app = express().get('/', (req, res) => {
+    res.json(parsePaginationParams(req));
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should read the page, sorting, search and known filters from the query', async () => {
+    const response = await request(app).get('/').query({
+      page: '2',
+      pageSize: '25',
+      sortBy: 'rating',
+      sortOrder: 'desc',
+      search: 'Doe',
+      filter_showInactiveMembers: 'false',
+      filter_showPastEvents: 'false',
+      filter_unknown: 'false',
+    });
+
+    expect(response.body).toEqual({
+      page: 2,
+      pageSize: 25,
+      sortBy: 'rating',
+      sortOrder: 'desc',
+      search: 'Doe',
+      filters: {
+        isActive: true,
+        eventDate: { $gt: '2026-09-26T12:00:00.000Z' },
+      },
+    });
+  });
+
+  it('should default to every item in ascending id order', async () => {
+    const response = await request(app).get('/?filter_showInactiveMembers=true');
+
+    expect(response.body).toEqual({
+      page: 1,
+      pageSize: -1,
+      sortBy: 'id',
+      sortOrder: 'asc',
+      search: '',
+      filters: {},
     });
   });
 });

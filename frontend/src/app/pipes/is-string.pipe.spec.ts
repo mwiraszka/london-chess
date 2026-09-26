@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { IsStringPipe } from './is-string.pipe';
 
 describe('IsStringPipe', () => {
-  const pipe = new IsStringPipe();
+  let pipe: IsStringPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [IsStringPipe] });
+    pipe = TestBed.inject(IsStringPipe);
+  });
 
   it('transforms values correctly', () => {
     expect(pipe.transform(undefined)).toBe(false);

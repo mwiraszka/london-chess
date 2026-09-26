@@ -20,7 +20,6 @@ vi.mock('lichess-pgn-viewer', () => ({
 
 describe('PgnViewerComponent', () => {
   let fixture: ComponentFixture<PgnViewerComponent>;
-  let component: PgnViewerComponent;
 
   const board = vi.mocked(LichessPgnViewer);
 
@@ -36,14 +35,9 @@ describe('PgnViewerComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(PgnViewerComponent);
-    component = fixture.componentInstance;
 
     fixture.componentRef.setInput('game', MOCK_GAMES[0]);
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   it('should render the game on the board from its PGN', () => {

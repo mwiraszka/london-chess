@@ -65,13 +65,9 @@ describe('NavigationBarComponent', () => {
     vi.clearAllMocks();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('navigation links', () => {
     it('should render the correct number of links when screenWidth is above 700px', () => {
-      component.screenWidth = 800;
+      component.screenWidth.set(800);
       fixture.detectChanges();
 
       const renderedLinks = fixture.nativeElement.querySelectorAll('.nav-link');
@@ -79,7 +75,7 @@ describe('NavigationBarComponent', () => {
     });
 
     it('should render the correct number of links when screenWidth is below 700px', () => {
-      component.screenWidth = 600;
+      component.screenWidth.set(600);
       fixture.detectChanges();
 
       const renderedLinks = fixture.nativeElement.querySelectorAll('.nav-link');

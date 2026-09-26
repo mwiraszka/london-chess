@@ -195,7 +195,19 @@
             "runner": "vitest",
             "runnerConfig": "vitest-base.config.ts",
             "setupFiles": ["src/test-setup.ts"],
-            "isolate": true
+            "isolate": true,
+            "coverageReporters": ["text-summary", "json-summary"],
+            "coverageExclude": [
+              "src/**/*.spec.ts",
+              "src/app/mocks/**",
+              "src/app/**/*.generated.ts"
+            ],
+            "coverageThresholds": {
+              "statements": 90,
+              "branches": 90,
+              "functions": 90,
+              "lines": 90
+            }
           }
         }
       }

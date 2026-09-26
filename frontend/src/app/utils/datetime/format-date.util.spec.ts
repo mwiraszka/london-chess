@@ -3,8 +3,14 @@ import moment from 'moment-timezone';
 import { formatDate } from './format-date.util';
 
 describe('formatDate', () => {
-  const currentDate = moment();
+  const now = '2026-03-14T15:09:26';
+  const currentDate = moment(now);
   const currentDateLong = currentDate.format('dddd, MMMM Do YYYY [at] h:mm A');
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(now));
+  });
 
   it('transforms undefined to the current date in "long" format', () => {
     expect(formatDate(undefined)).toBe(currentDateLong);

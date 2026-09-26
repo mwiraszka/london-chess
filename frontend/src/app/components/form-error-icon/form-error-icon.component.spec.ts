@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormControl, Validators } from '@angular/forms';
+import { FormControl, ValidatorFn, Validators } from '@angular/forms';
 
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { query } from '@app/utils';
@@ -9,94 +9,128 @@ import { FormErrorIconComponent } from './form-error-icon.component';
 
 describe('FormErrorIconComponent', () => {
   let fixture: ComponentFixture<FormErrorIconComponent>;
-  let component: FormErrorIconComponent;
+
+  const icon = (): HTMLElement =>
+    query(fixture.debugElement, 'ea-icon-alert-triangle').nativeElement;
+
+  const tooltip = (): string | null | undefined => {
+    const value = query(fixture.debugElement, 'ea-icon-alert-triangle')
+      .injector.get(TooltipDirective)
+      .tooltip();
+    return typeof value === 'string' ? value : null;
+  };
+
+  const render = (control: FormControl): void => {
+    fixture.componentRef.setInput('control', control);
+    fixture.detectChanges();
+  };
+
+  const failingWith =
+    (error: string): ValidatorFn =>
+    () => ({ [error]: true });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FormErrorIconComponent, TooltipDirective],
+      imports: [FormErrorIconComponent],
     }).compileComponents();
 
     fixture = TestBed.createComponent(FormErrorIconComponent);
-    component = fixture.componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  describe('visibility', () => {
+    it('should show the icon when the control is touched and invalid', () => {
+      const control = new FormControl('', { validators: Validators.required });
+      control.markAsTouched();
+
+      render(control);
+
+      expect(icon().classList.contains('form-error-icon--hidden')).toBe(false);
+    });
+
+    it('should hide the icon when the control is invalid but not touched', () => {
+      render(new FormControl('', { validators: Validators.required }));
+
+      expect(icon().classList.contains('form-error-icon--hidden')).toBe(true);
+    });
+
+    it('should hide the icon when the control is touched but valid', () => {
+      const control = new FormControl('hello world', { validators: Validators.required });
+      control.markAsTouched();
+
+      render(control);
+
+      expect(icon().classList.contains('form-error-icon--hidden')).toBe(true);
+    });
+
+    it('should show the icon once the rendered control is touched', () => {
+      const control = new FormControl('', { validators: Validators.required });
+      render(control);
+
+      control.markAsTouched();
+      fixture.detectChanges();
+
+      expect(icon().classList.contains('form-error-icon--hidden')).toBe(false);
+    });
   });
 
-  describe('template rendering', () => {
-    it('should render visible icon if control is touched and invalid', () => {
-      fixture.componentRef.setInput(
-        'control',
-        new FormControl('', { validators: Validators.required }),
-      );
-      component.control().markAsTouched();
-      fixture.detectChanges();
+  describe('error message', () => {
+    it('should prefer the required error over any other', () => {
+      render(new FormControl('', { validators: failingWith('required') }));
+      const requiredMessage = tooltip();
 
-      expect(query(fixture.debugElement, 'ea-icon-alert-triangle')).toBeTruthy();
-      expect(
-        fixture.nativeElement
-          .querySelector('ea-icon-alert-triangle')
-          .classList.contains('form-error-icon--hidden'),
-      ).toBe(false);
-    });
-
-    it('should render hidden icon if control is invalid but not touched', () => {
-      fixture.componentRef.setInput(
-        'control',
-        new FormControl('', { validators: Validators.required }),
-      );
-      fixture.detectChanges();
-
-      expect(query(fixture.debugElement, 'ea-icon-alert-triangle')).toBeTruthy();
-      expect(
-        fixture.nativeElement
-          .querySelector('ea-icon-alert-triangle')
-          .classList.contains('form-error-icon--hidden'),
-      ).toBe(true);
-    });
-
-    it('should render hidden icon if control is touched but not invalid', () => {
-      fixture.componentRef.setInput(
-        'control',
-        new FormControl('hello world', { validators: Validators.required }),
-      );
-      component.control().markAsTouched();
-      fixture.detectChanges();
-
-      expect(query(fixture.debugElement, 'ea-icon-alert-triangle')).toBeTruthy();
-      expect(
-        fixture.nativeElement
-          .querySelector('ea-icon-alert-triangle')
-          .classList.contains('form-error-icon--hidden'),
-      ).toBe(true);
-    });
-
-    it('should display first listed error message in tooltip if control has multiple errors', () => {
-      fixture.componentRef.setInput(
-        'control',
-        new FormControl('test', {
-          validators: [Validators.required, emailValidator],
-        }),
-      );
-      fixture.detectChanges();
-
-      const tooltipDirective = query(
-        fixture.debugElement,
-        'ea-icon-alert-triangle',
-      ).injector.get(TooltipDirective);
-
-      expect(tooltipDirective.tooltip).toBe('Invalid email');
-
-      fixture.componentRef.setInput(
-        'control',
+      render(
         new FormControl('', {
-          validators: [Validators.required, emailValidator],
+          validators: [failingWith('email'), failingWith('required')],
         }),
       );
+
+      expect(tooltip()).toBe(requiredMessage);
+    });
+
+    it('should update the message when the control value changes', () => {
+      const control = new FormControl('', {
+        validators: [Validators.required, emailValidator],
+      });
+      render(control);
+      const requiredMessage = tooltip();
+
+      control.setValue('not-an-email');
       fixture.detectChanges();
 
-      expect(tooltipDirective.tooltip).toBe('This field is required');
+      expect(tooltip()).not.toBe(requiredMessage);
+    });
+
+    it('should describe invalid characters the same way for a pattern or text error', () => {
+      render(new FormControl('', { validators: failingWith('pattern') }));
+      const patternMessage = tooltip();
+
+      render(new FormControl('', { validators: failingWith('invalidText') }));
+
+      expect(tooltip()).toBe(patternMessage);
+    });
+
+    it('should give every other error its own message', () => {
+      const errors = [
+        'required',
+        'pattern',
+        'invalidOrdinal',
+        'email',
+        'invalidPhoneNumberFormat',
+        'invalidRating',
+        'invalidYearOfBirth',
+        'invalidId',
+        'minlength',
+        'maxlength',
+        'somethingElse',
+      ];
+
+      const messages = errors.map(error => {
+        render(new FormControl('', { validators: failingWith(error) }));
+        return tooltip();
+      });
+
+      expect(messages.every(message => !!message)).toBe(true);
+      expect(new Set(messages).size).toBe(errors.length);
     });
   });
 });

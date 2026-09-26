@@ -5,7 +5,7 @@ import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { AlbumFormComponent } from '@app/components/album-form/album-form.component';
@@ -74,6 +74,10 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlbumEditorPageComponent implements EditorPage, OnInit {
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly adminIcon = ShieldCheckIconComponent;
 
   public readonly entity = 'album';
@@ -91,12 +95,6 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
     pageHeading: string;
     status: LoadStatus;
   }>;
-
-  constructor(
-    private readonly activatedRoute: ActivatedRoute,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(

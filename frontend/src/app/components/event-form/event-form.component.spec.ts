@@ -66,15 +66,14 @@ describe('EventFormComponent', () => {
     restoreSpy = vi.spyOn(component.restore, 'emit');
     submitSpy = vi.spyOn(component, 'onSubmit');
 
-    component.formData = pick(MOCK_EVENTS[0], EVENT_FORM_DATA_PROPERTIES);
-    component.hasUnsavedChanges = false;
-    component.originalEvent = null;
+    fixture.componentRef.setInput(
+      'formData',
+      pick(MOCK_EVENTS[0], EVENT_FORM_DATA_PROPERTIES),
+    );
+    fixture.componentRef.setInput('hasUnsavedChanges', false);
+    fixture.componentRef.setInput('originalEvent', null);
 
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('form initialization', () => {
@@ -115,7 +114,7 @@ describe('EventFormComponent', () => {
 
           for (const property of EVENT_FORM_DATA_PROPERTIES) {
             expect(component.form.controls[property].value).toBe(
-              component.formData[property],
+              component.formData()[property],
             );
             expect(component.form.controls[property].touched).toBe(true);
           }
@@ -156,7 +155,7 @@ describe('EventFormComponent', () => {
 
           for (const property of EVENT_FORM_DATA_PROPERTIES) {
             expect(component.form.controls[property].value).toBe(
-              component.formData[property],
+              component.formData()[property],
             );
             expect(component.form.controls[property].untouched).toBe(true);
           }
@@ -296,7 +295,7 @@ describe('EventFormComponent', () => {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
-            body: `Add ${component.formData.title} to schedule?`,
+            body: `Add ${component.formData().title} to schedule?`,
             confirmButtonText: 'Add',
           }),
         },
@@ -324,7 +323,7 @@ describe('EventFormComponent', () => {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
-            body: `Update ${component.originalEvent!.title} event?`,
+            body: `Update ${component.originalEvent()!.title} event?`,
             confirmButtonText: 'Update',
           }),
         },
@@ -419,7 +418,7 @@ describe('EventFormComponent', () => {
           articleId: generateId(24),
           eventTime: '6:00 pm',
         });
-        component.hasUnsavedChanges = false;
+        fixture.componentRef.setInput('hasUnsavedChanges', false);
         fixture.detectChanges();
 
         const submitButton = query(fixture.debugElement, '.submit-button');

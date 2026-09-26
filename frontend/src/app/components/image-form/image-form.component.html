@@ -3,7 +3,7 @@
   [formGroup]="form"
   (ngSubmit)="onSubmit()">
   <div class="lcc-form-fields">
-    @if (imageEntity) {
+    @if (imageEntity(); as imageEntity) {
       <div class="image-container full-span">
         <lcc-image [image]="imageEntity.image" />
       </div>
@@ -51,7 +51,7 @@
     <fieldset
       class="existing-albums-fieldset"
       [class.invalid]="form.controls.album.errors && form.controls.album.touched">
-      @for (album of existingAlbums; track $index) {
+      @for (album of existingAlbums(); track $index) {
         <div class="existing-album">
           <input
             [id]="'album-' + album"
@@ -88,7 +88,7 @@
 
     <button
       class="restore-button lcc-secondary-button"
-      [disabled]="!hasUnsavedChanges"
+      [disabled]="!hasUnsavedChanges()"
       tooltip="Restore image to its original state"
       (click)="onRestore()">
       <ea-icon-history />
@@ -99,7 +99,7 @@
 
   <hr />
 
-  @if (imageEntity) {
+  @if (imageEntity(); as imageEntity) {
     <lcc-modification-info [info]="imageEntity.image.modificationInfo">
     </lcc-modification-info>
   }
@@ -114,8 +114,8 @@
     <button
       class="submit-button lcc-primary-button"
       type="submit"
-      [disabled]="form.invalid || !hasUnsavedChanges">
-      {{ imageEntity ? 'Update image' : 'Add image' }}
+      [disabled]="form.invalid || !hasUnsavedChanges()">
+      {{ imageEntity() ? 'Update image' : 'Add image' }}
     </button>
   </div>
 </form>

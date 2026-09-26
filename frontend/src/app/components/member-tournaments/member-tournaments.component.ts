@@ -1,6 +1,5 @@
 import {
   CardComponent,
-  DataTableColumn,
   DataTableSortState,
   PaginatorComponent,
   PaginatorState,
@@ -24,17 +23,20 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
-import { DataTableComponent } from '@app/components/data-table/data-table.component';
+import {
+  DataTableCellContext,
+  DataTableComponent,
+  LccDataTableColumn,
+} from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
-import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
+import { MemberHighlightsComponent } from '@app/components/member-highlights/member-highlights.component';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import {
   LOADING_RESULT_COUNT,
   MEMBER_TOURNAMENTS_PAGE_SIZES,
   TOURNAMENT_FORMAT_LABELS,
-  WIDEST_DATE,
-  WIDEST_END_DATE,
 } from '@app/constants/tournaments';
-import { MemberTournamentResult, TournamentFormat } from '@app/models';
+import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
   compareCells,
@@ -95,53 +97,6 @@ function toResultRow(result: MemberTournamentResult, index: number): ResultRow {
 
 const INITIAL_SORT: DataTableSortState = { column: 'date', direction: 'desc' };
 
-function cycle<T>(items: T[], index: number, fallback: T): T {
-  return items.length ? items[index % items.length] : fallback;
-}
-
-const SIZING_ROWS: ResultRow[] = (() => {
-  const {
-    results,
-    timeControls,
-    maxSectionPlayers,
-    maxRating,
-    maxProvisionalGames,
-    maxScore,
-    hasDateRanges,
-  } = TOURNAMENT_SIZING;
-  const formats = Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[];
-  const count = Math.max(results.length, timeControls.length, formats.length);
-
-  return Array.from({ length: count }, (_, index) => {
-    const played = cycle(results, index, { name: '', section: '' });
-    const row = toResultRow(
-      {
-        tournament: {
-          number: index,
-          name: played.name,
-          subtitle: '',
-          date: WIDEST_DATE,
-          endDate: hasDateRanges ? WIDEST_END_DATE : null,
-          format: cycle(formats, index, 'swiss'),
-          timeControl: cycle(timeControls, index, ''),
-          isRated: false,
-        },
-        section: played.section,
-        roundCount: 0,
-        playerCount: maxSectionPlayers,
-        rank: maxSectionPlayers,
-        rating: maxRating,
-        provisionalGames: maxProvisionalGames,
-        performanceRating: null,
-        score: Math.floor(maxScore) + 0.5,
-        resultNote: '',
-      },
-      index,
-    );
-    return { ...row, id: `sizing-${index}` };
-  });
-})();
-
 type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
 
 @Component({
@@ -152,7 +107,9 @@ type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
     CardComponent,
     DataTableComponent,
     LoadFailedComponent,
+    MemberHighlightsComponent,
     PaginatorComponent,
+    TextSkeletonComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -165,6 +122,9 @@ export class MemberTournamentsComponent {
 
   private readonly dateCell = viewChild<CellTemplate>('dateCell');
   private readonly tournamentCell = viewChild<CellTemplate>('tournamentCell');
+  private readonly tournamentPlaceholder = viewChild<
+    TemplateRef<DataTableCellContext<ResultRow>>
+  >('tournamentPlaceholder');
   private readonly formatCell = viewChild<CellTemplate>('formatCell');
   private readonly timeControlCell = viewChild<CellTemplate>('timeControlCell');
   private readonly placeCell = viewChild<CellTemplate>('placeCell');
@@ -172,7 +132,6 @@ export class MemberTournamentsComponent {
   private readonly ratingCell = viewChild<CellTemplate>('ratingCell');
 
   protected readonly pageSizes = MEMBER_TOURNAMENTS_PAGE_SIZES;
-  protected readonly sizingRows = SIZING_ROWS;
   protected readonly loadingRowCount = LOADING_RESULT_COUNT;
 
   private readonly memberNumber$ = toObservable(this.memberNumber);
@@ -193,6 +152,8 @@ export class MemberTournamentsComponent {
 
   protected readonly loading = computed(() => this.status() === 'loading');
 
+  protected readonly results = computed(() => this.state()?.results ?? []);
+
   protected readonly sortState = signal<DataTableSortState>(INITIAL_SORT);
 
   private readonly allRows = computed(() => {
@@ -204,6 +165,9 @@ export class MemberTournamentsComponent {
   });
 
   protected readonly resultCount = computed(() => this.allRows().length);
+
+  // Every result sizes the columns, so no order or page moves them
+  protected readonly sizingRows = this.allRows;
 
   protected readonly pageSize = signal(MEMBER_TOURNAMENTS_PAGE_SIZES[0]);
 
@@ -217,7 +181,7 @@ export class MemberTournamentsComponent {
     pageOf(this.allRows(), this.page(), this.pageSize()),
   );
 
-  protected readonly columns = computed<DataTableColumn<ResultRow>[]>(() => {
+  protected readonly columns = computed<LccDataTableColumn<ResultRow>[]>(() => {
     const cells = {
       date: this.dateCell(),
       tournament: this.tournamentCell(),
@@ -243,6 +207,7 @@ export class MemberTournamentsComponent {
         label: 'Tournament',
         sortable: true,
         cellTemplate: cells.tournament,
+        placeholderTemplate: this.tournamentPlaceholder(),
       },
       { key: 'format', label: 'Format', sortable: true, cellTemplate: cells.format },
       {

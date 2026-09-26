@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Inject,
-  Optional,
-  TemplateRef,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, TemplateRef, inject } from '@angular/core';
 
 import {
   TOOLTIP_CONTENT_TOKEN,
@@ -33,8 +27,9 @@ import { IsStringPipe } from '@app/pipes';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TooltipComponent {
-  constructor(
-    @Inject(TOOLTIP_CONTENT_TOKEN) public tooltipContent: string | TemplateRef<unknown>,
-    @Optional() @Inject(TOOLTIP_CONTEXT_TOKEN) public tooltipContext: unknown = null,
-  ) {}
+  public readonly tooltipContent = inject<string | TemplateRef<unknown>>(
+    TOOLTIP_CONTENT_TOKEN,
+  );
+  public readonly tooltipContext =
+    inject(TOOLTIP_CONTEXT_TOKEN, { optional: true }) ?? null;
 }

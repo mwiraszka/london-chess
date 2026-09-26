@@ -19,12 +19,12 @@ import { environment } from '@env';
   providedIn: 'root',
 })
 export class ArticlesApiService {
+  private readonly http = inject(HttpClient);
+
   private readonly API_BASE_URL = environment.lccApiBaseUrl;
   private readonly COLLECTION: DbCollection = 'articles';
 
   private readonly setPaginationParams = inject(SET_PAGINATION_PARAMS);
-
-  constructor(private readonly http: HttpClient) {}
 
   public getFilteredArticles(
     options: DataPaginationOptions<Article>,

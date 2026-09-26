@@ -64,10 +64,6 @@ describe('AdminToolbarComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should display the admin icon', () => {
       expect(query(fixture.debugElement, 'ea-icon-shield-check.admin-icon')).toBeTruthy();
@@ -101,7 +97,7 @@ describe('AdminToolbarComponent', () => {
 
       it('should pass links to the link list component', () => {
         expect(
-          query(fixture.debugElement, 'lcc-link-list').componentInstance.links,
+          query(fixture.debugElement, 'lcc-link-list').componentInstance.links(),
         ).toEqual(mockAdminLinks);
       });
     });
@@ -144,7 +140,7 @@ describe('AdminToolbarComponent', () => {
         const firstButton = query(fixture.debugElement, '#refresh-button');
         const tooltipDirective = firstButton.injector.get(TooltipDirective);
 
-        expect(tooltipDirective.tooltip).toBe('Refresh data');
+        expect(tooltipDirective.tooltip()).toBe('Refresh data');
       });
 
       it('should call action function when button is clicked', () => {
@@ -224,13 +220,13 @@ describe('AdminToolbarComponent', () => {
         fixture.detectChanges();
 
         let linkList = query(fixture.debugElement, 'lcc-link-list');
-        expect(linkList.componentInstance.links.length).toBe(1);
+        expect(linkList.componentInstance.links().length).toBe(1);
 
         fixture.componentRef.setInput('adminLinks', mockAdminLinks);
         fixture.detectChanges();
 
         linkList = query(fixture.debugElement, 'lcc-link-list');
-        expect(linkList.componentInstance.links.length).toBe(3);
+        expect(linkList.componentInstance.links().length).toBe(3);
       });
 
       it('should handle removal of all buttons', () => {

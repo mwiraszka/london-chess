@@ -1,3 +1,5 @@
+import { TestBed } from '@angular/core/testing';
+
 import { SummarizeArticlePipe } from './summarize-article.pipe';
 
 const MOCK_RESULT_TABLE_BODY =
@@ -10,7 +12,12 @@ const MOCK_RESULT_TABLE_BODY =
   '|6\t|Kroker, Kif\t|1827\t|L1 (b)\t|0.0|';
 
 describe('SummarizeArticlePipe', () => {
-  const pipe = new SummarizeArticlePipe();
+  let pipe: SummarizeArticlePipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [SummarizeArticlePipe] });
+    pipe = TestBed.inject(SummarizeArticlePipe);
+  });
 
   it('handles missing and empty input correctly', () => {
     expect(pipe.transform(undefined)).toBe('');

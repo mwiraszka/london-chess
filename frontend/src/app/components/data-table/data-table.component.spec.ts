@@ -150,7 +150,9 @@ describe('DataTableComponent', () => {
       queryAll(bodyRows()[0], '.ea-data-table__cell')[1].nativeElement.textContent.trim(),
     ).toBe('3 pts');
     expect(query(fixture.debugElement, '.ea-data-table__sizing .name')).toBeTruthy();
-    expect(table.componentInstance.sizingRows()).toBe(host.sizingRows);
+    expect(table.componentInstance.sizingRows()).toEqual([
+      { id: 'sizing-widest', name: 'Bartholomew', score: 100 },
+    ]);
     expect(table.componentInstance.nowrap()).toBe(true);
     expect(table.componentInstance.striped()).toBe(true);
     expect(table.componentInstance.density()).toBe('compact');

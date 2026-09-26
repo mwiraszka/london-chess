@@ -1,29 +1,29 @@
 <div
   class="article-grid"
-  [class.is-home-page]="isHomePage"
-  [attr.card-count]="visibleRows.length">
-  @for (row of displayItems; track $index) {
+  [class.is-home-page]="isHomePage()"
+  [attr.card-count]="visibleRows().length">
+  @for (row of displayItems(); track $index) {
     <a
       class="article"
-      [class.skeleton]="showSkeleton"
-      [class.article--entering]="entering"
-      [style.animation-delay.s]="entering ? $index * 0.1 : null"
-      [attr.aria-hidden]="showSkeleton || null"
+      [class.skeleton]="showSkeleton()"
+      [class.article--entering]="entering()"
+      [style.animation-delay.s]="entering() ? $index * 0.1 : null"
+      [attr.aria-hidden]="showSkeleton() || null"
       [adminControls]="
-        !showSkeleton && isAdmin ? getAdminControlsConfig(row.article) : null
+        !showSkeleton() && isAdmin() ? getAdminControlsConfig(row.article) : null
       "
       [routerLink]="
-        showSkeleton
+        showSkeleton()
           ? undefined
           : row.article.title
             ? (['article', 'view', row.article.id] | routerLink)
             : undefined
       ">
-      @if (!showSkeleton && row.article.bookmarkDate) {
+      @if (!showSkeleton() && row.article.bookmarkDate) {
         <ea-icon-bookmark class="bookmark-icon" />
       }
 
-      @if (showSkeleton) {
+      @if (showSkeleton()) {
         <div class="image-container skeleton-image">
           <ea-skeleton
             variant="rect"
@@ -37,7 +37,7 @@
       }
 
       <div class="article-summary-container">
-        @if (showSkeleton) {
+        @if (showSkeleton()) {
           <div class="article-title-wrapper">
             <ea-skeleton
               variant="rect"
@@ -48,14 +48,12 @@
           <div class="article-title-wrapper">
             <h3
               class="article-title lcc-truncate-max-3-lines"
-              [innerHTML]="
-                row.article.title | highlight: $safeNavigationMigration(options?.search)
-              ">
+              [innerHTML]="row.article.title | highlight: options()?.search">
             </h3>
           </div>
         }
         <hr />
-        @if (showSkeleton) {
+        @if (showSkeleton()) {
           <div class="article-preview">
             <ea-skeleton
               variant="rect"
@@ -74,7 +72,7 @@
             [innerHTML]="
               row.article.body
                 | summarizeArticle: row.article.title.startsWith('Blitz')
-                | highlight: $safeNavigationMigration(options?.search)
+                | highlight: options()?.search
             ">
           </p>
           <div class="article-creation-date">

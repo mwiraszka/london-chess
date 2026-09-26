@@ -62,25 +62,21 @@ describe('ArticleGridComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('showSkeleton', () => {
     it('should return true when isLoading is true', () => {
       fixture.componentRef.setInput('isLoading', true);
 
-      expect(component.showSkeleton).toBe(true);
+      expect(component.showSkeleton()).toBe(true);
     });
 
     it('should return false when isLoading is false', () => {
       fixture.componentRef.setInput('isLoading', false);
 
-      expect(component.showSkeleton).toBe(false);
+      expect(component.showSkeleton()).toBe(false);
     });
 
     it('should return false when isLoading is undefined', () => {
-      expect(component.showSkeleton).toBe(false);
+      expect(component.showSkeleton()).toBe(false);
     });
   });
 
@@ -88,28 +84,28 @@ describe('ArticleGridComponent', () => {
     it('should return visibleRows when not loading', () => {
       fixture.componentRef.setInput('isLoading', false);
 
-      expect(component.displayItems).toBe(component.visibleRows);
+      expect(component.displayItems()).toBe(component.visibleRows());
     });
 
     it('should return 10 skeleton rows when loading on home page', () => {
       fixture.componentRef.setInput('isLoading', true);
       fixture.componentRef.setInput('isHomePage', true);
 
-      expect(component.displayItems).toHaveLength(10);
+      expect(component.displayItems()).toHaveLength(10);
     });
 
     it('should return pageSize skeleton rows when loading with specific pageSize', () => {
       fixture.componentRef.setInput('isLoading', true);
       fixture.componentRef.setInput('options', { ...mockOptions, pageSize: 25 });
 
-      expect(component.displayItems).toHaveLength(25);
+      expect(component.displayItems()).toHaveLength(25);
     });
 
     it('should return 100 skeleton rows when loading with no options', () => {
       fixture.componentRef.setInput('isLoading', true);
       fixture.componentRef.setInput('options', undefined);
 
-      expect(component.displayItems).toHaveLength(100);
+      expect(component.displayItems()).toHaveLength(100);
     });
   });
 
@@ -123,9 +119,9 @@ describe('ArticleGridComponent', () => {
       fixture.componentRef.setInput('images', MOCK_IMAGES);
       fixture.detectChanges();
 
-      expect(component.visibleRows).toHaveLength(1);
-      expect(component.visibleRows[0].article).toBe(MOCK_ARTICLES[0]);
-      expect(component.visibleRows[0].bannerImage).toEqual(matchingImage ?? null);
+      expect(component.visibleRows()).toHaveLength(1);
+      expect(component.visibleRows()[0].article).toBe(MOCK_ARTICLES[0]);
+      expect(component.visibleRows()[0].bannerImage).toEqual(matchingImage ?? null);
     });
 
     it('should set bannerImage to null when no matching image exists', () => {
@@ -133,8 +129,8 @@ describe('ArticleGridComponent', () => {
       fixture.componentRef.setInput('images', []);
       fixture.detectChanges();
 
-      expect(component.visibleRows).toHaveLength(1);
-      expect(component.visibleRows[0].bannerImage).toBeNull();
+      expect(component.visibleRows()).toHaveLength(1);
+      expect(component.visibleRows()[0].bannerImage).toBeNull();
     });
   });
 
@@ -316,7 +312,7 @@ describe('ArticleGridComponent', () => {
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, '.article')).toBeTruthy();
-      expect(component.isAdmin).toBe(false);
+      expect(component.isAdmin()).toBe(false);
     });
 
     it('should show bookmark icon for bookmarked articles', () => {
@@ -345,14 +341,6 @@ describe('ArticleGridComponent', () => {
     it('should display banner images with correct source', () => {
       fixture.componentRef.setInput('articles', [MOCK_ARTICLES[0]]);
       fixture.componentRef.setInput('images', [MOCK_IMAGES[0]]);
-      component.ngOnChanges({
-        images: {
-          currentValue: [MOCK_IMAGES[0]],
-          previousValue: [],
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
       fixture.detectChanges();
 
       const bannerImg = query(fixture.debugElement, '.image-container img');

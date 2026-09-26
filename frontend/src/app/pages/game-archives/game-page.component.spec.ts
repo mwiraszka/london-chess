@@ -1,7 +1,6 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
-import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ActivatedRoute,
@@ -28,15 +27,12 @@ import {
 
 import { GamePageComponent } from './game-page.component';
 
-@Component({ selector: 'lcc-pgn-viewer', template: '' })
-class PgnViewerStubComponent {
-  readonly game = input.required<Game>();
-}
-
 describe('GamePageComponent', () => {
   let fixture: ComponentFixture<GamePageComponent>;
-  let component: GamePageComponent;
   let store: MockStore;
+  let metaAndTitleService: Mocked<
+    Pick<MetaAndTitleService, 'updateTitle' | 'updateDescription'>
+  >;
 
   let dispatchSpy: MockInstance;
   let paramMap: BehaviorSubject<ParamMap>;
@@ -56,36 +52,24 @@ describe('GamePageComponent', () => {
     }),
   });
 
-  beforeEach(async () => {
+  beforeEach(() => {
     paramMap = new BehaviorSubject(convertToParamMap({ id: MOCK_GAMES[1].id }));
+    metaAndTitleService = { updateTitle: vi.fn(), updateDescription: vi.fn() };
 
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [GamePageComponent],
       providers: [
         provideMockStore({ initialState: stateWith(MOCK_GAMES) }),
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: paramMap.asObservable() } },
-        {
-          provide: MetaAndTitleService,
-          useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
-        },
+        { provide: MetaAndTitleService, useValue: metaAndTitleService },
       ],
-    })
-      .overrideComponent(GamePageComponent, {
-        remove: { imports: [PgnViewerComponent] },
-        add: { imports: [PgnViewerStubComponent] },
-      })
-      .compileComponents();
+    });
 
     fixture = TestBed.createComponent(GamePageComponent);
-    component = fixture.componentInstance;
     store = TestBed.inject(MockStore);
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('when the game is in the store', () => {
@@ -128,7 +112,7 @@ describe('GamePageComponent', () => {
     });
 
     it('should hand the game to the board', () => {
-      const viewer: PgnViewerStubComponent = query(
+      const viewer: PgnViewerComponent = query(
         fixture.debugElement,
         'lcc-pgn-viewer',
       ).componentInstance;
@@ -153,9 +137,12 @@ describe('GamePageComponent', () => {
       expect(back.injector.get(RouterLink).urlTree?.toString()).toBe('/game-archives');
     });
 
-    it('should update the page title', () => {
-      expect(TestBed.inject(MetaAndTitleService).updateTitle).toHaveBeenCalledWith(
+    it('should update the page title and description', () => {
+      expect(metaAndTitleService.updateTitle).toHaveBeenCalledWith(
         'Jane Smith vs John Doe',
+      );
+      expect(metaAndTitleService.updateDescription).toHaveBeenCalledWith(
+        'Jane Smith vs John Doe, Club Championship 2023.',
       );
     });
   });
@@ -164,6 +151,13 @@ describe('GamePageComponent', () => {
     beforeEach(() => {
       store.setState(stateWith([]));
       fixture.detectChanges();
+    });
+
+    it('should give the page a generic title', () => {
+      expect(metaAndTitleService.updateTitle).toHaveBeenCalledWith('Game');
+      expect(metaAndTitleService.updateDescription).toHaveBeenCalledWith(
+        'A game from the London Chess Club archives.',
+      );
     });
 
     it('should leave fetching it to the guard on its route', () => {
@@ -178,7 +172,7 @@ describe('GamePageComponent', () => {
     });
 
     it('should lay out a placeholder game under the skeletons', () => {
-      const viewer: PgnViewerStubComponent = query(
+      const viewer: PgnViewerComponent = query(
         fixture.debugElement,
         'lcc-pgn-viewer',
       ).componentInstance;
@@ -230,5 +224,64 @@ describe('GamePageComponent', () => {
     expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe(
       'John Doe vs H. Roe',
     );
+  });
+
+  describe('details recorded only for some games', () => {
+    const detailTerms = (): string[] =>
+      queryAll(fixture.debugElement, '.details dt').map(dt =>
+        dt.nativeElement.textContent.trim(),
+      );
+    const detailValues = (): string[] =>
+      queryAll(fixture.debugElement, '.details dd').map(dd =>
+        dd.nativeElement.textContent.replace(/\s+/g, ' ').trim(),
+      );
+
+    it('should fall back for a game with few details recorded', () => {
+      paramMap.next(convertToParamMap({ id: MOCK_GAMES[2].id }));
+
+      fixture.detectChanges();
+
+      expect(detailTerms()).toEqual([
+        'Event',
+        'Date',
+        'White',
+        'Black',
+        'Result',
+        'Moves',
+      ]);
+      expect(detailValues()[0]).toBe('Unknown event');
+      expect(queryAll(fixture.debugElement, '.details__extra')).toHaveLength(1);
+      expect(metaAndTitleService.updateDescription).toHaveBeenLastCalledWith(
+        expect.stringContaining('London Chess Club 1991'),
+      );
+    });
+
+    it('should name the annotator of an annotated game', () => {
+      paramMap.next(convertToParamMap({ id: MOCK_GAMES[0].id }));
+
+      fixture.detectChanges();
+
+      expect(detailTerms()).toContain('Annotated by');
+      expect(detailValues()).toContain(MOCK_GAMES[0].annotator);
+    });
+
+    it('should show the ECO code alone when the opening is not named', () => {
+      const ecoOnly: Game = { ...MOCK_GAMES[2], id: 'eco-only', eco: 'C20' };
+      store.setState(stateWith([ecoOnly]));
+      paramMap.next(convertToParamMap({ id: ecoOnly.id }));
+
+      fixture.detectChanges();
+
+      expect(detailTerms()).toContain('Opening');
+      expect(detailValues()).toContain('C20');
+    });
+
+    it('should show the placeholder when the route names no game', () => {
+      paramMap.next(convertToParamMap({}));
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.game--loading')).toBeTruthy();
+    });
   });
 });

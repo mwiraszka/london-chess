@@ -25,8 +25,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
-  ViewChild,
   inject,
+  input,
+  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
@@ -111,6 +112,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           [isLoading]="vm.status === 'loading' || vm.isFetching"
           [options]="vm.options"
           [showModificationInfo]="vm.isAdmin"
+          [widestEvents]="widestEvents()"
           (optionsChange)="onOptionsChange($event)">
         </lcc-events-table>
 
@@ -147,13 +149,19 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulePageComponent implements OnInit {
+  // The widest events, resolved with the route, size the table before its first page
+  public readonly widestEvents = input<Event[]>([]);
+
+  private readonly dialogService = inject(DialogService);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly pageIcon = CalendarDaysIconComponent;
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  @ViewChild(ScheduleToolbarComponent)
-  private scheduleToolbar!: ScheduleToolbarComponent;
+  private readonly scheduleToolbar = viewChild(ScheduleToolbarComponent);
 
   public readonly addEventLink: InternalLink = {
     text: 'Add an event',
@@ -181,12 +189,6 @@ export class SchedulePageComponent implements OnInit {
   }>;
 
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Schedule');
@@ -249,7 +251,9 @@ export class SchedulePageComponent implements OnInit {
           totalCount,
         }),
       ),
-      tap(() => setTimeout(() => this.scheduleToolbar?.changeDetectorRef.markForCheck())),
+      tap(() =>
+        setTimeout(() => this.scheduleToolbar()?.changeDetectorRef.markForCheck()),
+      ),
     );
   }
 

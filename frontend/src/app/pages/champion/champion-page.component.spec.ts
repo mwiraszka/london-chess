@@ -41,10 +41,6 @@ describe('ChampionPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('ngOnInit', () => {
     it('should set meta title and description', () => {
       component.ngOnInit();

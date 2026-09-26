@@ -6,11 +6,10 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  EventEmitter,
-  Inject,
   OnDestroy,
   OnInit,
-  Output,
+  inject,
+  output,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -38,17 +37,16 @@ import { isTouchDevice } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminControlsComponent implements OnInit, OnDestroy {
-  @Output() public destroyed = new EventEmitter<void>();
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly elementRef = inject(ElementRef);
+  private readonly keyStateService = inject(KeyStateService);
+
+  public config = inject<AdminControlsConfig>(ADMIN_CONTROLS_CONFIG_TOKEN);
+
+  public readonly destroyed = output<void>();
 
   public isTouchDevice = isTouchDevice();
   public showDeleteButton!: boolean;
-
-  constructor(
-    private readonly changeDetectorRef: ChangeDetectorRef,
-    @Inject(ADMIN_CONTROLS_CONFIG_TOKEN) public config: AdminControlsConfig,
-    private readonly elementRef: ElementRef,
-    private readonly keyStateService: KeyStateService,
-  ) {}
 
   public ngOnInit(): void {
     this.elementRef.nativeElement.style.setProperty(

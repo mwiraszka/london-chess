@@ -85,16 +85,12 @@ describe('ImageFormComponent', () => {
     submitSpy = vi.spyOn(component, 'onSubmit');
     uuidSpy = TestBed.inject(GENERATE_UUID) as Mock;
 
-    component.existingAlbums = uniq(MOCK_IMAGES.map(i => i.album));
-    component.hasUnsavedChanges = false;
-    component.imageEntity = null;
-    component.newImageFormData = null;
+    fixture.componentRef.setInput('existingAlbums', uniq(MOCK_IMAGES.map(i => i.album)));
+    fixture.componentRef.setInput('hasUnsavedChanges', false);
+    fixture.componentRef.setInput('imageEntity', null);
+    fixture.componentRef.setInput('newImageFormData', null);
 
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('form initialization', () => {
@@ -361,7 +357,10 @@ describe('ImageFormComponent', () => {
 
   describe('albumExists', () => {
     it('should return true if current image form value is in existingAlbums array', () => {
-      component.existingAlbums = uniq(MOCK_IMAGES.map(image => image.album));
+      fixture.componentRef.setInput(
+        'existingAlbums',
+        uniq(MOCK_IMAGES.map(image => image.album)),
+      );
       component.form.patchValue({ album: MOCK_IMAGES[3].album });
       fixture.detectChanges();
 
@@ -369,7 +368,10 @@ describe('ImageFormComponent', () => {
     });
 
     it('should return false if current image form value is NOT in existingAlbums array', () => {
-      component.existingAlbums = uniq(MOCK_IMAGES.map(image => image.album));
+      fixture.componentRef.setInput(
+        'existingAlbums',
+        uniq(MOCK_IMAGES.map(image => image.album)),
+      );
       component.form.patchValue({ album: 'Some new value' });
       fixture.detectChanges();
 
@@ -392,7 +394,10 @@ describe('ImageFormComponent', () => {
 
   describe('onNewAlbumInputFocus', () => {
     it('should check the radio button and update image form control', () => {
-      component.existingAlbums = uniq(MOCK_IMAGES.map(image => image.album));
+      fixture.componentRef.setInput(
+        'existingAlbums',
+        uniq(MOCK_IMAGES.map(image => image.album)),
+      );
       component.form.setValue(pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES));
       component.newAlbumValue = 'New album title';
       fixture.detectChanges();
@@ -474,12 +479,15 @@ describe('ImageFormComponent', () => {
 
   describe('onRestore', () => {
     beforeEach(() => {
-      component.hasUnsavedChanges = true;
-      component.imageEntity = {
+      fixture.componentRef.setInput('hasUnsavedChanges', true);
+      fixture.componentRef.setInput('imageEntity', {
         image: MOCK_IMAGES[0],
         formData: pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES),
-      };
-      component.newImageFormData = pick(MOCK_IMAGES[1], IMAGE_FORM_DATA_PROPERTIES);
+      });
+      fixture.componentRef.setInput(
+        'newImageFormData',
+        pick(MOCK_IMAGES[1], IMAGE_FORM_DATA_PROPERTIES),
+      );
       component.newImageDataUrl = 'data:image/png;base64,abc';
       fixture.detectChanges();
 
@@ -554,7 +562,7 @@ describe('ImageFormComponent', () => {
 
     it('should add a new image from the confirmation dialog', async () => {
       component.form.patchValue(pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES));
-      component.newImageFormData = MOCK_IMAGES[3];
+      fixture.componentRef.setInput('newImageFormData', MOCK_IMAGES[3]);
       fixture.detectChanges();
 
       await component.onSubmit();
@@ -578,11 +586,9 @@ describe('ImageFormComponent', () => {
     });
 
     it('should update an existing image from the confirmation dialog', async () => {
-      component.imageEntity = {
-        image: MOCK_IMAGES[3],
-        formData: pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES),
-      };
-      component.form.patchValue(component.imageEntity.formData);
+      const formData = pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES);
+      fixture.componentRef.setInput('imageEntity', { image: MOCK_IMAGES[3], formData });
+      component.form.patchValue(formData);
       fixture.detectChanges();
 
       await component.onSubmit();
@@ -607,8 +613,8 @@ describe('ImageFormComponent', () => {
 
     it('should not save anything until the dialog is confirmed', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
-      component.hasUnsavedChanges = true;
-      component.newImageFormData = MOCK_IMAGES[3];
+      fixture.componentRef.setInput('hasUnsavedChanges', true);
+      fixture.componentRef.setInput('newImageFormData', MOCK_IMAGES[3]);
       component.form.patchValue(pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES));
       fixture.detectChanges();
 
@@ -714,7 +720,7 @@ describe('ImageFormComponent', () => {
       it('should be enabled if there are unsaved changes and the form is valid', () => {
         dialogOpenSpy.mockResolvedValue('cancel');
         component.form.setValue(pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES));
-        component.hasUnsavedChanges = true;
+        fixture.componentRef.setInput('hasUnsavedChanges', true);
         fixture.detectChanges();
 
         query(fixture.debugElement, 'form').triggerEventHandler('ngSubmit');

@@ -1,22 +1,19 @@
 import { XIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   ComponentRef,
-  EventEmitter,
-  Inject,
-  Output,
-  ViewChild,
   ViewContainerRef,
+  inject,
+  output,
+  viewChild,
 } from '@angular/core';
 
 import { DialogConfig, DialogOutput } from '@app/models';
 import { DIALOG_CONFIG_TOKEN } from '@app/services';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-dialog',
   template: `
@@ -37,18 +34,17 @@ export class DialogComponent<
   TComponent extends DialogOutput<TResult>,
   TResult,
 > implements AfterViewInit {
-  @ViewChild('contentContainer', { read: ViewContainerRef })
-  private containerRef?: ViewContainerRef;
+  public readonly dialogConfig = inject<DialogConfig<TComponent>>(DIALOG_CONFIG_TOKEN);
+
+  private readonly containerRef = viewChild('contentContainer', {
+    read: ViewContainerRef,
+  });
   private contentComponentRef?: ComponentRef<TComponent>;
 
-  @Output() public result = new EventEmitter<TResult | 'close'>();
-
-  constructor(
-    @Inject(DIALOG_CONFIG_TOKEN) public dialogConfig: DialogConfig<TComponent>,
-  ) {}
+  public readonly result = output<TResult | 'close'>();
 
   public ngAfterViewInit(): void {
-    this.contentComponentRef = this.containerRef?.createComponent<TComponent>(
+    this.contentComponentRef = this.containerRef()?.createComponent<TComponent>(
       this.dialogConfig.componentType,
     );
 
@@ -57,11 +53,9 @@ export class DialogComponent<
         this.contentComponentRef.setInput(key, this.dialogConfig.inputs[key]);
       }
 
-      this.contentComponentRef.instance.dialogResult
-        .pipe(untilDestroyed(this))
-        .subscribe(result => {
-          this.result.emit(result);
-        });
+      this.contentComponentRef.instance.dialogResult.subscribe(result =>
+        this.result.emit(result),
+      );
     }
   }
 }

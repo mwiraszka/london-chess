@@ -38,10 +38,6 @@ describe('RegionalClubsPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     it('should set meta title and description', () => {
       component.ngOnInit();
@@ -78,7 +74,7 @@ describe('RegionalClubsPageComponent', () => {
       const clubCards = queryAll(fixture.debugElement, 'lcc-club-card');
 
       clubCards.forEach((clubCard, index) => {
-        expect(clubCard.componentInstance.club).toEqual(REGIONAL_CLUBS[index]);
+        expect(clubCard.componentInstance.club()).toEqual(REGIONAL_CLUBS[index]);
       });
     });
   });

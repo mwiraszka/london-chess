@@ -6,6 +6,7 @@ import {
   getPlayers,
   getSummary,
   getTournaments,
+  getWidestGames,
 } from '../controllers/games.controller';
 
 export const gamesRouter = Router()
@@ -13,4 +14,5 @@ export const gamesRouter = Router()
   .get('/players', getPlayers)
   .get('/tournaments', getTournaments)
   .get('/summary', getSummary)
+  .get('/widest', getWidestGames)
   .get('/:id', getGame);

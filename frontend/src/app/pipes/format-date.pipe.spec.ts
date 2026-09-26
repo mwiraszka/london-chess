@@ -1,12 +1,23 @@
 import moment from 'moment-timezone';
 
+import { TestBed } from '@angular/core/testing';
+
 import { FormatDatePipe } from './format-date.pipe';
 
 describe('FormatDatePipe', () => {
-  const pipe = new FormatDatePipe();
-
-  const currentDate = moment();
+  const now = '2026-03-14T15:09:26';
+  const currentDate = moment(now);
   const currentDateLong = currentDate.format('dddd, MMMM Do YYYY [at] h:mm A');
+
+  let pipe: FormatDatePipe;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(now));
+
+    TestBed.configureTestingModule({ providers: [FormatDatePipe] });
+    pipe = TestBed.inject(FormatDatePipe);
+  });
 
   it('transforms undefined to the current date in "long" format', () => {
     expect(pipe.transform(undefined)).toBe(currentDateLong);

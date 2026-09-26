@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { DurationPipe } from './duration.pipe';
 
 describe('DurationPipe', () => {
-  const pipe = new DurationPipe();
+  let pipe: DurationPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [DurationPipe] });
+    pipe = TestBed.inject(DurationPipe);
+  });
 
   it('transforms non-numeric values correctly', () => {
     expect(pipe.transform(undefined)).toBe('00:00');

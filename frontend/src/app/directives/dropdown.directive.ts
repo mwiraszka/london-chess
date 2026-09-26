@@ -1,5 +1,3 @@
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-
 import {
   ConnectedPosition,
   Overlay,
@@ -12,20 +10,24 @@ import {
   ComponentRef,
   Directive,
   ElementRef,
-  EventEmitter,
-  HostListener,
-  Output,
   Renderer2,
   ViewContainerRef,
+  inject,
+  output,
 } from '@angular/core';
 
 import { UserSettingsMenuComponent } from '@app/components/user-settings-menu/user-settings-menu.component';
 
-@UntilDestroy()
 @Directive({
   selector: '[dropdown]',
+  host: { '(click)': 'onClick()' },
 })
 export class DropdownDirective {
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly overlay = inject(Overlay);
+  private readonly renderer = inject(Renderer2);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+
   // Hardcoded for UserSettingsMenuComponent since it's the only component currently using
   // this directive
   private componentRef: ComponentRef<UserSettingsMenuComponent> | null = null;
@@ -34,20 +36,12 @@ export class DropdownDirective {
   private escapeKeyListener?: () => void;
   private overlayRef: OverlayRef | null = null;
 
-  @Output() public readonly isOpen = new EventEmitter<boolean>();
-
-  constructor(
-    private readonly elementRef: ElementRef<HTMLElement>,
-    private readonly overlay: Overlay,
-    private readonly renderer: Renderer2,
-    private readonly viewContainerRef: ViewContainerRef,
-  ) {}
+  public readonly isOpen = output<boolean>();
 
   public ngOnDestroy(): void {
     this.overlayRef?.dispose();
   }
 
-  @HostListener('click')
   public onClick(): void {
     if (this.overlayRef?.hasAttached()) {
       this.detach();
@@ -70,9 +64,7 @@ export class DropdownDirective {
 
     this.componentRef = this.overlayRef.attach(componentPortal);
 
-    this.componentRef.instance.close
-      .pipe(untilDestroyed(this))
-      .subscribe(() => this.detach());
+    this.componentRef.instance.close.subscribe(() => this.detach());
 
     setTimeout(() => {
       this.initEventListeners();

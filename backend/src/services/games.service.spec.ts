@@ -65,14 +65,13 @@ describe('buildPlayerNameSortPipeline', () => {
     buildPlayerNameSortPipeline({ year: 1994 }, 'whitePlayerId', 1, skip, limit);
 
   it('should filter the games before joining anything', () => {
-    expect(Object.keys(pipeline()[0])).toEqual(['$match']);
     expect(pipeline()[0]).toEqual({ $match: { year: 1994 } });
   });
 
   it('should join the player and the member whose name stands in for theirs', () => {
-    const lookups = pipeline()
-      .filter(stage => '$lookup' in stage)
-      .map(stage => (stage as { $lookup: { from: string } }).$lookup.from);
+    const lookups = pipeline().flatMap(stage =>
+      '$lookup' in stage ? [stage.$lookup.from] : [],
+    );
 
     expect(lookups).toEqual(['players', 'members']);
   });

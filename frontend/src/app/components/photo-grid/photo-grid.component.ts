@@ -8,10 +8,9 @@ import { UpperCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  Input,
-  OnChanges,
-  SimpleChanges,
+  computed,
   inject,
+  input,
 } from '@angular/core';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
@@ -46,14 +45,15 @@ import { customSort } from '@app/utils';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PhotoGridComponent implements OnChanges {
-  @Input({ required: true }) public isAdmin!: boolean;
-  @Input({ required: true }) public photoImages!: Image[];
+export class PhotoGridComponent {
+  private readonly dialogService = inject(DialogService);
+  private readonly storeRequests = inject(StoreRequestService);
 
-  @Input() public isLoading?: boolean;
-  @Input() public maxAlbums?: number;
+  public readonly isAdmin = input.required<boolean>();
+  public readonly photoImages = input.required<Image[]>();
 
-  public visibleAlbumCovers: Image[] = [];
+  public readonly isLoading = input<boolean>();
+  public readonly maxAlbums = input<number>();
 
   private readonly defaultSkeletonCovers: Image[] = Array.from({ length: 20 }, () => ({
     ...({} as Image),
@@ -80,29 +80,10 @@ export class PhotoGridComponent implements OnChanges {
     icon: PlusCircleIconComponent,
   };
 
-  private readonly storeRequests = inject(StoreRequestService);
+  public readonly showSkeleton = computed(() => !!this.isLoading());
 
-  constructor(private readonly dialogService: DialogService) {}
-
-  public get showSkeleton(): boolean {
-    return !!this.isLoading;
-  }
-
-  public get displayCovers(): Image[] {
-    if (this.showSkeleton) {
-      return this.defaultSkeletonCovers;
-    }
-    return this.visibleAlbumCovers;
-  }
-
-  public ngOnChanges(changes: SimpleChanges<PhotoGridComponent>): void {
-    if (changes.photoImages || changes.maxAlbums) {
-      this.visibleAlbumCovers = this.buildVisibleAlbumCovers();
-    }
-  }
-
-  private buildVisibleAlbumCovers(): Image[] {
-    const covers = this.photoImages
+  public readonly visibleAlbumCovers = computed<Image[]>(() => {
+    const covers = this.photoImages()
       .filter(image => image.albumCover)
       .map(image => ({
         ...image,
@@ -110,9 +91,14 @@ export class PhotoGridComponent implements OnChanges {
         mainHeight: image.mainHeight || 300,
         caption: image.caption || 'Loading...',
       }));
+    const maxAlbums = this.maxAlbums();
 
-    return this.maxAlbums != null ? covers.slice(0, this.maxAlbums) : covers;
-  }
+    return maxAlbums != null ? covers.slice(0, maxAlbums) : covers;
+  });
+
+  public readonly displayCovers = computed<Image[]>(() =>
+    this.showSkeleton() ? this.defaultSkeletonCovers : this.visibleAlbumCovers(),
+  );
 
   public async onClickAlbumCover(album: string): Promise<void> {
     await this.dialogService.open<ImageViewerComponent, null>({
@@ -120,10 +106,10 @@ export class PhotoGridComponent implements OnChanges {
       isModal: true,
       inputs: {
         album,
-        images: this.photoImages
+        images: this.photoImages()
           .filter(image => image.album === album)
           .sort((a, b) => customSort(a, b, 'albumOrdinality', false, 'caption', false)),
-        isAdmin: this.isAdmin,
+        isAdmin: this.isAdmin(),
       },
     });
   }
@@ -169,7 +155,7 @@ export class PhotoGridComponent implements OnChanges {
   }
 
   public getAlbumPhotoCountText(album: string): string {
-    const photoCount = this.photoImages.filter(image => image.album === album).length;
+    const photoCount = this.photoImages().filter(image => image.album === album).length;
     return `${photoCount} photo${photoCount === 1 ? '' : 's'}`;
   }
 }

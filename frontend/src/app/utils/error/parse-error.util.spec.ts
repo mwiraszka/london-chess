@@ -42,6 +42,31 @@ describe('parseError', () => {
         message: 'Http failure response for (unknown url): 404 undefined',
       });
     });
+
+    it('when neither message is a string', () => {
+      const response = Object.assign(new HttpErrorResponse({ status: 500, error: {} }), {
+        message: undefined,
+      });
+
+      expect(parseError(response)).toStrictEqual({
+        name: 'LCCError',
+        status: 500,
+        message: 'Unknown HTTP error.',
+      });
+    });
+
+    it('omits the status when the request never reached the server', () => {
+      const response = new HttpErrorResponse({
+        status: 0,
+        error: { message: 'offline' },
+      });
+
+      expect(parseError(response)).toStrictEqual({
+        name: 'LCCError',
+        status: undefined,
+        message: 'offline',
+      });
+    });
   });
 
   describe('non-HttpErrorResponse objects', () => {

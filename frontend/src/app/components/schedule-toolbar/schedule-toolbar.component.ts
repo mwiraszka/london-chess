@@ -10,10 +10,9 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  EventEmitter,
-  Input,
-  Output,
   inject,
+  input,
+  output,
 } from '@angular/core';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
@@ -38,14 +37,14 @@ import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
     <ea-switch
       class="schedule-toolbar__view"
       label="Calendar view"
-      [checked]="scheduleView === 'calendar'"
+      [checked]="scheduleView() === 'calendar'"
       (changed)="toggleScheduleView.emit()" />
 
     <ea-button
       class="schedule-toolbar__export"
       variant="ghost"
       size="md"
-      [disabled]="!filteredEvents.length"
+      [disabled]="!filteredEvents().length"
       [icon]="exportIcon"
       (clicked)="onExportToIcal()">
       Export to iCalendar
@@ -56,21 +55,19 @@ import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScheduleToolbarComponent {
-  @Input({ required: true }) public filteredEvents!: Event[];
-  @Input({ required: true }) public scheduleView!: 'list' | 'calendar';
-  @Input({ required: true }) public totalCount!: number;
+  readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly dialogService = inject(DialogService);
 
-  @Output() public readonly toggleScheduleView = new EventEmitter<void>();
+  public readonly filteredEvents = input.required<Event[]>();
+  public readonly scheduleView = input.required<'list' | 'calendar'>();
+  public readonly totalCount = input.required<number>();
+
+  public readonly toggleScheduleView = output<void>();
 
   protected readonly todayIcon = CalendarIconComponent;
   protected readonly exportIcon = CalendarCheckIconComponent;
 
   private readonly exportEventsToIcal = inject(EXPORT_EVENTS_TO_ICAL);
-
-  constructor(
-    public readonly changeDetectorRef: ChangeDetectorRef,
-    private readonly dialogService: DialogService,
-  ) {}
 
   public get todayScrollPoint(): Element | null {
     return document.querySelector('.schedule-view.active .today-scroll-point');
@@ -84,11 +81,13 @@ export class ScheduleToolbarComponent {
   }
 
   public async onExportToIcal(): Promise<void> {
+    const filteredEvents = this.filteredEvents();
+    const totalCount = this.totalCount();
     const body1 =
-      this.filteredEvents.length === this.totalCount
-        ? `All ${this.totalCount}`
-        : `The ${this.filteredEvents.length} currently visible`;
-    const body2 = `${this.filteredEvents.length === 1 ? 'event' : 'events'}`;
+      filteredEvents.length === totalCount
+        ? `All ${totalCount}`
+        : `The ${filteredEvents.length} currently visible`;
+    const body2 = `${this.filteredEvents().length === 1 ? 'event' : 'events'}`;
     const body3 =
       'will be exported to an iCalendar file, which can then be imported into Google Calendar, Apple Calendar or Microsoft Outlook.';
 
@@ -115,6 +114,6 @@ export class ScheduleToolbarComponent {
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `london_chess_club_events_${timestamp}.ics`;
 
-    this.exportEventsToIcal(this.filteredEvents, filename);
+    this.exportEventsToIcal(this.filteredEvents(), filename);
   }
 }

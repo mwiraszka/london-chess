@@ -18,11 +18,10 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
   OnInit,
-  Output,
   inject,
+  input,
+  output,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
@@ -76,9 +75,12 @@ import { pageRowCount } from '@app/utils';
   hostDirectives: [CdkScrollable],
 })
 export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
-  @Input() public selectable: boolean = true;
+  private readonly dialogService = inject(DialogService);
+  private readonly store = inject(Store);
 
-  @Output() public dialogResult = new EventEmitter<Id | 'close'>();
+  public readonly selectable = input<boolean>(true);
+
+  public readonly dialogResult = output<Id | 'close'>();
 
   public viewModel$?: Observable<{
     images: Image[];
@@ -102,11 +104,6 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly pageSizes = PAGE_SIZES;
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.store.dispatch(ImagesActions.fetchFilteredThumbnailsRequested());

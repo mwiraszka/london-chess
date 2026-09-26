@@ -23,23 +23,20 @@ describe('ToggleSwitchComponent', () => {
     fixture = TestBed.createComponent(ToggleSwitchComponent);
     component = fixture.componentInstance;
 
-    component.iconTooltipWhenOff = 'Mock tooltip';
-    component.iconWhenOn = EyeIconComponent;
-    component.iconWhenOff = EyeOffIconComponent;
-    component.tooltipWhenOff = 'Tooltip when off';
-    component.tooltipWhenOn = 'Tooltip when on';
+    fixture.componentRef.setInput('switchedOn', false);
+    fixture.componentRef.setInput('iconTooltipWhenOff', 'Mock tooltip');
+    fixture.componentRef.setInput('iconWhenOn', EyeIconComponent);
+    fixture.componentRef.setInput('iconWhenOff', EyeOffIconComponent);
+    fixture.componentRef.setInput('tooltipWhenOff', 'Tooltip when off');
+    fixture.componentRef.setInput('tooltipWhenOn', 'Tooltip when on');
     fixture.detectChanges();
 
     // Tooltip directive spies need to be set after first change detection cycle
     emitSpy = vi.spyOn(component.toggle, 'emit');
     // @ts-expect-error Private class member
-    tooltipAttachSpy = vi.spyOn(component.tooltipDirective, 'attach');
+    tooltipAttachSpy = vi.spyOn(component.tooltipDirective(), 'attach');
     // @ts-expect-error Private class member
-    tooltipDetachSpy = vi.spyOn(component.tooltipDirective, 'detach');
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    tooltipDetachSpy = vi.spyOn(component.tooltipDirective(), 'detach');
   });
 
   describe('initialization', () => {
@@ -92,7 +89,7 @@ describe('ToggleSwitchComponent', () => {
         const tooltipDirective = query(fixture.debugElement, '.toggle-icon').injector.get(
           TooltipDirective,
         );
-        expect(tooltipDirective.tooltip).toBe('Mock tooltip');
+        expect(tooltipDirective.tooltip()).toBe('Mock tooltip');
       });
 
       it('should not apply tooltip to icon if iconTooltipWhenOff is not provided', () => {
@@ -101,7 +98,7 @@ describe('ToggleSwitchComponent', () => {
         const iconEl = query(fixture.debugElement, '.toggle-icon');
         if (iconEl) {
           const tooltipDirective = iconEl.injector.get(TooltipDirective);
-          expect(tooltipDirective.tooltip).toBeFalsy();
+          expect(tooltipDirective.tooltip()).toBeFalsy();
         }
       });
 

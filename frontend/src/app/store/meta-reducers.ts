@@ -23,6 +23,10 @@ import {
   initialState as membersInitialState,
 } from './members/members.reducer';
 import { NavState } from './nav/nav.reducer';
+import {
+  TournamentsState,
+  initialState as tournamentsInitialState,
+} from './tournaments/tournaments.reducer';
 
 export interface MetaState {
   appState?: AppState;
@@ -34,6 +38,7 @@ export interface MetaState {
   membersState?: MembersState;
   navState?: NavState;
   routerState?: RouterState;
+  tournamentsState?: TournamentsState;
 }
 
 const hydratedStates = [
@@ -44,6 +49,7 @@ const hydratedStates = [
   'imagesState',
   'membersState',
   'navState',
+  'tournamentsState',
 ] as Array<keyof Exclude<MetaState, RouterState>>;
 
 // State saved by an app version older than these no longer fits its reducer
@@ -66,6 +72,8 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
+  // Only the list of tournaments is kept, the crosstables being fetched as they are opened
+  tournamentsState: omit(tournamentsInitialState, ['summaries', 'lastSummariesFetch']),
 };
 
 function isOlderThan(version: string, minimum: number[]): boolean {
@@ -78,15 +86,40 @@ function isOlderThan(version: string, minimum: number[]): boolean {
   return false;
 }
 
+// Versions before 6.3.0 load any `<state>_v*` key they find, whatever shape it was saved
+// in, so keys are namespaced to keep the state of later versions out of their reach
+const KEY_PREFIX = 'lcc.';
+
+export function stateStorageKey(stateName: string, version = currentVersion): string {
+  return `${KEY_PREFIX}${stateName}.v${version}`;
+}
+
+function parseStateStorageKey(
+  key: string,
+): { stateName: string; version: string } | null {
+  const match = /^lcc\.([^.]+)\.v(.+)$/.exec(key) ?? /^([^_]+)_v(.+)$/.exec(key);
+  return match && (hydratedStates as string[]).includes(match[1])
+    ? { stateName: match[1], version: match[2] }
+    : null;
+}
+
+function currentVersionKeys(): string[] {
+  return Object.keys(localStorage).filter(
+    key => key.startsWith(KEY_PREFIX) && key.endsWith(`.v${currentVersion}`),
+  );
+}
+
 /**
  * Updates hydrated state keys to new app version in local storage
  */
 export function updateStateVersionsInLocalStorageMetaReducer(
   reducer: ActionReducer<MetaState>,
 ): ActionReducer<MetaState> {
-  const keysToUpdate = Object.keys(localStorage).filter(key => {
-    const [stateName, version] = key.split('_v');
-    return (hydratedStates as string[]).includes(stateName) && version !== currentVersion;
+  const keysToUpdate = Object.keys(localStorage).flatMap(key => {
+    const parsed = parseStateStorageKey(key);
+    return parsed && (parsed.version !== currentVersion || !key.startsWith(KEY_PREFIX))
+      ? [{ key, ...parsed }]
+      : [];
   });
 
   let migrated = false;
@@ -96,24 +129,21 @@ export function updateStateVersionsInLocalStorageMetaReducer(
       migrated = true;
       console.info(`[LCC] Welcome to version ${currentVersion}`);
 
-      const imagesStateRemoved = keysToUpdate.some(key =>
-        key.startsWith('imagesState_v'),
+      const imagesStateRemoved = keysToUpdate.some(
+        ({ stateName }) => stateName === 'imagesState',
       );
 
-      keysToUpdate.forEach(key => {
-        const stateName = key.split('_v')[0];
-        const version = key.split('_v')[1];
+      keysToUpdate.forEach(({ key, stateName, version }) => {
         const stateValue = localStorage.getItem(key) || '';
 
         // Skip migrating state from v5.12.x or older to force a reset of stale data
-        const [major, minor] = (version || '').split('.').map(Number);
+        const [major, minor] = version.split('.').map(Number);
         const isStaleVersion = major < 5 || (major === 5 && minor <= 12);
         const firstCompatibleVersion = FIRST_COMPATIBLE_VERSIONS[stateName];
         // A cached older build may load after a newer one has saved its state
         const isIncompatible =
-          (!!firstCompatibleVersion &&
-            isOlderThan(version || '', firstCompatibleVersion)) ||
-          isOlderThan(currentVersion, (version || '').split('.').map(Number));
+          (!!firstCompatibleVersion && isOlderThan(version, firstCompatibleVersion)) ||
+          isOlderThan(currentVersion, version.split('.').map(Number));
 
         // Remove the old key first to free up space before writing the new one
         localStorage.removeItem(key);
@@ -121,7 +151,7 @@ export function updateStateVersionsInLocalStorageMetaReducer(
         // Keep state from the previous version unless it is imagesState, stale or incompatible
         if (stateName !== 'imagesState' && !isStaleVersion && !isIncompatible) {
           try {
-            localStorage.setItem(`${stateName}_v${currentVersion}`, stateValue);
+            localStorage.setItem(stateStorageKey(stateName), stateValue);
           } catch {
             console.warn(
               `[LCC] Could not migrate ${stateName} to new version (localStorage quota exceeded)`,
@@ -171,31 +201,19 @@ export function actionLogMetaReducer(
  * Custom storage mechanism that adds versioning to keys
  */
 export const versionedStorage = {
-  getItem: (key: string) => {
-    return localStorage.getItem(`${key}_v${currentVersion}`);
-  },
+  getItem: (key: string) => localStorage.getItem(stateStorageKey(key)),
   setItem: (key: string, value: string) => {
     try {
-      localStorage.setItem(`${key}_v${currentVersion}`, value);
+      localStorage.setItem(stateStorageKey(key), value);
     } catch {
       console.warn(`[LCC] Could not persist ${key} to localStorage (quota exceeded)`);
     }
   },
-  removeItem: (key: string) => {
-    localStorage.removeItem(`${key}_v${currentVersion}`);
-  },
-  clear: () => {
-    Object.keys(localStorage)
-      .filter(k => k.endsWith(`_v${currentVersion}`))
-      .forEach(k => localStorage.removeItem(k));
-  },
-  key: (index: number) => {
-    const keys = Object.keys(localStorage).filter(k => k.endsWith(`_v${currentVersion}`));
-    return keys[index] || null;
-  },
+  removeItem: (key: string) => localStorage.removeItem(stateStorageKey(key)),
+  clear: () => currentVersionKeys().forEach(key => localStorage.removeItem(key)),
+  key: (index: number) => currentVersionKeys()[index] || null,
   get length() {
-    return Object.keys(localStorage).filter(k => k.endsWith(`_v${currentVersion}`))
-      .length;
+    return currentVersionKeys().length;
   },
 };
 

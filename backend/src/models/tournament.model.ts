@@ -133,6 +133,7 @@ export type MemberTournamentResult = Pick<
   >;
   section: string;
   roundCount: number;
+  isDoubleRound: boolean;
   playerCount: number;
 };
 

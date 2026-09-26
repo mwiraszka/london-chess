@@ -13,11 +13,8 @@ describe('SafeModeNoticeComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(SafeModeNoticeComponent);
+    fixture.componentRef.setInput('entity', 'User');
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
   });
 
   describe('template rendering', () => {

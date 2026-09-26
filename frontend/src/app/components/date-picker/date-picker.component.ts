@@ -5,7 +5,8 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  HostListener,
+  inject,
+  signal,
 } from '@angular/core';
 import {
   ControlValueAccessor,
@@ -28,8 +29,11 @@ import { IsoDate } from '@app/models';
   ],
   imports: [ChevronLeftIconComponent, ChevronRightIconComponent, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(window:resize)': 'onResize()' },
 })
 export class DatePickerComponent implements ControlValueAccessor {
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+
   // Always render 6 weeks in calendar (the most that will ever be needed for any month)
   // to prevent layout shifts when switching between months
   public readonly WEEKS_IN_CALENDAR = 6;
@@ -38,13 +42,12 @@ export class DatePickerComponent implements ControlValueAccessor {
   public calendarDays: { date: Moment; disabled: boolean; selected: boolean }[][] = [];
   // Used to keep track of the month & year currently in calendar
   public currentMonth!: Moment;
-  public screenWidth = window.innerWidth;
+  public readonly screenWidth = signal(window.innerWidth);
   public selectedDate!: Moment;
 
-  constructor(private readonly changeDetectorRef: ChangeDetectorRef) {}
-
-  @HostListener('window:resize')
-  private onResize = () => (this.screenWidth = window.innerWidth);
+  protected onResize(): void {
+    this.screenWidth.set(window.innerWidth);
+  }
 
   public writeValue(date: IsoDate): void {
     if (!date) {

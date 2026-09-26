@@ -186,6 +186,7 @@ export function toMemberTournamentResults(
             },
             section: section.name,
             roundCount: section.roundCount,
+            isDoubleRound: section.isDoubleRound,
             playerCount: section.entries.length,
             rank: entry.rank,
             rating: entry.rating,

@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { EVENTS_PAGE_SIZES, WIDEST_EVENT } from '@app/constants/events-table';
+import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
 import { DialogService, StoreRequestService } from '@app/services';
@@ -125,13 +125,16 @@ describe('EventsTableComponent', () => {
       expect(queryAll(bodyRows()[2], '.events__date')).toHaveLength(1);
     });
 
-    it('should size the columns by the widest event', () => {
+    it('should size the columns by the widest events it is given', () => {
+      fixture.componentRef.setInput('widestEvents', [MOCK_EVENTS[2]]);
+      fixture.detectChanges();
+
       const sizingRows: EventRow[] = query(
         fixture.debugElement,
         'ea-data-table',
       ).componentInstance.sizingRows();
 
-      expect(sizingRows[0].events).toEqual([WIDEST_EVENT]);
+      expect(sizingRows.flatMap(row => row.events)).toEqual([MOCK_EVENTS[2]]);
     });
   });
 

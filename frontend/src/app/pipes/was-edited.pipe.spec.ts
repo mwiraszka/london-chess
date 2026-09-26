@@ -1,11 +1,18 @@
 import moment from 'moment-timezone';
 
+import { TestBed } from '@angular/core/testing';
+
 import { ModificationInfo } from '@app/models';
 
 import { WasEditedPipe } from './was-edited.pipe';
 
 describe('WasEditedPipe', () => {
-  const pipe = new WasEditedPipe();
+  let pipe: WasEditedPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [WasEditedPipe] });
+    pipe = TestBed.inject(WasEditedPipe);
+  });
 
   it('handles `null` modification info correctly', () => {
     expect(pipe.transform(null)).toBe(null);

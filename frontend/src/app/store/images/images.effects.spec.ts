@@ -2,16 +2,18 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
-import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
+import { Observable, ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 import { filter, take, toArray } from 'rxjs/operators';
 
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_IMAGE_FORM_DATA } from '@app/constants';
+import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import {
   ApiResponse,
+  Article,
   BaseImage,
   Id,
   Image,
@@ -20,7 +22,10 @@ import {
   User,
 } from '@app/models';
 import { ImageFileService, ImagesApiService, UserService } from '@app/services';
+import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
+import { initialState as articlesInitialState } from '@app/store/articles/articles.reducer';
 import { AuthSelectors } from '@app/store/auth';
+import { NavSelectors } from '@app/store/nav';
 import {
   BUILD_IMAGES_FORM_DATA,
   DATA_URL_TO_FILE,
@@ -161,6 +166,7 @@ describe('ImagesEffects', () => {
 
   afterEach(() => {
     store.resetSelectors();
+    vi.useRealTimers();
   });
 
   describe('fetchAllImagesMetadata$', () => {
@@ -1166,5 +1172,569 @@ describe('ImagesEffects', () => {
           done();
         });
       }));
+  });
+
+  function imagesStateWith(images: Image[], lastMetadataFetch: string | null = null) {
+    return {
+      ...mockImagesState,
+      ids: images.map(image => image.id),
+      entities: Object.fromEntries(
+        images.map(image => [
+          image.id,
+          { image, formData: { ...INITIAL_IMAGE_FORM_DATA, id: image.id } },
+        ]),
+      ),
+      lastMetadataFetch,
+    };
+  }
+
+  function collect(effect$: Observable<Action>): Action[] {
+    const results: Action[] = [];
+    effect$.subscribe(action => results.push(action));
+    return results;
+  }
+
+  describe('fetchAlbumThumbnailImages$', () => {
+    const album = 'Club Night';
+    const albumImages = [
+      { ...MOCK_IMAGES[0], album },
+      { ...MOCK_IMAGES[1], album },
+    ];
+    const albumIds = albumImages.map(image => image.id);
+
+    beforeEach(() => {
+      store.setState({
+        imagesState: imagesStateWith([...albumImages, MOCK_IMAGES[2]], '2026-01-01'),
+      });
+    });
+
+    it('should fetch the thumbnails of every image in the album', async () => {
+      imagesApiService.getBatchThumbnailImages.mockReturnValue(of({ data: albumImages }));
+
+      actions$.next(ImagesActions.fetchAlbumThumbnailsRequested({ album }));
+      const action = await firstValueFrom(effects.fetchAlbumThumbnailImages$);
+
+      expect(imagesApiService.getBatchThumbnailImages).toHaveBeenCalledWith(albumIds);
+      expect(action).toEqual(
+        ImagesActions.fetchBatchThumbnailsSucceeded({
+          images: albumImages,
+          context: 'photos-in-album',
+        }),
+      );
+    });
+
+    it('should load the metadata first when it has never been fetched', async () => {
+      store.setState({ imagesState: imagesStateWith(albumImages, null) });
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+      imagesApiService.getBatchThumbnailImages.mockReturnValue(of({ data: albumImages }));
+      actions$.next(ImagesActions.fetchAlbumThumbnailsRequested({ album }));
+      const action = firstValueFrom(effects.fetchAlbumThumbnailImages$);
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.fetchAllImagesMetadataRequested(),
+      );
+      expect(imagesApiService.getBatchThumbnailImages).not.toHaveBeenCalled();
+
+      actions$.next(ImagesActions.fetchAllImagesMetadataFailed({ error: mockError }));
+
+      await expect(action).resolves.toEqual(
+        ImagesActions.fetchBatchThumbnailsSucceeded({
+          images: albumImages,
+          context: 'photos-in-album',
+        }),
+      );
+    });
+
+    it('should report a failed thumbnail fetch', async () => {
+      imagesApiService.getBatchThumbnailImages.mockReturnValue(
+        throwError(() => mockError),
+      );
+
+      actions$.next(ImagesActions.fetchAlbumThumbnailsRequested({ album }));
+      const action = await firstValueFrom(effects.fetchAlbumThumbnailImages$);
+
+      expect(action).toEqual(
+        ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+      );
+    });
+
+    it('should not fetch anything for an empty album', () => {
+      actions$.next(ImagesActions.fetchAlbumThumbnailsRequested({ album: 'Empty' }));
+      const results = collect(effects.fetchAlbumThumbnailImages$);
+
+      expect(results).toEqual([]);
+      expect(imagesApiService.getBatchThumbnailImages).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('fetchArticleBannerThumbnails$', () => {
+    const bannerlessImage: Image = { ...MOCK_IMAGES[0], thumbnailUrl: undefined };
+    const homeArticle: Article = {
+      ...MOCK_ARTICLES[0],
+      bannerImageId: bannerlessImage.id,
+    };
+
+    beforeEach(() => {
+      store.overrideSelector(ArticlesSelectors.selectHomePageArticles, [homeArticle]);
+      store.overrideSelector(ArticlesSelectors.selectFilteredArticles, []);
+      store.refreshState();
+    });
+
+    it('should request the banner thumbnails that are missing', async () => {
+      store.setState({ imagesState: imagesStateWith([bannerlessImage]) });
+
+      actions$.next(
+        ArticlesActions.fetchHomePageArticlesSucceeded({
+          articles: [homeArticle],
+          totalCount: 1,
+        }),
+      );
+      const action = await firstValueFrom(effects.fetchArticleBannerThumbnails$);
+
+      expect(action).toEqual(
+        ImagesActions.fetchBatchThumbnailsRequested({
+          imageIds: [bannerlessImage.id],
+          context: 'article-banner-images',
+        }),
+      );
+    });
+
+    it('should not request anything when every banner thumbnail is fresh', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      store.setState({
+        imagesState: imagesStateWith([
+          {
+            ...bannerlessImage,
+            thumbnailUrl: 'https://example.com/thumb.jpg',
+            urlExpirationDate: '2026-01-01T10:00:00Z',
+          },
+        ]),
+      });
+
+      actions$.next(
+        ArticlesActions.fetchFilteredArticlesSucceeded({
+          articles: [homeArticle],
+          filteredCount: 1,
+          totalCount: 1,
+        }),
+      );
+      const results = collect(effects.fetchArticleBannerThumbnails$);
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe('fetchArticleImages$', () => {
+    const bannerId = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+    const freshId = 'bbbbbbbbbbbbbbbbbbbbbbbb';
+    const expiringId = 'cccccccccccccccccccccccc';
+    const undatedId = 'dddddddddddddddddddddddd';
+    const missingId = 'eeeeeeeeeeeeeeeeeeeeeeee';
+    const article: Article = {
+      ...MOCK_ARTICLES[0],
+      bannerImageId: bannerId,
+      body: `{{{${freshId}}}} {{{${expiringId}}}} {{{${undatedId}}}} {{{${missingId}}}}`,
+    };
+    const otherArticle: Article = {
+      ...MOCK_ARTICLES[1],
+      bannerImageId: missingId,
+      body: '',
+    };
+    const image = (id: string, overrides: Partial<Image>): Image => ({
+      ...MOCK_IMAGES[1],
+      id,
+      mainUrl: 'https://example.com/main.jpg',
+      urlExpirationDate: '2026-01-01T12:00:00Z',
+      ...overrides,
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T06:00:00Z'));
+      store.setState({
+        articlesState: {
+          ...articlesInitialState,
+          ids: [article.id, otherArticle.id],
+          entities: Object.fromEntries(
+            [article, otherArticle].map(entry => [
+              entry.id,
+              {
+                article: entry,
+                formData: {
+                  title: entry.title,
+                  body: entry.body,
+                  bannerImageId: entry.bannerImageId,
+                },
+              },
+            ]),
+          ),
+        },
+        imagesState: imagesStateWith([
+          image(bannerId, { mainUrl: undefined }),
+          image(freshId, {}),
+          image(expiringId, { urlExpirationDate: '2026-01-01T07:00:00Z' }),
+          image(undatedId, { urlExpirationDate: undefined }),
+        ]),
+      });
+    });
+
+    const requested = (...imageIds: string[]) =>
+      imageIds.map(imageId =>
+        ImagesActions.fetchMainImageInBackgroundRequested({ imageId }),
+      );
+
+    it('should refresh the images of a fetched article that are missing or expiring', () => {
+      actions$.next(ArticlesActions.fetchArticleSucceeded({ article }));
+      const results = collect(effects.fetchArticleImages$);
+
+      expect(results).toEqual(requested(bannerId, expiringId, undatedId, missingId));
+    });
+
+    it('should only check the article whose form changed', () => {
+      actions$.next(
+        ArticlesActions.formDataChanged({ articleId: otherArticle.id, formData: {} }),
+      );
+      const results = collect(effects.fetchArticleImages$);
+
+      expect(results).toEqual(requested(missingId));
+    });
+
+    it('should check every stored article after a metadata refresh', () => {
+      actions$.next(ImagesActions.fetchAllImagesMetadataSucceeded({ images: [] }));
+      const results = collect(effects.fetchArticleImages$);
+
+      expect(results).toEqual(
+        requested(bannerId, expiringId, undatedId, missingId, missingId),
+      );
+    });
+  });
+
+  describe('refetchFilteredThumbnails$ periodic check', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    it.each(['/photo-gallery', '/album/club-night', '/image/abc'])(
+      'should refetch expired thumbnails while on %s',
+      path => {
+        store.overrideSelector(NavSelectors.selectCurrentPath, path);
+        mockIsExpired.mockReturnValue(true);
+
+        const results = collect(effects.refetchFilteredThumbnails$);
+        vi.advanceTimersByTime(0);
+
+        expect(results).toEqual([ImagesActions.fetchFilteredThumbnailsRequested()]);
+      },
+    );
+
+    it.each([
+      ['on a page without thumbnails', '/news', true],
+      ['without a current page', null, true],
+      ['while the thumbnails are fresh', '/photo-gallery', false],
+    ])('should not refetch %s', (_label, path, expired) => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, path);
+      mockIsExpired.mockReturnValue(expired);
+
+      const results = collect(effects.refetchFilteredThumbnails$);
+      vi.advanceTimersByTime(0);
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe('retryFailedArticleBannerImages$', () => {
+    const bannerlessImage: Image = { ...MOCK_IMAGES[0], thumbnailUrl: undefined };
+    const bannerArticle: Article = {
+      ...MOCK_ARTICLES[0],
+      bannerImageId: bannerlessImage.id,
+    };
+    const expectedAction = ImagesActions.fetchBatchThumbnailsRequested({
+      imageIds: [bannerlessImage.id],
+      context: 'article-banner-images',
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      store.setState({ imagesState: imagesStateWith([bannerlessImage]) });
+      store.overrideSelector(ArticlesSelectors.selectHomePageArticles, [bannerArticle]);
+      store.overrideSelector(ArticlesSelectors.selectFilteredArticles, [
+        { ...MOCK_ARTICLES[1], bannerImageId: '' },
+      ]);
+    });
+
+    it.each(['', '/', '/news'])(
+      'should retry missing banner thumbnails five minutes after starting on "%s"',
+      path => {
+        store.overrideSelector(NavSelectors.selectCurrentPath, path);
+        store.refreshState();
+        const results = collect(effects.retryFailedArticleBannerImages$);
+
+        vi.advanceTimersByTime(5 * 60 * 1000 - 1);
+
+        expect(results).toEqual([]);
+
+        vi.advanceTimersByTime(1);
+
+        expect(results).toEqual([expectedAction]);
+      },
+    );
+
+    it('should not retry on a page without article banners', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
+      store.refreshState();
+      const results = collect(effects.retryFailedArticleBannerImages$);
+
+      vi.advanceTimersByTime(15 * 60 * 1000);
+
+      expect(results).toEqual([]);
+    });
+
+    it('should not retry when no banner thumbnail is missing', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/');
+      store.overrideSelector(ArticlesSelectors.selectHomePageArticles, []);
+      store.refreshState();
+      const results = collect(effects.retryFailedArticleBannerImages$);
+
+      vi.advanceTimersByTime(5 * 60 * 1000);
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe('addImage$', () => {
+    const imageFile = new File(['image'], 'photo.jpg', { type: 'image/jpeg' });
+    const formData = {
+      ...INITIAL_IMAGE_FORM_DATA,
+      id: 'new-1',
+      filename: 'photo.jpg',
+      caption: 'A photo',
+      album: 'Club Night',
+      albumCover: false,
+    };
+    let mockImageFileService: Mocked<ImageFileService>;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      mockImageFileService = TestBed.inject(ImageFileService) as Mocked<ImageFileService>;
+      mockImageFileService.getImage.mockResolvedValue({
+        id: 'new-1',
+        filename: 'photo.jpg',
+        dataUrl: 'data:image/jpeg;base64,abc',
+      });
+      mockDataUrlToFile.mockReturnValue(imageFile);
+      store.overrideSelector(AuthSelectors.selectUser, mockUser);
+      store.overrideSelector(ImagesSelectors.selectNewImageFormData, formData);
+      store.overrideSelector(ImagesSelectors.selectAllExistingAlbums, ['Club Night']);
+      store.refreshState();
+    });
+
+    const sentMetadata = (): BaseImage => {
+      const sent = imagesApiService.addImages.mock.calls[0][0];
+      return JSON.parse(String(sent.get('imageMetadata')));
+    };
+
+    it('should upload the staged image with its form data', async () => {
+      imagesApiService.addImages.mockReturnValue(of({ data: [MOCK_IMAGES[0]] }));
+
+      actions$.next(ImagesActions.addImageRequested({ imageId: 'new-1' }));
+      const action = await firstValueFrom(effects.addImage$);
+
+      expect(action).toEqual(ImagesActions.addImageSucceeded({ image: MOCK_IMAGES[0] }));
+      expect(imagesApiService.addImages.mock.calls[0][0].get('files')).toBe(imageFile);
+      expect(sentMetadata()).toEqual({
+        id: 'new-1',
+        filename: 'photo.jpg',
+        caption: 'A photo',
+        album: 'Club Night',
+        albumCover: false,
+        albumOrdinality: formData.albumOrdinality,
+        modificationInfo: {
+          createdBy: 'Test User',
+          createdByNumber: null,
+          dateCreated: '2026-01-01T00:00:00.000Z',
+          lastEditedBy: 'Test User',
+          lastEditedByNumber: null,
+          dateLastEdited: '2026-01-01T00:00:00.000Z',
+        },
+      });
+    });
+
+    it('should make the first image of a new album its cover', async () => {
+      store.overrideSelector(ImagesSelectors.selectAllExistingAlbums, []);
+      store.refreshState();
+      imagesApiService.addImages.mockReturnValue(of({ data: [MOCK_IMAGES[0]] }));
+
+      actions$.next(ImagesActions.addImageRequested({ imageId: 'new-1' }));
+      await firstValueFrom(effects.addImage$);
+
+      expect(sentMetadata().albumCover).toBe(true);
+    });
+
+    it('should fail when the staged image cannot be read', async () => {
+      mockImageFileService.getImage.mockResolvedValue(mockError);
+      mockIsLccError.mockImplementation(value => value === mockError);
+
+      actions$.next(ImagesActions.addImageRequested({ imageId: 'new-1' }));
+      const action = await firstValueFrom(effects.addImage$);
+
+      expect(action).toEqual(ImagesActions.addImageFailed({ error: mockError }));
+      expect(imagesApiService.addImages).not.toHaveBeenCalled();
+    });
+
+    it('should fail when the staged image cannot be turned into a file', async () => {
+      mockDataUrlToFile.mockReturnValue(null);
+
+      actions$.next(ImagesActions.addImageRequested({ imageId: 'new-1' }));
+      const action = await firstValueFrom(effects.addImage$);
+
+      expect(action.type).toBe(ImagesActions.addImageFailed.type);
+      expect(imagesApiService.addImages).not.toHaveBeenCalled();
+    });
+
+    it('should report a failed upload', async () => {
+      imagesApiService.addImages.mockReturnValue(throwError(() => mockError));
+
+      actions$.next(ImagesActions.addImageRequested({ imageId: 'new-1' }));
+      const action = await firstValueFrom(effects.addImage$);
+
+      expect(action).toEqual(ImagesActions.addImageFailed({ error: mockError }));
+      expect(mockParseError).toHaveBeenCalledWith(mockError);
+    });
+  });
+
+  describe('addImages$ before uploading', () => {
+    let mockImageFileService: Mocked<ImageFileService>;
+
+    beforeEach(() => {
+      mockImageFileService = TestBed.inject(ImageFileService) as Mocked<ImageFileService>;
+      store.overrideSelector(AuthSelectors.selectUser, mockUser);
+      store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {});
+      store.refreshState();
+    });
+
+    it('should fail when the staged images cannot be read', async () => {
+      mockImageFileService.getAllImages.mockResolvedValue(mockError);
+      mockIsLccError.mockImplementation(value => value === mockError);
+
+      actions$.next(ImagesActions.addImagesRequested());
+      const action = await firstValueFrom(effects.addImages$);
+
+      expect(action).toEqual(ImagesActions.addImagesFailed({ error: mockError }));
+    });
+
+    it('should fail when a staged image has no form data', async () => {
+      mockImageFileService.getAllImages.mockResolvedValue([
+        { id: 'new-1', filename: 'orphan.jpg', dataUrl: 'data:image/jpeg;base64,abc' },
+      ]);
+
+      actions$.next(ImagesActions.addImagesRequested());
+      const action = await firstValueFrom(effects.addImages$);
+
+      expect(action.type).toBe(ImagesActions.addImagesFailed.type);
+      expect(imagesApiService.addImages).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updating images without valid form data', () => {
+    beforeEach(() => {
+      store.overrideSelector(AuthSelectors.selectUser, mockUser);
+      mockBuildImagesFormData.mockReturnValue(mockError);
+      mockIsLccError.mockImplementation(value => value === mockError);
+    });
+
+    it('should fail an image update without calling the API', async () => {
+      store.setState({ imagesState: imagesStateWith([MOCK_IMAGES[0]]) });
+      store.refreshState();
+
+      actions$.next(ImagesActions.updateImageRequested({ imageId: MOCK_IMAGES[0].id }));
+      const action = await firstValueFrom(effects.updateImage$);
+
+      expect(action).toEqual(
+        ImagesActions.updateImageFailed({
+          baseImage: expect.objectContaining({ id: MOCK_IMAGES[0].id }),
+          error: mockError,
+        }),
+      );
+      expect(imagesApiService.updateImages).not.toHaveBeenCalled();
+    });
+
+    it('should fail the automatic album cover switch without calling the API', async () => {
+      const deletedCover = { ...MOCK_IMAGES[0], album: 'Club Night', albumCover: true };
+      store.setState({
+        imagesState: imagesStateWith([{ ...MOCK_IMAGES[1], album: 'Club Night' }]),
+      });
+
+      actions$.next(ImagesActions.deleteImageSucceeded({ image: deletedCover }));
+      const action = await firstValueFrom(
+        effects.automaticallyUpdateAlbumCoverAfterImageDeletion$,
+      );
+
+      expect(action).toEqual(
+        ImagesActions.automaticAlbumCoverSwitchFailed({
+          album: 'Club Night',
+          error: mockError,
+        }),
+      );
+      expect(imagesApiService.updateImages).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateAlbum$ with only existing images', () => {
+    const album = 'Club Night';
+    const failure = ImagesActions.updateAlbumFailed({
+      album,
+      error: { name: 'LCCError', message: '1 image operation failed' },
+    });
+
+    beforeEach(() => {
+      const mockImageFileService = TestBed.inject(
+        ImageFileService,
+      ) as Mocked<ImageFileService>;
+      mockImageFileService.getAllImages.mockResolvedValue([]);
+      store.overrideSelector(AuthSelectors.selectUser, mockUser);
+      store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {});
+      store.setState({
+        imagesState: imagesStateWith([{ ...MOCK_IMAGES[0], album }]),
+      });
+      store.refreshState();
+    });
+
+    it('should fail when the album edits cannot be packaged', async () => {
+      mockBuildImagesFormData.mockReturnValue(mockError);
+      mockIsLccError.mockImplementation(value => value === mockError);
+
+      actions$.next(ImagesActions.updateAlbumRequested({ album }));
+      const action = await firstValueFrom(effects.updateAlbum$);
+
+      expect(action).toEqual(failure);
+      expect(imagesApiService.updateImages).not.toHaveBeenCalled();
+    });
+
+    it('should fail when the album edits are rejected', async () => {
+      imagesApiService.updateImages.mockReturnValue(throwError(() => mockError));
+
+      actions$.next(ImagesActions.updateAlbumRequested({ album }));
+      const action = await firstValueFrom(effects.updateAlbum$);
+
+      expect(action).toEqual(failure);
+    });
+  });
+
+  describe('clearIndexedDbImageFileData$', () => {
+    it.each([
+      ImagesActions.imageFormDataRestored({ imageId: null }),
+      ImagesActions.albumFormDataRestored({ album: null }),
+    ])('should clear the staged image files on $type', action => {
+      const mockImageFileService = TestBed.inject(
+        ImageFileService,
+      ) as Mocked<ImageFileService>;
+
+      actions$.next(action);
+      collect(effects.clearIndexedDbImageFileData$);
+
+      expect(mockImageFileService.clearAllImages).toHaveBeenCalledTimes(1);
+    });
   });
 });

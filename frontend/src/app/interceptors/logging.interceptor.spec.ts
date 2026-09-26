@@ -1,106 +1,50 @@
 import { of } from 'rxjs';
 
-import {
-  HttpEvent,
-  HttpHandler,
-  HttpInterceptor,
-  HttpRequest,
-} from '@angular/common/http';
+import { HttpEvent, HttpHandler, HttpRequest } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+
+import { environment } from '@env';
 
 import { LoggingInterceptor } from './logging.interceptor';
 
 describe('LoggingInterceptor', () => {
-  let interceptor: HttpInterceptor;
+  const production = environment.production;
 
-  let mockHandler: HttpHandler;
-
-  let handleSpy: MockInstance;
+  let interceptor: LoggingInterceptor;
+  let handler: HttpHandler;
+  let infoSpy: MockInstance;
 
   beforeEach(() => {
-    mockHandler = {
-      handle: vi.fn().mockReturnValue(of({})),
-    };
+    handler = { handle: vi.fn().mockReturnValue(of({ type: 0 })) };
 
-    TestBed.configureTestingModule({
-      providers: [LoggingInterceptor],
-    });
+    TestBed.configureTestingModule({ providers: [LoggingInterceptor] });
 
     interceptor = TestBed.inject(LoggingInterceptor);
-
-    handleSpy = vi.spyOn(mockHandler, 'handle');
+    infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    environment.production = production;
   });
 
-  it('should be created', () => {
-    expect(interceptor).toBeTruthy();
+  it('should log the request outside production and pass it through', () => {
+    const request = new HttpRequest('GET', '/api/test');
+    const events: HttpEvent<unknown>[] = [];
+
+    interceptor.intercept(request, handler).subscribe(event => events.push(event));
+
+    expect(infoSpy).toHaveBeenCalledWith('Request', '/api/test');
+    expect(handler.handle).toHaveBeenCalledWith(request);
+    expect(events).toEqual([{ type: 0 }]);
   });
 
-  describe('intercept', () => {
-    it('should pass request through handler', () => {
-      const mockRequest = new HttpRequest('GET', '/api/test');
+  it('should not log the request in production', () => {
+    environment.production = true;
+    const request = new HttpRequest('GET', '/api/test');
 
-      interceptor.intercept(mockRequest, mockHandler);
+    interceptor.intercept(request, handler);
 
-      expect(handleSpy).toHaveBeenCalledWith(mockRequest);
-    });
-
-    it('should return handler response', () =>
-      withDone(done => {
-        const mockRequest = new HttpRequest('GET', '/api/test');
-        const mockResponse = { status: 200, data: 'test' };
-
-        handleSpy.mockReturnValue(of(mockResponse));
-
-        interceptor.intercept(mockRequest, mockHandler).subscribe({
-          next: (response: HttpEvent<unknown>) => {
-            expect(response).toEqual(mockResponse);
-            done();
-          },
-        });
-      }));
-
-    it('should handle POST requests', () => {
-      const mockRequest = new HttpRequest('POST', '/api/create', { data: 'test' });
-
-      interceptor.intercept(mockRequest, mockHandler);
-
-      expect(handleSpy).toHaveBeenCalledWith(mockRequest);
-    });
-
-    it('should handle PUT requests', () => {
-      const mockRequest = new HttpRequest('PUT', '/api/update/123', { data: 'updated' });
-
-      interceptor.intercept(mockRequest, mockHandler);
-
-      expect(handleSpy).toHaveBeenCalledWith(mockRequest);
-    });
-
-    it('should handle DELETE requests', () => {
-      const mockRequest = new HttpRequest('DELETE', '/api/delete/123');
-
-      interceptor.intercept(mockRequest, mockHandler);
-
-      expect(handleSpy).toHaveBeenCalledWith(mockRequest);
-    });
-
-    it('should handle requests with query parameters', () => {
-      const mockRequest = new HttpRequest('GET', '/api/test?param1=value1&param2=value2');
-
-      interceptor.intercept(mockRequest, mockHandler);
-
-      expect(handleSpy).toHaveBeenCalledWith(mockRequest);
-    });
-
-    it('should handle requests with different base URLs', () => {
-      const mockRequest = new HttpRequest('GET', 'https://external-api.com/data');
-
-      interceptor.intercept(mockRequest, mockHandler);
-
-      expect(handleSpy).toHaveBeenCalledWith(mockRequest);
-    });
+    expect(infoSpy).not.toHaveBeenCalled();
+    expect(handler.handle).toHaveBeenCalledWith(request);
   });
 });

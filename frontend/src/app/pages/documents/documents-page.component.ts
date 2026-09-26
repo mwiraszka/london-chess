@@ -12,7 +12,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DOCUMENT,
-  Inject,
   OnInit,
   TemplateRef,
   computed,
@@ -62,6 +61,11 @@ type CellTemplate = TemplateRef<{ $implicit: DocumentRow; value: unknown }>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentsPageComponent implements OnInit {
+  private readonly dialogService = inject(DialogService);
+  private readonly _document = inject<Document>(DOCUMENT);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly routingService = inject(RoutingService);
+
   protected readonly pageIcon = FileTextIconComponent;
 
   public readonly documents: ClubDocument[] = [
@@ -150,12 +154,7 @@ export class DocumentsPageComponent implements OnInit {
     },
   ]);
 
-  constructor(
-    private readonly dialogService: DialogService,
-    @Inject(DOCUMENT) private _document: Document,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly routingService: RoutingService,
-  ) {
+  constructor() {
     this.currentPath = this._document.location.pathname;
   }
 

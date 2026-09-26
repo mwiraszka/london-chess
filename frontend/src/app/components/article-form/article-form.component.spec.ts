@@ -1,34 +1,22 @@
 import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
+import { provideMarkdown } from 'ngx-markdown';
 
-import { Component, Input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageExplorerComponent } from '@app/components/image-explorer/image-explorer.component';
-import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
 import { ARTICLE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { Image } from '@app/models';
 import { DialogService, StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { lastOpenedDialog, query } from '@app/utils';
 
 import { ArticleFormComponent } from './article-form.component';
-
-@Component({
-  selector: 'lcc-markdown-renderer',
-  template: '',
-  standalone: true,
-})
-class MockMarkdownRendererComponent {
-  @Input() data?: string;
-  @Input() images: Image[] = [];
-  @Input() isWideView = false;
-}
 
 describe('ArticleFormComponent', () => {
   let fixture: ComponentFixture<ArticleFormComponent>;
@@ -39,8 +27,6 @@ describe('ArticleFormComponent', () => {
   let cancelSpy: MockInstance;
   let changeSpy: MockInstance;
   let dialogOpenSpy: MockInstance;
-  let initFormSpy: MockInstance;
-  let initFormValueChangeListenerSpy: MockInstance;
   let insertImageSpy: MockInstance;
   let requestFetchMainImageSpy: MockInstance;
   let storeRequestSpy: Mock;
@@ -48,6 +34,16 @@ describe('ArticleFormComponent', () => {
   let revertBannerImageSpy: MockInstance;
   let selectBannerImageSpy: MockInstance;
   let submitSpy: MockInstance;
+
+  const typeBody = (body: string): void => {
+    const textarea: HTMLTextAreaElement = query(
+      fixture.debugElement,
+      'textarea',
+    ).nativeElement;
+    textarea.value = body;
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -63,13 +59,10 @@ describe('ArticleFormComponent', () => {
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
         FormBuilder,
+        provideMarkdown(),
+        provideRouter([]),
       ],
-    })
-      .overrideComponent(ArticleFormComponent, {
-        remove: { imports: [MarkdownRendererComponent] },
-        add: { imports: [MockMarkdownRendererComponent] },
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ArticleFormComponent);
     component = fixture.componentInstance;
@@ -79,13 +72,6 @@ describe('ArticleFormComponent', () => {
     cancelSpy = vi.spyOn(component.cancel, 'emit');
     changeSpy = vi.spyOn(component.change, 'emit');
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    // @ts-expect-error Private class member
-    initFormSpy = vi.spyOn(component, 'initForm');
-    initFormValueChangeListenerSpy = vi.spyOn(
-      component,
-      // @ts-expect-error Private class member
-      'initFormValueChangeListener',
-    );
     insertImageSpy = vi.spyOn(component, 'onInsertImage');
     requestFetchMainImageSpy = vi.spyOn(component.requestFetchMainImage, 'emit');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
@@ -94,24 +80,23 @@ describe('ArticleFormComponent', () => {
     selectBannerImageSpy = vi.spyOn(component, 'onSelectBannerImage');
     submitSpy = vi.spyOn(component, 'onSubmit');
 
-    component.bannerImage = null;
-    component.bodyImages = [];
-    component.formData = pick(MOCK_ARTICLES[0], ARTICLE_FORM_DATA_PROPERTIES);
-    component.hasUnsavedChanges = false;
-    component.originalArticle = null;
+    fixture.componentRef.setInput('bannerImage', null);
+    fixture.componentRef.setInput('bodyImages', []);
+    fixture.componentRef.setInput(
+      'formData',
+      pick(MOCK_ARTICLES[0], ARTICLE_FORM_DATA_PROPERTIES),
+    );
+    fixture.componentRef.setInput('hasUnsavedChanges', false);
+    fixture.componentRef.setInput('originalArticle', null);
 
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('form initialization', () => {
     describe('handling form data', () => {
       it('should initialize with provided formData', () => {
         for (const p of ARTICLE_FORM_DATA_PROPERTIES) {
-          expect(component.form.controls[p].value).toBe(component.formData[p]);
+          expect(component.form.controls[p].value).toBe(component.formData()[p]);
         }
       });
     });
@@ -131,53 +116,25 @@ describe('ArticleFormComponent', () => {
         component.ngOnInit();
 
         expect(requestFetchMainImageSpy).toHaveBeenCalledWith(
-          component.formData.bannerImageId,
+          component.formData().bannerImageId,
         );
       });
     });
   });
 
   describe('form validation', () => {
-    describe('required validator', () => {
-      it('should mark empty field as invalid', () => {
-        component.form.patchValue({ title: '' });
-        fixture.detectChanges();
+    it('should require every field', () => {
+      component.form.setValue({ bannerImageId: '', title: '', body: '' });
 
-        expect(component.form.controls.title.hasError('required')).toBe(true);
-      });
-
-      it('should mark non-empty field as valid', () => {
-        component.form.patchValue({ bannerImageId: 'id-1234' });
-        fixture.detectChanges();
-
-        expect(component.form.controls.bannerImageId.hasError('required')).toBe(false);
-      });
+      expect(component.form.controls.bannerImageId.hasError('required')).toBe(true);
+      expect(component.form.controls.title.hasError('required')).toBe(true);
+      expect(component.form.controls.body.hasError('required')).toBe(true);
     });
 
-    describe('text validator', () => {
-      it('should mark field with whitespace-only text as valid', () => {
-        component.form.patchValue({
-          bannerImageId: ' ',
-          body: '  ',
-        });
-        fixture.detectChanges();
+    it('should reject text with control characters', () => {
+      component.form.patchValue({ title: 'Bell \u0007' });
 
-        expect(component.form.controls.bannerImageId.hasError('invalidText')).toBe(false);
-        expect(component.form.controls.body.hasError('invalidText')).toBe(false);
-      });
-
-      it('should mark field with emoji as valid', () => {
-        component.form.patchValue({
-          bannerImageId: '🔥',
-          title: 'abc',
-          body: '123',
-        });
-        fixture.detectChanges();
-
-        expect(component.form.controls.bannerImageId.hasError('invalidText')).toBe(false);
-        expect(component.form.controls.title.hasError('invalidText')).toBe(false);
-        expect(component.form.controls.body.hasError('invalidText')).toBe(false);
-      });
+      expect(component.form.controls.title.hasError('invalidText')).toBe(true);
     });
   });
 
@@ -219,19 +176,16 @@ describe('ArticleFormComponent', () => {
 
       expect(changeSpy).toHaveBeenCalledTimes(1);
       expect(restoreSpy).toHaveBeenCalledWith(MOCK_ARTICLES[4].id);
-      expect(initFormSpy).toHaveBeenCalledTimes(1);
-      expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
-
-      for (const key of ARTICLE_FORM_DATA_PROPERTIES) {
-        expect(component.form.controls[key].value).toBe(
-          // @ts-expect-error index signature
-          component.originalArticle[key],
-        );
-      }
+      expect(component.form.getRawValue()).toEqual(
+        pick(MOCK_ARTICLES[4], ARTICLE_FORM_DATA_PROPERTIES),
+      );
     });
 
     it('should not emit change or restore event or re-initialize form if dialog is cancelled', async () => {
       dialogOpenSpy.mockResolvedValue('cancel');
+      component.form.patchValue({ title: 'Edited title' });
+      vi.runAllTimers();
+      changeSpy.mockClear();
 
       await component.onRestore();
 
@@ -240,8 +194,7 @@ describe('ArticleFormComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
       expect(changeSpy).not.toHaveBeenCalled();
       expect(restoreSpy).not.toHaveBeenCalled();
-      expect(initFormSpy).not.toHaveBeenCalled();
-      expect(initFormValueChangeListenerSpy).not.toHaveBeenCalled();
+      expect(component.form.controls.title.value).toBe('Edited title');
     });
   });
 
@@ -472,35 +425,26 @@ describe('ArticleFormComponent', () => {
 
         expect(component.canInsertImage).toBe(true);
       });
-
-      it('should return true when body has fewer than MAX_ARTICLE_BODY_IMAGES', () => {
-        component.form.patchValue({ body: '{{{img1}}} {{{img2}}}' });
-
-        expect(component.canInsertImage).toBe(true);
-      });
-
-      it('should return false when body has MAX_ARTICLE_BODY_IMAGES or more', () => {
-        component.form.patchValue({
-          body: '{{{img1}}} {{{img2}}} {{{img3}}} {{{img4}}} {{{img5}}}',
-        });
-
-        expect(component.canInsertImage).toBe(false);
-      });
     });
 
     describe('onBodyTextareaInteraction', () => {
-      it('should capture cursor position on interaction', () => {
-        const textarea = document.createElement('textarea');
-        textarea.value = 'Some text content for testing cursor tracking';
-        textarea.selectionStart = 10;
-        textarea.selectionEnd = 35;
-        const event = { target: textarea } as unknown as Event;
+      it.each(['click', 'keyup', 'select'])(
+        'should insert an image where the cursor was left by a %s',
+        async eventName => {
+          dialogOpenSpy.mockResolvedValue('img-1');
+          component.form.patchValue({ body: 'Before After' });
+          fixture.detectChanges();
+          const textarea = query(fixture.debugElement, 'textarea');
+          textarea.nativeElement.setSelectionRange(3, 6);
 
-        component.onBodyTextareaInteraction(event);
+          textarea.triggerEventHandler(eventName, { target: textarea.nativeElement });
+          await component.onInsertImage();
 
-        // @ts-expect-error Private property - Should capture the selectionEnd position
-        expect(component.lastCursorPosition).toBe(35);
-      });
+          expect(component.form.controls.body.value).toBe(
+            'Before\n\n{{{img}}}(((500)))<<<Image caption goes here>>>\n\n After',
+          );
+        },
+      );
     });
 
     describe('onInsertImage', () => {
@@ -548,7 +492,7 @@ describe('ArticleFormComponent', () => {
       });
     });
 
-    describe('ngOnChanges', () => {
+    describe('body images', () => {
       it('should replace image URLs with IDs but leave existing IDs alone', () => {
         const imageId1 = '507f1f77bcf86cd799439011';
         const imageId2 = '507f191e810c19729de860ea';
@@ -573,16 +517,8 @@ describe('ArticleFormComponent', () => {
           },
         ];
 
-        component.bodyImages = mockImages;
-
-        component.ngOnChanges({
-          bodyImages: {
-            previousValue: [],
-            currentValue: mockImages,
-            firstChange: false,
-            isFirstChange: () => false,
-          },
-        });
+        fixture.componentRef.setInput('bodyImages', mockImages);
+        fixture.detectChanges();
 
         const body = component.form.controls.body.value;
         // URL should be expanded
@@ -595,6 +531,20 @@ describe('ArticleFormComponent', () => {
   });
 
   describe('template rendering', () => {
+    it('should preview the body as it is written', () => {
+      typeBody('## Preview');
+
+      expect(
+        query(fixture.debugElement, 'lcc-markdown-renderer').componentInstance.data(),
+      ).toBe('## Preview');
+    });
+
+    it('should not preview an empty body', () => {
+      typeBody('');
+
+      expect(query(fixture.debugElement, 'lcc-markdown-renderer')).toBeNull();
+    });
+
     describe('modification info', () => {
       it('should render if originalArticle is defined', () => {
         fixture.componentRef.setInput('originalArticle', MOCK_ARTICLES[0]);
@@ -670,10 +620,11 @@ describe('ArticleFormComponent', () => {
       });
 
       it('should be disabled when MAX_ARTICLE_BODY_IMAGES limit is reached', () => {
-        component.form.patchValue({
-          body: '{{{img1}}} {{{img2}}} {{{img3}}} {{{img4}}} {{{img5}}}',
-        });
+        typeBody('{{{img1}}} {{{img2}}} {{{img3}}} {{{img4}}} {{{img5}}}');
 
+        expect(
+          query(fixture.debugElement, '.insert-image-button').nativeElement.disabled,
+        ).toBe(true);
         expect(component.canInsertImage).toBe(false);
         expect(component.bodyImageCount).toBe(5);
       });
@@ -690,6 +641,21 @@ describe('ArticleFormComponent', () => {
     });
 
     describe('restore button', () => {
+      it('should restore a new article to its blank state when confirmed', async () => {
+        vi.useFakeTimers();
+        dialogOpenSpy.mockResolvedValue('confirm');
+        fixture.componentRef.setInput('hasUnsavedChanges', true);
+        fixture.detectChanges();
+
+        query(fixture.debugElement, '.restore-button').triggerEventHandler('click');
+        await vi.runAllTimersAsync();
+
+        expect(restoreSpy).toHaveBeenCalledWith(null);
+        expect(changeSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ articleId: null }),
+        );
+      });
+
       it('should be disabled if there are no unsaved changes', () => {
         fixture.componentRef.setInput('hasUnsavedChanges', false);
         fixture.detectChanges();

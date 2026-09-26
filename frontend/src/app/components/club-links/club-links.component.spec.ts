@@ -6,7 +6,6 @@ import { ClubLinksComponent } from './club-links.component';
 
 describe('ClubLinksComponent', () => {
   let fixture: ComponentFixture<ClubLinksComponent>;
-  let component: ClubLinksComponent;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -14,12 +13,7 @@ describe('ClubLinksComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ClubLinksComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('template rendering', () => {

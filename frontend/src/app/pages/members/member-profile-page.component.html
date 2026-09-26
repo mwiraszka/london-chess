@@ -72,26 +72,34 @@
 
             <div class="facts">
               <dl class="stats">
-                <div class="stat">
-                  <dt class="stat__label">Peak rating</dt>
-                  <dd class="stat__value">{{ member.peakRating }}</dd>
+                <div class="stats__pair">
+                  <div class="stat">
+                    <dt class="stat__label">Peak rating</dt>
+                    <dd class="stat__value">{{ member.peakRating }}</dd>
+                  </div>
+                  @if (member.city) {
+                    <div class="stat">
+                      <dt class="stat__label">City</dt>
+                      <dd class="stat__value">{{ member.city }}</dd>
+                    </div>
+                  }
                 </div>
-                @if (member.city) {
-                  <div class="stat">
-                    <dt class="stat__label">City</dt>
-                    <dd class="stat__value">{{ member.city }}</dd>
-                  </div>
-                }
-                @if (yearJoined(member); as year) {
-                  <div class="stat">
-                    <dt class="stat__label">Member since</dt>
-                    <dd class="stat__value">{{ year }}</dd>
-                  </div>
-                }
-                @if (member.showYearOfBirth && member.yearOfBirth) {
-                  <div class="stat">
-                    <dt class="stat__label">Year of birth</dt>
-                    <dd class="stat__value">{{ member.yearOfBirth }}</dd>
+                @if (
+                  yearJoined(member) || (member.showYearOfBirth && member.yearOfBirth)
+                ) {
+                  <div class="stats__pair">
+                    @if (yearJoined(member); as year) {
+                      <div class="stat">
+                        <dt class="stat__label">Member since</dt>
+                        <dd class="stat__value">{{ year }}</dd>
+                      </div>
+                    }
+                    @if (member.showYearOfBirth && member.yearOfBirth) {
+                      <div class="stat">
+                        <dt class="stat__label">Year of birth</dt>
+                        <dd class="stat__value">{{ member.yearOfBirth }}</dd>
+                      </div>
+                    }
                   </div>
                 }
               </dl>

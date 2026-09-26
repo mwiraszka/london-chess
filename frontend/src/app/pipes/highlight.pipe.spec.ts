@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { HighlightPipe } from './highlight.pipe';
@@ -28,7 +29,10 @@ describe('HighlightPipe', () => {
       bypassSecurityTrustResourceUrl: vi.fn(),
     } as Mocked<DomSanitizer>;
 
-    pipe = new HighlightPipe(sanitizer);
+    TestBed.configureTestingModule({
+      providers: [HighlightPipe, { provide: DomSanitizer, useValue: sanitizer }],
+    });
+    pipe = TestBed.inject(HighlightPipe);
   });
 
   it('create an instance', () => {

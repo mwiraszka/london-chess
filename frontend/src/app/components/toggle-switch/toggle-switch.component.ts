@@ -2,13 +2,11 @@ import { NgComponentOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
   TemplateRef,
   Type,
-  ViewChild,
+  input,
+  output,
+  viewChild,
 } from '@angular/core';
 
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -17,16 +15,16 @@ import { generateUuid } from '@app/utils/common/generate-uuid.util';
 @Component({
   selector: 'lcc-toggle-switch',
   template: `
-    @if (switchedOn && iconWhenOn) {
+    @if (switchedOn() && iconWhenOn(); as icon) {
       <span class="toggle-icon">
-        <ng-container *ngComponentOutlet="iconWhenOn" />
+        <ng-container *ngComponentOutlet="icon" />
       </span>
-    } @else if (!switchedOn && iconWhenOff) {
+    } @else if (!switchedOn() && iconWhenOff(); as icon) {
       <span
         class="toggle-icon"
-        [class.warning]="warningWhenOff"
-        [tooltip]="iconTooltipWhenOff">
-        <ng-container *ngComponentOutlet="iconWhenOff" />
+        [class.warning]="warningWhenOff()"
+        [tooltip]="iconTooltipWhenOff()">
+        <ng-container *ngComponentOutlet="icon" />
       </span>
     }
 
@@ -34,15 +32,15 @@ import { generateUuid } from '@app/utils/common/generate-uuid.util';
       #switchTooltip
       class="toggle-switch"
       [for]="uniqueId"
-      [tooltip]="switchedOn ? tooltipWhenOn : tooltipWhenOff">
+      [tooltip]="switchedOn() ? tooltipWhenOn() : tooltipWhenOff()">
       <input
         type="checkbox"
         [id]="uniqueId"
-        [checked]="switchedOn"
+        [checked]="switchedOn()"
         (change)="onToggleChange()" />
       <div
         class="slider round"
-        [class.warning]="!switchedOn && warningWhenOff">
+        [class.warning]="!switchedOn() && warningWhenOff()">
       </div>
     </label>
   `,
@@ -50,33 +48,31 @@ import { generateUuid } from '@app/utils/common/generate-uuid.util';
   imports: [NgComponentOutlet, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ToggleSwitchComponent implements OnInit {
-  @Input({ required: true }) public switchedOn = false;
+export class ToggleSwitchComponent {
+  public readonly switchedOn = input.required<boolean>();
 
-  @Input() public iconTooltipWhenOff: string | TemplateRef<unknown> | null = null;
-  @Input() public iconWhenOff?: Type<unknown>;
-  @Input() public iconWhenOn?: Type<unknown>;
-  @Input() public tooltipWhenOff: string | TemplateRef<unknown> | null = null;
-  @Input() public tooltipWhenOn: string | TemplateRef<unknown> | null = null;
-  @Input() public warningWhenOff = false;
+  public readonly iconTooltipWhenOff = input<string | TemplateRef<unknown> | null>(null);
+  public readonly iconWhenOff = input<Type<unknown>>();
+  public readonly iconWhenOn = input<Type<unknown>>();
+  public readonly tooltipWhenOff = input<string | TemplateRef<unknown> | null>(null);
+  public readonly tooltipWhenOn = input<string | TemplateRef<unknown> | null>(null);
+  public readonly warningWhenOff = input(false);
 
-  @Output() public toggle = new EventEmitter<boolean>();
+  public readonly toggle = output<boolean>();
 
-  @ViewChild('switchTooltip', { read: TooltipDirective, static: false })
-  private tooltipDirective?: TooltipDirective;
+  private readonly tooltipDirective = viewChild('switchTooltip', {
+    read: TooltipDirective,
+  });
 
-  public uniqueId!: string;
-
-  public ngOnInit(): void {
-    this.uniqueId = generateUuid().slice(-8);
-  }
+  public readonly uniqueId = generateUuid().slice(-8);
 
   public onToggleChange(): void {
-    this.toggle.emit();
+    this.toggle.emit(!this.switchedOn());
 
-    if (this.tooltipDirective) {
-      this.tooltipDirective.detach();
-      setTimeout(() => this.tooltipDirective?.attach());
+    const tooltipDirective = this.tooltipDirective();
+    if (tooltipDirective) {
+      tooltipDirective.detach();
+      setTimeout(() => this.tooltipDirective()?.attach());
     }
   }
 }

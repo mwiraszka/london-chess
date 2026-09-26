@@ -8,6 +8,8 @@
       title="Unable to load tournaments"
       (retry)="onRetry()" />
   } @else {
+    <lcc-member-highlights [results]="results()" />
+
     <lcc-data-table
       class="results"
       aria-label="Tournaments played"
@@ -18,7 +20,7 @@
       [loading]="loading()"
       [loadingRowCount]="loadingRowCount"
       [rowHref]="rowHref"
-      [sizingRows]="sizingRows"
+      [sizingRows]="sizingRows()"
       [sort]="sortState()"
       (rowActivate)="onOpenTournament($event)"
       (sorted)="onSorted($event)">
@@ -51,6 +53,13 @@
   @if (row.section) {
     <span class="results__note">({{ row.section }})</span>
   }
+</ng-template>
+
+<ng-template #tournamentPlaceholder>
+  <span class="results__tournament-placeholder">
+    Tournament
+    <lcc-text-skeleton width="100%" />
+  </span>
 </ng-template>
 
 <ng-template

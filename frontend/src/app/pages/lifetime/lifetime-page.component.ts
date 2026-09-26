@@ -16,6 +16,8 @@ import { MemberProfilesService, MetaAndTitleService } from '@app/services';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LifetimePageComponent implements OnInit {
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+
   protected readonly memberProfiles = inject(MemberProfilesService);
   protected readonly pageIcon = AwardIconComponent;
 
@@ -28,8 +30,6 @@ export class LifetimePageComponent implements OnInit {
   public readonly RECIPIENT_MEMBER_NUMBERS = new Map<string, number>([
     ['Gerry Litchfield', 2],
   ]);
-
-  constructor(private readonly metaAndTitleService: MetaAndTitleService) {}
 
   public ngOnInit(): void {
     void this.memberProfiles.load();

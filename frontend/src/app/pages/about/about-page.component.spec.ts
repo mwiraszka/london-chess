@@ -44,10 +44,6 @@ describe('AboutPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     it('should set meta title and description', () => {
       component.ngOnInit();
@@ -85,7 +81,7 @@ describe('AboutPageComponent', () => {
       expect(panels.length).toBe(expectedHeadings.length);
 
       expectedHeadings.forEach((heading, index) => {
-        expect(panels[index].componentInstance.heading).toBe(heading);
+        expect(panels[index].componentInstance.heading()).toBe(heading);
       });
     });
 

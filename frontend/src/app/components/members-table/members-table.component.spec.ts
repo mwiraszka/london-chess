@@ -5,7 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { MEMBERS_PAGE_SIZES, WIDEST_MEMBER } from '@app/constants/members-table';
+import { MEMBERS_PAGE_SIZES } from '@app/constants/members-table';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
 import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
@@ -164,7 +164,10 @@ describe('MembersTableComponent', () => {
     });
 
     it('should mark inactive members', () => {
-      const inactive = queryAll(fixture.debugElement, '.members__name--inactive');
+      const inactive = queryAll(
+        fixture.debugElement,
+        '.ea-data-table__body .members__name--inactive',
+      );
 
       expect(inactive.map(textOf)).toEqual(['Ding Liren', 'Judit Polgar']);
     });
@@ -185,14 +188,16 @@ describe('MembersTableComponent', () => {
       ]);
     });
 
-    it('should size the columns by the widest member', () => {
+    it('should size the columns by the widest members it is given', () => {
+      fixture.componentRef.setInput('widestMembers', [MOCK_MEMBERS[1]]);
+      fixture.detectChanges();
+
       const sizingRows: MemberRow[] = query(
         fixture.debugElement,
         'ea-data-table',
       ).componentInstance.sizingRows();
 
-      expect(sizingRows[0].member).toBe(WIDEST_MEMBER);
-      expect(sizingRows[0].number).toBe(999);
+      expect(sizingRows.map(row => row.member)).toEqual([MOCK_MEMBERS[1]]);
     });
   });
 

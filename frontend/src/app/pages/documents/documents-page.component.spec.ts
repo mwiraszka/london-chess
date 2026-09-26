@@ -82,10 +82,6 @@ describe('DocumentsPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     beforeEach(() => {
       component.ngOnInit();

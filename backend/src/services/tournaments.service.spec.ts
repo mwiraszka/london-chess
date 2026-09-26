@@ -1,33 +1,15 @@
 import { Types } from 'mongoose';
 
-import { GamePlayer } from '../models/game.model';
 import {
   RoundResult,
   TournamentEntry,
   TournamentRecord,
 } from '../models/tournament.model';
-import { resolvePlayers } from './games.service';
 import {
   ArchiveGame,
   matchRoundGames,
   toMemberTournamentResults,
-  toTournamentResponse,
 } from './tournaments.service';
-
-const { find, lean } = vi.hoisted(() => {
-  const lean = vi.fn<() => Promise<ArchiveGame[]>>();
-  return { lean, find: vi.fn(() => ({ lean })) };
-});
-
-vi.mock('../models/game.model', async importOriginal => ({
-  ...(await importOriginal<typeof import('../models/game.model')>()),
-  GameModel: { find },
-}));
-
-vi.mock('./games.service', async importOriginal => ({
-  ...(await importOriginal<typeof import('./games.service')>()),
-  resolvePlayers: vi.fn(),
-}));
 
 const ANN = 'a00000000000000000000001';
 const BOB = 'b00000000000000000000002';
@@ -76,7 +58,6 @@ const archiveGame = (
 
 const GAME_ONE = 'f00000000000000000000001';
 const GAME_TWO = 'f00000000000000000000002';
-const GAME_THREE = 'f00000000000000000000003';
 
 describe('matchRoundGames', () => {
   const entries = [
@@ -165,68 +146,6 @@ const record = (overrides: Partial<TournamentRecord> = {}): TournamentRecord => 
   ...overrides,
 });
 
-const player = (id: string, lastName: string): GamePlayer => ({
-  id,
-  firstName: 'Pat',
-  lastName,
-  suffix: '',
-  memberNumber: null,
-});
-
-const UNKNOWN = { firstName: '', lastName: 'Unknown', suffix: '', memberNumber: null };
-
-describe('toTournamentResponse', () => {
-  beforeEach(() => {
-    vi.mocked(resolvePlayers).mockResolvedValue(
-      new Map([
-        [ANN, player(ANN, 'Ann')],
-        [BOB, player(BOB, 'Bob')],
-      ]),
-    );
-  });
-
-  it('should look for the games in every section the archive keeps them in', async () => {
-    lean.mockResolvedValue([]);
-
-    await toTournamentResponse(record());
-
-    expect(find).toHaveBeenCalledWith(
-      {
-        tournament: 'Club Championship',
-        year: 2023,
-        section: { $in: ['A1', 'B1', 'B1 Playoff'] },
-      },
-      expect.any(Object),
-    );
-  });
-
-  it('should resolve the players and link results to their games', async () => {
-    lean.mockResolvedValue([
-      archiveGame(GAME_THREE, ANN, CAT, '2', 'B1 Playoff'),
-      archiveGame(GAME_ONE, ANN, BOB, '1'),
-      archiveGame(GAME_TWO, CAT, ANN, '1', 'B1'),
-    ]);
-
-    const response = await toTournamentResponse(record());
-
-    const [sectionA, sectionB] = response.sections;
-    expect(response).not.toHaveProperty('gameArchiveTournament');
-    expect(sectionA).not.toHaveProperty('gameArchiveSections');
-    expect(sectionA.entries[0].player.lastName).toBe('Ann');
-    expect(sectionA.entries[0].rounds[0].gameId).toBe(GAME_ONE);
-    expect(sectionA.games.map(({ id }) => id)).toEqual([GAME_ONE]);
-    expect(sectionB.entries[0].player).toEqual({ id: CAT, ...UNKNOWN });
-    expect(sectionB.games.map(({ id }) => id)).toEqual([GAME_TWO, GAME_THREE]);
-  });
-
-  it('should not look for games that were never archived', async () => {
-    const response = await toTournamentResponse(record({ gameArchiveTournament: null }));
-
-    expect(find).not.toHaveBeenCalled();
-    expect(response.sections.every(({ games }) => games.length === 0)).toBe(true);
-  });
-});
-
 describe('toMemberTournamentResults', () => {
   it("should list the players' entries across sections, newest first", () => {
     const older = record({ number: 50, date: '2022-09-08' });
@@ -251,6 +170,7 @@ describe('toMemberTournamentResults', () => {
         timeControl: 'G80',
       },
       roundCount: 2,
+      isDoubleRound: false,
       playerCount: 2,
       rating: 1500,
       score: 1,

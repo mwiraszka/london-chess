@@ -1,12 +1,19 @@
+import { AvatarComponent, BadgeComponent } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
-import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import {
+  ActivatedRoute,
+  ParamMap,
+  convertToParamMap,
+  provideRouter,
+} from '@angular/router';
 
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
+import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
+import { Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import {
@@ -14,131 +21,227 @@ import {
   MembersSelectors,
   initialState as membersInitialState,
 } from '@app/store/members';
-import { query, queryAll, queryTextContent } from '@app/utils';
+import { initialState as tournamentsInitialState } from '@app/store/tournaments';
+import { CITY_CHAMPION, query, queryAll, queryTextContent } from '@app/utils';
 
 import { MemberProfilePageComponent } from './member-profile-page.component';
 
-@Component({ selector: 'lcc-member-tournaments', template: '' })
-class MemberTournamentsStubComponent {
-  readonly memberNumber = input.required<number>();
-}
-
 describe('MemberProfilePageComponent', () => {
   let fixture: ComponentFixture<MemberProfilePageComponent>;
-  let component: MemberProfilePageComponent;
   let store: MockStore;
+  let paramMap: BehaviorSubject<ParamMap>;
+  let metaAndTitleService: Mocked<
+    Pick<MetaAndTitleService, 'updateTitle' | 'updateDescription'>
+  >;
 
-  const member = {
+  const member: Member = {
     ...MOCK_MEMBERS[0],
+    number: 7,
     isActive: true,
     isAdmin: false,
     showYearOfBirth: true,
+    yearJoined: undefined,
   };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
+  const statValues = (): string[] =>
+    queryAll(fixture.debugElement, '.stat__value').map(el =>
+      el.nativeElement.textContent.trim(),
+    );
+
+  function showMember(overrides: Partial<Member>): void {
+    store.overrideSelector(MembersSelectors.selectAllMembers, [
+      { ...member, ...overrides },
+    ]);
+    store.refreshState();
+    fixture.detectChanges();
+  }
+
+  function createComponent(): void {
+    fixture = TestBed.createComponent(MemberProfilePageComponent);
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    metaAndTitleService = { updateTitle: vi.fn(), updateDescription: vi.fn() };
+    paramMap = new BehaviorSubject(convertToParamMap({ number: String(member.number) }));
+
+    TestBed.configureTestingModule({
       imports: [MemberProfilePageComponent],
       providers: [
+        provideRouter([]),
         provideMockStore({
           initialState: {
             authState: authInitialState,
             membersState: membersInitialState,
+            tournamentsState: tournamentsInitialState,
           },
         }),
         {
           provide: ActivatedRoute,
-          useValue: {
-            paramMap: of(convertToParamMap({ number: String(member.number) })),
-          },
+          useValue: { paramMap },
         },
-        {
-          provide: MetaAndTitleService,
-          useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
-        },
+        { provide: MetaAndTitleService, useValue: metaAndTitleService },
       ],
-    })
-      .overrideComponent(MemberProfilePageComponent, {
-        remove: { imports: [MemberTournamentsComponent] },
-        add: { imports: [MemberTournamentsStubComponent] },
-      })
-      .compileComponents();
+    });
 
     store = TestBed.inject(MockStore);
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
-
-    fixture = TestBed.createComponent(MemberProfilePageComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  describe('once the member has loaded', () => {
+    beforeEach(() => {
+      createComponent();
+    });
 
-  it("should list the member's tournaments", () => {
-    const tournaments: MemberTournamentsStubComponent = query(
-      fixture.debugElement,
-      'lcc-member-tournaments',
-    ).componentInstance;
+    it('should set the page title and description', () => {
+      expect(metaAndTitleService.updateTitle).toHaveBeenCalledWith('Member Profile');
+      expect(metaAndTitleService.updateDescription).toHaveBeenCalled();
+    });
 
-    expect(tournaments.memberNumber()).toBe(member.number);
-  });
+    it("should list the member's tournaments", () => {
+      const tournaments: MemberTournamentsComponent = query(
+        fixture.debugElement,
+        'lcc-member-tournaments',
+      ).componentInstance;
 
-  it('should render the member name and ratings', () => {
-    expect(queryTextContent(fixture.debugElement, '.member-name__first')).toBe(
-      member.firstName,
+      expect(tournaments.memberNumber()).toBe(member.number);
+    });
+
+    it('should render the member name, avatar and ratings', () => {
+      const avatar: AvatarComponent = query(
+        fixture.debugElement,
+        'ea-avatar',
+      ).componentInstance;
+
+      expect(queryTextContent(fixture.debugElement, '.member-name__first')).toBe(
+        member.firstName,
+      );
+      expect(queryTextContent(fixture.debugElement, '.member-name__last')).toBe(
+        member.lastName,
+      );
+      expect(avatar.initials()).toBe('MC');
+      expect(avatar.src()).toBeUndefined();
+      expect(queryTextContent(fixture.debugElement, '.rating__value')).toBe(
+        member.rating,
+      );
+      expect(statValues()).toEqual([member.peakRating, member.city, member.yearOfBirth]);
+    });
+
+    it('should show the uploaded avatar when there is one', () => {
+      showMember({ avatarUrl: 'https://example.com/avatar.png', firstName: '' });
+
+      const avatar: AvatarComponent = query(
+        fixture.debugElement,
+        'ea-avatar',
+      ).componentInstance;
+      expect(avatar.src()).toBe('https://example.com/avatar.png');
+      expect(avatar.initials()).toBe('C');
+    });
+
+    it('should hide the year of birth when the member has not chosen to show it', () => {
+      showMember({ showYearOfBirth: false });
+
+      expect(statValues()).toEqual([member.peakRating, member.city]);
+      expect(queryAll(fixture.debugElement, '.stats__pair')).toHaveLength(1);
+    });
+
+    it('should show the year the member joined', () => {
+      showMember({ yearJoined: '2015', city: '' });
+
+      expect(statValues()).toEqual([member.peakRating, '2015', member.yearOfBirth]);
+    });
+
+    it('should show the founding member as having joined in 105 B.C.', () => {
+      paramMap.next(convertToParamMap({ number: '2' }));
+      showMember({ number: 2, showYearOfBirth: false });
+
+      expect(statValues()).toEqual([member.peakRating, member.city, '105 B.C.']);
+    });
+
+    it.each([true, false])(
+      'should show the admin icon only for an admin (%s)',
+      isAdmin => {
+        showMember({ isAdmin });
+
+        expect(!!query(fixture.debugElement, '.admin-icon')).toBe(isAdmin);
+      },
     );
-    expect(queryTextContent(fixture.debugElement, '.member-name__last')).toBe(
-      member.lastName,
-    );
 
-    expect(queryTextContent(fixture.debugElement, '.rating__value')).toBe(member.rating);
+    it('should link the city champion to the city champion page', () => {
+      expect(query(fixture.debugElement, '.champion-link')).toBeFalsy();
 
-    const statValues = queryAll(fixture.debugElement, '.stat__value').map(el =>
-      el.nativeElement.textContent.trim(),
-    );
-    expect(statValues).toEqual([member.peakRating, member.city, member.yearOfBirth]);
-  });
+      showMember(CITY_CHAMPION);
 
-  it('should hide the year of birth when the member has not chosen to show it', () => {
-    store.overrideSelector(MembersSelectors.selectAllMembers, [
-      { ...member, showYearOfBirth: false },
-    ]);
-    store.refreshState();
+      expect(query(fixture.debugElement, '.champion-link').attributes['href']).toBe(
+        '/city-champion',
+      );
+    });
 
-    fixture.detectChanges();
+    it('should badge the member as active or inactive', () => {
+      const badge = (): BadgeComponent =>
+        query(fixture.debugElement, '.status-badge').componentInstance;
 
-    const statValues = queryAll(fixture.debugElement, '.stat__value').map(el =>
-      el.nativeElement.textContent.trim(),
-    );
-    expect(statValues).toEqual([member.peakRating, member.city]);
-  });
+      expect(badge().variant()).toBe('success');
 
-  it('should not render the admin icon for non-admin members', () => {
-    expect(query(fixture.debugElement, '.admin-icon')).toBeFalsy();
-  });
+      showMember({ isActive: false });
 
-  it('should render the admin icon for admin members', () => {
-    store.overrideSelector(MembersSelectors.selectAllMembers, [
-      { ...member, isAdmin: true },
-    ]);
-    store.refreshState();
+      expect(badge().variant()).toBe('warning');
+      expect(query(fixture.debugElement, '.status-badge.inactive')).toBeTruthy();
+    });
 
-    fixture.detectChanges();
+    it('should link to both online chess accounts', () => {
+      const links = queryAll(fixture.debugElement, '.chess-accounts a').map(
+        link => link.attributes['href'],
+      );
 
-    expect(query(fixture.debugElement, '.admin-icon')).toBeTruthy();
-  });
+      expect(links).toEqual([
+        `https://www.chess.com/member/${member.chessComUsername}`,
+        `https://lichess.org/@/${member.lichessUsername}`,
+      ]);
+    });
 
-  it('should not render skeletons once the member has loaded', () => {
-    expect(queryAll(fixture.debugElement, 'ea-skeleton')).toHaveLength(0);
-    expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('false');
+    it('should only list the online chess accounts the member has', () => {
+      showMember({ chessComUsername: '' });
+
+      expect(queryAll(fixture.debugElement, '.chess-accounts a')).toHaveLength(1);
+
+      showMember({ chessComUsername: 'someone', lichessUsername: '' });
+
+      expect(queryAll(fixture.debugElement, '.chess-accounts a')).toHaveLength(1);
+
+      showMember({ chessComUsername: '', lichessUsername: '' });
+
+      expect(query(fixture.debugElement, '.chess-accounts')).toBeFalsy();
+    });
+
+    it('should not render skeletons', () => {
+      expect(queryAll(fixture.debugElement, '.profile-card ea-skeleton')).toHaveLength(0);
+      expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe(
+        'false',
+      );
+    });
+
+    it('should keep showing the member when a later refresh fails', () => {
+      store.setState({
+        authState: authInitialState,
+        membersState: { ...membersInitialState, failedLoads: ['member'] },
+        tournamentsState: tournamentsInitialState,
+      });
+      store.refreshState();
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      expect(queryTextContent(fixture.debugElement, '.member-name__first')).toBe(
+        member.firstName,
+      );
+    });
   });
 
   it('should cover each card with a skeleton while the member loads', () => {
     store.overrideSelector(MembersSelectors.selectAllMembers, []);
-    store.refreshState();
 
-    fixture.detectChanges();
+    createComponent();
 
     const cards = queryAll(fixture.debugElement, '.profile-card');
     expect(cards).toHaveLength(2);
@@ -148,10 +251,48 @@ describe('MemberProfilePageComponent', () => {
     });
     expect(query(fixture.debugElement, '.profile--loading')).toBeTruthy();
     expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('true');
+    expect(query(fixture.debugElement, 'lcc-member-tournaments')).toBeFalsy();
   });
 
-  it('should render the rating progression placeholder', () => {
-    expect(query(fixture.debugElement, '.rating-progression-placeholder')).toBeTruthy();
+  describe('when the name no longer fits', () => {
+    let resizeCallbacks: Array<() => void>;
+
+    beforeEach(() => {
+      resizeCallbacks = [];
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(callback: () => void) {
+            resizeCallbacks.push(callback);
+          }
+          public observe = vi.fn();
+          public disconnect = vi.fn();
+        },
+      );
+      createComponent();
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should offer the full name as a tooltip only while it is cut off', () => {
+      const tooltip = (): TooltipDirective =>
+        query(fixture.debugElement, '.member-name__text').injector.get(TooltipDirective);
+      const lastName: HTMLElement = query(
+        fixture.debugElement,
+        '.member-name__last',
+      ).nativeElement;
+
+      expect(tooltip().tooltip()).toBeNull();
+
+      Object.defineProperty(lastName, 'scrollWidth', { configurable: true, value: 120 });
+      Object.defineProperty(lastName, 'clientWidth', { configurable: true, value: 80 });
+      resizeCallbacks.forEach(callback => callback());
+      fixture.detectChanges();
+
+      expect(tooltip().tooltip()).toBe(`${member.firstName} ${member.lastName}`);
+    });
   });
 
   describe('when the member fails to load', () => {
@@ -159,11 +300,10 @@ describe('MemberProfilePageComponent', () => {
       store.setState({
         authState: authInitialState,
         membersState: { ...membersInitialState, failedLoads: ['member'] },
+        tournamentsState: tournamentsInitialState,
       });
       store.overrideSelector(MembersSelectors.selectAllMembers, []);
-      store.refreshState();
-
-      fixture.detectChanges();
+      createComponent();
     });
 
     it('should render a failure panel in place of the profile cards', () => {
@@ -178,25 +318,8 @@ describe('MemberProfilePageComponent', () => {
       query(fixture.debugElement, 'lcc-load-failed').triggerEventHandler('retry');
 
       expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.fetchMemberByNumberRequested({
-          memberNumber: Number(member.number),
-        }),
+        MembersActions.fetchMemberByNumberRequested({ memberNumber: member.number! }),
       );
     });
-  });
-
-  it('should keep showing a loaded member when a later refresh fails', () => {
-    store.setState({
-      authState: authInitialState,
-      membersState: { ...membersInitialState, failedLoads: ['member'] },
-    });
-    store.refreshState();
-
-    fixture.detectChanges();
-
-    expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
-    expect(queryTextContent(fixture.debugElement, '.member-name__first')).toBe(
-      member.firstName,
-    );
   });
 });

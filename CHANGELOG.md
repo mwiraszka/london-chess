@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.3.0] - 2026-09-26
+
+### Added
+
+- Display a member's 1st, 2nd and 3rd place finishes as gold, silver and bronze trophies above the table in the Tournaments card on their profile, with the details of each trophy's tournament and a link to it shown when it is selected
+
+### Changed
+
+- Update all components to Angular's signal-based inputs, outputs and view queries
+- Shrink the chalice and cup trophies on the tournaments page, and trim the empty space around every trophy
+- Frame the rating details on a member's profile, keeping them on one line while they fit and pairing them up once they do not
+- Give the trophies on a member's profile a little more room above them, and show the member's name in the main text colour
+
+### Fixed
+
+- Keep a browser that loads an older version of the site from picking up state saved by a newer one, so it starts cleanly instead of failing to show the page
+- Hold every table's columns at their final widths from the moment a page starts loading, rather than letting them jump when the data arrives or when sorting or paging
+- Leave off the separator dot at the start of a wrapped line of tournament details
+
 ## [v6.2.2] - 2026-09-23
 
 ### Changed
@@ -1947,6 +1966,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.3.0]: https://github.com/mwiraszka/london-chess/compare/v6.2.2...v6.3.0
 [v6.2.2]: https://github.com/mwiraszka/london-chess/compare/v6.2.1...v6.2.2
 [v6.2.1]: https://github.com/mwiraszka/london-chess/compare/v6.2.0...v6.2.1
 [v6.2.0]: https://github.com/mwiraszka/london-chess/compare/v6.1.1...v6.2.0

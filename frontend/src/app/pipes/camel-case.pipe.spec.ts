@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { CamelCasePipe } from './camel-case.pipe';
 
 describe('CamelCasePipe', () => {
-  const pipe = new CamelCasePipe();
+  let pipe: CamelCasePipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [CamelCasePipe] });
+    pipe = TestBed.inject(CamelCasePipe);
+  });
 
   it('transforms non-string values correctly', () => {
     expect(pipe.transform(undefined)).toBe('');
