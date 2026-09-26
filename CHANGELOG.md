@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep a browser that loads an older version of the site from picking up state saved by a newer one, so it starts cleanly instead of failing to show the page
 - Hold every table's columns at their final widths from the moment a page starts loading, rather than letting them jump when the data arrives or when sorting or paging
 - Leave off the separator dot at the start of a wrapped line of tournament details
+- Save an article or event that has no changes, instead of being told it could not be found
+- Report an image that fails to load from storage as an error, rather than as a missing image
+- Explain that a new profile photo must be under 5 MB, rather than failing with an unexpected error
+- Restore the saved details when leaving the editor of an album whose name contains a space
+- Keep the articles on the news page in place while they refresh in the background, rather than swapping them for placeholders
+- Ask to delete, not update, an article when deleting it from its own page
+- Write the log-in and create-account error messages as full sentences
+- Label the album editor's fields and the dialog, image viewer, calendar and admin control buttons for screen readers
 
 ## [v6.2.2] - 2026-09-23
 
