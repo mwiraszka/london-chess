@@ -157,7 +157,7 @@ export async function updateArticle(
       { $set: preparedArticle },
     );
 
-    if (result.matchedCount === 0 || result.modifiedCount === 0) {
+    if (result.matchedCount === 0) {
       res.status(404).json({
         message: `Unable to update article [${id}] because it could not be found.`,
       });

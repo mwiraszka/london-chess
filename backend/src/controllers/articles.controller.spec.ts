@@ -179,6 +179,24 @@ describe('articles routes', () => {
       });
     });
 
+    it('should accept a save that changes nothing', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
+      await createAdmin(ADMIN);
+      const id = await createArticle();
+      const save = () =>
+        request(app)
+          .put(`/v1/articles/${id}`)
+          .set('Authorization', bearer(ADMIN))
+          .send(articlePayload({ id }));
+      await save();
+
+      const response = await save();
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBe(id);
+    });
+
     it('should respond with not found for an unknown article', async () => {
       await createAdmin(ADMIN);
       const id = new Types.ObjectId().toString();

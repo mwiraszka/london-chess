@@ -18,6 +18,6 @@ describe('logger', () => {
       .send({ title: 'Blitz' });
 
     expect(response.status).toBe(204);
-    expect(info).toHaveBeenCalledWith('[LCC] POST request to /v1/events?page=2');
+    expect(info.mock.calls).toEqual([['[LCC] POST request to /v1/events?page=2']]);
   });
 });

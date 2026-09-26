@@ -793,6 +793,19 @@ describe('users routes', () => {
       expect(send).not.toHaveBeenCalled();
     });
 
+    it('should turn away an image over 5 MB', async () => {
+      const oversized = Buffer.alloc(5 * 1024 * 1024 + 1);
+
+      const response = await request(app)
+        .post('/v1/users/me/avatar')
+        .set('Authorization', bearer(USER))
+        .attach('file', oversized, { filename: 'photo.png', contentType: 'image/png' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('File must be under 5 MB.');
+      expect(send).not.toHaveBeenCalled();
+    });
+
     it('should respond with not found without a member record', async () => {
       const response = await request(app)
         .post('/v1/users/me/avatar')

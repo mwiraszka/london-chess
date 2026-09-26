@@ -38,7 +38,6 @@ import {
 } from '../util/member-responses.util';
 import { hashTemporaryPassword } from '../util/temporary-password.util';
 
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 type UploadedFiles = Record<string, Express.Multer.File[]> | undefined;
@@ -383,10 +382,6 @@ export async function uploadUserAvatar(
     }
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
       res.status(400).json({ message: 'File must be a JPEG, PNG, or WebP image.' });
-      return;
-    }
-    if (file.size > MAX_AVATAR_SIZE) {
-      res.status(400).json({ message: 'File must be under 5 MB.' });
       return;
     }
     if (!cropped) {

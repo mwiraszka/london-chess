@@ -172,9 +172,9 @@ export async function updateEvent(
       { $set: preparedEvent },
     );
 
-    if (result.matchedCount === 0 || result.modifiedCount === 0) {
+    if (result.matchedCount === 0) {
       res.status(404).json({
-        data: `Unable to update event [${id}] because it could not be found.`,
+        message: `Unable to update event [${id}] because it could not be found.`,
       });
       return;
     }

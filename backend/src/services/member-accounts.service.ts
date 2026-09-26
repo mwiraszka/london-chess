@@ -68,7 +68,7 @@ export async function updateLinkedMember(
   const record = await MemberModel.findOneAndUpdate(
     { 'account.clerkUserId': clerkUserId },
     { $set: fields },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean<MemberRecord>();
   return isLinkedMember(record) ? record : null;
 }

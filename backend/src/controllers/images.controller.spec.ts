@@ -226,6 +226,15 @@ describe('images routes', () => {
       expect(malformed.status).toBe(400);
       expect(unknown.status).toBe(404);
     });
+
+    it('should not report an image as missing when storage fails', async () => {
+      const id = await createImage();
+      getSignedUrl.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+      const response = await request(app).get(`/v1/images/${id}`);
+
+      expect(response.status).toBe(500);
+    });
   });
 
   describe('POST /v1/images', () => {
@@ -272,6 +281,38 @@ describe('images routes', () => {
 
       expect(withoutFiles.status).toBe(400);
       expect(mismatch.body.message).toBe('[IM-5.2] Image metadata mismatch');
+    });
+
+    it('should reject files sent without their details', async () => {
+      await createAdmin(ADMIN);
+
+      const response = await request(app)
+        .post('/v1/images')
+        .set('Authorization', bearer(ADMIN))
+        .attach('files', png, { filename: 'board.png', contentType: 'image/png' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('[IM-5.1] No files provided');
+    });
+
+    it('should stop the transaction deadline once the upload is saved', async () => {
+      await createAdmin(ADMIN);
+      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+
+      const response = await request(app)
+        .post('/v1/images')
+        .set('Authorization', bearer(ADMIN))
+        .attach('files', png, { filename: 'board.png', contentType: 'image/png' })
+        .field('imageMetadata', JSON.stringify(imagePayload()));
+
+      expect(response.status).toBe(201);
+      const deadlineIndex = setTimeoutSpy.mock.calls.findIndex(
+        ([, delay]) => delay === 120000,
+      );
+      const deadline = setTimeoutSpy.mock.results[deadlineIndex]?.value;
+      expect(deadline).toBeDefined();
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(deadline);
     });
 
     it('should save nothing when storage does not accept an image', async () => {
