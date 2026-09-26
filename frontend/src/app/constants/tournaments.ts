@@ -1,19 +1,32 @@
-import { TournamentFormat, Trophy } from '@app/models';
+import { capitalize } from 'lodash';
 
-const CUP: Trophy = { file: 'trophy-cup.svg', label: 'Gold cup trophy', shape: 'cup' };
-const BOWL: Trophy = {
-  file: 'trophy-bowl.svg',
-  label: 'Gold bowl trophy with blue and red tassels',
-  shape: 'bowl',
+import { TournamentFormat, Trophy, TrophyMetal, TrophyShape } from '@app/models';
+
+const TROPHY_DESCRIPTIONS: Record<TrophyShape, string> = {
+  cup: 'cup trophy',
+  bowl: 'bowl trophy with blue and red tassels',
+  chalice: 'chalice trophy',
 };
-const CHALICE: Trophy = {
-  file: 'trophy-chalice.svg',
-  label: 'Gold chalice trophy',
-  shape: 'chalice',
-};
+
+// The bowl is only ever gold, so it alone has no metal in its file name
+export function trophy(shape: TrophyShape, metal: TrophyMetal): Trophy {
+  return {
+    file: shape === 'bowl' ? 'trophy-bowl.svg' : `trophy-${shape}-${metal}.svg`,
+    label: `${capitalize(metal)} ${TROPHY_DESCRIPTIONS[shape]}`,
+    shape,
+    metal,
+  };
+}
 
 // In the order they stand in a row
-export const TROPHIES: Trophy[] = [CHALICE, CHALICE, BOWL, CUP, CHALICE, CHALICE];
+export const TROPHIES: Trophy[] = [
+  trophy('chalice', 'gold'),
+  trophy('chalice', 'gold'),
+  trophy('bowl', 'gold'),
+  trophy('cup', 'gold'),
+  trophy('chalice', 'gold'),
+  trophy('chalice', 'gold'),
+];
 
 export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
   swiss: 'Swiss',
@@ -32,10 +45,6 @@ export const TOURNAMENT_SUBTITLE_LABELS: Record<TournamentFormat, string> = {
 export const TOURNAMENTS_PAGE_SIZES = [25, 50, 100];
 
 export const MEMBER_TOURNAMENTS_PAGE_SIZES = [10, 25, 50];
-
-// The longest month name and two-digit days make the widest date labels
-export const WIDEST_DATE = '2000-09-30';
-export const WIDEST_END_DATE = '2000-11-30';
 
 export const LOADING_ENTRY_COUNT = 10;
 export const LOADING_ROUND_COUNT = 6;

@@ -1,0 +1,153 @@
+// The trophies stand at the sizes they have on the tournaments page
+$trophy-height: 140px;
+$bowl-scale: 0.68;
+$cup-scale: 0.72;
+$chalice-scale: 0.59;
+// Smaller on a narrow card, so a row still holds a few
+$narrow-scale: 0.75;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+.highlights {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.cabinet {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+}
+
+// Every trophy carries the underline, so selecting one never moves the row
+.trophy {
+  display: flex;
+  align-items: flex-end;
+  padding: 4px 4px 8px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--lcc-borderRadius--small);
+  background: none;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    transform: scale(1.04);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--lcc-color--memberTrophies-glow);
+    outline-offset: 2px;
+  }
+}
+
+// Lit and lifted while its details show below
+.trophy--selected,
+.trophy--selected:hover {
+  border-bottom-color: var(--lcc-color--memberTrophies-underline);
+  filter: brightness(1.1) drop-shadow(0 0 12px var(--lcc-color--memberTrophies-glow));
+  transform: scale(1.1);
+}
+
+.trophy__image {
+  width: auto;
+}
+
+.trophy--bowl .trophy__image {
+  height: $trophy-height * $bowl-scale;
+
+  @container (width < 480px) {
+    height: $trophy-height * $bowl-scale * $narrow-scale;
+  }
+}
+
+.trophy--cup .trophy__image {
+  height: $trophy-height * $cup-scale;
+
+  @container (width < 480px) {
+    height: $trophy-height * $cup-scale * $narrow-scale;
+  }
+}
+
+.trophy--chalice .trophy__image {
+  height: $trophy-height * $chalice-scale;
+
+  @container (width < 480px) {
+    height: $trophy-height * $chalice-scale * $narrow-scale;
+  }
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: center;
+}
+
+.details__heading {
+  margin: 0;
+  font-size: 16px;
+}
+
+.details__place {
+  font-weight: 600;
+}
+
+// One row of facts, or two even columns once the card is too narrow for it
+.details__facts {
+  display: grid;
+  justify-content: center;
+  gap: 8px 32px;
+  grid-template-columns: repeat(4, auto);
+  padding: 12px 24px;
+  margin: 0;
+  border: 1px solid var(--lcc-color--general-dividerLine);
+  border-radius: var(--lcc-borderRadius--small);
+
+  @container (width < 480px) {
+    justify-content: stretch;
+    gap: 12px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 16px;
+    text-align: start;
+  }
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fact__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+
+.fact__value {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.highlights__divider {
+  width: 100%;
+  margin: 32px 0;
+  border: 0;
+  border-top: 1px solid var(--lcc-color--general-dividerLine);
+}

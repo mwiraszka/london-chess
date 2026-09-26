@@ -102,28 +102,17 @@ export type MemberTournamentResult = Pick<
   >;
   section: string;
   roundCount: number;
+  isDoubleRound: boolean;
   playerCount: number;
 };
+
+export type TrophyShape = 'cup' | 'bowl' | 'chalice';
+
+export type TrophyMetal = 'gold' | 'silver' | 'bronze';
 
 export interface Trophy {
   file: string;
   label: string;
-  shape: 'cup' | 'bowl' | 'chalice';
-}
-
-// The widest values the tables show, for sizing columns before anything loads
-export interface TournamentSizing {
-  tournaments: Pick<Tournament, 'name' | 'subtitle'>[];
-  timeControls: string[];
-  players: Pick<GamePlayer, 'firstName' | 'lastName' | 'suffix'>[];
-  // A tournament with the section a result in it names
-  results: { name: string; section: string }[];
-  resultNotes: string[];
-  maxRounds: number;
-  maxPlayers: number;
-  maxSectionPlayers: number;
-  maxRating: number;
-  maxProvisionalGames: number;
-  maxScore: number;
-  hasDateRanges: boolean;
+  shape: TrophyShape;
+  metal: TrophyMetal;
 }

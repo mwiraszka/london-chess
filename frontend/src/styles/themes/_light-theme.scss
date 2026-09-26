@@ -245,6 +245,9 @@
   --lcc-color--memberProfile-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--memberProfile-cityChampionIconHover: #{clr(secondary, dark)};
 
+  --lcc-color--memberTrophies-glow: #{clr(secondary, base, 0.6)};
+  --lcc-color--memberTrophies-underline: #{clr(secondary, base)};
+
   --lcc-color--membersTable-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--membersTable-cityChampionIconHover: #{clr(secondary, lighter)};
   --lcc-color--membersTable-inactiveMemberAsterisk: #{clr(grayscale, gray-65)};

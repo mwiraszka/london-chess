@@ -251,6 +251,7 @@ describe('toMemberTournamentResults', () => {
         timeControl: 'G80',
       },
       roundCount: 2,
+      isDoubleRound: false,
       playerCount: 2,
       rating: 1500,
       score: 1,

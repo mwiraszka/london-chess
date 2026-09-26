@@ -81,8 +81,9 @@ export type {
   TournamentFormat,
   TournamentGame,
   TournamentSection,
-  TournamentSizing,
   TournamentSummary,
   Trophy,
+  TrophyMetal,
+  TrophyShape,
 } from './tournament.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';

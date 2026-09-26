@@ -245,6 +245,9 @@ body[data-theme='dark'] {
   --lcc-color--memberProfile-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--memberProfile-cityChampionIconHover: #{clr(secondary, lighter)};
 
+  --lcc-color--memberTrophies-glow: #{clr(secondary, lighter, 0.6)};
+  --lcc-color--memberTrophies-underline: #{clr(secondary, lighter)};
+
   --lcc-color--membersTable-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--membersTable-cityChampionIconHover: #{clr(secondary, lighter)};
   --lcc-color--membersTable-inactiveMemberAsterisk: #{clr(grayscale, gray-75)};

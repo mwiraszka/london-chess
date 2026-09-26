@@ -19,6 +19,7 @@ export {
   playerScores,
   resultLabel,
 } from './chess/player-name.util';
+export { trophyForResult, trophyShapeFor } from './chess/trophies.util';
 
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';
