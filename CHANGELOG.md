@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shrink the chalice and cup trophies on the tournaments page, and trim the empty space around every trophy
 - Frame the rating details on a member's profile, keeping them on one line while they fit and pairing them up once they do not
 - Give the trophies on a member's profile a little more room above them, and show the member's name in the main text colour
+- Add Playwright to the tools shown on the website changelog page
 
 ### Fixed
 
