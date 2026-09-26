@@ -18,7 +18,7 @@ export class TechRingComponent {
   protected readonly activeIndex = signal<number | null>(null);
 
   protected iconPath(technology: Technology): string {
-    return `assets/tech-icons/${technology.icon}.png`;
+    return `assets/tech-icons/${technology.icon}`;
   }
 
   protected isNeighbour(index: number): boolean {

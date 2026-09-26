@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { TECHNOLOGIES } from '@app/constants/technologies';
 import { queryAll } from '@app/utils';
 
 import { TechRingComponent } from './tech-ring.component';
@@ -24,7 +25,7 @@ describe('TechRingComponent', () => {
   });
 
   it('should render every technology', () => {
-    expect(icons().length).toBe(13);
+    expect(icons().length).toBe(TECHNOLOGIES.length);
   });
 
   it('should taper the lift over the three icons either side', () => {
@@ -42,11 +43,13 @@ describe('TechRingComponent', () => {
   });
 
   it('should measure the lift around the ring rather than along the list', () => {
+    const last = TECHNOLOGIES.length - 1;
+
     hover(0);
 
-    expect(icons()[12].classes['tech--neighbour']).toBe(true);
+    expect(icons()[last].classes['tech--neighbour']).toBe(true);
     expect(icons()[1].classes['tech--neighbour']).toBe(true);
-    expect(icons()[11].classes['tech--outer-neighbour']).toBe(true);
+    expect(icons()[last - 1].classes['tech--outer-neighbour']).toBe(true);
     expect(icons()[2].classes['tech--outer-neighbour']).toBe(true);
   });
 
@@ -64,7 +67,7 @@ describe('TechRingComponent', () => {
 
     hover(3);
 
-    expect(entries().length).toBe(13);
+    expect(entries().length).toBe(TECHNOLOGIES.length);
     expect(
       entries().filter(entry => entry.classes['tech-info__entry--visible']).length,
     ).toBe(1);
