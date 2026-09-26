@@ -37,6 +37,10 @@ import * as MembersSelectors from './members.selectors';
 
 @Injectable()
 export class MembersEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly membersApiService = inject(MembersApiService);
+  private readonly store = inject(Store);
+
   private readonly parseError = inject(PARSE_ERROR);
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
@@ -370,12 +374,6 @@ export class MembersEffects {
       }),
     );
   });
-
-  constructor(
-    private readonly actions$: Actions,
-    private readonly membersApiService: MembersApiService,
-    private readonly store: Store,
-  ) {}
 
   // A member without an account gets one along with their welcome email
   private emailSentOnUpdate(member: Member, notifyMember: boolean): MemberEmail | null {

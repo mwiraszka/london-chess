@@ -4,7 +4,7 @@ import { routerNavigatedAction } from '@ngrx/router-store';
 import { Action, Store } from '@ngrx/store';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 
 import { DialogService } from '@app/services';
@@ -34,6 +34,11 @@ function isMissingRecord(action: ReturnType<(typeof RECORD_FETCH_FAILURES)[numbe
 
 @Injectable()
 export class NavEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
+
   appendPathToHistory$ = createEffect(() =>
     this.actions$.pipe(
       ofType(routerNavigatedAction),
@@ -251,11 +256,4 @@ export class NavEffects {
       }),
     ),
   );
-
-  constructor(
-    private readonly actions$: Actions,
-    private readonly dialogService: DialogService,
-    private readonly router: Router,
-    private readonly store: Store,
-  ) {}
 }

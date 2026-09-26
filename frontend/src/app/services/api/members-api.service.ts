@@ -22,12 +22,12 @@ import { environment } from '@env';
   providedIn: 'root',
 })
 export class MembersApiService {
+  private readonly http = inject(HttpClient);
+
   private readonly API_BASE_URL = environment.lccApiBaseUrl;
   private readonly COLLECTION: DbCollection = 'members';
 
   private readonly setPaginationParams = inject(SET_PAGINATION_PARAMS);
-
-  constructor(private readonly http: HttpClient) {}
 
   public getAllMembers(scope: ApiScope): Observable<ApiResponse<PaginatedItems<Member>>> {
     return this.http.get<ApiResponse<PaginatedItems<Member>>>(

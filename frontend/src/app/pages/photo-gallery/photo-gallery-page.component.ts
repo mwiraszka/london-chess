@@ -5,7 +5,7 @@ import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
@@ -42,6 +42,9 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhotoGalleryPageComponent implements OnInit {
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly pageIcon = CameraIconComponent;
 
   public viewModel$?: Observable<{
@@ -49,11 +52,6 @@ export class PhotoGalleryPageComponent implements OnInit {
     photoImages: Image[];
     status: LoadStatus;
   }>;
-
-  constructor(
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Photo Gallery');

@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Inject, Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { IS_TOUCH_DEVICE } from '@app/tokens';
 
@@ -7,13 +7,13 @@ import { IS_TOUCH_DEVICE } from '@app/tokens';
   providedIn: 'root',
 })
 export class TouchEventsService {
+  private readonly _document = inject<Document>(DOCUMENT);
+
   private readonly LONG_PRESS_DURATION_MS = 500;
 
   private touchTimeoutId: number | null = null;
 
   private readonly isTouchDevice = inject(IS_TOUCH_DEVICE);
-
-  constructor(@Inject(DOCUMENT) private _document: Document) {}
 
   public listenForTouchEvents(): void {
     if (!this.isTouchDevice()) {

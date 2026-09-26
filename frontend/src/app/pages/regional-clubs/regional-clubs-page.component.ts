@@ -1,6 +1,6 @@
 import { MapIconComponent } from '@eagami/ui';
 
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 
 import { ClubCardComponent } from '@app/components/club-card/club-card.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
@@ -26,11 +26,11 @@ import { MetaAndTitleService } from '@app/services';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegionalClubsPageComponent implements OnInit {
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+
   protected readonly pageIcon = MapIconComponent;
 
   public readonly REGIONAL_CLUBS = REGIONAL_CLUBS;
-
-  constructor(private readonly metaAndTitleService: MetaAndTitleService) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Regional Clubs');
