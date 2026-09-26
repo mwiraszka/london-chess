@@ -37,9 +37,12 @@ export default defineConfig({
       timeout: 180_000,
     },
     {
-      command: 'node scripts/generate-data.mjs && pnpm exec ng serve --port 4200',
+      // A build rather than the dev server, which compiles on demand and so is slower and
+      // can fail on imports a build resolves
+      command:
+        'node scripts/generate-data.mjs && pnpm exec ng build --configuration development && node e2e/serve.mjs',
       url: 'http://localhost:4200',
-      reuseExistingServer: !isCi,
+      reuseExistingServer: false,
       timeout: 300_000,
     },
   ],
