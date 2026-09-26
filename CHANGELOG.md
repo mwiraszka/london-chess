@@ -7,13 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.3.0] - 2026-09-26
 
+### Added
+
+- Display a member's 1st, 2nd and 3rd place finishes as gold, silver and bronze trophies above the table in the Tournaments card on their profile, with the details of each trophy's tournament and a link to it shown when it is selected
+
 ### Changed
 
 - Update all components to Angular's signal-based inputs, outputs and view queries
+- Shrink the chalice and cup trophies on the tournaments page, and trim the empty space around every trophy
+- Frame the rating details on a member's profile, keeping them on one line while they fit and pairing them up once they do not
+- Include what each score was out of alongside a trophy's tournament details
 
 ### Fixed
 
 - Keep a browser that loads an older version of the site from picking up state saved by a newer one, so it starts cleanly instead of failing to show the page
+- Hold every table's columns at their final widths from the moment a page starts loading, rather than letting them jump when the data arrives or when sorting or paging
+- Leave off the separator dot at the start of a wrapped line of tournament details
 
 ## [v6.2.2] - 2026-09-23
 
