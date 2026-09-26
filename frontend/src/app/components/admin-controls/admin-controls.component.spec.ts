@@ -1,267 +1,184 @@
-import { of } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { RouterModule } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
 import { AdminControlsConfig } from '@app/models/admin-controls-config.model';
-import { ADMIN_CONTROLS_CONFIG_TOKEN } from '@app/services';
-import { KeyStateService } from '@app/services';
+import { ADMIN_CONTROLS_CONFIG_TOKEN, KeyStateService } from '@app/services';
 import { query } from '@app/utils';
 
 import { AdminControlsComponent } from './admin-controls.component';
 
 describe('AdminControlsComponent', () => {
   let fixture: ComponentFixture<AdminControlsComponent>;
-  let component: AdminControlsComponent;
+  let config: AdminControlsConfig;
+  let ctrlMetaKeyPressed$: BehaviorSubject<boolean>;
 
-  let keyStateService: KeyStateService;
+  const create = (overrides: Partial<AdminControlsConfig> = {}, touch = false): void => {
+    config = { ...config, ...overrides };
+    fixture = TestBed.createComponent(AdminControlsComponent);
+    fixture.componentInstance.isTouchDevice = touch;
+    fixture.detectChanges();
+  };
 
-  let ctrlMetaKeyPressedSpy: MockInstance;
-  let deleteCbSpy: MockInstance;
-  let destroyedSpy: MockInstance;
+  const tooltipText = (selector: string): string => {
+    query(fixture.debugElement, selector).nativeElement.dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+    return (
+      TestBed.inject(OverlayContainer).getContainerElement().textContent?.trim() ?? ''
+    );
+  };
 
   beforeEach(async () => {
+    config = { buttonSize: 15, deleteCb: vi.fn(), itemName: 'Spring Open' };
+    ctrlMetaKeyPressed$ = new BehaviorSubject(false);
+
     await TestBed.configureTestingModule({
-      imports: [AdminControlsComponent, RouterModule.forRoot([])],
+      imports: [AdminControlsComponent],
       providers: [
-        {
-          provide: ADMIN_CONTROLS_CONFIG_TOKEN,
-          useValue: {
-            buttonSize: 15,
-            deleteCb: vi.fn(),
-            isDeleteDisabled: false,
-          },
-        },
-        KeyStateService,
+        provideRouter([]),
+        { provide: ADMIN_CONTROLS_CONFIG_TOKEN, useFactory: () => config },
+        { provide: KeyStateService, useValue: { ctrlMetaKeyPressed$ } },
       ],
     }).compileComponents();
-
-    fixture = TestBed.createComponent(AdminControlsComponent);
-    component = fixture.componentInstance;
-
-    keyStateService = TestBed.inject(KeyStateService);
-
-    ctrlMetaKeyPressedSpy = vi.spyOn(keyStateService, 'ctrlMetaKeyPressed$', 'get');
-    deleteCbSpy = vi.spyOn(component.config, 'deleteCb');
-    destroyedSpy = vi.spyOn(component.destroyed, 'emit');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('should size its buttons from the config', () => {
+    create();
+
+    expect(
+      fixture.nativeElement.style.getPropertyValue('--admin-control-button-size'),
+    ).toBe('15px');
   });
 
-  describe('destroyed event emitter', () => {
-    it('should emit destroyed event on ngOnDestroy', () => {
-      expect(destroyedSpy).toHaveBeenCalledTimes(0);
-      component.ngOnDestroy();
+  it('should emit destroyed when destroyed', () => {
+    create();
+    const destroyedSpy = vi.spyOn(fixture.componentInstance.destroyed, 'emit');
 
-      expect(destroyedSpy).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+
+    expect(destroyedSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('bookmark button', () => {
+    it('should need both a callback and a bookmarked state', () => {
+      create({ bookmarkCb: vi.fn() });
+      const withoutState = query(fixture.debugElement, '.bookmark-button');
+      create({ bookmarkCb: undefined, bookmarked: false });
+      const withoutCallback = query(fixture.debugElement, '.bookmark-button');
+
+      expect(withoutState).toBeNull();
+      expect(withoutCallback).toBeNull();
+    });
+
+    it('should bookmark the item when clicked', () => {
+      const bookmarkCb = vi.fn();
+      create({ bookmarkCb, bookmarked: false });
+
+      query(fixture.debugElement, '.bookmark-button').triggerEventHandler('click');
+
+      expect(bookmarkCb).toHaveBeenCalledTimes(1);
+    });
+
+    it('should describe adding or removing the bookmark', () => {
+      create({ bookmarkCb: vi.fn(), bookmarked: false });
+      const toAdd = tooltipText('.bookmark-button');
+      query(fixture.debugElement, '.bookmark-button').nativeElement.dispatchEvent(
+        new Event('blur'),
+      );
+      config.bookmarked = true;
+
+      const toRemove = tooltipText('.bookmark-button');
+
+      expect(toAdd).not.toBe(toRemove);
+      expect(toRemove).toContain('Spring Open');
     });
   });
 
-  describe('template rendering', () => {
-    describe('bookmark button', () => {
-      it('should not render if only bookmarkCb is provided', () => {
-        component.config.bookmarkCb = vi.fn();
-        component.config.bookmarked = undefined;
-        fixture.detectChanges();
+  describe('edit button', () => {
+    it('should not render without an edit path', () => {
+      create();
 
-        expect(query(fixture.debugElement, '.bookmark-button')).toBeFalsy();
-      });
-
-      it('should not render if only bookmarked is provided', () => {
-        component.config.bookmarkCb = undefined;
-        component.config.bookmarked = false;
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, '.bookmark-button')).toBeFalsy();
-      });
-
-      it('should render if both bookmarkCb and bookmarked are provided', () => {
-        component.config.bookmarkCb = vi.fn();
-        component.config.bookmarked = false;
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, '.bookmark-button')).toBeTruthy();
-      });
-
-      it('should invoke bookmarkCb when clicked', () => {
-        component.config.bookmarkCb = vi.fn();
-        component.config.bookmarked = false;
-        fixture.detectChanges();
-
-        // Must redeclare spy after callback change
-        const bookmarkCbSpy = vi.spyOn(component.config, 'bookmarkCb');
-
-        query(fixture.debugElement, '.bookmark-button').triggerEventHandler('click');
-
-        expect(bookmarkCbSpy).toHaveBeenCalledTimes(1);
-      });
+      expect(query(fixture.debugElement, '.edit-button')).toBeNull();
     });
 
-    describe('edit button', () => {
-      it('should not render if editPath is not provided', () => {
-        component.config.editPath = undefined;
-        fixture.detectChanges();
+    it('should link to the edit path in the same tab by default', () => {
+      create({ editPath: ['event', 'edit', '1'] });
 
-        expect(query(fixture.debugElement, '.edit-button')).toBeFalsy();
-      });
-
-      it('should render if editPath is provided', () => {
-        component.config.editPath = ['event', 'edit'];
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, '.edit-button')).toBeTruthy();
-      });
+      const link: HTMLAnchorElement = query(
+        fixture.debugElement,
+        '.edit-button',
+      ).nativeElement;
+      expect(link.getAttribute('href')).toBe('/event/edit/1');
+      expect(link.getAttribute('target')).toBeNull();
+      expect(tooltipText('.edit-button')).toContain('Spring Open');
     });
 
-    describe('delete button', () => {
-      describe('on touch devices', () => {
-        beforeEach(() => {
-          component.isTouchDevice = true;
-        });
+    it('should open the edit path in a new tab when configured to', () => {
+      create({ editPath: ['event', 'edit', '1'], editInNewTab: true });
 
-        it('should render disabled when isDeleteDisabled is true', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: true,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
+      const link: HTMLAnchorElement = query(
+        fixture.debugElement,
+        '.edit-button',
+      ).nativeElement;
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    });
 
-          expect(
-            query(fixture.debugElement, '.delete-button').nativeElement.disabled,
-          ).toBe(true);
-        });
-
-        it('should not invoke deleteCb when clicked when isDeleteDisabled is true', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: true,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
-
-          query(fixture.debugElement, '.delete-button').triggerEventHandler('click');
-
-          expect(deleteCbSpy).not.toHaveBeenCalled();
-        });
-
-        it('should render enabled when isDeleteDisabled is false', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: false,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
-
-          expect(
-            query(fixture.debugElement, '.delete-button').nativeElement.disabled,
-          ).toBe(false);
-        });
-
-        it('should invoke deleteCb when clicked when isDeleteDisabled is false', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: false,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
-
-          query(fixture.debugElement, '.delete-button').triggerEventHandler('click');
-
-          expect(deleteCbSpy).toHaveBeenCalledTimes(1);
-        });
+    it('should not link anywhere while editing is disabled, and say why', () => {
+      create({
+        editPath: ['event', 'edit', '1'],
+        isEditDisabled: true,
+        editDisabledReason: 'Locked for review',
       });
 
-      describe('on non-touch devices when ctrlMeta button is pressed', () => {
-        beforeEach(() => {
-          ctrlMetaKeyPressedSpy.mockReturnValue(of(true));
-          component.isTouchDevice = false;
-        });
+      const link = query(fixture.debugElement, '.edit-button');
+      expect(link.classes['disabled']).toBe(true);
+      expect(link.nativeElement.getAttribute('href')).toBeNull();
+      expect(tooltipText('.edit-button')).toBe('Locked for review');
+    });
+  });
 
-        it('should render disabled when isDeleteDisabled is true', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: true,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
+  describe('delete button', () => {
+    it('should always show on a touch device', () => {
+      create({}, true);
 
-          expect(
-            query(fixture.debugElement, '.delete-button').nativeElement.disabled,
-          ).toBe(true);
-        });
+      expect(query(fixture.debugElement, '.delete-button')).not.toBeNull();
+    });
 
-        it('should not invoke deleteCb when clicked when isDeleteDisabled is true', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: true,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
+    it('should show only while ctrl or meta is held on other devices', () => {
+      create();
+      const hidden = query(fixture.debugElement, '.delete-button');
 
-          query(fixture.debugElement, '.delete-button').triggerEventHandler('click');
+      ctrlMetaKeyPressed$.next(true);
+      fixture.detectChanges();
 
-          expect(deleteCbSpy).not.toHaveBeenCalled();
-        });
+      expect(hidden).toBeNull();
+      expect(query(fixture.debugElement, '.delete-button')).not.toBeNull();
+    });
 
-        it('should render enabled when isDeleteDisabled is false', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: false,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
+    it('should delete the item when clicked', () => {
+      create({}, true);
 
-          expect(
-            query(fixture.debugElement, '.delete-button').nativeElement.disabled,
-          ).toBe(false);
-        });
+      query(fixture.debugElement, '.delete-button').triggerEventHandler('click');
 
-        it('should invoke deleteCb when clicked when isDeleteDisabled is false', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: false,
-          } as AdminControlsConfig;
-          component.ngOnInit();
-          fixture.detectChanges();
+      expect(config.deleteCb).toHaveBeenCalledTimes(1);
+      expect(tooltipText('.delete-button')).toContain('Spring Open');
+    });
 
-          query(fixture.debugElement, '.delete-button').triggerEventHandler('click');
+    it('should be disabled, say why, and not delete while deleting is disabled', () => {
+      create(
+        { isDeleteDisabled: true, deleteDisabledReason: 'Used in an article' },
+        true,
+      );
 
-          expect(deleteCbSpy).toHaveBeenCalledTimes(1);
-        });
-      });
+      const button = query(fixture.debugElement, '.delete-button');
+      button.triggerEventHandler('click');
 
-      describe('on non-touch devices without pressed ctrlMeta button', () => {
-        beforeEach(() => {
-          ctrlMetaKeyPressedSpy.mockReturnValue(of(false));
-          component.isTouchDevice = false;
-          fixture.detectChanges();
-
-          component.ngOnInit();
-        });
-
-        it('should not render when isDeleteDisabled is true', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: true,
-          } as AdminControlsConfig;
-          fixture.detectChanges();
-
-          expect(query(fixture.debugElement, '.delete-button')).toBeFalsy();
-        });
-
-        it('should not render when isDeleteDisabled is false', () => {
-          component.config = {
-            ...component.config,
-            isDeleteDisabled: false,
-          } as AdminControlsConfig;
-          fixture.detectChanges();
-
-          expect(query(fixture.debugElement, '.delete-button')).toBeFalsy();
-        });
-      });
+      expect(button.nativeElement.disabled).toBe(true);
+      expect(config.deleteCb).not.toHaveBeenCalled();
+      expect(tooltipText('.delete-button')).toBe('Used in an article');
     });
   });
 });

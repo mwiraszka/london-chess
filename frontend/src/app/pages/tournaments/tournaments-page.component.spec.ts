@@ -1,3 +1,4 @@
+import { TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -156,9 +157,8 @@ describe('TournamentsPageComponent', () => {
       'ea-data-table',
     ).componentInstance.sizingRows();
 
-    expect(sizingRows.length).toBeGreaterThan(0);
     expect(sizingRows.map(row => row.summary)).toEqual(
-      expect.arrayContaining(sizingRows.map(row => row.summary)),
+      expect.arrayContaining(MOCK_TOURNAMENT_SUMMARIES),
     );
     expect(sizingRows.map(row => row.name)).toContain('Tandem Simul 2024');
     expect(
@@ -192,6 +192,67 @@ describe('TournamentsPageComponent', () => {
     fixture.detectChanges();
 
     expect(bodyRows().map(row => cellTexts(row)[3])).toEqual(['G25', 'G80', '3 hours']);
+  });
+
+  it('should break ties in a sorted column by showing the newest first', () => {
+    fixture.detectChanges();
+
+    query(fixture.debugElement, 'ea-data-table').triggerEventHandler('sorted', {
+      column: 'rounds',
+      direction: 'desc',
+    });
+    fixture.detectChanges();
+
+    expect(bodyRows().map(row => cellTexts(row)[1])).toEqual([
+      'Championship',
+      'Fall Active',
+      'Tandem Simul 2024',
+    ]);
+  });
+
+  it('should return to newest first when a column is unsorted', () => {
+    fixture.detectChanges();
+    const table = query(fixture.debugElement, 'ea-data-table');
+    table.triggerEventHandler('sorted', { column: 'name', direction: 'asc' });
+    fixture.detectChanges();
+
+    table.triggerEventHandler('sorted', { column: 'name', direction: null });
+    fixture.detectChanges();
+
+    expect(bodyRows().map(row => cellTexts(row)[1])).toEqual([
+      'Championship',
+      'Tandem Simul 2024',
+      'Fall Active',
+    ]);
+  });
+
+  it('should page through the tournaments', () => {
+    fixture.detectChanges();
+
+    query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
+      page: 2,
+      pageSize: 2,
+    });
+    fixture.detectChanges();
+
+    expect(bodyRows().map(row => cellTexts(row)[1])).toEqual(['Fall Active']);
+  });
+
+  it('should set a qualifying subtitle beside the name, in full in its tooltip', () => {
+    store.overrideSelector(TournamentsSelectors.selectSummaries, [
+      { ...MOCK_TOURNAMENT_SUMMARIES[2], subtitle: 'Section A' },
+    ]);
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    const name = query(bodyRows()[0], '.tournaments__name');
+    expect(query(name, '.tournaments__subtitle').nativeElement.textContent).toBe(
+      '(Section A)',
+    );
+    expect(name.injector.get(TooltipDirective).eaTooltip()).toBe(
+      'Fall Active (Section A)',
+    );
   });
 
   describe('the filters', () => {
@@ -233,6 +294,25 @@ describe('TournamentsPageComponent', () => {
       expect(navigateSpy).toHaveBeenCalledWith(
         ...navigation({ year: '2024', timeControl: 'G80', format: null }),
       );
+    });
+
+    it('should show only the tournaments played at a time control', () => {
+      queryParamMap.next(convertToParamMap({ timeControl: 'G25' }));
+
+      fixture.detectChanges();
+
+      expect(bodyRows().map(row => cellTexts(row)[1])).toEqual(['Fall Active']);
+    });
+
+    it.each([
+      ['.filters__year', '2023', { year: '2023', timeControl: null, format: null }],
+      ['.filters__format', 'swiss', { year: null, timeControl: null, format: 'swiss' }],
+    ])('should put a filter chosen from %s in the address', (dropdown, value, params) => {
+      fixture.detectChanges();
+
+      query(fixture.debugElement, dropdown).triggerEventHandler('changed', value);
+
+      expect(navigateSpy).toHaveBeenCalledWith(...navigation(params));
     });
 
     it('should clear every filter at once', () => {

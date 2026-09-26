@@ -39,10 +39,6 @@ describe('ToggleSwitchComponent', () => {
     tooltipDetachSpy = vi.spyOn(component.tooltipDirective(), 'detach');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     it('should generate a unique 8-char ID on initialization', () => {
       expect(component.uniqueId.length).toBe(8);

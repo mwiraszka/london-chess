@@ -20,10 +20,6 @@ describe('DocumentViewerComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('onProgress', () => {
     it('should calculate percentLoaded correctly when onProgress is called', () => {
       component.onProgress({ loaded: 75, total: 100 });

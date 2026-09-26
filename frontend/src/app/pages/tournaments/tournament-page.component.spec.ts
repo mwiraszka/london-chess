@@ -345,4 +345,94 @@ describe('TournamentPageComponent', () => {
       );
     });
   });
+
+  describe('details recorded only for some tournaments', () => {
+    const [swiss] = MOCK_TOURNAMENTS.filter(({ number }) => number === 90);
+    const [simul] = MOCK_TOURNAMENTS.filter(({ number }) => number === 111);
+
+    const show = (tournament: Tournament) => {
+      store.setState(stateWith([tournament]));
+      open(tournament.number);
+    };
+
+    it('should leave out a missing time control and count a lone player', () => {
+      const [section] = swiss.sections;
+      show({
+        ...swiss,
+        timeControl: '',
+        sections: [{ ...section, entries: [section.entries[0]] }],
+      });
+
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toEqual([
+        'October 19, 2023',
+        'Swiss (rated)',
+        '1 player',
+      ]);
+    });
+
+    it('should show a subtitle that names no one as it is', () => {
+      show({ ...simul, subtitle: 'Club members' });
+
+      const subtitle = query(fixture.debugElement, '.details__subtitle');
+      expect(textOf(subtitle)).toContain('Club members');
+      expect(query(subtitle, '.details__person')).toBeFalsy();
+    });
+
+    it('should name simul givers without ratings plainly', () => {
+      const [section] = simul.sections;
+      show({
+        ...simul,
+        subtitle: 'Doe, John / Smith, Jane',
+        sections: [
+          { ...section, name: 'Doe, John', entries: [section.entries[0]] },
+          {
+            ...section,
+            name: 'Smith, Jane / Bloggs, Joe',
+            entries: [section.entries[1]],
+          },
+        ],
+      });
+
+      expect(
+        queryAll(fixture.debugElement, '.details__subtitle .details__person').map(textOf),
+      ).toEqual(['Doe, John', 'Smith, Jane']);
+      expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
+        'Doe, John',
+        'Smith, Jane / Bloggs, Joe',
+      ]);
+      expect(
+        query(fixture.debugElement, '.details__subtitle .details__extra'),
+      ).toBeFalsy();
+    });
+
+    it('should leave a round blank where a player has no result', () => {
+      const [section] = swiss.sections;
+      const [first] = section.entries;
+      show({
+        ...swiss,
+        sections: [
+          {
+            ...section,
+            entries: [
+              {
+                ...first,
+                rounds: [{ ...first.rounds[0], opponentRank: 9, gameId: null }],
+              },
+            ],
+          },
+        ],
+      });
+
+      const [row] = tableRows(query(fixture.debugElement, '.crosstable'));
+      expect(row.slice(3, 6)).toEqual([expect.any(String), '', '']);
+      expect(row[3]).not.toBe('');
+    });
+
+    it('should link an article kept elsewhere as it is', () => {
+      show({ ...swiss, articleUrl: 'https://example.com/fall-active' });
+
+      const [article] = queryAll(fixture.debugElement, 'lcc-link-list a');
+      expect(article.attributes['href']).toBe('https://example.com/fall-active');
+    });
+  });
 });

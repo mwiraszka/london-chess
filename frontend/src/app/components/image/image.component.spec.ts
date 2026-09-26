@@ -59,13 +59,7 @@ describe('ImageComponent', () => {
     component = componentDebug.componentInstance;
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  const img = (): DebugElement => componentDebug.query(By.css('img'));
 
   describe('source resolution', () => {
     it('should show fallback with shimmer overlay when image is null', () => {
@@ -121,7 +115,7 @@ describe('ImageComponent', () => {
 
       expect(component.showShimmer()).toBe(true);
 
-      componentDebug.query(By.css('img')).triggerEventHandler('load', {});
+      img().triggerEventHandler('load', {});
       fixture.detectChanges();
 
       expect(component.showShimmer()).toBe(false);
@@ -131,7 +125,7 @@ describe('ImageComponent', () => {
       host.image.set(makeImage());
       fixture.detectChanges();
 
-      componentDebug.query(By.css('img')).triggerEventHandler('load', {});
+      img().triggerEventHandler('load', {});
       fixture.detectChanges();
 
       expect(component.hasLoaded()).toBe(false);
@@ -141,7 +135,7 @@ describe('ImageComponent', () => {
     it('should re-show the shimmer when the image input changes to a new URL', () => {
       host.image.set(makeImage({ mainUrl: MAIN_URL }));
       fixture.detectChanges();
-      componentDebug.query(By.css('img')).triggerEventHandler('load', {});
+      img().triggerEventHandler('load', {});
       fixture.detectChanges();
       expect(component.showShimmer()).toBe(false);
 
@@ -177,7 +171,7 @@ describe('ImageComponent', () => {
       component.displayMode.set('main');
       component.currentSrc.set(MAIN_URL);
 
-      component['onImgError']();
+      img().triggerEventHandler('error', {});
 
       expect(component.displayMode()).toBe('thumbnail');
       expect(component.currentSrc()).toBe(THUMBNAIL_URL);
@@ -189,7 +183,7 @@ describe('ImageComponent', () => {
       component.displayMode.set('thumbnail');
       component.currentSrc.set(THUMBNAIL_URL);
 
-      component['onImgError']();
+      img().triggerEventHandler('error', {});
 
       expect(component.displayMode()).toBe('main');
       expect(component.currentSrc()).toBe(MAIN_URL);
@@ -200,8 +194,8 @@ describe('ImageComponent', () => {
       fixture.detectChanges();
       component.displayMode.set('main');
 
-      component['onImgError']();
-      component['onImgError']();
+      img().triggerEventHandler('error', {});
+      img().triggerEventHandler('error', {});
 
       expect(component.displayMode()).toBe('fallback');
       expect(component.currentSrc()).toBe(FALLBACK_SRC);
@@ -211,7 +205,7 @@ describe('ImageComponent', () => {
       host.image.set(null);
       fixture.detectChanges();
 
-      component['onImgError']();
+      img().triggerEventHandler('error', {});
 
       expect(component.displayMode()).toBe('fallback');
       expect(component.currentSrc()).toBe(FALLBACK_SRC);
@@ -225,9 +219,124 @@ describe('ImageComponent', () => {
       const emitSpy = vi.fn();
       component.loaded.subscribe(emitSpy);
 
-      componentDebug.query(By.css('img')).triggerEventHandler('load', {});
+      img().triggerEventHandler('load', {});
 
       expect(emitSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('fallback chain', () => {
+    it('should go straight to the fallback asset when the only main URL fails', () => {
+      host.image.set(makeImage({ mainUrl: MAIN_URL }));
+      fixture.detectChanges();
+
+      img().triggerEventHandler('error', {});
+
+      expect(component.displayMode()).toBe('fallback');
+    });
+
+    it('should go straight to the fallback asset when the only thumbnail fails', () => {
+      host.image.set(makeImage({ thumbnailUrl: THUMBNAIL_URL }));
+      fixture.detectChanges();
+
+      img().triggerEventHandler('error', {});
+
+      expect(component.displayMode()).toBe('fallback');
+    });
+
+    it('should stay on the fallback asset if even that fails', () => {
+      host.image.set(makeImage());
+      fixture.detectChanges();
+
+      img().triggerEventHandler('error', {});
+
+      expect(component.displayMode()).toBe('fallback');
+      expect(component.currentSrc()).toBe(FALLBACK_SRC);
+    });
+  });
+
+  describe('full-size upgrade', () => {
+    let preloaders: HTMLImageElement[];
+
+    beforeEach(() => {
+      preloaders = [];
+      vi.spyOn(window, 'Image').mockImplementation(function () {
+        const preloader = document.createElement('img');
+        preloaders.push(preloader);
+        return preloader;
+      });
+    });
+
+    const showThumbnail = (): void => {
+      host.image.set(makeImage({ mainUrl: MAIN_URL, thumbnailUrl: THUMBNAIL_URL }));
+      fixture.detectChanges();
+      img().triggerEventHandler('load', {});
+      fixture.detectChanges();
+    };
+
+    it('should preload the main image once the thumbnail shows, then swap it in', () => {
+      showThumbnail();
+      img().triggerEventHandler('load', {});
+
+      preloaders[0].dispatchEvent(new Event('load'));
+      fixture.detectChanges();
+
+      expect(preloaders.length).toBe(1);
+      expect(preloaders[0].src).toBe(MAIN_URL);
+      expect(component.displayMode()).toBe('main');
+      expect(img().nativeElement.src).toBe(MAIN_URL);
+      expect(component.blurred()).toBe(false);
+    });
+
+    it('should keep the thumbnail, unblurred, when the main image fails to preload', () => {
+      showThumbnail();
+
+      preloaders[0].dispatchEvent(new Event('error'));
+      img().triggerEventHandler('load', {});
+      fixture.detectChanges();
+
+      expect(preloaders.length).toBe(1);
+      expect(component.displayMode()).toBe('thumbnail');
+      expect(img().nativeElement.src).toBe(THUMBNAIL_URL);
+      expect(component.blurred()).toBe(false);
+    });
+
+    it('should preload a main URL that arrives after the thumbnail has shown', () => {
+      host.image.set(makeImage({ thumbnailUrl: THUMBNAIL_URL }));
+      fixture.detectChanges();
+      img().triggerEventHandler('load', {});
+
+      host.image.set(makeImage({ mainUrl: MAIN_URL, thumbnailUrl: THUMBNAIL_URL }));
+      fixture.detectChanges();
+      preloaders[0].dispatchEvent(new Event('load'));
+      fixture.detectChanges();
+
+      expect(component.displayMode()).toBe('main');
+      expect(img().nativeElement.src).toBe(MAIN_URL);
+    });
+
+    it('should ignore a preload that was cancelled by a new image', () => {
+      showThumbnail();
+      const { onload, onerror } = preloaders[0];
+
+      host.image.set(
+        makeImage({ id: 'img-2', mainUrl: 'https://example.com/other.jpg' }),
+      );
+      fixture.detectChanges();
+      onload?.call(preloaders[0], new Event('load'));
+      onerror?.call(preloaders[0], new Event('error'));
+
+      expect(preloaders[0].onload).toBeNull();
+      expect(component.currentSrc()).toBe('https://example.com/other.jpg');
+    });
+
+    it('should cancel the preload when destroyed', () => {
+      showThumbnail();
+
+      fixture.destroy();
+
+      expect(preloaders[0].onload).toBeNull();
+      expect(preloaders[0].onerror).toBeNull();
     });
   });
 });

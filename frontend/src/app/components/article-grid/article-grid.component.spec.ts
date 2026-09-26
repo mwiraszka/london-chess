@@ -62,10 +62,6 @@ describe('ArticleGridComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('showSkeleton', () => {
     it('should return true when isLoading is true', () => {
       fixture.componentRef.setInput('isLoading', true);

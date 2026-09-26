@@ -6,7 +6,6 @@ import { query } from '@app/utils';
 import { ClubCardComponent } from './club-card.component';
 
 describe('ClubCardComponent', () => {
-  let component: ClubCardComponent;
   let fixture: ComponentFixture<ClubCardComponent>;
 
   beforeEach(async () => {
@@ -15,12 +14,7 @@ describe('ClubCardComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ClubCardComponent);
-    component = fixture.componentInstance;
     fixture.componentRef.setInput('club', LCC);
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('template rendering', () => {

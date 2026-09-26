@@ -54,10 +54,6 @@ describe('TooltipDirective', () => {
     vi.clearAllMocks();
   });
 
-  it('should create', () => {
-    expect(directive).toBeTruthy();
-  });
-
   describe('attach', () => {
     it('should attach tooltip on mouseenter when tooltip content exists', () => {
       directiveElement.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));

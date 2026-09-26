@@ -1,10 +1,20 @@
 import moment from 'moment-timezone';
 
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { DatePickerComponent } from './date-picker.component';
+
+@Component({
+  template: `<lcc-date-picker [formControl]="control" />`,
+  imports: [DatePickerComponent, ReactiveFormsModule],
+})
+class HostComponent {
+  readonly control = new FormControl('2050-01-01T00:00:00.000Z', { nonNullable: true });
+}
 
 describe('DatePickerComponent', () => {
   let fixture: ComponentFixture<DatePickerComponent>;
@@ -13,11 +23,25 @@ describe('DatePickerComponent', () => {
   let onChangeSpy: MockInstance;
   let onNextMonthSpy: MockInstance;
   let onPreviousMonthSpy: MockInstance;
-  let onSelectCellSpy: MockInstance;
   let renderCalendarSpy: MockInstance;
+
+  const innerWidth = window.innerWidth;
+
+  const resizeWindow = (width: number): void => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    window.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+  };
 
   beforeAll(() => moment.tz.setDefault('UTC'));
   afterAll(() => moment.tz.setDefault());
+
+  afterEach(() => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: innerWidth,
+    });
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -30,7 +54,6 @@ describe('DatePickerComponent', () => {
     onChangeSpy = vi.spyOn(component, 'onChange');
     onNextMonthSpy = vi.spyOn(component, 'onNextMonth');
     onPreviousMonthSpy = vi.spyOn(component, 'onPreviousMonth');
-    onSelectCellSpy = vi.spyOn(component, 'onSelectCell');
     renderCalendarSpy = vi.spyOn(component, 'renderCalendar');
 
     component.writeValue('2050-01-01T00:00:00.000Z');
@@ -40,29 +63,45 @@ describe('DatePickerComponent', () => {
     vi.clearAllMocks();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  describe('value', () => {
+    it("should fall back to today's date without a value", () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2051-06-15T12:00:00.000Z'));
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+      component.writeValue('');
+      fixture.detectChanges();
+
+      expect(warnSpy).toHaveBeenCalled();
+      expect(queryTextContent(fixture.debugElement, '.title')).toBe('June 2051');
+      expect(queryTextContent(fixture.debugElement, '.selected-day')).toBe('15');
+    });
+
+    it('should show the month of a date selected from outside', () => {
+      component.setSelectedDate('2050-03-20T00:00:00.000Z');
+      fixture.detectChanges();
+
+      expect(queryTextContent(fixture.debugElement, '.title')).toBe('March 2050');
+      expect(queryTextContent(fixture.debugElement, '.selected-day')).toBe('20');
+    });
+
+    it('should not build a calendar before it has a value', () => {
+      const unset = TestBed.createComponent(DatePickerComponent).componentInstance;
+
+      unset.renderCalendar();
+
+      expect(unset.calendarDays).toEqual([]);
+    });
   });
 
   describe('template rendering', () => {
     describe('header', () => {
-      it('should render previous month button', () => {
-        expect(query(fixture.debugElement, '.previous-month-button')).toBeTruthy();
-      });
-
-      it('should render next month button', () => {
-        expect(query(fixture.debugElement, '.next-month-button')).toBeTruthy();
-      });
-
       it('should render the currently selected month and year as the title', () => {
         expect(queryTextContent(fixture.debugElement, '.title')).toBe('January 2050');
       });
 
       it('should shorten the month text on small screens', () => {
-        // Simulate resize so the host listener updates value (some environments may override manual assignment)
-        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 300 });
-        window.dispatchEvent(new Event('resize'));
-        fixture.detectChanges();
+        resizeWindow(300);
 
         expect(queryTextContent(fixture.debugElement, '.title')).toBe('Jan 2050');
       });
@@ -127,17 +166,6 @@ describe('DatePickerComponent', () => {
         expect(queryTextContent(fixture.debugElement, '.selected-day')).toBe('15');
       });
 
-      it('should call onSelectCell when a day is clicked', () => {
-        // Use the first day cell directly
-        const firstCell = query(
-          fixture.debugElement,
-          'tbody tr:first-child td:first-child',
-        );
-        firstCell.triggerEventHandler('click');
-
-        expect(onSelectCellSpy).toHaveBeenCalledWith(0, 0);
-      });
-
       it('should update selected date when a day is clicked', () => {
         component.writeValue('2050-01-01T00:00:00.000Z');
         fixture.detectChanges();
@@ -165,14 +193,23 @@ describe('DatePickerComponent', () => {
           'Saturday, January 15th 2050',
         );
 
-        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 300 });
-        window.dispatchEvent(new Event('resize'));
-        fixture.detectChanges();
+        resizeWindow(300);
 
         expect(queryTextContent(fixture.debugElement, '.selected-date')).toBe(
           'Sat, Jan 15th 2050',
         );
       });
     });
+  });
+
+  it('should work as a form control', () => {
+    const hostFixture = TestBed.createComponent(HostComponent);
+    hostFixture.detectChanges();
+
+    queryAll(hostFixture.debugElement, 'tbody td')
+      .find(cell => cell.nativeElement.textContent.trim() === '9')
+      ?.triggerEventHandler('click');
+
+    expect(hostFixture.componentInstance.control.value).toBe('2050-01-09T00:00:00.000Z');
   });
 });

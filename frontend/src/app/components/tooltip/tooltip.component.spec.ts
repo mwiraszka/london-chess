@@ -56,10 +56,6 @@ describe('TooltipComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
     it('should receive content through dependency injection', () => {
       expect(component.tooltipContent).toBe(shortString);
     });

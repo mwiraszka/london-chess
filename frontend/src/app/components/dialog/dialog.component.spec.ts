@@ -49,10 +49,6 @@ describe('DialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should forward events from the content component', () => {
     // @ts-expect-error Private class member
     component.contentComponentRef?.instance.dialogResult.emit('test-result');

@@ -1,19 +1,24 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
-import { firstValueFrom, of } from 'rxjs';
+import { provideMarkdown } from 'ngx-markdown';
+import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { take } from 'rxjs/operators';
 
-import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { ArticleComponent } from '@app/components/article/article.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ARTICLE_FORM_DATA_PROPERTIES, IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
+import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { Article, Image } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { Id } from '@app/models';
+import {
+  DialogService,
+  MetaAndTitleService,
+  RoutingService,
+  StoreRequestService,
+} from '@app/services';
 import { AppState, initialState as appInitialState } from '@app/store/app';
 import {
   ArticlesActions,
@@ -25,17 +30,6 @@ import { ImagesState, initialState as imagesInitialState } from '@app/store/imag
 import { lastOpenedDialog, query } from '@app/utils';
 
 import { ArticleViewerPageComponent } from './article-viewer-page.component';
-
-@Component({
-  selector: 'lcc-article',
-  template: '',
-  standalone: true,
-})
-class MockArticleComponent {
-  readonly article = input.required<Article>();
-  readonly bannerImage = input.required<Image | null>();
-  readonly bodyImages = input<Image[]>([]);
-}
 
 describe('ArticleViewerPageComponent', () => {
   let fixture: ComponentFixture<ArticleViewerPageComponent>;
@@ -60,8 +54,10 @@ describe('ArticleViewerPageComponent', () => {
   let mockArticlesState: ArticlesState;
   let mockAuthState: AuthState;
   let mockImagesState: ImagesState;
+  let activatedRoute: { params: Observable<{ article_id: Id }> };
 
-  beforeEach(async () => {
+  beforeEach(() => {
+    activatedRoute = { params: of({ article_id: mockArticle.id }) };
     mockAppState = {
       ...appInitialState,
     };
@@ -100,13 +96,12 @@ describe('ArticleViewerPageComponent', () => {
       totalCount: 1,
     };
 
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [ArticleViewerPageComponent],
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { params: of({ article_id: mockArticle.id }) },
-        },
+        { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: RoutingService, useValue: { fragment$: of(null) } },
+        provideMarkdown(),
         {
           provide: DialogService,
           useValue: { open: vi.fn() },
@@ -131,14 +126,7 @@ describe('ArticleViewerPageComponent', () => {
           },
         }),
       ],
-    })
-      .overrideComponent(ArticleViewerPageComponent, {
-        remove: { imports: [ArticleComponent] },
-        add: {
-          imports: [MockArticleComponent],
-        },
-      })
-      .compileComponents();
+    });
 
     fixture = TestBed.createComponent(ArticleViewerPageComponent);
     component = fixture.componentInstance;
@@ -154,10 +142,6 @@ describe('ArticleViewerPageComponent', () => {
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
 
     store.refreshState();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('initialization', () => {
@@ -179,6 +163,27 @@ describe('ArticleViewerPageComponent', () => {
       });
     });
 
+    it('should describe a short article with its whole body', async () => {
+      store.setState({
+        appState: mockAppState,
+        articlesState: {
+          ...mockArticlesState,
+          entities: {
+            [mockArticle.id]: {
+              article: { ...mockArticle, body: 'A short report.' },
+              formData: pick(mockArticle, ARTICLE_FORM_DATA_PROPERTIES),
+            },
+          },
+        },
+        authState: mockAuthState,
+        imagesState: mockImagesState,
+      });
+
+      await firstValueFrom(component.viewModel$!.pipe(take(1)));
+
+      expect(updateDescriptionSpy).toHaveBeenCalledWith('A short report.');
+    });
+
     it('should update title and meta tag accordingly', async () => {
       await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
@@ -191,9 +196,16 @@ describe('ArticleViewerPageComponent', () => {
     });
   });
 
-  describe('getAdminControlsConfig', () => {
-    it('should return config with correct delete callback and edit path', () => {
-      const config = component.getAdminControlsConfig(mockArticle);
+  describe('admin controls', () => {
+    const adminControls = () =>
+      query(fixture.debugElement, 'lcc-article')
+        .injector.get(AdminControlsDirective)
+        .adminControls();
+
+    it('should let an admin edit or delete the article', () => {
+      fixture.detectChanges();
+
+      const config = adminControls();
 
       expect(config).toStrictEqual({
         buttonSize: 34,
@@ -202,9 +214,22 @@ describe('ArticleViewerPageComponent', () => {
         itemName: mockArticle.title,
       });
 
-      config.deleteCb();
+      config?.deleteCb();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not offer the controls to anyone else', () => {
+      store.setState({
+        appState: mockAppState,
+        articlesState: mockArticlesState,
+        authState: { user: null },
+        imagesState: mockImagesState,
+      });
+
+      fixture.detectChanges();
+
+      expect(adminControls()).toBeNull();
     });
   });
 
@@ -242,23 +267,19 @@ describe('ArticleViewerPageComponent', () => {
     });
   });
 
-  describe('onRetry', () => {
-    it('should fetch the article again', () => {
-      component.onRetry(mockArticle.id);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.fetchArticleRequested({ articleId: mockArticle.id }),
-      );
-    });
-  });
-
   describe('template rendering', () => {
-    describe('when viewModel$ is undefined', () => {
-      it('should not render page components', () => {
-        expect(query(fixture.debugElement, 'lcc-article')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
-      });
+    it('should render nothing until the route params arrive', () => {
+      const params = new Subject<{ article_id: Id }>();
+      activatedRoute.params = params;
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-article-skeleton')).toBeFalsy();
+
+      params.next({ article_id: mockArticle.id });
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-article')).toBeTruthy();
     });
 
     describe('when viewModel$ is defined', () => {

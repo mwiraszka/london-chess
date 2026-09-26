@@ -1,7 +1,9 @@
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { EventInfoDialogComponent } from '@app/components/event-info-dialog/event-info-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
@@ -38,6 +40,9 @@ describe('EventsCalendarGridComponent', () => {
     },
     search: '',
   };
+
+  const overlay = (): HTMLElement =>
+    TestBed.inject(OverlayContainer).getContainerElement();
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -78,34 +83,6 @@ describe('EventsCalendarGridComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  describe('calendar months update', () => {
-    it('should build calendar months from the events', () => {
-      expect(component.calendarMonths().length).toBeGreaterThan(0);
-    });
-
-    it('should update when events change', () => {
-      const initialLength = component.calendarMonths().length;
-
-      fixture.componentRef.setInput('events', MOCK_EVENTS.slice(0, 4));
-      fixture.detectChanges();
-
-      expect(component.calendarMonths().length).toBeGreaterThan(initialLength);
-    });
-
-    it('should not update when non-events properties change', () => {
-      const initialCalendarMonths = component.calendarMonths();
-
-      fixture.componentRef.setInput('isAdmin', false);
-      fixture.detectChanges();
-
-      expect(component.calendarMonths()).toBe(initialCalendarMonths);
-    });
-  });
-
   describe('getAdminControlsConfig', () => {
     it('should return correct configuration for event', () => {
       const config = component.getAdminControlsConfig(mockEvents[0]);
@@ -113,7 +90,14 @@ describe('EventsCalendarGridComponent', () => {
       expect(config.buttonSize).toBe(34);
       expect(config.editPath).toEqual(['event', 'edit', mockEvents[0].id]);
       expect(config.itemName).toBe(mockEvents[0].title);
-      expect(config.deleteCb).toBeDefined();
+    });
+
+    it('should ask to confirm a delete from the controls', async () => {
+      dialogOpenSpy.mockResolvedValue('cancel');
+
+      await component.getAdminControlsConfig(mockEvents[0]).deleteCb();
+
+      expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Delete');
     });
   });
 
@@ -235,6 +219,84 @@ describe('EventsCalendarGridComponent', () => {
       expect(component.calendarMonths().length).toBeGreaterThan(
         initialCalendarMonths.length,
       );
+    });
+  });
+
+  describe('event indicators', () => {
+    it('should list the events of a day, most recently edited first', () => {
+      const olderEdit: Event = {
+        ...MOCK_EVENTS[1],
+        id: 'older-edit',
+        eventDate: MOCK_EVENTS[0].eventDate,
+        modificationInfo: {
+          ...MOCK_EVENTS[1].modificationInfo,
+          dateLastEdited: '2020-01-01T00:00:00.000Z',
+        },
+      };
+      const newerEdit: Event = {
+        ...olderEdit,
+        id: 'newer-edit',
+        modificationInfo: {
+          ...olderEdit.modificationInfo,
+          dateLastEdited: '2021-01-01T00:00:00.000Z',
+        },
+      };
+      fixture.componentRef.setInput('events', [olderEdit, newerEdit]);
+
+      const day = component
+        .calendarMonths()[0]
+        .weeks.flat()
+        .find(calendarDay => calendarDay.events.length);
+
+      expect(day?.events.map(event => event.id)).toEqual(['newer-edit', 'older-edit']);
+    });
+
+    it('should open the event details and go to its article when asked to', async () => {
+      const router = TestBed.inject(Router);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      dialogOpenSpy.mockResolvedValue('details');
+
+      queryAll(fixture.debugElement, '.event-indicator')[1].triggerEventHandler('click');
+      await fixture.whenStable();
+
+      expect(dialogOpenSpy).toHaveBeenCalledWith({
+        componentType: EventInfoDialogComponent,
+        inputs: { event: MOCK_EVENTS[1] },
+        isModal: true,
+      });
+      expect(navigateSpy).toHaveBeenCalledWith([
+        '/article/view/',
+        MOCK_EVENTS[1].articleId,
+      ]);
+    });
+
+    it('should stay put when the event details are closed', async () => {
+      const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
+      dialogOpenSpy.mockResolvedValue('close');
+
+      await component.onEventIndicator(MOCK_EVENTS[1]);
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should show the event in a tooltip, highlighting the search', () => {
+      fixture.componentRef.setInput('options', { ...mockOptions, search: 'champ' });
+      fixture.detectChanges();
+      const [blitz, championship] = queryAll(fixture.debugElement, '.event-indicator');
+
+      blitz.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+      const blitzTrophies = overlay().querySelectorAll('.championship-icon').length;
+      blitz.nativeElement.dispatchEvent(new MouseEvent('mouseleave'));
+      championship.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+
+      expect(blitzTrophies).toBe(0);
+      expect(overlay().querySelector('.event-title')?.textContent).toBe(
+        MOCK_EVENTS[1].title,
+      );
+      expect(overlay().querySelector('.event-type mark')?.textContent).toBe('champ');
+      expect(overlay().querySelectorAll('.championship-icon').length).toBe(1);
     });
   });
 

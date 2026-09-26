@@ -11,7 +11,6 @@ import { ModificationInfoComponent } from './modification-info.component';
 
 describe('ModificationInfoComponent', () => {
   let fixture: ComponentFixture<ModificationInfoComponent>;
-  let component: ModificationInfoComponent;
 
   const api = { get: vi.fn(() => Promise.resolve<MemberProfile[]>([])) };
 
@@ -24,14 +23,9 @@ describe('ModificationInfoComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ModificationInfoComponent);
-    component = fixture.componentInstance;
 
     fixture.componentRef.setInput('info', MOCK_MODIFICATION_INFOS[0]);
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('template rendering', () => {

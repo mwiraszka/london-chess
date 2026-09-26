@@ -43,10 +43,6 @@ describe('BasicDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('dialog result handling', () => {
     it('should emit "cancel" when cancel button is clicked', () => {
       query(fixture.debugElement, '.cancel-button').triggerEventHandler('click');

@@ -1,12 +1,10 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
 
-import { Renderer2 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
+import { Image } from '@app/models';
 import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { lastOpenedDialog, query, queryTextContent } from '@app/utils';
@@ -16,276 +14,363 @@ import { ImageViewerComponent } from './image-viewer.component';
 describe('ImageViewerComponent', () => {
   let fixture: ComponentFixture<ImageViewerComponent>;
   let component: ImageViewerComponent;
-
-  let dialogService: DialogService;
   let store: MockStore;
 
   let adminControlsCloseSpy: MockInstance;
-  let dialogOpenSpy: MockInstance;
+  let adminControlsOpenSpy: MockInstance;
+  let dialogOpenSpy: Mock;
   let dialogResultSpy: MockInstance;
   let dispatchSpy: MockInstance;
-  let fetchImageSpy: MockInstance;
-  let indexSubjectNextSpy: MockInstance;
   let storeRequestSpy: Mock;
 
+  const createViewer = (images: Image[] = MOCK_IMAGES, isAdmin = true): void => {
+    fixture = TestBed.createComponent(ImageViewerComponent);
+    component = fixture.componentInstance;
+    dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
+
+    fixture.componentRef.setInput('album', 'Mock Album');
+    fixture.componentRef.setInput('images', images);
+    fixture.componentRef.setInput('isAdmin', isAdmin);
+    fixture.detectChanges();
+  };
+
+  const isPrefetch = (
+    arg: unknown,
+  ): arg is ReturnType<typeof ImagesActions.fetchMainImageInBackgroundRequested> =>
+    typeof arg === 'object' &&
+    arg !== null &&
+    'type' in arg &&
+    arg.type === ImagesActions.fetchMainImageInBackgroundRequested.type;
+
+  const prefetched = (): string[] =>
+    dispatchSpy.mock.calls
+      .flat()
+      .filter(isPrefetch)
+      .map(action => action.imageId);
+
+  const shownImageId = (): string => component.imageId;
+
+  const press = (type: 'keydown' | 'keyup', key: string): KeyboardEvent => {
+    const event = new KeyboardEvent(type, { key, cancelable: true });
+    document.dispatchEvent(event);
+    fixture.detectChanges();
+    return event;
+  };
+
   beforeEach(async () => {
+    vi.useFakeTimers();
+
     await TestBed.configureTestingModule({
-      imports: [AdminControlsDirective, ImageViewerComponent],
+      imports: [ImageViewerComponent],
       providers: [
         provideMockStore(),
-        {
-          provide: DialogService,
-          useValue: { open: vi.fn() },
-        },
+        { provide: DialogService, useValue: { open: vi.fn() } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
-        {
-          provide: Renderer2,
-          useValue: {
-            listen: vi.fn().mockReturnValue(() => {}),
-          },
-        },
       ],
     }).compileComponents();
 
-    dialogService = TestBed.inject(DialogService);
     store = TestBed.inject(MockStore);
-
     store.overrideSelector(ImagesSelectors.selectAllImages, MOCK_IMAGES);
-    MOCK_IMAGES.forEach(image => {
-      store.overrideSelector(ImagesSelectors.selectImageById(image.id), image);
-    });
 
-    fixture = TestBed.createComponent(ImageViewerComponent);
-    component = fixture.componentInstance;
-
-    // Spies must be set up before first detectChanges where ngOnInit runs
-    dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
+    dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    // @ts-expect-error Private class member
-    fetchImageSpy = vi.spyOn(component, 'fetchImage');
-    // @ts-expect-error Private class member
-    indexSubjectNextSpy = vi.spyOn(component.indexSubject, 'next');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
-
-    fixture.componentRef.setInput('album', 'Mock Album');
-    fixture.componentRef.setInput('images', MOCK_IMAGES);
-    fixture.componentRef.setInput('isAdmin', true);
-    fixture.detectChanges();
-
     adminControlsCloseSpy = vi.spyOn(TestBed.inject(AdminControlsService), 'close');
+    adminControlsOpenSpy = vi
+      .spyOn(TestBed.inject(AdminControlsService), 'open')
+      .mockImplementation(() => undefined);
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  afterEach(() => fixture.destroy());
 
-  describe('initialization', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-      component.ngOnInit();
-      fixture.detectChanges();
-    });
+  describe('fetching the shown image', () => {
+    it('should fetch the first image when it has no main URL yet', () => {
+      createViewer();
 
-    it('should dispatch fetchMainImageRequested for image at index 0', () => {
-      // Manually trigger image fetch to avoid timing issues with async pipe subscription
-      // @ts-expect-error Private class member
-      component.fetchImage(0);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchMainImageRequested({
-          imageId: MOCK_IMAGES[0].id,
-        }),
+        ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
       );
     });
 
-    it('should dispatch fetchMainImageRequested when the stored main URL is expired', () => {
-      const expiredImage = {
-        ...MOCK_IMAGES[0],
-        mainUrl: 'https://example.com/stale.jpg',
-        urlExpirationDate: new Date(Date.now() - 60_000).toISOString(),
-      };
+    it('should fetch the image again when its stored main URL is expiring', () => {
+      vi.setSystemTime(new Date('2026-03-14T12:00:00Z'));
       store.overrideSelector(ImagesSelectors.selectAllImages, [
-        expiredImage,
+        {
+          ...MOCK_IMAGES[0],
+          mainUrl: 'https://example.com/stale.jpg',
+          urlExpirationDate: '2026-03-14T13:00:00Z',
+        },
         ...MOCK_IMAGES.slice(1),
       ]);
-      vi.clearAllMocks();
 
-      // @ts-expect-error Private class member
-      component.fetchImage(0);
+      createViewer();
 
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchMainImageRequested({ imageId: expiredImage.id }),
+        ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
       );
     });
 
-    it('should not refetch when the stored main URL is still fresh', () => {
-      const freshImage = {
-        ...MOCK_IMAGES[0],
-        mainUrl: 'https://example.com/fresh.jpg',
-        urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
-      };
+    it('should not fetch the image while its stored main URL is fresh', () => {
+      vi.setSystemTime(new Date('2026-03-14T12:00:00Z'));
       store.overrideSelector(ImagesSelectors.selectAllImages, [
-        freshImage,
+        {
+          ...MOCK_IMAGES[0],
+          mainUrl: 'https://example.com/fresh.jpg',
+          urlExpirationDate: '2026-03-14T23:00:00Z',
+        },
         ...MOCK_IMAGES.slice(1),
       ]);
-      vi.clearAllMocks();
 
-      // @ts-expect-error Private class member
-      component.fetchImage(0);
+      createViewer();
 
-      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(dispatchSpy).not.toHaveBeenCalledWith(
+        ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
+      );
     });
 
-    it('should set up currentImage$ observable', () => {
-      component.currentImage$.subscribe(image => {
-        expect(image).toEqual(MOCK_IMAGES[0]);
-      });
+    it('should show nothing until the image is in the store', () => {
+      store.overrideSelector(ImagesSelectors.selectAllImages, []);
+
+      createViewer();
+
+      expect(query(fixture.debugElement, 'figure')).toBeNull();
+    });
+  });
+
+  describe('prefetching adjacent images', () => {
+    it('should not prefetch anything for a single image', () => {
+      createViewer([MOCK_IMAGES[0]]);
+
+      vi.advanceTimersByTime(10_000);
+
+      expect(prefetched()).toEqual([]);
     });
 
-    describe('prefetching adjacent images', () => {
-      beforeEach(() => vi.useFakeTimers());
-      afterEach(() => vi.useRealTimers());
+    it('should prefetch the other image of two', () => {
+      createViewer(MOCK_IMAGES.slice(0, 2));
 
-      it('should correctly handle albums with a single image', () => {
-        vi.clearAllMocks();
-        fixture.componentRef.setInput('images', [MOCK_IMAGES[0]]);
+      vi.advanceTimersByTime(10_000);
 
-        // @ts-expect-error Private class member
-        component.prefetchAdjacentImages();
+      expect(prefetched()).toEqual([MOCK_IMAGES[1].id]);
+    });
 
-        vi.advanceTimersByTime(1000);
+    it('should prefetch the next and then the previous image of three', () => {
+      createViewer(MOCK_IMAGES.slice(0, 3));
 
-        expect(fetchImageSpy).not.toHaveBeenCalled();
-      });
+      vi.advanceTimersByTime(1000);
+      const first = prefetched();
+      vi.advanceTimersByTime(10_000);
 
-      it('should correctly handle albums with two images', () => {
-        vi.clearAllMocks();
-        fixture.componentRef.setInput('images', [MOCK_IMAGES[0], MOCK_IMAGES[1]]);
+      expect(first).toEqual([MOCK_IMAGES[1].id]);
+      expect(prefetched()).toEqual([MOCK_IMAGES[1].id, MOCK_IMAGES[2].id]);
+    });
 
-        // @ts-expect-error Private class member
-        component.prefetchAdjacentImages();
+    it('should prefetch outward from the shown image, one a second', () => {
+      const last = MOCK_IMAGES.length - 1;
+      createViewer();
 
-        vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(4000);
 
-        expect(fetchImageSpy).toHaveBeenCalledTimes(1);
-        expect(fetchImageSpy).toHaveBeenCalledWith(1, true);
+      expect(prefetched()).toEqual(
+        [1, last, 2, last - 1].map(index => MOCK_IMAGES[index].id),
+      );
+    });
 
-        vi.clearAllMocks();
-        vi.advanceTimersByTime(1000);
+    it('should skip prefetching an image no longer in the album', () => {
+      createViewer(MOCK_IMAGES.slice(0, 2));
 
-        expect(fetchImageSpy).not.toHaveBeenCalled();
-      });
+      fixture.componentRef.setInput('images', [MOCK_IMAGES[0]]);
+      vi.advanceTimersByTime(10_000);
 
-      it('should correctly handle albums with three images', () => {
-        vi.clearAllMocks();
-        fixture.componentRef.setInput('images', [
-          MOCK_IMAGES[0],
-          MOCK_IMAGES[1],
-          MOCK_IMAGES[2],
-        ]);
-
-        // @ts-expect-error Private class member
-        component.prefetchAdjacentImages();
-
-        vi.advanceTimersByTime(1000);
-
-        expect(fetchImageSpy).toHaveBeenCalledTimes(1);
-        expect(fetchImageSpy).toHaveBeenCalledWith(1, true);
-
-        vi.clearAllMocks();
-        vi.advanceTimersByTime(1000);
-
-        expect(fetchImageSpy).toHaveBeenCalledTimes(1);
-        expect(fetchImageSpy).toHaveBeenCalledWith(2, true);
-
-        vi.clearAllMocks();
-        vi.advanceTimersByTime(1000);
-
-        expect(fetchImageSpy).not.toHaveBeenCalled();
-      });
-
-      it('should correctly handle albums with many images', () => {
-        vi.clearAllMocks();
-
-        // @ts-expect-error Private class member
-        component.prefetchAdjacentImages();
-
-        vi.advanceTimersByTime(1000);
-
-        expect(fetchImageSpy).toHaveBeenCalledTimes(1);
-        expect(fetchImageSpy).toHaveBeenCalledWith(1, true);
-
-        vi.clearAllMocks();
-        vi.advanceTimersByTime(1000);
-
-        expect(fetchImageSpy).toHaveBeenCalledTimes(1);
-        expect(fetchImageSpy).toHaveBeenCalledWith(MOCK_IMAGES.length - 1, true);
-
-        // Current image, immediate next image and immediate previous image have already been fetched
-        const remainingImages = MOCK_IMAGES.length - 3;
-
-        vi.clearAllMocks();
-        vi.advanceTimersByTime(remainingImages * 1000);
-
-        expect(fetchImageSpy).toHaveBeenCalledTimes(remainingImages);
-
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(1, 2, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(2, MOCK_IMAGES.length - 2, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(3, 3, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(4, MOCK_IMAGES.length - 3, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(5, 4, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(6, MOCK_IMAGES.length - 4, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(7, 5, true);
-        expect(fetchImageSpy).toHaveBeenNthCalledWith(8, MOCK_IMAGES.length - 5, true);
-      });
+      expect(prefetched()).toEqual([]);
     });
   });
 
   describe('navigation', () => {
-    beforeEach(() => {
-      // @ts-expect-error Private class member
-      component.indexSubject.next(0);
-      vi.clearAllMocks();
+    beforeEach(() => createViewer());
+
+    it('should go to the next image, and from the last back to the first', () => {
+      query(fixture.debugElement, '.next-image-button').nativeElement.click();
+      const afterFirst = shownImageId();
+      for (let i = 1; i < MOCK_IMAGES.length; i++) {
+        component.onNextImage();
+      }
+
+      expect(afterFirst).toBe(MOCK_IMAGES[1].id);
+      expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
+      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(MOCK_IMAGES.length);
     });
 
-    it('should go to previous image and detach admin controls when onPreviousImage is called', () => {
+    it('should go to the previous image, and from the first round to the last', () => {
+      query(fixture.debugElement, '.previous-image-button').nativeElement.click();
+      const afterFirst = shownImageId();
       component.onPreviousImage();
-      fixture.detectChanges();
 
-      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(1);
-      expect(indexSubjectNextSpy).toHaveBeenCalledTimes(1);
-      expect(indexSubjectNextSpy).toHaveBeenCalledWith(MOCK_IMAGES.length - 1);
+      expect(afterFirst).toBe(MOCK_IMAGES[MOCK_IMAGES.length - 1].id);
+      expect(shownImageId()).toBe(MOCK_IMAGES[MOCK_IMAGES.length - 2].id);
+      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('keyboard navigation', () => {
+    it('should step through the images with the arrow keys and space, once per press', () => {
+      createViewer();
+      vi.advanceTimersByTime(0);
+
+      press('keydown', 'ArrowRight');
+      press('keydown', 'ArrowRight');
+      const whileHeld = shownImageId();
+      const nextActive = query(fixture.debugElement, '.next-image-button').classes[
+        'active'
+      ];
+      press('keyup', 'ArrowRight');
+      press('keydown', ' ');
+      press('keyup', ' ');
+      press('keydown', 'ArrowLeft');
+      press('keydown', 'ArrowLeft');
+      const afterLeft = shownImageId();
+      press('keyup', 'ArrowLeft');
+      press('keydown', 'ArrowLeft');
+
+      expect(whileHeld).toBe(MOCK_IMAGES[1].id);
+      expect(nextActive).toBe(true);
+      expect(afterLeft).toBe(MOCK_IMAGES[1].id);
+      expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
     });
 
-    it('should go to next image and detach admin controls when onNextImage is called', () => {
-      component.onNextImage();
+    it('should take over the navigation keys but leave the others alone', () => {
+      createViewer();
+      vi.advanceTimersByTime(0);
+
+      const arrowUp = press('keydown', 'ArrowUp');
+      const letter = press('keydown', 'a');
+      press('keyup', 'a');
+
+      expect(arrowUp.defaultPrevented).toBe(true);
+      expect(letter.defaultPrevented).toBe(false);
+      expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
+    });
+
+    it('should not move through a single image', () => {
+      createViewer([MOCK_IMAGES[0]]);
+      vi.advanceTimersByTime(0);
+
+      press('keydown', 'ArrowRight');
+      press('keyup', 'ArrowRight');
+      press('keydown', 'ArrowLeft');
+      press('keyup', 'ArrowLeft');
+
+      expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
+      expect(adminControlsCloseSpy).not.toHaveBeenCalled();
+    });
+
+    it('should stop listening once destroyed', () => {
+      createViewer();
+      vi.advanceTimersByTime(0);
+
+      fixture.destroy();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+
+      expect(adminControlsCloseSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('template rendering', () => {
+    it('should show the album name, and the caption once the image loads', () => {
+      createViewer();
+
+      const captionBefore = queryTextContent(fixture.debugElement, '.image-caption');
+      query(fixture.debugElement, 'lcc-image').triggerEventHandler('loaded');
       fixture.detectChanges();
 
-      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(1);
-      expect(indexSubjectNextSpy).toHaveBeenCalledTimes(1);
-      expect(indexSubjectNextSpy).toHaveBeenCalledWith(1);
+      expect(queryTextContent(fixture.debugElement, '.album-name')).toBe('Mock Album');
+      expect(captionBefore).toBe('');
+      expect(queryTextContent(fixture.debugElement, '.image-caption')).toBe(
+        MOCK_IMAGES[0].caption,
+      );
+    });
+
+    it('should enable the previous and next buttons for more than one image', () => {
+      createViewer();
+
+      expect(
+        query(fixture.debugElement, '.previous-image-button').nativeElement.disabled,
+      ).toBe(false);
+      expect(
+        query(fixture.debugElement, '.next-image-button').nativeElement.disabled,
+      ).toBe(false);
+    });
+
+    it('should disable the previous and next buttons for a single image', () => {
+      createViewer([MOCK_IMAGES[0]]);
+
+      expect(
+        query(fixture.debugElement, '.previous-image-button').nativeElement.disabled,
+      ).toBe(true);
+      expect(
+        query(fixture.debugElement, '.next-image-button').nativeElement.disabled,
+      ).toBe(true);
+    });
+
+    it('should offer admin controls on the image to an admin only', () => {
+      createViewer();
+      query(fixture.debugElement, 'figure').nativeElement.dispatchEvent(
+        new MouseEvent('contextmenu', { cancelable: true }),
+      );
+      fixture.destroy();
+      createViewer(MOCK_IMAGES, false);
+
+      query(fixture.debugElement, 'figure').nativeElement.dispatchEvent(
+        new MouseEvent('contextmenu', { cancelable: true }),
+      );
+
+      expect(adminControlsOpenSpy).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('admin controls', () => {
-    it('should return correct admin controls config', () => {
-      const config = component.getAdminControlsConfig(MOCK_IMAGES[0]);
+    beforeEach(() => createViewer());
 
-      expect(config.buttonSize).toBe(34);
-      expect(config.editPath).toEqual(['image', 'edit', MOCK_IMAGES[0].id]);
-      expect(config.editInNewTab).toBe(true);
-      expect(config.isDeleteDisabled).toBe(false); // MOCK_IMAGES[0] has no article appearances
-      expect(config.deleteDisabledReason).toBe(
-        'Image cannot be deleted while it is used in an article',
+    it('should disable deleting an image used in an article', () => {
+      const unused = component.getAdminControlsConfig(MOCK_IMAGES[0]);
+      const used = component.getAdminControlsConfig(MOCK_IMAGES[1]);
+
+      expect(unused).toEqual(
+        expect.objectContaining({
+          editPath: ['image', 'edit', MOCK_IMAGES[0].id],
+          editInNewTab: true,
+          isDeleteDisabled: false,
+          itemName: MOCK_IMAGES[0].filename,
+        }),
       );
-      expect(config.itemName).toBe(MOCK_IMAGES[0].filename);
+      expect(used.isDeleteDisabled).toBe(true);
+    });
+
+    it('should ask to confirm a delete from the controls', async () => {
+      dialogOpenSpy.mockResolvedValue('cancel');
+
+      await component.getAdminControlsConfig(MOCK_IMAGES[1]).deleteCb();
+
+      expect(dialogOpenSpy).toHaveBeenCalledWith({
+        componentType: BasicDialogComponent,
+        inputs: {
+          dialog: expect.objectContaining({
+            title: 'Confirm',
+            confirmButtonText: 'Delete',
+            confirmButtonType: 'warning',
+          }),
+        },
+        isModal: true,
+      });
     });
   });
 
   describe('image deletion', () => {
+    beforeEach(() => createViewer());
+
     describe('when the dialog is confirmed', () => {
       beforeEach(() => {
         dialogOpenSpy.mockImplementation(async () => {
@@ -297,18 +382,6 @@ describe('ImageViewerComponent', () => {
       it('should delete the image from the confirmation dialog', async () => {
         await component.onDeleteImage(MOCK_IMAGES[1]);
 
-        expect(dialogOpenSpy).toHaveBeenCalledWith({
-          componentType: BasicDialogComponent,
-          inputs: {
-            dialog: expect.objectContaining({
-              title: 'Confirm',
-              body: `Delete ${MOCK_IMAGES[1].filename}?`,
-              confirmButtonText: 'Delete',
-              confirmButtonType: 'warning',
-            }),
-          },
-          isModal: true,
-        });
         expect(storeRequestSpy).toHaveBeenCalledWith(
           ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[1] }),
           [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
@@ -346,50 +419,6 @@ describe('ImageViewerComponent', () => {
 
       expect(storeRequestSpy).not.toHaveBeenCalled();
       expect(dialogResultSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('template rendering', () => {
-    beforeEach(() => {
-      fixture.componentRef.setInput('album', MOCK_IMAGES[0].album);
-      component.currentImage$ = of(MOCK_IMAGES[0]);
-      fixture.detectChanges();
-    });
-
-    it('should display image with album name and caption after image load', () => {
-      query(fixture.debugElement, '.image-container img').triggerEventHandler('load');
-      fixture.detectChanges();
-
-      expect(queryTextContent(fixture.debugElement, '.album-name')).toBe(
-        MOCK_IMAGES[0].album,
-      );
-      expect(queryTextContent(fixture.debugElement, '.image-caption')).toBe(
-        MOCK_IMAGES[0].caption,
-      );
-    });
-
-    it('should display enabled previous and next buttons if album contains more than one image', () => {
-      fixture.componentRef.setInput('images', MOCK_IMAGES);
-      fixture.detectChanges();
-
-      expect(
-        query(fixture.debugElement, '.previous-image-button').nativeElement.disabled,
-      ).toBe(false);
-      expect(
-        query(fixture.debugElement, '.next-image-button').nativeElement.disabled,
-      ).toBe(false);
-    });
-
-    it('should display disabled previous and next buttons if album contains exactly one image', () => {
-      fixture.componentRef.setInput('images', [MOCK_IMAGES[0]]);
-      fixture.detectChanges();
-
-      expect(
-        query(fixture.debugElement, '.previous-image-button').nativeElement.disabled,
-      ).toBe(true);
-      expect(
-        query(fixture.debugElement, '.next-image-button').nativeElement.disabled,
-      ).toBe(true);
     });
   });
 });

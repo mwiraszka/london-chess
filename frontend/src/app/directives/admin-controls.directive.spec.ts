@@ -9,10 +9,12 @@ import { AdminControlsDirective } from './admin-controls.directive';
 
 @Component({
   template: `
-    <div
-      class="item"
-      [adminControls]="config()">
-      Item
+    <div class="image-grid">
+      <div
+        class="item"
+        [adminControls]="config()">
+        Item
+      </div>
     </div>
   `,
   imports: [AdminControlsDirective],
@@ -67,6 +69,18 @@ describe('AdminControlsDirective', () => {
     vi.spyOn(window, 'getSelection').mockReturnValue({
       toString: () => 'Item',
     } as Selection);
+
+    const event = rightClick();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('should leave the menu to an item scrolled partly out of its grid', () => {
+    const grid: HTMLElement = query(fixture.debugElement, '.image-grid').nativeElement;
+    const item: HTMLElement = query(fixture.debugElement, '.item').nativeElement;
+    vi.spyOn(grid, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 100, 50, 50));
+    vi.spyOn(item, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 80, 50, 50));
 
     const event = rightClick();
 

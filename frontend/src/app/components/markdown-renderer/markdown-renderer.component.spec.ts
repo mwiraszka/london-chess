@@ -1,148 +1,210 @@
-import { MarkdownComponent } from 'ngx-markdown';
-import { of } from 'rxjs';
+import { provideMarkdown } from 'ngx-markdown';
+import { Subject } from 'rxjs';
 
-import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, RouterLink, RouterModule } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
+import { Image } from '@app/models';
 import { RoutingService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
 import { MarkdownRendererComponent } from './markdown-renderer.component';
 
-@Component({
-  selector: 'markdown',
-  template: '',
-  standalone: true,
-})
-class MockMarkdownComponent {
-  readonly data = input('');
-  readonly disableSanitizer = input(false);
-}
-
 describe('MarkdownRendererComponent', () => {
+  const imageId = '0123456789abcdef01234567';
+  const image: Image = {
+    id: imageId,
+    filename: 'board.jpg',
+    caption: 'A board',
+    album: 'Club',
+    albumCover: false,
+    albumOrdinality: '1',
+    mainUrl: 'https://example.com/board.jpg',
+    mainWidth: 640,
+    modificationInfo: {
+      createdBy: 'Admin',
+      createdByNumber: null,
+      dateCreated: '2025-01-01T00:00:00Z',
+      lastEditedBy: 'Admin',
+      lastEditedByNumber: null,
+      dateLastEdited: '2025-01-01T00:00:00Z',
+    },
+  };
+
   let fixture: ComponentFixture<MarkdownRendererComponent>;
-  let component: MarkdownRendererComponent;
+  let fragment$: Subject<string | null>;
 
-  let addAnchorIdsToHeadingsSpy: MockInstance;
-  let addBlockquoteIconsSpy: MockInstance;
-  let scrollToAnchorSpy: MockInstance;
+  const render = async (data: string, images: Image[] = []): Promise<void> => {
+    fixture.componentRef.setInput('images', images);
+    fixture.componentRef.setInput('data', data);
+    fixture.detectChanges();
+    await vi.runOnlyPendingTimersAsync();
+    fixture.detectChanges();
+  };
 
-  const mockMarkdownText = `
-  ## Heading 1
-  
-  Some text here.
-  
-  ## Heading 2
-  
-  More text here.
-  
-  | Column 1 | Column 2 |
-  |----------|----------|
-  | Data 1   | Data 2   |
-  
-  > This is a blockquote
-  `;
+  const rendered = <T extends HTMLElement>(selector: string): T[] =>
+    Array.from(fixture.nativeElement.querySelectorAll(selector));
 
   beforeEach(async () => {
+    vi.useFakeTimers();
+    fragment$ = new Subject<string | null>();
+
     await TestBed.configureTestingModule({
-      imports: [MarkdownRendererComponent, RouterLink, RouterModule.forRoot([])],
+      imports: [MarkdownRendererComponent],
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { fragment: of('mock-fragment') },
-        },
-        {
-          provide: RoutingService,
-          useValue: { fragment$: of('mock-fragment') },
-        },
+        provideMarkdown(),
+        provideRouter([]),
+        { provide: RoutingService, useValue: { fragment$ } },
       ],
-    })
-      .overrideComponent(MarkdownRendererComponent, {
-        remove: { imports: [MarkdownComponent] },
-        add: { imports: [MockMarkdownComponent] },
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(MarkdownRendererComponent);
-    component = fixture.componentInstance;
-
-    // @ts-expect-error Private class member
-    addAnchorIdsToHeadingsSpy = vi.spyOn(component, 'addAnchorIdsToHeadings');
-    // @ts-expect-error Private class member
-    addBlockquoteIconsSpy = vi.spyOn(component, 'addBlockquoteIcons');
-    // @ts-expect-error Private class member
-    scrollToAnchorSpy = vi.spyOn(component, 'scrollToAnchor');
-
     fixture.detectChanges();
+    await vi.runOnlyPendingTimersAsync();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  afterEach(() => fixture.destroy());
 
-  describe('initialization', () => {
-    it('should set currentPath from document location (JSDOM location for this test)', () => {
-      expect(component.currentPath).toBe('/');
+  describe('headings', () => {
+    beforeEach(async () => {
+      await render('## First Section\n\nText\n\n## Second *Part*\n\n<h2></h2>');
     });
 
-    it('should scroll to URL fragment after view init', () => {
-      vi.useFakeTimers();
+    it('should list each heading as a link to its anchor', () => {
+      const links = queryAll(fixture.debugElement, '.heading-link');
 
-      component.ngAfterViewInit();
+      expect(links.map(link => link.nativeElement.getAttribute('href'))).toEqual([
+        '/#first-section',
+        '/#second-part',
+        '/#',
+      ]);
+    });
 
-      vi.advanceTimersByTime(1);
+    it('should give each heading an anchor id', () => {
+      const headings = rendered('markdown h2');
 
-      expect(scrollToAnchorSpy).toHaveBeenCalledWith('mock-fragment');
+      expect(headings.map(heading => heading.id)).toEqual([
+        'first-section',
+        'second-part',
+        '',
+      ]);
+    });
 
-      vi.useRealTimers();
+    it('should scroll to the heading named by the URL fragment', () => {
+      const [heading] = rendered('#second-part');
+      const scrollSpy = vi.spyOn(heading, 'scrollIntoView');
+
+      fragment$.next('second-part');
+
+      expect(scrollSpy).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'start',
+        inline: 'nearest',
+      });
+    });
+
+    it('should not scroll without a fragment or a matching heading', () => {
+      const [heading] = rendered('#first-section');
+      const scrollSpy = vi.spyOn(heading, 'scrollIntoView');
+
+      fragment$.next(null);
+      fragment$.next('missing-section');
+
+      expect(scrollSpy).not.toHaveBeenCalled();
     });
   });
 
-  describe('data changes', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-      fixture.componentRef.setInput('data', mockMarkdownText);
+  describe('blockquotes', () => {
+    it('should hide changed markdown until it has been decorated', async () => {
+      await render('> A quote');
+
+      fixture.componentRef.setInput('data', '> Another quote');
       fixture.detectChanges();
-      // Simulate lifecycle timing delay
-      vi.advanceTimersByTime(1);
+      const [markdown] = rendered('markdown');
+      const hiddenBefore = markdown.style.visibility;
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(hiddenBefore).toBe('hidden');
+      expect(markdown.style.visibility).toBe('');
     });
 
-    afterEach(() => vi.useRealTimers());
+    it('should open every blockquote with a quote icon, once', async () => {
+      const data = '> A quote\n\n<blockquote></blockquote>';
+      await render(data);
 
-    it('should set data input', () => {
-      expect(component.data()).toBe(mockMarkdownText);
-    });
+      await render(data, [image]);
 
-    it('should add custom blockquote icons and anchor ids to headings', () => {
-      expect(addBlockquoteIconsSpy).toHaveBeenCalledTimes(1);
-      expect(addAnchorIdsToHeadingsSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('should render the tables as sortable tables between the text', () => {
-      const markdowns = queryAll(fixture.debugElement, 'markdown');
-
-      expect(markdowns.map(markdown => markdown.componentInstance.data().trim())).toEqual(
-        [
-          '## Heading 1\n  \n  Some text here.\n  \n  ## Heading 2\n  \n  More text here.',
-          '> This is a blockquote',
-        ],
-      );
+      const blockquotes = rendered('blockquote');
+      expect(blockquotes.map(blockquote => blockquote.className)).toEqual([
+        'lcc-blockquote',
+        'lcc-blockquote',
+      ]);
       expect(
-        queryAll(
-          query(fixture.debugElement, 'lcc-markdown-table'),
-          '.ea-data-table__cell--header',
-        ).map(header => header.nativeElement.textContent.trim()),
-      ).toEqual(['Column 1', 'Column 2']);
+        blockquotes.map(
+          blockquote => blockquote.querySelectorAll('.lcc-quote-icon').length,
+        ),
+      ).toEqual([1, 1]);
+      expect(
+        blockquotes.map(blockquote => blockquote.firstElementChild?.className),
+      ).toEqual(['lcc-quote-icon', 'lcc-quote-icon']);
     });
   });
 
-  describe('template rendering', () => {
-    it('should expose headings for table of contents', () => {
-      component.headings.set(['Heading 1', 'Heading 2', 'Heading 3']);
-      fixture.detectChanges();
+  describe('images', () => {
+    const container = () => rendered('.markdown-image-container')[0];
 
-      expect(component.headings()).toEqual(['Heading 1', 'Heading 2', 'Heading 3']);
+    it('should render a stored image at the given width with its caption', async () => {
+      await render(`{{{${imageId}}}}(((500)))<<< The board >>>`, [image]);
+
+      expect(container().style.maxWidth).toBe('500px');
+      expect(container().querySelector('img')?.getAttribute('src')).toBe(image.mainUrl);
+      expect(container().querySelector('img')?.getAttribute('alt')).toBe('The board');
+      expect(container().querySelector('.markdown-image-caption')?.textContent).toBe(
+        'The board',
+      );
     });
+
+    it('should find a stored image by the id in a URL and use its own width', async () => {
+      await render(`{{{https://example.com/images/${imageId}.jpg}}}`, [image]);
+
+      expect(container().style.maxWidth).toBe('640px');
+      expect(container().querySelector('img')?.getAttribute('src')).toBe(image.mainUrl);
+      expect(container().querySelector('.markdown-image-caption')).toBeNull();
+    });
+
+    it('should fall back for an image id that is not stored', async () => {
+      await render(`{{{${imageId}}}}`);
+
+      expect(container().style.maxWidth).toBe('300px');
+      expect(container().querySelector('img')?.getAttribute('src')).toBe(
+        'assets/fallback-image.png',
+      );
+    });
+
+    it('should use any other source as is, at no more than the widest width', async () => {
+      await render('{{{https://example.com/photo.png}}}(((5000)))');
+
+      expect(container().style.maxWidth).toBe('1200px');
+      expect(container().querySelector('img')?.getAttribute('src')).toBe(
+        'https://example.com/photo.png',
+      );
+    });
+  });
+
+  it('should render tables between the text as sortable tables', async () => {
+    await render(
+      'Before\n\n| Column 1 | Column 2 |\n|---|---|\n| Data 1 | Data 2 |\n\nAfter',
+    );
+
+    expect(rendered('markdown').map(markdown => markdown.textContent?.trim())).toEqual([
+      'Before',
+      'After',
+    ]);
+    expect(
+      queryAll(
+        query(fixture.debugElement, 'lcc-markdown-table'),
+        '.ea-data-table__cell--header',
+      ).map(header => header.nativeElement.textContent.trim()),
+    ).toEqual(['Column 1', 'Column 2']);
   });
 });

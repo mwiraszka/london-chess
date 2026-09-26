@@ -3,6 +3,11 @@ import moment from 'moment-timezone';
 import { isExpired } from './is-expired.util';
 
 describe('isExpired', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-03-14T15:09:26Z'));
+  });
+
   it('returns true for invalid dates', () => {
     expect(isExpired('')).toBe(true);
     expect(isExpired('invalid-date')).toBe(true);

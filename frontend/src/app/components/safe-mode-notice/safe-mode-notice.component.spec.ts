@@ -17,10 +17,6 @@ describe('SafeModeNoticeComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should use given entity in aside text', () => {
       fixture.componentRef.setInput('entity', 'Michal');

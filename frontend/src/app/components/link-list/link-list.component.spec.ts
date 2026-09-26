@@ -63,10 +63,6 @@ describe('LinkListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should render header when provided', () => {
       fixture.componentRef.setInput('header', 'Mock Header');

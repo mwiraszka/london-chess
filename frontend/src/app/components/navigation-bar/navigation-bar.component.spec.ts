@@ -65,10 +65,6 @@ describe('NavigationBarComponent', () => {
     vi.clearAllMocks();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('navigation links', () => {
     it('should render the correct number of links when screenWidth is above 700px', () => {
       component.screenWidth.set(800);

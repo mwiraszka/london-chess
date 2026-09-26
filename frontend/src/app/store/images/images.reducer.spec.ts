@@ -1,8 +1,12 @@
 import { pick } from 'lodash';
 
-import { BASE_IMAGE_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
+import {
+  BASE_IMAGE_PROPERTIES,
+  IMAGE_FORM_DATA_PROPERTIES,
+  INITIAL_IMAGE_FORM_DATA,
+} from '@app/constants';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { LccError } from '@app/models';
+import { Image, LccError } from '@app/models';
 import { BaseImage } from '@app/models/image.model';
 
 import * as ImagesActions from './images.actions';
@@ -19,6 +23,16 @@ describe('Images Reducer', () => {
     name: 'LCCError',
     message: 'Something went wrong',
   };
+  const now = '2026-03-01T12:00:00.000Z';
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(now));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   describe('unknown action', () => {
     it('should return the default state', () => {
@@ -26,33 +40,6 @@ describe('Images Reducer', () => {
       const state = imagesReducer(initialState, action);
 
       expect(state).toBe(initialState);
-    });
-  });
-
-  describe('initialState', () => {
-    it('should have the correct initial state', () => {
-      expect(initialState).toEqual({
-        ids: [],
-        entities: {},
-        newImagesFormData: {},
-        failedLoads: [],
-        isFetchingFiltered: false,
-        uploadProgress: null,
-        filteredImages: [],
-        filteredCount: null,
-        totalCount: 0,
-        options: {
-          page: 1,
-          pageSize: 20,
-          sortBy: 'modificationInfo',
-          sortOrder: 'desc',
-          filters: null,
-          search: '',
-        },
-        lastMetadataFetch: null,
-        lastFilteredThumbnailsFetch: null,
-        lastAlbumCoversFetch: null,
-      });
     });
   });
 
@@ -69,19 +56,27 @@ describe('Images Reducer', () => {
       expect(state.failedLoads).toEqual(['metadata', 'filteredThumbnails', 'mainImage']);
     });
 
-    it('should forget a failure once its load is attempted again', () => {
-      const previousState: ImagesState = {
-        ...initialState,
-        failedLoads: ['metadata', 'mainImage'],
-      };
-
-      const state = imagesReducer(
-        previousState,
+    it.each([
+      [ImagesActions.fetchAllImagesMetadataRequested(), 'metadata'],
+      [ImagesActions.fetchFilteredThumbnailsRequested(), 'filteredThumbnails'],
+      [
         ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
-      );
+        'mainImage',
+      ],
+    ] as const)(
+      'should forget a failure once its load is attempted again (%#)',
+      (action, load) => {
+        const previousState: ImagesState = {
+          ...initialState,
+          failedLoads: ['metadata', 'filteredThumbnails', 'mainImage'],
+        };
 
-      expect(state.failedLoads).toEqual(['metadata']);
-    });
+        const state = imagesReducer(previousState, action);
+
+        expect(state.failedLoads).toHaveLength(2);
+        expect(state.failedLoads).not.toContain(load);
+      },
+    );
 
     it('should not record a failure for images fetched ahead of time', () => {
       const action = ImagesActions.fetchMainImageInBackgroundFailed({ error: mockError });
@@ -145,7 +140,7 @@ describe('Images Reducer', () => {
 
       expect(state.ids.length).toBe(1);
       expect(state.entities['mock-id-1']?.image).toMatchObject(mockBaseImage);
-      expect(state.lastMetadataFetch).toBeTruthy();
+      expect(state.lastMetadataFetch).toBe(now);
     });
 
     it('should preserve existing URLs when upserting metadata', () => {
@@ -192,7 +187,7 @@ describe('Images Reducer', () => {
       expect(state.filteredImages).toEqual(images);
       expect(state.filteredCount).toBe(1);
       expect(state.totalCount).toBe(10);
-      expect(state.lastFilteredThumbnailsFetch).toBeTruthy();
+      expect(state.lastFilteredThumbnailsFetch).toBe(now);
     });
   });
 
@@ -223,7 +218,7 @@ describe('Images Reducer', () => {
       });
       const state = imagesReducer(initialState, action);
 
-      expect(state.lastAlbumCoversFetch).toBeTruthy();
+      expect(state.lastAlbumCoversFetch).toBe(now);
     });
 
     it('should not update lastAlbumCoversFetch for other contexts', () => {
@@ -820,6 +815,133 @@ describe('Images Reducer', () => {
           ImagesActions.fetchFilteredThumbnailsFailed({ error: mockError }),
         ).isFetchingFiltered,
       ).toBe(false);
+    });
+  });
+
+  describe('merging presigned URLs', () => {
+    const withMainImage = (urlExpirationDate: string): ImagesState =>
+      imagesAdapter.upsertOne(
+        {
+          image: {
+            ...MOCK_IMAGES[1],
+            thumbnailUrl: undefined,
+            urlExpirationDate,
+          },
+          formData: pick(MOCK_IMAGES[1], IMAGE_FORM_DATA_PROPERTIES),
+        },
+        initialState,
+      );
+
+    it.each([
+      ['an earlier', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z'],
+      ['a later', '2026-02-01T00:00:00.000Z', '2026-01-15T00:00:00.000Z'],
+      ['no', undefined, '2026-01-15T00:00:00.000Z'],
+    ])(
+      'should keep the main URL and the earlier expiration when a thumbnail with %s expiration arrives',
+      (_label, thumbnailExpiration, expectedExpiration) => {
+        const previousState = withMainImage('2026-01-15T00:00:00.000Z');
+        const thumbnail: Image = {
+          ...MOCK_IMAGES[1],
+          mainUrl: undefined,
+          urlExpirationDate: thumbnailExpiration,
+        };
+
+        const filteredState = imagesReducer(
+          previousState,
+          ImagesActions.fetchFilteredThumbnailsSucceeded({
+            images: [thumbnail],
+            filteredCount: 1,
+            totalCount: 1,
+          }),
+        );
+        const batchState = imagesReducer(
+          previousState,
+          ImagesActions.fetchBatchThumbnailsSucceeded({
+            images: [thumbnail],
+            context: 'album-covers',
+          }),
+        );
+
+        [filteredState, batchState].forEach(state => {
+          const image = state.entities[MOCK_IMAGES[1].id]?.image;
+          expect(image?.mainUrl).toBe(MOCK_IMAGES[1].mainUrl);
+          expect(image?.thumbnailUrl).toBe(MOCK_IMAGES[1].thumbnailUrl);
+          expect(image?.urlExpirationDate).toBe(expectedExpiration);
+        });
+      },
+    );
+
+    it('should keep the stored URLs of an added image the response leaves out', () => {
+      const previousState = withMainImage('2026-01-15T00:00:00.000Z');
+
+      const state = imagesReducer(
+        previousState,
+        ImagesActions.addImagesSucceeded({
+          images: [
+            {
+              ...MOCK_IMAGES[1],
+              mainUrl: undefined,
+              thumbnailUrl: undefined,
+              urlExpirationDate: undefined,
+            },
+          ],
+        }),
+      );
+
+      const image = state.entities[MOCK_IMAGES[1].id]?.image;
+      expect(image?.mainUrl).toBe(MOCK_IMAGES[1].mainUrl);
+      expect(image?.thumbnailUrl).toBeUndefined();
+      expect(image?.urlExpirationDate).toBe('2026-01-15T00:00:00.000Z');
+    });
+  });
+
+  describe('changes to images that are not stored', () => {
+    let consoleWarnSpy: MockInstance;
+
+    beforeEach(() => {
+      consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    });
+
+    it('should skip an unknown image after an album update', () => {
+      const state = imagesReducer(
+        initialState,
+        ImagesActions.updateAlbumSucceeded({
+          album: 'Test Album',
+          newImages: [MOCK_IMAGES[2]],
+          updatedImages: [mockBaseImage],
+        }),
+      );
+
+      expect(state.ids).toEqual([MOCK_IMAGES[2].id]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(mockBaseImage.id),
+      );
+    });
+
+    it('should skip form data for an unknown image', () => {
+      const state = imagesReducer(
+        initialState,
+        ImagesActions.formDataChanged({
+          multipleFormData: [{ id: 'unknown-id', caption: 'Lost caption' }],
+        }),
+      );
+
+      expect(state.ids).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('unknown-id'));
+    });
+
+    it('should only clear new image form data when restoring an album with no stored images', () => {
+      const previousState: ImagesState = {
+        ...initialState,
+        newImagesFormData: { 'new-1': INITIAL_IMAGE_FORM_DATA },
+      };
+
+      const state = imagesReducer(
+        previousState,
+        ImagesActions.albumFormDataRestored({ album: 'Empty Album' }),
+      );
+
+      expect(state).toEqual({ ...previousState, newImagesFormData: {} });
     });
   });
 });

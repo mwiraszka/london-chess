@@ -93,10 +93,6 @@ describe('ImageFormComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('form initialization', () => {
     beforeEach(() => uuidSpy.mockReturnValue('1234'));
 

@@ -2,7 +2,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router } from '@angular/router';
@@ -81,6 +81,12 @@ describe('NavEffects', () => {
     vi.clearAllMocks();
   });
 
+  function collect<T>(effect$: Observable<T>): T[] {
+    const results: T[] = [];
+    effect$.subscribe(action => results.push(action));
+    return results;
+  }
+
   describe('appendPathToHistory$', () => {
     it('should append new path to history when path changes', () =>
       withDone(done => {
@@ -95,21 +101,24 @@ describe('NavEffects', () => {
         });
       }));
 
-    it('should ignore fragment differences when comparing paths', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
-        store.refreshState();
+    it('should ignore fragment differences when comparing paths', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/news#section'));
 
-        actions$.next(mockNavigatedAction('/news#section'));
+      const results = collect(effects.appendPathToHistory$);
 
-        setTimeout(() => {
-          expect(router.navigate).not.toHaveBeenCalled();
-          done();
-        }, 10);
-      }));
+      expect(results).toEqual([]);
+    });
 
     it('should append path when current path is null', () => {
       store.overrideSelector(NavSelectors.selectCurrentPath, null);
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/news'));
+
+      const results = collect(effects.appendPathToHistory$);
+
+      expect(results).toEqual([NavActions.appendPathToHistory({ path: '/news' })]);
     });
   });
 
@@ -359,23 +368,20 @@ describe('NavEffects', () => {
         });
       }));
 
-    it('should not navigate when not viewing the deleted article', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
-        store.refreshState();
+    it('should not navigate when not viewing the deleted article', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.refreshState();
+      actions$.next(
+        ArticlesActions.deleteArticleSucceeded({
+          articleId: 'article123',
+          articleTitle: 'Test',
+        }),
+      );
 
-        actions$.next(
-          ArticlesActions.deleteArticleSucceeded({
-            articleId: 'article123',
-            articleTitle: 'Test',
-          }),
-        );
+      const results = collect(effects.navigateToNewsAfterArticleDeletion$);
 
-        setTimeout(() => {
-          expect(router.navigate).not.toHaveBeenCalled();
-          done();
-        }, 10);
-      }));
+      expect(results).toEqual([]);
+    });
   });
 
   describe('navigateToPhotoGallery$', () => {
@@ -623,6 +629,29 @@ describe('NavEffects', () => {
         });
       }));
 
+    it.each([
+      ['/article/edit/not-an-id', 'news'],
+      ['/article/unknown', 'news'],
+      ['/event/edit/not-an-id', 'schedule'],
+      ['/image/edit/not-an-id', 'photo-gallery'],
+      ['/member/view/a7b8c9d0e1f2a3b4c5d6e7f8', 'members'],
+    ])('should send an invalid %s route back to %s', (url, path) => {
+      actions$.next(mockNavigatedAction(url));
+
+      const results = collect(effects.handleEntityRouteNavigationRequest$);
+
+      expect(results).toEqual([NavActions.navigationRequested({ path })]);
+    });
+
+    it('should only handle a record route once when just its fragment changes', () => {
+      const results = collect(effects.handleEntityRouteNavigationRequest$);
+
+      actions$.next(mockNavigatedAction('/article/add'));
+      actions$.next(mockNavigatedAction('/article/add#body'));
+
+      expect(results).toEqual([ArticlesActions.createAnArticleSelected()]);
+    });
+
     it('should navigate to photo-gallery for invalid album route', () =>
       withDone(done => {
         store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
@@ -730,17 +759,34 @@ describe('NavEffects', () => {
         });
       }));
 
-    it('should not restore form data when staying on same entity type', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/article/edit/abc123');
-        store.refreshState();
+    it('should not restore form data when staying on same entity type', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/article/edit/abc123');
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/article/view/def456'));
 
-        actions$.next(mockNavigatedAction('/article/view/def456'));
+      const results = collect(effects.restoreFormDataOnNavigationAwayFromEntityRoute$);
 
-        setTimeout(() => {
-          // No action should be dispatched
-          done();
-        }, 10);
-      }));
+      expect(results).toEqual([]);
+    });
+
+    it('should not restore form data when leaving a page that is not a record', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/members'));
+
+      const results = collect(effects.restoreFormDataOnNavigationAwayFromEntityRoute$);
+
+      expect(results).toEqual([]);
+    });
+
+    it('should restore new record form data when leaving an add page', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/member/add');
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/members'));
+
+      const results = collect(effects.restoreFormDataOnNavigationAwayFromEntityRoute$);
+
+      expect(results).toEqual([MembersActions.formDataRestored({ memberId: null })]);
+    });
   });
 });

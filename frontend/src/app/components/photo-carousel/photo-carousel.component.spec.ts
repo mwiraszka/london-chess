@@ -42,10 +42,6 @@ describe('PhotoCarouselComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     it('should start with currentIndex at 0', () => {
       expect(component.currentIndex()).toBe(0);

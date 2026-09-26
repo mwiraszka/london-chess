@@ -52,10 +52,6 @@ describe('ScheduleToolbarComponent', () => {
     vi.restoreAllMocks();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('onExportToIcal', () => {
     it('should call exportEventsToIcal with events and filename', async () => {
       exportEventsToIcalSpy.mockReturnValue(3);

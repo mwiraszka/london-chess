@@ -103,10 +103,6 @@ describe('SchedulePageComponent', () => {
     vi.useRealTimers();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('ngOnInit', () => {
     beforeEach(() => {
       component.ngOnInit();

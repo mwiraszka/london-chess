@@ -1,3 +1,4 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { firstValueFrom } from 'rxjs';
 
@@ -78,16 +79,7 @@ describe('ImageExplorerComponent', () => {
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
-    it('should be selectable by default', () => {
-      fixture.detectChanges();
-      expect(component.selectable()).toBe(true);
-    });
-
     it('should fetch the thumbnails for the current options', () => {
       fixture.detectChanges();
 
@@ -117,6 +109,14 @@ describe('ImageExplorerComponent', () => {
         'Image cannot be delete while it is used in an article',
       );
       expect(config.itemName).toBe(mockImages[0].filename);
+    });
+
+    it('should ask to confirm a delete from the controls', async () => {
+      dialogOpenSpy.mockResolvedValue('cancel');
+
+      await component.getAdminControlsConfig(mockImages[0]).deleteCb();
+
+      expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Delete');
     });
 
     it('should disable delete for images used in articles', () => {
@@ -162,17 +162,6 @@ describe('ImageExplorerComponent', () => {
     });
   });
 
-  describe('onRetry', () => {
-    it('should fetch the thumbnails again', () => {
-      component.onRetry();
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchFilteredThumbnailsRequested(),
-      );
-    });
-  });
-
   describe('template rendering', () => {
     beforeEach(() => {
       // Set up mock data and re-render component
@@ -186,10 +175,7 @@ describe('ImageExplorerComponent', () => {
       );
     });
 
-    it('should apply selectable class when selectable is true', () => {
-      fixture.componentRef.setInput('selectable', true);
-      fixture.detectChanges();
-
+    it('should be selectable by default', () => {
       expect(query(fixture.debugElement, '.image-card').classes['selectable']).toBe(true);
     });
 
@@ -285,5 +271,83 @@ describe('ImageExplorerComponent', () => {
         );
       });
     });
+  });
+
+  describe('search and pagination', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      fixture.detectChanges();
+      dispatchSpy.mockClear();
+    });
+
+    const searchInput = (): HTMLInputElement =>
+      query(fixture.debugElement, '.filters__search input').nativeElement;
+
+    it('should search from the first page once typing pauses', () => {
+      searchInput().value = 'board';
+      searchInput().dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(299);
+      const beforePause = dispatchSpy.mock.calls.length;
+      vi.advanceTimersByTime(1);
+
+      expect(beforePause).toBe(0);
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.paginationOptionsChanged({
+          options: { ...mockOptions, search: 'board', page: 1 },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should show a search set elsewhere without searching again', () => {
+      store.overrideSelector(ImagesSelectors.selectOptions, {
+        ...mockOptions,
+        search: 'album',
+      });
+      store.refreshState();
+      fixture.detectChanges();
+      vi.advanceTimersByTime(300);
+
+      expect(searchInput().value).toBe('album');
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+
+    it('should fetch the chosen page', () => {
+      query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
+        page: 3,
+        pageSize: 50,
+      });
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        ImagesActions.paginationOptionsChanged({
+          options: { ...mockOptions, page: 3, pageSize: 50 },
+          fetch: true,
+        }),
+      );
+    });
+
+    it('should size an all-images skeleton to the smallest page before the count is known', async () => {
+      store.overrideSelector(ImagesSelectors.selectOptions, {
+        ...mockOptions,
+        pageSize: PAGE_SIZE_ALL,
+      });
+      store.overrideSelector(ImagesSelectors.selectFilteredCount, null);
+      store.refreshState();
+
+      const vm = await firstValueFrom(component.viewModel$!);
+
+      expect(vm.skeletonCards).toHaveLength(10);
+    });
+  });
+
+  it('should say so when no images match the search', () => {
+    store.overrideSelector(ImagesSelectors.selectFilteredImages, []);
+    store.overrideSelector(ImagesSelectors.selectFilteredCount, 0);
+
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, 'ea-empty-state')).not.toBeNull();
+    expect(query(fixture.debugElement, '.image-grid')).toBeNull();
   });
 });

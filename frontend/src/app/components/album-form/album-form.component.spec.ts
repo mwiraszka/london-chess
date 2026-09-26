@@ -3,6 +3,7 @@ import { pick } from 'lodash';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { By } from '@angular/platform-browser';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
@@ -27,16 +28,30 @@ describe('AlbumFormComponent', () => {
   let changeSpy: MockInstance;
   let deleteImageSpy: MockInstance;
   let dialogOpenSpy: MockInstance;
-  let fetchNewImageDataUrlsSpy: MockInstance;
   let fileActionFailSpy: MockInstance;
-  let initFormSpy: MockInstance;
-  let initFormValueChangeListenerSpy: MockInstance;
+  let getAllImagesSpy: MockInstance;
   let removeNewImageSpy: MockInstance;
   let storeRequestSpy: Mock;
   let restoreSpy: MockInstance;
   let storeImageFileSpy: MockInstance;
   let submitSpy: MockInstance;
   let uuidSpy: MockInstance;
+
+  const fileEvent = (
+    files: File[],
+  ): { event: Event; fileInputElement: HTMLInputElement } => {
+    const fileInputElement = document.createElement('input');
+    Object.defineProperty(fileInputElement, 'files', { value: files, writable: true });
+    const event = new Event('change');
+    Object.defineProperty(event, 'target', { value: fileInputElement });
+    return { event, fileInputElement };
+  };
+
+  const entitiesOf = (...indices: number[]) =>
+    indices.map(index => ({
+      image: MOCK_IMAGES[index],
+      formData: pick(MOCK_IMAGES[index], IMAGE_FORM_DATA_PROPERTIES),
+    }));
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -86,16 +101,8 @@ describe('AlbumFormComponent', () => {
     changeSpy = vi.spyOn(component.change, 'emit');
     deleteImageSpy = vi.spyOn(imageFileService, 'deleteImage');
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    // @ts-expect-error Private class member
-    fetchNewImageDataUrlsSpy = vi.spyOn(component, 'fetchNewImageDataUrls');
     fileActionFailSpy = vi.spyOn(component.fileActionFail, 'emit');
-    // @ts-expect-error Private class member
-    initFormSpy = vi.spyOn(component, 'initForm');
-    initFormValueChangeListenerSpy = vi.spyOn(
-      component,
-      // @ts-expect-error Private class member
-      'initFormValueChangeListener',
-    );
+    getAllImagesSpy = vi.spyOn(imageFileService, 'getAllImages');
     removeNewImageSpy = vi.spyOn(component.removeNewImage, 'emit');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     restoreSpy = vi.spyOn(component.restore, 'emit');
@@ -112,20 +119,11 @@ describe('AlbumFormComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('form initialization', () => {
     describe('if both imageEntities and newImagesFormData are empty', () => {
       beforeEach(() => {
         vi.clearAllMocks();
         component.ngOnInit();
-      });
-
-      it('should initialize form and its value change listener', () => {
-        expect(initFormSpy).toHaveBeenCalledTimes(1);
-        expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
       });
 
       it('should initialize the form with empty, untouched values', () => {
@@ -138,13 +136,13 @@ describe('AlbumFormComponent', () => {
         expect(component.form.controls.newImages.untouched).toBe(true);
       });
 
-      it('should not call fetchNewImagesDataUrls', () => {
-        expect(fetchNewImageDataUrlsSpy).not.toHaveBeenCalled();
+      it('should not fetch any new image data', () => {
+        expect(getAllImagesSpy).not.toHaveBeenCalled();
       });
     });
 
     describe('if imageEntities is empty and newImagesFormData contains data', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         vi.clearAllMocks();
         // Two images from the same album
         fixture.componentRef.setInput('newImagesFormData', {
@@ -153,11 +151,7 @@ describe('AlbumFormComponent', () => {
         });
 
         component.ngOnInit();
-      });
-
-      it('should initialize form and its value change listener', () => {
-        expect(initFormSpy).toHaveBeenCalledTimes(1);
-        expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
+        await fixture.whenStable();
       });
 
       it('should initialize the form with untouched values from newImageFormData', () => {
@@ -181,8 +175,22 @@ describe('AlbumFormComponent', () => {
         expect(component.form.controls.newImages.untouched).toBe(true);
       });
 
-      it('should emit data URLs fetch event', () => {
-        expect(fetchNewImageDataUrlsSpy).toHaveBeenCalledTimes(1);
+      it('should load the previews of the new images', () => {
+        expect(getAllImagesSpy).toHaveBeenCalledTimes(1);
+        expect(component.newImageDataUrls).toEqual({
+          'new-123': 'data:image/png;base64,abc',
+          'new-456': 'data:image/jpeg;base64,xyz',
+        });
+      });
+
+      it('should report new image previews that fail to load', async () => {
+        const error: LccError = { name: 'LCCError', message: 'Could not read images.' };
+        getAllImagesSpy.mockResolvedValue(error);
+
+        component.ngOnInit();
+        await fixture.whenStable();
+
+        expect(fileActionFailSpy).toHaveBeenCalledWith(error);
       });
     });
 
@@ -201,11 +209,6 @@ describe('AlbumFormComponent', () => {
         ]);
 
         component.ngOnInit();
-      });
-
-      it('should initialize form and its value change listener', () => {
-        expect(initFormSpy).toHaveBeenCalledTimes(1);
-        expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
       });
 
       it('should initialize the form with untouched values from imageEntities formData', () => {
@@ -229,8 +232,8 @@ describe('AlbumFormComponent', () => {
         expect(component.form.controls.newImages.untouched).toBe(true);
       });
 
-      it('should not emit data URLs fetch event', () => {
-        expect(fetchNewImageDataUrlsSpy).not.toHaveBeenCalled();
+      it('should not fetch any new image data', () => {
+        expect(getAllImagesSpy).not.toHaveBeenCalled();
       });
     });
 
@@ -266,11 +269,6 @@ describe('AlbumFormComponent', () => {
         component.ngOnInit();
       });
 
-      it('should initialize form and its value change listener', () => {
-        expect(initFormSpy).toHaveBeenCalledTimes(1);
-        expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
-      });
-
       it('should initialize the form with touched values from imageEntities formData', () => {
         expect(component.form.controls.album.value).toBe('A new album title');
         expect(component.form.controls.newImages.value).toStrictEqual([]);
@@ -292,8 +290,8 @@ describe('AlbumFormComponent', () => {
         expect(component.form.controls.newImages.touched).toBe(true);
       });
 
-      it('should not emit data URLs fetch event', () => {
-        expect(fetchNewImageDataUrlsSpy).not.toHaveBeenCalled();
+      it('should not fetch any new image data', () => {
+        expect(getAllImagesSpy).not.toHaveBeenCalled();
       });
     });
   });
@@ -310,80 +308,21 @@ describe('AlbumFormComponent', () => {
       component.ngOnInit();
     });
 
-    describe('required validator', () => {
-      it('should mark empty field as invalid', () => {
-        component.form.controls.newImages.at(0).patchValue({ caption: '' });
-        component.form.markAllAsTouched();
-        fixture.detectChanges();
+    it('should require a caption', () => {
+      component.form.controls.newImages.at(0).patchValue({ caption: '' });
 
-        expect(
-          component.form.controls.newImages.at(0).controls.caption.hasError('required'),
-        ).toBe(true);
-      });
-
-      it('should mark non-empty field as valid', () => {
-        component.form.controls.newImages.at(0).patchValue({ caption: 'Valid caption' });
-        component.form.markAllAsTouched();
-        fixture.detectChanges();
-
-        expect(
-          component.form.controls.newImages.at(0).controls.caption.hasError('required'),
-        ).toBe(false);
-      });
+      expect(
+        component.form.controls.newImages.at(0).controls.caption.hasError('required'),
+      ).toBe(true);
     });
 
-    describe('text validator', () => {
-      it('should mark field with whitespace-only text as valid', () => {
-        component.form.patchValue({ album: '   ' });
-        component.form.controls.album.markAsTouched();
-        fixture.detectChanges();
+    it('should reject a caption or ordinality in an invalid format', () => {
+      const image = component.form.controls.newImages.at(0);
 
-        expect(component.form.controls.album.hasError('invalidText')).toBe(false);
-      });
+      image.patchValue({ caption: 'Bell \u0007', albumOrdinality: '0' });
 
-      it('should mark field with emoji as valid', () => {
-        component.form.patchValue({ album: '🔥' });
-        component.form.markAllAsTouched();
-        fixture.detectChanges();
-
-        expect(component.form.controls.album.hasError('invalidText')).toBe(false);
-      });
-
-      it('should mark caption field with emoji as valid', () => {
-        component.form.controls.newImages.at(0).patchValue({ caption: 'Żubrówka 🔥' });
-        component.form.markAllAsTouched();
-        fixture.detectChanges();
-
-        expect(
-          component.form.controls.newImages
-            .at(0)
-            .controls.caption.hasError('invalidText'),
-        ).toBe(false);
-      });
-
-      it('should mark caption field with foreign characters as valid', () => {
-        component.form.controls.newImages.at(0).patchValue({ caption: 'Żubrówka' });
-        component.form.markAllAsTouched();
-        fixture.detectChanges();
-
-        expect(
-          component.form.controls.newImages
-            .at(0)
-            .controls.caption.hasError('invalidText'),
-        ).toBe(false);
-      });
-
-      it('should mark field with valid text as valid', () => {
-        component.form.controls.newImages.at(0).patchValue({ caption: 'Absolut' });
-        component.form.markAllAsTouched();
-        fixture.detectChanges();
-
-        expect(
-          component.form.controls.newImages
-            .at(0)
-            .controls.caption.hasError('invalidText'),
-        ).toBe(false);
-      });
+      expect(image.controls.caption.hasError('invalidText')).toBe(true);
+      expect(image.controls.albumOrdinality.hasError('invalidOrdinal')).toBe(true);
     });
   });
 
@@ -526,12 +465,7 @@ describe('AlbumFormComponent', () => {
   describe('onChooseFiles', () => {
     it('should process a single file and update form values', async () => {
       const file = new File([':)'], 'new-file.1.png', { type: 'image/png' });
-      const fileInputElement = document.createElement('input');
-      Object.defineProperty(fileInputElement, 'files', {
-        value: [file],
-        writable: true,
-      });
-      const event = { target: fileInputElement };
+      const { event, fileInputElement } = fileEvent([file]);
 
       storeImageFileSpy.mockResolvedValue({
         id: 'new-7777',
@@ -539,7 +473,7 @@ describe('AlbumFormComponent', () => {
         dataUrl: 'data:image/png;base64,abc',
       });
 
-      await component.onChooseFiles(event as unknown as Event);
+      await component.onChooseFiles(event);
       await fixture.whenStable();
 
       expect(uuidSpy).toHaveBeenCalledTimes(1);
@@ -558,12 +492,7 @@ describe('AlbumFormComponent', () => {
     it('should process multiple files and update form values', async () => {
       const file1 = new File([':)'], 'new-file.1.png', { type: 'image/png' });
       const file2 = new File([':)'], 'new-file.2.jpg', { type: 'image/jpeg' });
-      const fileInputElement = document.createElement('input');
-      Object.defineProperty(fileInputElement, 'files', {
-        value: [file1, file2],
-        writable: true,
-      });
-      const event = { target: fileInputElement };
+      const { event, fileInputElement } = fileEvent([file1, file2]);
 
       storeImageFileSpy
         .mockResolvedValueOnce({
@@ -577,7 +506,7 @@ describe('AlbumFormComponent', () => {
           dataUrl: 'data:image/jpeg;base64,xyz',
         });
 
-      await component.onChooseFiles(event as unknown as Event);
+      await component.onChooseFiles(event);
       await fixture.whenStable();
 
       expect(uuidSpy).toHaveBeenCalledTimes(2);
@@ -614,14 +543,9 @@ describe('AlbumFormComponent', () => {
 
       const file20 = new File([':)'], 'new-file.20.jpg', { type: 'image/jpeg' });
       const file21 = new File([':)'], 'new-file.21.jpg', { type: 'image/jpeg' });
-      const fileInputElement = document.createElement('input');
-      Object.defineProperty(fileInputElement, 'files', {
-        value: [file20, file21],
-        writable: true,
-      });
-      const event = { target: fileInputElement };
+      const { event, fileInputElement } = fileEvent([file20, file21]);
 
-      await component.onChooseFiles(event as unknown as Event);
+      await component.onChooseFiles(event);
       await fixture.whenStable();
 
       expect(Object.keys(component.newImagesFormData()).length).toBe(19);
@@ -634,12 +558,7 @@ describe('AlbumFormComponent', () => {
       const file1 = new File([':)'], 'new-file.1.png', { type: 'image/png' });
       const file2 = new File([':('], 'new-file.2.tiff', { type: 'image/tiff' });
       const file3 = new File([':)'], 'new-file.3.jpg', { type: 'image/jpeg' });
-      const fileInputElement = document.createElement('input');
-      Object.defineProperty(fileInputElement, 'files', {
-        value: [file1, file2, file3],
-        writable: true,
-      });
-      const event = { target: fileInputElement };
+      const { event, fileInputElement } = fileEvent([file1, file2, file3]);
       const error: LccError = {
         name: 'LCCError' as const,
         message: 'Error message',
@@ -658,7 +577,7 @@ describe('AlbumFormComponent', () => {
           dataUrl: 'data:image/jpeg;base64,xyz',
         });
 
-      await component.onChooseFiles(event as unknown as Event);
+      await component.onChooseFiles(event);
       await fixture.whenStable();
 
       expect(storeImageFileSpy).toHaveBeenCalledTimes(3);
@@ -675,14 +594,9 @@ describe('AlbumFormComponent', () => {
     });
 
     it('should do nothing if no file is selected', async () => {
-      const fileInputElement = document.createElement('input');
-      Object.defineProperty(fileInputElement, 'files', {
-        value: [],
-        writable: true,
-      });
-      const event = { target: fileInputElement };
+      const { event } = fileEvent([]);
 
-      await component.onChooseFiles(event as unknown as Event);
+      await component.onChooseFiles(event);
       fixture.detectChanges();
 
       expect(storeImageFileSpy).not.toHaveBeenCalled();
@@ -745,12 +659,12 @@ describe('AlbumFormComponent', () => {
       });
       expect(changeSpy).toHaveBeenCalled();
       expect(restoreSpy).toHaveBeenCalledWith('My Awesome Album');
-      expect(initFormSpy).toHaveBeenCalledTimes(1);
-      expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
+      expect(component.form.controls.existingImages.at(0).controls.caption.value).toBe(
+        MOCK_IMAGES[0].caption,
+      );
     });
 
     it('should not emit change or restore event or re-initialize form if dialog is cancelled', async () => {
-      fixture.componentRef.setInput('hasUnsavedChanges', true);
       dialogOpenSpy.mockResolvedValue('cancel');
 
       await component.onRestore();
@@ -759,10 +673,6 @@ describe('AlbumFormComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
       expect(changeSpy).not.toHaveBeenCalled();
       expect(restoreSpy).not.toHaveBeenCalled();
-      expect(initFormSpy).not.toHaveBeenCalled();
-      expect(initFormValueChangeListenerSpy).not.toHaveBeenCalled();
-
-      // Unchanged
       expect(component.form.controls.existingImages.at(0).controls.caption.value).toBe(
         'Modified caption',
       );
@@ -991,5 +901,166 @@ describe('AlbumFormComponent', () => {
         expect(submitSpy).toHaveBeenCalledTimes(1);
       });
     });
+  });
+
+  describe('existing images', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('album', MOCK_IMAGES[1].album);
+      fixture.componentRef.setInput('imageEntities', entitiesOf(1, 2));
+      component.ngOnInit();
+      fixture.detectChanges();
+    });
+
+    it('should show each image with its own fields', () => {
+      expect(
+        fixture.debugElement
+          .queryAll(By.css('lcc-image'))
+          .map(image => image.componentInstance.image()),
+      ).toEqual([MOCK_IMAGES[1], MOCK_IMAGES[2]]);
+    });
+
+    it('should make the chosen existing image the only album cover', () => {
+      const radios = fixture.debugElement.queryAll(By.css('.cover-image-input'));
+
+      radios[1].triggerEventHandler('change');
+
+      expect(
+        component.form.controls.existingImages.controls.map(
+          control => control.controls.albumCover.value,
+        ),
+      ).toEqual([false, true]);
+    });
+
+    it('should pass the album cover to an existing image when the new cover is removed', async () => {
+      dialogOpenSpy.mockResolvedValue('confirm');
+      deleteImageSpy.mockResolvedValue('success');
+      component.form.controls.existingImages.at(0).controls.albumCover.setValue(false);
+      const { event } = fileEvent([new File([':)'], 'cover.png')]);
+      storeImageFileSpy.mockResolvedValue({
+        id: 'new-1',
+        filename: 'cover.png',
+        dataUrl: 'data:image/png;base64,abc',
+      });
+      await component.onChooseFiles(event);
+      await fixture.whenStable();
+      component.onSetAlbumCover('new-1');
+
+      await component.onRemoveNewImage(
+        component.form.controls.newImages.at(0).getRawValue(),
+        0,
+      );
+
+      expect(component.form.controls.existingImages.at(0).controls.albumCover.value).toBe(
+        true,
+      );
+    });
+
+    it('should ask to upload the new images along with the album update', async () => {
+      const { event } = fileEvent([new File([':)'], 'a.png'), new File([':)'], 'b.png')]);
+      storeImageFileSpy
+        .mockResolvedValueOnce({ id: 'new-1', filename: 'a.png', dataUrl: 'data:,a' })
+        .mockResolvedValueOnce({ id: 'new-2', filename: 'b.png', dataUrl: 'data:,b' });
+      await component.onChooseFiles(event);
+      await fixture.whenStable();
+
+      await component.onSubmit();
+
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        `Update ${MOCK_IMAGES[1].album} and upload these 2 new images?`,
+      );
+    });
+  });
+
+  describe('new images', () => {
+    beforeEach(async () => {
+      fixture.componentRef.setInput('newImagesFormData', {
+        'new-123': { ...pick(MOCK_IMAGES[0], IMAGE_FORM_DATA_PROPERTIES), id: 'new-123' },
+        'new-456': { ...pick(MOCK_IMAGES[3], IMAGE_FORM_DATA_PROPERTIES), id: 'new-456' },
+      });
+      component.ngOnInit();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    });
+
+    it('should preview each new image', () => {
+      expect(
+        fixture.debugElement
+          .queryAll(By.css('.image-container img'))
+          .map(image => image.nativeElement.getAttribute('src')),
+      ).toEqual(['data:image/png;base64,abc', 'data:image/jpeg;base64,xyz']);
+    });
+
+    it('should make the chosen new image the only album cover', () => {
+      const radios = fixture.debugElement.queryAll(By.css('.album-cover-input'));
+
+      radios[1].triggerEventHandler('change');
+
+      expect(
+        component.form.controls.newImages.controls.map(
+          control => control.controls.albumCover.value,
+        ),
+      ).toEqual([false, true]);
+    });
+
+    it('should ask before removing a new image', () => {
+      dialogOpenSpy.mockResolvedValue('cancel');
+
+      query(fixture.debugElement, '.remove-image-button').triggerEventHandler('click');
+
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        `Remove ${MOCK_IMAGES[0].filename}?`,
+      );
+    });
+  });
+
+  describe('file input', () => {
+    it('should add the chosen files as new images', async () => {
+      const { event } = fileEvent([new File([':)'], 'board.png')]);
+      storeImageFileSpy.mockResolvedValue({
+        id: 'new-1',
+        filename: 'board.png',
+        dataUrl: 'data:image/png;base64,abc',
+      });
+
+      query(fixture.debugElement, 'input[type="file"]').triggerEventHandler(
+        'change',
+        event,
+      );
+      await fixture.whenStable();
+
+      expect(component.form.controls.newImages.at(0).controls.id.value).toBe('new-1');
+    });
+
+    it('should keep a cancelled file choice from closing the surrounding dialog', () => {
+      const event = new Event('cancel');
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      query(fixture.debugElement, 'input[type="file"]').triggerEventHandler(
+        'cancel',
+        event,
+      );
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+    });
+  });
+
+  it('should ask before restoring from the restore button', () => {
+    dialogOpenSpy.mockResolvedValue('cancel');
+    fixture.componentRef.setInput('hasUnsavedChanges', true);
+    fixture.detectChanges();
+
+    query(fixture.debugElement, '.restore-button').triggerEventHandler('click');
+
+    expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Restore');
+  });
+
+  it('should save nothing for an album with no images', async () => {
+    component.form.controls.album.setValue('Empty album');
+
+    await component.onSubmit();
+    const result = await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
+
+    expect(result).toBeNull();
+    expect(storeRequestSpy).not.toHaveBeenCalled();
   });
 });

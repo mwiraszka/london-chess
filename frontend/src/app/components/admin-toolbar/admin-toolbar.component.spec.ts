@@ -64,10 +64,6 @@ describe('AdminToolbarComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should display the admin icon', () => {
       expect(query(fixture.debugElement, 'ea-icon-shield-check.admin-icon')).toBeTruthy();

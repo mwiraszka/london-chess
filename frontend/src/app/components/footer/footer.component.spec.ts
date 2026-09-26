@@ -26,10 +26,6 @@ describe('FooterComponent', () => {
     await setUp();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     describe('footer structure', () => {
       it('should render the main section', () => {

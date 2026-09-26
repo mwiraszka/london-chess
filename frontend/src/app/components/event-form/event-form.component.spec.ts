@@ -76,10 +76,6 @@ describe('EventFormComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('form initialization', () => {
     describe('handling form data', () => {
       describe('if form has unsaved changes', () => {

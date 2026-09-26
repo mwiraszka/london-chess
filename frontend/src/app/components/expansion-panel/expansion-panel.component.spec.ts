@@ -19,10 +19,6 @@ describe('ExpansionPanelComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should be collapsed by default', () => {
     expect(component.expanded()).toBe(false);
     expect(fixture.debugElement.query(By.css('.expansion-content'))).toBeNull();

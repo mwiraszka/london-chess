@@ -25,10 +25,6 @@ describe('EventInfoDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('dialog result handling', () => {
     it('should emit "details" when details button is clicked', () => {
       query(fixture.debugElement, '.details-button').triggerEventHandler('click');
