@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -105,5 +106,21 @@ export class MembersApiService {
 
   private notifyParams(notifyMember: boolean): HttpParams {
     return notifyMember ? new HttpParams().set('notify', 'true') : new HttpParams();
+  }
+  // Asked for once a visit per scope, as the widest values change only as rarely as the
+  // members do
+  private readonly widest = new Map<ApiScope, Observable<ApiResponse<Member[]>>>();
+
+  public getWidestMembers(scope: ApiScope): Observable<ApiResponse<Member[]>> {
+    let widest$ = this.widest.get(scope);
+    if (!widest$) {
+      widest$ = this.http
+        .get<ApiResponse<Member[]>>(
+          `${this.API_BASE_URL}/${scope}/${this.COLLECTION}/widest`,
+        )
+        .pipe(shareReplay({ bufferSize: 1, refCount: false }));
+      this.widest.set(scope, widest$);
+    }
+    return widest$;
   }
 }

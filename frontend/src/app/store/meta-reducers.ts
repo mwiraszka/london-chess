@@ -23,6 +23,10 @@ import {
   initialState as membersInitialState,
 } from './members/members.reducer';
 import { NavState } from './nav/nav.reducer';
+import {
+  TournamentsState,
+  initialState as tournamentsInitialState,
+} from './tournaments/tournaments.reducer';
 
 export interface MetaState {
   appState?: AppState;
@@ -34,6 +38,7 @@ export interface MetaState {
   membersState?: MembersState;
   navState?: NavState;
   routerState?: RouterState;
+  tournamentsState?: TournamentsState;
 }
 
 const hydratedStates = [
@@ -44,6 +49,7 @@ const hydratedStates = [
   'imagesState',
   'membersState',
   'navState',
+  'tournamentsState',
 ] as Array<keyof Exclude<MetaState, RouterState>>;
 
 // State saved by an app version older than these no longer fits its reducer
@@ -66,6 +72,8 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
+  // Only the list of tournaments is kept, the crosstables being fetched as they are opened
+  tournamentsState: omit(tournamentsInitialState, ['summaries', 'lastSummariesFetch']),
 };
 
 function isOlderThan(version: string, minimum: number[]): boolean {

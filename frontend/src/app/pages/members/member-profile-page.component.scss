@@ -156,6 +156,7 @@
   .rating__value {
     font-size: 32px;
     font-weight: 600;
+    color: var(--color-text-primary);
   }
 }
 
@@ -172,16 +173,23 @@
   }
 }
 
-.stats {
-  display: grid;
-  gap: 8px 48px;
-  grid-auto-flow: column;
+// The stats' frame, which the accounts beside them drop below to keep their top lines level
+$stats-inset: 12px;
+$stats-border-width: 1px;
 
-  // The stats sit in one row or pair up two by two, never three over one
-  @container (width < 560px) {
-    gap: 16px 48px;
-    grid-template-columns: repeat(2, auto);
-    grid-auto-flow: row;
+// The stats wrap a pair at a time, so they sit in one row or two by two, never three over one
+.stats {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  padding: $stats-inset 24px;
+  border: $stats-border-width solid var(--lcc-color--general-dividerLine);
+  border-radius: var(--lcc-borderRadius--small);
+
+  .stats__pair {
+    display: flex;
+    gap: 32px;
   }
 
   .stat {
@@ -201,6 +209,7 @@
   .stat__value {
     font-size: 16px;
     overflow-wrap: anywhere;
+    color: var(--color-text-primary);
   }
 }
 
@@ -210,6 +219,7 @@
   align-content: start;
   gap: 8px 12px;
   grid-template-columns: auto auto;
+  padding-top: $stats-inset + $stats-border-width;
 
   .platform {
     display: inline-flex;

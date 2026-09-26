@@ -26,6 +26,7 @@ import {
   Component,
   OnInit,
   inject,
+  input,
   viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -111,6 +112,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           [isLoading]="vm.status === 'loading' || vm.isFetching"
           [options]="vm.options"
           [showModificationInfo]="vm.isAdmin"
+          [widestEvents]="widestEvents()"
           (optionsChange)="onOptionsChange($event)">
         </lcc-events-table>
 
@@ -147,6 +149,9 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulePageComponent implements OnInit {
+  // The widest events, resolved with the route, size the table before its first page
+  public readonly widestEvents = input<Event[]>([]);
+
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);

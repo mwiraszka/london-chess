@@ -27,9 +27,6 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
-import { PLACEHOLDER_GAME } from '@app/constants/games';
-import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
 import {
   LOADING_ENTRY_COUNT,
   LOADING_ROUND_COUNT,
@@ -103,85 +100,6 @@ export interface SectionView {
 const SITE_ARTICLE_URL = /^https:\/\/londonchess\.ca\/article\/view\/([\da-f]{24})$/;
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
-
-function cycle<T>(items: T[], index: number, fallback: T): T {
-  return items.length ? items[index % items.length] : fallback;
-}
-
-// Shared by every crosstable on the page, so their columns line up
-const SIZING_ROWS: CrosstableRow[] = (() => {
-  const {
-    players,
-    resultNotes,
-    maxRounds,
-    maxSectionPlayers,
-    maxRating,
-    maxProvisionalGames,
-    maxScore,
-  } = TOURNAMENT_SIZING;
-  const widestResult: RoundResult = {
-    round: 1,
-    outcome: 'game',
-    scores: [1, 0],
-    points: 1,
-    opponentRank: maxSectionPlayers,
-    color: null,
-    gameId: null,
-  };
-  const count = Math.max(players.length, resultNotes.length);
-
-  return Array.from({ length: count }, (_, index) => {
-    const entry: TournamentEntry = {
-      rank: maxSectionPlayers,
-      player: {
-        ...PLACEHOLDER_GAME.white,
-        ...cycle(players, index, PLACEHOLDER_GAME.white),
-      },
-      rating: maxRating,
-      provisionalGames: maxProvisionalGames,
-      performanceRating: null,
-      score: Math.floor(maxScore) + 0.5,
-      tiebreak: null,
-      rounds: [],
-      resultNote: cycle(resultNotes, index, ''),
-    };
-    const row: CrosstableRow = {
-      id: `sizing-${index}`,
-      entry,
-      rank: entry.rank,
-      player: playerNameLastFirst(entry.player),
-      rating: entry.rating,
-      provisionalGames: entry.provisionalGames,
-      score: entry.score,
-      resultNote: entry.resultNote,
-    };
-    for (let round = 1; round <= maxRounds; round++) {
-      row[roundKey(round)] = {
-        result: widestResult,
-        label: roundResultLabel(widestResult),
-        description: '',
-      };
-    }
-    return row;
-  });
-})();
-
-const GAME_SIZING_ROWS: GameRow[] = ARCHIVE_SIZING.players.map((player, index) => {
-  const white = { ...PLACEHOLDER_GAME.white, ...player };
-  const black = {
-    ...PLACEHOLDER_GAME.black,
-    ...cycle(ARCHIVE_SIZING.players, index + 1, player),
-  };
-  const round = String(TOURNAMENT_SIZING.maxRounds);
-  return {
-    id: `sizing-${index}`,
-    game: { ...PLACEHOLDER_GAME, id: `sizing-${index}`, round, white, black },
-    round,
-    white: playerName(white),
-    result: '1/2-1/2',
-    black: playerName(black),
-  };
-});
 
 function sectionHeading(section: TournamentSection): SectionHeading | null {
   if (section.ratingBand) {
@@ -315,9 +233,7 @@ export class TournamentPageComponent implements OnInit {
     icon: AwardIconComponent,
   };
 
-  protected readonly sizingRows = SIZING_ROWS;
   protected readonly loadingRowCount = LOADING_ENTRY_COUNT;
-  protected readonly gameSizingRows = GAME_SIZING_ROWS;
 
   private readonly tournamentNumber$ = this.route.paramMap.pipe(
     map(params => Number(params.get('number'))),

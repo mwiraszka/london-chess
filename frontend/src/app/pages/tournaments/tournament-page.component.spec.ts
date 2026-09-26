@@ -13,7 +13,6 @@ import {
   provideRouter,
 } from '@angular/router';
 
-import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
 import { MOCK_TOURNAMENTS } from '@app/mocks/tournaments.mock';
 import { Tournament } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
@@ -154,24 +153,10 @@ describe('TournamentPageComponent', () => {
       ]);
     });
 
-    it('should size the columns by the widest content in any crosstable', () => {
-      const sizingRows: CrosstableRow[] = query(
-        fixture.debugElement,
-        '.crosstable',
-      ).componentInstance.sizingRows();
-
-      expect(sizingRows[0].rank).toBe(TOURNAMENT_SIZING.maxSectionPlayers);
-      expect(sizingRows[0].rating).toBe(TOURNAMENT_SIZING.maxRating);
-      expect(sizingRows[0]['round-1']?.label).toBe(
-        `WL${TOURNAMENT_SIZING.maxSectionPlayers}`,
-      );
-      expect(sizingRows[0][`round-${TOURNAMENT_SIZING.maxRounds}`]).toBeTruthy();
+    it('should size each crosstable by its own rows', () => {
       expect(
-        queryAll(
-          fixture.debugElement,
-          '.crosstable .ea-data-table__sizing .ea-data-table__row',
-        ),
-      ).toHaveLength(sizingRows.length);
+        queryAll(fixture.debugElement, '.crosstable .ea-data-table__sizing'),
+      ).toHaveLength(0);
     });
 
     it('should describe each round in its tooltip', () => {

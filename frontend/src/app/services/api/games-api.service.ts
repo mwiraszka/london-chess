@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -77,5 +78,13 @@ export class GamesApiService {
     }
 
     return params;
+  }
+  // Asked for once a visit, as the widest values change only as rarely as the records do
+  private readonly widest$ = this.http
+    .get<ApiResponse<Game[]>>(`${this.API_BASE_URL}/${this.COLLECTION}/widest`)
+    .pipe(shareReplay({ bufferSize: 1, refCount: false }));
+
+  public getWidestGames(): Observable<ApiResponse<Game[]>> {
+    return this.widest$;
   }
 }

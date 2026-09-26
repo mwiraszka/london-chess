@@ -4,7 +4,6 @@ import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
-import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
 import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
 import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
@@ -64,6 +63,18 @@ describe('MemberTournamentsComponent', () => {
       expect(dispatchSpy).not.toHaveBeenCalled();
     });
 
+    it('should show the highlights above the table', () => {
+      const highlights = query(fixture.debugElement, 'lcc-member-highlights');
+
+      expect(queryAll(highlights, '.trophy')).toHaveLength(2);
+      expect(query(highlights, '.highlights__divider')).toBeTruthy();
+      expect(
+        highlights.nativeElement.compareDocumentPosition(
+          query(fixture.debugElement, 'lcc-data-table').nativeElement,
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
     it('should list each tournament with its days, format, time control, place, score and rating', () => {
       expect(
         bodyRows().map(row => queryAll(row, '.ea-data-table__cell').map(textOf)),
@@ -103,20 +114,19 @@ describe('MemberTournamentsComponent', () => {
       expect(dateHeader.classes['ea-data-table__cell--align-right']).toBe(true);
     });
 
-    it('should size the columns by the widest content for any member', () => {
+    it("should size the columns by every one of the member's results", () => {
       const sizingRows: ResultRow[] = query(
         fixture.debugElement,
         'ea-data-table',
       ).componentInstance.sizingRows();
 
-      expect(sizingRows[0].dateLabel).toBe('September 30 – November 30, 2000');
-      expect(sizingRows[0].placeLabel).toBe(
-        `${TOURNAMENT_SIZING.maxSectionPlayers} of ${TOURNAMENT_SIZING.maxSectionPlayers}`,
-      );
-      expect(sizingRows[0].rating).toBe(TOURNAMENT_SIZING.maxRating);
+      expect(sizingRows.map(row => row.tournament)).toEqual([
+        'Championship',
+        'Fall Active',
+      ]);
       expect(
         queryAll(fixture.debugElement, '.ea-data-table__sizing .ea-data-table__row'),
-      ).toHaveLength(sizingRows.length);
+      ).toHaveLength(2);
     });
 
     it('should link each row to its tournament', () => {
@@ -255,6 +265,16 @@ describe('MemberTournamentsComponent', () => {
 
     expect(query(fixture.debugElement, 'ea-paginator').componentInstance.page()).toBe(1);
     expect(bodyRows()).toHaveLength(10);
+  });
+
+  it('should show only the table for a member without a podium finish', () => {
+    store.setState(stateWith({ 2: [{ ...MOCK_MEMBER_TOURNAMENT_RESULTS[1], rank: 4 }] }));
+
+    render(2);
+
+    expect(query(fixture.debugElement, '.highlights')).toBeFalsy();
+    expect(query(fixture.debugElement, '.highlights__divider')).toBeFalsy();
+    expect(bodyRows()).toHaveLength(1);
   });
 
   it('should say when a member has no tournaments on record', () => {

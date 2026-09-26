@@ -5,12 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Params, Router, provideRouter } from '@angular/router';
 
-import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
-import {
-  FIGURE_COUNT_UP_DURATION,
-  INITIAL_GAMES_QUERY,
-  PLACEHOLDER_GAME,
-} from '@app/constants/games';
+import { FIGURE_COUNT_UP_DURATION, INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
   MOCK_ARCHIVE_TOURNAMENTS,
@@ -19,7 +14,7 @@ import {
 } from '@app/mocks/games.mock';
 import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
-import { playerName, query, queryAll, queryTextContent } from '@app/utils';
+import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { GameArchivesPageComponent, GameRow } from './game-archives-page.component';
 
@@ -397,27 +392,19 @@ describe('GameArchivesPageComponent', () => {
       expect(queryTextContent(rows[2], '.games__event')).toBe('Unknown event');
     });
 
-    it('should size the columns by the widest content in the archive', () => {
+    it('should size the columns by the widest games resolved with the route', () => {
+      fixture.componentRef.setInput('widestGames', [MOCK_GAMES[1]]);
+      fixture.detectChanges();
+
       const sizingRows: GameRow[] = query(
         fixture.debugElement,
         'ea-data-table',
       ).componentInstance.sizingRows();
 
-      const [widestPlayer] = ARCHIVE_SIZING.players;
-      const [widestEvent] = ARCHIVE_SIZING.events;
-      const [widestOpening] = ARCHIVE_SIZING.openings;
-
-      expect(sizingRows[0].dateLabel).toBe('September 30, 2000');
-      expect(sizingRows[0].whiteName).toBe(
-        playerName({ ...PLACEHOLDER_GAME.white, ...widestPlayer }),
-      );
-      expect(sizingRows[0].game?.tournament).toBe(widestEvent.tournament);
-      expect(sizingRows[0].game?.section).toBe(widestEvent.section);
-      expect(sizingRows[0].game?.opening).toBe(widestOpening.name);
-      expect(sizingRows[0].moves).toBe(ARCHIVE_SIZING.longestGame);
+      expect(sizingRows.map(row => row.game)).toEqual([MOCK_GAMES[1]]);
       expect(
         queryAll(fixture.debugElement, '.ea-data-table__sizing .ea-data-table__row'),
-      ).toHaveLength(sizingRows.length);
+      ).toHaveLength(1);
     });
 
     it('should render the failure panel when the reference data fails to load', () => {

@@ -65,8 +65,7 @@
             section.heading ? 'Standings, ' + section.heading.text : 'Standings'
           "
           [columns]="sectionColumns().get(section.key) ?? []"
-          [data]="section.rows"
-          [sizingRows]="sizingRows" />
+          [data]="section.rows" />
 
         @if (section.games.length) {
           <h4 class="section__games-heading">Games in the archive</h4>
@@ -77,7 +76,6 @@
             [columns]="gameColumns()"
             [data]="section.games"
             [rowHref]="gameHref"
-            [sizingRows]="gameSizingRows"
             (rowActivate)="onOpenGame($event)" />
         }
       </section>
@@ -101,8 +99,7 @@
         [columns]="loadingColumns()"
         [data]="[]"
         [loading]="true"
-        [loadingRowCount]="loadingRowCount"
-        [sizingRows]="sizingRows" />
+        [loadingRowCount]="loadingRowCount" />
     </section>
   }
 

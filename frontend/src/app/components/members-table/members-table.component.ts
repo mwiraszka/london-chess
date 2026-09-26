@@ -24,11 +24,7 @@ import { Router, RouterLink } from '@angular/router';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
-import {
-  MEMBERS_PAGE_SIZES,
-  WIDEST_MEMBER,
-  WIDEST_ROW_NUMBER,
-} from '@app/constants/members-table';
+import { MEMBERS_PAGE_SIZES } from '@app/constants/members-table';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import {
   AdminControlsConfig,
@@ -83,8 +79,6 @@ function toMemberRow(member: Member, number: number): MemberRow {
   };
 }
 
-const SIZING_ROWS: MemberRow[] = [toMemberRow(WIDEST_MEMBER, WIDEST_ROW_NUMBER)];
-
 // The columns whose highest value comes first when they are first sorted
 const DESCENDING_FIRST: string[] = ['rating', 'peakRating'];
 
@@ -115,6 +109,7 @@ export class MembersTableComponent {
   public readonly options = input.required<DataPaginationOptions<Member>>();
   public readonly filteredCount = input.required<number | null>();
   public readonly isLoading = input(false);
+  public readonly widestMembers = input<Member[]>([]);
 
   public readonly optionsChange = output<DataPaginationOptions<Member>>();
 
@@ -133,7 +128,6 @@ export class MembersTableComponent {
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly isCityChampion = isCityChampion;
   protected readonly pageSizes = MEMBERS_PAGE_SIZES;
-  protected readonly sizingRows = SIZING_ROWS;
 
   // Admins see every detail and the controls to change it, unless safe mode hides them
   protected readonly showsDetails = computed(() => this.isAdmin() && !this.isSafeMode());
@@ -154,6 +148,11 @@ export class MembersTableComponent {
 
   protected readonly rows = computed<MemberRow[]>(() =>
     this.members().map((member, index) => toMemberRow(member, this.startIndex() + index)),
+  );
+
+  // Sized from the first skeleton on by the widest of every member, not just this page
+  protected readonly sizingRows = computed(() =>
+    this.widestMembers().map((member, index) => toMemberRow(member, index + 1)),
   );
 
   protected readonly columns = computed<DataTableColumn<MemberRow>[]>(() => {

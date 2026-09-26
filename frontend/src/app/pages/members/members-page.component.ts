@@ -20,6 +20,7 @@ import {
   ElementRef,
   OnInit,
   inject,
+  input,
   signal,
   viewChild,
 } from '@angular/core';
@@ -105,6 +106,7 @@ import { isLccError } from '@app/utils';
           [isLoading]="vm.status === 'loading' || vm.isFetching"
           [isSafeMode]="vm.isSafeMode"
           [members]="vm.filteredMembers"
+          [widestMembers]="widestMembers()"
           [options]="vm.options"
           (optionsChange)="onOptionsChange($event)">
         </lcc-members-table>
@@ -126,6 +128,9 @@ import { isLccError } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersPageComponent implements OnInit {
+  // The widest members, resolved with the route, size the table before its first page
+  public readonly widestMembers = input<Member[]>([]);
+
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
