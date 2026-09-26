@@ -82,6 +82,8 @@ jobs:
 
   E2E-Tests:
     runs-on: ubuntu-latest
+    # The suite takes a few minutes, so anything longer is a hang worth stopping
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
