@@ -9,7 +9,6 @@ import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, User } from '@app/models';
 
-import { version } from '../../../package.json';
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import * as AuthActions from './auth/auth.actions';
 import { initialState as eventsInitialState } from './events/events.reducer';
@@ -31,6 +30,7 @@ import {
   clearRecordsOnAccessLossMetaReducer,
   hydrationMetaReducer,
   metaReducers,
+  stateStorageKey,
   stripExpiredImageUrls,
   updateStateVersionsInLocalStorageMetaReducer,
   versionedStorage,
@@ -80,8 +80,36 @@ describe('Meta Reducers', () => {
       updateStateMetaReducer(mockState, action);
 
       // Should preserve appState with current version
-      const preserved = localStorage.getItem(`appState_v${version}`);
+      const preserved = localStorage.getItem(stateStorageKey('appState'));
       expect(preserved).toBe(oldAppState);
+    });
+
+    it('should carry state saved by the previous version under its namespaced key', () => {
+      const oldAppState = JSON.stringify({ theme: 'dark' });
+      localStorage.setItem(stateStorageKey('appState', '6.2.9'), oldAppState);
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(localStorage.getItem(stateStorageKey('appState', '6.2.9'))).toBeNull();
+      expect(localStorage.getItem(stateStorageKey('appState'))).toBe(oldAppState);
+    });
+
+    it('should leave no key behind that a version before 6.3.0 could load', () => {
+      localStorage.setItem('appState_v6.2.2', '{"theme": "dark"}');
+      localStorage.setItem('eventsState_v6.2.2', '{"entities": {}}');
+      localStorage.setItem('imagesState_v6.2.2', '{"entities": {}}');
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(Object.keys(localStorage).filter(key => key.includes('_v'))).toEqual([]);
+      expect(localStorage.getItem(stateStorageKey('appState'))).toBe('{"theme": "dark"}');
+      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBe(
+        '{"entities": {}}',
+      );
     });
 
     it('should drop record state saved in an incompatible shape', () => {
@@ -94,7 +122,7 @@ describe('Meta Reducers', () => {
 
       staleKeys.forEach(key => {
         expect(localStorage.getItem(`${key}_v6.1.1`)).toBeNull();
-        expect(localStorage.getItem(`${key}_v${version}`)).toBeNull();
+        expect(localStorage.getItem(stateStorageKey(key))).toBeNull();
       });
     });
 
@@ -106,22 +134,22 @@ describe('Meta Reducers', () => {
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
-      expect(localStorage.getItem(`eventsState_v${version}`)).toBe(oldEventsState);
+      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBe(oldEventsState);
     });
 
     it('should drop state saved by a newer version of the app', () => {
-      localStorage.setItem('appState_v10.50.0', '{"theme": "dark"}');
+      localStorage.setItem(stateStorageKey('appState', '10.50.0'), '{"theme": "dark"}');
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
-      expect(localStorage.getItem('appState_v10.50.0')).toBeNull();
-      expect(localStorage.getItem(`appState_v${version}`)).toBeNull();
+      expect(localStorage.getItem(stateStorageKey('appState', '10.50.0'))).toBeNull();
+      expect(localStorage.getItem(stateStorageKey('appState'))).toBeNull();
     });
 
     it('should not remove keys with current version', () => {
-      const currentKey = `appState_v${version}`;
+      const currentKey = stateStorageKey('appState');
       localStorage.setItem(currentKey, '{"theme": "dark"}');
 
       const updateStateMetaReducer =
@@ -182,7 +210,7 @@ describe('Meta Reducers', () => {
       expect(retrieved).toBe(testValue);
 
       // Check that it's actually stored with version
-      const rawKey = `${testKey}_v${version}`;
+      const rawKey = stateStorageKey(testKey);
       expect(localStorage.getItem(rawKey)).toBe(testValue);
     });
 
@@ -218,8 +246,7 @@ describe('Meta Reducers', () => {
       versionedStorage.setItem('key1', 'value1');
 
       const key = versionedStorage.key(0);
-      expect(key).toContain('key1');
-      expect(key).toContain(`_v${version}`);
+      expect(key).toBe(stateStorageKey('key1'));
     });
 
     it('should return null for invalid index', () => {
