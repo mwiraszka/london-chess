@@ -186,6 +186,7 @@ export function toMemberTournamentResults(
             },
             section: section.name,
             roundCount: section.roundCount,
+            roundsPlayed: entry.rounds.filter(({ outcome }) => outcome === 'game').length,
             isDoubleRound: section.isDoubleRound,
             playerCount: section.entries.length,
             rank: entry.rank,

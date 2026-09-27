@@ -47,6 +47,17 @@ export type GameResponse = Omit<Game, 'whitePlayerId' | 'blackPlayerId'> & {
   black: GamePlayer;
 };
 
+export interface OpeningCount {
+  opening: string;
+  gameCount: number;
+}
+
+// How often a member reached each opening family, by the colour they played
+export interface MemberOpenings {
+  white: OpeningCount[];
+  black: OpeningCount[];
+}
+
 export interface ArchiveTournament {
   name: string;
   sections: string[];

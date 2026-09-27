@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   getGame,
   getGames,
+  getMemberOpenings,
   getPlayers,
   getSummary,
   getTournaments,
@@ -15,4 +16,5 @@ export const gamesRouter = Router()
   .get('/tournaments', getTournaments)
   .get('/summary', getSummary)
   .get('/widest', getWidestGames)
+  .get('/members/:number/openings', getMemberOpenings)
   .get('/:id', getGame);

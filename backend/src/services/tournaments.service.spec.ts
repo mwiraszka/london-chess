@@ -180,4 +180,29 @@ describe('toMemberTournamentResults', () => {
   it('should have nothing for players without entries', () => {
     expect(toMemberTournamentResults([record()], new Set(['nobody']))).toEqual([]);
   });
+
+  it('should count only the rounds a player actually played', () => {
+    const bye: RoundResult = {
+      ...played(3, 0, 1),
+      outcome: 'full-point-bye',
+      scores: [],
+    };
+    const forfeit: RoundResult = { ...played(4, 2, 1), outcome: 'forfeit' };
+    const tournament = record({
+      sections: [
+        {
+          name: '',
+          ratingBand: '',
+          roundCount: 4,
+          isDoubleRound: false,
+          gameArchiveSections: [],
+          entries: [entry(1, ANN, [played(1, 2, 1), played(2, 2, 0), bye, forfeit])],
+        },
+      ],
+    });
+
+    const [result] = toMemberTournamentResults([tournament], new Set([ANN]));
+
+    expect(result.roundsPlayed).toBe(2);
+  });
 });

@@ -2,10 +2,10 @@ import { Types } from 'mongoose';
 import request from 'supertest';
 
 import { app } from '../app';
-import { Game, GameModel, GameResponse } from '../models/game.model';
+import { Game, GameModel, GameResponse, MemberOpenings } from '../models/game.model';
 import { Player, PlayerModel } from '../models/player.model';
 import { useTestDatabase } from '../testing/database';
-import { MODIFICATION_INFO, createMember } from '../testing/fixtures';
+import { MODIFICATION_INFO, createMember, memberAccount } from '../testing/fixtures';
 import { ArchivePlayer } from './games.controller';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
@@ -289,6 +289,65 @@ describe('games routes', () => {
       });
 
       const response = await request(app).get('/v1/games/widest');
+
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('GET /v1/games/members/:number/openings', () => {
+    it("should count the member's opening families by the colour they played", async () => {
+      const member = await createMember({
+        number: 7,
+        account: memberAccount({ clerkUserId: 'user_member' }),
+      });
+      const linked = await createPlayer({ memberId: member._id.toString() });
+      const other = await createPlayer({ lastName: 'Other' });
+      await createGame(linked, other, { opening: 'Sicilian Defence, Najdorf' });
+      await createGame(linked, other, { opening: 'Sicilian Defence: Dragon' });
+      await createGame(linked, other, { opening: 'Italian Game' });
+      await createGame(other, linked, { opening: 'French Defence' });
+      await createGame(other, linked, { opening: '' });
+      await createGame(other, other, { opening: 'Ruy Lopez' });
+
+      const response = await request(app).get('/v1/games/members/7/openings');
+
+      expect(response.status).toBe(200);
+      const openings: MemberOpenings = response.body.data;
+      expect(openings).toEqual({
+        white: [
+          { opening: 'Sicilian Defence', gameCount: 2 },
+          { opening: 'Italian Game', gameCount: 1 },
+        ],
+        black: [{ opening: 'French Defence', gameCount: 1 }],
+      });
+    });
+
+    it('should have no openings for a member without archived players', async () => {
+      await createMember({ number: 7, account: memberAccount() });
+
+      const response = await request(app).get('/v1/games/members/7/openings');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({ white: [], black: [] });
+    });
+
+    it('should respond with not found for a member without an account or a malformed number', async () => {
+      await createMember({ number: 8 });
+
+      const withoutAccount = await request(app).get('/v1/games/members/8/openings');
+      const malformed = await request(app).get('/v1/games/members/abc/openings');
+
+      expect(withoutAccount.status).toBe(404);
+      expect(malformed.status).toBe(404);
+    });
+
+    it('should report an unexpected failure', async () => {
+      await createMember({ number: 7, account: memberAccount() });
+      vi.spyOn(PlayerModel, 'find').mockImplementationOnce(() => {
+        throw new Error('boom');
+      });
+
+      const response = await request(app).get('/v1/games/members/7/openings');
 
       expect(response.status).toBe(500);
     });
