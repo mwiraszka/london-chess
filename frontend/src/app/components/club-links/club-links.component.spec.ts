@@ -17,8 +17,8 @@ describe('ClubLinksComponent', () => {
   });
 
   describe('template rendering', () => {
-    it('should render links with an image, text and open in new tab icon for each of the four sections', () => {
-      const linkElements = queryAll(fixture.debugElement, 'section a');
+    it('should render links with an image, text and open in new tab icon for each of the four cards', () => {
+      const linkElements = queryAll(fixture.debugElement, 'ea-card a');
 
       expect(linkElements.length).toBe(4);
 

@@ -10,20 +10,17 @@
   }
 }
 
-section {
-  padding: 16px;
-  border-radius: var(--lcc-borderRadius--large);
-  box-shadow: 3px 3px 5px var(--lcc-color--clubLinks-boxShadow);
-  background-color: var(--lcc-color--general-cardBackground);
+// Cards in the same row share its height
+ea-card {
+  display: grid;
+  height: 100%;
+}
 
-  &:hover {
-    box-shadow: 4px 4px 8px var(--lcc-color--clubLinks-boxShadow);
-    animation: raise 0.2s ease forwards;
-  }
-
-  > span {
-    margin-right: 8px;
-  }
+// The card body's smaller secondary text would otherwise replace the home page's type
+.club-link__text {
+  margin-right: 8px;
+  font-size: var(--font-size-md);
+  color: var(--lcc-color--homePage-primaryText);
 }
 
 a {
@@ -31,6 +28,7 @@ a {
   vertical-align: middle;
   align-items: center;
   gap: 6px;
+  font-size: var(--font-size-md);
 
   .image-container {
     @include link-icon-lift;
@@ -49,14 +47,5 @@ a {
   ea-icon-external-link {
     @include icon-size(16px);
     @include link-icon-lift;
-  }
-}
-
-@keyframes raise {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.015);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  CardComponent,
   ExternalLinkIconComponent,
   MailIconComponent,
   MapPinIconComponent,
@@ -16,6 +17,7 @@ import { Club } from '@app/models';
   styleUrls: ['./club-card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CardComponent,
     ClubMapComponent,
     ExternalLinkIconComponent,
     MailIconComponent,

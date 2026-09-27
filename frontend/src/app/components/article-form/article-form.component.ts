@@ -1,4 +1,5 @@
 import {
+  CardComponent,
   HistoryIconComponent,
   ImageIconComponent,
   RotateCcwIconComponent,
@@ -51,6 +52,7 @@ import { textValidator } from '@app/validators';
   templateUrl: './article-form.component.html',
   styleUrl: './article-form.component.scss',
   imports: [
+    CardComponent,
     FormErrorIconComponent,
     HistoryIconComponent,
     ImageComponent,

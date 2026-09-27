@@ -1,4 +1,5 @@
 import {
+  CardComponent,
   HistoryIconComponent,
   ImageIconComponent,
   ImagePlusIconComponent,
@@ -54,6 +55,7 @@ import { ordinalityValidator, textValidator } from '@app/validators';
   templateUrl: './album-form.component.html',
   styleUrl: './album-form.component.scss',
   imports: [
+    CardComponent,
     FormErrorIconComponent,
     HistoryIconComponent,
     ImageComponent,

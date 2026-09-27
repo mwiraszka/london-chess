@@ -2,6 +2,7 @@
 
 // [data-theme="light"] is the default and fallback theme
 :root {
+  --lcc-color--aboutPage-answerBackground: #{clr(grayscale, white-98)};
   --lcc-color--aboutPage-addressAndTimeText: #{clr(grayscale, black-10)};
   --lcc-color--aboutPage-boardChairText: #{clr(grayscale, gray-35)};
   --lcc-color--aboutPage-cardBackground: #{clr(grayscale, white-95)};
@@ -10,7 +11,6 @@
   --lcc-color--aboutPage-cellBackground1: #{clr(grayscale, white-98)};
   --lcc-color--aboutPage-cellBackground2: #{clr(grayscale, white-95)};
   --lcc-color--aboutPage-sectionHeaderText: #{clr(grayscale, gray-25)};
-  --lcc-color--aboutPage-text: #{clr(grayscale, black-15)};
 
   --lcc-color--adminControls-bookmarkIcon: #{clr(secondary, base)};
   --lcc-color--adminControls-bookmarkIconOnHover: #{clr(secondary, light)};
@@ -95,10 +95,6 @@
   --lcc-color--championPage-primaryTextBold: #{clr(grayscale, black-5)};
   --lcc-color--championPage-secondaryText: #{clr(grayscale, gray-35)};
 
-  --lcc-color--clubCard-liftedSectionBackground: #{clr(grayscale, white-92)};
-
-  --lcc-color--clubLinks-boxShadow: #{clr(grayscale, white-85, 0.7)};
-
   --lcc-color--datePicker-buttonsBackground: #{clr(primary, base)};
   --lcc-color--datePicker-buttonsBackgroundOnHover: #{clr(primary, light)};
   --lcc-color--datePicker-cellBorderOnHover: #{clr(grayscale, gray-75, 0.3)};
@@ -157,8 +153,6 @@
   --lcc-color--footer-secondaryText: #{clr(grayscale, gray-50)};
   --lcc-color--footer-verticalSpacer: #{clr(grayscale, gray-75)};
 
-  --lcc-color--form-background: #{clr(grayscale, white-98)};
-  --lcc-color--form-boxShadow: #{clr(grayscale, white-95, 0.7)};
   --lcc-color--form-headerText: #{clr(grayscale, black-10)};
   --lcc-color--form-labelText: #{clr(grayscale, black-15)};
   --lcc-color--form-requiredFieldAsterisk: #{clr(warning, light)};
@@ -187,7 +181,6 @@
   --lcc-color--header-textOnHover: #{clr(grayscale, white-95)};
 
   --lcc-color--homePage-articleBackground: #{clr(grayscale, white-98)};
-  --lcc-color--homePage-boxShadow: #{clr(grayscale, white-85, 0.7)};
   --lcc-color--homePage-headingText: #{clr(grayscale, gray-25)};
   --lcc-color--homePage-primaryText: #{clr(grayscale, black-15)};
   --lcc-color--homePage-secondaryText: #{clr(grayscale, gray-35)};

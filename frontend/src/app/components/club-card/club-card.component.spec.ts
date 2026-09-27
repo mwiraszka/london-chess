@@ -28,7 +28,7 @@ describe('ClubCardComponent', () => {
     });
 
     it('should render address', () => {
-      const address = query(fixture.debugElement, '.address .address');
+      const address = query(fixture.debugElement, '.address-lines');
       const addressText = address?.nativeElement.textContent;
 
       expect(addressText).toContain(LCC.addressLine1);

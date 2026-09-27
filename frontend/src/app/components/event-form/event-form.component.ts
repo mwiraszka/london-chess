@@ -1,4 +1,4 @@
-import { HistoryIconComponent } from '@eagami/ui';
+import { CardComponent, HistoryIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import moment from 'moment-timezone';
 import { debounceTime } from 'rxjs/operators';
@@ -43,6 +43,7 @@ import { idValidator, textValidator, timeValidator } from '@app/validators';
   templateUrl: './event-form.component.html',
   styleUrl: './event-form.component.scss',
   imports: [
+    CardComponent,
     DatePickerComponent,
     FormErrorIconComponent,
     HistoryIconComponent,

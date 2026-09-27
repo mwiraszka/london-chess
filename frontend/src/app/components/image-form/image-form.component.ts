@@ -1,4 +1,4 @@
-import { HistoryIconComponent, ImageIconComponent } from '@eagami/ui';
+import { CardComponent, HistoryIconComponent, ImageIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { debounceTime } from 'rxjs/operators';
 
@@ -46,6 +46,7 @@ import { textValidator } from '@app/validators';
   templateUrl: './image-form.component.html',
   styleUrl: './image-form.component.scss',
   imports: [
+    CardComponent,
     FormErrorIconComponent,
     HistoryIconComponent,
     ImageComponent,

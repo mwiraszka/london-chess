@@ -1,4 +1,4 @@
-import { HistoryIconComponent } from '@eagami/ui';
+import { CardComponent, HistoryIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { merge } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -49,6 +49,7 @@ import {
   templateUrl: './member-form.component.html',
   styleUrl: './member-form.component.scss',
   imports: [
+    CardComponent,
     DatePickerComponent,
     FormErrorIconComponent,
     HistoryIconComponent,

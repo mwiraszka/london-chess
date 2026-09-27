@@ -1,15 +1,8 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
+  display: block;
   width: 100%;
-  padding: 8px 16px;
-  border-radius: var(--lcc-borderRadius--small);
-  box-shadow: 1px 1px 5px 2px var(--lcc-color--form-boxShadow);
-  background-color: var(--lcc-color--form-background);
 
   .file-and-preview-container {
     display: flex;
@@ -112,4 +105,14 @@
     margin: 1em 0;
     border-top: 1px solid var(--lcc-color--general-dividerLine);
   }
+}
+
+// The card body's smaller secondary text would otherwise replace the page's type
+.form-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
 }
