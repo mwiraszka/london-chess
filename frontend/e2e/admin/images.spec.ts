@@ -113,6 +113,8 @@ test.describe('managing images', () => {
 
     await album.fill(`${ALBUMS.picnic} renamed`);
     await captions.first().fill('A caption that was never saved');
+    // The form reports edits a moment after typing stops, which enables Restore
+    await expect(editor.locator('.restore-button')).toBeEnabled();
     await editor
       .locator('lcc-navigation-bar')
       .getByRole('link', { name: 'News', exact: true })

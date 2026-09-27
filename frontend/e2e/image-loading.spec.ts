@@ -123,6 +123,9 @@ test.describe('image loading', () => {
       )
       .toBe(true);
 
+    // Once the page settles, nothing the app still has in flight can save over the rewrite
+    await page.waitForLoadState('networkidle');
+
     // Rewrite the persisted state to cover both failure shapes: week-old
     // entries, and retired-storage URLs carrying a fresh expiration (the
     // corruption older app versions could write)
