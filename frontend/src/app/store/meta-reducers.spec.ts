@@ -431,6 +431,44 @@ describe('Meta Reducers', () => {
       expect(image?.urlExpirationDate).toBe(freshImage.urlExpirationDate);
     });
 
+    describe('the record of when images were last fetched', () => {
+      const fetchedAt = '2026-01-15T10:00:00.000Z';
+      const withFetches = (image: Image): ImagesState => ({
+        ...stateWith(image),
+        lastMetadataFetch: fetchedAt,
+        lastFilteredThumbnailsFetch: fetchedAt,
+        lastAlbumCoversFetch: fetchedAt,
+      });
+
+      it('should be forgotten once any URL is stripped, so fresh URLs are fetched', () => {
+        const expiredImage: Image = {
+          ...MOCK_IMAGES[0],
+          mainUrl: 'https://example.com/stale.jpg',
+          urlExpirationDate: new Date(Date.now() - 60_000).toISOString(),
+        };
+
+        const result = stripExpiredImageUrls(withFetches(expiredImage));
+
+        expect(result.lastMetadataFetch).toBeNull();
+        expect(result.lastFilteredThumbnailsFetch).toBeNull();
+        expect(result.lastAlbumCoversFetch).toBeNull();
+      });
+
+      it('should be kept while every URL is still fresh', () => {
+        const freshImage: Image = {
+          ...MOCK_IMAGES[0],
+          mainUrl: 'https://example.com/fresh.jpg',
+          urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
+        };
+
+        const result = stripExpiredImageUrls(withFetches(freshImage));
+
+        expect(result.lastMetadataFetch).toBe(fetchedAt);
+        expect(result.lastFilteredThumbnailsFetch).toBe(fetchedAt);
+        expect(result.lastAlbumCoversFetch).toBe(fetchedAt);
+      });
+    });
+
     it('should be applied when hydrating imagesState from local storage', () => {
       const expiredImage: Image = {
         ...MOCK_IMAGES[0],

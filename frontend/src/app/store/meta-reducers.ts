@@ -292,11 +292,14 @@ function pointsAtRetiredStorage(url: string | undefined): boolean {
  * Drops persisted presigned URLs that are already expired (or inside the
  * refresh buffer), or that point at retired storage, while rehydrating, so
  * components render placeholders and wait for fresh URLs instead of loading
- * doomed ones.
+ * doomed ones. Dropping any also forgets when the images were last fetched,
+ * since those fetches no longer stand behind the URLs, so fresh ones are
+ * fetched as the app starts.
  */
 export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
   const entities = imagesState.entities ?? {};
   const updatedEntities: typeof entities = {};
+  let stripped = false;
 
   for (const id of Object.keys(entities)) {
     const entity = entities[id];
@@ -307,6 +310,7 @@ export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
         pointsAtRetiredStorage(image?.mainUrl) ||
         pointsAtRetiredStorage(image?.thumbnailUrl));
 
+    stripped ||= !!entity && stale;
     updatedEntities[id] =
       entity && stale
         ? {
@@ -321,7 +325,15 @@ export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
         : entity;
   }
 
-  return { ...imagesState, entities: updatedEntities };
+  return stripped
+    ? {
+        ...imagesState,
+        entities: updatedEntities,
+        lastMetadataFetch: null,
+        lastFilteredThumbnailsFetch: null,
+        lastAlbumCoversFetch: null,
+      }
+    : { ...imagesState, entities: updatedEntities };
 }
 
 export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compact([
