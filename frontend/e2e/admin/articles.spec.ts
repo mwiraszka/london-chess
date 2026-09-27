@@ -2,6 +2,8 @@ import { expect, test } from '../fixtures';
 import { BANNER_IMAGES } from '../seed';
 import {
   API,
+  APP_API,
+  RESPONSE_TIMEOUT,
   confirm,
   logIn,
   openAdminControls,
@@ -31,7 +33,9 @@ test.describe('managing articles', () => {
     await expect(page.locator('lcc-markdown-renderer strong')).toHaveText('end-to-end');
     const published = page.waitForResponse(
       response =>
-        response.url() === `${API}/articles` && response.request().method() === 'POST',
+        response.url() === `${APP_API}/articles` &&
+        response.request().method() === 'POST',
+      { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Publish article' }).click();
     await confirm(page, 'Publish');
@@ -50,8 +54,9 @@ test.describe('managing articles', () => {
     await page.getByLabel('Title:').fill(`${title} (updated)`);
     const updated = page.waitForResponse(
       response =>
-        response.url() === `${API}/articles/${articleId}` &&
+        response.url() === `${APP_API}/articles/${articleId}` &&
         response.request().method() === 'PUT',
+      { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Update article' }).click();
     await confirm(page, 'Update');

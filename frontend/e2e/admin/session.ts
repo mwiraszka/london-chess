@@ -5,6 +5,13 @@ import { Locator, Page, expect, test } from '../fixtures';
 
 export const API = 'http://localhost:3300/v1';
 
+// The address the app itself calls, which the e2e server passes on to the API
+export const APP_API = 'http://localhost:4300/v1';
+
+// How long to wait for a response the test triggered, well short of the test timeout so a
+// wait that can never match fails in seconds
+export const RESPONSE_TIMEOUT = 15_000;
+
 // Clerk accepts this code for any address containing +clerk_test on a development instance
 const TEST_VERIFICATION_CODE = '424242';
 
@@ -28,7 +35,8 @@ export async function logIn(page: Page): Promise<string> {
 
   const account = page.waitForResponse(
     response =>
-      response.url() === `${API}/users/me` && response.request().method() === 'GET',
+      response.url() === `${APP_API}/users/me` && response.request().method() === 'GET',
+    { timeout: RESPONSE_TIMEOUT },
   );
   await page.getByRole('button', { name: 'Log in' }).click();
 

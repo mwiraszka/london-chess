@@ -2,7 +2,8 @@ import { Page, expect, test } from '../fixtures';
 import { ALBUMS, PICNIC_IMAGES } from '../seed';
 import { png } from './files';
 import {
-  API,
+  APP_API,
+  RESPONSE_TIMEOUT,
   confirm,
   logIn,
   openAdminControls,
@@ -26,7 +27,8 @@ async function deleteAlbum(page: Page, album: string): Promise<void> {
 function imagesSaved(page: Page) {
   return page.waitForResponse(
     response =>
-      response.url() === `${API}/images` && response.request().method() === 'POST',
+      response.url() === `${APP_API}/images` && response.request().method() === 'POST',
+    { timeout: RESPONSE_TIMEOUT },
   );
 }
 

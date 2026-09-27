@@ -1,7 +1,8 @@
 import { Page, expect, test } from '../fixtures';
 import { flipSwitch } from '../switches';
 import {
-  API,
+  APP_API,
+  RESPONSE_TIMEOUT,
   confirm,
   logIn,
   openAdminControls,
@@ -39,7 +40,8 @@ test.describe('managing events', () => {
     await page.getByLabel('Lecture', { exact: true }).check();
     const added = page.waitForResponse(
       response =>
-        response.url() === `${API}/events` && response.request().method() === 'POST',
+        response.url() === `${APP_API}/events` && response.request().method() === 'POST',
+      { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Add event' }).click();
     await confirm(page, 'Add');
@@ -55,8 +57,9 @@ test.describe('managing events', () => {
     await page.getByLabel('Details:').fill('Rook and pawn endings for club players.');
     const updated = page.waitForResponse(
       response =>
-        response.url().startsWith(`${API}/events/`) &&
+        response.url().startsWith(`${APP_API}/events/`) &&
         response.request().method() === 'PUT',
+      { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Update event' }).click();
     await confirm(page, 'Update');

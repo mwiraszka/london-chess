@@ -7,6 +7,8 @@ export default defineConfig({
   timeout: 60_000,
   forbidOnly: isCi,
   retries: isCi ? 1 : 0,
+  // A broken build fails every test alike, so CI stops early instead of running them all
+  maxFailures: isCi ? 3 : 0,
   reporter: isCi ? [['list'], ['html', { open: 'never' }]] : [['list']],
   globalSetup: './e2e/global-setup.ts',
   use: {

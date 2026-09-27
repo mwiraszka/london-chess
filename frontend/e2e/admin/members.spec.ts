@@ -1,7 +1,8 @@
 import { Page, expect, test } from '../fixtures';
 import { bodyRows } from '../tables';
 import {
-  API,
+  APP_API,
+  RESPONSE_TIMEOUT,
   confirm,
   logIn,
   openAdminControls,
@@ -33,8 +34,9 @@ test.describe('managing members', () => {
     await page.getByLabel('LCC rating:').fill('1432');
     const added = page.waitForResponse(
       response =>
-        response.url().startsWith(`${API}/admin/members`) &&
+        response.url().startsWith(`${APP_API}/admin/members`) &&
         response.request().method() === 'POST',
+      { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Add member' }).click();
     await expect(page.locator('lcc-dialog')).toContainText(`Add Imogen ${lastName}?`);
@@ -51,8 +53,9 @@ test.describe('managing members', () => {
     await page.getByLabel('City:').fill('Komoka');
     const updated = page.waitForResponse(
       response =>
-        response.url().startsWith(`${API}/admin/members/`) &&
+        response.url().startsWith(`${APP_API}/admin/members/`) &&
         response.request().method() === 'PUT',
+      { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Update member' }).click();
     await confirm(page, 'Update');
