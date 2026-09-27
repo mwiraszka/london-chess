@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.3.0] - 2026-09-26
+## [v6.3.0] - 2026-09-27
 
 ### Added
 
 - Display a member's 1st, 2nd and 3rd place finishes as gold, silver and bronze trophies above the table in the Tournaments card on their profile, with the details of each trophy's tournament and a link to it shown when it is selected
+- Chart a member's rating at the start of each rated tournament on their profile, opening on the latest five years with quarterly date ticks, and scrolling or pinch-zooming back through older results
+- Add an Openings card to member profiles, with donut charts of the opening families a member played as White and as Black in the game archives
 
 ### Changed
 
@@ -18,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Frame the rating details on a member's profile, keeping them on one line while they fit and pairing them up once they do not
 - Give the trophies on a member's profile a little more room above them, and show the member's name in the main text colour
 - Add Playwright to the tools shown on the website changelog page
+- Let each card on a member's profile be collapsed and expanded from anywhere on its header
+- Redesign the About page's questions as a single list with an icon for each, highlighting the questions that are open, and send contact questions to the support address
+- Give the regional club cards, the club links on the home page and the admin forms the same card style as the rest of the site
+- Move the expand arrows on the website changelog's release cards to the right, in line with the rest of the site
+- Remove the option to show every game at once in the game archives
 
 ### Fixed
 
@@ -32,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ask to delete, not update, an article when deleting it from its own page
 - Write the log-in and create-account error messages as full sentences
 - Label the album editor's fields and the dialog, image viewer, calendar and admin control buttons for screen readers
+- Sort members by rating as numbers, so a rating of 985 no longer ranks above 1000
 
 ## [v6.2.2] - 2026-09-23
 
