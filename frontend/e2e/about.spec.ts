@@ -1,20 +1,26 @@
 import { expect, test } from './fixtures';
 
 test.describe('about', () => {
-  test('expands a section to read it and collapses it again', async ({ page }) => {
+  test('shows where the club meets without opening anything', async ({ page }) => {
     await page.goto('/about');
-    const parking = page.locator('lcc-expansion-panel').filter({
-      has: page.getByRole('heading', { name: '🚗 Parking' }),
-    });
-    await expect(parking.locator('.expansion-content')).toHaveCount(0);
 
-    await parking.getByRole('heading', { name: '🚗 Parking' }).click();
+    await expect(page.locator('lcc-club-card')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Scheduled events' })).toBeVisible();
+  });
 
-    await expect(parking.locator('.expansion-content')).toBeVisible();
-    await expect(parking.locator('.expansion-content')).not.toBeEmpty();
+  test('opens a question to read its answer and closes it again', async ({ page }) => {
+    await page.goto('/about');
+    const question = page.getByRole('button', { name: 'Is there parking?' });
+    const answer = page.getByRole('region', { name: 'Is there parking?' });
+    await expect(question).toHaveAttribute('aria-expanded', 'false');
 
-    await parking.getByRole('heading', { name: '🚗 Parking' }).click();
+    await question.click();
 
-    await expect(parking.locator('.expansion-content')).toHaveCount(0);
+    await expect(answer).toBeVisible();
+    await expect(answer).not.toBeEmpty();
+
+    await question.click();
+
+    await expect(answer).toHaveCount(0);
   });
 });

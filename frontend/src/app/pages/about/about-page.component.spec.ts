@@ -63,43 +63,61 @@ describe('AboutPageComponent', () => {
       expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
     });
 
-    it('should render all sections as expansion panels', () => {
-      const expectedHeadings = [
-        '📍 Location and schedule',
-        '👋 First visit',
-        '🚗 Parking',
-        '📜 Club regulations',
-        '💵 Membership fee',
-        '🔢 Chess ratings',
-        '♟ Chess supplies',
-        '📖 Rules of the game',
-        '🏆 Tournaments',
-        '🗳 AGM and leadership team',
-      ];
+    it('should keep the location card with its map and links open', () => {
+      const location = query(fixture.debugElement, '.about__location');
 
-      const panels = queryAll(fixture.debugElement, 'lcc-expansion-panel');
-      expect(panels.length).toBe(expectedHeadings.length);
-
-      expectedHeadings.forEach((heading, index) => {
-        expect(panels[index].componentInstance.heading()).toBe(heading);
-      });
+      expect(query(location, 'lcc-club-card')).toBeTruthy();
+      expect(query(location, 'lcc-link-list').componentInstance.links()).toEqual([
+        component.schedulePageLink,
+        component.regionalClubsPageLink,
+      ]);
     });
 
-    it('should toggle expansion panel content when clicked', () => {
-      const firstSection = query(fixture.debugElement, 'lcc-expansion-panel');
-      const header = query(firstSection, '.expansion-header');
+    it('should list every question in one accordion, each with its own icon', () => {
+      const accordions = queryAll(fixture.debugElement, 'ea-accordion');
+      const items = queryAll(fixture.debugElement, 'ea-accordion-item');
 
-      expect(query(firstSection, '.expansion-content')).toBeFalsy();
+      expect(accordions).toHaveLength(1);
+      expect(items).toHaveLength(11);
+      items.forEach(item => expect(query(item, '.ea-accordion-item__icon')).toBeTruthy());
+    });
 
-      header.triggerEventHandler('click');
+    it('should highlight the questions that are open', () => {
+      const [item] = queryAll(fixture.debugElement, 'ea-accordion-item');
+
+      query(item, '.ea-accordion-item__trigger').nativeElement.click();
       fixture.detectChanges();
 
-      expect(query(firstSection, '.expansion-content')).toBeTruthy();
+      expect(query(item, '.ea-accordion-item--highlighted')).toBeTruthy();
+    });
 
-      header.triggerEventHandler('click');
+    it('should reveal an answer when its question is opened and hide it again', () => {
+      const [item] = queryAll(fixture.debugElement, 'ea-accordion-item');
+      const trigger = query(item, '.ea-accordion-item__trigger');
+
+      expect(query(item, '.ea-accordion-item__content')).toBeFalsy();
+
+      trigger.nativeElement.click();
       fixture.detectChanges();
 
-      expect(query(firstSection, '.expansion-content')).toBeFalsy();
+      expect(query(item, '.ea-accordion-item__content')).toBeTruthy();
+      expect(trigger.attributes['aria-expanded']).toBe('true');
+
+      trigger.nativeElement.click();
+      fixture.detectChanges();
+
+      expect(query(item, '.ea-accordion-item__content')).toBeFalsy();
+    });
+
+    it('should let several answers stay open at once', () => {
+      const [first, second] = queryAll(fixture.debugElement, 'ea-accordion-item');
+
+      query(first, '.ea-accordion-item__trigger').nativeElement.click();
+      query(second, '.ea-accordion-item__trigger').nativeElement.click();
+      fixture.detectChanges();
+
+      expect(query(first, '.ea-accordion-item__content')).toBeTruthy();
+      expect(query(second, '.ea-accordion-item__content')).toBeTruthy();
     });
   });
 });

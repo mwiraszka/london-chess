@@ -1,14 +1,29 @@
 import {
+  AccordionComponent,
+  AccordionItemComponent,
+  BookOpenIconComponent,
   CalendarDaysIconComponent,
+  CardComponent,
+  DollarSignIconComponent,
+  EditIconComponent,
+  FileTextIconComponent,
   InfoIconComponent,
+  LaptopIconComponent,
   MapIconComponent,
+  MapPinIconComponent,
+  MessageCircleIconComponent,
+  NavigationIconComponent,
+  ShoppingBagIconComponent,
+  TrendingUpIconComponent,
+  TrophyIconComponent,
+  UserPlusIconComponent,
+  UsersIconComponent,
 } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { ClubCardComponent } from '@app/components/club-card/club-card.component';
-import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
@@ -21,10 +36,14 @@ import { MetaAndTitleService } from '@app/services';
   templateUrl: './about-page.component.html',
   styleUrl: './about-page.component.scss',
   imports: [
+    AccordionComponent,
+    AccordionItemComponent,
+    CardComponent,
     ClubCardComponent,
-    ExpansionPanelComponent,
     LinkListComponent,
+    MapPinIconComponent,
     MemberLinkComponent,
+    MessageCircleIconComponent,
     PageHeaderComponent,
     RouterLink,
   ],
@@ -34,6 +53,18 @@ export class AboutPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
 
   protected readonly pageIcon = InfoIconComponent;
+
+  protected readonly visitIcon = UserPlusIconComponent;
+  protected readonly parkingIcon = NavigationIconComponent;
+  protected readonly suppliesIcon = ShoppingBagIconComponent;
+  protected readonly feesIcon = DollarSignIconComponent;
+  protected readonly regulationsIcon = FileTextIconComponent;
+  protected readonly tournamentsIcon = TrophyIconComponent;
+  protected readonly enteringIcon = EditIconComponent;
+  protected readonly ratingsIcon = TrendingUpIconComponent;
+  protected readonly rulesIcon = BookOpenIconComponent;
+  protected readonly leadershipIcon = UsersIconComponent;
+  protected readonly websiteIcon = LaptopIconComponent;
 
   public readonly lccClub: Club = LCC;
   public readonly schedulePageLink: InternalLink = {
@@ -50,7 +81,7 @@ export class AboutPageComponent implements OnInit {
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('About');
     this.metaAndTitleService.updateDescription(
-      'A brief overview of the London Chess Club.',
+      'Where and when the London Chess Club meets, and answers to common questions about visiting, membership and tournaments.',
     );
   }
 }
