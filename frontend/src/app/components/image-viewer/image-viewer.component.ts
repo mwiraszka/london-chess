@@ -9,13 +9,12 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
   OnDestroy,
   OnInit,
-  Output,
   Renderer2,
   inject,
+  input,
+  output,
 } from '@angular/core';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
@@ -52,11 +51,15 @@ import { isPresignedUrlExpired } from '@app/utils';
 export class ImageViewerComponent
   implements OnInit, AfterViewInit, OnDestroy, DialogOutput<null>
 {
-  @Input({ required: true }) album!: string;
-  @Input({ required: true }) images!: Image[];
-  @Input({ required: true }) isAdmin!: boolean;
+  private readonly dialogService = inject(DialogService);
+  private readonly renderer = inject(Renderer2);
+  private readonly store = inject(Store);
 
-  @Output() public dialogResult = new EventEmitter<null | 'close'>();
+  readonly album = input.required<string>();
+  readonly images = input.required<Image[]>();
+  readonly isAdmin = input.required<boolean>();
+
+  public readonly dialogResult = output<null | 'close'>();
 
   public currentImage$!: Observable<Image | null>;
   public displayedCaption: string = '';
@@ -68,19 +71,13 @@ export class ImageViewerComponent
   }
 
   public get imageId(): Id {
-    return this.images[this.index].id;
+    return this.images()[this.index].id;
   }
 
   private indexSubject = new BehaviorSubject<number>(0);
 
   private readonly adminControls = inject(AdminControlsService);
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly renderer: Renderer2,
-    private readonly store: Store,
-  ) {}
 
   private keydownListener?: () => void;
   private keyupListener?: () => void;
@@ -108,13 +105,13 @@ export class ImageViewerComponent
 
   public onPreviousImage(): void {
     this.adminControls.close();
-    const newIndex = this.index > 0 ? this.index - 1 : this.images.length - 1;
+    const newIndex = this.index > 0 ? this.index - 1 : this.images().length - 1;
     this.indexSubject.next(newIndex);
   }
 
   public onNextImage(): void {
     this.adminControls.close();
-    const newIndex = this.index < this.images.length - 1 ? this.index + 1 : 0;
+    const newIndex = this.index < this.images().length - 1 ? this.index + 1 : 0;
     this.indexSubject.next(newIndex);
   }
 
@@ -157,7 +154,7 @@ export class ImageViewerComponent
   }
 
   private prefetchAdjacentImages(): void {
-    if (this.images.length <= 1) {
+    if (this.images().length <= 1) {
       return;
     }
 
@@ -165,14 +162,15 @@ export class ImageViewerComponent
     // neighbours (next, then previous) and then alternating outward.
     const indicesToPrefetch: number[] = [1];
 
-    if (this.images.length > 2) {
-      indicesToPrefetch.push(this.images.length - 1);
+    const images = this.images();
+    if (this.images().length > 2) {
+      indicesToPrefetch.push(images.length - 1);
     }
 
-    for (let i = 2; i <= Math.floor(this.images.length / 2); i++) {
+    for (let i = 2; i <= Math.floor(images.length / 2); i++) {
       indicesToPrefetch.push(i);
-      if (i !== this.images.length - i) {
-        indicesToPrefetch.push(this.images.length - i);
+      if (i !== images.length - i) {
+        indicesToPrefetch.push(images.length - i);
       }
     }
 
@@ -187,11 +185,11 @@ export class ImageViewerComponent
   }
 
   private fetchImage(index: number, isPrefetch = false): void {
-    if (index < 0 || index >= this.images.length) {
+    if (index < 0 || index >= this.images().length) {
       return;
     }
 
-    const imageId = this.images[index].id;
+    const imageId = this.images()[index].id;
 
     this.store
       .select(ImagesSelectors.selectImageById(imageId))
@@ -224,14 +222,14 @@ export class ImageViewerComponent
 
         if (
           event.key === 'ArrowLeft' &&
-          this.images.length > 1 &&
+          this.images().length > 1 &&
           !this.isPreviousImageButtonActive
         ) {
           this.isPreviousImageButtonActive = true;
           this.onPreviousImage();
         } else if (
           (event.key === 'ArrowRight' || event.key === ' ') &&
-          this.images.length > 1 &&
+          this.images().length > 1 &&
           !this.isNextImageButtonActive
         ) {
           this.isNextImageButtonActive = true;
@@ -244,11 +242,11 @@ export class ImageViewerComponent
       'document',
       'keyup',
       (event: KeyboardEvent) => {
-        if (event.key === 'ArrowLeft' && this.images.length > 1) {
+        if (event.key === 'ArrowLeft' && this.images().length > 1) {
           this.isPreviousImageButtonActive = false;
         } else if (
           (event.key === 'ArrowRight' || event.key === ' ') &&
-          this.images.length > 1
+          this.images().length > 1
         ) {
           this.isNextImageButtonActive = false;
         }

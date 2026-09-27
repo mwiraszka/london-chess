@@ -65,16 +65,15 @@ describe('MemberFormComponent', () => {
     restoreSpy = vi.spyOn(component.restore, 'emit');
     submitSpy = vi.spyOn(component, 'onSubmit');
 
-    component.formData = pick(MOCK_MEMBERS[0], MEMBER_FORM_DATA_PROPERTIES);
-    component.hasUnsavedChanges = false;
-    component.isSafeMode = false;
-    component.originalMember = null;
+    fixture.componentRef.setInput(
+      'formData',
+      pick(MOCK_MEMBERS[0], MEMBER_FORM_DATA_PROPERTIES),
+    );
+    fixture.componentRef.setInput('hasUnsavedChanges', false);
+    fixture.componentRef.setInput('isSafeMode', false);
+    fixture.componentRef.setInput('originalMember', null);
 
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('form initialization', () => {
@@ -93,7 +92,7 @@ describe('MemberFormComponent', () => {
 
           for (const property of MEMBER_FORM_DATA_PROPERTIES) {
             expect(component.form.controls[property].value).toBe(
-              component.formData[property],
+              component.formData()[property],
             );
             expect(component.form.controls[property].touched).toBe(true);
           }
@@ -114,7 +113,7 @@ describe('MemberFormComponent', () => {
 
           for (const property of MEMBER_FORM_DATA_PROPERTIES) {
             expect(component.form.controls[property].value).toBe(
-              component.formData[property],
+              component.formData()[property],
             );
             expect(component.form.controls[property].untouched).toBe(true);
           }
@@ -257,7 +256,7 @@ describe('MemberFormComponent', () => {
       expect(dialog).toEqual(
         expect.objectContaining({
           title: 'Confirm',
-          body: `Add ${component.formData.firstName} ${component.formData.lastName} and email them their login details?`,
+          body: `Add ${component.formData().firstName} ${component.formData().lastName} and email them their login details?`,
           confirmButtonText: 'Add',
         }),
       );

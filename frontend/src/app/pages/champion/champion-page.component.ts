@@ -2,7 +2,7 @@ import { TrophyIconComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { take } from 'rxjs/operators';
 
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 
 import { ChampionsTableComponent } from '@app/components/champions-table/champions-table.component';
 import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
@@ -28,6 +28,9 @@ import { isExpired } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChampionPageComponent implements OnInit {
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly pageIcon = TrophyIconComponent;
 
   public readonly photos: Partial<Image>[] = [
@@ -279,11 +282,6 @@ export class ChampionPageComponent implements OnInit {
     { year: 1968, winners: [{ name: 'Peter Murray', peakRating: '2289' }] },
     { year: 1967, winners: [{ name: 'Peter Murray', peakRating: '2289' }] },
   ];
-
-  constructor(
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('City Champion');

@@ -64,6 +64,11 @@ import { ImagesSelectors } from '@app/store/images';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleViewerPageComponent implements OnInit {
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly dialogService = inject(DialogService);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   public readonly newsPageLink: InternalLink = {
     text: 'More articles',
     internalPath: 'news',
@@ -80,13 +85,6 @@ export class ArticleViewerPageComponent implements OnInit {
   }>;
 
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly activatedRoute: ActivatedRoute,
-    private readonly dialogService: DialogService,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
@@ -139,7 +137,7 @@ export class ArticleViewerPageComponent implements OnInit {
   private async onDelete(article: Article): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: `Update ${article.title}?`,
+      body: `Delete ${article.title}?`,
       confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
       confirmAction: () =>

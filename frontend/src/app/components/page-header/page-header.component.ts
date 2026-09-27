@@ -1,27 +1,27 @@
 import { ShieldCheckIconComponent } from '@eagami/ui';
 
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input, Type } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Type, input } from '@angular/core';
 
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 
 @Component({
   selector: 'lcc-page-header',
   template: `
-    @if (icon) {
+    @if (icon()) {
       <span
         class="page-header-icon"
-        [class.admin-page]="icon === adminIcon">
-        <ng-container *ngComponentOutlet="icon" />
+        [class.admin-page]="icon() === adminIcon">
+        <ng-container *ngComponentOutlet="icon()" />
       </span>
     }
     <h2
       class="page-heading"
-      [class.end-with-asterisk]="hasUnsavedChanges">
-      @if (heading === null) {
+      [class.end-with-asterisk]="hasUnsavedChanges()">
+      @if (heading() === null) {
         <lcc-text-skeleton width="14em" />
       } @else {
-        {{ heading }}
+        {{ heading() }}
       }
     </h2>
   `,
@@ -31,10 +31,10 @@ import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skelet
 })
 export class PageHeaderComponent {
   // Null until the heading is known, meanwhile a placeholder holds its space
-  @Input({ required: true }) public heading!: string | null;
+  public readonly heading = input.required<string | null>();
 
-  @Input() public hasUnsavedChanges: boolean | null = null;
-  @Input() public icon: Type<unknown> | null = null;
+  public readonly hasUnsavedChanges = input<boolean | null>(null);
+  public readonly icon = input<Type<unknown> | null>(null);
 
   protected readonly adminIcon = ShieldCheckIconComponent;
 }

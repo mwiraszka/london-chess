@@ -62,6 +62,10 @@ import { combinedLoadStatus } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePageComponent implements OnInit {
+  private readonly dialogService = inject(DialogService);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   public readonly REGIONAL_CLUBS = REGIONAL_CLUBS;
 
   public viewModel$?: Observable<{
@@ -115,12 +119,6 @@ export class HomePageComponent implements OnInit {
   };
 
   private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('London Chess Club');

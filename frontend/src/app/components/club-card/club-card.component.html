@@ -1,40 +1,44 @@
-<section class="club-info-section">
-  <div class="club-info-content">
-    <h3 class="club-name">{{ club.name }}</h3>
-    <hr />
+<ea-card
+  padding="none"
+  [fullWidth]="true">
+  <div class="club-card">
+    <section class="club-info">
+      <h3 class="club-name">{{ club().name }}</h3>
+      <hr />
 
-    <div class="club-details">
-      <div class="address">
-        <ea-icon-map-pin class="map-icon secondary-text" />
-        <div class="address secondary-text">
-          {{ club.addressLine1 }}<br />
-          {{ club.addressLine2 }}<br />
-          {{ club.addressLine3 }}
+      <div class="club-details">
+        <div class="address">
+          <ea-icon-map-pin class="map-icon" />
+          <div class="address-lines">
+            {{ club().addressLine1 }}<br />
+            {{ club().addressLine2 }}<br />
+            {{ club().addressLine3 }}
+          </div>
         </div>
-      </div>
 
-      <div class="schedule secondary-text">
-        {{ club.scheduleText }}
-      </div>
-
-      @if (club.email) {
-        <div class="email">
-          <ea-icon-mail class="email-icon" />
-          <a
-            [href]="'mailto:' + club.email"
-            class="email-link lcc-link"
-            rel="noopener noreferrer"
-            target="_blank">
-            <span>{{ club.email }}</span>
-            <ea-icon-external-link class="external-link-icon" />
-          </a>
+        <div class="schedule">
+          {{ club().scheduleText }}
         </div>
-      }
-    </div>
+
+        @if (club().email) {
+          <div class="email">
+            <ea-icon-mail class="email-icon" />
+            <a
+              [href]="'mailto:' + club().email"
+              class="email-link lcc-link"
+              rel="noopener noreferrer"
+              target="_blank">
+              <span>{{ club().email }}</span>
+              <ea-icon-external-link class="external-link-icon" />
+            </a>
+          </div>
+        }
+      </div>
+    </section>
+
+    <lcc-club-map
+      [club]="club()"
+      tooltip="Open in Google Maps">
+    </lcc-club-map>
   </div>
-</section>
-
-<lcc-club-map
-  [club]="club"
-  tooltip="Open in Google Maps">
-</lcc-club-map>
+</ea-card>

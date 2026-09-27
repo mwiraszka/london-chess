@@ -14,7 +14,7 @@ import { Observable, combineLatest } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
@@ -108,6 +108,9 @@ import { combinedLoadStatus } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewsPageComponent implements OnInit {
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly pageIcon = NewspaperIconComponent;
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly searchIcon = SearchIconComponent;
@@ -129,11 +132,6 @@ export class NewsPageComponent implements OnInit {
     options: DataPaginationOptions<Article>;
     status: LoadStatus;
   }>;
-
-  constructor(
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('News');

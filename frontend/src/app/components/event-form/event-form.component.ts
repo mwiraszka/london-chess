@@ -1,4 +1,4 @@
-import { HistoryIconComponent } from '@eagami/ui';
+import { CardComponent, HistoryIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import moment from 'moment-timezone';
 import { debounceTime } from 'rxjs/operators';
@@ -6,11 +6,10 @@ import { debounceTime } from 'rxjs/operators';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
   OnInit,
-  Output,
   inject,
+  input,
+  output,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -44,6 +43,7 @@ import { idValidator, textValidator, timeValidator } from '@app/validators';
   templateUrl: './event-form.component.html',
   styleUrl: './event-form.component.scss',
   imports: [
+    CardComponent,
     DatePickerComponent,
     FormErrorIconComponent,
     HistoryIconComponent,
@@ -54,31 +54,29 @@ import { idValidator, textValidator, timeValidator } from '@app/validators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventFormComponent implements OnInit {
-  @Input({ required: true }) formData!: EventFormData;
-  @Input({ required: true }) hasUnsavedChanges!: boolean;
-  @Input({ required: true }) originalEvent!: Event | null;
+  private readonly dialogService = inject(DialogService);
+  private readonly formBuilder = inject(FormBuilder);
 
-  @Output() cancel = new EventEmitter<void>();
-  @Output() change = new EventEmitter<{
+  readonly formData = input.required<EventFormData>();
+  readonly hasUnsavedChanges = input.required<boolean>();
+  readonly originalEvent = input.required<Event | null>();
+
+  readonly cancel = output<void>();
+  readonly change = output<{
     eventId: Id | null;
     formData: Partial<EventFormData>;
   }>();
-  @Output() restore = new EventEmitter<Id | null>();
+  readonly restore = output<Id | null>();
 
   public form!: FormGroup<EventFormGroup>;
 
   private readonly storeRequests = inject(StoreRequestService);
 
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly formBuilder: FormBuilder,
-  ) {}
-
   public ngOnInit(): void {
     this.initForm();
     this.initFormValueChangeListener();
 
-    if (this.hasUnsavedChanges) {
+    if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
     }
   }
@@ -104,7 +102,7 @@ export class EventFormComponent implements OnInit {
       return;
     }
 
-    this.restore.emit(this.originalEvent?.id ?? null);
+    this.restore.emit(this.originalEvent()?.id ?? null);
 
     setTimeout(() => this.ngOnInit());
   }
@@ -119,12 +117,13 @@ export class EventFormComponent implements OnInit {
       return;
     }
 
+    const originalEvent = this.originalEvent();
     const dialog: Dialog = {
       title: 'Confirm',
-      body: this.originalEvent
-        ? `Update ${this.originalEvent.title} event?`
-        : `Add ${this.formData.title} to schedule?`,
-      confirmButtonText: this.originalEvent ? 'Update' : 'Add',
+      body: originalEvent
+        ? `Update ${originalEvent.title} event?`
+        : `Add ${this.formData().title} to schedule?`,
+      confirmButtonText: this.originalEvent() ? 'Update' : 'Add',
       confirmAction: () => this.save(),
     };
 
@@ -136,9 +135,10 @@ export class EventFormComponent implements OnInit {
   }
 
   private save(): Promise<unknown> {
-    return this.originalEvent
+    const originalEvent = this.originalEvent();
+    return originalEvent
       ? this.storeRequests.dispatch(
-          EventsActions.updateEventRequested({ eventId: this.originalEvent.id }),
+          EventsActions.updateEventRequested({ eventId: originalEvent.id }),
           [EventsActions.updateEventSucceeded, EventsActions.updateEventFailed],
         )
       : this.storeRequests.dispatch(EventsActions.addEventRequested(), [
@@ -149,10 +149,10 @@ export class EventFormComponent implements OnInit {
 
   private initForm(): void {
     // Displayed in local time since America/Toronto set as default timezone in app.component
-    const eventTime: string = moment(this.formData.eventDate).format('h:mm A');
+    const eventTime: string = moment(this.formData().eventDate).format('h:mm A');
 
     this.form = this.formBuilder.group({
-      eventDate: new FormControl(this.formData.eventDate, {
+      eventDate: new FormControl(this.formData().eventDate, {
         nonNullable: true,
         validators: Validators.required,
       }),
@@ -160,19 +160,19 @@ export class EventFormComponent implements OnInit {
         nonNullable: true,
         validators: [Validators.required, timeValidator],
       }),
-      title: new FormControl(this.formData.title, {
+      title: new FormControl(this.formData().title, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      details: new FormControl(this.formData.details, {
+      details: new FormControl(this.formData().details, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      type: new FormControl(this.formData.type, {
+      type: new FormControl(this.formData().type, {
         nonNullable: true,
         validators: Validators.required,
       }),
-      articleId: new FormControl(this.formData.articleId, {
+      articleId: new FormControl(this.formData().articleId, {
         nonNullable: true,
         validators: idValidator,
       }),
@@ -200,7 +200,7 @@ export class EventFormComponent implements OnInit {
           }
 
           return this.change.emit({
-            eventId: this.originalEvent?.id ?? null,
+            eventId: this.originalEvent()?.id ?? null,
             formData,
           });
         },

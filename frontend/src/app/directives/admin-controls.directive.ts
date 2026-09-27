@@ -1,28 +1,22 @@
-import {
-  Directive,
-  ElementRef,
-  HostListener,
-  Input,
-  ViewContainerRef,
-  inject,
-} from '@angular/core';
+import { Directive, ElementRef, ViewContainerRef, inject, input } from '@angular/core';
 
 import { AdminControlsConfig } from '@app/models';
 import { AdminControlsService } from '@app/services';
 
 @Directive({
   selector: '[adminControls]',
+  host: { '(contextmenu)': 'onContextMenu($event)' },
 })
 export class AdminControlsDirective {
-  @Input() public adminControls: AdminControlsConfig | null = null;
+  public readonly adminControls = input<AdminControlsConfig | null>(null);
 
   private readonly adminControlsService = inject(AdminControlsService);
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly viewContainerRef = inject(ViewContainerRef);
 
-  @HostListener('contextmenu', ['$event'])
   public onContextMenu(event: MouseEvent): void {
-    if (!this.adminControls) {
+    const adminControls = this.adminControls();
+    if (!adminControls) {
       return;
     }
     // Selected text keeps its own context menu
@@ -40,6 +34,6 @@ export class AdminControlsDirective {
       return;
     }
     event.preventDefault();
-    this.adminControlsService.open(this.adminControls, host, this.viewContainerRef);
+    this.adminControlsService.open(adminControls, host, this.viewContainerRef);
   }
 }

@@ -5,12 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Params, Router, provideRouter } from '@angular/router';
 
-import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
-import {
-  FIGURE_COUNT_UP_DURATION,
-  INITIAL_GAMES_QUERY,
-  PLACEHOLDER_GAME,
-} from '@app/constants/games';
+import { FIGURE_COUNT_UP_DURATION, INITIAL_GAMES_QUERY } from '@app/constants/games';
 import {
   MOCK_ARCHIVE_PLAYERS,
   MOCK_ARCHIVE_TOURNAMENTS,
@@ -19,7 +14,7 @@ import {
 } from '@app/mocks/games.mock';
 import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
-import { playerName, query, queryAll, queryTextContent } from '@app/utils';
+import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { GameArchivesPageComponent, GameRow } from './game-archives-page.component';
 
@@ -32,6 +27,9 @@ describe('GameArchivesPageComponent', () => {
   let dispatchSpy: MockInstance;
   let navigateSpy: MockInstance;
   let queryParams: BehaviorSubject<Params>;
+
+  const trigger = (selector: string, eventName: string, event?: object | string): void =>
+    query(fixture.debugElement, selector).triggerEventHandler(eventName, event);
 
   const loadedQuery = {
     ...INITIAL_GAMES_QUERY,
@@ -75,10 +73,6 @@ describe('GameArchivesPageComponent', () => {
     store.overrideSelector(GamesSelectors.selectSummary, MOCK_GAMES_SUMMARY);
     store.overrideSelector(GamesSelectors.selectReferenceStatus, 'loaded');
     store.refreshState();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('the URL', () => {
@@ -192,7 +186,7 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should put a chosen player in the URL and start from the first page', () => {
-      component.onPlayerSelected({
+      trigger('.filters__player', 'selected', {
         value: MOCK_GAMES[0].white.id,
         label: 'Doe, John',
       });
@@ -214,7 +208,7 @@ describe('GameArchivesPageComponent', () => {
       });
       store.refreshState();
 
-      component.onPlayerTyped('');
+      trigger('.filters__player', 'changed', '');
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -224,15 +218,15 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should not touch the URL while a name is being typed', () => {
-      component.onPlayerTyped('Lit');
+      trigger('.filters__player', 'changed', 'Lit');
 
       expect(component['playerText']()).toBe('Lit');
       expect(navigateSpy).not.toHaveBeenCalled();
     });
 
     it('should put the year and result in the URL', () => {
-      component.onYearChanged('2023');
-      component.onResultChanged('1-0');
+      trigger('.filters__year', 'changed', '2023');
+      trigger('.filters__result', 'changed', '1-0');
 
       expect(navigateSpy).toHaveBeenNthCalledWith(1, [], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -246,8 +240,29 @@ describe('GameArchivesPageComponent', () => {
       });
     });
 
+    it('should offer a player with a suffix by their full name', () => {
+      store.overrideSelector(GamesSelectors.selectPlayers, [
+        { ...MOCK_ARCHIVE_PLAYERS[0], suffix: 'Jr.' },
+      ]);
+      store.refreshState();
+
+      expect(component['playerOptions']().map(option => option.label)).toEqual([
+        'Smith, Jane Jr.',
+      ]);
+    });
+
+    it('should drop the year from the URL when every year is chosen', () => {
+      trigger('.filters__year', 'changed', '');
+
+      expect(navigateSpy).toHaveBeenCalledWith([], {
+        relativeTo: TestBed.inject(ActivatedRoute),
+        info: KEEP_SCROLL,
+        queryParams: {},
+      });
+    });
+
     it('should clear every filter', () => {
-      component.onClearFilters();
+      trigger('.filters__clear', 'clicked');
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -292,7 +307,7 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should sort on the server by a player name', () => {
-      component.onSorted({ column: 'whiteName', direction: 'asc' });
+      trigger('lcc-data-table', 'sorted', { column: 'whiteName', direction: 'asc' });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -302,7 +317,7 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should sort on the server from the first page', () => {
-      component.onSorted({ column: 'moves', direction: 'asc' });
+      trigger('lcc-data-table', 'sorted', { column: 'moves', direction: 'asc' });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -312,7 +327,7 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should fall back to the default sort when a column is unsorted', () => {
-      component.onSorted({ column: 'moves', direction: null });
+      trigger('lcc-data-table', 'sorted', { column: 'moves', direction: null });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -322,7 +337,7 @@ describe('GameArchivesPageComponent', () => {
     });
 
     it('should page on the server', () => {
-      component.onPageChanged({ page: 3, pageSize: 50 });
+      trigger('ea-paginator', 'changed', { page: 3, pageSize: 50 });
 
       expect(navigateSpy).toHaveBeenCalledWith([], {
         relativeTo: TestBed.inject(ActivatedRoute),
@@ -372,6 +387,54 @@ describe('GameArchivesPageComponent', () => {
     });
   });
 
+  it('should hold a page of skeleton rows before anything has loaded', () => {
+    store.overrideSelector(GamesSelectors.selectFilteredGames, []);
+    store.overrideSelector(GamesSelectors.selectFilteredCount, null);
+    store.overrideSelector(GamesSelectors.selectFilteredGamesStatus, 'loading');
+    store.refreshState();
+
+    fixture.detectChanges();
+
+    expect(
+      queryAll(fixture.debugElement, '.ea-data-table__body .ea-data-table__row'),
+    ).toHaveLength(loadedQuery.pageSize);
+  });
+
+  describe('the archive figures without a summary', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    it('should hold every figure at nothing until the summary arrives', () => {
+      store.overrideSelector(GamesSelectors.selectSummary, null);
+      store.refreshState();
+      fixture.detectChanges();
+
+      vi.advanceTimersByTime(FIGURE_COUNT_UP_DURATION);
+
+      expect(component['figures']().map(figure => figure.value)).toEqual([0, 0, 0, 0]);
+    });
+
+    it('should count no years for an archive without dated games', () => {
+      store.overrideSelector(GamesSelectors.selectSummary, {
+        ...MOCK_GAMES_SUMMARY,
+        firstYear: null,
+        lastYear: null,
+      });
+      store.refreshState();
+      fixture.detectChanges();
+
+      vi.advanceTimersByTime(FIGURE_COUNT_UP_DURATION);
+
+      expect(component['figures']().map(figure => figure.value)).toEqual([
+        MOCK_GAMES_SUMMARY.gameCount,
+        MOCK_GAMES_SUMMARY.playerCount,
+        MOCK_GAMES_SUMMARY.tournamentCount,
+        0,
+      ]);
+    });
+  });
+
   describe('template rendering', () => {
     beforeEach(() => {
       fixture.detectChanges();
@@ -397,27 +460,19 @@ describe('GameArchivesPageComponent', () => {
       expect(queryTextContent(rows[2], '.games__event')).toBe('Unknown event');
     });
 
-    it('should size the columns by the widest content in the archive', () => {
+    it('should size the columns by the widest games resolved with the route', () => {
+      fixture.componentRef.setInput('widestGames', [MOCK_GAMES[1]]);
+      fixture.detectChanges();
+
       const sizingRows: GameRow[] = query(
         fixture.debugElement,
         'ea-data-table',
       ).componentInstance.sizingRows();
 
-      const [widestPlayer] = ARCHIVE_SIZING.players;
-      const [widestEvent] = ARCHIVE_SIZING.events;
-      const [widestOpening] = ARCHIVE_SIZING.openings;
-
-      expect(sizingRows[0].dateLabel).toBe('September 30, 2000');
-      expect(sizingRows[0].whiteName).toBe(
-        playerName({ ...PLACEHOLDER_GAME.white, ...widestPlayer }),
-      );
-      expect(sizingRows[0].game?.tournament).toBe(widestEvent.tournament);
-      expect(sizingRows[0].game?.section).toBe(widestEvent.section);
-      expect(sizingRows[0].game?.opening).toBe(widestOpening.name);
-      expect(sizingRows[0].moves).toBe(ARCHIVE_SIZING.longestGame);
+      expect(sizingRows.map(row => row.game)).toEqual([MOCK_GAMES[1]]);
       expect(
         queryAll(fixture.debugElement, '.ea-data-table__sizing .ea-data-table__row'),
-      ).toHaveLength(sizingRows.length);
+      ).toHaveLength(1);
     });
 
     it('should render the failure panel when the reference data fails to load', () => {

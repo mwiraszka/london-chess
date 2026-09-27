@@ -64,4 +64,8 @@ describe('formatBytes', () => {
     expect(formatBytes('1073741824', 0)).toBe('1 GB');
     expect(formatBytes(1_000_000_000_000, 5)).toBe('931.32257 GB');
   });
+
+  it('treats a negative `decimalDigits` as zero', () => {
+    expect(formatBytes(1040, -1)).toBe('1 kB');
+  });
 });

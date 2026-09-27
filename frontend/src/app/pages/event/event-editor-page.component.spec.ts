@@ -86,10 +86,6 @@ describe('EventEditorPageComponent', () => {
     store.refreshState();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     describe('with event_id route param', () => {
       beforeEach(() => {

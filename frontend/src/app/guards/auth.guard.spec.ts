@@ -102,4 +102,16 @@ describe('accessGuard', () => {
       NavActions.pageAccessDenied({ pageHeading: 'Add Article' }),
     );
   });
+
+  it('should deny a page without an add or edit heading', () => {
+    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+    store.refreshState();
+
+    const result = runGuard('admin', '/members');
+
+    expect(result).toBe(false);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      NavActions.pageAccessDenied({ pageHeading: '' }),
+    );
+  });
 });

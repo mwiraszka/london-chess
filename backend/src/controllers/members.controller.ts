@@ -17,6 +17,7 @@ import { clerkClient } from '../services/clerk.service';
 import { sendEmail } from '../services/email.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
+import { widestMemberIds } from '../services/widest.service';
 import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
@@ -176,6 +177,25 @@ export function getMembers(scope: Scope) {
           totalCount,
         },
       });
+    } catch (error) {
+      res.status(500).json({ message: `Unknown error: ${error}` });
+    }
+  };
+}
+
+// The members holding the widest text of each column the scope shows, for sizing the table
+// before a page loads
+export function getWidestMembers(scope: Scope) {
+  return async (
+    _req: Request,
+    res: Response<ApiResponse<(PublicMember | AdminMember)[]>>,
+  ): Promise<void> => {
+    try {
+      const records = await MemberModel.find(
+        { _id: { $in: await widestMemberIds(scope) } },
+        scope === 'public' ? PUBLIC_MEMBER_PROJECTION : null,
+      ).lean<MemberRecord[]>();
+      res.status(200).json({ data: records.map(toResponse(scope)) });
     } catch (error) {
       res.status(500).json({ message: `Unknown error: ${error}` });
     }

@@ -12,3 +12,22 @@
 .results__secondary {
   font-size: 12px;
 }
+
+// The column's label set in its header's type, plus room for a name, under the skeleton
+.results__tournament-placeholder {
+  position: relative;
+  display: inline-block;
+  padding-right: 86px;
+  font-size: calc(var(--ea-data-table-font-size) * 0.75);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: transparent;
+
+  lcc-text-skeleton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+}

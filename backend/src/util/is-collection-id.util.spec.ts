@@ -1,7 +1,7 @@
 import { isCollectionId } from './is-collection-id.util';
 
 describe('isCollectionId', () => {
-  it('accepts only 24-character hex strings', () => {
+  it('should accept only 24-character hex strings', () => {
     expect(isCollectionId(undefined)).toBe(false);
     expect(isCollectionId(null)).toBe(false);
     expect(isCollectionId(15)).toBe(false);

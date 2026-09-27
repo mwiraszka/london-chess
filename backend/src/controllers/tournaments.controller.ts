@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 
 import { ApiResponse } from '../models/api-response.model';
-import { MemberModel, MemberRecord } from '../models/member.model';
-import { PlayerModel, PlayerRecord } from '../models/player.model';
 import {
   MemberTournamentResult,
   TournamentModel,
@@ -10,6 +8,7 @@ import {
   TournamentResponse,
   TournamentSummary,
 } from '../models/tournament.model';
+import { findProfilePlayerIds } from '../services/member-players.service';
 import {
   TOURNAMENT_SUMMARY_PIPELINE,
   toMemberTournamentResults,
@@ -58,23 +57,13 @@ export async function getMemberTournaments(
 ): Promise<void> {
   try {
     const { number } = req.params;
-    const member = /^\d+$/.test(number)
-      ? await MemberModel.findOne(
-          { number: Number(number), 'account.clerkUserId': { $ne: null } },
-          { _id: 1 },
-        ).lean<Pick<MemberRecord, '_id'>>()
-      : null;
+    const playerIds = await findProfilePlayerIds(number);
 
-    if (!member) {
+    if (!playerIds) {
       res.status(404).json({ message: `Unable to find member [${number}]` });
       return;
     }
 
-    const players = await PlayerModel.find(
-      { memberId: member._id.toString() },
-      { _id: 1 },
-    ).lean<Pick<PlayerRecord, '_id'>[]>();
-    const playerIds = players.map(({ _id }) => _id.toString());
     const records = playerIds.length
       ? await TournamentModel.find({
           'sections.entries.playerId': { $in: playerIds },

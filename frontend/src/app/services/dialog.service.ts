@@ -10,13 +10,14 @@ import { ComponentPortal } from '@angular/cdk/portal';
 import {
   ComponentRef,
   DOCUMENT,
-  Inject,
   Injectable,
   InjectionToken,
   Injector,
   Renderer2,
   RendererFactory2,
+  inject,
 } from '@angular/core';
+import { outputToObservable } from '@angular/core/rxjs-interop';
 
 import { DialogComponent } from '@app/components/dialog/dialog.component';
 import { DialogConfig, DialogOutput } from '@app/models';
@@ -29,6 +30,10 @@ export const DIALOG_CONFIG_TOKEN = new InjectionToken<DialogConfig<unknown>>(
   providedIn: 'root',
 })
 export class DialogService {
+  private readonly _document = inject<Document>(DOCUMENT);
+  private readonly overlay = inject(Overlay);
+  private readonly rendererFactory = inject(RendererFactory2);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private dialogComponentRefs: Array<ComponentRef<DialogComponent<any, any>>> = [];
   private documentClickListener?: () => void;
@@ -43,11 +48,7 @@ export class DialogService {
       : null;
   }
 
-  constructor(
-    @Inject(DOCUMENT) private readonly _document: Document,
-    private readonly overlay: Overlay,
-    private readonly rendererFactory: RendererFactory2,
-  ) {
+  constructor() {
     this.renderer = this.rendererFactory.createRenderer(null, null);
   }
 
@@ -98,12 +99,14 @@ export class DialogService {
     this.overlayRefs?.push(overlayRef);
     this.dialogComponentRefs.push(dialogComponentRef);
 
-    return firstValueFrom(dialogComponentRef.instance.result).finally(() => {
-      // Only dispose if this dialog is still in the array (might have been removed by closeAll())
-      if (this.dialogComponentRefs.includes(dialogComponentRef)) {
-        this.dispose();
-      }
-    });
+    return firstValueFrom(outputToObservable(dialogComponentRef.instance.result)).finally(
+      () => {
+        // Only dispose if this dialog is still in the array (might have been removed by closeAll())
+        if (this.dialogComponentRefs.includes(dialogComponentRef)) {
+          this.dispose();
+        }
+      },
+    );
   }
 
   public closeAll(): void {
@@ -121,9 +124,17 @@ export class DialogService {
     for (const overlayRef of overlaysToClose) {
       overlayRef.dispose();
     }
+
+    this.removeEventListeners();
   }
 
+  // Attached a tick after the first dialog opens, by which time every dialog may be closed
   private initEventListeners(): void {
+    this.removeEventListeners();
+    if (!this.overlayRefs.length) {
+      return;
+    }
+
     this.documentClickListener = this.renderer.listen(
       'document',
       'click',
@@ -169,10 +180,15 @@ export class DialogService {
       overlayRef.dispose();
     }
 
-    // Only remove listeners when there are no more overlays
     if (this.overlayRefs.length === 0) {
-      this.documentClickListener?.();
-      this.keydownListener?.();
+      this.removeEventListeners();
     }
+  }
+
+  private removeEventListeners(): void {
+    this.documentClickListener?.();
+    this.keydownListener?.();
+    this.documentClickListener = undefined;
+    this.keydownListener = undefined;
   }
 }

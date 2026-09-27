@@ -72,26 +72,34 @@
 
             <div class="facts">
               <dl class="stats">
-                <div class="stat">
-                  <dt class="stat__label">Peak rating</dt>
-                  <dd class="stat__value">{{ member.peakRating }}</dd>
+                <div class="stats__pair">
+                  <div class="stat">
+                    <dt class="stat__label">Peak rating</dt>
+                    <dd class="stat__value">{{ member.peakRating }}</dd>
+                  </div>
+                  @if (member.city) {
+                    <div class="stat">
+                      <dt class="stat__label">City</dt>
+                      <dd class="stat__value">{{ member.city }}</dd>
+                    </div>
+                  }
                 </div>
-                @if (member.city) {
-                  <div class="stat">
-                    <dt class="stat__label">City</dt>
-                    <dd class="stat__value">{{ member.city }}</dd>
-                  </div>
-                }
-                @if (yearJoined(member); as year) {
-                  <div class="stat">
-                    <dt class="stat__label">Member since</dt>
-                    <dd class="stat__value">{{ year }}</dd>
-                  </div>
-                }
-                @if (member.showYearOfBirth && member.yearOfBirth) {
-                  <div class="stat">
-                    <dt class="stat__label">Year of birth</dt>
-                    <dd class="stat__value">{{ member.yearOfBirth }}</dd>
+                @if (
+                  yearJoined(member) || (member.showYearOfBirth && member.yearOfBirth)
+                ) {
+                  <div class="stats__pair">
+                    @if (yearJoined(member); as year) {
+                      <div class="stat">
+                        <dt class="stat__label">Member since</dt>
+                        <dd class="stat__value">{{ year }}</dd>
+                      </div>
+                    }
+                    @if (member.showYearOfBirth && member.yearOfBirth) {
+                      <div class="stat">
+                        <dt class="stat__label">Year of birth</dt>
+                        <dd class="stat__value">{{ member.yearOfBirth }}</dd>
+                      </div>
+                    }
                   </div>
                 }
               </dl>
@@ -152,15 +160,9 @@
       </div>
 
       <div class="profile-card">
-        <ea-card
-          class="rating-progression-card"
-          [fullWidth]="true">
-          <h3 slot="header">Rating progression</h3>
-          <div class="rating-progression-placeholder">
-            <ea-icon-bar-chart class="placeholder-icon" />
-            <p>A graph of this member's rating over time is coming soon.</p>
-          </div>
-        </ea-card>
+        <lcc-collapsible-card heading="Rating progression">
+          <lcc-rating-progression [memberNumber]="vm.memberNumber" />
+        </lcc-collapsible-card>
         @if (!vm.member) {
           <ea-skeleton
             variant="rect"
@@ -170,7 +172,13 @@
       </div>
 
       @if (vm.member) {
-        <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
+        <lcc-collapsible-card heading="Tournaments">
+          <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
+        </lcc-collapsible-card>
+
+        <lcc-collapsible-card heading="Openings">
+          <lcc-member-openings [memberNumber]="vm.memberNumber" />
+        </lcc-collapsible-card>
       }
     </div>
   }

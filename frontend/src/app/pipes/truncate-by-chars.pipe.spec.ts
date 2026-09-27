@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { TruncateByCharsPipe } from './truncate-by-chars.pipe';
 
 describe('TruncateByCharsPipe', () => {
-  const pipe = new TruncateByCharsPipe();
+  let pipe: TruncateByCharsPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [TruncateByCharsPipe] });
+    pipe = TestBed.inject(TruncateByCharsPipe);
+  });
 
   it('handles `undefined` values correctly', () => {
     expect(pipe.transform(undefined)).toBe('');

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
@@ -30,7 +29,7 @@ import { RangePipe } from '@app/pipes';
       <section class="chess-pieces">
         @for (num of 5 | range: 1; track num) {
           <img
-            [ngClass]="'pieces-' + num"
+            [class]="'pieces-' + num"
             src="assets/chess-pieces.svg"
             alt="Chess pieces" />
         }
@@ -38,7 +37,7 @@ import { RangePipe } from '@app/pipes';
     </div>
   `,
   styleUrl: './header.component.scss',
-  imports: [CommonModule, RangePipe, RouterModule],
+  imports: [RangePipe, RouterModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeaderComponent {}

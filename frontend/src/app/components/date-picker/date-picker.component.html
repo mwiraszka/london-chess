@@ -6,7 +6,7 @@
     <ea-icon-chevron-left />
   </button>
   <h3 class="title">
-    {{ currentMonth.format(screenWidth < 400 ? 'MMM YYYY' : 'MMMM YYYY') }}
+    {{ currentMonth.format(screenWidth() < 400 ? 'MMM YYYY' : 'MMMM YYYY') }}
   </h3>
   <button
     class="next-month-button lcc-primary-button"
@@ -43,7 +43,7 @@
         class="selected-date">
         {{
           selectedDate.format(
-            screenWidth < 400 ? 'ddd, MMM Do YYYY' : 'dddd, MMMM Do YYYY'
+            screenWidth() < 400 ? 'ddd, MMM Do YYYY' : 'dddd, MMMM Do YYYY'
           )
         }}
       </td>

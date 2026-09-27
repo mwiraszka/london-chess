@@ -9,7 +9,7 @@
         routerLinkActive="link-active"
         [routerLink]="link.internalPath | routerLink"
         [routerLinkActiveOptions]="{ exact: true }"
-        [tooltip]="screenWidth > 800 ? null : link.text">
+        [tooltip]="screenWidth() > 800 ? null : link.text">
         <span class="link-text">{{ link.text }}</span>
         @if (link.icon) {
           <span class="link-icon">
@@ -27,7 +27,7 @@
       aria-label="Menu"
       class="avatar-button"
       dropdown
-      (isOpen)="isDropdownOpen = $event">
+      (isOpen)="isDropdownOpen.set($event)">
       @if (user()) {
         <ea-avatar
           size="sm"

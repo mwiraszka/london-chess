@@ -11,7 +11,7 @@
   [attr.aria-busy]="pending()"
   [class.confirm-button--pending]="pending()"
   [disabled]="confirmDisabled() || pending()"
-  [ngClass]="confirmVariant() === 'warning' ? 'lcc-warning-button' : 'lcc-primary-button'"
+  [class]="confirmVariant() === 'warning' ? 'lcc-warning-button' : 'lcc-primary-button'"
   (click)="confirm()">
   <span class="confirm-button__label">{{ confirmText() }}</span>
   @if (pending()) {

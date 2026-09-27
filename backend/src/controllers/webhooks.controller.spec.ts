@@ -1,7 +1,21 @@
 import { Request } from 'express';
-import { createHmac } from 'node:crypto';
+import request from 'supertest';
 
+import { app } from '../app';
+import { MemberModel } from '../models/member.model';
+import { useTestDatabase } from '../testing/database';
+import {
+  createMember,
+  memberAccount,
+  readMember,
+  startMemberNumbers,
+} from '../testing/fixtures';
+import { webhookHeaders } from '../testing/webhook';
 import { ClerkUserEventData, toProfile, verifyClerkWebhook } from './webhooks.controller';
+
+vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
+vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
+vi.mock('../services/storage.service', () => import('../testing/storage.mock.js'));
 
 describe('toProfile', () => {
   const baseData: ClerkUserEventData = {
@@ -87,24 +101,12 @@ describe('toProfile', () => {
 describe('verifyClerkWebhook', () => {
   const body = JSON.stringify({ type: 'user.created', data: { id: 'user_123' } });
 
-  // Signs like Clerk does, with the test signing secret set in vitest.config.ts
   function signedRequest(
     payload: string,
     signedPayload = payload,
   ): Pick<Request, 'headers' | 'originalUrl' | 'body'> {
-    const id = 'msg_123';
-    const timestamp = String(Math.floor(Date.now() / 1000));
-    const signature = createHmac('sha256', Buffer.from('dGVzdC1zZWNyZXQ=', 'base64'))
-      .update(`${id}.${timestamp}.${signedPayload}`)
-      .digest('base64');
-
     return {
-      headers: {
-        'content-type': 'application/json',
-        'svix-id': id,
-        'svix-timestamp': timestamp,
-        'svix-signature': `v1,${signature}`,
-      },
+      headers: webhookHeaders(signedPayload),
       originalUrl: '/v1/webhooks/clerk',
       body: Buffer.from(payload),
     };
@@ -136,5 +138,80 @@ describe('verifyClerkWebhook', () => {
     const event = await verifyClerkWebhook(request);
 
     expect(event).toBeNull();
+  });
+});
+
+describe('POST /v1/webhooks/clerk', () => {
+  useTestDatabase();
+
+  function deliver(event: object) {
+    const payload = JSON.stringify(event);
+    return request(app)
+      .post('/v1/webhooks/clerk')
+      .set(webhookHeaders(payload))
+      .send(payload);
+  }
+
+  it('should link a new user to the member named in their metadata', async () => {
+    await startMemberNumbers(9);
+    const member = await createMember();
+
+    const response = await deliver({
+      type: 'user.created',
+      data: { id: 'user_new', public_metadata: { memberId: member._id.toString() } },
+    });
+
+    expect(response.status).toBe(200);
+    const linked = await readMember(member._id);
+    expect(linked.account?.clerkUserId).toBe('user_new');
+    expect(linked.number).toBe(9);
+  });
+
+  it('should sync an updated user onto their member record', async () => {
+    const member = await createMember({ number: 3, account: memberAccount() });
+
+    const response = await deliver({
+      type: 'user.updated',
+      data: {
+        id: 'user_test',
+        email_addresses: [{ id: 'idn_1', email_address: 'new@example.com' }],
+        public_metadata: { isAdmin: true },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const synced = await readMember(member._id);
+    expect(synced.email).toBe('new@example.com');
+    expect(synced.account?.isAdmin).toBe(true);
+  });
+
+  it('should take the account off a deleted user and ignore other events', async () => {
+    const member = await createMember({ number: 3, account: memberAccount() });
+
+    const deleted = await deliver({ type: 'user.deleted', data: { id: 'user_test' } });
+    const other = await deliver({ type: 'session.created', data: { id: 'sess_1' } });
+
+    expect(deleted.status).toBe(200);
+    expect(other.status).toBe(200);
+    expect((await readMember(member._id)).account).toBeNull();
+  });
+
+  it('should reject an unsigned delivery', async () => {
+    const response = await request(app)
+      .post('/v1/webhooks/clerk')
+      .set('content-type', 'application/json')
+      .send(JSON.stringify({ type: 'user.deleted', data: { id: 'user_test' } }));
+
+    expect(response.status).toBe(400);
+  });
+
+  it('should respond with a server error when the event cannot be processed', async () => {
+    vi.spyOn(MemberModel, 'findOne').mockImplementation(() => {
+      throw new Error('down');
+    });
+
+    const response = await deliver({ type: 'user.updated', data: { id: 'user_test' } });
+
+    expect(response.status).toBe(500);
   });
 });

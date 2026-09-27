@@ -1,7 +1,9 @@
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { EventInfoDialogComponent } from '@app/components/event-info-dialog/event-info-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
@@ -22,7 +24,6 @@ describe('EventsCalendarGridComponent', () => {
 
   let dialogOpenSpy: MockInstance;
   let storeRequestSpy: Mock;
-  let updateCalendarMonthsSpy: MockInstance;
 
   const mockEvents = MOCK_EVENTS.slice(0, 2);
   const mockIsAdmin = true;
@@ -39,6 +40,9 @@ describe('EventsCalendarGridComponent', () => {
     },
     search: '',
   };
+
+  const overlay = (): HTMLElement =>
+    TestBed.inject(OverlayContainer).getContainerElement();
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -71,60 +75,12 @@ describe('EventsCalendarGridComponent', () => {
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
-    // @ts-expect-error Private class member
-    updateCalendarMonthsSpy = vi.spyOn(component, 'updateCalendarMonths');
 
     fixture.componentRef.setInput('events', mockEvents);
     fixture.componentRef.setInput('isAdmin', mockIsAdmin);
     fixture.componentRef.setInput('options', mockOptions);
 
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  describe('calendar months update', () => {
-    it('should update on init', () => {
-      updateCalendarMonthsSpy.mockClear();
-      component.ngOnInit();
-
-      expect(updateCalendarMonthsSpy).toHaveBeenCalledTimes(1);
-      expect(component.calendarMonths.length).toBeGreaterThan(0);
-    });
-
-    it('should update when events change', () => {
-      const initialLength = component.calendarMonths.length;
-
-      fixture.componentRef.setInput('events', MOCK_EVENTS.slice(0, 4));
-      component.ngOnChanges({
-        events: {
-          currentValue: MOCK_EVENTS.slice(0, 4),
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
-      fixture.detectChanges();
-
-      expect(component.calendarMonths.length).toBeGreaterThan(initialLength);
-    });
-
-    it('should not update when non-events properties change', () => {
-      const initialCalendarMonths = component.calendarMonths;
-
-      component.ngOnChanges({
-        isAdmin: {
-          currentValue: false,
-          previousValue: true,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
-
-      expect(component.calendarMonths).toBe(initialCalendarMonths);
-    });
   });
 
   describe('getAdminControlsConfig', () => {
@@ -134,7 +90,14 @@ describe('EventsCalendarGridComponent', () => {
       expect(config.buttonSize).toBe(34);
       expect(config.editPath).toEqual(['event', 'edit', mockEvents[0].id]);
       expect(config.itemName).toBe(mockEvents[0].title);
-      expect(config.deleteCb).toBeDefined();
+    });
+
+    it('should ask to confirm a delete from the controls', async () => {
+      dialogOpenSpy.mockResolvedValue('cancel');
+
+      await component.getAdminControlsConfig(mockEvents[0]).deleteCb();
+
+      expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Delete');
     });
   });
 
@@ -181,20 +144,11 @@ describe('EventsCalendarGridComponent', () => {
     it('should return empty array when no events', () => {
       fixture.componentRef.setInput('events', []);
 
-      component.ngOnChanges({
-        events: {
-          currentValue: [],
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
-
-      expect(component.monthYears).toEqual([]);
+      expect(component.monthYears()).toEqual([]);
     });
 
     it('should return correct month years for events', () => {
-      expect(component.monthYears).toEqual([
+      expect(component.monthYears()).toEqual([
         'January 2050',
         'February 2050',
         'March 2050',
@@ -213,9 +167,9 @@ describe('EventsCalendarGridComponent', () => {
     let calendarMonth: CalendarMonth;
 
     beforeEach(() => {
-      calendarMonth = component.calendarMonths.find(
-        month => month.monthYear === 'January 2050',
-      )!;
+      calendarMonth = component
+        .calendarMonths()
+        .find(month => month.monthYear === 'January 2050')!;
     });
 
     it('should generate calendar month with correct structure', () => {
@@ -248,38 +202,101 @@ describe('EventsCalendarGridComponent', () => {
 
   describe('caching behaviour', () => {
     it('should not regenerate calendar months if events have not changed', () => {
-      const initialCalendarMonths = component.calendarMonths;
+      const initialCalendarMonths = component.calendarMonths();
 
-      component.ngOnChanges({
-        events: {
-          currentValue: mockEvents,
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
+      fixture.detectChanges();
 
-      expect(component.calendarMonths).toBe(initialCalendarMonths);
+      expect(component.calendarMonths()).toBe(initialCalendarMonths);
     });
 
     it('should regenerate calendar months if events change', () => {
-      const initialCalendarMonths = component.calendarMonths;
+      const initialCalendarMonths = component.calendarMonths();
 
       const modifiedEvents = MOCK_EVENTS.slice(0, 5);
 
       fixture.componentRef.setInput('events', modifiedEvents);
-      component.ngOnChanges({
-        events: {
-          currentValue: modifiedEvents,
-          previousValue: mockEvents,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
 
-      expect(component.calendarMonths.length).toBeGreaterThan(
+      expect(component.calendarMonths().length).toBeGreaterThan(
         initialCalendarMonths.length,
       );
+    });
+  });
+
+  describe('event indicators', () => {
+    it('should list the events of a day, most recently edited first', () => {
+      const olderEdit: Event = {
+        ...MOCK_EVENTS[1],
+        id: 'older-edit',
+        eventDate: MOCK_EVENTS[0].eventDate,
+        modificationInfo: {
+          ...MOCK_EVENTS[1].modificationInfo,
+          dateLastEdited: '2020-01-01T00:00:00.000Z',
+        },
+      };
+      const newerEdit: Event = {
+        ...olderEdit,
+        id: 'newer-edit',
+        modificationInfo: {
+          ...olderEdit.modificationInfo,
+          dateLastEdited: '2021-01-01T00:00:00.000Z',
+        },
+      };
+      fixture.componentRef.setInput('events', [olderEdit, newerEdit]);
+
+      const day = component
+        .calendarMonths()[0]
+        .weeks.flat()
+        .find(calendarDay => calendarDay.events.length);
+
+      expect(day?.events.map(event => event.id)).toEqual(['newer-edit', 'older-edit']);
+    });
+
+    it('should open the event details and go to its article when asked to', async () => {
+      const router = TestBed.inject(Router);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      dialogOpenSpy.mockResolvedValue('details');
+
+      queryAll(fixture.debugElement, '.event-indicator')[1].triggerEventHandler('click');
+      await fixture.whenStable();
+
+      expect(dialogOpenSpy).toHaveBeenCalledWith({
+        componentType: EventInfoDialogComponent,
+        inputs: { event: MOCK_EVENTS[1] },
+        isModal: true,
+      });
+      expect(navigateSpy).toHaveBeenCalledWith([
+        '/article/view/',
+        MOCK_EVENTS[1].articleId,
+      ]);
+    });
+
+    it('should stay put when the event details are closed', async () => {
+      const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
+      dialogOpenSpy.mockResolvedValue('close');
+
+      await component.onEventIndicator(MOCK_EVENTS[1]);
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should show the event in a tooltip, highlighting the search', () => {
+      fixture.componentRef.setInput('options', { ...mockOptions, search: 'champ' });
+      fixture.detectChanges();
+      const [blitz, championship] = queryAll(fixture.debugElement, '.event-indicator');
+
+      blitz.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+      const blitzTrophies = overlay().querySelectorAll('.championship-icon').length;
+      blitz.nativeElement.dispatchEvent(new MouseEvent('mouseleave'));
+      championship.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+
+      expect(blitzTrophies).toBe(0);
+      expect(overlay().querySelector('.event-title')?.textContent).toBe(
+        MOCK_EVENTS[1].title,
+      );
+      expect(overlay().querySelector('.event-type mark')?.textContent).toBe('champ');
+      expect(overlay().querySelectorAll('.championship-icon').length).toBe(1);
     });
   });
 
@@ -326,7 +343,7 @@ describe('EventsCalendarGridComponent', () => {
           const eventIndicator = query(localFixture.debugElement, '.event-indicator');
           const directiveInstance = eventIndicator.injector.get(TooltipDirective);
 
-          expect(directiveInstance.tooltip).toBeTruthy();
+          expect(directiveInstance.tooltip()).toBeTruthy();
         });
       });
 
@@ -349,7 +366,7 @@ describe('EventsCalendarGridComponent', () => {
           const eventIndicator = query(localFixture.debugElement, '.event-indicator');
           const directiveInstance = eventIndicator.injector.get(TooltipDirective);
 
-          expect(directiveInstance.tooltip).toBeFalsy();
+          expect(directiveInstance.tooltip()).toBeFalsy();
         });
       });
     });

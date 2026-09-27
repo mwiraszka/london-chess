@@ -59,10 +59,6 @@ describe('DropdownDirective', () => {
     vi.clearAllMocks();
   });
 
-  it('should create', () => {
-    expect(directive).toBeTruthy();
-  });
-
   describe('onClick', () => {
     it('should attach dropdown when clicked and not already open', () => {
       // @ts-expect-error Private class member

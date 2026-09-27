@@ -75,9 +75,9 @@
           @for (image of vm.images; track image.id) {
             <div
               class="image-card"
-              [class.selectable]="selectable"
+              [class.selectable]="selectable()"
               [adminControls]="getAdminControlsConfig(image)"
-              (click)="selectable ? dialogResult.emit(image.id) : null">
+              (click)="selectable() ? dialogResult.emit(image.id) : null">
               <div class="image-container">
                 <lcc-image [image]="image" />
               </div>

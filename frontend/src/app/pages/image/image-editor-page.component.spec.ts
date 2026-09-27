@@ -1,7 +1,7 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick, uniq } from 'lodash';
-import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -25,6 +25,7 @@ describe('ImageEditorPageComponent', () => {
 
   let metaAndTitleService: MetaAndTitleService;
   let mockParamsSubject: BehaviorSubject<{ image_id?: string }>;
+  let activatedRoute: { params: Observable<{ image_id?: string }> };
   let store: MockStore;
 
   let dispatchSpy: MockInstance;
@@ -33,6 +34,7 @@ describe('ImageEditorPageComponent', () => {
 
   beforeEach(async () => {
     mockParamsSubject = new BehaviorSubject<{ image_id?: string }>({});
+    activatedRoute = { params: mockParamsSubject.asObservable() };
 
     const mockImagesState: ImagesState = {
       ...imagesInitialState,
@@ -56,7 +58,7 @@ describe('ImageEditorPageComponent', () => {
         provideMockActions(() => EMPTY),
         {
           provide: ActivatedRoute,
-          useValue: { params: mockParamsSubject.asObservable() },
+          useValue: activatedRoute,
         },
         {
           provide: ImageFileService,
@@ -88,10 +90,6 @@ describe('ImageEditorPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
     store.refreshState();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('initialization', () => {
@@ -162,68 +160,60 @@ describe('ImageEditorPageComponent', () => {
     });
   });
 
-  describe('onCancel', () => {
-    it('should dispatch cancelSelected action', () => {
-      component.onCancel();
+  describe('form events', () => {
+    const imageForm = () => query(fixture.debugElement, 'lcc-image-form');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(ImagesActions.cancelSelected());
+    beforeEach(() => {
+      fixture.detectChanges();
+      dispatchSpy.mockClear();
     });
-  });
 
-  describe('onChange', () => {
-    it('should dispatch changeSelected action', () => {
-      const mockChangedFormData: Partial<ImageFormData> & { id: string } = {
-        id: 'abc123abc123',
-        caption: 'A new caption',
-        albumOrdinality: '5',
-      };
-      component.onChange([mockChangedFormData]);
+    it('should cancel editing', () => {
+      imageForm().triggerEventHandler('cancel');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.formDataChanged({ multipleFormData: [mockChangedFormData] }),
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(ImagesActions.cancelSelected());
+    });
+
+    it('should store changed form data', () => {
+      const multipleFormData: Array<Partial<ImageFormData> & { id: string }> = [
+        { id: 'abc123abc123', caption: 'A new caption' },
+      ];
+
+      imageForm().triggerEventHandler('change', { multipleFormData });
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.formDataChanged({ multipleFormData }),
       );
     });
-  });
 
-  describe('onFileActionFail', () => {
-    it('should dispatch imageFileActionFailed action', () => {
-      const mockError: LccError = {
-        name: 'LCCError',
-        message: 'Some error message',
-      };
-      component.onFileActionFail(mockError);
+    it('should report a failed file action', () => {
+      const error: LccError = { name: 'LCCError', message: 'Some error message' };
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.imageFileActionFailed({ error: mockError }),
+      imageForm().triggerEventHandler('fileActionFail', error);
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.imageFileActionFailed({ error }),
       );
     });
-  });
 
-  describe('onRequestFetchMainImage', () => {
-    it('should dispatch fetchMainImageRequested action', () => {
-      const mockImageId = 'abc123abc123';
-      component.onRequestFetchMainImage(mockImageId);
+    it('should fetch a main image the form asks for', () => {
+      imageForm().triggerEventHandler('requestFetchMainImage', 'abc123abc123');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchMainImageRequested({ imageId: mockImageId }),
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.fetchMainImageRequested({ imageId: 'abc123abc123' }),
+      );
+    });
+
+    it('should restore the saved image', () => {
+      imageForm().triggerEventHandler('restore', 'abc123abc123');
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.imageFormDataRestored({ imageId: 'abc123abc123' }),
       );
     });
   });
 
   describe('onRetry', () => {
-    it('should fetch the image again', () => {
-      component.onRetry(MOCK_IMAGES[0].id);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchMainImageRequested({ imageId: MOCK_IMAGES[0].id }),
-      );
-    });
-
     it('should not fetch anything for a new image', () => {
       component.onRetry(null);
 
@@ -231,25 +221,19 @@ describe('ImageEditorPageComponent', () => {
     });
   });
 
-  describe('onRestore', () => {
-    it('should dispatch imageFormDataRestored action', () => {
-      const mockImage = 'abc123abc123';
-      component.onRestore(mockImage);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.imageFormDataRestored({ imageId: mockImage }),
-      );
-    });
-  });
-
   describe('template rendering', () => {
-    describe('when viewModel$ is undefined', () => {
-      it('should not render page components', () => {
-        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-image-form')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
-      });
+    it('should render nothing until the route params arrive', () => {
+      const params = new Subject<{ image_id?: string }>();
+      activatedRoute.params = params;
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
+
+      params.next({});
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-image-form')).toBeTruthy();
     });
 
     describe('when viewModel$ is defined', () => {

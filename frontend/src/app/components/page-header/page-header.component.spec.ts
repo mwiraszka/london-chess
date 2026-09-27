@@ -20,10 +20,6 @@ describe('PageHeaderComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should always display heading', () => {
       fixture.detectChanges();

@@ -8,22 +8,33 @@
   width: 100%;
 }
 
+$details-gap: 24px;
+
+// As wide as its one line when that fits, and centred by its margins; wider than
+// that it wraps, clipping the dot that would otherwise open a line
 .details {
+  overflow: hidden;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  margin: 0;
+  gap: 0 $details-gap;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
   font-size: 16px;
-  text-align: center;
   color: var(--color-text-primary);
 }
 
 .details__item {
+  position: relative;
   white-space: nowrap;
 }
 
+// The dot hangs in the gap before its item, outside the line when the item opens one
 .details__item + .details__item::before {
-  margin: 0 8px;
+  position: absolute;
+  left: -$details-gap;
+  width: $details-gap;
+  text-align: center;
   color: var(--color-text-secondary);
   content: '·';
 }

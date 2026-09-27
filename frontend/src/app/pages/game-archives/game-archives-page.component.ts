@@ -28,6 +28,7 @@ import {
   TemplateRef,
   computed,
   inject,
+  input,
   linkedSignal,
   signal,
   viewChild,
@@ -39,13 +40,11 @@ import { DataTableComponent } from '@app/components/data-table/data-table.compon
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { ARCHIVE_SIZING } from '@app/constants/game-archive-sizing';
 import {
   FIGURE_COUNT_UP_DURATION,
   FIGURE_COUNT_UP_INTERVAL,
   GAMES_PAGE_SIZES,
   INITIAL_GAMES_QUERY,
-  PLACEHOLDER_GAME,
 } from '@app/constants/games';
 import {
   Game,
@@ -97,45 +96,6 @@ function toGameRow(game: Game): GameRow {
     moves: Math.ceil(game.plyCount / 2),
   };
 }
-
-// The longest month name and a two-digit day make the widest date label
-const WIDEST_DATE = '2000-09-30';
-
-function cycle<T>(items: T[], index: number, fallback: T): T {
-  return items.length ? items[index % items.length] : fallback;
-}
-
-// Rows holding the widest content each column shows anywhere in the archive, so
-// the columns are sized once for every page rather than by the one on screen
-const SIZING_ROWS: GameRow[] = (() => {
-  const { players, events, openings, longestGame } = ARCHIVE_SIZING;
-  const results: GameResult[] = ['1-0', '1/2-1/2', '0-1'];
-  const count = Math.max(players.length, events.length, openings.length, results.length);
-
-  return Array.from({ length: count }, (_, index) => {
-    const event = cycle(events, index, { tournament: '', section: '' });
-    const opening = cycle(openings, index, { eco: '', name: '' });
-    return toGameRow({
-      ...PLACEHOLDER_GAME,
-      id: `sizing-${index}`,
-      date: WIDEST_DATE,
-      white: {
-        ...PLACEHOLDER_GAME.white,
-        ...cycle(players, index, PLACEHOLDER_GAME.white),
-      },
-      black: {
-        ...PLACEHOLDER_GAME.black,
-        ...cycle(players, index + 1, PLACEHOLDER_GAME.black),
-      },
-      tournament: event.tournament,
-      section: event.section,
-      eco: opening.eco,
-      opening: opening.name,
-      result: cycle(results, index, PLACEHOLDER_GAME.result),
-      plyCount: longestGame * 2,
-    });
-  });
-})();
 
 type CellTemplate = TemplateRef<{ $implicit: GameRow; value: unknown }>;
 
@@ -268,7 +228,10 @@ export class GameArchivesPageComponent implements OnInit {
 
   protected readonly rows = computed<GameRow[]>(() => this.games().map(toGameRow));
 
-  protected readonly sizingRows = SIZING_ROWS;
+  // The archive's widest games size the columns from the first skeleton on
+  public readonly widestGames = input<Game[]>([]);
+
+  protected readonly sizingRows = computed(() => this.widestGames().map(toGameRow));
 
   // Rows are real links to their games, so the browser shows and can open them
   protected readonly rowHref = ({ game }: GameRow): string => `/game-archives/${game.id}`;

@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { FormatBytesPipe } from './format-bytes.pipe';
 
 describe('FormatBytesPipe', () => {
-  const pipe = new FormatBytesPipe();
+  let pipe: FormatBytesPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [FormatBytesPipe] });
+    pipe = TestBed.inject(FormatBytesPipe);
+  });
 
   it('transforms non-numeric values correctly', () => {
     expect(pipe.transform(undefined)).toBe('0 B');

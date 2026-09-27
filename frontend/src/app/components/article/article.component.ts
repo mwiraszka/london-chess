@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { ImageComponent } from '@app/components/image/image.component';
 import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
@@ -21,7 +21,7 @@ import { FormatDatePipe, TruncateByCharsPipe, WasEditedPipe } from '@app/pipes';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleComponent {
-  @Input({ required: true }) article!: Article;
-  @Input({ required: true }) bannerImage!: Image | null;
-  @Input() bodyImages: Image[] = [];
+  readonly article = input.required<Article>();
+  readonly bannerImage = input.required<Image | null>();
+  readonly bodyImages = input<Image[]>([]);
 }

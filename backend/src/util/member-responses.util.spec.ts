@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-import { MemberRecord } from '../models/member.model';
+import { MemberAccount, MemberRecord } from '../models/member.model';
 import {
   PUBLIC_MEMBER_PROJECTION,
   PUBLIC_PROFILE_PROJECTION,
@@ -19,6 +19,19 @@ const PRIVATE_MEMBER_FIELDS = [
   'account',
   'hasAccount',
 ];
+
+const ACCOUNT: MemberAccount = {
+  clerkUserId: 'user_123',
+  isAdmin: true,
+  clerkImageUrl: 'https://img.clerk.com/photo',
+  avatarUrl: 'https://avatars.example.com/cropped',
+  avatarOriginalUrl: 'https://avatars.example.com/original',
+  avatarManagedByApp: true,
+  clerkImagePending: false,
+  avatarCropState: { zoom: 1, offsetX: 0, offsetY: 0 },
+  avatarUpdatedAt: '2024-01-01T00:00:00.000Z',
+  temporaryPasswordHash: 'temporary-password-hash',
+};
 
 function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
   return {
@@ -44,18 +57,7 @@ function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
       lastEditedByNumber: null,
       dateLastEdited: '2024-01-01T00:00:00.000Z',
     },
-    account: {
-      clerkUserId: 'user_123',
-      isAdmin: true,
-      clerkImageUrl: 'https://img.clerk.com/photo',
-      avatarUrl: 'https://avatars.example.com/cropped',
-      avatarOriginalUrl: 'https://avatars.example.com/original',
-      avatarManagedByApp: true,
-      clerkImagePending: false,
-      avatarCropState: { zoom: 1, offsetX: 0, offsetY: 0 },
-      avatarUpdatedAt: '2024-01-01T00:00:00.000Z',
-      temporaryPasswordHash: 'temporary-password-hash',
-    },
+    account: ACCOUNT,
     ...overrides,
   };
 }
@@ -160,7 +162,7 @@ describe('toPublicMember', () => {
   it('should version the avatar URL by its upload time so a new photo is never served from cache', () => {
     const record = buildRecord();
     const reuploaded = buildRecord({
-      account: { ...record.account!, avatarUpdatedAt: '2024-02-01T00:00:00.000Z' },
+      account: { ...ACCOUNT, avatarUpdatedAt: '2024-02-01T00:00:00.000Z' },
     });
 
     const member = toPublicMember(record);
@@ -240,12 +242,7 @@ describe('toMemberProfiles', () => {
 
 describe('toAccountRecord', () => {
   it('should map the linked account for its own user', () => {
-    const record = buildRecord();
-
-    const account = toAccountRecord({
-      ...record,
-      account: { ...record.account!, clerkUserId: 'user_123' },
-    });
+    const account = toAccountRecord({ ...buildRecord(), account: ACCOUNT });
 
     expect(account.id).toBe('user_123');
     expect(account.memberNumber).toBe(7);
@@ -258,7 +255,7 @@ describe('toAccountRecord', () => {
   it('should report the year of birth preference once it is set', () => {
     const record = buildRecord({ preferences: { showYearOfBirth: true } });
 
-    const account = toAccountRecord({ ...record, account: record.account! });
+    const account = toAccountRecord({ ...record, account: ACCOUNT });
 
     expect(account.showYearOfBirth).toBe(true);
   });

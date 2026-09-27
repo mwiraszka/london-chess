@@ -39,6 +39,36 @@ describe('Games Selectors', () => {
     expect(GamesSelectors.selectSummary(state)).toEqual(MOCK_GAMES_SUMMARY);
   });
 
+  describe('member openings', () => {
+    const openings = {
+      white: [{ opening: 'Italian Game', gameCount: 3 }],
+      black: [{ opening: 'Sicilian Defence', gameCount: 2 }],
+    };
+
+    it("should select a member's openings, or null before they load", () => {
+      const state = withState({ ...initialState, memberOpenings: { 7: openings } });
+
+      expect(GamesSelectors.selectMemberOpenings(7)(state)).toEqual(openings);
+      expect(GamesSelectors.selectMemberOpenings(8)(state)).toBeNull();
+    });
+
+    it("should report whether a member's openings are loading, loaded or failed", () => {
+      expect(GamesSelectors.selectMemberOpeningsStatus(7)(withState(initialState))).toBe(
+        'loading',
+      );
+      expect(
+        GamesSelectors.selectMemberOpeningsStatus(7)(
+          withState({ ...initialState, memberOpenings: { 7: openings } }),
+        ),
+      ).toBe('loaded');
+      expect(
+        GamesSelectors.selectMemberOpeningsStatus(7)(
+          withState({ ...initialState, failedLoads: ['member-openings'] }),
+        ),
+      ).toBe('failed');
+    });
+  });
+
   describe('selectGameById', () => {
     it('should find a stored game', () => {
       expect(

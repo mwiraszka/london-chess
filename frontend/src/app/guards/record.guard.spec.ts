@@ -1,4 +1,3 @@
-import { Actions } from '@ngrx/effects';
 import { provideMockActions } from '@ngrx/effects/testing';
 import {
   Action,
@@ -154,6 +153,5 @@ describe('recordGuard', () => {
     );
 
     expect(settled).toEqual([router.createUrlTree(['/'])]);
-    expect(TestBed.inject(Actions)).toBeTruthy();
   });
 });

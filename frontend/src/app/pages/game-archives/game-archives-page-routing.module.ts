@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { gameGuard } from '@app/guards/game.guard';
+import { widestGamesResolver } from '@app/resolvers/widest.resolvers';
 
 import { GameArchivesPageComponent } from './game-archives-page.component';
 import { GamePageComponent } from './game-page.component';
@@ -10,6 +11,7 @@ const routes: Routes = [
   {
     path: '',
     component: GameArchivesPageComponent,
+    resolve: { widestGames: widestGamesResolver },
   },
   {
     path: ':id',

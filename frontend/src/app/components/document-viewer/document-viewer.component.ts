@@ -1,12 +1,6 @@
 import { PDFProgressData, PdfViewerModule } from 'ng2-pdf-viewer';
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 
 import { DialogOutput } from '@app/models';
 
@@ -15,11 +9,11 @@ import { DialogOutput } from '@app/models';
   template: `
     <div
       class="loading-progress-indicator"
-      [style.width.%]="percentLoaded">
+      [style.width.%]="percentLoaded()">
     </div>
 
     <pdf-viewer
-      [src]="documentPath"
+      [src]="documentPath()"
       [original-size]="false"
       [render-text]="true"
       [render-text-mode]="0"
@@ -31,11 +25,11 @@ import { DialogOutput } from '@app/models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentViewerComponent implements DialogOutput<null> {
-  @Input() public documentPath?: string;
+  public readonly documentPath = input<string>();
 
-  public percentLoaded = 0;
+  public readonly percentLoaded = signal(0);
 
-  @Output() public dialogResult = new EventEmitter<null | 'close'>();
+  public readonly dialogResult = output<null | 'close'>();
 
   public onProgress(progressData: PDFProgressData): void {
     if (progressData.total <= 0 || progressData.loaded > progressData.total) {
@@ -43,6 +37,6 @@ export class DocumentViewerComponent implements DialogOutput<null> {
       return;
     }
 
-    this.percentLoaded = Math.floor((progressData.loaded / progressData.total) * 100);
+    this.percentLoaded.set(Math.floor((progressData.loaded / progressData.total) * 100));
   }
 }

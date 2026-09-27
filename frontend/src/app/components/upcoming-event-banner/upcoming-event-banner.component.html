@@ -1,6 +1,6 @@
 <div
   class="container"
-  [style.background]="backgroundStyling">
+  [style.background]="backgroundStyling()">
   <div class="banner-message-container">
     <div
       class="banner-message"
@@ -8,18 +8,18 @@
       <div
         class="marquee-content"
         #marqueeContent
-        [class.animate]="shouldAnimate"
-        [style.animation-duration.s]="animationDuration">
+        [class.animate]="shouldAnimate()"
+        [style.animation-duration.s]="animationDuration()">
         <ng-container *ngTemplateOutlet="bannerContent" />
-        @if (shouldAnimate) {
+        @if (shouldAnimate()) {
           <ng-container *ngTemplateOutlet="bannerContent" />
         }
       </div>
 
       <ng-template #bannerContent>
         <span class="marquee-item">
-          <span>Next {{ nextEvents.length > 1 ? 'events' : 'event' }}:</span>
-          @for (event of nextEvents; track event.id) {
+          <span>Next {{ nextEvents().length > 1 ? 'events' : 'event' }}:</span>
+          @for (event of nextEvents(); track event.id) {
             @if (!$first) {
               <span class="event-divider"></span>
             }
@@ -37,7 +37,7 @@
           }
           <span>on</span>
           <span>
-            <b>{{ nextEvents[0].eventDate | formatDate }}</b>
+            <b>{{ nextEvents()[0].eventDate | formatDate }}</b>
           </span>
         </span>
       </ng-template>

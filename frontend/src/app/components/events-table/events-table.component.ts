@@ -5,7 +5,6 @@ import {
   TrophyIconComponent,
 } from '@eagami/ui';
 
-import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,7 +24,7 @@ import {
   LccDataTableColumn,
 } from '@app/components/data-table/data-table.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { EVENTS_PAGE_SIZES, WIDEST_EVENT } from '@app/constants/events-table';
+import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
@@ -63,8 +62,6 @@ function toEventRows(events: Event[]): EventRow[] {
   return rows;
 }
 
-const SIZING_ROWS: EventRow[] = toEventRows([WIDEST_EVENT]);
-
 type CellTemplate = TemplateRef<DataTableCellContext<EventRow>>;
 
 @Component({
@@ -77,7 +74,6 @@ type CellTemplate = TemplateRef<DataTableCellContext<EventRow>>;
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
-    NgClass,
     PaginatorComponent,
     RouterLink,
     SkeletonComponent,
@@ -96,6 +92,7 @@ export class EventsTableComponent {
   public readonly options = input<DataPaginationOptions<Event>>();
   public readonly filteredCount = input<number | null>(null);
   public readonly showModificationInfo = input(false);
+  public readonly widestEvents = input<Event[]>([]);
 
   public readonly optionsChange = output<DataPaginationOptions<Event>>();
 
@@ -109,7 +106,6 @@ export class EventsTableComponent {
     viewChild.required<CellTemplate>('entryPlaceholder');
 
   protected readonly pageSizes = EVENTS_PAGE_SIZES;
-  protected readonly sizingRows = SIZING_ROWS;
 
   protected readonly search = computed(() => this.options()?.search ?? '');
 
@@ -127,6 +123,9 @@ export class EventsTableComponent {
   protected readonly rows = computed<EventRow[]>(() =>
     toEventRows(this.events()).slice(0, this.dateLimit()),
   );
+
+  // Sized from the first skeleton on by the widest of every event, not just this page
+  protected readonly sizingRows = computed(() => toEventRows(this.widestEvents()));
 
   protected readonly columns = computed<LccDataTableColumn<EventRow>[]>(() => [
     {

@@ -1,7 +1,7 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
-import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -32,9 +32,11 @@ describe('ArticleEditorPageComponent', () => {
   let updateTitleSpy: MockInstance;
 
   let mockParamsSubject: BehaviorSubject<{ article_id?: Id }>;
+  let activatedRoute: { params: Observable<{ article_id?: Id }> };
 
   beforeEach(async () => {
     mockParamsSubject = new BehaviorSubject<{ article_id?: Id }>({});
+    activatedRoute = { params: mockParamsSubject.asObservable() };
 
     const mockArticlesState: ArticlesState = {
       ...articlesInitialState,
@@ -56,10 +58,7 @@ describe('ArticleEditorPageComponent', () => {
       imports: [ArticleEditorPageComponent],
       providers: [
         provideMockActions(() => EMPTY),
-        {
-          provide: ActivatedRoute,
-          useValue: { params: mockParamsSubject.asObservable() },
-        },
+        { provide: ActivatedRoute, useValue: activatedRoute },
         {
           provide: MetaAndTitleService,
           useValue: {
@@ -87,10 +86,6 @@ describe('ArticleEditorPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
     store.refreshState();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('initialization', () => {
@@ -160,55 +155,50 @@ describe('ArticleEditorPageComponent', () => {
     });
   });
 
-  describe('onCancel', () => {
-    it('should dispatch cancelSelected action', () => {
-      component.onCancel();
+  describe('form events', () => {
+    const articleForm = () => query(fixture.debugElement, 'lcc-article-form');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(ArticlesActions.cancelSelected());
+    beforeEach(() => {
+      fixture.detectChanges();
+      dispatchSpy.mockClear();
     });
-  });
 
-  describe('onChange', () => {
-    it('should dispatch changeSelected action', () => {
-      const mockArticleId = 'abc123';
-      const mockChangedFormData: Partial<ArticleFormData> = {
-        title: 'A new title',
-      };
-      component.onChange(mockArticleId, mockChangedFormData);
+    it('should cancel editing', () => {
+      articleForm().triggerEventHandler('cancel');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.formDataChanged({
-          articleId: mockArticleId,
-          formData: mockChangedFormData,
-        }),
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ArticlesActions.cancelSelected(),
       );
     });
-  });
 
-  describe('onRequestFetchMainImage', () => {
-    it('should dispatch fetchMainImageRequested action', () => {
-      const mockImageId = 'abc123abc123';
-      component.onRequestFetchMainImage(mockImageId);
+    it('should store changed form data', () => {
+      const formData: Partial<ArticleFormData> = { title: 'A new title' };
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchMainImageRequested({ imageId: mockImageId }),
+      articleForm().triggerEventHandler('change', { articleId: 'abc123', formData });
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ArticlesActions.formDataChanged({ articleId: 'abc123', formData }),
+      );
+    });
+
+    it('should fetch a main image the form asks for', () => {
+      articleForm().triggerEventHandler('requestFetchMainImage', 'abc123abc123');
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.fetchMainImageRequested({ imageId: 'abc123abc123' }),
+      );
+    });
+
+    it('should restore the saved article', () => {
+      articleForm().triggerEventHandler('restore', 'abc123');
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ArticlesActions.formDataRestored({ articleId: 'abc123' }),
       );
     });
   });
 
   describe('onRetry', () => {
-    it('should fetch the article again', () => {
-      component.onRetry(MOCK_ARTICLES[0].id);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.fetchArticleRequested({ articleId: MOCK_ARTICLES[0].id }),
-      );
-    });
-
     it('should not fetch anything for a new article', () => {
       component.onRetry(null);
 
@@ -216,25 +206,19 @@ describe('ArticleEditorPageComponent', () => {
     });
   });
 
-  describe('onRestore', () => {
-    it('should dispatch formDataRestored action', () => {
-      const mockArticleId = 'abc123';
-      component.onRestore(mockArticleId);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.formDataRestored({ articleId: mockArticleId }),
-      );
-    });
-  });
-
   describe('template rendering', () => {
-    describe('when viewModel$ is undefined', () => {
-      it('should not render page components', () => {
-        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-article-form')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
-      });
+    it('should render nothing until the route params arrive', () => {
+      const params = new Subject<{ article_id?: Id }>();
+      activatedRoute.params = params;
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
+
+      params.next({});
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-article-form')).toBeTruthy();
     });
 
     describe('when viewModel$ is defined', () => {

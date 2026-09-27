@@ -257,4 +257,61 @@ describe('customSort', () => {
       });
     });
   });
+
+  describe('when comparing a single pair', () => {
+    it('should order a missing value first', () => {
+      expect(customSort({ key: null }, { key: 3 }, 'key')).toBe(-1);
+      expect(customSort({ key: 3 }, { key: undefined }, 'key')).toBe(1);
+    });
+
+    it('should order numbers and booleans in both directions', () => {
+      expect(customSort({ key: 1 }, { key: 2 }, 'key')).toBe(-1);
+      expect(customSort({ key: 2 }, { key: 2 }, 'key')).toBe(0);
+      expect(customSort({ key: 3 }, { key: 2 }, 'key')).toBe(1);
+      expect(customSort({ key: true }, { key: false }, 'key')).toBe(-1);
+      expect(customSort({ key: false }, { key: true }, 'key')).toBe(1);
+    });
+
+    it('should report and treat values it cannot compare as equal', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const results = [
+        customSort({ key: 1 }, { key: '1' }, 'key'),
+        customSort({ key: new Date(0) }, { key: new Date(1) }, 'key'),
+        customSort({ key: { x: 1 } }, { key: { x: 2 } }, 'key'),
+      ];
+
+      expect(results).toEqual([0, 0, 0]);
+      expect(errorSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it('should order album ordinality numerically', () => {
+      expect(
+        customSort(
+          { albumOrdinality: '10' },
+          { albumOrdinality: '9' },
+          'albumOrdinality',
+        ),
+      ).toBe(1);
+      expect(
+        customSort({ albumOrdinality: '2' }, { albumOrdinality: '2' }, 'albumOrdinality'),
+      ).toBe(0);
+      expect(
+        customSort(
+          { albumOrdinality: '2' },
+          { albumOrdinality: '10' },
+          'albumOrdinality',
+        ),
+      ).toBe(-1);
+    });
+
+    it('should order equal ratings by their provisional game counts', () => {
+      expect(customSort({ rating: '1800' }, { rating: '1800' }, 'rating')).toBe(0);
+      expect(customSort({ rating: '1800' }, { rating: '1800/5' }, 'rating')).toBe(1);
+      expect(customSort({ rating: '1800/5' }, { rating: '1800' }, 'rating')).toBe(-1);
+      expect(customSort({ rating: '1800/5' }, { rating: '1800/9' }, 'rating')).toBe(-1);
+      expect(customSort({ rating: '1800/5' }, { rating: '1800/5' }, 'rating')).toBe(0);
+      expect(customSort({ rating: '1800/9' }, { rating: '1800/5' }, 'rating')).toBe(1);
+    });
+  });
 });

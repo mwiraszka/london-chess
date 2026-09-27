@@ -1,7 +1,7 @@
 <div class="banner-image-container">
-  <lcc-image [image]="bannerImage" />
+  <lcc-image [image]="bannerImage()" />
   <h3 class="title lcc-truncate-max-2-lines">
-    {{ article.title | truncateByChars: 120 }}
+    {{ article().title | truncateByChars: 120 }}
   </h3>
 </div>
 
@@ -10,29 +10,29 @@
     <div class="author-row">
       <span class="author-name">
         <lcc-member-link
-          [memberNumber]="article.modificationInfo.createdByNumber"
-          [name]="article.modificationInfo.createdBy"
+          [memberNumber]="article().modificationInfo.createdByNumber"
+          [name]="article().modificationInfo.createdBy"
           [showAvatar]="true" />
       </span>
     </div>
     <span class="date-created">
-      {{ article.modificationInfo.dateCreated | formatDate: 'short' }}
+      {{ article().modificationInfo.dateCreated | formatDate: 'short' }}
     </span>
   </div>
 
   <div class="editor-container">
-    @if (article.modificationInfo | wasEdited) {
+    @if (article().modificationInfo | wasEdited) {
       <span class="updated">last updated</span>
       <div class="modification-details">
         <span class="editor-name">
           <lcc-member-link
-            [memberNumber]="article.modificationInfo.lastEditedByNumber"
-            [name]="article.modificationInfo.lastEditedBy"
+            [memberNumber]="article().modificationInfo.lastEditedByNumber"
+            [name]="article().modificationInfo.lastEditedBy"
             [showAvatar]="true" />
         </span>
         <span class="vertical-spacer">|</span>
         <span class="date-last-edited">
-          {{ article.modificationInfo.dateLastEdited | formatDate: 'short' }}
+          {{ article().modificationInfo.dateLastEdited | formatDate: 'short' }}
         </span>
       </div>
     }
@@ -43,7 +43,7 @@
 
 <div class="markdown-container">
   <lcc-markdown-renderer
-    [data]="article.body"
-    [images]="bodyImages">
+    [data]="article().body"
+    [images]="bodyImages()">
   </lcc-markdown-renderer>
 </div>

@@ -1,7 +1,6 @@
 import {
   AvatarComponent,
   BadgeComponent,
-  BarChartIconComponent,
   CardComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
@@ -11,7 +10,7 @@ import {
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, take } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -24,16 +23,22 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { CollapsibleCardComponent } from '@app/components/collapsible-card/collapsible-card.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
+import { MemberOpeningsComponent } from '@app/components/member-openings/member-openings.component';
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
 import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { LoadStatus, Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
+import { GamesActions, GamesSelectors } from '@app/store/games';
 import { MembersActions, MembersSelectors } from '@app/store/members';
+import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import { isCityChampion } from '@app/utils';
 
 @Component({
@@ -43,13 +48,15 @@ import { isCityChampion } from '@app/utils';
   imports: [
     AvatarComponent,
     BadgeComponent,
-    BarChartIconComponent,
     CardComponent,
+    CollapsibleCardComponent,
     CommonModule,
     ExternalLinkIconComponent,
     LoadFailedComponent,
+    MemberOpeningsComponent,
     MemberTournamentsComponent,
     PageHeaderComponent,
+    RatingProgressionComponent,
     RouterLink,
     ShieldCheckIconComponent,
     SkeletonComponent,
@@ -93,6 +100,35 @@ export class MemberProfilePageComponent implements OnInit {
       parts.forEach(part => observer.observe(part));
       onCleanup(() => observer.disconnect());
     });
+
+    // Fetched once a visit for the rating, tournaments and openings cards, as tournaments
+    // and games only change by import
+    this.route.paramMap
+      .pipe(
+        map(params => Number(params.get('number'))),
+        switchMap(memberNumber =>
+          combineLatest([
+            this.store.select(TournamentsSelectors.selectMemberResults(memberNumber)),
+            this.store.select(GamesSelectors.selectMemberOpenings(memberNumber)),
+          ]).pipe(
+            take(1),
+            map(([results, openings]) => ({ memberNumber, results, openings })),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ memberNumber, results, openings }) => {
+        if (!results) {
+          this.store.dispatch(
+            TournamentsActions.fetchMemberTournamentsRequested({ memberNumber }),
+          );
+        }
+        if (!openings) {
+          this.store.dispatch(
+            GamesActions.fetchMemberOpeningsRequested({ memberNumber }),
+          );
+        }
+      });
   }
 
   public ngOnInit(): void {

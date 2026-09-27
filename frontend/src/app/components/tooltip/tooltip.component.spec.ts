@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewChild } from '@angular/core';
+import { Component, TemplateRef, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import {
@@ -16,7 +16,7 @@ import { TooltipComponent } from './tooltip.component';
   template: `<ng-template #templateRef>Template Content</ng-template>`,
 })
 class TooltipHostTemplateComponent {
-  @ViewChild('templateRef', { read: TemplateRef }) templateRef!: TemplateRef<unknown>;
+  readonly templateRef = viewChild.required('templateRef', { read: TemplateRef });
 }
 
 // Host component with context-aware template
@@ -31,7 +31,7 @@ class TooltipHostTemplateComponent {
   `,
 })
 class TooltipHostTemplateWithContextComponent {
-  @ViewChild('templateRef', { read: TemplateRef }) templateRef!: TemplateRef<unknown>;
+  readonly templateRef = viewChild.required('templateRef', { read: TemplateRef });
 }
 
 describe('TooltipComponent', () => {
@@ -54,10 +54,6 @@ describe('TooltipComponent', () => {
       fixture = TestBed.createComponent(TooltipComponent);
       component = fixture.componentInstance;
       fixture.detectChanges();
-    });
-
-    it('should create', () => {
-      expect(component).toBeTruthy();
     });
 
     it('should receive content through dependency injection', () => {
@@ -117,7 +113,7 @@ describe('TooltipComponent', () => {
       }).compileComponents();
       const hostFixture = TestBed.createComponent(TooltipHostTemplateComponent);
       hostFixture.detectChanges();
-      templateRef = hostFixture.componentInstance.templateRef;
+      templateRef = hostFixture.componentInstance.templateRef();
 
       // Reset and configure a fresh testing module supplying the real TemplateRef
       TestBed.resetTestingModule();
@@ -174,7 +170,7 @@ describe('TooltipComponent', () => {
         TooltipHostTemplateWithContextComponent,
       );
       hostFixture.detectChanges();
-      templateRef = hostFixture.componentInstance.templateRef;
+      templateRef = hostFixture.componentInstance.templateRef();
 
       // Reset and configure a fresh testing module supplying the real TemplateRef and context
       TestBed.resetTestingModule();

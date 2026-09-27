@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { KebabCasePipe } from './kebab-case.pipe';
 
 describe('KebabCasePipe', () => {
-  const pipe = new KebabCasePipe();
+  let pipe: KebabCasePipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [KebabCasePipe] });
+    pipe = TestBed.inject(KebabCasePipe);
+  });
 
   it('transforms non-string values correctly', () => {
     expect(pipe.transform(undefined)).toBe('');

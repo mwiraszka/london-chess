@@ -2,15 +2,7 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Subject, timer } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  HostListener,
-  Input,
-  OnInit,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, input, signal } from '@angular/core';
 
 import { Image } from '@app/models';
 
@@ -20,14 +12,18 @@ import { Image } from '@app/models';
   templateUrl: './photo-carousel.component.html',
   styleUrl: './photo-carousel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { tabindex: '0' },
+  host: {
+    tabindex: '0',
+    '(keydown.arrowleft)': 'onPreviousPhoto()',
+    '(keydown.arrowright)': 'onNextPhoto()',
+    '(keydown.enter)': 'onNextPhoto()',
+  },
 })
 export class PhotoCarouselComponent implements OnInit {
-  @Input({ required: true }) public photos!: Partial<Image>[];
+  public readonly photos = input.required<Partial<Image>[]>();
 
-  public currentIndex = 0;
+  public readonly currentIndex = signal(0);
 
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly autoCycleSubject$ = new Subject<void>();
 
   public ngOnInit(): void {
@@ -37,27 +33,26 @@ export class PhotoCarouselComponent implements OnInit {
         switchMap(() => timer(4000, 4000)),
         untilDestroyed(this),
       )
-      .subscribe(() => {
-        this.currentIndex = (this.currentIndex + 1) % this.photos.length;
-        this.changeDetectorRef.markForCheck();
-      });
+      .subscribe(() => this.showNextPhoto());
   }
 
-  @HostListener('keydown.arrowleft')
   public onPreviousPhoto(): void {
-    this.currentIndex = (this.currentIndex - 1 + this.photos.length) % this.photos.length;
+    const count = this.photos().length;
+    this.currentIndex.update(index => (index - 1 + count) % count);
     this.autoCycleSubject$.next();
   }
 
-  @HostListener('keydown.arrowright')
-  @HostListener('keydown.enter')
   public onNextPhoto(): void {
-    this.currentIndex = (this.currentIndex + 1) % this.photos.length;
+    this.showNextPhoto();
     this.autoCycleSubject$.next();
   }
 
   public onSelectPhoto(index: number): void {
-    this.currentIndex = index;
+    this.currentIndex.set(index);
     this.autoCycleSubject$.next();
+  }
+
+  private showNextPhoto(): void {
+    this.currentIndex.update(index => (index + 1) % this.photos().length);
   }
 }

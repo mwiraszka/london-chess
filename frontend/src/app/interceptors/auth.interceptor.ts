@@ -8,7 +8,7 @@ import {
   HttpInterceptor,
   HttpRequest,
 } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { ClerkService } from '@app/services';
 
@@ -16,7 +16,7 @@ import { environment } from '@env';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private readonly clerkService: ClerkService) {}
+  private readonly clerkService = inject(ClerkService);
 
   public intercept(
     req: HttpRequest<unknown>,

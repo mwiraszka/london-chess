@@ -79,10 +79,6 @@ describe('NewsPageComponent', () => {
     store.refreshState();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('ngOnInit', () => {
     beforeEach(() => {
       component.ngOnInit();

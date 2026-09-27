@@ -31,6 +31,7 @@ describe('Games Reducer', () => {
       players: [],
       tournaments: [],
       summary: null,
+      memberOpenings: {},
     });
   });
 
@@ -129,6 +130,37 @@ describe('Games Reducer', () => {
       expect(state.entities[MOCK_GAMES[0].id]).toEqual(MOCK_GAMES[0]);
     });
   });
+  describe('member openings', () => {
+    const openings = {
+      white: [{ opening: 'Italian Game', gameCount: 3 }],
+      black: [{ opening: 'Sicilian Defence', gameCount: 2 }],
+    };
+
+    it("should keep each member's openings by their number", () => {
+      const state = gamesReducer(
+        initialState,
+        GamesActions.fetchMemberOpeningsSucceeded({ memberNumber: 7, openings }),
+      );
+
+      expect(state.memberOpenings).toEqual({ 7: openings });
+    });
+
+    it('should record a failed fetch and clear it when fetched again', () => {
+      const failed = gamesReducer(
+        initialState,
+        GamesActions.fetchMemberOpeningsFailed({ error: mockError }),
+      );
+
+      const retried = gamesReducer(
+        failed,
+        GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }),
+      );
+
+      expect(failed.failedLoads).toEqual(['member-openings']);
+      expect(retried.failedLoads).toEqual([]);
+    });
+  });
+
   describe('a fetch of filtered games', () => {
     it('should be marked as under way until it succeeds or fails', () => {
       const fetching = gamesReducer(

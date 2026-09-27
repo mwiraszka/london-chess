@@ -1,0 +1,51 @@
+@switch (status()) {
+  @case ('failed') {
+    <lcc-load-failed
+      title="Unable to load openings"
+      (retry)="onRetry()" />
+  }
+  @case ('loading') {
+    <div class="openings">
+      @for (colour of ['White', 'Black']; track colour) {
+        <div class="openings__colour">
+          <h4 class="openings__heading">As {{ colour }}</h4>
+          <ea-skeleton
+            class="openings__skeleton"
+            variant="rect"
+            width="100%"
+            aria-busy="true"
+            [height]="chartHeight + 'px'" />
+        </div>
+      }
+    </div>
+  }
+  @default {
+    @if (hasGames()) {
+      <div class="openings">
+        @for (chart of charts(); track chart.colour) {
+          <div class="openings__colour">
+            <h4 class="openings__heading">As {{ chart.colour }}</h4>
+            @if (chart.slices.length) {
+              <ea-pie-chart
+                variant="donut"
+                [animationDuration]="3000"
+                aria-label="Openings played as {{ chart.colour }}"
+                [data]="chart.slices"
+                [formatValue]="formatGameCount"
+                [height]="chartHeight"
+                [showPercentages]="true" />
+            } @else {
+              <p class="openings__empty">
+                No games as {{ chart.colour }} in the archives yet.
+              </p>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="openings__empty">
+        Openings show once a member has games in the archives.
+      </p>
+    }
+  }
+}

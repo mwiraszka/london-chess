@@ -51,6 +51,11 @@ import * as ImagesSelectors from './images.selectors';
 
 @Injectable()
 export class ImagesEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly imageFileService = inject(ImageFileService);
+  private readonly imagesApiService = inject(ImagesApiService);
+  private readonly store = inject(Store);
+
   private readonly buildImagesFormData = inject(BUILD_IMAGES_FORM_DATA);
   private readonly dataUrlToFile = inject(DATA_URL_TO_FILE);
   private readonly isExpired = inject(IS_EXPIRED);
@@ -941,11 +946,4 @@ export class ImagesEffects {
       ),
     { dispatch: false },
   );
-
-  constructor(
-    private readonly actions$: Actions,
-    private readonly imageFileService: ImageFileService,
-    private readonly imagesApiService: ImagesApiService,
-    private readonly store: Store,
-  ) {}
 }

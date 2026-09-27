@@ -27,6 +27,7 @@ For feature requests or to report a bug, open an
 | [![MongoDB](readme-icons/mongodb.png)](https://www.mongodb.com)                                       | `MongoDB`            | document database                  |
 | [![NgRx](readme-icons/ngrx.png)](https://ngrx.io)                                                     | `NgRx`               | reactive state management          |
 | [![Ngx Markdown](readme-icons/ngx-markdown.png)](https://github.com/jfcere/ngx-markdown)              | `Ngx Markdown`       | markdown rendering for articles    |
+| [![Playwright](readme-icons/playwright.svg)](https://playwright.dev)                                  | `Playwright`         | end-to-end testing                 |
 | [![Sentry](readme-icons/sentry.png)](https://sentry.io)                                               | `Sentry`             | error tracking                     |
 | [![Vercel](readme-icons/vercel.png)](https://vercel.com)                                              | `Vercel`             | hosting for the site and API       |
 | [![Vitest](readme-icons/vitest.png)](https://vitest.dev)                                              | `Vitest`             | unit testing                       |

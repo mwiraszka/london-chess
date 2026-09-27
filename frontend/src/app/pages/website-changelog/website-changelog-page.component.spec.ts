@@ -14,7 +14,6 @@ import { WebsiteChangelogPageComponent } from './website-changelog-page.componen
 
 describe('WebsiteChangelogPageComponent', () => {
   let fixture: ComponentFixture<WebsiteChangelogPageComponent>;
-  let component: WebsiteChangelogPageComponent;
   let markLatestReleaseSeenSpy: Mock;
   let fragment$: BehaviorSubject<string | null>;
 
@@ -43,12 +42,7 @@ describe('WebsiteChangelogPageComponent', () => {
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     fixture = TestBed.createComponent(WebsiteChangelogPageComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   it('should render one card per release', () => {

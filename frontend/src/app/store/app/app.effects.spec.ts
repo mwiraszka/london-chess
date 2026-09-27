@@ -2,8 +2,7 @@ import { ToastService } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import moment from 'moment-timezone';
-import { ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 
@@ -11,7 +10,7 @@ import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { LccError } from '@app/models';
+import { LccError, MemberEmail, Toast } from '@app/models';
 import { ArticlesActions } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions } from '@app/store/events';
@@ -25,6 +24,8 @@ import { environment } from '@env';
 import { AppActions, AppSelectors } from '.';
 import { AppEffects } from './app.effects';
 
+type ToastType = Toast['type'];
+
 describe('AppEffects', () => {
   let effects: AppEffects;
   let actions$: ReplaySubject<Action>;
@@ -36,17 +37,43 @@ describe('AppEffects', () => {
     message: 'Test error message',
     status: 500,
   };
+  const article = MOCK_ARTICLES[0];
+  const event = MOCK_EVENTS[0];
+  const image = MOCK_IMAGES[0];
+  const member = MOCK_MEMBERS[0];
+  const memberName = `${member.firstName} ${member.lastName}`;
+
+  function collect<T>(effect$: Observable<T>): T[] {
+    const results: T[] = [];
+    effect$.subscribe(action => results.push(action));
+    return results;
+  }
+
+  function notify(action: Action): Toast | undefined {
+    toastService.show.mockClear();
+    actions$.next(action);
+    const displayed: Array<ReturnType<typeof AppActions.toastDisplayed>> = [];
+    effects.notify$.subscribe(result => displayed.push(result)).unsubscribe();
+
+    expect(displayed.length).toBeLessThanOrEqual(1);
+    const toast = displayed[0]?.toast;
+    if (toast) {
+      expect(toastService.show).toHaveBeenCalledExactlyOnceWith(toast.message, {
+        title: toast.title,
+        variant: toast.type,
+      });
+    } else {
+      expect(toastService.show).not.toHaveBeenCalled();
+    }
+    return toast;
+  }
 
   beforeEach(() => {
-    const toastServiceMock = {
-      show: vi.fn(),
-    };
-
     TestBed.configureTestingModule({
       providers: [
         AppEffects,
         provideMockActions(() => actions$),
-        { provide: ToastService, useValue: toastServiceMock },
+        { provide: ToastService, useValue: { show: vi.fn() } },
         provideMockStore(),
       ],
     });
@@ -55,8 +82,11 @@ describe('AppEffects', () => {
     toastService = TestBed.inject(ToastService) as Mocked<ToastService>;
     store = TestBed.inject(MockStore);
     actions$ = new ReplaySubject<Action>(1);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
 
-    vi.clearAllMocks();
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('notify$', () => {
@@ -65,593 +95,305 @@ describe('AppEffects', () => {
       store.refreshState();
     });
 
-    describe('App actions', () => {
-      it('should display toast for unexpectedErrorOccurred', () =>
-        withDone(done => {
-          actions$.next(AppActions.unexpectedErrorOccurred({ error: mockError }));
+    const failures: Action[] = [
+      AppActions.unexpectedErrorOccurred({ error: mockError }),
+      ArticlesActions.deleteArticleFailed({ error: mockError }),
+      ArticlesActions.fetchArticleFailed({ error: mockError }),
+      ArticlesActions.fetchFilteredArticlesFailed({ error: mockError }),
+      ArticlesActions.fetchHomePageArticlesFailed({ error: mockError }),
+      ArticlesActions.publishArticleFailed({ error: mockError }),
+      ArticlesActions.updateArticleFailed({ error: mockError }),
+      EventsActions.addEventFailed({ error: mockError }),
+      EventsActions.deleteEventFailed({ error: mockError }),
+      EventsActions.exportEventsToCsvFailed({ error: mockError }),
+      EventsActions.fetchEventFailed({ error: mockError }),
+      EventsActions.fetchFilteredEventsFailed({ error: mockError }),
+      EventsActions.fetchHomePageEventsFailed({ error: mockError }),
+      EventsActions.updateEventFailed({ error: mockError }),
+      GamesActions.fetchArchiveReferenceFailed({ error: mockError }),
+      GamesActions.fetchFilteredGamesFailed({ error: mockError }),
+      GamesActions.fetchGameFailed({ error: mockError }),
+      ImagesActions.addImageFailed({ error: mockError }),
+      ImagesActions.addImagesFailed({ error: mockError }),
+      ImagesActions.automaticAlbumCoverSwitchFailed({ album: 'Club', error: mockError }),
+      ImagesActions.deleteAlbumFailed({ album: 'Club', error: mockError }),
+      ImagesActions.deleteImageFailed({ image, error: mockError }),
+      ImagesActions.fetchAllImagesMetadataFailed({ error: mockError }),
+      ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+      ImagesActions.fetchFilteredThumbnailsFailed({ error: mockError }),
+      ImagesActions.fetchMainImageFailed({ error: mockError }),
+      ImagesActions.imageFileActionFailed({ error: mockError }),
+      ImagesActions.updateAlbumFailed({ album: 'Club', error: mockError }),
+      ImagesActions.updateImageFailed({ baseImage: image, error: mockError }),
+      MembersActions.addMemberFailed({ error: mockError }),
+      MembersActions.deleteMemberFailed({ error: mockError }),
+      MembersActions.exportMembersToCsvFailed({ error: mockError }),
+      MembersActions.fetchMemberFailed({ error: mockError }),
+      MembersActions.fetchAllMembersFailed({ error: mockError }),
+      MembersActions.fetchFilteredMembersFailed({ error: mockError }),
+      MembersActions.parseMemberRatingsFromCsvFailed({ error: mockError }),
+      MembersActions.updateMemberFailed({ error: mockError }),
+      MembersActions.updateMemberRatingsFailed({ error: mockError }),
+    ];
 
-          effects.notify$.subscribe(action => {
-            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
-              title: 'Unexpected error',
-              variant: 'warning',
-            });
-            expect(action).toEqual(
-              AppActions.toastDisplayed({
-                toast: {
-                  title: 'Unexpected error',
-                  message: 'Test error message',
-                  type: 'warning',
-                },
-              }),
-            );
-            done();
-          });
-        }));
+    it.each(failures.map(action => [action.type, action]))(
+      'should show a warning with the error for "%s"',
+      (_type, action) => {
+        const toast = notify(action);
+
+        expect(toast?.type).toBe('warning');
+        expect(toast?.title).toBeTruthy();
+        expect(toast?.message).toContain(mockError.message);
+        expect(console.error).toHaveBeenCalledWith('[LCC]', mockError);
+      },
+    );
+
+    const successes: Array<[Action, ToastType, string]> = [
+      [
+        ArticlesActions.deleteArticleSucceeded({
+          articleId: 'a1',
+          articleTitle: 'Opening',
+        }),
+        'success',
+        'Opening',
+      ],
+      [ArticlesActions.publishArticleSucceeded({ article }), 'success', article.title],
+      [
+        ArticlesActions.updateArticleSucceeded({ article, originalArticleTitle: 'Old' }),
+        'success',
+        'Old',
+      ],
+      [EventsActions.addEventSucceeded({ event }), 'success', event.title],
+      [
+        EventsActions.deleteEventSucceeded({ eventId: 'e1', eventTitle: 'Blitz' }),
+        'success',
+        'Blitz',
+      ],
+      [EventsActions.exportEventsToCsvSucceeded({ exportedCount: 17 }), 'success', '17'],
+      [
+        EventsActions.updateEventSucceeded({ event, originalEventTitle: 'Rapid' }),
+        'success',
+        'Rapid',
+      ],
+      [ImagesActions.addImageSucceeded({ image }), 'success', image.filename],
+      [ImagesActions.addImagesSucceeded({ images: [image] }), 'success', '1'],
+      [
+        ImagesActions.addImagesSucceeded({ images: MOCK_IMAGES }),
+        'success',
+        String(MOCK_IMAGES.length),
+      ],
+      [
+        ImagesActions.automaticAlbumCoverSwitchSucceeded({ baseImage: image }),
+        'info',
+        image.filename,
+      ],
+      [
+        ImagesActions.deleteAlbumSucceeded({ album: 'Club', imageIds: ['i1'] }),
+        'success',
+        'Club',
+      ],
+      [
+        ImagesActions.deleteAlbumSucceeded({
+          album: 'Club',
+          imageIds: ['i1', 'i2', 'i3'],
+        }),
+        'success',
+        '3',
+      ],
+      [ImagesActions.deleteImageSucceeded({ image }), 'success', image.filename],
+      [
+        ImagesActions.updateAlbumSucceeded({
+          album: 'Club',
+          newImages: [],
+          updatedImages: [],
+        }),
+        'success',
+        'Club',
+      ],
+      [
+        ImagesActions.updateImageSucceeded({ baseImage: image }),
+        'success',
+        image.filename,
+      ],
+      [
+        MembersActions.addMemberSucceeded({ member, emailSent: null }),
+        'success',
+        memberName,
+      ],
+      [
+        MembersActions.deleteMemberSucceeded({ memberId: 'm1', memberName: 'Jo Smith' }),
+        'success',
+        'Jo Smith',
+      ],
+      [
+        MembersActions.exportMembersToCsvSucceeded({ exportedCount: 23 }),
+        'success',
+        '23',
+      ],
+      [
+        MembersActions.updateMemberRatingsSucceeded({
+          members: MOCK_MEMBERS,
+          unnotifiedMemberNames: [],
+        }),
+        'success',
+        String(MOCK_MEMBERS.length),
+      ],
+      [
+        MembersActions.updateMemberRatingsSucceeded({
+          members: MOCK_MEMBERS,
+          unnotifiedMemberNames: ['Jo Smith', 'Al Brown'],
+        }),
+        'warning',
+        'Jo Smith, Al Brown',
+      ],
+      [NavActions.pageAccessDenied({ pageHeading: 'Members' }), 'info', 'Members'],
+    ];
+
+    it.each(
+      successes.map(([action, type, detail]) => [action.type, action, type, detail]),
+    )('should show a toast describing "%s"', (_type, action, type, detail) => {
+      const toast = notify(action);
+
+      expect(toast?.type).toBe(type);
+      expect(toast?.title).toBeTruthy();
+      expect(toast?.message).toContain(detail);
     });
 
-    describe('Articles actions', () => {
-      it('should display toast for deleteArticleFailed', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.deleteArticleFailed({ error: mockError }));
+    it('should describe album and upload counts differently for one image and many', () => {
+      const messageFor = (action: Action): string | undefined => notify(action)?.message;
 
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
-              title: 'Article deletion',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
-
-      it('should display toast for deleteArticleSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            ArticlesActions.deleteArticleSucceeded({
-              articleId: 'test123',
-              articleTitle: 'Test Article',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully deleted Test Article',
-              { title: 'Article deletion', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for fetchArticleFailed', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.fetchArticleFailed({ error: mockError }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
-              title: 'Load article',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
-
-      it('should display toast for publishArticleSucceeded', () =>
-        withDone(done => {
-          const article = { ...MOCK_ARTICLES[0], title: 'New Article' };
-          actions$.next(ArticlesActions.publishArticleSucceeded({ article }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully published New Article',
-              { title: 'New article', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for updateArticleSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            ArticlesActions.updateArticleSucceeded({
-              article: MOCK_ARTICLES[0],
-              originalArticleTitle: 'Original Title',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Original Title',
-              { title: 'Article update', variant: 'success' },
-            );
-            done();
-          });
-        }));
+      expect(messageFor(ImagesActions.addImagesSucceeded({ images: [image] }))).not.toBe(
+        messageFor(ImagesActions.addImagesSucceeded({ images: [image, image] })),
+      );
+      expect(
+        messageFor(
+          ImagesActions.deleteAlbumSucceeded({ album: 'Club', imageIds: ['a'] }),
+        ),
+      ).not.toBe(
+        messageFor(
+          ImagesActions.deleteAlbumSucceeded({ album: 'Club', imageIds: ['a', 'b'] }),
+        ),
+      );
     });
 
-    describe('Events actions', () => {
-      it('should display toast for addEventSucceeded', () =>
-        withDone(done => {
-          const event = { ...MOCK_EVENTS[0], title: 'New Event' };
-          actions$.next(EventsActions.addEventSucceeded({ event }));
+    it('should say which email, if any, went out with a member change', () => {
+      const messages = (
+        ['welcome', 'changes', null] as Array<MemberEmail | null>
+      ).flatMap(emailSent =>
+        [
+          MembersActions.updateMemberSucceeded({
+            member,
+            originalMemberName: memberName,
+            emailSent,
+          }),
+          MembersActions.addMemberSucceeded({ member, emailSent }),
+        ].map(action => notify(action)?.message),
+      );
 
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully added New Event',
-              { title: 'New event', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for deleteEventSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            EventsActions.deleteEventSucceeded({
-              eventId: 'evt123',
-              eventTitle: 'Test Event',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully deleted Test Event',
-              { title: 'Event deletion', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for exportEventsToCsvSucceeded', () =>
-        withDone(done => {
-          actions$.next(EventsActions.exportEventsToCsvSucceeded({ exportedCount: 25 }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully exported 25 events to CSV',
-              { title: 'CSV export', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for updateEventSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            EventsActions.updateEventSucceeded({
-              event: MOCK_EVENTS[0],
-              originalEventTitle: 'Original Event',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Original Event',
-              { title: 'Event update', variant: 'success' },
-            );
-            done();
-          });
-        }));
+      messages.forEach(message => expect(message).toContain(memberName));
+      const [updateWelcome, addWelcome, updateChanges, addChanges, updateNone, addNone] =
+        messages;
+      expect(new Set([updateWelcome, updateChanges, updateNone]).size).toBe(3);
+      expect(addWelcome).not.toBe(addNone);
+      expect(addChanges).toBe(addNone);
     });
 
-    describe('Games actions', () => {
-      it('should display toast for fetchFilteredGamesFailed', () =>
-        withDone(done => {
-          actions$.next(GamesActions.fetchFilteredGamesFailed({ error: mockError }));
+    it('should not toast an action it has no message for', () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
 
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
-              title: 'Load games',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
+      const toast = effects['mapActionToToast'](ArticlesActions.cancelSelected());
+
+      expect(toast).toBeNull();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        ArticlesActions.cancelSelected.type,
+      );
     });
 
-    describe('Images actions', () => {
-      it('should display toast for addImageSucceeded', () =>
-        withDone(done => {
-          const image = { ...MOCK_IMAGES[0], filename: 'test.jpg' };
-          actions$.next(ImagesActions.addImageSucceeded({ image }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully uploaded test.jpg',
-              { title: 'Add image', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for addImagesSucceeded with single image', () =>
-        withDone(done => {
-          actions$.next(ImagesActions.addImagesSucceeded({ images: [MOCK_IMAGES[0]] }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully uploaded 1 image',
-              { title: 'Add images', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for addImagesSucceeded with multiple images', () =>
-        withDone(done => {
-          actions$.next(
-            ImagesActions.addImagesSucceeded({
-              images: [MOCK_IMAGES[0], MOCK_IMAGES[1]],
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully uploaded 2 images',
-              { title: 'Add images', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for deleteAlbumSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            ImagesActions.deleteAlbumSucceeded({
-              album: 'Test Album',
-              imageIds: ['1', '2'],
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully deleted Test Album and all 2 of its images',
-              { title: 'Album deletion', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for deleteImageSucceeded', () =>
-        withDone(done => {
-          const image = { ...MOCK_IMAGES[0], filename: 'test.jpg' };
-          actions$.next(ImagesActions.deleteImageSucceeded({ image }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully deleted test.jpg',
-              { title: 'Image deletion', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for updateAlbumSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            ImagesActions.updateAlbumSucceeded({
-              album: 'Test Album',
-              newImages: [],
-              updatedImages: [],
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Test Album',
-              { title: 'Album update', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for updateImageSucceeded', () =>
-        withDone(done => {
-          const baseImage = { ...MOCK_IMAGES[0], filename: 'updated.jpg' };
-          actions$.next(ImagesActions.updateImageSucceeded({ baseImage }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated updated.jpg',
-              { title: 'Image update', variant: 'success' },
-            );
-            done();
-          });
-        }));
-    });
-
-    describe('Members actions', () => {
-      it('should display toast for addMemberSucceeded', () =>
-        withDone(done => {
-          const member = { ...MOCK_MEMBERS[0], firstName: 'John', lastName: 'Doe' };
-          actions$.next(MembersActions.addMemberSucceeded({ member, emailSent: null }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully added John Doe.',
-              { title: 'New member', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should mention the welcome email for a member added with an account', () =>
-        withDone(done => {
-          const member = { ...MOCK_MEMBERS[0], firstName: 'John', lastName: 'Doe' };
-          actions$.next(
-            MembersActions.addMemberSucceeded({ member, emailSent: 'welcome' }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully added John Doe and emailed them their login details.',
-              { title: 'New member', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for deleteMemberSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.deleteMemberSucceeded({
-              memberId: 'mem123',
-              memberName: 'Jane Smith',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully deleted Jane Smith',
-              { title: 'Member deletion', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for exportMembersToCsvSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.exportMembersToCsvSucceeded({ exportedCount: 50 }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully exported 50 members to CSV',
-              { title: 'CSV export', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for updateMemberSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.updateMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              originalMemberName: 'Old Name',
-              emailSent: null,
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Old Name.',
-              { title: 'Member update', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should mention the changes email for a member with an account', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.updateMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              originalMemberName: 'Old Name',
-              emailSent: 'changes',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Old Name and emailed them the changes.',
-              { title: 'Member update', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should mention the welcome email for a member given an account', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.updateMemberSucceeded({
-              member: MOCK_MEMBERS[2],
-              originalMemberName: 'Old Name',
-              emailSent: 'welcome',
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated Old Name and emailed them their login details.',
-              { title: 'Member update', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should display toast for updateMemberRatingsSucceeded', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.updateMemberRatingsSucceeded({
-              members: [MOCK_MEMBERS[0], MOCK_MEMBERS[1]],
-              unnotifiedMemberNames: [],
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Successfully updated 2 members.',
-              { title: 'Members update', variant: 'success' },
-            );
-            done();
-          });
-        }));
-
-      it('should warn about members who could not be emailed their new rating', () =>
-        withDone(done => {
-          actions$.next(
-            MembersActions.updateMemberRatingsSucceeded({
-              members: [MOCK_MEMBERS[0], MOCK_MEMBERS[1]],
-              unnotifiedMemberNames: ['Magnus Carlsen'],
-            }),
-          );
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Updated 2 members, but Magnus Carlsen could not be emailed about their new rating.',
-              { title: 'Members update', variant: 'warning' },
-            );
-            done();
-          });
-        }));
-    });
-
-    describe('Nav actions', () => {
-      it('should display toast for pageAccessDenied', () =>
-        withDone(done => {
-          actions$.next(NavActions.pageAccessDenied({ pageHeading: 'Admin Panel' }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith(
-              'Please log in as admin to access Admin Panel page',
-              { title: 'Access denied', variant: 'info' },
-            );
-            done();
-          });
-        }));
-    });
-
-    describe('Toast suppression in production', () => {
+    describe('in production', () => {
       beforeEach(() => {
-        // Mock production environment
         (environment as { production: boolean }).production = true;
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        store.refreshState();
       });
 
       afterEach(() => {
         (environment as { production: boolean }).production = false;
       });
 
-      it('should suppress fetchArticleFailed toast in production for non-admin', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.fetchArticleFailed({ error: mockError }));
+      it('should hide load failures from visitors', () => {
+        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
+        store.refreshState();
+        const toast = notify(ArticlesActions.fetchArticleFailed({ error: mockError }));
 
-          setTimeout(() => {
-            expect(toastService.show).not.toHaveBeenCalled();
-            done();
-          }, 10);
-        }));
+        expect(toast).toBeUndefined();
+      });
 
-      it('should still show deleteArticleFailed toast in production for non-admin', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.deleteArticleFailed({ error: mockError }));
+      it('should still show load failures to admins', () => {
+        const toast = notify(ArticlesActions.fetchArticleFailed({ error: mockError }));
 
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalled();
-            done();
-          });
-        }));
+        expect(toast).toBeDefined();
+      });
+
+      it('should still show visitors failures of their own changes', () => {
+        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
+        store.refreshState();
+        const toast = notify(ArticlesActions.deleteArticleFailed({ error: mockError }));
+
+        expect(toast).toBeDefined();
+      });
     });
 
     describe('missing records', () => {
       const notFound: LccError = { name: 'LCCError', message: 'Not found', status: 404 };
 
-      it('should not toast a fetchMemberFailed for a record that does not exist', () =>
-        withDone(done => {
-          actions$.next(MembersActions.fetchMemberFailed({ error: notFound }));
+      it.each([
+        ArticlesActions.fetchArticleFailed({ error: notFound }),
+        EventsActions.fetchEventFailed({ error: notFound }),
+        GamesActions.fetchGameFailed({ error: notFound }),
+        MembersActions.fetchMemberFailed({ error: notFound }),
+      ])('should not toast a $type for a record that does not exist', action => {
+        const toast = notify(action);
 
-          setTimeout(() => {
-            expect(toastService.show).not.toHaveBeenCalled();
-            done();
-          }, 10);
-        }));
+        expect(toast).toBeUndefined();
+      });
 
-      it('should still toast a fetchMemberFailed for any other failure', () =>
-        withDone(done => {
-          actions$.next(MembersActions.fetchMemberFailed({ error: mockError }));
+      it('should still toast a 404 from an action that is not a record fetch', () => {
+        const toast = notify(ArticlesActions.deleteArticleFailed({ error: notFound }));
 
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Test error message', {
-              title: 'Load member',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
-
-      it('should still toast a 404 from an action that is not a record fetch', () =>
-        withDone(done => {
-          actions$.next(ArticlesActions.deleteArticleFailed({ error: notFound }));
-
-          effects.notify$.subscribe(() => {
-            expect(toastService.show).toHaveBeenCalledWith('Not found', {
-              title: 'Article deletion',
-              variant: 'warning',
-            });
-            done();
-          });
-        }));
+        expect(toast?.message).toContain(notFound.message);
+      });
     });
-
-    it('should log error to console when action has error property', () =>
-      withDone(done => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-        actions$.next(ArticlesActions.fetchArticleFailed({ error: mockError }));
-
-        effects.notify$.subscribe(() => {
-          expect(consoleSpy).toHaveBeenCalledWith('[LCC]', mockError);
-          consoleSpy.mockRestore();
-          done();
-        });
-      }));
   });
 
   describe('reinstateUpcomingEventBanner$', () => {
-    it('should reinstate banner when more than a day has passed', () =>
-      withDone(done => {
-        const yesterday = moment().subtract(2, 'days').toISOString();
-        store.overrideSelector(AppSelectors.selectBannerLastCleared, yesterday);
-        store.refreshState();
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-03-10T12:00:00Z'));
+    });
 
-        effects.reinstateUpcomingEventBanner$.subscribe(action => {
-          expect(action).toEqual(AppActions.upcomingEventBannerReinstated());
-          done();
-        });
-      }));
+    it('should reinstate the banner once a day has passed since it was cleared', () => {
+      store.overrideSelector(
+        AppSelectors.selectBannerLastCleared,
+        '2026-03-08T12:00:00Z',
+      );
+      store.refreshState();
 
-    it('should not reinstate banner when cleared today', () =>
-      withDone(done => {
-        const today = moment().toISOString();
-        store.overrideSelector(AppSelectors.selectBannerLastCleared, today);
-        store.refreshState();
+      const results = collect(effects.reinstateUpcomingEventBanner$);
 
-        setTimeout(() => {
-          // No action should be emitted
-          done();
-        }, 10);
-      }));
+      expect(results).toEqual([AppActions.upcomingEventBannerReinstated()]);
+    });
 
-    it('should not reinstate banner when never cleared', () =>
-      withDone(done => {
-        store.overrideSelector(AppSelectors.selectBannerLastCleared, null);
-        store.refreshState();
+    it.each([
+      ['cleared today', '2026-03-10T08:00:00Z'],
+      ['never cleared', null],
+    ])('should leave the banner alone when %s', (_label, bannerLastCleared) => {
+      store.overrideSelector(AppSelectors.selectBannerLastCleared, bannerLastCleared);
+      store.refreshState();
 
-        setTimeout(() => {
-          // No action should be emitted
-          done();
-        }, 10);
-      }));
+      const results = collect(effects.reinstateUpcomingEventBanner$);
+
+      expect(results).toEqual([]);
+    });
   });
 });

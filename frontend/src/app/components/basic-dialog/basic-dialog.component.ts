@@ -3,14 +3,13 @@ import { ProgressBarComponent } from '@eagami/ui';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
   OnDestroy,
   OnInit,
-  Output,
   Renderer2,
   RendererFactory2,
   inject,
+  input,
+  output,
   viewChild,
 } from '@angular/core';
 
@@ -20,9 +19,9 @@ import { BasicDialogResult, Dialog, DialogOutput } from '@app/models';
 @Component({
   selector: 'lcc-basic-dialog',
   template: `
-    <h3 class="dialog-title">{{ dialog.title }}</h3>
-    <p class="dialog-body">{{ dialog.body }}</p>
-    @if (dialog.uploadProgress?.(); as progress) {
+    <h3 class="dialog-title">{{ dialog().title }}</h3>
+    <p class="dialog-body">{{ dialog().body }}</p>
+    @if (dialog().uploadProgress?.(); as progress) {
       <div class="upload-progress">
         <ea-progress-bar
           [max]="progress.total"
@@ -34,10 +33,10 @@ import { BasicDialogResult, Dialog, DialogOutput } from '@app/models';
       </div>
     }
     <lcc-dialog-buttons
-      [cancelText]="dialog.cancelButtonText ?? 'Cancel'"
-      [confirmAction]="dialog.confirmAction"
-      [confirmText]="dialog.confirmButtonText"
-      [confirmVariant]="dialog.confirmButtonType ?? 'primary'"
+      [cancelText]="dialog().cancelButtonText ?? 'Cancel'"
+      [confirmAction]="dialog().confirmAction"
+      [confirmText]="dialog().confirmButtonText"
+      [confirmVariant]="dialog().confirmButtonType ?? 'primary'"
       (result)="dialogResult.emit($event)" />
   `,
   styles: `
@@ -76,9 +75,9 @@ import { BasicDialogResult, Dialog, DialogOutput } from '@app/models';
 export class BasicDialogComponent
   implements DialogOutput<BasicDialogResult>, OnInit, OnDestroy
 {
-  @Input({ required: true }) dialog!: Dialog;
+  readonly dialog = input.required<Dialog>();
 
-  @Output() public dialogResult = new EventEmitter<BasicDialogResult | 'close'>();
+  public readonly dialogResult = output<BasicDialogResult | 'close'>();
 
   private readonly buttons = viewChild.required(DialogButtonsComponent);
   private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(

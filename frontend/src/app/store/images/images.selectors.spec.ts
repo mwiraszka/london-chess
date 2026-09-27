@@ -643,4 +643,151 @@ describe('Images Selectors', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('selectIsFetchingFiltered', () => {
+    it('should select whether a filtered fetch is under way', () => {
+      const result = ImagesSelectors.selectIsFetchingFiltered.projector({
+        ...mockImagesState,
+        isFetchingFiltered: true,
+      });
+
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('against the whole store', () => {
+    it('should derive the metadata status from the images state', () => {
+      const result = ImagesSelectors.selectMetadataStatus({
+        imagesState: {
+          ...mockImagesState,
+          lastMetadataFetch: null,
+          failedLoads: ['metadata'],
+        },
+      });
+
+      expect(result).toBe('failed');
+    });
+  });
+
+  describe('selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2025-11-15T12:00:00Z'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should return album covers whose thumbnail is missing or expired', () => {
+      const allImages: Image[] = [
+        {
+          ...MOCK_IMAGES[0],
+          id: 'not-a-cover',
+          albumCover: false,
+          thumbnailUrl: undefined,
+        },
+        { ...MOCK_IMAGES[1], id: 'missing', albumCover: true, thumbnailUrl: undefined },
+        {
+          ...MOCK_IMAGES[2],
+          id: 'expired',
+          albumCover: true,
+          thumbnailUrl: 'https://example.com/expired.jpg',
+          urlExpirationDate: '2025-11-15T11:00:00Z',
+        },
+        {
+          ...MOCK_IMAGES[3],
+          id: 'fresh',
+          albumCover: true,
+          thumbnailUrl: 'https://example.com/fresh.jpg',
+          urlExpirationDate: '2025-11-15T22:00:00Z',
+        },
+      ];
+
+      const result =
+        ImagesSelectors.selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls.projector(
+          allImages,
+        );
+
+      expect(result).toEqual(['missing', 'expired']);
+    });
+  });
+
+  describe('article body images', () => {
+    const imageIdA = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+    const imageIdB = 'bbbbbbbbbbbbbbbbbbbbbbbb';
+    const allImages: Image[] = [
+      { ...MOCK_IMAGES[0], id: imageIdA },
+      { ...MOCK_IMAGES[1], id: imageIdB },
+      MOCK_IMAGES[2],
+    ];
+    const bodyWithImages = `Intro {{{${imageIdA}}}} middle {{{${imageIdA} caption}}} {{{no id here}}} end {{{${imageIdB}}}}`;
+    const emptyFormData: ArticleFormData = { title: '', body: '', bannerImageId: '' };
+
+    describe('selectBodyImagesByArticleId', () => {
+      it('should return each image referenced in the edited body once', () => {
+        const selector = ImagesSelectors.selectBodyImagesByArticleId(MOCK_ARTICLES[0].id);
+
+        const result = selector.projector(allImages, MOCK_ARTICLES[0], {
+          ...emptyFormData,
+          body: bodyWithImages,
+        });
+
+        expect(result.map(image => image.id)).toEqual([imageIdA, imageIdB]);
+      });
+
+      it('should fall back to the saved article body', () => {
+        const selector = ImagesSelectors.selectBodyImagesByArticleId(MOCK_ARTICLES[0].id);
+
+        const result = selector.projector(
+          allImages,
+          { ...MOCK_ARTICLES[0], body: `{{{${imageIdB}}}}` },
+          emptyFormData,
+        );
+
+        expect(result.map(image => image.id)).toEqual([imageIdB]);
+      });
+
+      it('should return nothing when there is no body', () => {
+        const selector = ImagesSelectors.selectBodyImagesByArticleId(null);
+
+        const result = selector.projector(allImages, null, emptyFormData);
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe('selectImageIdsByArticleId', () => {
+      it('should list the banner image first, followed by each body image once', () => {
+        const selector = ImagesSelectors.selectImageIdsByArticleId(MOCK_ARTICLES[0].id);
+
+        const result = selector.projector(MOCK_ARTICLES[0], {
+          ...emptyFormData,
+          body: bodyWithImages,
+          bannerImageId: imageIdB,
+        });
+
+        expect(result).toEqual([imageIdB, imageIdA]);
+      });
+
+      it('should fall back to the saved banner image and body', () => {
+        const selector = ImagesSelectors.selectImageIdsByArticleId(MOCK_ARTICLES[0].id);
+
+        const result = selector.projector(
+          { ...MOCK_ARTICLES[0], bannerImageId: imageIdA, body: `{{{${imageIdB}}}}` },
+          emptyFormData,
+        );
+
+        expect(result).toEqual([imageIdA, imageIdB]);
+      });
+
+      it('should return nothing for an article without images', () => {
+        const selector = ImagesSelectors.selectImageIdsByArticleId(null);
+
+        const result = selector.projector(null, emptyFormData);
+
+        expect(result).toEqual([]);
+      });
+    });
+  });
 });

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from './fixtures';
 import { holdRequests } from './requests';
 
 const GAMES_PAGE = /\/v1\/games\?/;
@@ -34,7 +33,7 @@ test.describe('game archives', () => {
     const total = (await range.textContent())?.match(/of ([\d,]+)/)?.[1];
     const games = await holdRequests(page, GAMES_PAGE);
 
-    await page.locator('.games .ea-paginator__page-btn', { hasText: /^2$/ }).click();
+    await page.getByRole('button', { name: 'Go to page 2' }).click();
 
     await expect.poll(games.count).toBeGreaterThan(0);
     await expect(range).toContainText(`of ${total}`);

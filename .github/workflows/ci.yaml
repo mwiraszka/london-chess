@@ -33,8 +33,9 @@ jobs:
       - name: Check Formatting
         run: pnpm format:check
 
-      - name: Test
-        run: pnpm test
+      # The thresholds in angular.json fail this step below 90% coverage
+      - name: Test With Coverage
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build:prod
@@ -68,5 +69,69 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test
-        run: pnpm test
+      # The in-memory database the tests run against downloads its binary on first use
+      - name: Cache MongoDB Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('backend/package.json') }}
+
+      # The thresholds in vitest.config.ts fail this step below 90% coverage
+      - name: Test With Coverage
+        run: pnpm test:coverage
+
+  E2E-Tests:
+    runs-on: ubuntu-latest
+    # The suite takes a few minutes, so anything longer is a hang worth stopping
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      # Clerk's development instance, for session verification and the test account
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install Frontend Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The backend lockfile is untracked, so dependencies resolve from package.json
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: pnpm install --no-frozen-lockfile
+
+      # The seeded database the suite runs against downloads its binary on first use
+      - name: Cache MongoDB Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('backend/package.json') }}
+
+      - name: Install Playwright Browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run End-to-End Tests
+        run: pnpm e2e
+
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 14

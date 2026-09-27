@@ -1,14 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MetaAndTitleService {
-  constructor(
-    private readonly meta: Meta,
-    private readonly title: Title,
-  ) {}
+  private readonly meta = inject(Meta);
+  private readonly title = inject(Title);
 
   public updateTitle(title: string): void {
     if (title !== 'London Chess Club') {

@@ -155,6 +155,7 @@ const routes: Routes = [
   imports: [
     RouterModule.forRoot(routes, {
       onSameUrlNavigation: 'reload',
+      bindToComponentInputs: true,
     }),
   ],
   exports: [RouterModule],

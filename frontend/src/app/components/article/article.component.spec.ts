@@ -1,29 +1,17 @@
-import { Component, Input } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideMarkdown } from 'ngx-markdown';
 
-import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { Image } from '@app/models';
 import { ApiService } from '@app/services';
 import { query, queryTextContent } from '@app/utils';
 
 import { ArticleComponent } from './article.component';
 
-@Component({
-  selector: 'lcc-markdown-renderer',
-  template: '',
-  standalone: true,
-})
-class MockMarkdownRendererComponent {
-  @Input() data = '';
-  @Input() images: Image[] = [];
-  @Input() disableSanitizer = false;
-}
-
 describe('ArticleComponent', () => {
   let fixture: ComponentFixture<ArticleComponent>;
-  let component: ArticleComponent;
 
   beforeEach(async () => {
     const mockApiService: Pick<ApiService, 'get'> = {
@@ -32,24 +20,18 @@ describe('ArticleComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ArticleComponent],
-      providers: [{ provide: ApiService, useValue: mockApiService }],
-    })
-      .overrideComponent(ArticleComponent, {
-        remove: { imports: [MarkdownRendererComponent] },
-        add: { imports: [MockMarkdownRendererComponent] },
-      })
-      .compileComponents();
+      providers: [
+        provideMarkdown(),
+        provideRouter([]),
+        { provide: ApiService, useValue: mockApiService },
+      ],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ArticleComponent);
-    component = fixture.componentInstance;
 
     fixture.componentRef.setInput('article', MOCK_ARTICLES[2]);
     fixture.componentRef.setInput('bannerImage', null);
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('template rendering', () => {
@@ -131,5 +113,17 @@ describe('ArticleComponent', () => {
         expect(query(fixture.debugElement, '.shimmer-overlay')).toBeTruthy();
       });
     });
+  });
+
+  it('should render the article body with its images', () => {
+    fixture.componentRef.setInput('bodyImages', [MOCK_IMAGES[1]]);
+    fixture.detectChanges();
+
+    const renderer = query(
+      fixture.debugElement,
+      'lcc-markdown-renderer',
+    ).componentInstance;
+    expect(renderer.data()).toBe(MOCK_ARTICLES[2].body);
+    expect(renderer.images()).toEqual([MOCK_IMAGES[1]]);
   });
 });

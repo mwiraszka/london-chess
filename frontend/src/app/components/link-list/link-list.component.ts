@@ -1,7 +1,7 @@
 import { ExternalLinkIconComponent } from '@eagami/ui';
 
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TooltipDirective } from '@app/directives/tooltip.directive';
@@ -11,12 +11,12 @@ import { RouterLinkPipe } from '@app/pipes';
 @Component({
   selector: 'lcc-link-list',
   template: `
-    @if (header) {
-      <h3>{{ header }}</h3>
+    @if (header()) {
+      <h3>{{ header() }}</h3>
     }
 
-    <ul [class.single-column]="links.length < 4">
-      @for (link of links; track link) {
+    <ul [class.single-column]="links().length < 4">
+      @for (link of links(); track link) {
         <li>
           @if (link.externalPath) {
             <a
@@ -62,6 +62,6 @@ import { RouterLinkPipe } from '@app/pipes';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LinkListComponent {
-  @Input() public header?: string;
-  @Input() public links: Array<InternalLink | ExternalLink> = [];
+  public readonly header = input<string>();
+  public readonly links = input<Array<InternalLink | ExternalLink>>([]);
 }

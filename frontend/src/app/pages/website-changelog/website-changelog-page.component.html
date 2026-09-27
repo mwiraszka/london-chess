@@ -73,10 +73,6 @@
                 class="release-toggle"
                 [attr.aria-controls]="releaseId(release) + '-details'"
                 [attr.aria-expanded]="isExpanded(release)">
-                <ea-icon-chevron-down
-                  class="release-chevron"
-                  aria-hidden="true"
-                  [class.release-chevron--expanded]="isExpanded(release)" />
                 <span class="release-title">
                   <span class="release-version-row">
                     <span class="release-version">
@@ -99,17 +95,23 @@
                 </span>
               </button>
             </h3>
-            @if (release.date) {
-              <a
-                class="release-link lcc-link"
-                [href]="releaseUrl(release)"
-                rel="noopener noreferrer"
-                target="_blank"
-                (click)="$event.stopPropagation()">
-                <span>More details</span>
-                <ea-icon-external-link class="external-link-icon" />
-              </a>
-            }
+            <div class="release-actions">
+              @if (release.date) {
+                <a
+                  class="release-link lcc-link"
+                  [href]="releaseUrl(release)"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  (click)="$event.stopPropagation()">
+                  <span>More details</span>
+                  <ea-icon-external-link class="external-link-icon" />
+                </a>
+              }
+              <ea-icon-chevron-down
+                class="release-chevron"
+                aria-hidden="true"
+                [class.release-chevron--expanded]="isExpanded(release)" />
+            </div>
           </div>
 
           <div

@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+.openings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.openings__heading {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.openings__skeleton {
+  display: block;
+}
+
+.openings__empty {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}

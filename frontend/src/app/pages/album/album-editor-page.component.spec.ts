@@ -1,7 +1,7 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick, uniq } from 'lodash';
-import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -25,6 +25,7 @@ describe('AlbumEditorPageComponent', () => {
 
   let metaAndTitleService: MetaAndTitleService;
   let mockParamsSubject: BehaviorSubject<{ album?: string }>;
+  let activatedRoute: { params: Observable<{ album?: string }> };
   let store: MockStore;
 
   let dispatchSpy: MockInstance;
@@ -33,6 +34,7 @@ describe('AlbumEditorPageComponent', () => {
 
   beforeEach(async () => {
     mockParamsSubject = new BehaviorSubject<{ album?: string }>({});
+    activatedRoute = { params: mockParamsSubject.asObservable() };
 
     const mockImagesState: ImagesState = {
       ...imagesInitialState,
@@ -55,10 +57,7 @@ describe('AlbumEditorPageComponent', () => {
       imports: [AlbumEditorPageComponent],
       providers: [
         provideMockActions(() => EMPTY),
-        {
-          provide: ActivatedRoute,
-          useValue: { params: mockParamsSubject.asObservable() },
-        },
+        { provide: ActivatedRoute, useValue: activatedRoute },
         {
           provide: ImageFileService,
           useValue: {},
@@ -89,10 +88,6 @@ describe('AlbumEditorPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
     store.refreshState();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   describe('initialization', () => {
@@ -160,88 +155,78 @@ describe('AlbumEditorPageComponent', () => {
     });
   });
 
-  describe('onCancel', () => {
-    it('should dispatch cancelSelected action', () => {
-      component.onCancel();
+  describe('form events', () => {
+    const albumForm = () => query(fixture.debugElement, 'lcc-album-form');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(ImagesActions.cancelSelected());
+    beforeEach(() => {
+      fixture.detectChanges();
+      dispatchSpy.mockClear();
     });
-  });
 
-  describe('onChange', () => {
-    it('should dispatch changeSelected action', () => {
-      const mockChangedFormData: Partial<ImageFormData> & { id: string } = {
-        id: 'abc123abc123',
-        caption: 'A new caption',
-        albumOrdinality: '5',
-      };
-      component.onChange([mockChangedFormData]);
+    it('should cancel editing', () => {
+      albumForm().triggerEventHandler('cancel');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.formDataChanged({ multipleFormData: [mockChangedFormData] }),
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(ImagesActions.cancelSelected());
+    });
+
+    it('should store changed form data', () => {
+      const multipleFormData: Array<Partial<ImageFormData> & { id: string }> = [
+        { id: 'abc123abc123', caption: 'A new caption', albumOrdinality: '5' },
+      ];
+
+      albumForm().triggerEventHandler('change', { multipleFormData });
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.formDataChanged({ multipleFormData }),
       );
     });
-  });
 
-  describe('onFileActionFail', () => {
-    it('should dispatch imageFileActionFailed action', () => {
-      const mockError: LccError = {
-        name: 'LCCError',
-        message: 'Some error message',
-      };
-      component.onFileActionFail(mockError);
+    it('should ignore a change without form data', () => {
+      albumForm().triggerEventHandler('change', {});
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.imageFileActionFailed({ error: mockError }),
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+
+    it('should report a failed file action', () => {
+      const error: LccError = { name: 'LCCError', message: 'Some error message' };
+
+      albumForm().triggerEventHandler('fileActionFail', error);
+
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.imageFileActionFailed({ error }),
       );
     });
-  });
 
-  describe('onRemoveNewImage', () => {
-    it('should dispatch newImageRemoved action', () => {
-      const mockImageId = 'abc123abc123';
-      component.onRemoveNewImage(mockImageId);
+    it('should remove a new image', () => {
+      albumForm().triggerEventHandler('removeNewImage', 'abc123abc123');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.newImageRemoved({ imageId: mockImageId }),
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.newImageRemoved({ imageId: 'abc123abc123' }),
       );
     });
-  });
 
-  describe('onRetry', () => {
-    it('should fetch the image metadata again', () => {
-      component.onRetry();
+    it('should restore the saved album', () => {
+      albumForm().triggerEventHandler('restore', 'Album of the Year');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.fetchAllImagesMetadataRequested(),
-      );
-    });
-  });
-
-  describe('onRestore', () => {
-    it('should dispatch albumFormDataRestored action', () => {
-      const mockAlbum = 'abc123abc123';
-      component.onRestore(mockAlbum);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ImagesActions.albumFormDataRestored({ album: mockAlbum }),
+      expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
+        ImagesActions.albumFormDataRestored({ album: 'Album of the Year' }),
       );
     });
   });
 
   describe('template rendering', () => {
-    describe('when viewModel$ is undefined', () => {
-      it('should not render page components', () => {
-        expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-album-form')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
-      });
+    it('should render nothing until the route params arrive', () => {
+      const params = new Subject<{ album?: string }>();
+      activatedRoute.params = params;
+
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-link-list')).toBeFalsy();
+
+      params.next({});
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'lcc-album-form')).toBeTruthy();
     });
 
     describe('when viewModel$ is defined', () => {

@@ -9,15 +9,14 @@ import {
   DOCUMENT,
   Directive,
   ElementRef,
-  HostListener,
-  Inject,
   InjectionToken,
   Injector,
-  Input,
   OnDestroy,
   Renderer2,
   TemplateRef,
   ViewContainerRef,
+  inject,
+  input,
 } from '@angular/core';
 
 import { TooltipComponent } from '@app/components/tooltip/tooltip.component';
@@ -32,25 +31,28 @@ export const TOOLTIP_CONTEXT_TOKEN = new InjectionToken<unknown>('Tooltip Contex
 
 @Directive({
   selector: '[tooltip]',
+  host: {
+    '(mouseenter)': 'attach($event)',
+    '(focus)': 'attach($event)',
+    '(mouseleave)': 'detach()',
+    '(blur)': 'detach()',
+  },
 })
 export class TooltipDirective implements OnDestroy {
-  @Input() public tooltip: string | TemplateRef<unknown> | null = null;
-  @Input() public tooltipContext: unknown = null;
+  private readonly _document = inject<Document>(DOCUMENT);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly overlay = inject(Overlay);
+  private readonly renderer = inject(Renderer2);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+
+  public readonly tooltip = input<string | TemplateRef<unknown> | null>(null);
+  public readonly tooltipContext = input<unknown>(null);
 
   private overlayRef: OverlayRef | null = null;
 
-  constructor(
-    @Inject(DOCUMENT) private _document: Document,
-    private readonly elementRef: ElementRef<HTMLElement>,
-    private readonly overlay: Overlay,
-    private readonly renderer: Renderer2,
-    private readonly viewContainerRef: ViewContainerRef,
-  ) {}
-
-  @HostListener('mouseenter', ['$event'])
-  @HostListener('focus', ['$event'])
   public attach(event?: MouseEvent | FocusEvent): void {
-    if (isDefined(this.tooltip) && !this.overlayRef?.hasAttached()) {
+    const tooltip = this.tooltip();
+    if (isDefined(tooltip) && !this.overlayRef?.hasAttached()) {
       const clientY: Pixels | undefined =
         event instanceof MouseEvent ? event.clientY : undefined;
 
@@ -65,11 +67,11 @@ export class TooltipDirective implements OnDestroy {
         providers: [
           {
             provide: TOOLTIP_CONTENT_TOKEN,
-            useValue: this.tooltip,
+            useValue: tooltip,
           },
           {
             provide: TOOLTIP_CONTEXT_TOKEN,
-            useValue: this.tooltipContext,
+            useValue: this.tooltipContext(),
           },
         ],
       });
@@ -90,7 +92,7 @@ export class TooltipDirective implements OnDestroy {
       }
 
       // Enable pointer events if tooltip content is a template (interactive content)
-      if (this.tooltip instanceof TemplateRef && componentRef.location.nativeElement) {
+      if (tooltip instanceof TemplateRef && componentRef.location.nativeElement) {
         this.renderer.setStyle(
           componentRef.location.nativeElement,
           'pointer-events',
@@ -100,8 +102,6 @@ export class TooltipDirective implements OnDestroy {
     }
   }
 
-  @HostListener('mouseleave')
-  @HostListener('blur')
   public detach(): void {
     if (this.overlayRef?.hasAttached()) {
       this.overlayRef?.detach();

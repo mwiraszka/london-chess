@@ -30,6 +30,10 @@ import * as ArticlesSelectors from './articles.selectors';
 
 @Injectable()
 export class ArticlesEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly articlesApiService = inject(ArticlesApiService);
+  private readonly store = inject(Store);
+
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
   private readonly userService = inject(UserService);
@@ -323,10 +327,4 @@ export class ArticlesEffects {
       ),
     );
   });
-
-  constructor(
-    private readonly actions$: Actions,
-    private readonly articlesApiService: ArticlesApiService,
-    private readonly store: Store,
-  ) {}
 }

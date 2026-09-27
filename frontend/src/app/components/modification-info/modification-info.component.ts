@@ -1,6 +1,6 @@
 import { EditIconComponent, FilePlusIconComponent } from '@eagami/ui';
 
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { ModificationInfo } from '@app/models';
@@ -17,16 +17,16 @@ import { FormatDatePipe } from '@app/pipes';
           <span>created by</span>
           <span class="name">
             <lcc-member-link
-              [memberNumber]="info.createdByNumber"
-              [name]="info.createdBy"
+              [memberNumber]="info().createdByNumber"
+              [name]="info().createdBy"
               [showAvatar]="true" />
           </span>
           <span class="vertical-spacer">|</span>
-          <span class="date">{{ info.dateCreated | formatDate: 'short' }}</span>
+          <span class="date">{{ info().dateCreated | formatDate: 'short' }}</span>
         </div>
       </div>
 
-      @if (info.dateCreated !== info.dateLastEdited) {
+      @if (info().dateCreated !== info().dateLastEdited) {
         <div class="edit-details-container">
           <ea-icon-edit />
 
@@ -34,12 +34,12 @@ import { FormatDatePipe } from '@app/pipes';
             <span>last edited by</span>
             <span class="name">
               <lcc-member-link
-                [memberNumber]="info.lastEditedByNumber"
-                [name]="info.lastEditedBy"
+                [memberNumber]="info().lastEditedByNumber"
+                [name]="info().lastEditedBy"
                 [showAvatar]="true" />
             </span>
             <span class="vertical-spacer">|</span>
-            <span class="date">{{ info.dateLastEdited | formatDate: 'short' }}</span>
+            <span class="date">{{ info().dateLastEdited | formatDate: 'short' }}</span>
           </div>
         </div>
       }
@@ -55,5 +55,5 @@ import { FormatDatePipe } from '@app/pipes';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ModificationInfoComponent {
-  @Input({ required: true }) info!: ModificationInfo;
+  readonly info = input.required<ModificationInfo>();
 }

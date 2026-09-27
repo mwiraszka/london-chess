@@ -215,23 +215,17 @@ describe('App Reducer', () => {
     });
 
     it('should set bannerLastCleared to current timestamp', () => {
-      const beforeTime = Date.now();
-
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-03-14T15:09:26.000Z'));
       const previousState: AppState = {
         ...initialState,
         showUpcomingEventBanner: true,
         bannerLastCleared: null,
       };
 
-      const action = AppActions.upcomingEventBannerCleared();
-      const state = appReducer(previousState, action);
+      const state = appReducer(previousState, AppActions.upcomingEventBannerCleared());
 
-      const afterTime = Date.now();
-
-      expect(state.bannerLastCleared).toBeTruthy();
-      const timestamp = new Date(state.bannerLastCleared!).getTime();
-      expect(timestamp).toBeGreaterThanOrEqual(beforeTime);
-      expect(timestamp).toBeLessThanOrEqual(afterTime);
+      expect(state.bannerLastCleared).toBe('2026-03-14T15:09:26.000Z');
     });
 
     it('should preserve other state properties', () => {

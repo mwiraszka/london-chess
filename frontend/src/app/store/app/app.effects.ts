@@ -5,7 +5,7 @@ import { Store } from '@ngrx/store';
 import moment from 'moment-timezone';
 import { filter, map, tap } from 'rxjs/operators';
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { LccError, MemberEmail, Toast } from '@app/models';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
@@ -34,6 +34,10 @@ type NotifyAction = ReturnType<
 
 @Injectable()
 export class AppEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly store = inject(Store);
+  private readonly toastService = inject(ToastService);
+
   readonly ACTIONS_TO_NOTIFY = [
     AppActions.unexpectedErrorOccurred,
 
@@ -170,12 +174,6 @@ export class AppEffects {
       map(() => AppActions.upcomingEventBannerReinstated()),
     ),
   );
-
-  constructor(
-    private readonly actions$: Actions,
-    private readonly store: Store,
-    private readonly toastService: ToastService,
-  ) {}
 
   // A 404 on a single record is handled by sending the visitor home, not by a toast
   private isMissingRecord(action: NotifyAction): boolean {

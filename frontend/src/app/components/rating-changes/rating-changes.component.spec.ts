@@ -41,10 +41,6 @@ describe('RatingChangesComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should list each member with their old and new ratings, marking the changes', () => {
       const rows = queryAll(

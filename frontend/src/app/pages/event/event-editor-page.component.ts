@@ -5,7 +5,7 @@ import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { EventFormComponent } from '@app/components/event-form/event-form.component';
@@ -70,6 +70,10 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventEditorPageComponent implements EditorPage, OnInit {
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly adminIcon = ShieldCheckIconComponent;
 
   public readonly entity = 'event';
@@ -86,12 +90,6 @@ export class EventEditorPageComponent implements EditorPage, OnInit {
     pageHeading: string;
     status: LoadStatus;
   }>;
-
-  constructor(
-    private readonly activatedRoute: ActivatedRoute,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(

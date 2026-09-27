@@ -82,10 +82,6 @@ describe('MemberEditorPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('initialization', () => {
     describe('with member_id route param', () => {
       beforeEach(() => {

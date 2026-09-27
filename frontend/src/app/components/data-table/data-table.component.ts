@@ -111,12 +111,11 @@ export class DataTableComponent<T extends { id: string }> {
       return this.data();
     }
     const shape = this.sizingRows()[0] ?? this.data()[0];
-    return shape
-      ? Array.from({ length: this.loadingRowCount() }, (_, index) => ({
-          ...shape,
-          id: `loading-${index}`,
-        }))
-      : [];
+    // Placeholder rows are read for their id alone, so a row of nothing else will do
+    return Array.from(
+      { length: this.loadingRowCount() },
+      (_, index) => ({ ...shape, id: `loading-${index}` }) as T,
+    );
   });
 
   protected readonly shownColumns = computed<DataTableColumn<T>[]>(() => {
@@ -126,6 +125,11 @@ export class DataTableComponent<T extends { id: string }> {
       cellTemplate: cells.get(column.key),
     }));
   });
+
+  // The hidden copies keep their own ids, so nothing keyed on a row's id marks them
+  protected readonly hiddenRows = computed<T[]>(() =>
+    this.sizingRows().map(row => ({ ...row, id: `sizing-${row.id}` })),
+  );
 
   protected readonly rowHrefWhenLoaded = computed(() =>
     this.loading() ? undefined : this.rowHref(),
@@ -138,7 +142,7 @@ export class DataTableComponent<T extends { id: string }> {
 
   // The sizing rows keep their content while loading, so the columns keep their widths
   protected isPlaceholder(row: T): boolean {
-    return this.loading() && !this.sizingRows().includes(row);
+    return this.loading() && !this.hiddenRows().includes(row);
   }
 
   protected cellContext(

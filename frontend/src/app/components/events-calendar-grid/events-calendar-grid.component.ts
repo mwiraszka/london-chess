@@ -1,15 +1,12 @@
 import { CalendarDaysIconComponent, TrophyIconComponent } from '@eagami/ui';
 import moment from 'moment-timezone';
 
-import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  Input,
-  OnChanges,
-  OnInit,
-  SimpleChanges,
+  computed,
   inject,
+  input,
 } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -41,7 +38,6 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   imports: [
     AdminControlsDirective,
     CalendarDaysIconComponent,
-    CommonModule,
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
@@ -51,41 +47,51 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EventsCalendarGridComponent implements OnInit, OnChanges {
-  @Input({ required: true }) public events!: Event[];
-  @Input({ required: true }) public isAdmin!: boolean;
+export class EventsCalendarGridComponent {
+  private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
+  private readonly storeRequests = inject(StoreRequestService);
 
-  @Input() public isLoading = false;
-  @Input() public options?: DataPaginationOptions<Event>;
+  public readonly events = input.required<Event[]>();
+  public readonly isAdmin = input.required<boolean>();
+
+  public readonly isLoading = input(false);
+  public readonly options = input<DataPaginationOptions<Event>>();
 
   protected readonly daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   protected readonly skeletonMonths = [0, 1, 2];
   // Six weeks, the most a month can span
   protected readonly skeletonDays = Array.from({ length: 42 }, (_, index) => index);
+  protected readonly isTouchDevice = inject(IS_TOUCH_DEVICE)();
 
-  // Cache computed values to avoid recalculation
-  public calendarMonths: CalendarMonth[] = [];
-  public isTouchDevice!: boolean;
-  private cachedEventsJson = '';
-
-  private readonly isTouchDeviceFn = inject(IS_TOUCH_DEVICE);
-  private readonly storeRequests = inject(StoreRequestService);
-
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly router: Router,
-  ) {}
-
-  public ngOnInit(): void {
-    this.isTouchDevice = this.isTouchDeviceFn();
-    this.updateCalendarMonths();
-  }
-
-  public ngOnChanges(changes: SimpleChanges<EventsCalendarGridComponent>): void {
-    if (changes.events) {
-      this.updateCalendarMonths();
+  public readonly monthYears = computed<string[]>(() => {
+    const events = this.events();
+    if (!events.length) {
+      return [];
     }
-  }
+
+    const sortedEvents = events
+      .map(event => moment(event.eventDate))
+      .sort((a, b) => a.valueOf() - b.valueOf());
+
+    const firstEventDate = sortedEvents[0];
+    const lastEventDate = sortedEvents[sortedEvents.length - 1];
+
+    const monthYears: string[] = [];
+    const current = firstEventDate.clone().startOf('month');
+    const end = lastEventDate.clone().startOf('month');
+
+    while (current.isSameOrBefore(end, 'month')) {
+      monthYears.push(current.format('MMMM YYYY'));
+      current.add(1, 'month');
+    }
+
+    return monthYears;
+  });
+
+  public readonly calendarMonths = computed<CalendarMonth[]>(() =>
+    this.monthYears().map(monthYear => this.generateCalendarMonth(monthYear)),
+  );
 
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
@@ -128,61 +134,18 @@ export class EventsCalendarGridComponent implements OnInit, OnChanges {
     }
   }
 
-  public get monthYears(): string[] {
-    if (!this.events.length) {
-      return [];
-    }
-
-    const sortedEvents = this.events
-      .map(event => moment(event.eventDate))
-      .sort((a, b) => a.valueOf() - b.valueOf());
-
-    const firstEventDate = sortedEvents[0];
-    const lastEventDate = sortedEvents[sortedEvents.length - 1];
-
-    const monthYears: string[] = [];
-    const current = firstEventDate.clone().startOf('month');
-    const end = lastEventDate.clone().startOf('month');
-
-    while (current.isSameOrBefore(end, 'month')) {
-      monthYears.push(current.format('MMMM YYYY'));
-      current.add(1, 'month');
-    }
-
-    return monthYears;
-  }
-
   public trackWeekByIndex(index: number): number {
     return index;
   }
 
-  private updateCalendarMonths(): void {
-    const eventsJson = JSON.stringify(
-      this.events.map(event => ({
-        id: event.id,
-        eventDate: event.eventDate,
-        dateLastEdited: event.modificationInfo.dateLastEdited,
-      })),
-    );
-
-    // Only recalculate if events have actually changed
-    if (eventsJson === this.cachedEventsJson) {
-      return;
-    }
-
-    this.cachedEventsJson = eventsJson;
-    this.calendarMonths = this.monthYears.map(monthYear =>
-      this.generateCalendarMonth(monthYear),
-    );
-  }
-
   private generateCalendarMonth(monthYear: string): CalendarMonth {
+    const events = this.events();
     const startOfMonth = moment(monthYear, 'MMMM YYYY').startOf('month');
     const endOfMonth = moment(monthYear, 'MMMM YYYY').endOf('month');
     const today = moment.tz('America/Toronto');
 
     // Check if this month has any events
-    const monthHasEvents = this.events.some(event =>
+    const monthHasEvents = events.some(event =>
       moment(event.eventDate).isBetween(startOfMonth, endOfMonth, 'day', '[]'),
     );
 
@@ -207,7 +170,7 @@ export class EventsCalendarGridComponent implements OnInit, OnChanges {
           '[]',
         );
         const isToday = currentDate.isSame(today, 'day');
-        const dayEvents = this.events
+        const dayEvents = events
           .filter(event => moment(event.eventDate).isSame(currentDate, 'day'))
           .sort((a, b) => customSort(a, b, 'modificationInfo.dateLastEdited', true));
 

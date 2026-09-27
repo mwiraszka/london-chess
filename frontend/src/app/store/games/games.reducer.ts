@@ -9,11 +9,12 @@ import {
   GamesQuery,
   GamesSummary,
   IsoDate,
+  MemberOpenings,
 } from '@app/models';
 
 import * as GamesActions from './games.actions';
 
-export type GamesLoad = 'filtered' | 'game' | 'reference';
+export type GamesLoad = 'filtered' | 'game' | 'reference' | 'member-openings';
 
 export interface GamesState extends EntityState<Game> {
   // Loads whose latest attempt failed
@@ -28,6 +29,7 @@ export interface GamesState extends EntityState<Game> {
   players: ArchivePlayer[];
   tournaments: ArchiveTournament[];
   summary: GamesSummary | null;
+  memberOpenings: Record<number, MemberOpenings>;
 }
 
 export const gamesAdapter = createEntityAdapter<Game>();
@@ -43,6 +45,7 @@ export const initialState: GamesState = gamesAdapter.getInitialState({
   players: [],
   tournaments: [],
   summary: null,
+  memberOpenings: {},
 });
 
 function withLoadAttempt(state: GamesState, load: GamesLoad): GamesState {
@@ -98,6 +101,20 @@ export const gamesReducer = createReducer(
       tournaments,
       summary,
       lastReferenceFetch: new Date().toISOString(),
+    }),
+  ),
+
+  on(GamesActions.fetchMemberOpeningsRequested, (state): GamesState =>
+    withLoadAttempt(state, 'member-openings'),
+  ),
+  on(GamesActions.fetchMemberOpeningsFailed, (state): GamesState =>
+    withFailedLoad(state, 'member-openings'),
+  ),
+  on(
+    GamesActions.fetchMemberOpeningsSucceeded,
+    (state, { memberNumber, openings }): GamesState => ({
+      ...state,
+      memberOpenings: { ...state.memberOpenings, [memberNumber]: openings },
     }),
   ),
 

@@ -16,9 +16,9 @@ import { NgComponentOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  HostListener,
   computed,
   inject,
+  signal,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -44,6 +44,7 @@ import { AuthSelectors } from '@app/store/auth';
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(window:resize)': 'onResize()' },
 })
 export class NavigationBarComponent {
   private readonly clerkService = inject(ClerkService);
@@ -107,11 +108,10 @@ export class NavigationBarComponent {
     return (first + last).toUpperCase() || undefined;
   });
 
-  public isDropdownOpen = false;
-  public screenWidth = window.innerWidth;
+  public readonly isDropdownOpen = signal(false);
+  public readonly screenWidth = signal(window.innerWidth);
 
-  @HostListener('window:resize')
-  onResize(): void {
-    this.screenWidth = window.innerWidth;
+  protected onResize(): void {
+    this.screenWidth.set(window.innerWidth);
   }
 }

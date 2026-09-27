@@ -1,0 +1,23 @@
+:host {
+  overflow: hidden;
+  display: block;
+}
+
+.rating-progression__skeleton {
+  display: block;
+}
+
+.rating-progression__message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 16px;
+  margin: 0;
+}
+
+.rating-progression__empty {
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}

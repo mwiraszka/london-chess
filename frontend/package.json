@@ -1,6 +1,6 @@
 {
   "name": "lcc-frontend",
-  "version": "6.2.2",
+  "version": "6.3.0",
   "description": "Frontend for the London Chess Club website, built with Angular",
   "author": "Michal Wiraszka",
   "repository": {
@@ -25,7 +25,7 @@
     "test:coverage": "node scripts/generate-data.mjs && ng test --coverage",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "e2e": "playwright test",
+    "e2e": "playwright install chromium && playwright test",
     "lint": "eslint 'src/**'"
   },
   "dependencies": {
@@ -39,7 +39,7 @@
     "@angular/platform-browser-dynamic": "22.1.6",
     "@angular/router": "22.1.6",
     "@clerk/clerk-js": "6.32.0",
-    "@eagami/ui": "5.49.1",
+    "@eagami/ui": "5.53.0",
     "@googlemaps/js-api-loader": "2.1.1",
     "@ngneat/until-destroy": "10.0.0",
     "@ngrx/effects": "22.0.1",
@@ -67,6 +67,7 @@
     "@angular/build": "22.1.8",
     "@angular/cli": "22.1.8",
     "@angular/compiler-cli": "22.1.6",
+    "@clerk/testing": "2.2.39",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",

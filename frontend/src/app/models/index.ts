@@ -38,6 +38,8 @@ export type {
   GamesSortBy,
   GamesSummary,
   ArchiveTournament,
+  MemberOpenings,
+  OpeningCount,
 } from './game.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {
@@ -81,8 +83,9 @@ export type {
   TournamentFormat,
   TournamentGame,
   TournamentSection,
-  TournamentSizing,
   TournamentSummary,
   Trophy,
+  TrophyMetal,
+  TrophyShape,
 } from './tournament.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';

@@ -1,7 +1,14 @@
+import { TestBed } from '@angular/core/testing';
+
 import { RangePipe } from './range.pipe';
 
 describe('RangePipe', () => {
-  const pipe = new RangePipe();
+  let pipe: RangePipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [RangePipe] });
+    pipe = TestBed.inject(RangePipe);
+  });
 
   it('generates ranges correctly when no offset provided', () => {
     expect(pipe.transform(-10)).toStrictEqual([]);

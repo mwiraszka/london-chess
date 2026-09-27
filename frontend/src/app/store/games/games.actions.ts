@@ -8,6 +8,7 @@ import {
   GamesSummary,
   Id,
   LccError,
+  MemberOpenings,
 } from '@app/models';
 
 export const fetchFilteredGamesRequested = createAction(
@@ -48,6 +49,19 @@ export const fetchArchiveReferenceSucceeded = createAction(
 );
 export const fetchArchiveReferenceFailed = createAction(
   '[Games] Fetch archive reference failed',
+  props<{ error: LccError }>(),
+);
+
+export const fetchMemberOpeningsRequested = createAction(
+  '[Games] Fetch member openings requested',
+  props<{ memberNumber: number }>(),
+);
+export const fetchMemberOpeningsSucceeded = createAction(
+  '[Games] Fetch member openings succeeded',
+  props<{ memberNumber: number; openings: MemberOpenings }>(),
+);
+export const fetchMemberOpeningsFailed = createAction(
+  '[Games] Fetch member openings failed',
   props<{ error: LccError }>(),
 );
 

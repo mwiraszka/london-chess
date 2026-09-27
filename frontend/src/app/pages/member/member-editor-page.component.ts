@@ -5,7 +5,7 @@ import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { FormSkeletonComponent } from '@app/components/form-skeleton/form-skeleton.component';
@@ -72,6 +72,10 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberEditorPageComponent implements EditorPage, OnInit {
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
   protected readonly adminIcon = ShieldCheckIconComponent;
 
   public readonly entity = 'member';
@@ -88,12 +92,6 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
     pageHeading: string;
     status: LoadStatus;
   }>;
-
-  constructor(
-    private readonly activatedRoute: ActivatedRoute,
-    private readonly metaAndTitleService: MetaAndTitleService,
-    private readonly store: Store,
-  ) {}
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(

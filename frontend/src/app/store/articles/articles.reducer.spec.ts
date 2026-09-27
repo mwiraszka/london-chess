@@ -518,10 +518,13 @@ describe('Articles Reducer', () => {
     });
   });
   describe('a fetch of filtered articles', () => {
-    it('should be marked as under way until it succeeds or fails', () => {
+    it('should hold placeholders from a new page or search until it succeeds or fails', () => {
       const fetching = articlesReducer(
         initialState,
-        ArticlesActions.fetchFilteredArticlesRequested(),
+        ArticlesActions.paginationOptionsChanged({
+          options: initialState.options,
+          fetch: true,
+        }),
       );
 
       expect(fetching.isFetchingFiltered).toBe(true);
@@ -531,6 +534,27 @@ describe('Articles Reducer', () => {
           ArticlesActions.fetchFilteredArticlesFailed({ error: mockError }),
         ).isFetchingFiltered,
       ).toBe(false);
+    });
+
+    it('should leave the articles on screen while they refresh in the background', () => {
+      const refreshing = articlesReducer(
+        initialState,
+        ArticlesActions.fetchFilteredArticlesRequested(),
+      );
+
+      expect(refreshing.isFetchingFiltered).toBe(false);
+    });
+
+    it('should not hold placeholders for options that fetch nothing', () => {
+      const state = articlesReducer(
+        initialState,
+        ArticlesActions.paginationOptionsChanged({
+          options: initialState.options,
+          fetch: false,
+        }),
+      );
+
+      expect(state.isFetchingFiltered).toBe(false);
     });
   });
 });

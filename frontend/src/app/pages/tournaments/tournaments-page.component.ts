@@ -32,13 +32,10 @@ import { DataTableComponent } from '@app/components/data-table/data-table.compon
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { TOURNAMENT_SIZING } from '@app/constants/tournament-sizing';
 import {
   TOURNAMENTS_PAGE_SIZES,
   TOURNAMENT_FORMAT_LABELS,
   TROPHIES,
-  WIDEST_DATE,
-  WIDEST_END_DATE,
 } from '@app/constants/tournaments';
 import { TournamentFormat, TournamentSummary } from '@app/models';
 import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
@@ -85,32 +82,6 @@ function toTournamentRow(summary: TournamentSummary): TournamentRow {
 }
 
 const INITIAL_SORT: DataTableSortState = { column: 'date', direction: 'desc' };
-
-function cycle<T>(items: T[], index: number, fallback: T): T {
-  return items.length ? items[index % items.length] : fallback;
-}
-
-const SIZING_ROWS: TournamentRow[] = (() => {
-  const { tournaments, timeControls, maxRounds, maxPlayers, hasDateRanges } =
-    TOURNAMENT_SIZING;
-  const formats = Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[];
-  const count = Math.max(tournaments.length, timeControls.length, formats.length);
-
-  return Array.from({ length: count }, (_, index) =>
-    toTournamentRow({
-      number: index,
-      ...cycle(tournaments, index, { name: '', subtitle: '' }),
-      date: WIDEST_DATE,
-      endDate: hasDateRanges ? WIDEST_END_DATE : null,
-      format: cycle(formats, index, 'swiss'),
-      timeControl: cycle(timeControls, index, ''),
-      isRated: true,
-      sectionCount: 1,
-      roundCount: maxRounds,
-      playerCount: maxPlayers,
-    }),
-  );
-})();
 
 export interface TournamentFilters {
   year: string;
@@ -246,7 +217,8 @@ export class TournamentsPageComponent implements OnInit {
     pageOf(this.filteredRows(), this.page(), this.pageSize()),
   );
 
-  protected readonly sizingRows = SIZING_ROWS;
+  // Every tournament sizes the columns, so no filter, order or page moves them
+  protected readonly sizingRows = computed(() => this.summaries().map(toTournamentRow));
 
   protected readonly rowHref = ({ summary }: TournamentRow): string =>
     `/tournaments/${summary.number}`;

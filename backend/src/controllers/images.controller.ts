@@ -62,8 +62,9 @@ async function withTransactionTimeout<T>(
     }
   };
 
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(async () => {
+    timer = setTimeout(async () => {
       timedOut = true;
       await cleanup();
       if (onTimeout) {
@@ -90,6 +91,8 @@ async function withTransactionTimeout<T>(
     }
 
     throw error;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -318,16 +321,16 @@ export async function addImages(
 ): Promise<void> {
   try {
     const files = (req.files as { [fieldname: string]: Express.Multer.File[] })['files'];
-    const imageMetadata = req.body.imageMetadata as string | string[];
+    const imageMetadata = req.body.imageMetadata as string | string[] | undefined;
+
+    if (!files?.length || !imageMetadata) {
+      res.status(400).json({ message: '[IM-5.1] No files provided' });
+      return;
+    }
 
     const parsedImageMetadataArray = (
       Array.isArray(imageMetadata) ? imageMetadata : [imageMetadata]
     ).map(metadata => JSON.parse(metadata)) as Image[];
-
-    if (!files?.length) {
-      res.status(400).json({ message: '[IM-5.1] No files provided' });
-      return;
-    }
 
     if (parsedImageMetadataArray.length !== files.length) {
       res.status(400).json({ message: '[IM-5.2] Image metadata mismatch' });
@@ -568,52 +571,47 @@ async function _getCombinedImage(
   imageSize: 'main' | 'thumbnail',
   preloaded?: { doc: Omit<Image, 'id'>; articleAppearances: number },
 ): Promise<CombinedImage | null> {
-  try {
-    const s3Key = imageSize === 'thumbnail' ? `${id}-thumb` : id;
+  const s3Key = imageSize === 'thumbnail' ? `${id}-thumb` : id;
 
-    const getCommand = new GetObjectCommand({
-      Bucket: imagesBucket(),
-      Key: s3Key,
-    });
-    const signedUrl = await getSignedUrl(r2Client(), getCommand, {
-      expiresIn: URL_EXPIRY_SECONDS,
-    });
+  const getCommand = new GetObjectCommand({
+    Bucket: imagesBucket(),
+    Key: s3Key,
+  });
+  const signedUrl = await getSignedUrl(r2Client(), getCommand, {
+    expiresIn: URL_EXPIRY_SECONDS,
+  });
 
-    let imageMetadata: Omit<Image, 'id'>;
-    let articleAppearances: number;
+  let imageMetadata: Omit<Image, 'id'>;
+  let articleAppearances: number;
 
-    if (preloaded) {
-      imageMetadata = preloaded.doc;
-      articleAppearances = preloaded.articleAppearances;
-    } else {
-      const mongoResponse = await ImageModel.findById(id).lean();
+  if (preloaded) {
+    imageMetadata = preloaded.doc;
+    articleAppearances = preloaded.articleAppearances;
+  } else {
+    const mongoResponse = await ImageModel.findById(id).lean();
 
-      if (!mongoResponse) {
-        console.error(`[IM-9.2] Image database record [${id}] not found`);
-        return null;
-      }
-
-      const { _id, ...rest } = mongoResponse;
-      imageMetadata = rest;
-      articleAppearances = await ArticleModel.countDocuments({ bannerImageId: id });
+    if (!mongoResponse) {
+      console.error(`[IM-9.2] Image database record [${id}] not found`);
+      return null;
     }
 
-    const combinedImage: CombinedImage = {
-      ...imageMetadata,
-      id,
-      urlExpirationDate: new Date(
-        new Date().getTime() + URL_EXPIRY_SECONDS * 1000,
-      ).toISOString(),
-      mainUrl: imageSize === 'main' ? signedUrl : undefined,
-      thumbnailUrl: imageSize === 'thumbnail' ? signedUrl : undefined,
-      articleAppearances,
-    };
-
-    return combinedImage;
-  } catch (error) {
-    console.error(`[IM-9.3] Error getting image for ${id}: ${error}`);
-    return null;
+    const { _id, ...rest } = mongoResponse;
+    imageMetadata = rest;
+    articleAppearances = await ArticleModel.countDocuments({ bannerImageId: id });
   }
+
+  const combinedImage: CombinedImage = {
+    ...imageMetadata,
+    id,
+    urlExpirationDate: new Date(
+      new Date().getTime() + URL_EXPIRY_SECONDS * 1000,
+    ).toISOString(),
+    mainUrl: imageSize === 'main' ? signedUrl : undefined,
+    thumbnailUrl: imageSize === 'thumbnail' ? signedUrl : undefined,
+    articleAppearances,
+  };
+
+  return combinedImage;
 }
 
 async function _processNewImages(

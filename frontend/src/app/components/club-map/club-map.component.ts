@@ -5,9 +5,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  Input,
   OnInit,
-  ViewChild,
+  input,
+  viewChild,
 } from '@angular/core';
 
 import { Club } from '@app/models';
@@ -18,12 +18,12 @@ import { environment } from '@env';
   selector: 'lcc-club-map',
   template: `
     <a
-      [href]="club.mapUrl"
+      [href]="club().mapUrl"
       rel="noopener noreferrer"
       target="_blank">
       <div
         #mapContainer
-        [id]="club.id + '-location'">
+        [id]="club().id + '-location'">
       </div>
     </a>
   `,
@@ -52,9 +52,9 @@ import { environment } from '@env';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClubMapComponent implements OnInit, AfterViewInit {
-  @ViewChild('mapContainer') mapContainer!: ElementRef<HTMLDivElement>;
+  readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
 
-  @Input({ required: true }) club!: Club;
+  readonly club = input.required<Club>();
 
   public ngOnInit(): void {
     setOptions({
@@ -70,17 +70,17 @@ export class ClubMapComponent implements OnInit, AfterViewInit {
   private async initMap(): Promise<void> {
     const mapOptions: google.maps.MapOptions = {
       cameraControl: false,
-      center: this.club.location,
+      center: this.club().location,
       clickableIcons: false,
       draggable: false,
       keyboardShortcuts: false,
-      mapId: `${this.club.id}-location`,
+      mapId: `${this.club().id}-location`,
       mapTypeControl: false,
       zoom: 15,
     };
 
     const map = await importLibrary('maps')
-      .then(({ Map }) => new Map(this.mapContainer.nativeElement, mapOptions))
+      .then(({ Map }) => new Map(this.mapContainer().nativeElement, mapOptions))
       .catch((error: unknown) =>
         console.error(`[LCC] Error creating Google Maps map: ${error}`),
       );
@@ -90,7 +90,7 @@ export class ClubMapComponent implements OnInit, AfterViewInit {
         .then(({ AdvancedMarkerElement }) => {
           new AdvancedMarkerElement({
             map,
-            position: this.club.location,
+            position: this.club().location,
           });
         })
         .catch((error: unknown) =>

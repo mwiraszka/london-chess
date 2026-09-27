@@ -1,5 +1,3 @@
-import { take } from 'rxjs/operators';
-
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import {
@@ -80,7 +78,7 @@ export class AdminControlsService {
     this.componentRef = this.overlayRef.attach(
       new ComponentPortal(AdminControlsComponent, viewContainerRef, injector),
     );
-    this.componentRef.instance.destroyed.pipe(take(1)).subscribe(() => this.close());
+    this.componentRef.instance.destroyed.subscribe(() => this.close());
 
     // The click that opened the controls must not be the one that closes them
     setTimeout(() => this.listen());

@@ -29,6 +29,10 @@ import * as EventsSelectors from './events.selectors';
 
 @Injectable()
 export class EventsEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly eventsApiService = inject(EventsApiService);
+  private readonly store = inject(Store);
+
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
@@ -292,10 +296,4 @@ export class EventsEffects {
       }),
     );
   });
-
-  constructor(
-    private readonly actions$: Actions,
-    private readonly eventsApiService: EventsApiService,
-    private readonly store: Store,
-  ) {}
 }

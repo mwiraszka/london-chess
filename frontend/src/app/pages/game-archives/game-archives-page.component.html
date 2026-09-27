@@ -109,7 +109,7 @@
     [loading]="loading()"
     [loadingRowCount]="rowCount()"
     [rowHref]="rowHref"
-    [sizingRows]="sizingRows"
+    [sizingRows]="sizingRows()"
     [sort]="sortState()"
     (rowActivate)="onOpenGame($event)"
     (sorted)="onSorted($event)">
@@ -119,7 +119,6 @@
       [page]="query().page"
       [pageSize]="query().pageSize"
       [pageSizeOptions]="pageSizes"
-      [showAllOption]="true"
       [showRangeLabel]="filteredCount() !== null"
       [totalItems]="filteredCount() ?? 0"
       (changed)="onPageChanged($event)" />

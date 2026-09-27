@@ -1,7 +1,7 @@
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter, map, pairwise, startWith } from 'rxjs/operators';
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 
 import { DialogService } from './dialog.service';
@@ -25,6 +25,9 @@ function isQueryOnlyChange(previous: string, next: string): boolean {
   providedIn: 'root',
 })
 export class RoutingService {
+  private readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
+
   private _fragmentSubject = new BehaviorSubject<string | null>(null);
 
   public readonly fragment$: Observable<string | null> =
@@ -39,10 +42,7 @@ export class RoutingService {
     return this._fragmentSubject.getValue();
   }
 
-  constructor(
-    private readonly dialogService: DialogService,
-    private readonly router: Router,
-  ) {
+  constructor() {
     const fragment = this.router.parseUrl(this.router.url).fragment;
     this._fragmentSubject.next(fragment);
 

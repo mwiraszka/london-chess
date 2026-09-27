@@ -32,10 +32,6 @@ describe('DialogButtonsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   describe('template rendering', () => {
     it('should render the button labels', () => {
       expect(queryTextContent(fixture.debugElement, '.cancel-button')).toBe('Cancel');

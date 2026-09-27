@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.3.0] - 2026-09-27
+
+### Added
+
+- Display a member's 1st, 2nd and 3rd place finishes as gold, silver and bronze trophies above the table in the Tournaments card on their profile, with the details of each trophy's tournament and a link to it shown when it is selected
+- Chart a member's rating at the start of each rated tournament on their profile, opening on the latest five years with quarterly date ticks, and scrolling or pinch-zooming back through older results
+- Add an Openings card to member profiles, with donut charts of the opening families a member played as White and as Black in the game archives
+
+### Changed
+
+- Update all components to Angular's signal-based inputs, outputs and view queries
+- Shrink the chalice and cup trophies on the tournaments page, and trim the empty space around every trophy
+- Frame the rating details on a member's profile, keeping them on one line while they fit and pairing them up once they do not
+- Give the trophies on a member's profile a little more room above them, and show the member's name in the main text colour
+- Add Playwright to the tools shown on the website changelog page
+- Let each card on a member's profile be collapsed and expanded from anywhere on its header
+- Redesign the About page's questions as a single list with an icon for each, highlighting the questions that are open, and send contact questions to the support address
+- Give the regional club cards, the club links on the home page and the admin forms the same card style as the rest of the site
+- Move the expand arrows on the website changelog's release cards to the right, in line with the rest of the site
+- Remove the option to show every game at once in the game archives
+
+### Fixed
+
+- Keep a browser that loads an older version of the site from picking up state saved by a newer one, so it starts cleanly instead of failing to show the page
+- Hold every table's columns at their final widths from the moment a page starts loading, rather than letting them jump when the data arrives or when sorting or paging
+- Leave off the separator dot at the start of a wrapped line of tournament details
+- Save an article or event that has no changes, instead of being told it could not be found
+- Report an image that fails to load from storage as an error, rather than as a missing image
+- Explain that a new profile photo must be under 5 MB, rather than failing with an unexpected error
+- Restore the saved details when leaving the editor of an album whose name contains a space
+- Keep the articles on the news page in place while they refresh in the background, rather than swapping them for placeholders
+- Ask to delete, not update, an article when deleting it from its own page
+- Write the log-in and create-account error messages as full sentences
+- Label the album editor's fields and the dialog, image viewer, calendar and admin control buttons for screen readers
+- Sort members by rating as numbers, so a rating of 985 no longer ranks above 1000
+- Fetch fresh images when saved image links have gone stale, rather than leaving the home page's album covers and article banners blank
+
 ## [v6.2.2] - 2026-09-23
 
 ### Changed
@@ -1947,6 +1984,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.3.0]: https://github.com/mwiraszka/london-chess/compare/v6.2.2...v6.3.0
 [v6.2.2]: https://github.com/mwiraszka/london-chess/compare/v6.2.1...v6.2.2
 [v6.2.1]: https://github.com/mwiraszka/london-chess/compare/v6.2.0...v6.2.1
 [v6.2.0]: https://github.com/mwiraszka/london-chess/compare/v6.1.1...v6.2.0

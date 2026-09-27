@@ -1,0 +1,61 @@
+@if (entries().length) {
+  <section
+    class="highlights"
+    aria-label="Highlights">
+    <div
+      class="cabinet"
+      role="group"
+      aria-label="Trophies won">
+      @for (entry of entries(); track entry.id) {
+        <button
+          type="button"
+          [class]="'trophy trophy--' + entry.trophy.shape"
+          [class.trophy--selected]="entry.id === selectedId()"
+          [attr.aria-pressed]="entry.id === selectedId()"
+          [attr.aria-label]="entry.description"
+          (click)="onSelect(entry)">
+          <img
+            class="trophy__image"
+            [src]="'assets/' + entry.trophy.file"
+            alt="" />
+        </button>
+      }
+    </div>
+
+    <div
+      class="details"
+      aria-live="polite">
+      @if (selected(); as entry) {
+        <p class="details__heading">
+          <span class="details__place">{{ entry.place }}</span>
+          in
+          <a
+            class="details__link lcc-link"
+            [routerLink]="['/tournaments', entry.result.tournament.number]">
+            {{ entry.tournament }}
+          </a>
+        </p>
+        <dl class="details__facts">
+          <div class="fact">
+            <dt class="fact__label">Date(s)</dt>
+            <dd class="fact__value">{{ entry.dateLabel }}</dd>
+          </div>
+          <div class="fact">
+            <dt class="fact__label">Format</dt>
+            <dd class="fact__value">{{ entry.format }}</dd>
+          </div>
+          <div class="fact">
+            <dt class="fact__label">Time control</dt>
+            <dd class="fact__value">{{ entry.timeControl }}</dd>
+          </div>
+          <div class="fact">
+            <dt class="fact__label">Score</dt>
+            <dd class="fact__value">{{ entry.scoreLabel }}</dd>
+          </div>
+        </dl>
+      }
+    </div>
+  </section>
+
+  <hr class="highlights__divider" />
+}
