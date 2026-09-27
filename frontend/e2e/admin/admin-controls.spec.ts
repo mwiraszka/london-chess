@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures';
 import { ARTICLES, PROFILE_MEMBER, UPCOMING_EVENTS } from '../seed';
-import { flipSwitch } from '../switches';
+import { setSwitch } from '../switches';
 import { bodyRows } from '../tables';
 import { logIn, openAdminControls, requireAdminCredentials } from './session';
 
@@ -18,7 +18,11 @@ test.describe('admin controls', () => {
       page.getByRole('link', { name: new RegExp(ARTICLES[1].title) }),
     );
 
+    // Delete only appears while Ctrl is held, so it is hard to hit by accident
+    await expect(controls.getByRole('button', { name: /^Delete / })).toHaveCount(0);
+    await page.keyboard.down('Control');
     await expect(controls.getByRole('button', { name: /^Delete / })).toBeEnabled();
+    await page.keyboard.up('Control');
     await expect(controls.getByRole('button', { name: /bookmark/i })).toBeVisible();
     await controls.getByRole('link', { name: /^Edit / }).click();
     await expect(page).toHaveURL(new RegExp(`/article/edit/${ARTICLES[1].id}$`));
@@ -27,7 +31,7 @@ test.describe('admin controls', () => {
 
   test('offer editing an event from the schedule list', async ({ page }) => {
     await page.goto('/schedule');
-    await flipSwitch(page, 'Calendar view');
+    await setSwitch(page, 'Calendar view', false);
 
     const controls = await openAdminControls(
       page

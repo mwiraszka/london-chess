@@ -1,8 +1,9 @@
 import { Page, expect, test } from '../fixtures';
-import { flipSwitch } from '../switches';
+import { setSwitch } from '../switches';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  clickDelete,
   confirm,
   logIn,
   openAdminControls,
@@ -12,7 +13,7 @@ import {
 
 async function findInList(page: Page, title: string) {
   await page.goto('/schedule');
-  await flipSwitch(page, 'Calendar view');
+  await setSwitch(page, 'Calendar view', false);
   await page.getByRole('textbox', { name: 'Search' }).fill(title);
   return page
     .locator('lcc-events-table')
@@ -69,7 +70,7 @@ test.describe('managing events', () => {
     await expect(page.locator('lcc-events-table')).toContainText('Rook and pawn endings');
 
     controls = await openAdminControls(edited);
-    await controls.getByRole('button', { name: /^Delete / }).click();
+    await clickDelete(controls);
     await expect(page.locator('lcc-dialog')).toContainText(`Delete ${title}?`);
     await confirm(page, 'Delete');
 

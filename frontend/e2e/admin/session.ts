@@ -61,10 +61,29 @@ export async function logIn(page: Page): Promise<string> {
 
 // Right-clicking an item is how an admin brings up its edit and delete controls
 export async function openAdminControls(item: Locator): Promise<Locator> {
+  // The controls close on scroll, and the browser fires the scroll that brings the item
+  // into view on the next frame, so it has to land before the right-click opens them
+  await item.scrollIntoViewIfNeeded();
+  await item.evaluate(
+    () =>
+      new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
   await item.click({ button: 'right' });
   const controls = item.page().locator('lcc-admin-controls');
   await expect(controls).toBeVisible();
   return controls;
+}
+
+// Delete only appears in the controls while Ctrl is held, as the test browser reports a
+// Windows machine. The click is dispatched rather than performed, since a Ctrl-held click
+// on macOS opens the context menu and Enter does not activate a button under Ctrl
+export async function clickDelete(controls: Locator): Promise<void> {
+  const keyboard = controls.page().keyboard;
+  await keyboard.down('Control');
+  await controls.getByRole('button', { name: /^Delete / }).dispatchEvent('click');
+  await keyboard.up('Control');
 }
 
 export async function confirm(page: Page, button: string): Promise<void> {

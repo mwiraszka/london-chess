@@ -4,6 +4,7 @@ import {
   API,
   APP_API,
   RESPONSE_TIMEOUT,
+  clickDelete,
   confirm,
   logIn,
   openAdminControls,
@@ -47,6 +48,8 @@ test.describe('managing articles', () => {
     await expect(card).toBeVisible();
 
     await card.click();
+    // The card holds the title as a heading too, so the address shows the navigation is done
+    await expect(page).toHaveURL(/\/article\/view\/[0-9a-f]{24}$/);
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     const articleId = page.url().split('/').pop()!;
     await page.goto(`/article/edit/${articleId}`);
@@ -71,7 +74,7 @@ test.describe('managing articles', () => {
       name: new RegExp(`${title} \\(updated\\)`),
     });
     const controls = await openAdminControls(updatedCard);
-    await controls.getByRole('button', { name: /^Delete / }).click();
+    await clickDelete(controls);
     await expect(page.locator('lcc-dialog')).toContainText(`Delete ${title} (updated)?`);
     await confirm(page, 'Delete');
 

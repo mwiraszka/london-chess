@@ -1,6 +1,6 @@
 import { Page, expect, test } from './fixtures';
 import { EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from './seed';
-import { flipSwitch } from './switches';
+import { flipSwitch, setSwitch } from './switches';
 
 const SIMUL = EVENTS.find(event => event.type === 'simul')!;
 const CLOSURE = EVENTS.find(event => event.type === 'closed')!;
@@ -18,7 +18,7 @@ function indicator(page: Page, type: string) {
 
 async function openListView(page: Page): Promise<void> {
   await page.goto('/schedule');
-  await flipSwitch(page, 'Calendar view');
+  await setSwitch(page, 'Calendar view', false);
   await expect(page.getByRole('switch', { name: 'Calendar view' })).not.toBeChecked();
 }
 

@@ -3,6 +3,7 @@ import { bodyRows } from '../tables';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  clickDelete,
   confirm,
   logIn,
   openAdminControls,
@@ -65,7 +66,7 @@ test.describe('managing members', () => {
     await expect(row).toContainText('Komoka');
 
     controls = await openAdminControls(row);
-    await controls.getByRole('button', { name: /^Delete / }).click();
+    await clickDelete(controls);
     await expect(page.locator('lcc-dialog')).toContainText(`Delete Imogen ${lastName}?`);
     await confirm(page, 'Delete');
 

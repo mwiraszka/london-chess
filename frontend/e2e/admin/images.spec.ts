@@ -4,6 +4,7 @@ import { png } from './files';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  clickDelete,
   confirm,
   logIn,
   openAdminControls,
@@ -18,7 +19,7 @@ function albumCover(page: Page, album: string) {
 async function deleteAlbum(page: Page, album: string): Promise<void> {
   await page.goto('/photo-gallery');
   const controls = await openAdminControls(albumCover(page, album));
-  await controls.getByRole('button', { name: /^Delete / }).click();
+  await clickDelete(controls);
   await expect(page.locator('lcc-dialog')).toContainText(`Delete ${album} and its`);
   await confirm(page, 'Delete');
   await expect(albumCover(page, album)).toHaveCount(0);
@@ -95,24 +96,30 @@ test.describe('managing images', () => {
     await logIn(page);
     await page.goto('/photo-gallery');
     const controls = await openAdminControls(albumCover(page, ALBUMS.picnic));
-    await controls.getByRole('link', { name: /^Edit / }).click();
-    await expect(page).toHaveURL(
+    // An album opens in its editor in a new tab
+    const [editor] = await Promise.all([
+      page.waitForEvent('popup'),
+      controls.getByRole('link', { name: /^Edit / }).click(),
+    ]);
+    await expect(editor).toHaveURL(
       new RegExp(`/album/edit/${encodeURIComponent(ALBUMS.picnic)}$`),
     );
-    const album = page.locator('#album-input');
-    const captions = page.locator('lcc-album-form input[id^="existing-caption-input-"]');
+    const album = editor.locator('#album-input');
+    const captions = editor.locator(
+      'lcc-album-form input[id^="existing-caption-input-"]',
+    );
     await expect(album).toHaveValue(ALBUMS.picnic);
     await expect(captions).toHaveCount(PICNIC_IMAGES.length);
 
     await album.fill(`${ALBUMS.picnic} renamed`);
     await captions.first().fill('A caption that was never saved');
-    await page
+    await editor
       .locator('lcc-navigation-bar')
       .getByRole('link', { name: 'News', exact: true })
       .click();
-    await confirm(page, 'Leave');
-    await expect(page).toHaveURL(/\/news$/);
-    await page.goBack();
+    await confirm(editor, 'Leave');
+    await expect(editor).toHaveURL(/\/news$/);
+    await editor.goBack();
 
     await expect(album).toHaveValue(ALBUMS.picnic);
     await expect(captions).toHaveCount(PICNIC_IMAGES.length);
