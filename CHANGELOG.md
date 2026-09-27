@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Write the log-in and create-account error messages as full sentences
 - Label the album editor's fields and the dialog, image viewer, calendar and admin control buttons for screen readers
 - Sort members by rating as numbers, so a rating of 985 no longer ranks above 1000
+- Fetch fresh images when saved image links have gone stale, rather than leaving the home page's album covers and article banners blank
 
 ## [v6.2.2] - 2026-09-23
 
