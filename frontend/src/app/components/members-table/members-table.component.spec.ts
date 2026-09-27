@@ -199,6 +199,21 @@ describe('MembersTableComponent', () => {
 
       expect(sizingRows.map(row => row.member)).toEqual([MOCK_MEMBERS[1]]);
     });
+
+    it('should give the table numeric rating keys, so a page stays in rating order', () => {
+      fixture.componentRef.setInput('widestMembers', [
+        { ...MOCK_MEMBERS[1], rating: '985', peakRating: '1800/12' },
+      ]);
+      fixture.detectChanges();
+
+      const [row]: MemberRow[] = query(
+        fixture.debugElement,
+        'ea-data-table',
+      ).componentInstance.sizingRows();
+
+      expect(row.rating).toBe(985.1);
+      expect(row.peakRating).toBe(1800.012);
+    });
   });
 
   describe('for admins', () => {

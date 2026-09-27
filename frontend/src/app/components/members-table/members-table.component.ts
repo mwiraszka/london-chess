@@ -3,6 +3,7 @@ import {
   DataTableSortState,
   EmptyStateComponent,
   FilterXIconComponent,
+  PAGE_SIZE_ALL,
   PaginatorComponent,
   PaginatorState,
   TrophyIconComponent,
@@ -36,7 +37,7 @@ import {
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
 import { DialogService, StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
-import { isCityChampion, pageRowCount } from '@app/utils';
+import { isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
 
 // The sort keys hold what the server sorts by, so a page keeps the order it came in
 export interface MemberRow {
@@ -46,8 +47,8 @@ export interface MemberRow {
   name: string;
   firstName: string;
   lastName: string;
-  rating: string;
-  peakRating: string;
+  rating: number;
+  peakRating: number;
   city: string;
   chessComUsername: string;
   lichessUsername: string;
@@ -66,8 +67,8 @@ function toMemberRow(member: Member, number: number): MemberRow {
     name: `${member.lastName}, ${member.firstName}`,
     firstName: member.firstName,
     lastName: member.lastName,
-    rating: member.rating,
-    peakRating: member.peakRating,
+    rating: ratingSortValue(member.rating),
+    peakRating: ratingSortValue(member.peakRating),
     city: member.city,
     chessComUsername: member.chessComUsername,
     lichessUsername: member.lichessUsername,
@@ -150,9 +151,20 @@ export class MembersTableComponent {
     this.members().map((member, index) => toMemberRow(member, this.startIndex() + index)),
   );
 
+  // The page's last row number set in nines, the widest digits, so the # column holds its
+  // width before any member arrives
+  private readonly widestRowNumber = computed(() => {
+    const { page, pageSize } = this.options();
+    const lastRow =
+      pageSize === PAGE_SIZE_ALL
+        ? (this.filteredCount() ?? MEMBERS_PAGE_SIZES[0])
+        : page * pageSize;
+    return 10 ** String(lastRow).length - 1;
+  });
+
   // Sized from the first skeleton on by the widest of every member, not just this page
   protected readonly sizingRows = computed(() =>
-    this.widestMembers().map((member, index) => toMemberRow(member, index + 1)),
+    this.widestMembers().map(member => toMemberRow(member, this.widestRowNumber())),
   );
 
   protected readonly columns = computed<DataTableColumn<MemberRow>[]>(() => {

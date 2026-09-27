@@ -19,6 +19,7 @@ export {
   playerScores,
   resultLabel,
 } from './chess/player-name.util';
+export { ratingSortValue } from './chess/rating-sort-value.util';
 export { trophyForResult, trophyShapeFor } from './chess/trophies.util';
 
 export { areSame } from './common/are-same.util';
