@@ -293,12 +293,6 @@ describe('MemberTournamentsComponent', () => {
       render(2);
     });
 
-    it('should fetch them', () => {
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
-      );
-    });
-
     it('should hold the table with skeleton rows', () => {
       expect(bodyRows()).toHaveLength(3);
       expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(7);

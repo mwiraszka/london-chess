@@ -57,6 +57,7 @@ describe('GamesEffects', () => {
             getPlayers: vi.fn(),
             getTournaments: vi.fn(),
             getSummary: vi.fn(),
+            getMemberOpenings: vi.fn(),
           },
         },
       ],
@@ -173,6 +174,42 @@ describe('GamesEffects', () => {
 
         effects.fetchGame$.subscribe(action => {
           expect(action).toEqual(GamesActions.fetchGameFailed({ error: mockError }));
+          done();
+        });
+      }));
+  });
+
+  describe('fetchMemberOpenings$', () => {
+    const openings = {
+      white: [{ opening: 'Italian Game', gameCount: 3 }],
+      black: [{ opening: 'Sicilian Defence', gameCount: 2 }],
+    };
+
+    it("should fetch the member's openings", () =>
+      withDone(done => {
+        gamesApiService.getMemberOpenings.mockReturnValue(of({ data: openings }));
+
+        actions$.next(GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }));
+
+        effects.fetchMemberOpenings$.subscribe(action => {
+          expect(gamesApiService.getMemberOpenings).toHaveBeenCalledWith(7);
+          expect(action).toEqual(
+            GamesActions.fetchMemberOpeningsSucceeded({ memberNumber: 7, openings }),
+          );
+          done();
+        });
+      }));
+
+    it('should report a failed fetch', () =>
+      withDone(done => {
+        gamesApiService.getMemberOpenings.mockReturnValue(throwError(() => mockError));
+
+        actions$.next(GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }));
+
+        effects.fetchMemberOpenings$.subscribe(action => {
+          expect(action).toEqual(
+            GamesActions.fetchMemberOpeningsFailed({ error: mockError }),
+          );
           done();
         });
       }));

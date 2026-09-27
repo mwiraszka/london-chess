@@ -1,5 +1,6 @@
 import { AvatarComponent, BadgeComponent } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { isEqual } from 'lodash';
 import { BehaviorSubject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -11,17 +12,23 @@ import {
 } from '@angular/router';
 
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
+import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
 import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
+import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
 import { Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
+import { GamesActions, initialState as gamesInitialState } from '@app/store/games';
 import {
   MembersActions,
   MembersSelectors,
   initialState as membersInitialState,
 } from '@app/store/members';
-import { initialState as tournamentsInitialState } from '@app/store/tournaments';
+import {
+  TournamentsActions,
+  initialState as tournamentsInitialState,
+} from '@app/store/tournaments';
 import { CITY_CHAMPION, query, queryAll, queryTextContent } from '@app/utils';
 
 import { MemberProfilePageComponent } from './member-profile-page.component';
@@ -72,6 +79,7 @@ describe('MemberProfilePageComponent', () => {
         provideMockStore({
           initialState: {
             authState: authInitialState,
+            gamesState: gamesInitialState,
             membersState: membersInitialState,
             tournamentsState: tournamentsInitialState,
           },
@@ -86,6 +94,78 @@ describe('MemberProfilePageComponent', () => {
 
     store = TestBed.inject(MockStore);
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
+  });
+
+  describe("the member's openings", () => {
+    it('should be fetched once for the openings card', () => {
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+      createComponent();
+
+      const fetch = GamesActions.fetchMemberOpeningsRequested({
+        memberNumber: Number(member.number),
+      });
+      expect(
+        dispatchSpy.mock.calls.filter(([action]) => isEqual(action, fetch)),
+      ).toHaveLength(1);
+    });
+
+    it('should not be fetched again when already in the store', () => {
+      store.setState({
+        authState: authInitialState,
+        gamesState: {
+          ...gamesInitialState,
+          memberOpenings: { [Number(member.number)]: { white: [], black: [] } },
+        },
+        membersState: membersInitialState,
+        tournamentsState: tournamentsInitialState,
+      });
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+      createComponent();
+
+      expect(dispatchSpy).not.toHaveBeenCalledWith(
+        GamesActions.fetchMemberOpeningsRequested({
+          memberNumber: Number(member.number),
+        }),
+      );
+    });
+  });
+
+  describe("the member's tournament results", () => {
+    it('should be fetched once for the rating and tournaments cards', () => {
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+      createComponent();
+
+      const fetch = TournamentsActions.fetchMemberTournamentsRequested({
+        memberNumber: Number(member.number),
+      });
+      expect(
+        dispatchSpy.mock.calls.filter(([action]) => isEqual(action, fetch)),
+      ).toHaveLength(1);
+    });
+
+    it('should not be fetched again when already in the store', () => {
+      store.setState({
+        authState: authInitialState,
+        gamesState: gamesInitialState,
+        membersState: membersInitialState,
+        tournamentsState: {
+          ...tournamentsInitialState,
+          memberResults: { [Number(member.number)]: MOCK_MEMBER_TOURNAMENT_RESULTS },
+        },
+      });
+      const dispatchSpy = vi.spyOn(store, 'dispatch');
+
+      createComponent();
+
+      expect(dispatchSpy).not.toHaveBeenCalledWith(
+        TournamentsActions.fetchMemberTournamentsRequested({
+          memberNumber: Number(member.number),
+        }),
+      );
+    });
   });
 
   describe('once the member has loaded', () => {
@@ -105,6 +185,15 @@ describe('MemberProfilePageComponent', () => {
       ).componentInstance;
 
       expect(tournaments.memberNumber()).toBe(member.number);
+    });
+
+    it("should chart the member's rating progression", () => {
+      const ratingProgression: RatingProgressionComponent = query(
+        fixture.debugElement,
+        'lcc-rating-progression',
+      ).componentInstance;
+
+      expect(ratingProgression.memberNumber()).toBe(member.number);
     });
 
     it('should render the member name, avatar and ratings', () => {
@@ -215,7 +304,9 @@ describe('MemberProfilePageComponent', () => {
     });
 
     it('should not render skeletons', () => {
-      expect(queryAll(fixture.debugElement, '.profile-card ea-skeleton')).toHaveLength(0);
+      expect(queryAll(fixture.debugElement, '.profile-card > ea-skeleton')).toHaveLength(
+        0,
+      );
       expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe(
         'false',
       );
@@ -224,6 +315,7 @@ describe('MemberProfilePageComponent', () => {
     it('should keep showing the member when a later refresh fails', () => {
       store.setState({
         authState: authInitialState,
+        gamesState: gamesInitialState,
         membersState: { ...membersInitialState, failedLoads: ['member'] },
         tournamentsState: tournamentsInitialState,
       });
@@ -299,6 +391,7 @@ describe('MemberProfilePageComponent', () => {
     beforeEach(() => {
       store.setState({
         authState: authInitialState,
+        gamesState: gamesInitialState,
         membersState: { ...membersInitialState, failedLoads: ['member'] },
         tournamentsState: tournamentsInitialState,
       });

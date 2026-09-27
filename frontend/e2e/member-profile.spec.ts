@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { holdRequests } from './requests';
 import {
   BLITZ,
   CHAMPIONSHIP,
@@ -115,4 +116,35 @@ test('marks the reigning city champion on their profile', async ({ page }) => {
     }),
   ).toBeVisible();
   await expect(page.locator('main a.champion-link[href="/city-champion"]')).toBeVisible();
+});
+
+test.describe('member rating progression', () => {
+  test('charts the rating without moving a pixel as it loads', async ({ page }) => {
+    const results = await holdRequests(page, /\/v1\/tournaments\/members\//);
+    await page.goto(`/members/${PROFILE_MEMBER.number}`);
+    const card = page
+      .locator('lcc-collapsible-card')
+      .filter({ has: page.locator('lcc-rating-progression') });
+    const skeleton = card.locator('.rating-progression__skeleton');
+    await expect(skeleton).toBeVisible();
+    await expect.poll(results.count).toBeGreaterThan(0);
+    const before = await card.boundingBox();
+
+    await results.release();
+
+    await expect(card.locator('ea-line-chart svg')).toBeVisible();
+    await expect(skeleton).toHaveCount(0);
+    expect(await card.boundingBox()).toEqual(before);
+  });
+
+  test("plots the member's rating across their rated tournaments", async ({ page }) => {
+    await page.goto(`/members/${PROFILE_MEMBER.number}`);
+
+    const chart = page.getByRole('group', {
+      name: /Rating at each rated tournament, oldest first/,
+    });
+
+    await expect(chart).toBeVisible();
+    await expect(chart.locator('.ea-line-chart__point')).not.toHaveCount(0);
+  });
 });

@@ -102,6 +102,8 @@ export type MemberTournamentResult = Pick<
   >;
   section: string;
   roundCount: number;
+  // Rounds the member actually played in this section, excluding byes and forfeits
+  roundsPlayed: number;
   isDoubleRound: boolean;
   playerCount: number;
 };

@@ -160,15 +160,9 @@
       </div>
 
       <div class="profile-card">
-        <ea-card
-          class="rating-progression-card"
-          [fullWidth]="true">
-          <h3 slot="header">Rating progression</h3>
-          <div class="rating-progression-placeholder">
-            <ea-icon-bar-chart class="placeholder-icon" />
-            <p>A graph of this member's rating over time is coming soon.</p>
-          </div>
-        </ea-card>
+        <lcc-collapsible-card heading="Rating progression">
+          <lcc-rating-progression [memberNumber]="vm.memberNumber" />
+        </lcc-collapsible-card>
         @if (!vm.member) {
           <ea-skeleton
             variant="rect"
@@ -178,7 +172,13 @@
       </div>
 
       @if (vm.member) {
-        <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
+        <lcc-collapsible-card heading="Tournaments">
+          <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
+        </lcc-collapsible-card>
+
+        <lcc-collapsible-card heading="Openings">
+          <lcc-member-openings [memberNumber]="vm.memberNumber" />
+        </lcc-collapsible-card>
       }
     </div>
   }

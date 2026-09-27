@@ -38,6 +38,8 @@ export type {
   GamesSortBy,
   GamesSummary,
   ArchiveTournament,
+  MemberOpenings,
+  OpeningCount,
 } from './game.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {

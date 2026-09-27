@@ -69,6 +69,25 @@ export class GamesEffects {
     );
   });
 
+  fetchMemberOpenings$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(GamesActions.fetchMemberOpeningsRequested),
+      switchMap(({ memberNumber }) =>
+        this.gamesApiService.getMemberOpenings(memberNumber).pipe(
+          map(response =>
+            GamesActions.fetchMemberOpeningsSucceeded({
+              memberNumber,
+              openings: response.data,
+            }),
+          ),
+          catchError(error =>
+            of(GamesActions.fetchMemberOpeningsFailed({ error: this.parseError(error) })),
+          ),
+        ),
+      ),
+    );
+  });
+
   fetchArchiveReference$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(GamesActions.fetchArchiveReferenceRequested),

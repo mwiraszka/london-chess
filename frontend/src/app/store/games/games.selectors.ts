@@ -65,6 +65,17 @@ export const selectGameStatus = (id: Id) =>
     loadStatus(!!game, failedLoads.includes('game')),
   );
 
+export const selectMemberOpenings = (memberNumber: number) =>
+  createSelector(selectGamesState, state => state.memberOpenings[memberNumber] ?? null);
+
+export const selectMemberOpeningsStatus = (memberNumber: number) =>
+  createSelector(
+    selectMemberOpenings(memberNumber),
+    selectFailedLoads,
+    (openings, failedLoads) =>
+      loadStatus(openings !== null, failedLoads.includes('member-openings')),
+  );
+
 export const selectIsFetchingFiltered = createSelector(
   selectGamesState,
   state => state.isFetchingFiltered,

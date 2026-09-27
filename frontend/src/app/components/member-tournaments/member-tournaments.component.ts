@@ -1,5 +1,4 @@
 import {
-  CardComponent,
   DataTableSortState,
   PaginatorComponent,
   PaginatorState,
@@ -7,7 +6,7 @@ import {
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
-import { map, switchMap, take } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
 import {
   ChangeDetectionStrategy,
@@ -20,7 +19,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
 import {
@@ -104,7 +103,6 @@ type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
   templateUrl: './member-tournaments.component.html',
   styleUrl: './member-tournaments.component.scss',
   imports: [
-    CardComponent,
     DataTableComponent,
     LoadFailedComponent,
     MemberHighlightsComponent,
@@ -242,27 +240,6 @@ export class MemberTournamentsComponent {
 
   protected readonly rowHref = ({ result }: ResultRow): string =>
     `/tournaments/${result.tournament.number}`;
-
-  constructor() {
-    // Fetched once a visit, as tournaments only change by import
-    this.memberNumber$
-      .pipe(
-        switchMap(memberNumber =>
-          this.store.select(TournamentsSelectors.selectMemberResults(memberNumber)).pipe(
-            take(1),
-            map(results => ({ memberNumber, results })),
-          ),
-        ),
-        takeUntilDestroyed(),
-      )
-      .subscribe(({ memberNumber, results }) => {
-        if (!results) {
-          this.store.dispatch(
-            TournamentsActions.fetchMemberTournamentsRequested({ memberNumber }),
-          );
-        }
-      });
-  }
 
   public onSorted({ column, direction }: DataTableSortState): void {
     this.sortState.set(direction ? { column, direction } : INITIAL_SORT);

@@ -110,5 +110,13 @@ describe('GamesApiService', () => {
 
       httpMock.expectOne(`${apiBaseUrl}/summary`).flush({ data: MOCK_GAMES_SUMMARY });
     });
+
+    it("should request a member's openings", () => {
+      service.getMemberOpenings(7).subscribe();
+
+      httpMock
+        .expectOne(`${apiBaseUrl}/members/7/openings`)
+        .flush({ data: { white: [], black: [] } });
+    });
   });
 });

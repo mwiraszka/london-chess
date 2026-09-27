@@ -40,6 +40,16 @@ export interface ArchivePlayer extends GamePlayer {
   gameCount: number;
 }
 
+export interface OpeningCount {
+  opening: string;
+  gameCount: number;
+}
+
+export interface MemberOpenings {
+  white: OpeningCount[];
+  black: OpeningCount[];
+}
+
 export interface ArchiveTournament {
   name: string;
   sections: string[];

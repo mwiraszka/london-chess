@@ -1,0 +1,31 @@
+<ea-card
+  class="collapsible-card"
+  headerAlign="start"
+  [fullWidth]="true">
+  <div
+    slot="header"
+    class="collapsible-card__header"
+    (click)="onToggle()">
+    <h3 class="collapsible-card__heading">
+      <button
+        type="button"
+        class="collapsible-card__toggle"
+        [attr.aria-controls]="bodyId"
+        [attr.aria-expanded]="expanded()">
+        <span>{{ heading() }}</span>
+        <ea-icon-chevron-down
+          class="collapsible-card__chevron"
+          aria-hidden="true"
+          [class.collapsible-card__chevron--expanded]="expanded()" />
+      </button>
+    </h3>
+  </div>
+
+  @if (expanded()) {
+    <div
+      class="collapsible-card__body"
+      [attr.id]="bodyId">
+      <ng-content />
+    </div>
+  }
+</ea-card>

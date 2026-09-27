@@ -13,6 +13,7 @@ import {
   GamesQuery,
   GamesSummary,
   Id,
+  MemberOpenings,
   PaginatedItems,
 } from '@app/models';
 
@@ -55,6 +56,14 @@ export class GamesApiService {
   public getSummary(): Observable<ApiResponse<GamesSummary>> {
     return this.http.get<ApiResponse<GamesSummary>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/summary`,
+    );
+  }
+
+  public getMemberOpenings(
+    memberNumber: number,
+  ): Observable<ApiResponse<MemberOpenings>> {
+    return this.http.get<ApiResponse<MemberOpenings>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/members/${memberNumber}/openings`,
     );
   }
 
