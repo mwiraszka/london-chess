@@ -3,7 +3,7 @@ import { setupClerkTestingToken } from '@clerk/testing/playwright';
 import { MISSING_CREDENTIALS_REASON, adminCredentials } from '../admin-credentials';
 import { Locator, Page, expect, test } from '../fixtures';
 
-export const API = 'http://localhost:3000/v1';
+export const API = 'http://localhost:3300/v1';
 
 // Clerk accepts this code for any address containing +clerk_test on a development instance
 const TEST_VERIFICATION_CODE = '424242';

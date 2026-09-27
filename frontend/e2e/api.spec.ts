@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures';
 import { CHAMPIONSHIP_IMAGES, UNAVAILABLE_IMAGE } from './seed';
 
-const API = 'http://localhost:3000/v1';
+const API = 'http://localhost:3300/v1';
 
 test.describe('API', () => {
   test('reports an image storage cannot provide as a failure, not as missing', async ({

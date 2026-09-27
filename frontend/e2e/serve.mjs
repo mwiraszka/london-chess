@@ -1,12 +1,14 @@
-// Serves the built app for the end-to-end suite, answering every unknown path with the
-// app itself so deep links route on the client, as the hosted site does
+// Serves the built app for the end-to-end suite on its own port, answering every unknown
+// path with the app so deep links route on the client, and passing API calls on to the
+// seeded API so the browser only ever talks to this origin
 import { createReadStream, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, request as forward } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../dist', import.meta.url));
-const PORT = 4200;
+const PORT = 4300;
+const API_PORT = 3300;
 
 const TYPES = {
   '.css': 'text/css',
@@ -22,7 +24,33 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
+function passToApi(request, response) {
+  const upstream = forward(
+    {
+      host: 'localhost',
+      port: API_PORT,
+      method: request.method,
+      path: request.url,
+      headers: request.headers,
+    },
+    apiResponse => {
+      response.writeHead(apiResponse.statusCode ?? 502, apiResponse.headers);
+      apiResponse.pipe(response);
+    },
+  );
+  upstream.on('error', () => {
+    response.writeHead(502);
+    response.end();
+  });
+  request.pipe(upstream);
+}
+
 createServer((request, response) => {
+  if (request.url.startsWith('/v1/')) {
+    passToApi(request, response);
+    return;
+  }
+
   const path = normalize(decodeURIComponent(new URL(request.url, 'http://e2e').pathname));
   const file = join(ROOT, path);
   const found = file.startsWith(ROOT) && existsSync(file) && statSync(file).isFile();

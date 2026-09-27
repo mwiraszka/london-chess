@@ -6,7 +6,7 @@ import { STORAGE_PORT, UNAVAILABLE_IMAGE } from './seed-data';
 // Serves the API for the end-to-end suite against a throwaway database seeded on every
 // start. Storage and email are faked in this process; Clerk is the development instance,
 // used only to verify sessions and to find the test account to make an admin
-const API_PORT = 3000;
+const API_PORT = 3300;
 
 const { CLERK_SECRET_KEY, E2E_ADMIN_EMAIL } = process.env;
 
