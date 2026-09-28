@@ -82,8 +82,8 @@ export const imagesSortingConfig: SortingConfig = {
     uploadDate: 'modificationInfo.dateCreated',
   },
   secondarySort: {
-    uploadDate: 'filename',
-    album: 'albumOrdinality',
+    uploadDate: ['filename'],
+    album: ['albumOrdinality'],
   },
   searchableFields: ['caption', 'filename', 'album'],
 };

@@ -146,8 +146,8 @@ export const memberSortingConfig: SortingConfig = {
     lastUpdated: 'modificationInfo.dateLastEdited',
   },
   secondarySort: {
-    name: 'firstName',
-    lastName: 'firstName',
+    name: ['firstName'],
+    lastName: ['firstName'],
   },
   searchableFields: [
     'firstName',

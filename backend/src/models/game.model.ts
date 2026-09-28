@@ -110,12 +110,12 @@ export const gameSortingConfig: SortingConfig = {
     moves: 'plyCount',
   },
   secondarySort: {
-    date: 'round',
-    result: 'date',
-    tournament: 'date',
-    plyCount: 'date',
-    moves: 'date',
-    eco: 'date',
+    date: ['round'],
+    result: ['date'],
+    tournament: ['section', 'date', 'round'],
+    plyCount: ['date'],
+    moves: ['date'],
+    eco: ['date'],
   },
   searchableFields: [],
 };

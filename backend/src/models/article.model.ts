@@ -38,7 +38,7 @@ export const articleTypes: Record<keyof Article, string | string[]> = {
 export const articleSortingConfig: SortingConfig = {
   fieldMappings: {},
   secondarySort: {
-    bookmarkDate: 'modificationInfo.dateCreated',
+    bookmarkDate: ['modificationInfo.dateCreated'],
   },
   searchableFields: [
     'title',
