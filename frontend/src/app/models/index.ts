@@ -14,7 +14,7 @@ export type { ChangelogRelease, ChangelogTag } from './changelog.model';
 export type { ChampionshipTableRowData } from './championship-data.model';
 export type { Club, ClubDocument } from './club.model';
 export type { Id, IsoDate, Pixels, Url } from './core.model';
-export type { DateFormat } from './date-format.model';
+export type { DateFormat, MonthStyle } from './date-format.model';
 export type {
   BasicDialogResult,
   Dialog,

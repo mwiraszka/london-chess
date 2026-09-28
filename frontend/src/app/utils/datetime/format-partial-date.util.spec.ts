@@ -12,4 +12,9 @@ describe('formatPartialDate', () => {
   it('should show only the year when nothing more is known', () => {
     expect(formatPartialDate('1996')).toBe('1996');
   });
+
+  it('should shorten the month when asked to', () => {
+    expect(formatPartialDate('2023-12-07', 'short')).toBe('Dec 7, 2023');
+    expect(formatPartialDate('1996-05', 'short')).toBe('May 1996');
+  });
 });

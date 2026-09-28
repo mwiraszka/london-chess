@@ -72,7 +72,7 @@ describe('MemberHighlightsComponent', () => {
         '/tournaments/90',
       );
       expect(queryAll(fixture.debugElement, '.fact__value').map(textOf)).toEqual([
-        'October 19, 2023',
+        'Oct 19, 2023',
         'Swiss',
         'G25',
         '2½ / 3',

@@ -10,3 +10,5 @@ export type DateFormat =
   | 'short month-day-year'
   | 'time'
   | 'year';
+
+export type MonthStyle = 'long' | 'short';

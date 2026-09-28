@@ -21,4 +21,15 @@ describe('formatDateRange', () => {
       'December 4, 2025 – January 8, 2026',
     );
   });
+
+  it('should shorten the months when asked to', () => {
+    expect(formatDateRange('2025-09-04', null, 'short')).toBe('Sep 4, 2025');
+    expect(formatDateRange('2025-09-04', '2025-09-25', 'short')).toBe('Sep 4–25, 2025');
+    expect(formatDateRange('2025-09-04', '2025-10-09', 'short')).toBe(
+      'Sep 4 – Oct 9, 2025',
+    );
+    expect(formatDateRange('2025-12-04', '2026-01-08', 'short')).toBe(
+      'Dec 4, 2025 – Jan 8, 2026',
+    );
+  });
 });

@@ -74,7 +74,7 @@ function toResultRow(result: MemberTournamentResult, index: number): ResultRow {
     id: `${index}-${tournament.number}`,
     result,
     date: tournament.date,
-    dateLabel: formatDateRange(tournament.date, tournament.endDate),
+    dateLabel: formatDateRange(tournament.date, tournament.endDate, 'short'),
     tournament: tournament.name,
     section: shortenSubtitle(result.section),
     format: TOURNAMENT_FORMAT_LABELS[tournament.format],
