@@ -128,14 +128,7 @@
   #ratingCell
   let-row>
   @if (row.rating !== null) {
-    {{ row.rating }}
-    @if (row.provisionalGames) {
-      <span
-        class="crosstable__provisional"
-        [eaTooltip]="'Provisional, from ' + row.provisionalGames + ' games'">
-        P{{ row.provisionalGames }}
-      </span>
-    }
+    {{ row.provisionalGames ? row.rating + '/' + row.provisionalGames : row.rating }}
   } @else {
     <span class="crosstable__unrated">Unrated</span>
   }

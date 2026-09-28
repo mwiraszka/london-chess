@@ -120,7 +120,7 @@ describe('TournamentPageComponent', () => {
       ]);
       expect(tableRows(table)).toEqual([
         ['1', 'Doe, John', '1850', 'W2', 'H', 'W3', '2½'],
-        ['2', 'Smith, Jane', '1640 P6', 'L1', 'W3', 'U', '1'],
+        ['2', 'Smith, Jane', '1640/6', 'L1', 'W3', 'U', '1'],
         ['3', 'Bloggs, Joe', 'Unrated', 'B', 'L2', 'L1', '0'],
       ]);
     });
