@@ -161,11 +161,17 @@
   }
 }
 
+// The stats' frame, which the accounts beside them drop below to keep their top lines level
+$stats-inset: 12px;
+$stats-border-width: 1px;
+$accounts-inset: $stats-inset + $stats-border-width;
+
+// The row gap gives back the accounts' inset, so once they wrap they sit the usual 16px below
 .facts {
   display: flex;
   flex-flow: row wrap;
   justify-content: space-between;
-  gap: 16px 48px;
+  gap: (16px - $accounts-inset) 48px;
   margin-top: 16px;
 
   @container (width < 560px) {
@@ -174,19 +180,23 @@
   }
 }
 
-// The stats' frame, which the accounts beside them drop below to keep their top lines level
-$stats-inset: 12px;
-$stats-border-width: 1px;
-
-// The stats wrap a pair at a time, so they sit in one row or two by two, never three over one
+// The stats sit a pair at a time, in one row or two by two, never three over one, and a
+// stacked pair centres with the other as one block
 .stats {
-  display: flex;
+  display: grid;
   flex: 0 1 auto;
-  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px 32px;
+  grid-auto-columns: minmax(0, max-content);
+  grid-auto-flow: column;
   padding: $stats-inset 24px;
   border: $stats-border-width solid var(--lcc-color--general-dividerLine);
   border-radius: var(--lcc-borderRadius--small);
+
+  @container (width < 560px) {
+    align-self: stretch;
+    grid-auto-flow: row;
+  }
 
   .stats__pair {
     display: flex;
@@ -220,7 +230,7 @@ $stats-border-width: 1px;
   align-content: start;
   gap: 8px 12px;
   grid-template-columns: auto auto;
-  padding-top: $stats-inset + $stats-border-width;
+  padding-top: $accounts-inset;
 
   .platform {
     display: inline-flex;
