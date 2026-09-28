@@ -37,16 +37,28 @@ describe('PullToRefreshIndicatorComponent', () => {
     pullProgress.set(0.5);
     fixture.detectChanges();
 
-    expect(query(fixture.debugElement, 'ea-icon-refresh-cw.indicator')).toBeTruthy();
+    expect(query(fixture.debugElement, '.indicator ea-icon-refresh-cw')).toBeTruthy();
+    expect(query(fixture.debugElement, '.indicator--refreshing')).toBeFalsy();
     expect(host().style.getPropertyValue('--lcc-pull-progress')).toBe('0.5');
   });
 
-  it('should show nothing once the pull is released and the refresh runs', () => {
+  it('should keep the arrows spinning, fully drawn, while the refresh runs', () => {
     pullProgress.set(1);
     fixture.detectChanges();
 
     pullProgress.set(0);
     isRefreshing.set(true);
+    fixture.detectChanges();
+
+    expect(query(fixture.debugElement, '.indicator--refreshing')).toBeTruthy();
+    expect(host().style.getPropertyValue('--lcc-pull-progress')).toBe('1');
+  });
+
+  it('should hide once the refresh is over', () => {
+    isRefreshing.set(true);
+    fixture.detectChanges();
+
+    isRefreshing.set(false);
     fixture.detectChanges();
 
     expect(query(fixture.debugElement, '.indicator')).toBeFalsy();
