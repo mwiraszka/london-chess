@@ -29,9 +29,9 @@
                 <div class="identity-text">
                   <h3 class="member-name">
                     <span
-                      #memberName
                       class="member-name__text"
-                      [tooltip]="isNameTruncated() ? fullName(member) : null">
+                      [eaTooltip]="fullName(member)"
+                      [whenClipped]="true">
                       <span class="member-name__first">
                         {{ member.firstName }}
                       </span>
@@ -42,13 +42,13 @@
                     @if (member.isAdmin) {
                       <ea-icon-shield-check
                         class="admin-icon"
-                        tooltip="Club admin" />
+                        eaTooltip="Club admin" />
                     }
                     @if (isCityChampion(member)) {
                       <a
                         class="champion-link"
                         routerLink="/city-champion"
-                        tooltip="2025 City Champion">
+                        eaTooltip="2025 City Champion">
                         <ea-icon-trophy class="champion-icon" />
                       </a>
                     }

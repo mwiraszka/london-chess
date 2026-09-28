@@ -147,8 +147,6 @@ $narrow-scale: 0.75;
 }
 
 .highlights__divider {
-  width: 100%;
+  display: block;
   margin: 32px 0;
-  border: 0;
-  border-top: 1px solid var(--lcc-color--general-dividerLine);
 }

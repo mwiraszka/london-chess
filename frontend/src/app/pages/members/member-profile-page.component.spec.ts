@@ -1,4 +1,4 @@
-import { AvatarComponent, BadgeComponent } from '@eagami/ui';
+import { AvatarComponent, BadgeComponent, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { isEqual } from 'lodash';
 import { BehaviorSubject } from 'rxjs';
@@ -13,7 +13,6 @@ import {
 
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
 import { Member } from '@app/models';
@@ -346,44 +345,18 @@ describe('MemberProfilePageComponent', () => {
     expect(query(fixture.debugElement, 'lcc-member-tournaments')).toBeFalsy();
   });
 
-  describe('when the name no longer fits', () => {
-    let resizeCallbacks: Array<() => void>;
-
+  describe('once the member loads', () => {
     beforeEach(() => {
-      resizeCallbacks = [];
-      vi.stubGlobal(
-        'ResizeObserver',
-        class {
-          constructor(callback: () => void) {
-            resizeCallbacks.push(callback);
-          }
-          public observe = vi.fn();
-          public disconnect = vi.fn();
-        },
-      );
       createComponent();
     });
 
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
+    it('should offer the full name as a tooltip while it is cut off', () => {
+      const tooltip = query(fixture.debugElement, '.member-name__text').injector.get(
+        TooltipDirective,
+      );
 
-    it('should offer the full name as a tooltip only while it is cut off', () => {
-      const tooltip = (): TooltipDirective =>
-        query(fixture.debugElement, '.member-name__text').injector.get(TooltipDirective);
-      const lastName: HTMLElement = query(
-        fixture.debugElement,
-        '.member-name__last',
-      ).nativeElement;
-
-      expect(tooltip().tooltip()).toBeNull();
-
-      Object.defineProperty(lastName, 'scrollWidth', { configurable: true, value: 120 });
-      Object.defineProperty(lastName, 'clientWidth', { configurable: true, value: 80 });
-      resizeCallbacks.forEach(callback => callback());
-      fixture.detectChanges();
-
-      expect(tooltip().tooltip()).toBe(`${member.firstName} ${member.lastName}`);
+      expect(tooltip.eaTooltip()).toBe(`${member.firstName} ${member.lastName}`);
+      expect(tooltip.whenClipped()).toBe(true);
     });
   });
 

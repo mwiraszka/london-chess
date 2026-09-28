@@ -1,3 +1,5 @@
+import { DividerComponent } from '@eagami/ui';
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -64,7 +66,7 @@ function toTrophyEntry(result: MemberTournamentResult): TrophyEntry | null {
   selector: 'lcc-member-highlights',
   templateUrl: './member-highlights.component.html',
   styleUrl: './member-highlights.component.scss',
-  imports: [RouterLink],
+  imports: [DividerComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberHighlightsComponent {
