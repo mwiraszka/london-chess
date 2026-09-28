@@ -158,13 +158,12 @@ test.describe('pull to refresh', () => {
     hasTouch: true,
   });
 
-  test('shows the arrow only while pulling, then refreshes the data', async ({
-    page,
-  }) => {
+  test('keeps the arrow spinning until the refreshed data is back', async ({ page }) => {
     await page.goto('/');
     const articleCards = page.locator('.articles-section a.article:not(.skeleton)');
     await expect(articleCards.first()).toBeVisible();
     const arrow = page.locator('lcc-pull-to-refresh-indicator ea-icon-refresh-cw');
+    const spinning = page.locator('lcc-pull-to-refresh-indicator .indicator--refreshing');
     const lists = await holdRequests(page, LISTS);
 
     await touch(page, 'touchstart', 100);
@@ -174,11 +173,12 @@ test.describe('pull to refresh', () => {
 
     await touch(page, 'touchend');
 
-    await expect(arrow).toHaveCount(0);
+    await expect(spinning).toBeVisible();
     await expect.poll(lists.count).toBeGreaterThan(0);
 
     await lists.release();
 
+    await expect(arrow).toHaveCount(0);
     await expect(articleCards.first()).toBeVisible();
   });
 });

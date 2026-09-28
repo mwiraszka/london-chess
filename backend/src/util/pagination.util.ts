@@ -52,8 +52,8 @@ export function buildPaginationQuery<T = unknown>(
   const actualSortField = config?.fieldMappings?.[sortBy] || sortBy;
   sort[actualSortField] = sortOrder === 'asc' ? 1 : -1;
 
-  if (config?.secondarySort?.[sortBy]) {
-    sort[config.secondarySort[sortBy]] = sortOrder === 'asc' ? 1 : -1;
+  for (const field of config?.secondarySort?.[sortBy] ?? []) {
+    sort[field] = sortOrder === 'asc' ? 1 : -1;
   }
 
   const filter: QueryFilter<T> = {};

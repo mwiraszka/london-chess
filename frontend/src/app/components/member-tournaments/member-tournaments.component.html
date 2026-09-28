@@ -87,14 +87,7 @@
   #ratingCell
   let-row>
   @if (row.rating !== null) {
-    {{ row.rating }}
-    @if (row.provisionalGames) {
-      <span
-        class="results__secondary"
-        [eaTooltip]="'Provisional, from ' + row.provisionalGames + ' games'">
-        P{{ row.provisionalGames }}
-      </span>
-    }
+    {{ row.provisionalGames ? row.rating + '/' + row.provisionalGames : row.rating }}
   } @else {
     <span class="results__secondary">Unrated</span>
   }

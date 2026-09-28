@@ -41,8 +41,8 @@ export const eventTypes: Record<keyof Event, string | string[]> = {
 export const eventSortingConfig: SortingConfig = {
   fieldMappings: {},
   secondarySort: {
-    title: 'eventDate',
-    type: 'eventDate',
+    title: ['eventDate'],
+    type: ['eventDate'],
   },
   searchableFields: [
     'title',

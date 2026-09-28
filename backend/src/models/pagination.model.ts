@@ -18,6 +18,6 @@ export interface PaginationQuery<T = unknown> {
 
 export interface SortingConfig {
   fieldMappings?: Record<string, string>;
-  secondarySort?: Record<string, string>;
+  secondarySort?: Record<string, string[]>;
   searchableFields: string[];
 }

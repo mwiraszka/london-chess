@@ -1,5 +1,7 @@
 @use '../../../styles/abstracts/mixins' as *;
 
+$pull-rotation: 270deg;
+
 // Takes no space, so it floats over the top of the page content
 :host {
   z-index: 1;
@@ -10,15 +12,39 @@
 }
 
 .indicator {
-  @include icon-size(20px);
-
   display: flex;
-  box-sizing: content-box;
-  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   box-shadow: var(--shadow-md);
   background-color: var(--color-bg-elevated);
   color: var(--color-text-secondary);
-  transform: translateY(calc(var(--lcc-pull-progress) * 16px))
-    rotate(calc(var(--lcc-pull-progress) * 270deg));
+  transform: translateY(calc(var(--lcc-pull-progress) * 16px));
+}
+
+.indicator__icon {
+  @include icon-size(20px);
+
+  transform: rotate(calc(var(--lcc-pull-progress) * #{$pull-rotation}));
+}
+
+// Spins on from where a full pull left the arrows
+.indicator--refreshing .indicator__icon {
+  animation: spin 0.75s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2.5s;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate($pull-rotation);
+  }
+
+  to {
+    transform: rotate($pull-rotation + 360deg);
+  }
 }

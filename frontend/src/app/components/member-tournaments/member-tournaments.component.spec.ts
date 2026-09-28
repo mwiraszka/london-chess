@@ -80,7 +80,7 @@ describe('MemberTournamentsComponent', () => {
         bodyRows().map(row => queryAll(row, '.ea-data-table__cell').map(textOf)),
       ).toEqual([
         [
-          'September 12 – November 14, 2024',
+          'Sep 12 – Nov 14, 2024',
           'Championship (A1)',
           'Round robin',
           'G80',
@@ -88,7 +88,7 @@ describe('MemberTournamentsComponent', () => {
           '3½',
           '1850',
         ],
-        ['October 19, 2023', 'Fall Active', 'Swiss', 'G25', '1 of 3', '2½', '1850'],
+        ['Oct 19, 2023', 'Fall Active', 'Swiss', 'G25', '1 of 3', '2½', '1850'],
       ]);
       expect(textOf(query(bodyRows()[0], '.results__note'))).toBe('(A1)');
     });
@@ -174,7 +174,7 @@ describe('MemberTournamentsComponent', () => {
     render(7);
 
     expect(queryAll(bodyRows()[0], '.ea-data-table__cell').map(textOf)).toEqual([
-      'September 12, 2024',
+      'Sep 12, 2024',
       'Tandem Simul 2024',
       'Tandem simul (unrated)',
       '3 hours',

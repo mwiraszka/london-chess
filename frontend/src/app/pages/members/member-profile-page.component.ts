@@ -5,6 +5,7 @@ import {
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
   SkeletonComponent,
+  TooltipDirective,
   TrophyIconComponent,
   UserIconComponent,
 } from '@eagami/ui';
@@ -13,16 +14,7 @@ import { Observable, combineLatest } from 'rxjs';
 import { map, switchMap, take } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  OnInit,
-  effect,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -33,7 +25,6 @@ import { MemberTournamentsComponent } from '@app/components/member-tournaments/m
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
 import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { LoadStatus, Member } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
@@ -72,9 +63,6 @@ export class MemberProfilePageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(Store);
 
-  private readonly memberName = viewChild<ElementRef<HTMLElement>>('memberName');
-
-  protected readonly isNameTruncated = signal(false);
   protected readonly pageIcon = UserIconComponent;
   protected readonly placeholderMember = PLACEHOLDER_PROFILE_MEMBER;
 
@@ -85,22 +73,6 @@ export class MemberProfilePageComponent implements OnInit {
   }>;
 
   constructor() {
-    // Truncation depends on the rendered width of each name part, which changes
-    // with the card's size and with the name itself
-    effect(onCleanup => {
-      const name = this.memberName()?.nativeElement;
-      if (!name) {
-        return;
-      }
-
-      const parts = Array.from(name.children);
-      const observer = new ResizeObserver(() =>
-        this.isNameTruncated.set(parts.some(part => part.scrollWidth > part.clientWidth)),
-      );
-      parts.forEach(part => observer.observe(part));
-      onCleanup(() => observer.disconnect());
-    });
-
     // Fetched once a visit for the rating, tournaments and openings cards, as tournaments
     // and games only change by import
     this.route.paramMap

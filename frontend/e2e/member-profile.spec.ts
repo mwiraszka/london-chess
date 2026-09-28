@@ -83,7 +83,7 @@ test.describe('member profile', () => {
         .getByRole('term')
         .filter({ hasText: label })
         .locator('xpath=following-sibling::dd');
-    await expect(fact('Date(s)')).toHaveText('September 18, 2025');
+    await expect(fact('Date(s)')).toHaveText('Sep 18, 2025');
     await expect(fact('Format')).toHaveText('Swiss (unrated)');
     await expect(fact('Time control')).toHaveText(BLITZ.timeControl);
     await expect(fact('Score')).toHaveText('4 / 4');

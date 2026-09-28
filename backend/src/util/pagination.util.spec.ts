@@ -1,6 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 
+import { gameSortingConfig } from '../models/game.model';
 import { PaginationParams } from '../models/pagination.model';
 import { buildPaginationQuery, parsePaginationParams } from './pagination.util';
 
@@ -151,13 +152,33 @@ describe('buildPaginationQuery', () => {
       };
       const config = {
         fieldMappings: { name: 'lastName' },
-        secondarySort: { name: 'firstName' },
+        secondarySort: { name: ['firstName'] },
         searchableFields: [],
       };
 
       const result = buildPaginationQuery(params, config);
 
       expect(result.sort).toEqual({ lastName: -1, firstName: -1 });
+    });
+
+    it('should order games by event as shown, tournament and then section', () => {
+      const params: PaginationParams = {
+        page: 1,
+        pageSize: 20,
+        sortBy: 'tournament',
+        sortOrder: 'asc',
+        search: '',
+        filters: {},
+      };
+
+      const result = buildPaginationQuery(params, gameSortingConfig);
+
+      expect(Object.entries(result.sort)).toEqual([
+        ['tournament', 1],
+        ['section', 1],
+        ['date', 1],
+        ['round', 1],
+      ]);
     });
   });
 });

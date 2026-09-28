@@ -1,9 +1,4 @@
-import {
-  DataTableSortState,
-  PaginatorComponent,
-  PaginatorState,
-  TooltipDirective,
-} from '@eagami/ui';
+import { DataTableSortState, PaginatorComponent, PaginatorState } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -79,7 +74,7 @@ function toResultRow(result: MemberTournamentResult, index: number): ResultRow {
     id: `${index}-${tournament.number}`,
     result,
     date: tournament.date,
-    dateLabel: formatDateRange(tournament.date, tournament.endDate),
+    dateLabel: formatDateRange(tournament.date, tournament.endDate, 'short'),
     tournament: tournament.name,
     section: shortenSubtitle(result.section),
     format: TOURNAMENT_FORMAT_LABELS[tournament.format],
@@ -108,7 +103,6 @@ type CellTemplate = TemplateRef<{ $implicit: ResultRow; value: unknown }>;
     MemberHighlightsComponent,
     PaginatorComponent,
     TextSkeletonComponent,
-    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -34,7 +34,7 @@ describe('MemberHighlightsComponent', () => {
     beforeEach(() => render(MOCK_MEMBER_TOURNAMENT_RESULTS));
 
     it('should close the section with a divider', () => {
-      expect(query(fixture.debugElement, '.highlights__divider')).toBeTruthy();
+      expect(query(fixture.debugElement, 'ea-divider.highlights__divider')).toBeTruthy();
     });
 
     it('should stand a trophy for each finish, newest first', () => {
@@ -72,7 +72,7 @@ describe('MemberHighlightsComponent', () => {
         '/tournaments/90',
       );
       expect(queryAll(fixture.debugElement, '.fact__value').map(textOf)).toEqual([
-        'October 19, 2023',
+        'Oct 19, 2023',
         'Swiss',
         'G25',
         '2½ / 3',

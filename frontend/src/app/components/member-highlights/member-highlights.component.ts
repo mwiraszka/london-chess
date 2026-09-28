@@ -1,3 +1,5 @@
+import { DividerComponent } from '@eagami/ui';
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -41,7 +43,7 @@ function toTrophyEntry(result: MemberTournamentResult): TrophyEntry | null {
   const section = shortenSubtitle(result.section);
   const name = section ? `${tournament.name} (${section})` : tournament.name;
   const place = `${PLACES[result.rank - 1]} of ${result.playerCount}`;
-  const dateLabel = formatDateRange(tournament.date, tournament.endDate);
+  const dateLabel = formatDateRange(tournament.date, tournament.endDate, 'short');
   const format = TOURNAMENT_FORMAT_LABELS[tournament.format];
   const pointsOnOffer = result.roundCount * (result.isDoubleRound ? 2 : 1);
 
@@ -55,7 +57,7 @@ function toTrophyEntry(result: MemberTournamentResult): TrophyEntry | null {
     format: tournament.isRated ? format : `${format} (unrated)`,
     timeControl: tournament.timeControl,
     scoreLabel: `${formatScore(result.score)} / ${pointsOnOffer}`,
-    description: `${trophy.label}: ${place} in ${name}, ${dateLabel}`,
+    description: `${trophy.label}: ${place} in ${name}, ${formatDateRange(tournament.date, tournament.endDate)}`,
   };
 }
 
@@ -64,7 +66,7 @@ function toTrophyEntry(result: MemberTournamentResult): TrophyEntry | null {
   selector: 'lcc-member-highlights',
   templateUrl: './member-highlights.component.html',
   styleUrl: './member-highlights.component.scss',
-  imports: [RouterLink],
+  imports: [DividerComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberHighlightsComponent {
