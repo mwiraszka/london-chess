@@ -1,8 +1,8 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  display: grid !important;
-  align-items: unset !important;
+  display: grid;
+  align-items: unset;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'welcome' 'schedule' 'articles' 'photos';
 
@@ -62,10 +62,7 @@
       .tournament-registration-link-button {
         align-self: center;
         max-width: 400px;
-        padding: 16px 32px;
         margin-top: 16px;
-        font-size: 16px;
-        text-align: center;
       }
     }
 

@@ -1,6 +1,7 @@
 import {
   CalendarDaysIconComponent,
   CameraIconComponent,
+  DialogService,
   DownloadIconComponent,
   InfoIconComponent,
   NewspaperIconComponent,
@@ -16,12 +17,12 @@ import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
 
 import { HomePageComponent } from './home-page.component';
 
@@ -55,7 +56,7 @@ describe('HomePageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [HomePageComponent],
       providers: [
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
@@ -179,13 +180,14 @@ describe('HomePageComponent', () => {
     });
 
     it('should open confirmation dialog with correct event count', async () => {
-      const dialogOpenSpy = vi.spyOn(dialogService, 'open').mockResolvedValue('cancel');
+      const dialogOpenSpy = vi
+        .spyOn(dialogService, 'open')
+        .mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToCsv();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: expect.any(Function),
+      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -194,7 +196,6 @@ describe('HomePageComponent', () => {
             confirmButtonType: 'primary',
           }),
         },
-        isModal: false,
       });
     });
 
@@ -209,7 +210,7 @@ describe('HomePageComponent', () => {
     });
 
     it('should not export anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToCsv();
 
@@ -257,7 +258,7 @@ describe('HomePageComponent', () => {
     it('should have correct internal link configurations', () => {
       expect(component.aboutPageLink).toStrictEqual({
         text: 'More about the London Chess Club',
-        internalPath: 'about',
+        internalPath: 'faq',
         icon: InfoIconComponent,
       });
 
