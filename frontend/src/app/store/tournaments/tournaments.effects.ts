@@ -2,14 +2,27 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
+import moment from 'moment-timezone';
 import { of } from 'rxjs';
-import { catchError, filter, map, switchMap, take } from 'rxjs/operators';
+import {
+  catchError,
+  concatMap,
+  exhaustMap,
+  filter,
+  map,
+  mergeMap,
+  switchMap,
+  take,
+} from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 
-import { TournamentsApiService } from '@app/services';
+import { ModificationInfo, User } from '@app/models';
+import { TournamentsApiService, UserService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
+import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
+import { isDefined } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 import * as TournamentsSelectors from './tournaments.selectors';
@@ -21,6 +34,7 @@ export class TournamentsEffects {
   private readonly parseError = inject(PARSE_ERROR);
   private readonly store = inject(Store);
   private readonly tournamentsApiService = inject(TournamentsApiService);
+  private readonly userService = inject(UserService);
 
   fetchTournaments$ = createEffect(() => {
     return this.actions$.pipe(
@@ -105,4 +119,145 @@ export class TournamentsEffects {
       ),
     );
   });
+
+  addTournament$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(TournamentsActions.addTournamentRequested),
+      concatLatestFrom(() => [
+        this.store.select(TournamentsSelectors.selectTournamentFormData(null)),
+        this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
+      ]),
+      concatMap(([, formData, user]) =>
+        this.tournamentsApiService
+          .addTournament({ ...formData, modificationInfo: this.credit(user, null) })
+          .pipe(
+            map(response =>
+              TournamentsActions.addTournamentSucceeded({
+                tournamentNumber: response.data,
+                tournamentName: formData.name,
+              }),
+            ),
+            catchError(error =>
+              of(
+                TournamentsActions.addTournamentFailed({ error: this.parseError(error) }),
+              ),
+            ),
+          ),
+      ),
+    );
+  });
+
+  updateTournament$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(TournamentsActions.updateTournamentRequested),
+      concatLatestFrom(({ tournamentNumber }) => [
+        this.store
+          .select(TournamentsSelectors.selectTournamentByNumber(tournamentNumber))
+          .pipe(filter(isDefined)),
+        this.store.select(
+          TournamentsSelectors.selectTournamentFormData(tournamentNumber),
+        ),
+        this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
+      ]),
+      concatMap(([{ tournamentNumber }, tournament, formData, user]) =>
+        this.tournamentsApiService
+          .updateTournament(tournamentNumber, {
+            ...formData,
+            modificationInfo: this.credit(user, tournament.modificationInfo),
+          })
+          .pipe(
+            map(() =>
+              TournamentsActions.updateTournamentSucceeded({
+                tournamentNumber,
+                tournamentName: formData.name,
+              }),
+            ),
+            catchError(error =>
+              of(
+                TournamentsActions.updateTournamentFailed({
+                  error: this.parseError(error),
+                }),
+              ),
+            ),
+          ),
+      ),
+    );
+  });
+
+  deleteTournament$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(TournamentsActions.deleteTournamentRequested),
+      mergeMap(({ tournamentNumber, tournamentName }) =>
+        this.tournamentsApiService.deleteTournament(tournamentNumber).pipe(
+          map(() =>
+            TournamentsActions.deleteTournamentSucceeded({
+              tournamentNumber,
+              tournamentName,
+            }),
+          ),
+          catchError(error =>
+            of(
+              TournamentsActions.deleteTournamentFailed({
+                error: this.parseError(error),
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+  });
+
+  register$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(TournamentsActions.registrationRequested),
+      exhaustMap(({ tournamentNumber, tournamentName }) =>
+        this.tournamentsApiService.register(tournamentNumber).pipe(
+          map(response =>
+            TournamentsActions.registrationSucceeded({
+              tournamentNumber,
+              tournamentName,
+              registrants: response.data,
+            }),
+          ),
+          catchError(error =>
+            of(TournamentsActions.registrationFailed({ error: this.parseError(error) })),
+          ),
+        ),
+      ),
+    );
+  });
+
+  withdraw$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(TournamentsActions.withdrawalRequested),
+      exhaustMap(({ tournamentNumber, tournamentName }) =>
+        this.tournamentsApiService.withdraw(tournamentNumber).pipe(
+          map(response =>
+            TournamentsActions.withdrawalSucceeded({
+              tournamentNumber,
+              tournamentName,
+              registrants: response.data,
+            }),
+          ),
+          catchError(error =>
+            of(TournamentsActions.withdrawalFailed({ error: this.parseError(error) })),
+          ),
+        ),
+      ),
+    );
+  });
+
+  private credit(user: User, original: ModificationInfo | null): ModificationInfo {
+    const name = `${user.firstName} ${user.lastName}`;
+    const number = this.userService.memberNumber();
+    const now = moment().toISOString();
+    return {
+      createdBy: original?.createdBy ?? name,
+      createdByNumber: original ? original.createdByNumber : number,
+      dateCreated: original?.dateCreated ?? now,
+      lastEditedBy: name,
+      lastEditedByNumber: number,
+      dateLastEdited: now,
+    };
+  }
 }

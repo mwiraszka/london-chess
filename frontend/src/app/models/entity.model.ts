@@ -5,4 +5,4 @@ import { Member } from './member.model';
 
 export type EntityType = Article | Event | Image | Member;
 
-export type Entity = 'article' | 'event' | 'image' | 'album' | 'member';
+export type Entity = 'article' | 'event' | 'image' | 'album' | 'member' | 'tournament';

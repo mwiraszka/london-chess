@@ -15,6 +15,7 @@ import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import * as NavActions from '@app/store/nav/nav.actions';
+import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
 import { isDefined } from '@app/utils';
 
 import { environment } from '@env';
@@ -30,6 +31,7 @@ type NotifyAction = ReturnType<
   | (typeof ImagesActions)[keyof typeof ImagesActions]
   | (typeof MembersActions)[keyof typeof MembersActions]
   | (typeof NavActions)[keyof typeof NavActions]
+  | (typeof TournamentsActions)[keyof typeof TournamentsActions]
 >;
 
 @Injectable()
@@ -103,6 +105,17 @@ export class AppEffects {
     MembersActions.updateMemberRatingsFailed,
 
     NavActions.pageAccessDenied,
+
+    TournamentsActions.addTournamentFailed,
+    TournamentsActions.addTournamentSucceeded,
+    TournamentsActions.deleteTournamentFailed,
+    TournamentsActions.deleteTournamentSucceeded,
+    TournamentsActions.registrationFailed,
+    TournamentsActions.registrationSucceeded,
+    TournamentsActions.updateTournamentFailed,
+    TournamentsActions.updateTournamentSucceeded,
+    TournamentsActions.withdrawalFailed,
+    TournamentsActions.withdrawalSucceeded,
   ] as const;
 
   readonly SUPPRESSED_TOASTS_IN_PROD = [
@@ -568,6 +581,67 @@ export class AppEffects {
           title: 'Access denied',
           message: `Please log in as admin to access ${action.pageHeading} page`,
           type: 'info',
+        };
+
+      case TournamentsActions.addTournamentFailed.type:
+        return {
+          title: 'New tournament',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case TournamentsActions.addTournamentSucceeded.type:
+        return {
+          title: 'New tournament',
+          message: `Added ${action.tournamentName}.`,
+          type: 'success',
+        };
+      case TournamentsActions.deleteTournamentFailed.type:
+        return {
+          title: 'Tournament deletion',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case TournamentsActions.deleteTournamentSucceeded.type:
+        return {
+          title: 'Tournament deletion',
+          message: `Deleted ${action.tournamentName}.`,
+          type: 'success',
+        };
+      case TournamentsActions.registrationFailed.type:
+        return {
+          title: 'Registration',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case TournamentsActions.registrationSucceeded.type:
+        return {
+          title: 'Registered',
+          message: `You are registered for ${action.tournamentName}.`,
+          type: 'success',
+        };
+      case TournamentsActions.updateTournamentFailed.type:
+        return {
+          title: 'Tournament update',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case TournamentsActions.updateTournamentSucceeded.type:
+        return {
+          title: 'Tournament update',
+          message: `Updated ${action.tournamentName}.`,
+          type: 'success',
+        };
+      case TournamentsActions.withdrawalFailed.type:
+        return {
+          title: 'Withdrawal',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case TournamentsActions.withdrawalSucceeded.type:
+        return {
+          title: 'Withdrawn',
+          message: `You are no longer registered for ${action.tournamentName}.`,
+          type: 'success',
         };
 
       default:

@@ -4,6 +4,8 @@ import {
   LccError,
   MemberTournamentResult,
   Tournament,
+  TournamentFormData,
+  TournamentRegistrant,
   TournamentSummary,
 } from '@app/models';
 
@@ -43,4 +45,91 @@ export const fetchMemberTournamentsSucceeded = createAction(
 export const fetchMemberTournamentsFailed = createAction(
   '[Tournaments] Fetch member tournaments failed',
   props<{ error: LccError }>(),
+);
+
+export const addTournamentRequested = createAction(
+  '[Tournaments] Add tournament requested',
+);
+export const addTournamentSucceeded = createAction(
+  '[Tournaments] Add tournament succeeded',
+  props<{ tournamentNumber: number; tournamentName: string }>(),
+);
+export const addTournamentFailed = createAction(
+  '[Tournaments] Add tournament failed',
+  props<{ error: LccError }>(),
+);
+
+export const updateTournamentRequested = createAction(
+  '[Tournaments] Update tournament requested',
+  props<{ tournamentNumber: number }>(),
+);
+export const updateTournamentSucceeded = createAction(
+  '[Tournaments] Update tournament succeeded',
+  props<{ tournamentNumber: number; tournamentName: string }>(),
+);
+export const updateTournamentFailed = createAction(
+  '[Tournaments] Update tournament failed',
+  props<{ error: LccError }>(),
+);
+
+export const deleteTournamentRequested = createAction(
+  '[Tournaments] Delete tournament requested',
+  props<{ tournamentNumber: number; tournamentName: string }>(),
+);
+export const deleteTournamentSucceeded = createAction(
+  '[Tournaments] Delete tournament succeeded',
+  props<{ tournamentNumber: number; tournamentName: string }>(),
+);
+export const deleteTournamentFailed = createAction(
+  '[Tournaments] Delete tournament failed',
+  props<{ error: LccError }>(),
+);
+
+export const registrationRequested = createAction(
+  '[Tournaments] Registration requested',
+  props<{ tournamentNumber: number; tournamentName: string }>(),
+);
+export const registrationSucceeded = createAction(
+  '[Tournaments] Registration succeeded',
+  props<{
+    tournamentNumber: number;
+    tournamentName: string;
+    registrants: TournamentRegistrant[];
+  }>(),
+);
+export const registrationFailed = createAction(
+  '[Tournaments] Registration failed',
+  props<{ error: LccError }>(),
+);
+
+export const withdrawalRequested = createAction(
+  '[Tournaments] Withdrawal requested',
+  props<{ tournamentNumber: number; tournamentName: string }>(),
+);
+export const withdrawalSucceeded = createAction(
+  '[Tournaments] Withdrawal succeeded',
+  props<{
+    tournamentNumber: number;
+    tournamentName: string;
+    registrants: TournamentRegistrant[];
+  }>(),
+);
+export const withdrawalFailed = createAction(
+  '[Tournaments] Withdrawal failed',
+  props<{ error: LccError }>(),
+);
+
+export const cancelSelected = createAction(
+  '[Tournaments] Cancel selected',
+  props<{ tournamentNumber: number | null }>(),
+);
+
+export const formDataChanged = createAction(
+  '[Tournaments] Form data changed',
+  props<{ tournamentNumber: number | null; formData: Partial<TournamentFormData> }>(),
+);
+
+export const formDataRestored = createAction(
+  '[Tournaments] Form data restored',
+  props<{ tournamentNumber: number | null }>(),
 );

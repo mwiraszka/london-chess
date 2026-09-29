@@ -5,6 +5,8 @@ import {
   TournamentSummary,
 } from '@app/models';
 
+import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';
+
 const player = (
   id: string,
   firstName: string,
@@ -27,6 +29,10 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     timeControl: 'G25',
     isRated: true,
     articleUrl: 'https://londonchess.ca/article/view/679ee6041a2b3c4d5e6f7a8b',
+    registrationOpens: null,
+    registrationCloses: null,
+    registrants: [],
+    modificationInfo: null,
     sections: [
       {
         name: '',
@@ -176,6 +182,10 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     timeControl: '3 hours',
     isRated: false,
     articleUrl: null,
+    registrationOpens: null,
+    registrationCloses: null,
+    registrants: [],
+    modificationInfo: null,
     sections: [
       {
         name: '',
@@ -220,6 +230,10 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     timeControl: 'G80',
     isRated: true,
     articleUrl: null,
+    registrationOpens: null,
+    registrationCloses: null,
+    registrants: [],
+    modificationInfo: null,
     sections: [
       {
         name: 'A1',
@@ -296,9 +310,12 @@ export const MOCK_TOURNAMENT_SUMMARIES: TournamentSummary[] = [
     format: 'round-robin',
     timeControl: 'G80',
     isRated: true,
+    registrationOpens: null,
+    registrationCloses: null,
     sectionCount: 2,
     roundCount: 3,
     playerCount: 3,
+    registrationCount: 0,
   },
   {
     number: 111,
@@ -309,9 +326,12 @@ export const MOCK_TOURNAMENT_SUMMARIES: TournamentSummary[] = [
     format: 'tandem-simul',
     timeControl: '3 hours',
     isRated: false,
+    registrationOpens: null,
+    registrationCloses: null,
     sectionCount: 1,
     roundCount: 1,
     playerCount: 2,
+    registrationCount: 0,
   },
   {
     number: 90,
@@ -322,9 +342,12 @@ export const MOCK_TOURNAMENT_SUMMARIES: TournamentSummary[] = [
     format: 'swiss',
     timeControl: 'G25',
     isRated: true,
+    registrationOpens: null,
+    registrationCloses: null,
     sectionCount: 1,
     roundCount: 3,
     playerCount: 3,
+    registrationCount: 0,
   },
 ];
 
@@ -376,3 +399,53 @@ export const MOCK_MEMBER_TOURNAMENT_RESULTS: MemberTournamentResult[] = [
     resultNote: '',
   },
 ];
+
+// Registration runs through October 2050, well after any test run
+export const MOCK_UPCOMING_TOURNAMENT: Tournament = {
+  number: 184,
+  name: 'Fall Rapid',
+  subtitle: '',
+  date: '2050-10-15',
+  endDate: '2050-10-29',
+  format: 'swiss',
+  timeControl: 'G25+5',
+  isRated: true,
+  articleUrl: null,
+  sections: [],
+  registrationOpens: '2026-01-01T12:00:00.000Z',
+  registrationCloses: '2050-10-15T21:00:00.000Z',
+  registrants: [
+    {
+      memberNumber: 2,
+      firstName: 'John',
+      lastName: 'Doe',
+      rating: '1850',
+      registeredAt: '2026-02-01T12:00:00.000Z',
+    },
+    {
+      memberNumber: 7,
+      firstName: 'Joe',
+      lastName: 'Bloggs',
+      rating: '1500/7',
+      registeredAt: '2026-02-02T12:00:00.000Z',
+    },
+  ],
+  modificationInfo: MOCK_MODIFICATION_INFOS[0],
+};
+
+export const MOCK_UPCOMING_SUMMARY: TournamentSummary = {
+  number: MOCK_UPCOMING_TOURNAMENT.number,
+  name: MOCK_UPCOMING_TOURNAMENT.name,
+  subtitle: '',
+  date: MOCK_UPCOMING_TOURNAMENT.date,
+  endDate: MOCK_UPCOMING_TOURNAMENT.endDate,
+  format: 'swiss',
+  timeControl: 'G25+5',
+  isRated: true,
+  registrationOpens: MOCK_UPCOMING_TOURNAMENT.registrationOpens,
+  registrationCloses: MOCK_UPCOMING_TOURNAMENT.registrationCloses,
+  sectionCount: 0,
+  roundCount: 0,
+  playerCount: 0,
+  registrationCount: 2,
+};

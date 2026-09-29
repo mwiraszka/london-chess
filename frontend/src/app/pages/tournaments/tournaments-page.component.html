@@ -3,6 +3,58 @@
   [icon]="pageIcon">
 </lcc-page-header>
 
+@if (isAdmin()) {
+  <lcc-admin-toolbar [adminLinks]="[addTournamentLink]" />
+}
+
+@if (upcoming().length) {
+  <section
+    class="upcoming"
+    aria-labelledby="upcoming-heading">
+    <h3
+      id="upcoming-heading"
+      class="upcoming__heading">
+      Upcoming tournaments
+    </h3>
+    <ul class="upcoming__list">
+      @for (item of upcoming(); track item.summary.number) {
+        <li
+          class="upcoming__item"
+          [adminControls]="isAdmin() ? controlsFor(item.summary) : null">
+          <ea-card [fullWidth]="true">
+            <div class="upcoming__card">
+              <a
+                class="upcoming__name lcc-link"
+                [routerLink]="['/tournaments', item.summary.number]">
+                {{ item.summary.name }}
+              </a>
+              <p class="upcoming__details">
+                <span>{{ item.dateLabel }}</span>
+                <span>{{ item.format }}</span>
+                @if (item.summary.timeControl) {
+                  <span>{{ item.summary.timeControl }}</span>
+                }
+              </p>
+              @if (item.registration; as registration) {
+                <p class="upcoming__registration">
+                  <ea-badge [variant]="registration.variant">
+                    {{ registration.label }}
+                  </ea-badge>
+                  <span>
+                    {{ item.summary.registrationCount }}
+                    {{ item.summary.registrationCount === 1 ? 'player' : 'players' }}
+                    registered
+                  </span>
+                </p>
+              }
+            </div>
+          </ea-card>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
 <ea-card
   class="intro"
   [fullWidth]="true">
@@ -98,6 +150,7 @@
     [columns]="columns()"
     [data]="rows()"
     [loading]="loading()"
+    [rowControls]="isAdmin() ? rowControls : undefined"
     [rowHref]="rowHref"
     [sizingRows]="sizingRows()"
     [sort]="sortState()"
@@ -125,13 +178,22 @@
 <ng-template
   #nameCell
   let-row>
-  <span
-    class="tournaments__name"
-    [eaTooltip]="row.subtitle ? row.name + ' (' + row.subtitle + ')' : ''"
-    [whenClipped]="true">
-    {{ row.name }}
-    @if (row.subtitle) {
-      <span class="tournaments__subtitle">({{ row.subtitle }})</span>
+  <span class="tournaments__name-cell">
+    <span
+      class="tournaments__name"
+      [eaTooltip]="row.subtitle ? row.name + ' (' + row.subtitle + ')' : ''"
+      [whenClipped]="true">
+      {{ row.name }}
+      @if (row.subtitle) {
+        <span class="tournaments__subtitle">({{ row.subtitle }})</span>
+      }
+    </span>
+    @if (row.badge; as badge) {
+      <ea-badge
+        size="sm"
+        [variant]="badge.variant">
+        {{ badge.label }}
+      </ea-badge>
     }
   </span>
 </ng-template>

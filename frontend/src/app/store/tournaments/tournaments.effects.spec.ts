@@ -4,21 +4,25 @@ import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { ReplaySubject, of, throwError } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd } from '@angular/router';
 
+import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import {
   MOCK_MEMBER_TOURNAMENT_RESULTS,
   MOCK_TOURNAMENTS,
   MOCK_TOURNAMENT_SUMMARIES,
+  MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
-import { LccError } from '@app/models';
-import { TournamentsApiService } from '@app/services';
+import { LccError, TournamentFormData, User } from '@app/models';
+import { TournamentsApiService, UserService } from '@app/services';
 import { AppActions } from '@app/store/app';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
 
 import { TournamentsActions, TournamentsSelectors } from '.';
 import { TournamentsEffects } from './tournaments.effects';
+import { initialState, tournamentsAdapter } from './tournaments.reducer';
 
 describe('TournamentsEffects', () => {
   let actions$: ReplaySubject<Action>;
@@ -51,8 +55,14 @@ describe('TournamentsEffects', () => {
             getTournaments: vi.fn(),
             getTournament: vi.fn(),
             getMemberTournaments: vi.fn(),
+            addTournament: vi.fn(),
+            updateTournament: vi.fn(),
+            deleteTournament: vi.fn(),
+            register: vi.fn(),
+            withdraw: vi.fn(),
           },
         },
+        { provide: UserService, useValue: { memberNumber: signal(100) } },
       ],
     });
 
@@ -241,6 +251,193 @@ describe('TournamentsEffects', () => {
         effects.fetchMemberTournaments$.subscribe(action => {
           expect(action).toEqual(
             TournamentsActions.fetchMemberTournamentsFailed({ error: mockError }),
+          );
+          done();
+        });
+      }));
+  });
+
+  describe('saving tournaments', () => {
+    const admin: User = {
+      id: 'user_admin',
+      firstName: 'Ada',
+      lastName: 'Admin',
+      email: 'ada@example.com',
+      isAdmin: true,
+    };
+    const draft: TournamentFormData = {
+      ...INITIAL_TOURNAMENT_FORM_DATA,
+      name: 'Winter Blitz',
+      date: '2026-12-03',
+    };
+
+    const number = MOCK_UPCOMING_TOURNAMENT.number;
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-27T12:00:00.000Z'));
+      store.setState({
+        authState: { user: admin },
+        tournamentsState: tournamentsAdapter.setAll([MOCK_UPCOMING_TOURNAMENT], {
+          ...initialState,
+          formData: { [number]: draft },
+          newTournamentFormData: draft,
+        }),
+      });
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    it('should add the draft of a new tournament credited to the admin', () =>
+      withDone(done => {
+        tournamentsApiService.addTournament.mockReturnValue(of({ data: 185 }));
+
+        actions$.next(TournamentsActions.addTournamentRequested());
+
+        effects.addTournament$.subscribe(action => {
+          expect(tournamentsApiService.addTournament).toHaveBeenCalledWith({
+            ...draft,
+            modificationInfo: {
+              createdBy: 'Ada Admin',
+              createdByNumber: 100,
+              dateCreated: '2026-09-27T12:00:00.000Z',
+              lastEditedBy: 'Ada Admin',
+              lastEditedByNumber: 100,
+              dateLastEdited: '2026-09-27T12:00:00.000Z',
+            },
+          });
+          expect(action).toEqual(
+            TournamentsActions.addTournamentSucceeded({
+              tournamentNumber: 185,
+              tournamentName: 'Winter Blitz',
+            }),
+          );
+          done();
+        });
+      }));
+
+    it('should update a tournament, keeping who created it', () =>
+      withDone(done => {
+        tournamentsApiService.updateTournament.mockReturnValue(of({ data: number }));
+
+        actions$.next(
+          TournamentsActions.updateTournamentRequested({ tournamentNumber: number }),
+        );
+
+        effects.updateTournament$.subscribe(action => {
+          expect(tournamentsApiService.updateTournament).toHaveBeenCalledWith(number, {
+            ...draft,
+            modificationInfo: expect.objectContaining({
+              createdBy: MOCK_UPCOMING_TOURNAMENT.modificationInfo?.createdBy,
+              lastEditedBy: 'Ada Admin',
+            }),
+          });
+          expect(action).toEqual(
+            TournamentsActions.updateTournamentSucceeded({
+              tournamentNumber: number,
+              tournamentName: 'Winter Blitz',
+            }),
+          );
+          done();
+        });
+      }));
+
+    it('should report a failed save', () =>
+      withDone(done => {
+        tournamentsApiService.addTournament.mockReturnValue(throwError(() => mockError));
+
+        actions$.next(TournamentsActions.addTournamentRequested());
+
+        effects.addTournament$.subscribe(action => {
+          expect(action).toEqual(
+            TournamentsActions.addTournamentFailed({ error: mockError }),
+          );
+          done();
+        });
+      }));
+
+    it('should delete a tournament', () =>
+      withDone(done => {
+        tournamentsApiService.deleteTournament.mockReturnValue(of({ data: 90 }));
+
+        actions$.next(
+          TournamentsActions.deleteTournamentRequested({
+            tournamentNumber: 90,
+            tournamentName: 'Fall Active',
+          }),
+        );
+
+        effects.deleteTournament$.subscribe(action => {
+          expect(action).toEqual(
+            TournamentsActions.deleteTournamentSucceeded({
+              tournamentNumber: 90,
+              tournamentName: 'Fall Active',
+            }),
+          );
+          done();
+        });
+      }));
+  });
+
+  describe('registration', () => {
+    const request = { tournamentNumber: 184, tournamentName: 'Fall Rapid' };
+
+    it('should register and pass on the latest registrants', () =>
+      withDone(done => {
+        tournamentsApiService.register.mockReturnValue(
+          of({ data: MOCK_UPCOMING_TOURNAMENT.registrants }),
+        );
+
+        actions$.next(TournamentsActions.registrationRequested(request));
+
+        effects.register$.subscribe(action => {
+          expect(action).toEqual(
+            TournamentsActions.registrationSucceeded({
+              ...request,
+              registrants: MOCK_UPCOMING_TOURNAMENT.registrants,
+            }),
+          );
+          done();
+        });
+      }));
+
+    it('should report a refused registration', () =>
+      withDone(done => {
+        tournamentsApiService.register.mockReturnValue(throwError(() => mockError));
+
+        actions$.next(TournamentsActions.registrationRequested(request));
+
+        effects.register$.subscribe(action => {
+          expect(action).toEqual(
+            TournamentsActions.registrationFailed({ error: mockError }),
+          );
+          done();
+        });
+      }));
+
+    it('should withdraw and pass on the latest registrants', () =>
+      withDone(done => {
+        tournamentsApiService.withdraw.mockReturnValue(of({ data: [] }));
+
+        actions$.next(TournamentsActions.withdrawalRequested(request));
+
+        effects.withdraw$.subscribe(action => {
+          expect(action).toEqual(
+            TournamentsActions.withdrawalSucceeded({ ...request, registrants: [] }),
+          );
+          done();
+        });
+      }));
+
+    it('should report a refused withdrawal', () =>
+      withDone(done => {
+        tournamentsApiService.withdraw.mockReturnValue(throwError(() => mockError));
+
+        actions$.next(TournamentsActions.withdrawalRequested(request));
+
+        effects.withdraw$.subscribe(action => {
+          expect(action).toEqual(
+            TournamentsActions.withdrawalFailed({ error: mockError }),
           );
           done();
         });

@@ -1,4 +1,4 @@
-import { TooltipDirective } from '@eagami/ui';
+import { DialogRef, DialogService, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -11,10 +11,22 @@ import {
   provideRouter,
 } from '@angular/router';
 
-import { MOCK_TOURNAMENT_SUMMARIES } from '@app/mocks/tournaments.mock';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import {
+  MOCK_TOURNAMENT_SUMMARIES,
+  MOCK_UPCOMING_SUMMARY,
+} from '@app/mocks/tournaments.mock';
+import { BasicDialogResult } from '@app/models';
+import { KEEP_SCROLL, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
-import { query, queryAll } from '@app/utils';
+import {
+  closedDialogRef,
+  clubToday,
+  lastOpenedDialog,
+  query,
+  queryAll,
+  queryTextContent,
+} from '@app/utils';
 
 import { TournamentRow, TournamentsPageComponent } from './tournaments-page.component';
 
@@ -61,6 +73,11 @@ describe('TournamentsPageComponent', () => {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
       ],
     }).compileComponents();
 
@@ -76,6 +93,7 @@ describe('TournamentsPageComponent', () => {
       MOCK_TOURNAMENT_SUMMARIES,
     );
     store.overrideSelector(TournamentsSelectors.selectSummariesStatus, 'loaded');
+    store.overrideSelector(AuthSelectors.selectIsAdmin, false);
     store.refreshState();
   });
 
@@ -127,17 +145,11 @@ describe('TournamentsPageComponent', () => {
     fixture.detectChanges();
 
     expect(bodyRows().map(cellTexts)).toEqual([
-      [
-        'September 12 – November 14, 2024',
-        'Championship',
-        'Round robin',
-        'G80',
-        '3',
-        '3',
-      ],
-      ['June 27, 2024', 'Tandem Simul 2024', 'Tandem simul', '3 hours', '1', '2'],
-      ['October 19, 2023', 'Fall Active', 'Swiss', 'G25', '3', '3'],
+      ['Sep 12 – Nov 14, 2024', 'Championship', 'Round robin', 'G80', '3', '3'],
+      ['Jun 27, 2024', 'Tandem Simul 2024', 'Tandem simul', '3 hours', '1', '2'],
+      ['Oct 19, 2023', 'Fall Active', 'Swiss', 'G25', '3', '3'],
     ]);
+    expect(query(fixture.debugElement, '.ea-data-table__body ea-badge')).toBeFalsy();
   });
 
   it('should line the dates up on the right', () => {
@@ -345,7 +357,7 @@ describe('TournamentsPageComponent', () => {
 
     it('should hold the table with skeleton rows', () => {
       expect(bodyRows()).toHaveLength(10);
-      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(6);
+      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(6);
     });
 
     it('should not open skeleton rows', () => {
@@ -370,6 +382,95 @@ describe('TournamentsPageComponent', () => {
 
       expect(dispatchSpy).toHaveBeenCalledWith(
         TournamentsActions.fetchTournamentsRequested(),
+      );
+    });
+  });
+
+  describe('upcoming tournaments', () => {
+    beforeEach(() => {
+      store.overrideSelector(TournamentsSelectors.selectSummaries, [
+        MOCK_UPCOMING_SUMMARY,
+        ...MOCK_TOURNAMENT_SUMMARIES,
+      ]);
+      store.refreshState();
+      fixture.detectChanges();
+    });
+
+    it('should show tournaments still to come above the archive, with their registration', () => {
+      const [card] = queryAll(fixture.debugElement, '.upcoming__item');
+      const text = card.nativeElement.textContent.replace(/\s+/g, ' ');
+
+      expect(query(fixture.debugElement, '.upcoming__name').attributes['href']).toBe(
+        `/tournaments/${MOCK_UPCOMING_SUMMARY.number}`,
+      );
+      expect(text).toContain('October 15–29, 2050');
+      expect(text).toContain('Registration open until');
+      expect(text).toContain('2 players registered');
+    });
+
+    it('should list tournaments still to come first in the table, badged as upcoming', () => {
+      const [first] = bodyRows();
+
+      expect(bodyRows()).toHaveLength(MOCK_TOURNAMENT_SUMMARIES.length + 1);
+      expect(cellTexts(first).slice(0, 2)).toEqual([
+        'Oct 15–29, 2050',
+        `${MOCK_UPCOMING_SUMMARY.name} Upcoming`,
+      ]);
+    });
+
+    it('should badge a tournament under way as in progress', () => {
+      store.overrideSelector(TournamentsSelectors.selectSummaries, [
+        { ...MOCK_UPCOMING_SUMMARY, date: clubToday(), endDate: null },
+        ...MOCK_TOURNAMENT_SUMMARIES,
+      ]);
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(queryTextContent(bodyRows()[0], 'ea-badge')).toBe('In progress');
+    });
+  });
+
+  describe('for admins', () => {
+    beforeEach(() => {
+      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      store.refreshState();
+      fixture.detectChanges();
+    });
+
+    it('should offer to add a tournament', () => {
+      expect(
+        query(
+          fixture.debugElement,
+          'lcc-admin-toolbar lcc-link-list',
+        ).componentInstance.links(),
+      ).toEqual([expect.objectContaining({ internalPath: ['tournament', 'add'] })]);
+    });
+
+    it('should edit and delete a tournament from its controls', async () => {
+      const [summary] = MOCK_TOURNAMENT_SUMMARIES;
+      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
+      dialogOpenSpy.mockImplementation(() => {
+        const confirmation = new DialogRef<BasicDialogResult>();
+        void lastOpenedDialog(dialogOpenSpy)
+          .confirmAction?.()
+          .then(() => confirmation.close('confirm'));
+        return confirmation;
+      });
+
+      const controls = fixture.componentInstance.controlsFor(summary);
+      controls.deleteCb();
+      await fixture.whenStable();
+
+      expect(controls.editPath).toEqual(['tournament', 'edit', String(summary.number)]);
+      expect(TestBed.inject(StoreRequestService).dispatch).toHaveBeenCalledWith(
+        TournamentsActions.deleteTournamentRequested({
+          tournamentNumber: summary.number,
+          tournamentName: summary.name,
+        }),
+        [
+          TournamentsActions.deleteTournamentSucceeded,
+          TournamentsActions.deleteTournamentFailed,
+        ],
       );
     });
   });

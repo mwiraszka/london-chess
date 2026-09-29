@@ -4,15 +4,20 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { MOCK_MODIFICATION_INFOS } from '@app/mocks/modification-info.mock';
 import {
   MOCK_MEMBER_TOURNAMENT_RESULTS,
   MOCK_TOURNAMENTS,
   MOCK_TOURNAMENT_SUMMARIES,
+  MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
 import {
   ApiResponse,
   MemberTournamentResult,
+  PlayerNameMatch,
   Tournament,
+  TournamentInput,
+  TournamentRegistrant,
   TournamentSummary,
 } from '@app/models';
 
@@ -70,5 +75,92 @@ describe('TournamentsApiService', () => {
 
     expect(request.request.method).toBe('GET');
     expect(received).toEqual({ data: MOCK_MEMBER_TOURNAMENT_RESULTS });
+  });
+
+  describe('managing tournaments', () => {
+    const input: TournamentInput = {
+      name: 'Fall Rapid',
+      subtitle: '',
+      date: '2050-10-15',
+      endDate: null,
+      format: 'swiss',
+      timeControl: 'G25+5',
+      isRated: true,
+      articleUrl: null,
+      registrationOpens: null,
+      registrationCloses: null,
+      sections: null,
+      modificationInfo: MOCK_MODIFICATION_INFOS[0],
+    };
+
+    it('should add a tournament and receive its number', () => {
+      let received: ApiResponse<number> | undefined;
+      service.addTournament(input).subscribe(result => (received = result));
+
+      const request = httpMock.expectOne(apiBaseUrl);
+      request.flush({ data: 184 });
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual(input);
+      expect(received).toEqual({ data: 184 });
+    });
+
+    it('should update a tournament by number', () => {
+      service.updateTournament(184, input).subscribe();
+
+      const request = httpMock.expectOne(`${apiBaseUrl}/184`);
+      request.flush({ data: 184 });
+
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body).toEqual(input);
+    });
+
+    it('should delete a tournament by number', () => {
+      service.deleteTournament(184).subscribe();
+
+      const request = httpMock.expectOne(`${apiBaseUrl}/184`);
+      request.flush({ data: 184 });
+
+      expect(request.request.method).toBe('DELETE');
+    });
+
+    it('should ask which player names the archive already knows', () => {
+      const matches: PlayerNameMatch[] = [
+        { name: 'Doe, John', playerId: '64b7f0c2a1d3e4f5a6b7c8a1', memberNumber: 2 },
+      ];
+      let received: ApiResponse<PlayerNameMatch[]> | undefined;
+      service.matchPlayers(['Doe, John']).subscribe(result => (received = result));
+
+      const request = httpMock.expectOne(`${apiBaseUrl}/player-matches`);
+      request.flush({ data: matches });
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ names: ['Doe, John'] });
+      expect(received).toEqual({ data: matches });
+    });
+  });
+
+  describe('registration', () => {
+    const registrants: TournamentRegistrant[] = MOCK_UPCOMING_TOURNAMENT.registrants;
+
+    it('should register the signed-in member', () => {
+      let received: ApiResponse<TournamentRegistrant[]> | undefined;
+      service.register(184).subscribe(result => (received = result));
+
+      const request = httpMock.expectOne(`${apiBaseUrl}/184/registration`);
+      request.flush({ data: registrants });
+
+      expect(request.request.method).toBe('POST');
+      expect(received).toEqual({ data: registrants });
+    });
+
+    it('should withdraw the signed-in member', () => {
+      service.withdraw(184).subscribe();
+
+      const request = httpMock.expectOne(`${apiBaseUrl}/184/registration`);
+      request.flush({ data: [] });
+
+      expect(request.request.method).toBe('DELETE');
+    });
   });
 });

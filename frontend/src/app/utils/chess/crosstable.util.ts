@@ -44,7 +44,7 @@ export function roundResultLabel({
   scores,
   points,
   opponentRank,
-}: RoundResult): string {
+}: Pick<RoundResult, 'outcome' | 'scores' | 'points' | 'opponentRank'>): string {
   const opponent = opponentRank ?? '';
   switch (outcome) {
     case 'game':

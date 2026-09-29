@@ -58,6 +58,7 @@ const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   eventsState: [6, 2, 0],
   imagesState: [6, 2, 0],
   membersState: [6, 2, 0],
+  tournamentsState: [6, 4, 0],
 };
 
 // What only describes the current visit, so every visit starts from these
@@ -72,8 +73,13 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
-  // Only the list of tournaments is kept, the crosstables being fetched as they are opened
-  tournamentsState: omit(tournamentsInitialState, ['summaries', 'lastSummariesFetch']),
+  // The list of tournaments and unsaved edits are kept, crosstables being fetched as opened
+  tournamentsState: omit(tournamentsInitialState, [
+    'summaries',
+    'lastSummariesFetch',
+    'formData',
+    'newTournamentFormData',
+  ]),
 };
 
 function isOlderThan(version: string, minimum: number[]): boolean {
@@ -269,6 +275,7 @@ export function clearRecordsOnAccessLossMetaReducer(
             eventsState: eventsInitialState,
             imagesState: imagesInitialState,
             membersState: membersInitialState,
+            tournamentsState: tournamentsInitialState,
           },
           action,
         );

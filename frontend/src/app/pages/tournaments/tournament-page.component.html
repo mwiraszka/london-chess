@@ -48,6 +48,84 @@
       </p>
     }
 
+    @if (isAdmin()) {
+      <lcc-admin-toolbar
+        [adminButtons]="[deleteButton]"
+        [adminLinks]="[editLink()]" />
+    }
+
+    @if (registration(); as registration) {
+      <ea-card
+        class="registration"
+        [fullWidth]="true">
+        <h3
+          slot="header"
+          class="registration__heading">
+          Registration
+        </h3>
+        <div class="registration__body">
+          <p class="registration__status">{{ registration.summary }}</p>
+
+          @if (registration.isRegistered) {
+            <div class="registration__actions">
+              <p class="registration__registered">You are registered.</p>
+              @if (registration.canWithdraw) {
+                <ea-button
+                  class="withdraw-button"
+                  variant="secondary"
+                  (clicked)="onWithdraw(tournament)">
+                  Withdraw
+                </ea-button>
+              }
+            </div>
+          } @else if (registration.status === 'open') {
+            <div class="registration__actions">
+              @if (user()) {
+                <ea-button
+                  class="register-button"
+                  [loading]="registering()"
+                  (clicked)="onRegister(tournament)">
+                  Register
+                </ea-button>
+              } @else {
+                <ea-button
+                  class="log-in-button"
+                  (clicked)="onLogIn()">
+                  Log in to register
+                </ea-button>
+              }
+            </div>
+          }
+
+          @if (registration.registrants.length) {
+            <ol
+              class="registration__list"
+              aria-label="Registered players">
+              @for (
+                registrant of registration.registrants;
+                track registrant.memberNumber
+              ) {
+                <li class="registration__registrant">
+                  <lcc-member-link
+                    [memberNumber]="registrant.memberNumber"
+                    [name]="registrant.firstName + ' ' + registrant.lastName" />
+                  <span class="registration__rating">{{ registrant.rating }}</span>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="registration__empty">No one has registered yet.</p>
+          }
+        </div>
+      </ea-card>
+    }
+
+    @if (!hasResults()) {
+      <p class="details details__pending">
+        Standings will appear here once the tournament is under way.
+      </p>
+    }
+
     @for (section of sections(); track section.key) {
       <section class="section">
         @if (section.heading; as heading) {

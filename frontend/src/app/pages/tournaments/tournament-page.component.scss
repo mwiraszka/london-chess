@@ -90,3 +90,42 @@ $details-gap: 24px;
 .games__result--decisive {
   font-weight: bold;
 }
+
+.registration__heading {
+  font: inherit;
+}
+
+.registration__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.registration__status,
+.registration__registered,
+.registration__empty {
+  margin: 0;
+}
+
+.registration__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.registration__list {
+  display: grid;
+  gap: 4px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  padding-left: 24px;
+  margin: 0;
+  list-style: decimal;
+}
+
+.registration__rating {
+  margin-left: 8px;
+  color: var(--color-text-secondary);
+}

@@ -1,8 +1,8 @@
-import { DataTableColumn } from '@eagami/ui';
+import { DataTableColumn, DialogRef, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
-import { DebugElement } from '@angular/core';
+import { DebugElement, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ActivatedRoute,
@@ -13,12 +13,25 @@ import {
   provideRouter,
 } from '@angular/router';
 
-import { MOCK_TOURNAMENTS } from '@app/mocks/tournaments.mock';
-import { Tournament } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournaments.mock';
+import { BasicDialogResult, Tournament, User } from '@app/models';
+import {
+  AuthDrawerService,
+  MetaAndTitleService,
+  StoreRequestService,
+  UserService,
+} from '@app/services';
+import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
 import { tournamentsAdapter } from '@app/store/tournaments/tournaments.reducer';
-import { query, queryAll, queryTextContent } from '@app/utils';
+import {
+  closedDialogRef,
+  lastOpenedDialog,
+  query,
+  queryAll,
+  queryTextContent,
+} from '@app/utils';
 
 import { CrosstableRow, TournamentPageComponent } from './tournament-page.component';
 
@@ -30,7 +43,10 @@ describe('TournamentPageComponent', () => {
   let dispatchSpy: MockInstance;
   let paramMap: BehaviorSubject<ParamMap>;
 
+  const memberNumber = signal<number | null>(null);
+
   const stateWith = (tournaments: Tournament[], failed = false) => ({
+    authState: { user: null },
     tournamentsState: tournamentsAdapter.setAll(tournaments, {
       ...initialState,
       failedLoads: failed ? ['tournament' as const] : [],
@@ -72,12 +88,22 @@ describe('TournamentPageComponent', () => {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
+        { provide: AuthDrawerService, useValue: { openLogin: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
+        {
+          provide: StoreRequestService,
+          useValue: { dispatch: vi.fn().mockResolvedValue(null) },
+        },
+        { provide: UserService, useValue: { memberNumber } },
       ],
     }).compileComponents();
+
+    memberNumber.set(null);
 
     fixture = TestBed.createComponent(TournamentPageComponent);
     router = TestBed.inject(Router);
     store = TestBed.inject(MockStore);
+    store.setState(stateWith([...MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT]));
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
   });
@@ -325,7 +351,7 @@ describe('TournamentPageComponent', () => {
         query(fixture.debugElement, '.details--loading lcc-text-skeleton'),
       ).toBeTruthy();
       expect(rows).toHaveLength(10);
-      expect(queryAll(rows[0], 'lcc-text-skeleton')).toHaveLength(10);
+      expect(queryAll(rows[0], '.ea-data-table__placeholder')).toHaveLength(10);
     });
   });
 
@@ -433,6 +459,153 @@ describe('TournamentPageComponent', () => {
 
       const [article] = queryAll(fixture.debugElement, 'lcc-link-list a');
       expect(article.attributes['href']).toBe('https://example.com/fall-active');
+    });
+  });
+
+  describe('an upcoming tournament', () => {
+    const member: User = {
+      id: 'user_member',
+      firstName: 'Joe',
+      lastName: 'Bloggs',
+      email: 'joe@example.com',
+      isAdmin: false,
+    };
+
+    const signIn = (user: User | null, number: number | null = null) => {
+      store.overrideSelector(AuthSelectors.selectUser, user);
+      store.overrideSelector(AuthSelectors.selectIsAdmin, !!user?.isAdmin);
+      store.refreshState();
+      memberNumber.set(number);
+    };
+
+    const openUpcoming = (changes: Partial<Tournament> = {}) => {
+      store.setState(stateWith([{ ...MOCK_UPCOMING_TOURNAMENT, ...changes }]));
+      open(MOCK_UPCOMING_TOURNAMENT.number);
+    };
+
+    const registration = () => query(fixture.debugElement, '.registration');
+
+    it('should list the registered players with their ratings', () => {
+      openUpcoming();
+
+      expect(
+        queryAll(fixture.debugElement, '.registration__registrant').map(registrant => [
+          textOf(query(registrant, 'lcc-member-link')),
+          textOf(query(registrant, '.registration__rating')),
+        ]),
+      ).toEqual([
+        ['John Doe', '1850'],
+        ['Joe Bloggs', '1500/7'],
+      ]);
+      expect(textOf(query(fixture.debugElement, '.details__pending'))).toBe(
+        'Standings will appear here once the tournament is under way.',
+      );
+    });
+
+    it('should ask a visitor to log in to register', () => {
+      openUpcoming();
+
+      query(fixture.debugElement, '.log-in-button').triggerEventHandler('clicked');
+
+      expect(queryTextContent(fixture.debugElement, '.registration__status')).toMatch(
+        /^Registration is open until /,
+      );
+      expect(TestBed.inject(AuthDrawerService).openLogin).toHaveBeenCalled();
+    });
+
+    it('should register a member who has not registered yet', async () => {
+      signIn(member, 44);
+      openUpcoming();
+
+      query(fixture.debugElement, '.register-button').triggerEventHandler('clicked');
+      await fixture.whenStable();
+
+      expect(TestBed.inject(StoreRequestService).dispatch).toHaveBeenCalledWith(
+        TournamentsActions.registrationRequested({
+          tournamentNumber: MOCK_UPCOMING_TOURNAMENT.number,
+          tournamentName: MOCK_UPCOMING_TOURNAMENT.name,
+        }),
+        [TournamentsActions.registrationSucceeded, TournamentsActions.registrationFailed],
+      );
+    });
+
+    it('should let a registered member withdraw once they confirm', async () => {
+      signIn(member, 7);
+      openUpcoming();
+      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
+      dialogOpenSpy.mockImplementation(() => {
+        const confirmation = new DialogRef<BasicDialogResult>();
+        void lastOpenedDialog(dialogOpenSpy)
+          .confirmAction?.()
+          .then(() => confirmation.close('confirm'));
+        return confirmation;
+      });
+
+      query(fixture.debugElement, '.withdraw-button').triggerEventHandler('clicked');
+      await fixture.whenStable();
+
+      expect(textOf(query(fixture.debugElement, '.registration__registered'))).toBe(
+        'You are registered.',
+      );
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, expect.anything());
+      expect(TestBed.inject(StoreRequestService).dispatch).toHaveBeenCalledWith(
+        TournamentsActions.withdrawalRequested({
+          tournamentNumber: MOCK_UPCOMING_TOURNAMENT.number,
+          tournamentName: MOCK_UPCOMING_TOURNAMENT.name,
+        }),
+        [TournamentsActions.withdrawalSucceeded, TournamentsActions.withdrawalFailed],
+      );
+    });
+
+    it('should offer no registration before it opens or after it closes', () => {
+      signIn(member, 44);
+      openUpcoming({ registrationOpens: '2049-01-01T12:00:00.000Z' });
+      const beforeOpening = queryTextContent(
+        fixture.debugElement,
+        '.registration__status',
+      );
+      const registerBeforeOpening = query(fixture.debugElement, '.register-button');
+
+      openUpcoming({ registrationCloses: '2026-01-02T12:00:00.000Z' });
+
+      expect(beforeOpening).toMatch(/^Registration opens /);
+      expect(registerBeforeOpening).toBeFalsy();
+      expect(queryTextContent(fixture.debugElement, '.registration__status')).toBe(
+        'Registration has closed.',
+      );
+      expect(query(fixture.debugElement, '.register-button')).toBeFalsy();
+    });
+
+    it('should leave out registration for a tournament that takes none online', () => {
+      openUpcoming({
+        registrationOpens: null,
+        registrationCloses: null,
+        registrants: [],
+      });
+
+      expect(registration()).toBeFalsy();
+    });
+
+    it('should give admins links to edit and delete the tournament', async () => {
+      signIn({ ...member, isAdmin: true });
+      openUpcoming();
+      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+
+      query(
+        fixture.debugElement,
+        'lcc-admin-toolbar #delete-tournament',
+      ).triggerEventHandler('clicked');
+      await fixture.whenStable();
+
+      expect(
+        queryAll(fixture.debugElement, 'lcc-admin-toolbar lcc-link-list a').map(link =>
+          link.injector.get(RouterLink).urlTree?.toString(),
+        ),
+      ).toEqual([`/tournament/edit/${MOCK_UPCOMING_TOURNAMENT.number}`]);
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        'Delete Fall Rapid (October 15–29, 2050)? Its results and registrations will be lost.',
+      );
     });
   });
 });

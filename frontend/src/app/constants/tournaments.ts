@@ -1,6 +1,14 @@
+import { BadgeVariant, SelectOption } from '@eagami/ui';
 import { capitalize } from 'lodash';
 
-import { TournamentFormat, Trophy, TrophyMetal, TrophyShape } from '@app/models';
+import {
+  TournamentFormData,
+  TournamentFormat,
+  TournamentTiming,
+  Trophy,
+  TrophyMetal,
+  TrophyShape,
+} from '@app/models';
 
 const TROPHY_DESCRIPTIONS: Record<TrophyShape, string> = {
   cup: 'cup trophy',
@@ -35,6 +43,14 @@ export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
   'tandem-simul': 'Tandem simul',
 };
 
+export const TOURNAMENT_TIMING_BADGES: Record<
+  TournamentTiming,
+  { label: string; variant: BadgeVariant }
+> = {
+  upcoming: { label: 'Upcoming', variant: 'info' },
+  'in-progress': { label: 'In progress', variant: 'success' },
+};
+
 export const TOURNAMENT_SUBTITLE_LABELS: Record<TournamentFormat, string> = {
   swiss: 'Theme',
   'round-robin': 'Theme',
@@ -50,3 +66,38 @@ export const LOADING_ENTRY_COUNT = 10;
 export const LOADING_ROUND_COUNT = 6;
 
 export const LOADING_RESULT_COUNT = 3;
+
+export const TOURNAMENT_FORMAT_OPTIONS: SelectOption[] = (
+  Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[]
+).map(format => ({ value: format, label: TOURNAMENT_FORMAT_LABELS[format] }));
+
+// The details a tournament's form edits; its results change only through an import
+export const TOURNAMENT_FORM_DATA_PROPERTIES = [
+  'name',
+  'subtitle',
+  'date',
+  'endDate',
+  'format',
+  'timeControl',
+  'isRated',
+  'articleUrl',
+  'registrationOpens',
+  'registrationCloses',
+] as const;
+
+export const INITIAL_TOURNAMENT_FORM_DATA: TournamentFormData = {
+  name: '',
+  subtitle: '',
+  date: '',
+  endDate: null,
+  format: 'swiss',
+  timeControl: '',
+  isRated: true,
+  articleUrl: null,
+  registrationOpens: null,
+  registrationCloses: null,
+  sections: null,
+};
+
+// How many problems an import lists before summing up the rest
+export const MAX_LISTED_IMPORT_PROBLEMS = 10;

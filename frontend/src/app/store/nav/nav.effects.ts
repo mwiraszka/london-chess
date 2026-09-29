@@ -1,3 +1,4 @@
+import { DialogService } from '@eagami/ui';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
@@ -7,7 +8,6 @@ import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 import { Injectable, inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 
-import { DialogService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as EventsActions from '@app/store/events/events.actions';
@@ -15,7 +15,13 @@ import * as GamesActions from '@app/store/games/games.actions';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
-import { isCollectionId, isDefined, isEntity, isString } from '@app/utils';
+import {
+  isCollectionId,
+  isDefined,
+  isEntity,
+  isRecordNumber,
+  isString,
+} from '@app/utils';
 
 import * as NavActions from './nav.actions';
 import * as NavSelectors from './nav.selectors';
@@ -119,6 +125,42 @@ export class NavEffects {
     ),
   );
 
+  navigateToTournament$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        TournamentsActions.addTournamentSucceeded,
+        TournamentsActions.updateTournamentSucceeded,
+      ),
+      map(({ tournamentNumber }) =>
+        NavActions.navigationRequested({ path: `tournaments/${tournamentNumber}` }),
+      ),
+    ),
+  );
+
+  leaveTournamentEditor$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(TournamentsActions.cancelSelected),
+      map(({ tournamentNumber }) =>
+        NavActions.navigationRequested({
+          path:
+            tournamentNumber === null ? 'tournaments' : `tournaments/${tournamentNumber}`,
+        }),
+      ),
+    ),
+  );
+
+  navigateToTournamentsAfterDeletion$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(TournamentsActions.deleteTournamentSucceeded),
+      concatLatestFrom(() => this.store.select(NavSelectors.selectCurrentPath)),
+      filter(
+        ([{ tournamentNumber }, currentPath]) =>
+          currentPath === `/tournaments/${tournamentNumber}`,
+      ),
+      map(() => NavActions.navigationRequested({ path: 'tournaments' })),
+    ),
+  );
+
   leaveMissingRecord$ = createEffect(() =>
     this.actions$.pipe(
       ofType(...RECORD_FETCH_FAILURES),
@@ -206,6 +248,16 @@ export class NavEffects {
             }
             return NavActions.navigationRequested({ path: 'members' });
 
+          case 'tournament':
+            // The edit route's guard fetches the tournament
+            if (
+              (controlMode === 'add' && !isDefined(id)) ||
+              (controlMode === 'edit' && isRecordNumber(id))
+            ) {
+              return null;
+            }
+            return NavActions.navigationRequested({ path: 'tournaments' });
+
           default:
             return AppActions.unexpectedErrorOccurred({
               error: {
@@ -247,6 +299,10 @@ export class NavEffects {
             return ImagesActions.imageFormDataRestored({ imageId: id });
           case 'member':
             return MembersActions.formDataRestored({ memberId: id });
+          case 'tournament':
+            return TournamentsActions.formDataRestored({
+              tournamentNumber: isRecordNumber(id) ? Number(id) : null,
+            });
           default:
             return AppActions.unexpectedErrorOccurred({
               error: {
