@@ -1,4 +1,4 @@
-import { AwardIconComponent } from '@eagami/ui';
+import { AwardIconComponent, CardComponent } from '@eagami/ui';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
@@ -12,7 +12,7 @@ import { MemberProfilesService, MetaAndTitleService } from '@app/services';
   selector: 'lcc-lifetime-page',
   templateUrl: './lifetime-page.component.html',
   styleUrl: './lifetime-page.component.scss',
-  imports: [CommonModule, KebabCasePipe, PageHeaderComponent, RouterLink],
+  imports: [CardComponent, CommonModule, KebabCasePipe, PageHeaderComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LifetimePageComponent implements OnInit {
