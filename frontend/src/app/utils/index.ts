@@ -20,6 +20,20 @@ export {
   resultLabel,
 } from './chess/player-name.util';
 export { ratingSortValue } from './chess/rating-sort-value.util';
+export {
+  parseRating,
+  parseRoundCell,
+  parseScore,
+  parseStandings,
+} from './chess/standings-import.util';
+export {
+  canWithdraw,
+  clubToday,
+  isUpcomingTournament,
+  registrationStatus,
+  tournamentFormData,
+  tournamentTiming,
+} from './chess/tournament-status.util';
 export { trophyForResult, trophyShapeFor } from './chess/trophies.util';
 
 export { areSame } from './common/are-same.util';
@@ -30,13 +44,18 @@ export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';
 export { takeRandomly } from './common/take-randomly.util';
 
+export {
+  fromClubDateTime,
+  fromDayString,
+  toClubDateTime,
+  toDayString,
+} from './datetime/club-date-time.util';
 export { formatDate } from './datetime/format-date.util';
 export { formatDateRange } from './datetime/format-date-range.util';
 export { formatPartialDate } from './datetime/format-partial-date.util';
 export { isExpired } from './datetime/is-expired.util';
 export { isUpcomingEvent } from './datetime/is-upcoming-event.util';
 export { isValidIsoDate } from './datetime/is-valid-iso-date.util';
-export { isValidTime } from './datetime/is-valid-time.util';
 
 export { isMac } from './device/is-mac.util';
 export { isTouchDevice } from './device/is-touch-device.util';
@@ -81,6 +100,7 @@ export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.
 export { actionSanitizer } from './store/action-sanitizer.util';
 export { combinedLoadStatus, loadStatus } from './store/load-status.util';
 
+export { closedDialogRef } from './test/closed-dialog-ref.util';
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
 export { lastOpenedDialog } from './test/last-opened-dialog.util';
 
