@@ -1,4 +1,5 @@
 import {
+  AlertComponent,
   ButtonComponent,
   CodeInputComponent,
   InputComponent,
@@ -28,6 +29,7 @@ import {
   styleUrl: './auth-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AlertComponent,
     ButtonComponent,
     CodeInputComponent,
     InputComponent,

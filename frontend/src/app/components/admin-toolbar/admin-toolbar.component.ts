@@ -1,10 +1,8 @@
-import { ShieldCheckIconComponent, SpinnerComponent } from '@eagami/ui';
+import { ButtonComponent, ShieldCheckIconComponent, TooltipDirective } from '@eagami/ui';
 
-import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { AdminButton, ExternalLink, InternalLink } from '@app/models';
 
 @Component({
@@ -17,23 +15,17 @@ import { AdminButton, ExternalLink, InternalLink } from '@app/models';
       }
       @if (adminButtons(); as buttons) {
         <div class="admin-buttons">
+          <ng-content />
           @for (button of buttons; track button.id) {
-            <button
+            <ea-button
+              class="admin-button"
+              variant="secondary"
               [id]="button.id"
-              class="admin-button lcc-secondary-button"
-              type="button"
-              [attr.aria-busy]="button.isLoading?.() ?? false"
-              [disabled]="button.isLoading?.() ?? false"
-              [tooltip]="button.tooltip"
-              (click)="button.action()">
-              <span class="button-icon">
-                @if (button.isLoading?.()) {
-                  <ea-spinner size="sm" />
-                } @else {
-                  <ng-container *ngComponentOutlet="button.icon" />
-                }
-              </span>
-            </button>
+              [aria-label]="button.tooltip"
+              [eaTooltip]="button.tooltip"
+              [icon]="button.icon"
+              [loading]="button.isLoading?.() ?? false"
+              (clicked)="button.action()" />
           }
         </div>
       }
@@ -41,10 +33,9 @@ import { AdminButton, ExternalLink, InternalLink } from '@app/models';
   `,
   styleUrl: './admin-toolbar.component.scss',
   imports: [
+    ButtonComponent,
     LinkListComponent,
-    NgComponentOutlet,
     ShieldCheckIconComponent,
-    SpinnerComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

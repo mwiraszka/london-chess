@@ -1,4 +1,4 @@
-import { NewspaperIconComponent } from '@eagami/ui';
+import { DialogService, NewspaperIconComponent } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
@@ -18,14 +18,13 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import {
   AdminControlsConfig,
   Article,
-  BasicDialogResult,
   Dialog,
   Id,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
@@ -147,11 +146,7 @@ export class ArticleViewerPageComponent implements OnInit {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      isModal: true,
-      inputs: { dialog },
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onRetry(articleId: Id): void {

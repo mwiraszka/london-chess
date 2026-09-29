@@ -1,3 +1,4 @@
+import { DialogRef, DialogService } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
@@ -5,9 +6,9 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { Dialog, EditorPage, User } from '@app/models';
-import { DialogService } from '@app/services';
+import { BasicDialogResult, Dialog, EditorPage, User } from '@app/models';
 import { AuthSelectors } from '@app/store/auth';
+import { closedDialogRef } from '@app/utils';
 
 import { unsavedChangesGuard } from './unsaved-changes.guard';
 
@@ -41,7 +42,7 @@ describe('unsavedChangesGuard', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         provideMockStore({
           selectors: [{ selector: AuthSelectors.selectUser, value: admin }],
         }),
@@ -78,7 +79,7 @@ describe('unsavedChangesGuard', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         provideMockStore({
           selectors: [{ selector: AuthSelectors.selectUser, value: null }],
         }),
@@ -96,7 +97,7 @@ describe('unsavedChangesGuard', () => {
   });
 
   it('should show dialog and return true when user confirms leaving with unsaved changes', async () => {
-    dialogOpenSpy.mockResolvedValue('confirm');
+    dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
     const result = await runGuard({
       entity: 'member',
@@ -104,9 +105,7 @@ describe('unsavedChangesGuard', () => {
     });
 
     expect(result).toBe(true);
-    expect(dialogOpenSpy).toHaveBeenCalledWith({
-      componentType: BasicDialogComponent,
-      isModal: false,
+    expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
       inputs: {
         dialog: {
           title: 'Unsaved changes',
@@ -118,7 +117,7 @@ describe('unsavedChangesGuard', () => {
   });
 
   it('should show dialog and return false when user cancels leaving with unsaved changes', async () => {
-    dialogOpenSpy.mockResolvedValue('cancel');
+    dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
     const result = await runGuard({
       entity: 'event',
@@ -128,8 +127,8 @@ describe('unsavedChangesGuard', () => {
     expect(result).toBe(false);
   });
 
-  it('should handle dialog rejection and return false', async () => {
-    dialogOpenSpy.mockResolvedValue(null);
+  it('should return false when the dialog is dismissed', async () => {
+    dialogOpenSpy.mockReturnValue(closedDialogRef());
 
     const result = await runGuard({
       entity: 'member',
@@ -137,5 +136,51 @@ describe('unsavedChangesGuard', () => {
     });
 
     expect(result).toBe(false);
+  });
+
+  it('should let a navigation made while the dialog is up wait on the same answer', async () => {
+    const leaveDialog = new DialogRef<BasicDialogResult>();
+    const opened = new Promise<void>(resolve =>
+      dialogOpenSpy.mockImplementation(() => {
+        resolve();
+        return leaveDialog;
+      }),
+    );
+    const component: EditorPage = {
+      entity: 'article',
+      viewModel$: of({ hasUnsavedChanges: true }),
+    };
+
+    const superseded = runGuard(component);
+    await opened;
+    const checked = new Promise<void>(resolve =>
+      vi.spyOn(leaveDialog, 'closed').mockImplementation(() => {
+        resolve();
+        return false;
+      }),
+    );
+    const latest = runGuard(component);
+    await checked;
+    leaveDialog.close('confirm');
+
+    expect(await latest).toBe(true);
+    expect(await superseded).toBe(true);
+    expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should open a new dialog for a navigation made after the last one was answered', async () => {
+    const component: EditorPage = {
+      entity: 'article',
+      viewModel$: of({ hasUnsavedChanges: true }),
+    };
+    dialogOpenSpy.mockReturnValueOnce(closedDialogRef('cancel'));
+    dialogOpenSpy.mockReturnValueOnce(closedDialogRef('confirm'));
+
+    const first = await runGuard(component);
+    const second = await runGuard(component);
+
+    expect(first).toBe(false);
+    expect(second).toBe(true);
+    expect(dialogOpenSpy).toHaveBeenCalledTimes(2);
   });
 });

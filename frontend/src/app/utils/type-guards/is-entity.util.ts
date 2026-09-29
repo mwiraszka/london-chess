@@ -4,6 +4,7 @@ import { isString } from './is-string.util';
 
 export function isEntity(value: unknown): value is Entity {
   return (
-    isString(value) && ['article', 'event', 'image', 'album', 'member'].includes(value)
+    isString(value) &&
+    ['article', 'event', 'image', 'album', 'member', 'tournament'].includes(value)
   );
 }

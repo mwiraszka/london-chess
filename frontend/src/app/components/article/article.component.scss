@@ -84,8 +84,10 @@
       gap: 6px;
 
       .vertical-spacer {
-        padding: 0 0.4em;
-        color: var(--lcc-color--general-editorTextSpacer);
+        --ea-divider-length: 1em;
+
+        display: flex;
+        margin: 0 0.4em;
       }
 
       .date-last-edited {
@@ -95,10 +97,9 @@
   }
 }
 
-hr {
-  width: 100%;
+.article-divider {
+  display: block;
   margin: 0.5em 0;
-  border-top: 1px solid var(--lcc-color--general-dividerLineLight);
 }
 
 // Clipped rather than hidden, which would make the container a scroll container and

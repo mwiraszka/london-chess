@@ -1,61 +1,71 @@
-import { CardComponent, HistoryIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import moment from 'moment-timezone';
+import {
+  ButtonComponent,
+  CardComponent,
+  DatePickerComponent,
+  DialogService,
+  DropdownComponent,
+  HistoryIconComponent,
+  InputComponent,
+  TextareaComponent,
+  TimePickerComponent,
+} from '@eagami/ui';
 import { debounceTime } from 'rxjs/operators';
 
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
   input,
   output,
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { DatePickerComponent } from '@app/components/date-picker/date-picker.component';
-import { FormErrorIconComponent } from '@app/components/form-error-icon/form-error-icon.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { EVENT_TYPE_OPTIONS, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import {
+  FORM_CHANGE_DEBOUNCE,
+  FORM_ERROR_MESSAGES,
+  WEEK_STARTS_ON,
+} from '@app/constants/forms';
 import {
   BasicDialogResult,
   Dialog,
   Event,
   EventFormData,
   EventFormGroup,
+  EventFormValue,
   Id,
 } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
-import { isValidTime } from '@app/utils';
-import { idValidator, textValidator, timeValidator } from '@app/validators';
+import { fromClubDateTime, toClubDateTime } from '@app/utils';
+import { idValidator, textValidator } from '@app/validators';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-event-form',
   templateUrl: './event-form.component.html',
   styleUrl: './event-form.component.scss',
   imports: [
+    ButtonComponent,
     CardComponent,
     DatePickerComponent,
-    FormErrorIconComponent,
-    HistoryIconComponent,
+    DropdownComponent,
+    InputComponent,
     ModificationInfoComponent,
     ReactiveFormsModule,
-    TooltipDirective,
+    TextareaComponent,
+    TimePickerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventFormComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogService = inject(DialogService);
-  private readonly formBuilder = inject(FormBuilder);
+  private readonly storeRequests = inject(StoreRequestService);
 
   readonly formData = input.required<EventFormData>();
   readonly hasUnsavedChanges = input.required<boolean>();
@@ -68,13 +78,20 @@ export class EventFormComponent implements OnInit {
   }>();
   readonly restore = output<Id | null>();
 
+  protected readonly errorMessages = FORM_ERROR_MESSAGES;
+  protected readonly eventTypeOptions = EVENT_TYPE_OPTIONS;
+  protected readonly restoreIcon = HistoryIconComponent;
+  protected readonly weekStartsOn = WEEK_STARTS_ON;
+
   public form!: FormGroup<EventFormGroup>;
 
-  private readonly storeRequests = inject(StoreRequestService);
-
   public ngOnInit(): void {
-    this.initForm();
-    this.initFormValueChangeListener();
+    this.form = this.buildForm(this.formData());
+
+    this.form.valueChanges
+      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.emitChange());
+    this.emitChange();
 
     if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
@@ -89,26 +106,27 @@ export class EventFormComponent implements OnInit {
       confirmButtonType: 'warning',
     };
 
-    const dialogResult = await this.dialogService.open<
+    const dialogResult = await this.dialogService.open<BasicDialogResult>(
       BasicDialogComponent,
-      BasicDialogResult
-    >({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+      { inputs: { dialog } },
+    ).result;
 
     if (dialogResult !== 'confirm') {
       return;
     }
 
-    this.restore.emit(this.originalEvent()?.id ?? null);
-
-    setTimeout(() => this.ngOnInit());
+    const originalEvent = this.originalEvent();
+    this.restore.emit(originalEvent?.id ?? null);
+    this.form.reset(this.toFormValue(originalEvent ?? INITIAL_EVENT_FORM_DATA));
   }
 
   public onCancel(): void {
     this.cancel.emit();
+  }
+
+  // A click that leaves the page starts by leaving a field, so the draft is saved first
+  public onFieldLeft(): void {
+    this.emitChange();
   }
 
   public async onSubmit(): Promise<void> {
@@ -117,21 +135,20 @@ export class EventFormComponent implements OnInit {
       return;
     }
 
+    // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.emitChange();
+
     const originalEvent = this.originalEvent();
     const dialog: Dialog = {
       title: 'Confirm',
       body: originalEvent
         ? `Update ${originalEvent.title} event?`
-        : `Add ${this.formData().title} to schedule?`,
-      confirmButtonText: this.originalEvent() ? 'Update' : 'Add',
+        : `Add ${this.form.controls.title.value} to schedule?`,
+      confirmButtonText: originalEvent ? 'Update' : 'Add',
       confirmAction: () => this.save(),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   private save(): Promise<unknown> {
@@ -147,66 +164,48 @@ export class EventFormComponent implements OnInit {
         ]);
   }
 
-  private initForm(): void {
-    // Displayed in local time since America/Toronto set as default timezone in app.component
-    const eventTime: string = moment(this.formData().eventDate).format('h:mm A');
+  private toFormValue(data: EventFormData): EventFormValue {
+    const { day, time } = toClubDateTime(data.eventDate);
+    return {
+      eventDay: day,
+      eventTime: time,
+      title: data.title,
+      details: data.details,
+      type: data.type,
+      articleId: data.articleId,
+    };
+  }
 
-    this.form = this.formBuilder.group({
-      eventDate: new FormControl(this.formData().eventDate, {
+  private buildForm(data: EventFormData): FormGroup<EventFormGroup> {
+    const value = this.toFormValue(data);
+    return new FormGroup<EventFormGroup>({
+      eventDay: new FormControl<Date | null>(value.eventDay, Validators.required),
+      eventTime: new FormControl<string | null>(value.eventTime, Validators.required),
+      title: new FormControl(value.title, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.maxLength(100), textValidator],
+      }),
+      details: new FormControl(value.details, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.maxLength(200), textValidator],
+      }),
+      type: new FormControl(value.type, {
         nonNullable: true,
         validators: Validators.required,
       }),
-      eventTime: new FormControl(eventTime, {
-        nonNullable: true,
-        validators: [Validators.required, timeValidator],
-      }),
-      title: new FormControl(this.formData().title, {
-        nonNullable: true,
-        validators: [Validators.required, textValidator],
-      }),
-      details: new FormControl(this.formData().details, {
-        nonNullable: true,
-        validators: [Validators.required, textValidator],
-      }),
-      type: new FormControl(this.formData().type, {
-        nonNullable: true,
-        validators: Validators.required,
-      }),
-      articleId: new FormControl(this.formData().articleId, {
+      articleId: new FormControl(value.articleId, {
         nonNullable: true,
         validators: idValidator,
       }),
     });
   }
 
-  private initFormValueChangeListener(): void {
-    this.form.valueChanges
-      .pipe(debounceTime(250), untilDestroyed(this))
-      .subscribe(
-        (formDataWithEventTime: Partial<EventFormData & { eventTime: string }>) => {
-          const { eventTime, ...formData } = formDataWithEventTime;
-
-          if (isValidTime(eventTime)) {
-            let hours = Number(eventTime.split(':')[0]) % 12;
-            if (eventTime.slice(-2).toUpperCase() === 'PM') {
-              hours += 12;
-            }
-            const minutes = Number(eventTime.split(':')[1].slice(0, 2));
-
-            formData.eventDate = moment(formData.eventDate)
-              .hours(hours)
-              .minutes(minutes)
-              .toISOString();
-          }
-
-          return this.change.emit({
-            eventId: this.originalEvent()?.id ?? null,
-            formData,
-          });
-        },
-      );
-
-    // Manually trigger form data change to pass initial form data to store
-    this.form.updateValueAndValidity();
+  private emitChange(): void {
+    const { eventDay, eventTime, ...fields } = this.form.getRawValue();
+    const eventDate = fromClubDateTime(eventDay, eventTime);
+    this.change.emit({
+      eventId: this.originalEvent()?.id ?? null,
+      formData: eventDate ? { ...fields, eventDate } : fields,
+    });
   }
 }

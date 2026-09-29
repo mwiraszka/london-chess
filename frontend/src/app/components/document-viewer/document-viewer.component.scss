@@ -1,19 +1,12 @@
-:host {
-  display: flex;
-  flex-direction: column;
-}
-
-.loading-progress-indicator {
-  width: 100%;
-  height: 4px;
-  box-shadow: 0 0 5px 0 var(--lcc-color--documentViewer-loaderBoxShadow);
-  background-color: var(--lcc-color--documentViewer-loaderBackground);
+.loading-progress {
+  display: block;
+  margin-bottom: 12px;
 }
 
 pdf-viewer {
-  width: var(--lcc-width--appContent);
-  max-width: inherit;
-  height: 90dvh;
+  display: block;
+  width: 100%;
+  height: 75dvh;
 
   ::ng-deep .ng2-pdf-viewer-container {
     overflow-x: hidden;

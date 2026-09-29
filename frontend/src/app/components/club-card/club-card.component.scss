@@ -23,11 +23,9 @@
   padding: 16px 32px;
 }
 
-hr {
-  width: 100%;
+.club-divider {
+  display: block;
   margin: 4px 0 16px;
-  border: none;
-  border-top: 2px solid var(--lcc-color--general-dividerLine);
 }
 
 .club-details {

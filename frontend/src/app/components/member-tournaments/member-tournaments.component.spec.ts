@@ -295,7 +295,10 @@ describe('MemberTournamentsComponent', () => {
 
     it('should hold the table with skeleton rows', () => {
       expect(bodyRows()).toHaveLength(3);
-      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(7);
+      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(6);
+      expect(
+        query(bodyRows()[0], '.results__tournament-placeholder lcc-text-skeleton'),
+      ).toBeTruthy();
     });
 
     it('should not open skeleton rows', () => {

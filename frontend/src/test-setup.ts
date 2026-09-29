@@ -1,4 +1,7 @@
+import { installNativeDialogShim } from '@eagami/ui/testing';
 import { afterEach, vi } from 'vitest';
+
+installNativeDialogShim();
 
 // Guard against fake-timer leakage between tests (Jest reset these implicitly).
 afterEach(() => {
@@ -66,6 +69,7 @@ const ORIGINAL_CONSOLE_INFO = console.info;
 
 const IGNORED_ERROR_PATTERNS: RegExp[] = [
   /\[LCC] Could not parse document load progress data:/, // Document viewer progress edge cases
+  /\[LCC] Unable to read standings file:/, // Standings import of unreadable files
   /\[LCC] Unable to parse ratings to determine new peak rating/, // Rating util invalid inputs in tests
   /\[LCC] Sort error: property 'key' does not exist/, // custom sort util negative tests
   /\[LCC] Unable to convert data URL and filename to File:/, // dataUrlToFile negative test cases

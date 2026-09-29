@@ -122,10 +122,10 @@
           font-style: normal;
         }
 
-        hr {
+        ea-divider {
+          display: block;
           width: 100%;
           margin: 4px 0 8px;
-          border-top: 1px solid var(--lcc-color--footer-dividerLine);
         }
 
         a {
@@ -161,9 +161,14 @@
   }
 }
 
-.divider {
+// The brand-coloured bar needs a more opaque rule than the library's translucent one
+.copyright-divider {
+  --color-divider: var(--lcc-color--footer-verticalSpacer);
+  --ea-divider-length: 1em;
+
+  display: inline-flex;
+  vertical-align: middle;
   margin: 0 8px;
-  color: var(--lcc-color--footer-verticalSpacer);
 }
 
 .tooltip-highlighted-text {

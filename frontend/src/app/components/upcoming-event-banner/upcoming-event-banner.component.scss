@@ -1,5 +1,3 @@
-@use '../../../styles/abstracts/mixins' as *;
-
 :host {
   z-index: 1000;
 }
@@ -72,14 +70,12 @@
   }
 }
 
-ea-icon-x {
-  @include icon-size(16px);
-
-  color: var(--lcc-color--upcomingEventBanner-closeIcon);
-
-  &:hover {
-    color: var(--lcc-color--upcomingEventBanner-closeIconOnHover);
-  }
+// Trimmed to its glyph so the button does not make the banner any taller
+.close-button {
+  --ea-button-padding: 2px;
+  --ea-button-min-height: 0;
+  --ea-button-color: var(--lcc-color--upcomingEventBanner-closeIcon);
+  --ea-button-color-hover: var(--lcc-color--upcomingEventBanner-closeIconOnHover);
 }
 
 @keyframes marquee-scroll {

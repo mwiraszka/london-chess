@@ -21,5 +21,7 @@ describe('isEntity', () => {
     expect(isEntity('event')).toBe(true);
     expect(isEntity('image')).toBe(true);
     expect(isEntity('member')).toBe(true);
+    expect(isEntity('tournament')).toBe(true);
+    expect(isEntity('tournaments')).toBe(false);
   });
 });

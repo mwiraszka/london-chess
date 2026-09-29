@@ -1,16 +1,15 @@
-import { AvatarComponent, ToastService } from '@eagami/ui';
+import { AvatarComponent, ToastService, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { User } from '@app/models';
 import { AuthDrawerService, ClerkService } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
-import { query } from '@app/utils';
+import { query, queryAll } from '@app/utils';
 
 import { UserSettingsMenuComponent } from './user-settings-menu.component';
 
@@ -28,7 +27,6 @@ describe('UserSettingsMenuComponent', () => {
   let closeSpy: Mock;
   let dispatchSpy: MockInstance;
   let logOutSpy: Mock;
-  let navigateSpy: Mock;
   let openLoginSpy: Mock;
   let toastSpy: Mock;
 
@@ -49,24 +47,20 @@ describe('UserSettingsMenuComponent', () => {
   };
 
   const click = (selector: string): void => {
-    query(fixture.debugElement, `${selector} a`).nativeElement.click();
+    query(fixture.debugElement, `${selector} button`).nativeElement.click();
   };
 
   const toggle = (selector: string): void => {
-    query(fixture.debugElement, `${selector} lcc-toggle-switch`).triggerEventHandler(
-      'toggle',
-      true,
-    );
+    query(fixture.debugElement, `${selector} input[role="switch"]`).nativeElement.click();
   };
 
-  const tooltipOf = (selector: string) =>
-    query(fixture.debugElement, selector).injector.get(TooltipDirective).tooltip();
+  const tooltipOf = (selector: string): TooltipDirective =>
+    query(fixture.debugElement, selector).injector.get(TooltipDirective);
 
   beforeEach(async () => {
     clerkUser.set(null);
     closeSpy = vi.fn();
     logOutSpy = vi.fn().mockResolvedValue(undefined);
-    navigateSpy = vi.fn().mockResolvedValue(true);
     openLoginSpy = vi.fn();
     toastSpy = vi.fn();
 
@@ -76,7 +70,7 @@ describe('UserSettingsMenuComponent', () => {
         provideMockStore(),
         { provide: AuthDrawerService, useValue: { openLogin: openLoginSpy } },
         { provide: ClerkService, useValue: { user: clerkUser, logOut: logOutSpy } },
-        { provide: Router, useValue: { navigate: navigateSpy } },
+        provideRouter([{ path: '**', children: [] }]),
         { provide: ToastService, useValue: { show: toastSpy } },
       ],
     }).compileComponents();
@@ -112,17 +106,15 @@ describe('UserSettingsMenuComponent', () => {
       expect(query(fixture.debugElement, '.desktop-view-toggle')).toBeFalsy();
     });
 
-    it('should navigate to the account page and close the menu', () => {
-      click('.account');
+    it.each([
+      ['.account', '/account'],
+      ['.website-changelog', '/website-changelog'],
+    ])('should link %s to %s and close the menu on the way', (selector, path) => {
+      const link = query(fixture.debugElement, `a${selector}`).nativeElement;
 
-      expect(navigateSpy).toHaveBeenCalledWith(['account']);
-      expect(closeSpy).toHaveBeenCalled();
-    });
+      link.click();
 
-    it('should navigate to the website changelog page and close the menu', () => {
-      click('.website-changelog');
-
-      expect(navigateSpy).toHaveBeenCalledWith(['website-changelog']);
+      expect(link.getAttribute('href')).toBe(path);
       expect(closeSpy).toHaveBeenCalled();
     });
 
@@ -153,9 +145,25 @@ describe('UserSettingsMenuComponent', () => {
       expect(logOutSpy).toHaveBeenCalled();
     });
 
-    it('should not show tooltips for a name and email that fit', () => {
-      expect(tooltipOf('.user-name')).toBeNull();
-      expect(tooltipOf('.user-email')).toBeNull();
+    it('should offer the full name and email in tooltips while they are cut off', () => {
+      expect(tooltipOf('.user-name').eaTooltip()).toBe('John Doe');
+      expect(tooltipOf('.user-name').whenClipped()).toBe(true);
+      expect(tooltipOf('.user-email').eaTooltip()).toBe('john.doe@example.com');
+      expect(tooltipOf('.user-email').whenClipped()).toBe(true);
+    });
+
+    it('should lay every action out as a row spanning the menu, its label at the start', () => {
+      const buttons = queryAll(fixture.debugElement, '.menu-button');
+
+      expect(buttons.length).toBeGreaterThan(0);
+      buttons.forEach(({ componentInstance }) => {
+        expect(componentInstance.fullWidth()).toBe(true);
+        expect(componentInstance.align()).toBe('start');
+      });
+    });
+
+    it('should separate the user, pages, toggles and log out with dividers', () => {
+      expect(queryAll(fixture.debugElement, 'ea-divider')).toHaveLength(3);
     });
   });
 
@@ -226,25 +234,39 @@ describe('UserSettingsMenuComponent', () => {
     store.overrideSelector(AppSelectors.selectIsSafeMode, false);
     create();
 
-    query(fixture.debugElement, '.safe-mode-toggle .toggle-icon').triggerEventHandler(
-      'mouseenter',
-      new MouseEvent('mouseenter'),
-    );
-    fixture.detectChanges();
+    query(
+      fixture.debugElement,
+      '.safe-mode-toggle .safe-mode-warning',
+    ).nativeElement.dispatchEvent(new FocusEvent('focusin'));
 
     expect(
-      document.querySelector('.cdk-overlay-container .safe-mode-warning-tooltip'),
-    ).toBeTruthy();
+      document.querySelector('.ea-tooltip .safe-mode-warning-tooltip')?.textContent,
+    ).toContain('Safe mode is currently disabled');
   });
 
-  it('should show the full name and email in tooltips when they are truncated', () => {
-    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(40);
+  it('should not warn while safe mode is on', () => {
+    create();
+
+    expect(query(fixture.debugElement, '.safe-mode-warning')).toBeFalsy();
+    expect(
+      query(
+        fixture.debugElement,
+        '.safe-mode-toggle ea-switch',
+      ).componentInstance.variant(),
+    ).toBe('default');
+  });
+
+  it('should tone the safe mode switch as a warning while it is off', () => {
+    store.overrideSelector(AppSelectors.selectIsSafeMode, false);
 
     create();
-    fixture.detectChanges();
 
-    expect(tooltipOf('.user-name')).toBe('John Doe');
-    expect(tooltipOf('.user-email')).toBe('john.doe@example.com');
+    expect(
+      query(
+        fixture.debugElement,
+        '.safe-mode-toggle ea-switch',
+      ).componentInstance.variant(),
+    ).toBe('warning');
   });
 
   it('should offer a desktop view toggle on touch devices', () => {

@@ -35,12 +35,20 @@ ea-drawer.lcc-auth-drawer {
   --ea-drawer-panel-background-color: var(--lcc-color--authDrawer-background);
 }
 
-// This app's dark surfaces recess below the page tone (footer, expansion
-// panels, auth drawer), so cards follow suit instead of using the library's
+// This app's dark surfaces recess below the page tone (footer, auth drawer), so
+// cards, accordions and dialogs follow suit instead of using the library's
 // lighter elevated tier, with the border stepped down to stay subtle.
-body[data-theme='dark'] ea-card {
+body[data-theme='dark'] ea-accordion,
+body[data-theme='dark'] ea-card,
+body[data-theme='dark'] ea-dialog {
   --color-bg-elevated: var(--color-neutral-800);
   --color-border-default: var(--color-neutral-600);
+}
+
+// A dialog takes a card's edge too, since a recessed panel alone would sink into
+// the dimmed page behind it
+ea-dialog .ea-dialog__panel {
+  border: var(--border-width-thin) solid var(--color-border-default);
 }
 
 // The app's own inputs sit a tone above the dark page, so the library's fields and
@@ -94,4 +102,11 @@ ea-skeleton {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+// A paginator closing a page ends on its buttons, so the space above the footer is the
+// page's own, as on every other page
+lcc-news-page > .paginator .ea-paginator,
+lcc-events-calendar-grid > .paginator .ea-paginator {
+  padding-bottom: 0;
 }

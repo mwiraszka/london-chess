@@ -1,5 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { ALBUMS, PICNIC_IMAGES } from '../seed';
+import { fieldLabel, watchWrites } from './fields';
 import { png } from './files';
 import {
   APP_API,
@@ -20,7 +21,7 @@ async function deleteAlbum(page: Page, album: string): Promise<void> {
   await page.goto('/photo-gallery');
   const controls = await openAdminControls(albumCover(page, album));
   await clickDelete(controls);
-  await expect(page.locator('lcc-dialog')).toContainText(`Delete ${album} and its`);
+  await expect(page.locator('lcc-basic-dialog')).toContainText(`Delete ${album} and its`);
   await confirm(page, 'Delete');
   await expect(albumCover(page, album)).toHaveCount(0);
 }
@@ -43,13 +44,17 @@ test.describe('managing images', () => {
     await page.goto('/photo-gallery');
     await page.getByRole('link', { name: 'Add an image' }).click();
     await expect(page).toHaveURL(/\/image\/add$/);
-    await page.locator('#file-input').setInputFiles(png('blitz-night.png'));
+    await page
+      .locator('lcc-image-form ea-file-uploader input[type="file"]')
+      .setInputFiles(png('blitz-night.png'));
     await expect(page.getByAltText('Image preview')).toHaveAttribute(
       'src',
       /^data:image/,
     );
-    await page.getByLabel('Caption:').fill('Clocks ticking');
-    await page.getByPlaceholder('New album').fill(album);
+    await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
+    const albumField = page.getByRole('combobox', { name: fieldLabel('Album') });
+    await albumField.fill(album);
+    await albumField.press('Escape');
     const saved = imagesSaved(page);
     await page.getByRole('button', { name: 'Add image' }).click();
     await confirm(page, 'Add');
@@ -68,7 +73,7 @@ test.describe('managing images', () => {
     await page.goto('/photo-gallery');
     await page.getByRole('link', { name: 'Create an album' }).click();
     await expect(page).toHaveURL(/\/album\/add$/);
-    await page.locator('#album-input').fill(album);
+    await page.getByLabel(fieldLabel('Album title')).fill(album);
     await page
       .locator('lcc-album-form input[type="file"]')
       .setInputFiles([png('first-board.png'), png('second-board.png')]);
@@ -104,17 +109,15 @@ test.describe('managing images', () => {
     await expect(editor).toHaveURL(
       new RegExp(`/album/edit/${encodeURIComponent(ALBUMS.picnic)}$`),
     );
-    const album = editor.locator('#album-input');
-    const captions = editor.locator(
-      'lcc-album-form input[id^="existing-caption-input-"]',
-    );
+    const album = editor.getByLabel(fieldLabel('Album title'));
+    const captions = editor.locator('.existing-image').getByLabel(fieldLabel('Caption'));
     await expect(album).toHaveValue(ALBUMS.picnic);
     await expect(captions).toHaveCount(PICNIC_IMAGES.length);
 
     await album.fill(`${ALBUMS.picnic} renamed`);
     await captions.first().fill('A caption that was never saved');
-    // The form reports edits a moment after typing stops, which enables Restore
-    await expect(editor.locator('.restore-button')).toBeEnabled();
+    // The form reports edits a moment after typing stops, which enables Discard
+    await expect(editor.getByRole('button', { name: 'Discard changes' })).toBeEnabled();
     await editor
       .locator('lcc-navigation-bar')
       .getByRole('link', { name: 'News', exact: true })
@@ -128,5 +131,47 @@ test.describe('managing images', () => {
     for (const caption of await captions.all()) {
       await expect(caption).not.toHaveValue('A caption that was never saved');
     }
+  });
+
+  test('asks for a file instead of adding an image without one', async ({ page }) => {
+    await logIn(page);
+    const writes = watchWrites(page, `${APP_API}/images`);
+
+    await page.goto('/image/add');
+    await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
+    const albumField = page.getByRole('combobox', { name: fieldLabel('Album') });
+    await albumField.fill(uniqueName('Blitz night'));
+    await albumField.press('Escape');
+    await page.getByRole('button', { name: 'Add image' }).click();
+
+    await expect(page.getByText('Choose an image to upload.')).toBeVisible();
+    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+
+    await page
+      .locator('lcc-image-form ea-file-uploader input[type="file"]')
+      .setInputFiles(png('blitz-night.png'));
+    await expect(page.getByText('Choose an image to upload.')).toHaveCount(0);
+
+    expect(writes).toEqual([]);
+    await page.getByRole('button', { name: 'Discard changes' }).click();
+    await confirm(page, 'Restore');
+  });
+
+  test('offers to create an album only once it has an image', async ({ page }) => {
+    await logIn(page);
+
+    await page.goto('/album/add');
+    await page.getByLabel(fieldLabel('Album title')).fill(uniqueName('Simul evening'));
+    await expect(page.getByRole('button', { name: 'Create album' })).toBeDisabled();
+
+    await page
+      .locator('lcc-album-form input[type="file"]')
+      .setInputFiles(png('first-board.png'));
+    await expect(page.getByAltText('New image preview')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Create album' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Discard changes' }).click();
+    await confirm(page, 'Restore');
+    await expect(page.getByAltText('New image preview')).toHaveCount(0);
   });
 });

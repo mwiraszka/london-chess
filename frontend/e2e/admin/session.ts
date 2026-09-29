@@ -87,7 +87,7 @@ export async function clickDelete(controls: Locator): Promise<void> {
 }
 
 export async function confirm(page: Page, button: string): Promise<void> {
-  const dialog = page.locator('lcc-dialog');
+  const dialog = page.locator('lcc-basic-dialog');
   await dialog.getByRole('button', { name: button, exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }

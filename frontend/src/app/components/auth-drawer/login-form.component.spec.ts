@@ -59,7 +59,8 @@ describe('LoginFormComponent', () => {
     query(fixture.debugElement, 'form').nativeElement.dispatchEvent(new Event('submit'));
   };
 
-  const errorText = (): string => queryTextContent(fixture.debugElement, '.error');
+  const errorText = (): string =>
+    queryTextContent(fixture.debugElement, 'ea-alert.auth-error');
 
   beforeEach(async () => {
     isLoggedIn.set(false);
@@ -181,8 +182,9 @@ describe('LoginFormComponent', () => {
     });
 
     it('should switch to the create account and forgot password forms', () => {
-      const [createAccount, forgotPassword] =
-        fixture.nativeElement.querySelectorAll('.auth-link__button');
+      const [createAccount, forgotPassword] = fixture.nativeElement.querySelectorAll(
+        '.auth-link__button button',
+      );
 
       createAccount.click();
       const afterCreateAccount = authDrawer.mode();

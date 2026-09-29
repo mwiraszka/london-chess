@@ -6,7 +6,9 @@ import {
   HomeIconComponent,
   InfoIconComponent,
   NewspaperIconComponent,
+  PopoverComponent,
   SettingsIconComponent,
+  TooltipDirective,
   TrophyIconComponent,
   UsersIconComponent,
 } from '@eagami/ui';
@@ -22,8 +24,7 @@ import {
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { DropdownDirective } from '@app/directives/dropdown.directive';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { UserSettingsMenuComponent } from '@app/components/user-settings-menu/user-settings-menu.component';
 import { InternalLink } from '@app/models';
 import { RouterLinkPipe } from '@app/pipes';
 import { ClerkService } from '@app/services';
@@ -35,13 +36,14 @@ import { AuthSelectors } from '@app/store/auth';
   styleUrl: './navigation-bar.component.scss',
   imports: [
     AvatarComponent,
-    DropdownDirective,
     NgComponentOutlet,
+    PopoverComponent,
     RouterLink,
     RouterLinkActive,
     RouterLinkPipe,
     SettingsIconComponent,
     TooltipDirective,
+    UserSettingsMenuComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:resize)': 'onResize()' },
@@ -57,8 +59,8 @@ export class NavigationBarComponent {
       icon: HomeIconComponent,
     },
     {
-      text: 'About',
-      internalPath: 'about',
+      text: 'FAQ',
+      internalPath: 'faq',
       icon: InfoIconComponent,
     },
     {
@@ -108,7 +110,8 @@ export class NavigationBarComponent {
     return (first + last).toUpperCase() || undefined;
   });
 
-  public readonly isDropdownOpen = signal(false);
+  protected readonly isMenuOpen = signal(false);
+  protected readonly menuId = 'user-settings-menu';
   public readonly screenWidth = signal(window.innerWidth);
 
   protected onResize(): void {

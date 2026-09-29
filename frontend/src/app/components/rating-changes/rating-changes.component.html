@@ -1,40 +1,62 @@
-<h3 class="dialog-title">Confirm rating changes</h3>
-<p class="dialog-body">
-  The following rating changes were parsed from the CSV file. Review and confirm to apply
-  updates.
-</p>
+<ea-dialog
+  width="xl"
+  [closeDisabled]="pending()"
+  [closeOnBackdrop]="!pending()"
+  [closeOnEscape]="!pending()">
+  <h3
+    slot="header"
+    class="dialog-title">
+    Confirm rating changes
+  </h3>
 
-@if (rows().length) {
-  <lcc-data-table
-    class="rating-changes"
-    aria-label="Rating changes"
-    [columns]="columns()"
-    [data]="rows()" />
-} @else {
-  <p>No valid rating changes found.</p>
-}
+  <p>
+    The following rating changes were parsed from the CSV file. Review and confirm to
+    apply updates.
+  </p>
 
-@if (unmatchedMembers()?.length) {
-  <section class="unmatched-section">
-    <p>The following CSV entries could not be matched to existing members:</p>
-    <ul class="unmatched-member-list">
-      @for (memberName of unmatchedMembers(); track memberName) {
-        <li>{{ memberName }}</li>
-      }
-    </ul>
-    <p>
-      New members need to be added individually. If any of these members are expected to
-      already exist in the database, please check the spelling of the names and ensure
-      that the current ratings are correct.
-    </p>
-  </section>
-}
+  @if (rows().length) {
+    <lcc-data-table
+      class="rating-changes"
+      aria-label="Rating changes"
+      [columns]="columns()"
+      [data]="rows()" />
+  } @else {
+    <p>No valid rating changes found.</p>
+  }
 
-<lcc-dialog-buttons
-  confirmText="Update members"
-  [confirmAction]="confirmAction()"
-  [confirmDisabled]="!rows().length"
-  (result)="dialogResult.emit($event)" />
+  @if (unmatchedMembers()?.length) {
+    <section class="unmatched-section">
+      <p>The following CSV entries could not be matched to existing members:</p>
+      <ul class="unmatched-member-list">
+        @for (memberName of unmatchedMembers(); track memberName) {
+          <li>{{ memberName }}</li>
+        }
+      </ul>
+      <p>
+        New members need to be added individually. If any of these members are expected to
+        already exist in the database, please check the spelling of the names and ensure
+        that the current ratings are correct.
+      </p>
+    </section>
+  }
+
+  <div slot="footer">
+    <ea-button
+      class="cancel-button"
+      variant="secondary"
+      [disabled]="pending()"
+      (clicked)="dialogRef.close('cancel')">
+      Cancel
+    </ea-button>
+    <ea-button
+      class="confirm-button"
+      [disabled]="!rows().length"
+      [loading]="pending()"
+      (clicked)="confirm()">
+      Update members
+    </ea-button>
+  </div>
+</ea-dialog>
 
 <ng-template
   #newRatingCell

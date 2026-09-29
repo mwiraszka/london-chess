@@ -1,4 +1,4 @@
-import { EditIconComponent, FilePlusIconComponent } from '@eagami/ui';
+import { DividerComponent, EditIconComponent, FilePlusIconComponent } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
@@ -21,7 +21,9 @@ import { FormatDatePipe } from '@app/pipes';
               [name]="info().createdBy"
               [showAvatar]="true" />
           </span>
-          <span class="vertical-spacer">|</span>
+          <ea-divider
+            class="vertical-spacer"
+            orientation="vertical" />
           <span class="date">{{ info().dateCreated | formatDate: 'short' }}</span>
         </div>
       </div>
@@ -38,7 +40,9 @@ import { FormatDatePipe } from '@app/pipes';
                 [name]="info().lastEditedBy"
                 [showAvatar]="true" />
             </span>
-            <span class="vertical-spacer">|</span>
+            <ea-divider
+              class="vertical-spacer"
+              orientation="vertical" />
             <span class="date">{{ info().dateLastEdited | formatDate: 'short' }}</span>
           </div>
         </div>
@@ -47,6 +51,7 @@ import { FormatDatePipe } from '@app/pipes';
   `,
   styleUrl: './modification-info.component.scss',
   imports: [
+    DividerComponent,
     EditIconComponent,
     FilePlusIconComponent,
     FormatDatePipe,

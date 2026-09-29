@@ -1,4 +1,6 @@
 import {
+  AccordionComponent,
+  AccordionItemComponent,
   AvatarComponent,
   BadgeComponent,
   CardComponent,
@@ -18,7 +20,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
-import { CollapsibleCardComponent } from '@app/components/collapsible-card/collapsible-card.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberOpeningsComponent } from '@app/components/member-openings/member-openings.component';
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
@@ -37,10 +38,11 @@ import { isCityChampion } from '@app/utils';
   templateUrl: './member-profile-page.component.html',
   styleUrl: './member-profile-page.component.scss',
   imports: [
+    AccordionComponent,
+    AccordionItemComponent,
     AvatarComponent,
     BadgeComponent,
     CardComponent,
-    CollapsibleCardComponent,
     CommonModule,
     ExternalLinkIconComponent,
     LoadFailedComponent,

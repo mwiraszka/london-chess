@@ -1,8 +1,9 @@
-import { Renderer2, signal } from '@angular/core';
+import { ButtonComponent, DialogRef, ProgressBarComponent } from '@eagami/ui';
+
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
-import { Dialog } from '@app/models';
+import { BasicDialogResult, Dialog } from '@app/models';
 import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { BasicDialogComponent } from './basic-dialog.component';
@@ -10,60 +11,115 @@ import { BasicDialogComponent } from './basic-dialog.component';
 describe('BasicDialogComponent', () => {
   let fixture: ComponentFixture<BasicDialogComponent>;
   let component: BasicDialogComponent;
+  let dialogRef: DialogRef<BasicDialogResult>;
+  let closeSpy: MockInstance;
 
   const mockDialog: Dialog = {
-    title: 'Confirm' as const,
+    title: 'Confirm',
     body: 'Body of the mock dialog',
     confirmButtonText: 'Confirm',
-    cancelButtonText: 'Cancel',
-    confirmButtonType: 'primary' as const,
+    cancelButtonText: 'Keep editing',
+    confirmButtonType: 'primary',
   };
 
-  const mockWarningDialog = {
-    title: 'Confirm' as const,
+  const mockWarningDialog: Dialog = {
+    title: 'Confirm',
     body: 'Body of the mock warning dialog',
     confirmButtonText: 'Delete',
-    confirmButtonType: 'warning' as const,
+    confirmButtonType: 'warning',
   };
 
-  let dialogResultSpy: MockInstance;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [BasicDialogComponent],
-      providers: [{ provide: Renderer2, useValue: { listen: vi.fn() } }],
-    }).compileComponents();
-
+  function render(dialog: Dialog): void {
+    fixture?.destroy();
     fixture = TestBed.createComponent(BasicDialogComponent);
     component = fixture.componentInstance;
-
-    dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
-
-    fixture.componentRef.setInput('dialog', mockDialog);
+    fixture.componentRef.setInput('dialog', dialog);
     fixture.detectChanges();
+  }
+
+  const button = (selector: string): ButtonComponent =>
+    query(fixture.debugElement, selector).componentInstance;
+
+  const pressEnter = (target: Element): void => {
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  };
+
+  beforeEach(async () => {
+    dialogRef = new DialogRef<BasicDialogResult>();
+    closeSpy = vi.spyOn(dialogRef, 'close');
+
+    await TestBed.configureTestingModule({
+      imports: [BasicDialogComponent],
+      providers: [{ provide: DialogRef, useValue: dialogRef }],
+    }).compileComponents();
+
+    render(mockDialog);
   });
 
-  describe('dialog result handling', () => {
-    it('should emit "cancel" when cancel button is clicked', () => {
-      query(fixture.debugElement, '.cancel-button').triggerEventHandler('click');
-
-      expect(dialogResultSpy).toHaveBeenCalledWith('cancel');
+  describe('rendering', () => {
+    it('should open with the title in the header and the body below it', () => {
+      expect(queryTextContent(fixture.debugElement, '[slot="header"]')).toBe('Confirm');
+      expect(queryTextContent(fixture.debugElement, '.dialog-body')).toBe(
+        'Body of the mock dialog',
+      );
+      expect(
+        query(fixture.debugElement, 'dialog').nativeElement.hasAttribute('open'),
+      ).toBe(true);
     });
 
-    it('should emit "confirm" when confirm button is clicked', () => {
-      query(fixture.debugElement, '.confirm-button').triggerEventHandler('click');
+    it('should label the buttons from the dialog, defaulting the cancel text', () => {
+      expect(queryTextContent(fixture.debugElement, '.cancel-button')).toBe(
+        'Keep editing',
+      );
 
-      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+      render(mockWarningDialog);
+
+      expect(queryTextContent(fixture.debugElement, '.cancel-button')).toBe('Cancel');
+      expect(queryTextContent(fixture.debugElement, '.confirm-button')).toBe('Delete');
     });
 
-    it('should emit "confirm" when enter key is pressed', () => {
-      const enterEvent = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        bubbles: true,
-      });
-      document.dispatchEvent(enterEvent);
+    it('should style a warning confirmation as a danger button', () => {
+      expect(button('.confirm-button').variant()).toBe('primary');
 
-      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+      render(mockWarningDialog);
+
+      expect(button('.confirm-button').variant()).toBe('danger');
+    });
+  });
+
+  describe('answers', () => {
+    it('should answer cancel from the cancel button', () => {
+      query(fixture.debugElement, '.cancel-button').triggerEventHandler('clicked');
+
+      expect(closeSpy).toHaveBeenCalledWith('cancel');
+    });
+
+    it('should answer confirm from the confirm button', async () => {
+      query(fixture.debugElement, '.confirm-button').triggerEventHandler('clicked');
+      await fixture.whenStable();
+
+      expect(closeSpy).toHaveBeenCalledWith('confirm');
+    });
+
+    it('should answer confirm when Enter is pressed away from the buttons', async () => {
+      pressEnter(query(fixture.debugElement, '.dialog-body').nativeElement);
+      await fixture.whenStable();
+
+      expect(closeSpy).toHaveBeenCalledWith('confirm');
+    });
+
+    it('should leave Enter on a focused button to that button', () => {
+      const cancel = query(fixture.debugElement, '.cancel-button button').nativeElement;
+
+      pressEnter(cancel);
+
+      expect(closeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should close without an answer when the dialog is dismissed', () => {
+      query(fixture.debugElement, '.ea-dialog__close').nativeElement.click();
+
+      expect(closeSpy).toHaveBeenCalledWith();
     });
   });
 
@@ -75,42 +131,33 @@ describe('BasicDialogComponent', () => {
       confirmAction = vi.fn<() => Promise<unknown>>(
         () => new Promise<void>(resolve => (finishAction = () => resolve())),
       );
-      fixture.destroy();
-      fixture = TestBed.createComponent(BasicDialogComponent);
-      component = fixture.componentInstance;
-      dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
-      fixture.componentRef.setInput('dialog', { ...mockDialog, confirmAction });
-      fixture.detectChanges();
+      render({ ...mockDialog, confirmAction });
     });
 
-    it('should stay open until the confirm action finishes', async () => {
-      const buttons: DialogButtonsComponent = query(
-        fixture.debugElement,
-        'lcc-dialog-buttons',
-      ).componentInstance;
-
-      const confirmation = buttons.confirm();
+    it('should stay open and busy until the action finishes', async () => {
+      const confirmation = component.confirm();
       fixture.detectChanges();
 
       expect(confirmAction).toHaveBeenCalledTimes(1);
-      expect(query(fixture.debugElement, '.confirm-button ea-spinner')).toBeTruthy();
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(button('.confirm-button').loading()).toBe(true);
+      expect(button('.cancel-button').disabled()).toBe(true);
+      expect(closeSpy).not.toHaveBeenCalled();
 
       finishAction();
       await confirmation;
 
-      expect(dialogResultSpy).toHaveBeenCalledTimes(1);
-      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+      expect(closeSpy).toHaveBeenCalledTimes(1);
+      expect(closeSpy).toHaveBeenCalledWith('confirm');
     });
 
-    it('should run the action once however often enter is pressed', () => {
-      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    it('should run the action once however often Enter is pressed', () => {
+      const body = query(fixture.debugElement, '.dialog-body').nativeElement;
 
-      document.dispatchEvent(enterEvent);
-      document.dispatchEvent(enterEvent);
+      pressEnter(body);
+      pressEnter(body);
 
       expect(confirmAction).toHaveBeenCalledTimes(1);
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -119,62 +166,35 @@ describe('BasicDialogComponent', () => {
 
     beforeEach(() => {
       uploadProgress.set(null);
-      fixture.destroy();
-      fixture = TestBed.createComponent(BasicDialogComponent);
-      component = fixture.componentInstance;
-      fixture.componentRef.setInput('dialog', { ...mockDialog, uploadProgress });
-      fixture.detectChanges();
+      render({ ...mockDialog, uploadProgress });
     });
 
-    it('should not render a progress bar before any upload starts', () => {
-      expect(query(fixture.debugElement, 'ea-progress-bar')).toBeFalsy();
+    it('should not show progress before any upload starts', () => {
+      expect(queryAll(fixture.debugElement, 'ea-progress-bar')).toHaveLength(0);
     });
 
-    it('should render the progress of the uploads in flight', () => {
+    it('should show the progress of the uploads in flight', () => {
       uploadProgress.set({ uploaded: 1, total: 3 });
       fixture.detectChanges();
 
-      const progressBar = query(
+      const progressBar: ProgressBarComponent = query(
         fixture.debugElement,
         'ea-progress-bar',
       ).componentInstance;
       expect(progressBar.value()).toBe(1);
       expect(progressBar.max()).toBe(3);
-      expect(queryTextContent(fixture.debugElement, '.upload-progress__text')).toBe(
-        'Uploaded 1 of 3 images',
-      );
+      expect(progressBar.label()).toBe('Uploaded 1 of 3 images');
     });
 
     it('should use the singular for a single upload', () => {
       uploadProgress.set({ uploaded: 0, total: 1 });
       fixture.detectChanges();
 
-      expect(queryTextContent(fixture.debugElement, '.upload-progress__text')).toBe(
-        'Uploaded 0 of 1 image',
-      );
-    });
-
-    it('should not render a progress bar for dialogs without uploads', () => {
-      fixture.destroy();
-      fixture = TestBed.createComponent(BasicDialogComponent);
-      fixture.componentRef.setInput('dialog', mockDialog);
-      fixture.detectChanges();
-
-      expect(queryAll(fixture.debugElement, '.upload-progress')).toHaveLength(0);
-    });
-  });
-
-  describe('template rendering', () => {
-    it('should render dialog title and body', () => {
-      expect(queryTextContent(fixture.debugElement, 'h3')).toBe(mockDialog.title);
-      expect(queryTextContent(fixture.debugElement, 'p')).toBe(mockDialog.body);
-    });
-
-    it('should use default cancel text if not provided', () => {
-      fixture.componentRef.setInput('dialog', mockWarningDialog);
-      fixture.detectChanges();
-
-      expect(queryTextContent(fixture.debugElement, '.cancel-button')).toBe('Cancel');
+      const progressBar: ProgressBarComponent = query(
+        fixture.debugElement,
+        'ea-progress-bar',
+      ).componentInstance;
+      expect(progressBar.label()).toBe('Uploaded 0 of 1 image');
     });
   });
 });

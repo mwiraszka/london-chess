@@ -1,4 +1,5 @@
 import {
+  AlertComponent,
   ButtonComponent,
   CodeInputComponent,
   LockIconComponent,
@@ -27,9 +28,9 @@ import { createVerificationCodeControl } from '@app/utils';
   styleUrls: ['./auth-form.component.scss', './create-account-form.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AlertComponent,
     ButtonComponent,
     CodeInputComponent,
-    LockIconComponent,
     MemberAccountFieldsComponent,
     ReactiveFormsModule,
   ],
@@ -43,6 +44,7 @@ export class CreateAccountFormComponent {
   private readonly codeInput = viewChild(CodeInputComponent);
 
   protected readonly codeLength = VERIFICATION_CODE_LENGTH;
+  protected readonly privacyIcon = LockIconComponent;
   protected readonly form = this.authDrawer.createAccountForm;
   protected readonly verificationForm = new FormGroup({
     code: createVerificationCodeControl(),

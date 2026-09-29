@@ -10,7 +10,7 @@ test.describe('documents', () => {
     await table.getByRole('link', { name: 'Code of Conduct' }).first().click();
 
     await expect(page).toHaveURL(/\/documents#lcc-code-of-conduct\.pdf$/);
-    const viewer = page.locator('lcc-dialog lcc-document-viewer');
+    const viewer = page.locator('lcc-document-viewer');
     await expect(viewer.locator('.page').first()).toBeVisible();
 
     await page.keyboard.press('Escape');
@@ -33,6 +33,6 @@ test.describe('documents', () => {
     await page.locator('lcc-footer').getByRole('link', { name: 'Club Bylaws' }).click();
 
     await expect(page).toHaveURL(/\/documents#lcc-bylaws\.pdf$/);
-    await expect(page.locator('lcc-dialog lcc-document-viewer')).toBeVisible();
+    await expect(page.locator('lcc-document-viewer')).toBeVisible();
   });
 });

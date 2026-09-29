@@ -1,22 +1,28 @@
-import { BookmarkIconComponent, EditIconComponent, TrashIconComponent } from '@eagami/ui';
+import {
+  BookmarkIconComponent,
+  ButtonComponent,
+  EditIconComponent,
+  PopoverComponent,
+  PopoverPlacement,
+  TooltipDirective,
+  TrashIconComponent,
+} from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  ElementRef,
-  OnDestroy,
   OnInit,
+  computed,
   inject,
+  input,
   output,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TooltipDirective } from '@app/directives/tooltip.directive';
-import { AdminControlsConfig } from '@app/models/admin-controls-config.model';
+import { AdminControlsConfig, AdminControlsPlacement } from '@app/models';
 import { IsDefinedPipe, RouterLinkPipe } from '@app/pipes';
-import { ADMIN_CONTROLS_CONFIG_TOKEN } from '@app/services';
 import { KeyStateService } from '@app/services';
 import { isTouchDevice } from '@app/utils';
 
@@ -26,34 +32,37 @@ import { isTouchDevice } from '@app/utils';
   templateUrl: './admin-controls.component.html',
   styleUrl: './admin-controls.component.scss',
   imports: [
-    BookmarkIconComponent,
+    ButtonComponent,
     EditIconComponent,
     IsDefinedPipe,
+    PopoverComponent,
     RouterLink,
     RouterLinkPipe,
     TooltipDirective,
-    TrashIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminControlsComponent implements OnInit, OnDestroy {
+export class AdminControlsComponent implements OnInit {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly elementRef = inject(ElementRef);
   private readonly keyStateService = inject(KeyStateService);
 
-  public config = inject<AdminControlsConfig>(ADMIN_CONTROLS_CONFIG_TOKEN);
+  public readonly anchor = input.required<HTMLElement>();
+  public readonly config = input.required<AdminControlsConfig>();
+  public readonly placement = input<AdminControlsPlacement>('top');
 
-  public readonly destroyed = output<void>();
+  public readonly closed = output<void>();
+
+  protected readonly popoverPlacement = computed<PopoverPlacement>(() =>
+    this.placement() === 'top' ? 'inside-top-start' : 'inside-start',
+  );
+
+  protected readonly bookmarkIcon = BookmarkIconComponent;
+  protected readonly deleteIcon = TrashIconComponent;
 
   public isTouchDevice = isTouchDevice();
   public showDeleteButton!: boolean;
 
   public ngOnInit(): void {
-    this.elementRef.nativeElement.style.setProperty(
-      '--admin-control-button-size',
-      `${this.config.buttonSize}px`,
-    );
-
     if (this.isTouchDevice) {
       this.showDeleteButton = true;
     } else {
@@ -66,9 +75,5 @@ export class AdminControlsComponent implements OnInit, OnDestroy {
           this.changeDetectorRef.markForCheck();
         });
     }
-  }
-
-  public ngOnDestroy(): void {
-    this.destroyed.emit();
   }
 }

@@ -1,5 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { bodyRows } from '../tables';
+import { fieldError, fieldLabel, leaveAndReturn, watchWrites } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
@@ -19,6 +20,12 @@ async function findMember(page: Page, lastName: string) {
   return rows.first();
 }
 
+async function openNewMemberForm(page: Page): Promise<void> {
+  await page.goto('/members');
+  await page.getByRole('link', { name: 'Add a member' }).click();
+  await expect(page).toHaveURL(/\/member\/add$/);
+}
+
 test.describe('managing members', () => {
   test.beforeEach(requireAdminCredentials);
 
@@ -26,13 +33,11 @@ test.describe('managing members', () => {
     const lastName = uniqueName('Pemberly').replace(' ', '-');
     await logIn(page);
 
-    await page.goto('/members');
-    await page.getByRole('link', { name: 'Add a member' }).click();
-    await expect(page).toHaveURL(/\/member\/add$/);
-    await page.getByLabel('First name:').fill('Imogen');
-    await page.getByLabel('Last name:').fill(lastName);
-    await page.getByLabel('City:').fill('Strathroy');
-    await page.getByLabel('LCC rating:').fill('1432');
+    await openNewMemberForm(page);
+    await page.getByLabel(fieldLabel('First name')).fill('Imogen');
+    await page.getByLabel(fieldLabel('Last name')).fill(lastName);
+    await page.getByLabel(fieldLabel('City')).fill('Strathroy');
+    await page.getByLabel(fieldLabel('LCC rating')).fill('1432');
     const added = page.waitForResponse(
       response =>
         response.url().startsWith(`${APP_API}/admin/members`) &&
@@ -40,7 +45,9 @@ test.describe('managing members', () => {
       { timeout: RESPONSE_TIMEOUT },
     );
     await page.getByRole('button', { name: 'Add member' }).click();
-    await expect(page.locator('lcc-dialog')).toContainText(`Add Imogen ${lastName}?`);
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      `Add Imogen ${lastName}?`,
+    );
     await confirm(page, 'Add');
 
     expect((await added).status()).toBe(201);
@@ -50,8 +57,11 @@ test.describe('managing members', () => {
     let controls = await openAdminControls(row);
     await controls.getByRole('link', { name: /^Edit / }).click();
     await expect(page).toHaveURL(/\/member\/edit\/[0-9a-f]{24}$/);
-    await expect(page.getByLabel('Last name:')).toHaveValue(lastName);
-    await page.getByLabel('City:').fill('Komoka');
+    await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(lastName);
+    // Opening a member is not an edit, so there is nothing to save or discard yet
+    await expect(page.getByRole('button', { name: 'Update member' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeDisabled();
+    await page.getByLabel(fieldLabel('City')).fill('Komoka');
     const updated = page.waitForResponse(
       response =>
         response.url().startsWith(`${APP_API}/admin/members/`) &&
@@ -67,9 +77,69 @@ test.describe('managing members', () => {
 
     controls = await openAdminControls(row);
     await clickDelete(controls);
-    await expect(page.locator('lcc-dialog')).toContainText(`Delete Imogen ${lastName}?`);
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      `Delete Imogen ${lastName}?`,
+    );
     await confirm(page, 'Delete');
 
     await expect(page.getByText('No members match these filters.')).toBeVisible();
+  });
+
+  test('shows what is wrong instead of saving an incomplete member', async ({ page }) => {
+    await logIn(page);
+    const writes = watchWrites(page, `${APP_API}/admin/members`);
+
+    await openNewMemberForm(page);
+    await expect(page.locator('lcc-member-form').getByRole('alert')).toHaveCount(0);
+    await page.getByLabel(fieldLabel('First name')).fill('Imogen');
+    await page.getByLabel(fieldLabel('LCC rating')).fill('15OO');
+    await page.getByLabel(fieldLabel('City')).focus();
+    await expect(fieldError(page, 'LCC rating')).toHaveText(
+      'Enter a rating such as 1500, or 1500/7 for a provisional rating.',
+    );
+    await page.getByRole('button', { name: 'Add member' }).click();
+
+    await expect(fieldError(page, 'Last name')).toHaveText('This field is required');
+    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+
+    await page.getByLabel(fieldLabel('LCC rating')).fill('1500/7');
+    await page.getByLabel(fieldLabel('Last name')).fill('Pemberly');
+    await expect(fieldError(page, 'LCC rating')).toHaveCount(0);
+    await expect(fieldError(page, 'Last name')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Add member' }).click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText('Add Imogen Pemberly?');
+    await page
+      .locator('lcc-basic-dialog')
+      .getByRole('button', { name: 'Cancel' })
+      .click();
+
+    expect(writes).toEqual([]);
+    await page.getByRole('button', { name: 'Discard changes' }).click();
+    await confirm(page, 'Restore');
+  });
+
+  test('keeps a new member draft, with its errors, through leaving the page', async ({
+    page,
+  }) => {
+    await logIn(page);
+
+    await openNewMemberForm(page);
+    await page.getByLabel(fieldLabel('First name')).fill('Imogen');
+    await page.getByLabel(fieldLabel('City')).fill('');
+    // The draft reaches the store a moment after typing stops, which enables Discard
+    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeEnabled();
+    await leaveAndReturn(page);
+
+    await expect(page).toHaveURL(/\/member\/add$/);
+    await expect(page.getByLabel(fieldLabel('First name'))).toHaveValue('Imogen');
+    await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('');
+    await expect(fieldError(page, 'City')).toHaveText('This field is required');
+
+    await page.getByRole('button', { name: 'Discard changes' }).click();
+    await confirm(page, 'Restore');
+
+    await expect(page.getByLabel(fieldLabel('First name'))).toHaveValue('');
+    await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('London');
+    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeDisabled();
   });
 });

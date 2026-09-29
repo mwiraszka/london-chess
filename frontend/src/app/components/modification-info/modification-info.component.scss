@@ -47,11 +47,13 @@
       }
 
       .vertical-spacer {
+        --ea-divider-length: 1em;
+
         display: none;
-        color: var(--lcc-color--modificationInfo-verticalSpacer);
+        vertical-align: middle;
 
         @include respond-to('gt-md') {
-          display: inline;
+          display: inline-flex;
         }
       }
 

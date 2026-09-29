@@ -2,6 +2,7 @@ import { expect, test } from '../fixtures';
 import { ARTICLES, PROFILE_MEMBER, UPCOMING_EVENTS } from '../seed';
 import { setSwitch } from '../switches';
 import { bodyRows } from '../tables';
+import { fieldLabel } from './fields';
 import { logIn, openAdminControls, requireAdminCredentials } from './session';
 
 test.describe('admin controls', () => {
@@ -26,7 +27,7 @@ test.describe('admin controls', () => {
     await expect(controls.getByRole('button', { name: /bookmark/i })).toBeVisible();
     await controls.getByRole('link', { name: /^Edit / }).click();
     await expect(page).toHaveURL(new RegExp(`/article/edit/${ARTICLES[1].id}$`));
-    await expect(page.getByLabel('Title:')).toHaveValue(ARTICLES[1].title);
+    await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(ARTICLES[1].title);
   });
 
   test('offer editing an event from the schedule list', async ({ page }) => {
@@ -53,7 +54,9 @@ test.describe('admin controls', () => {
 
     await controls.getByRole('link', { name: /^Edit / }).click();
     await expect(page).toHaveURL(/\/member\/edit\/[0-9a-f]{24}$/);
-    await expect(page.getByLabel('Last name:')).toHaveValue(PROFILE_MEMBER.lastName);
+    await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(
+      PROFILE_MEMBER.lastName,
+    );
   });
 
   test('show the admin toolbar on each managed page', async ({ page }) => {
@@ -62,6 +65,7 @@ test.describe('admin controls', () => {
       ['/schedule', 'Add an event'],
       ['/members', 'Add a member'],
       ['/photo-gallery', 'Create an album'],
+      ['/tournaments', 'Add a tournament'],
     ]) {
       await page.goto(path);
 

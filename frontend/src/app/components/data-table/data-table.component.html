@@ -1,18 +1,21 @@
 <ea-data-table
   density="compact"
   [aria-label]="ariaLabel()"
-  [clickable]="clickable() && !loading()"
+  [clickable]="clickable()"
   [columns]="shownColumns()"
-  [data]="rows()"
+  [data]="data()"
   [hoverable]="hoverable()"
+  [loading]="loading()"
+  [loadingRowCount]="loadingRowCount()"
   [noDataText]="noDataText()"
   [nowrap]="true"
-  [rowHref]="rowHrefWhenLoaded()"
+  [rowHref]="rowHref()"
   [sizingRows]="hiddenRows()"
   [sort]="sort()"
   [striped]="true"
   [trackBy]="trackBy"
   (rowActivate)="rowActivate.emit($event)"
+  (rowContextMenu)="onRowContextMenu($event)"
   (sorted)="sorted.emit($event)">
   <ng-content
     select="ea-paginator"
@@ -24,18 +27,8 @@
     let-row
     let-value="value"
     [lccDataTableCell]="column.key">
-    <span
-      class="data-table__cell"
-      [attr.data-row-id]="row.id">
-      @if (isPlaceholder(row)) {
-        @if (column.placeholderTemplate) {
-          <ng-container
-            [ngTemplateOutlet]="column.placeholderTemplate"
-            [ngTemplateOutletContext]="cellContext(row, value, column)" />
-        } @else {
-          <lcc-text-skeleton width="100%" />
-        }
-      } @else if (column.cellTemplate) {
+    <span class="data-table__cell">
+      @if (column.cellTemplate) {
         <ng-container
           [ngTemplateOutlet]="column.cellTemplate"
           [ngTemplateOutletContext]="cellContext(row, value, column)" />

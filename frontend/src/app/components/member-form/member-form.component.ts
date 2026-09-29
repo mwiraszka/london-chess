@@ -1,68 +1,82 @@
-import { CardComponent, HistoryIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import {
+  AlertComponent,
+  ButtonComponent,
+  CardComponent,
+  CheckboxComponent,
+  DatePickerComponent,
+  DialogService,
+  HistoryIconComponent,
+  InputComponent,
+} from '@eagami/ui';
+import { pick } from 'lodash';
 import { merge } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
   input,
   output,
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { DatePickerComponent } from '@app/components/date-picker/date-picker.component';
-import { FormErrorIconComponent } from '@app/components/form-error-icon/form-error-icon.component';
+import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
-import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
+import { PhoneNumberFieldComponent } from '@app/components/phone-number-field/phone-number-field.component';
+import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import {
+  FORM_CHANGE_DEBOUNCE,
+  FORM_ERROR_MESSAGES,
+  WEEK_STARTS_ON,
+} from '@app/constants/forms';
+import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
 import {
   BasicDialogResult,
   Dialog,
   Id,
+  IsoDate,
   Member,
   MemberFormData,
   MemberFormGroup,
+  MemberFormValue,
 } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
+import { fromClubDateTime, toClubDateTime, toDayString } from '@app/utils';
 import {
   emailValidator,
-  phoneNumberValidator,
   ratingValidator,
   textValidator,
   yearOfBirthValidator,
 } from '@app/validators';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-member-form',
   templateUrl: './member-form.component.html',
   styleUrl: './member-form.component.scss',
   imports: [
+    AlertComponent,
+    ButtonComponent,
     CardComponent,
+    CheckboxComponent,
+    ChessUsernameFieldsComponent,
     DatePickerComponent,
-    FormErrorIconComponent,
-    HistoryIconComponent,
+    InputComponent,
     ModificationInfoComponent,
+    PhoneNumberFieldComponent,
     ReactiveFormsModule,
-    SafeModeNoticeComponent,
-    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberFormComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogService = inject(DialogService);
-  private readonly formBuilder = inject(FormBuilder);
+  private readonly storeRequests = inject(StoreRequestService);
 
   readonly formData = input.required<MemberFormData>();
   readonly hasUnsavedChanges = input.required<boolean>();
@@ -76,11 +90,18 @@ export class MemberFormComponent implements OnInit {
   }>();
   readonly restore = output<Id | null>();
 
+  protected readonly errorMessages = FORM_ERROR_MESSAGES;
+  protected readonly restoreIcon = HistoryIconComponent;
+  protected readonly weekStartsOn = WEEK_STARTS_ON;
+
   public form!: FormGroup<MemberFormGroup>;
   // Kept out of the form group, so the choice is never saved with the member or
   // counted as an unsaved change. Only the editor shows it: a new member is always
   // emailed once their email address and year of birth are filled in
-  public notifyMember = this.createNotifyMemberControl();
+  public readonly notifyMember = new FormControl(
+    { value: false, disabled: true },
+    { nonNullable: true },
+  );
 
   // A member with an account changes their email address from the account page
   protected get isEmailManagedByAccount(): boolean {
@@ -93,11 +114,21 @@ export class MemberFormComponent implements OnInit {
       : "Create the member's account and email them their login details";
   }
 
-  private readonly storeRequests = inject(StoreRequestService);
-
   public ngOnInit(): void {
-    this.initForm();
-    this.initFormValueChangeListener();
+    this.form = this.buildForm(this.formData());
+    this.syncNotifyMember();
+
+    this.form.valueChanges
+      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.emitChange());
+    this.emitChange();
+
+    merge(
+      this.form.controls.email.valueChanges,
+      this.form.controls.yearOfBirth.valueChanges,
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.syncNotifyMember());
 
     if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
@@ -112,26 +143,33 @@ export class MemberFormComponent implements OnInit {
       confirmButtonType: 'warning',
     };
 
-    const dialogResult = await this.dialogService.open<
+    const dialogResult = await this.dialogService.open<BasicDialogResult>(
       BasicDialogComponent,
-      BasicDialogResult
-    >({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+      { inputs: { dialog } },
+    ).result;
 
     if (dialogResult !== 'confirm') {
       return;
     }
 
-    this.restore.emit(this.originalMember()?.id ?? null);
-
-    setTimeout(() => this.ngOnInit());
+    const originalMember = this.originalMember();
+    this.restore.emit(originalMember?.id ?? null);
+    this.form.reset(
+      this.toFormValue(
+        originalMember
+          ? pick(originalMember, MEMBER_FORM_DATA_PROPERTIES)
+          : INITIAL_MEMBER_FORM_DATA,
+      ),
+    );
   }
 
   public onCancel(): void {
     this.cancel.emit();
+  }
+
+  // A click that leaves the page starts by leaving a field, so the draft is saved first
+  public onFieldLeft(): void {
+    this.emitChange();
   }
 
   public async onSubmit(): Promise<void> {
@@ -139,6 +177,9 @@ export class MemberFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+
+    // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.emitChange();
 
     const notifyMember = this.notifyMember.value;
     const dialog: Dialog = {
@@ -148,11 +189,7 @@ export class MemberFormComponent implements OnInit {
       confirmAction: () => this.save(notifyMember),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   private save(notifyMember: boolean): Promise<unknown> {
@@ -174,7 +211,8 @@ export class MemberFormComponent implements OnInit {
   private getConfirmationMessage(notifyMember: boolean): string {
     const originalMember = this.originalMember();
     if (!originalMember) {
-      const name = `${this.formData().firstName} ${this.formData().lastName}`;
+      const { firstName, lastName } = this.form.getRawValue();
+      const name = `${firstName} ${lastName}`;
       return notifyMember
         ? `Add ${name} and email them their login details?`
         : `Add ${name}?`;
@@ -189,58 +227,56 @@ export class MemberFormComponent implements OnInit {
       : `Update ${name}, create their account and email them their login details?`;
   }
 
-  private initForm(): void {
-    this.form = this.formBuilder.group<MemberFormGroup>({
-      firstName: new FormControl(this.formData().firstName, {
+  private toFormValue(data: MemberFormData): MemberFormValue {
+    return {
+      ...data,
+      dateJoined: data.dateJoined ? toClubDateTime(data.dateJoined).day : null,
+    };
+  }
+
+  private buildForm(data: MemberFormData): FormGroup<MemberFormGroup> {
+    const value = this.toFormValue(data);
+    return new FormGroup<MemberFormGroup>({
+      firstName: new FormControl(value.firstName, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      lastName: new FormControl(this.formData().lastName, {
+      lastName: new FormControl(value.lastName, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      city: new FormControl(this.formData().city, {
+      city: new FormControl(value.city, {
         nonNullable: true,
         validators: [Validators.required, textValidator],
       }),
-      rating: new FormControl(this.formData().rating, {
+      rating: new FormControl(value.rating, {
         nonNullable: true,
         validators: [Validators.required, ratingValidator],
       }),
-      dateJoined: new FormControl(this.formData().dateJoined, {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
+      dateJoined: new FormControl<Date | null>(value.dateJoined, Validators.required),
       email: new FormControl(
-        { value: this.formData().email, disabled: this.isEmailManagedByAccount },
+        { value: value.email, disabled: this.isEmailManagedByAccount },
         { nonNullable: true, validators: emailValidator },
       ),
-      phoneNumber: new FormControl(this.formData().phoneNumber, {
+      phoneNumber: new FormControl(value.phoneNumber, {
         nonNullable: true,
-        validators: phoneNumberValidator,
+        validators: Validators.pattern(MEMBER_DETAIL_RULES.phoneNumber.pattern),
       }),
-      yearOfBirth: new FormControl(this.formData().yearOfBirth, {
+      yearOfBirth: new FormControl(value.yearOfBirth, {
         nonNullable: true,
         validators: yearOfBirthValidator,
       }),
-      chessComUsername: new FormControl(this.formData().chessComUsername, {
+      chessComUsername: new FormControl(value.chessComUsername, {
         nonNullable: true,
-        validators: textValidator,
+        validators: Validators.pattern(MEMBER_DETAIL_RULES.chessComUsername.pattern),
       }),
-      lichessUsername: new FormControl(this.formData().lichessUsername, {
+      lichessUsername: new FormControl(value.lichessUsername, {
         nonNullable: true,
-        validators: textValidator,
+        validators: Validators.pattern(MEMBER_DETAIL_RULES.lichessUsername.pattern),
       }),
-      isActive: new FormControl(this.formData().isActive, { nonNullable: true }),
-      peakRating: new FormControl(this.formData().peakRating, { nonNullable: true }),
+      isActive: new FormControl(value.isActive, { nonNullable: true }),
+      peakRating: new FormControl(value.peakRating, { nonNullable: true }),
     });
-
-    this.notifyMember = this.createNotifyMemberControl();
-    this.syncNotifyMember();
-  }
-
-  private createNotifyMemberControl(): FormControl<boolean> {
-    return new FormControl({ value: false, disabled: true }, { nonNullable: true });
   }
 
   // Emailing the member needs a valid email address and year of birth, and is offered
@@ -259,24 +295,29 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
-  private initFormValueChangeListener(): void {
-    this.form.valueChanges
-      .pipe(debounceTime(250), untilDestroyed(this))
-      .subscribe((formData: Partial<MemberFormData>) =>
-        this.change.emit({
-          memberId: this.originalMember()?.id ?? null,
-          formData,
-        }),
-      );
+  // An unchanged day keeps the instant it was saved with, so opening a member never
+  // counts as an edit. A newly picked day starts at midnight on the club clock
+  private toDateJoined(day: Date | null): IsoDate | null {
+    if (!day) {
+      return null;
+    }
 
-    merge(
-      this.form.controls.email.valueChanges,
-      this.form.controls.yearOfBirth.valueChanges,
-    )
-      .pipe(untilDestroyed(this))
-      .subscribe(() => this.syncNotifyMember());
+    const pickedDay = toDayString(day);
+    const savedInstant = [
+      this.originalMember()?.dateJoined,
+      this.formData().dateJoined,
+    ].find(
+      instant => !!instant && toDayString(toClubDateTime(instant).day) === pickedDay,
+    );
+    return savedInstant ?? fromClubDateTime(day, '00:00');
+  }
 
-    // Manually trigger form data change to pass initial form data to store
-    this.form.updateValueAndValidity();
+  private emitChange(): void {
+    const { dateJoined: day, ...fields } = this.form.getRawValue();
+    const dateJoined = this.toDateJoined(day);
+    this.change.emit({
+      memberId: this.originalMember()?.id ?? null,
+      formData: dateJoined ? { ...fields, dateJoined } : fields,
+    });
   }
 }

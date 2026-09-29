@@ -1,8 +1,9 @@
+import { ButtonComponent, DialogRef } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { MemberWithNewRatings } from '@app/models';
+import { BasicDialogResult, MemberWithNewRatings } from '@app/models';
 import { query, queryAll } from '@app/utils';
 
 import { RatingChangesComponent } from './rating-changes.component';
@@ -10,7 +11,7 @@ import { RatingChangesComponent } from './rating-changes.component';
 describe('RatingChangesComponent', () => {
   let fixture: ComponentFixture<RatingChangesComponent>;
 
-  let dialogResultSpy: MockInstance;
+  let closeSpy: MockInstance;
 
   const mockMembersWithNewRatings: MemberWithNewRatings[] = [
     {
@@ -28,13 +29,15 @@ describe('RatingChangesComponent', () => {
   const unmatchedMembers = ['Charlie Brown', 'Danny Ocean'];
 
   beforeEach(async () => {
+    const dialogRef = new DialogRef<BasicDialogResult>();
+    closeSpy = vi.spyOn(dialogRef, 'close');
+
     await TestBed.configureTestingModule({
       imports: [RatingChangesComponent],
+      providers: [{ provide: DialogRef, useValue: dialogRef }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RatingChangesComponent);
-
-    dialogResultSpy = vi.spyOn(fixture.componentInstance.dialogResult, 'emit');
 
     fixture.componentRef.setInput('membersWithNewRatings', mockMembersWithNewRatings);
     fixture.componentRef.setInput('unmatchedMembers', unmatchedMembers);
@@ -92,23 +95,32 @@ describe('RatingChangesComponent', () => {
       fixture.componentRef.setInput('membersWithNewRatings', []);
       fixture.detectChanges();
 
-      expect(query(fixture.debugElement, '.confirm-button').properties['disabled']).toBe(
-        true,
-      );
+      const confirm: ButtonComponent = query(
+        fixture.debugElement,
+        '.confirm-button',
+      ).componentInstance;
+      expect(confirm.disabled()).toBe(true);
     });
   });
 
   describe('dialog result handling', () => {
-    it('should emit cancel when cancel button clicked', () => {
-      query(fixture.debugElement, '.cancel-button').triggerEventHandler('click');
+    it('should answer cancel when cancel button clicked', () => {
+      query(fixture.debugElement, '.cancel-button').triggerEventHandler('clicked');
 
-      expect(dialogResultSpy).toHaveBeenCalledWith('cancel');
+      expect(closeSpy).toHaveBeenCalledWith('cancel');
     });
 
-    it('should emit confirm when confirm button clicked', () => {
-      query(fixture.debugElement, '.confirm-button').triggerEventHandler('click');
+    it('should answer confirm when confirm button clicked', async () => {
+      query(fixture.debugElement, '.confirm-button').triggerEventHandler('clicked');
+      await fixture.whenStable();
 
-      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+      expect(closeSpy).toHaveBeenCalledWith('confirm');
+    });
+
+    it('should close without an answer when the dialog is dismissed', () => {
+      query(fixture.debugElement, '.ea-dialog__close').nativeElement.click();
+
+      expect(closeSpy).toHaveBeenCalledWith();
     });
 
     it('should apply the ratings before confirming', async () => {
@@ -118,22 +130,22 @@ describe('RatingChangesComponent', () => {
       );
       fixture.componentRef.setInput('confirmAction', confirmAction);
       fixture.detectChanges();
-      const buttons: DialogButtonsComponent = query(
-        fixture.debugElement,
-        'lcc-dialog-buttons',
-      ).componentInstance;
 
-      const confirmation = buttons.confirm();
+      const confirmation = fixture.componentInstance.confirm();
       fixture.detectChanges();
 
+      const confirm: ButtonComponent = query(
+        fixture.debugElement,
+        '.confirm-button',
+      ).componentInstance;
       expect(confirmAction).toHaveBeenCalledTimes(1);
-      expect(query(fixture.debugElement, '.confirm-button ea-spinner')).toBeTruthy();
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(confirm.loading()).toBe(true);
+      expect(closeSpy).not.toHaveBeenCalled();
 
       finishUpdate();
       await confirmation;
 
-      expect(dialogResultSpy).toHaveBeenCalledWith('confirm');
+      expect(closeSpy).toHaveBeenCalledWith('confirm');
     });
   });
 });

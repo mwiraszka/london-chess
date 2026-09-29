@@ -1,3 +1,4 @@
+import { DialogRef, DialogService } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { firstValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -7,9 +8,10 @@ import { type CanDeactivateFn } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { BasicDialogResult, Dialog, EditorPage } from '@app/models';
-import { DialogService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { declaredAccess, hasAccess } from '@app/utils';
+
+let leaveDialog: DialogRef<BasicDialogResult> | null = null;
 
 export const unsavedChangesGuard: CanDeactivateFn<EditorPage> = async (
   component,
@@ -38,11 +40,13 @@ export const unsavedChangesGuard: CanDeactivateFn<EditorPage> = async (
     confirmButtonText: 'Leave',
   };
 
-  const result = await dialogService.open<BasicDialogComponent, BasicDialogResult>({
-    componentType: BasicDialogComponent,
-    isModal: false,
-    inputs: { dialog },
-  });
+  // A navigation made while this is up, such as Back, supersedes the one that opened it,
+  // so it waits on the same answer
+  if (!leaveDialog || leaveDialog.closed()) {
+    leaveDialog = dialogService.open<BasicDialogResult>(BasicDialogComponent, {
+      inputs: { dialog },
+    });
+  }
 
-  return result === 'confirm';
+  return (await leaveDialog.result) === 'confirm';
 };

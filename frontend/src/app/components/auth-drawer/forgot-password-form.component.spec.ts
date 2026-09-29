@@ -54,7 +54,8 @@ describe('ForgotPasswordFormComponent', () => {
     query(fixture.debugElement, 'form').nativeElement.dispatchEvent(new Event('submit'));
   };
 
-  const errorText = (): string => queryTextContent(fixture.debugElement, '.error');
+  const errorText = (): string =>
+    queryTextContent(fixture.debugElement, 'ea-alert.auth-error');
 
   beforeEach(async () => {
     userRecord.set(null);
@@ -143,7 +144,7 @@ describe('ForgotPasswordFormComponent', () => {
     });
 
     it('should go back to the log in form', () => {
-      query(fixture.debugElement, '.auth-link__button').nativeElement.click();
+      query(fixture.debugElement, '.auth-link__button button').nativeElement.click();
 
       expect(authDrawer.mode()).toBe('login');
     });

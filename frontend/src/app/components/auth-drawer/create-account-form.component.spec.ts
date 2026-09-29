@@ -61,7 +61,8 @@ describe('CreateAccountFormComponent', () => {
   const codeInput = (): CodeInputComponent =>
     query(fixture.debugElement, 'ea-code-input').componentInstance;
 
-  const errorText = (): string => queryTextContent(fixture.debugElement, '.error');
+  const errorText = (): string =>
+    queryTextContent(fixture.debugElement, 'ea-alert.auth-error');
 
   beforeEach(async () => {
     postSpy = vi.fn().mockResolvedValue(undefined);
@@ -151,9 +152,19 @@ describe('CreateAccountFormComponent', () => {
     });
 
     it('should switch to the log in form', () => {
-      query(fixture.debugElement, '.auth-link__button').nativeElement.click();
+      query(fixture.debugElement, '.auth-link__button button').nativeElement.click();
 
       expect(authDrawer.mode()).toBe('login');
+    });
+
+    it('should explain how the details are used in a privacy note', () => {
+      const note = query(fixture.debugElement, 'ea-alert.privacy-note');
+
+      expect(note.componentInstance.variant()).toBe('info');
+      expect(query(note, 'ea-icon-lock')).toBeTruthy();
+      expect(note.nativeElement.textContent).toContain(
+        "We don't share your information with anyone.",
+      );
     });
   });
 
@@ -244,7 +255,7 @@ describe('CreateAccountFormComponent', () => {
       fixture.detectChanges();
 
       expect(query(fixture.debugElement, 'lcc-member-account-fields')).toBeTruthy();
-      expect(query(fixture.debugElement, '.error')).toBeFalsy();
+      expect(query(fixture.debugElement, 'ea-alert.auth-error')).toBeFalsy();
       expect(authDrawer.createAccountForm.controls.firstName.value).toBe(' Ann ');
       // @ts-expect-error Protected class member
       expect(component.verificationForm.controls.code.value).toBe('');

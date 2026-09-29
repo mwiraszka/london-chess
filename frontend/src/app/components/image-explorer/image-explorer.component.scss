@@ -8,17 +8,9 @@ $side-padding: 8px;
 
 @include filters-search-switch;
 
-:host-context(body[data-theme='dark']) .filters__search {
-  --color-bg-base: var(--lcc-color--imageExplorer-controlBackground);
-}
-
-.paginator ea-paginator {
-  --color-bg-base: var(--lcc-color--imageExplorer-controlBackground);
-
-  // The paginator's own top line would double the edge of the grid above it
-  ::ng-deep .ea-paginator {
-    border-top: none;
-  }
+// The paginator's own top line would double the edge of the grid above it
+.paginator ea-paginator ::ng-deep .ea-paginator {
+  border-top: none;
 }
 
 .paginator {
@@ -28,22 +20,18 @@ $side-padding: 8px;
 }
 
 :host {
-  // The dialog stays light in either theme, so its library controls do too
-  --color-bg-base: var(--lcc-color--imageExplorer-controlBackground);
-  --color-bg-muted: var(--lcc-color--imageExplorer-controlBackgroundOnHover);
-  --color-state-hover: var(--lcc-color--imageExplorer-controlBackgroundOnHover);
-  --color-text-primary: var(--lcc-color--imageExplorer-controlText);
-  --color-text-secondary: var(--lcc-color--imageExplorer-controlSecondaryText);
-  --color-text-tertiary: var(--lcc-color--imageExplorer-controlSecondaryText);
-  --color-border-default: var(--lcc-color--imageExplorer-controlBorder);
-  --color-border-subtle: var(--lcc-color--imageExplorer-controlBorder);
+  --ea-dialog-body-padding: 0;
+}
 
+.dialog-title {
+  font: inherit;
+}
+
+.image-explorer {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: min(90vw, var(--lcc-width--appContent));
-  height: 90dvh;
-  background-color: var(--lcc-color--imageExplorer-gridBackground);
+  height: 100%;
 
   lcc-admin-toolbar {
     width: calc(100% - 16px);
@@ -97,7 +85,7 @@ $side-padding: 8px;
     border: none;
     border-radius: var(--lcc-borderRadius--large);
     box-shadow: 1px 2px 4px var(--lcc-color--general-cardBoxShadow);
-    background-color: var(--lcc-color--imageExplorer-gridBackground);
+    background-color: var(--lcc-color--imageExplorer-cardBackground);
     transition: all 0.2s ease;
 
     &.selectable:hover {
@@ -159,7 +147,7 @@ $side-padding: 8px;
       color: var(--lcc-color--imageExplorer-articleAppearancesText);
     }
 
-    // Placeholders take a fill that reads on the light card in either theme
+    // Placeholders take a fill that reads on the card
     ::ng-deep ea-skeleton .ea-skeleton {
       background-color: var(--lcc-color--imageExplorer-skeleton);
     }

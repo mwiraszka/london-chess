@@ -1,4 +1,9 @@
-import { DataTableSortState, PaginatorComponent, PaginatorState } from '@eagami/ui';
+import {
+  DataTableColumn,
+  DataTableSortState,
+  PaginatorComponent,
+  PaginatorState,
+} from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -17,11 +22,7 @@ import {
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
-import {
-  DataTableCellContext,
-  DataTableComponent,
-  LccDataTableColumn,
-} from '@app/components/data-table/data-table.component';
+import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberHighlightsComponent } from '@app/components/member-highlights/member-highlights.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
@@ -115,7 +116,7 @@ export class MemberTournamentsComponent {
   private readonly dateCell = viewChild<CellTemplate>('dateCell');
   private readonly tournamentCell = viewChild<CellTemplate>('tournamentCell');
   private readonly tournamentPlaceholder = viewChild<
-    TemplateRef<DataTableCellContext<ResultRow>>
+    TemplateRef<{ $implicit: DataTableColumn<ResultRow>; index: number }>
   >('tournamentPlaceholder');
   private readonly formatCell = viewChild<CellTemplate>('formatCell');
   private readonly timeControlCell = viewChild<CellTemplate>('timeControlCell');
@@ -173,7 +174,7 @@ export class MemberTournamentsComponent {
     pageOf(this.allRows(), this.page(), this.pageSize()),
   );
 
-  protected readonly columns = computed<LccDataTableColumn<ResultRow>[]>(() => {
+  protected readonly columns = computed<DataTableColumn<ResultRow>[]>(() => {
     const cells = {
       date: this.dateCell(),
       tournament: this.tournamentCell(),

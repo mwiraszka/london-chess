@@ -1,4 +1,4 @@
-import { DataTableSortState, PaginatorComponent } from '@eagami/ui';
+import { DataTableColumn, DataTableSortState, PaginatorComponent } from '@eagami/ui';
 
 import { Component, TemplateRef, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -8,11 +8,7 @@ import { AdminControlsConfig } from '@app/models';
 import { AdminControlsService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
-import {
-  DataTableCellContext,
-  DataTableComponent,
-  LccDataTableColumn,
-} from './data-table.component';
+import { DataTableComponent } from './data-table.component';
 
 interface Row {
   id: string;
@@ -59,7 +55,9 @@ class HostComponent {
   readonly nameCell =
     viewChild.required<TemplateRef<{ $implicit: Row; value: unknown }>>('nameCell');
   readonly namePlaceholder =
-    viewChild.required<TemplateRef<DataTableCellContext<Row>>>('namePlaceholder');
+    viewChild.required<TemplateRef<{ $implicit: DataTableColumn<Row>; index: number }>>(
+      'namePlaceholder',
+    );
 
   readonly rows = signal<Row[]>([
     { id: 'a', name: 'Ann', score: 3 },
@@ -79,7 +77,7 @@ class HostComponent {
   readonly sorts: DataTableSortState[] = [];
 
   readonly columns = () => {
-    const columns: LccDataTableColumn<Row>[] = [
+    const columns: DataTableColumn<Row>[] = [
       {
         key: 'name',
         label: 'Name',
@@ -171,13 +169,14 @@ describe('DataTableComponent', () => {
     expect(table.componentInstance.hoverable()).toBe(false);
   });
 
-  it('should not highlight placeholder rows on hover', () => {
+  it('should hand the loading state and its row count to the table', () => {
     const table = query(fixture.debugElement, 'ea-data-table');
 
     host.loading.set(true);
     fixture.detectChanges();
 
-    expect(table.componentInstance.hoverable()).toBe(false);
+    expect(table.componentInstance.loading()).toBe(true);
+    expect(table.componentInstance.loadingRowCount()).toBe(4);
   });
 
   it('should sit at its content width unless asked to fill its container', () => {
@@ -256,9 +255,9 @@ describe('DataTableComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should hold placeholder rows shaped like the widest content', () => {
+    it('should hold placeholder rows, with the placeholders each column asks for', () => {
       expect(bodyRows()).toHaveLength(4);
-      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(1);
+      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(1);
       expect(query(bodyRows()[0], '.name-placeholder')).toBeTruthy();
       expect(query(bodyRows()[0], '.name')).toBeFalsy();
     });
@@ -274,7 +273,7 @@ describe('DataTableComponent', () => {
       );
       expect(sizingCells[1].nativeElement.textContent.trim()).toBe('100 pts');
       expect(
-        query(fixture.debugElement, '.ea-data-table__sizing lcc-text-skeleton'),
+        query(fixture.debugElement, '.ea-data-table__sizing .ea-data-table__placeholder'),
       ).toBeFalsy();
     });
 

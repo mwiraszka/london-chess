@@ -9,7 +9,7 @@
         routerLinkActive="link-active"
         [routerLink]="link.internalPath | routerLink"
         [routerLinkActiveOptions]="{ exact: true }"
-        [tooltip]="screenWidth() > 800 ? null : link.text">
+        [eaTooltip]="screenWidth() > 800 ? '' : link.text">
         <span class="link-text">{{ link.text }}</span>
         @if (link.icon) {
           <span class="link-icon">
@@ -24,10 +24,14 @@
 
   <div class="nav-controls">
     <button
+      #menuTrigger
+      aria-haspopup="dialog"
       aria-label="Menu"
       class="avatar-button"
-      dropdown
-      (isOpen)="isDropdownOpen.set($event)">
+      type="button"
+      [attr.aria-controls]="menuId"
+      [attr.aria-expanded]="isMenuOpen()"
+      (click)="isMenuOpen.set(!isMenuOpen())">
       @if (user()) {
         <ea-avatar
           size="sm"
@@ -38,6 +42,19 @@
         <ea-icon-settings class="menu-icon" />
       }
     </button>
+    <ea-popover
+      aria-label="Menu"
+      placement="bottom-end"
+      [anchor]="menuTrigger"
+      [closeOnEscape]="true"
+      [closeOnOutsideClick]="true"
+      [open]="isMenuOpen()"
+      [surfaceId]="menuId"
+      (closeRequested)="isMenuOpen.set(false)">
+      @if (isMenuOpen()) {
+        <lcc-user-settings-menu (close)="isMenuOpen.set(false)" />
+      }
+    </ea-popover>
   </div>
 </div>
 

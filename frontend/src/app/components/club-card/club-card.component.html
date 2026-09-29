@@ -4,7 +4,9 @@
   <div class="club-card">
     <section class="club-info">
       <h3 class="club-name">{{ club().name }}</h3>
-      <hr />
+      <ea-divider
+        class="club-divider"
+        [thick]="true" />
 
       <div class="club-details">
         <div class="address">
@@ -38,7 +40,7 @@
 
     <lcc-club-map
       [club]="club()"
-      tooltip="Open in Google Maps">
+      eaTooltip="Open in Google Maps">
     </lcc-club-map>
   </div>
 </ea-card>

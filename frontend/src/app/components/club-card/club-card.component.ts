@@ -1,14 +1,15 @@
 import {
   CardComponent,
+  DividerComponent,
   ExternalLinkIconComponent,
   MailIconComponent,
   MapPinIconComponent,
+  TooltipDirective,
 } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { ClubMapComponent } from '@app/components/club-map/club-map.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { Club } from '@app/models';
 
 @Component({
@@ -19,6 +20,7 @@ import { Club } from '@app/models';
   imports: [
     CardComponent,
     ClubMapComponent,
+    DividerComponent,
     ExternalLinkIconComponent,
     MailIconComponent,
     MapPinIconComponent,

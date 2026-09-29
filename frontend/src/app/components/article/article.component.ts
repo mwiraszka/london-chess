@@ -1,3 +1,5 @@
+import { DividerComponent } from '@eagami/ui';
+
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { ImageComponent } from '@app/components/image/image.component';
@@ -11,6 +13,7 @@ import { FormatDatePipe, TruncateByCharsPipe, WasEditedPipe } from '@app/pipes';
   templateUrl: './article.component.html',
   styleUrl: './article.component.scss',
   imports: [
+    DividerComponent,
     FormatDatePipe,
     ImageComponent,
     MarkdownRendererComponent,

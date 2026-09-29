@@ -198,11 +198,9 @@ describe('TouchEventsService', () => {
     });
 
     it('should prevent contextmenu when tooltip is open', () => {
-      const tooltipContainer = mockDocument.createElement('div');
-      tooltipContainer.className = 'cdk-overlay-container';
-      const tooltip = mockDocument.createElement('lcc-tooltip');
-      tooltipContainer.appendChild(tooltip);
-      mockDocument.body.appendChild(tooltipContainer);
+      const tooltip = mockDocument.createElement('div');
+      tooltip.className = 'ea-tooltip';
+      mockDocument.body.appendChild(tooltip);
 
       const contextMenuEvent = new MouseEvent('contextmenu', {
         bubbles: true,

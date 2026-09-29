@@ -1,10 +1,9 @@
+import { DialogService } from '@eagami/ui';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter, map, pairwise, startWith } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-
-import { DialogService } from './dialog.service';
 
 // Passed as a navigation's `info` by a link to a page laid out like the one being
 // left, so the visitor's scroll position is kept rather than reset

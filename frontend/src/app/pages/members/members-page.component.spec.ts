@@ -1,7 +1,7 @@
 import {
+  DialogService,
   DownloadIconComponent,
   PlusCircleIconComponent,
-  UploadIconComponent,
 } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { firstValueFrom, take } from 'rxjs';
@@ -17,12 +17,12 @@ import {
   Member,
   MemberWithNewRatings,
 } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
-import { lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
 
 import { MembersPageComponent } from './members-page.component';
 
@@ -67,7 +67,7 @@ describe('MembersPageComponent', () => {
         { provide: PARSE_CSV, useValue: vi.fn() },
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
         {
           provide: StoreRequestService,
@@ -177,19 +177,12 @@ describe('MembersPageComponent', () => {
     });
   });
 
-  describe('onMemberRatingChangesFileSelected', () => {
+  describe('onRatingsFileChosen', () => {
     let parseCsvSpy: MockInstance;
-    let mockEvent: Event;
     let mockFile: File;
 
     beforeEach(() => {
       mockFile = new File(['test,data'], 'test.csv', { type: 'text/csv' });
-      mockEvent = {
-        target: {
-          files: [mockFile],
-          value: 'test.csv',
-        },
-      } as unknown as Event;
 
       parseCsvSpy = TestBed.inject(PARSE_CSV) as Mock;
     });
@@ -199,30 +192,10 @@ describe('MembersPageComponent', () => {
     });
 
     it('should return early if no file is selected', async () => {
-      const eventWithoutFile = {
-        target: {
-          files: null,
-          value: '',
-        },
-      } as unknown as Event;
-
-      await component.onMemberRatingChangesFileSelected(eventWithoutFile);
+      await component.onRatingsFileChosen([]);
 
       expect(parseCsvSpy).not.toHaveBeenCalled();
       expect(dispatchSpy).not.toHaveBeenCalled();
-    });
-
-    it('should clear input value after processing', async () => {
-      parseCsvSpy.mockResolvedValue([['John', 'Doe', '1500', '1520', '1550']]);
-      store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
-      store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
-      store.refreshState();
-
-      vi.spyOn(dialogService, 'open').mockResolvedValue('cancel');
-
-      await component.onMemberRatingChangesFileSelected(mockEvent);
-
-      expect((mockEvent.target as HTMLInputElement).value).toBe('');
     });
 
     it('should dispatch parseMemberRatingsFromCsvFailed when CSV parsing fails', async () => {
@@ -232,7 +205,7 @@ describe('MembersPageComponent', () => {
       };
       parseCsvSpy.mockResolvedValue(mockError);
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
+      await component.onRatingsFileChosen([mockFile]);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
@@ -241,7 +214,7 @@ describe('MembersPageComponent', () => {
     });
 
     it('should open rating changes dialog when CSV parsing succeeds', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
       parseCsvSpy.mockResolvedValue([
         ['Magnus', 'Carlsen', '2850', '2860', '2882'],
         ['Hikaru', 'Nakamura', '2775', '2785', '2816'],
@@ -250,17 +223,15 @@ describe('MembersPageComponent', () => {
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
+      await component.onRatingsFileChosen([mockFile]);
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: expect.any(Function),
+      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
         inputs: {
           confirmAction: expect.any(Function),
           membersWithNewRatings: expect.any(Array),
           unmatchedMembers: expect.any(Array),
         },
-        isModal: false,
       });
     });
 
@@ -270,8 +241,8 @@ describe('MembersPageComponent', () => {
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
-      const confirmAction = dialogOpenSpy.mock.lastCall?.[0].inputs?.[
+      await component.onRatingsFileChosen([mockFile]);
+      const confirmAction = dialogOpenSpy.mock.lastCall?.[1].inputs?.[
         'confirmAction'
       ] as () => Promise<unknown>;
       await confirmAction();
@@ -290,42 +261,45 @@ describe('MembersPageComponent', () => {
     });
 
     it('should not update any ratings until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
       parseCsvSpy.mockResolvedValue([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
       store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
+      await component.onRatingsFileChosen([mockFile]);
 
       expect(storeRequestSpy).not.toHaveBeenCalled();
     });
 
-    it('should show the upload button as loading while the ratings are prepared', async () => {
+    it('should hold the upload button while the ratings are prepared', async () => {
       let resolveParsing: (rows: string[][]) => void = () => undefined;
       parseCsvSpy.mockReturnValue(new Promise(resolve => (resolveParsing = resolve)));
       store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
-      const selection = component.onMemberRatingChangesFileSelected(mockEvent);
+      const selection = component.onRatingsFileChosen([mockFile]);
 
-      expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(true);
+      // @ts-expect-error Protected class member
+      expect(component.isPreparingRatingChanges()).toBe(true);
       expect(dialogOpenSpy).not.toHaveBeenCalled();
 
       resolveParsing([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
       await selection;
 
-      expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(false);
+      // @ts-expect-error Protected class member
+      expect(component.isPreparingRatingChanges()).toBe(false);
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should stop loading when the file cannot be parsed', async () => {
       parseCsvSpy.mockResolvedValue({ name: 'LCCError', message: 'Invalid CSV format' });
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
+      await component.onRatingsFileChosen([mockFile]);
 
-      expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(false);
+      // @ts-expect-error Protected class member
+      expect(component.isPreparingRatingChanges()).toBe(false);
     });
 
     describe('when only public member records are loaded', () => {
@@ -346,7 +320,7 @@ describe('MembersPageComponent', () => {
           }),
         );
 
-        await component.onMemberRatingChangesFileSelected(mockEvent);
+        await component.onRatingsFileChosen([mockFile]);
 
         expect(storeRequestSpy).toHaveBeenCalledWith(
           MembersActions.fetchAllMembersRequested(),
@@ -362,23 +336,24 @@ describe('MembersPageComponent', () => {
           }),
         );
 
-        await component.onMemberRatingChangesFileSelected(mockEvent);
+        await component.onRatingsFileChosen([mockFile]);
 
         expect(dialogOpenSpy).not.toHaveBeenCalled();
-        expect(component.updateRatingsFromCsvButton.isLoading?.()).toBe(false);
+        // @ts-expect-error Protected class member
+        expect(component.isPreparingRatingChanges()).toBe(false);
       });
     });
 
     it('should handle members with new ratings correctly', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
       parseCsvSpy.mockResolvedValue([['Magnus', 'Carlsen', '2850', '2860', '2882']]);
       store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
+      await component.onRatingsFileChosen([mockFile]);
 
-      const dialogCall = dialogOpenSpy.mock.calls[0][0];
+      const dialogCall = dialogOpenSpy.mock.calls[0][1];
       const membersWithNewRatings = dialogCall.inputs?.[
         'membersWithNewRatings'
       ] as MemberWithNewRatings[];
@@ -394,15 +369,15 @@ describe('MembersPageComponent', () => {
     });
 
     it('should handle unmatched members correctly', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
       parseCsvSpy.mockResolvedValue([['Unknown', 'Player', '1500', '1520', '1550']]);
       store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
       store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
       store.refreshState();
 
-      await component.onMemberRatingChangesFileSelected(mockEvent);
+      await component.onRatingsFileChosen([mockFile]);
 
-      const dialogCall = dialogOpenSpy.mock.calls[0][0];
+      const dialogCall = dialogOpenSpy.mock.calls[0][1];
       const unmatchedMembers = dialogCall.inputs?.['unmatchedMembers'] as string[];
 
       expect(unmatchedMembers).toHaveLength(1);
@@ -433,13 +408,14 @@ describe('MembersPageComponent', () => {
     });
 
     it('should open confirmation dialog with correct member count', async () => {
-      const dialogOpenSpy = vi.spyOn(dialogService, 'open').mockResolvedValue('cancel');
+      const dialogOpenSpy = vi
+        .spyOn(dialogService, 'open')
+        .mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToCsv();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: expect.any(Function),
+      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -448,7 +424,6 @@ describe('MembersPageComponent', () => {
             confirmButtonType: 'primary',
           }),
         },
-        isModal: false,
       });
     });
 
@@ -466,7 +441,7 @@ describe('MembersPageComponent', () => {
     });
 
     it('should not export anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToCsv();
 
@@ -484,31 +459,12 @@ describe('MembersPageComponent', () => {
     });
 
     it('should have correct admin button configurations', () => {
-      expect(component.updateRatingsFromCsvButton).toEqual({
-        id: 'update-ratings-from-csv',
-        tooltip: 'Update member ratings from CSV',
-        icon: UploadIconComponent,
-        action: expect.any(Function),
-        isLoading: expect.any(Function),
-      });
-
       expect(component.exportToCsvButton).toEqual({
         id: 'export-to-csv',
         tooltip: 'Export to CSV',
         icon: DownloadIconComponent,
         action: expect.any(Function),
       });
-    });
-
-    it('should trigger file input click when updateRatingsFromCsvButton action is called', () => {
-      const mockClick = vi.fn();
-      vi.spyOn(component, 'memberRatingChangesFileInput').mockReturnValue({
-        nativeElement: { click: mockClick } as unknown as HTMLInputElement,
-      });
-
-      component.updateRatingsFromCsvButton.action();
-
-      expect(mockClick).toHaveBeenCalledTimes(1);
     });
 
     it('should call onExportToCsv when exportToCsvButton action is called', () => {
@@ -522,7 +478,7 @@ describe('MembersPageComponent', () => {
     describe('when viewModel$ is undefined', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'input[type="file"]')).toBeFalsy();
+        expect(query(fixture.debugElement, '.ratings-upload')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeFalsy();
@@ -538,19 +494,35 @@ describe('MembersPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeTruthy();
       });
 
-      it('should render file input and admin toolbar for admins', () => {
+      it('should offer admins a CSV upload button in the admin toolbar', () => {
         store.overrideSelector(AuthSelectors.selectIsAdmin, true);
         fixture.detectChanges();
 
-        expect(query(fixture.debugElement, 'input[type="file"]')).toBeTruthy();
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeTruthy();
+        const upload = query(fixture.debugElement, 'lcc-admin-toolbar .ratings-upload');
+        expect(upload.componentInstance.variant()).toBe('button');
+        expect(upload.componentInstance.accept()).toBe('.csv');
+        expect(upload.componentInstance.multiple()).toBe(false);
       });
 
-      it('should not render file input or admin toolbar for non-admins', () => {
+      it('should prepare the ratings from the chosen file', () => {
+        const chosenSpy = vi.spyOn(component, 'onRatingsFileChosen').mockResolvedValue();
+        const file = new File(['test,data'], 'test.csv', { type: 'text/csv' });
+        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+        fixture.detectChanges();
+
+        query(fixture.debugElement, '.ratings-upload').triggerEventHandler(
+          'valueChange',
+          [file],
+        );
+
+        expect(chosenSpy).toHaveBeenCalledWith([file]);
+      });
+
+      it('should not render the CSV upload or admin toolbar for non-admins', () => {
         store.overrideSelector(AuthSelectors.selectIsAdmin, false);
         fixture.detectChanges();
 
-        expect(query(fixture.debugElement, 'input[type="file"]')).toBeFalsy();
+        expect(query(fixture.debugElement, '.ratings-upload')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
       });
     });

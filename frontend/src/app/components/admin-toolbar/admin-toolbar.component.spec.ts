@@ -1,7 +1,9 @@
 import {
+  ButtonComponent,
   DownloadIconComponent,
   RefreshCwIconComponent,
   SettingsIconComponent,
+  TooltipDirective,
 } from '@eagami/ui';
 
 import { signal } from '@angular/core';
@@ -9,7 +11,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { AdminButton, ExternalLink, InternalLink } from '@app/models';
 import { query, queryAll } from '@app/utils';
 
@@ -56,7 +57,7 @@ describe('AdminToolbarComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminToolbarComponent, LinkListComponent, TooltipDirective],
+      imports: [AdminToolbarComponent, LinkListComponent],
       providers: [provideRouter([])],
     }).compileComponents();
 
@@ -118,35 +119,35 @@ describe('AdminToolbarComponent', () => {
         );
       });
 
-      it('should set correct button properties', () => {
+      it('should render each as a secondary button named after its action', () => {
         const firstButton = query(fixture.debugElement, '#refresh-button');
+        const button: ButtonComponent = firstButton.componentInstance;
 
-        expect(firstButton).toBeTruthy();
-        expect(firstButton.attributes['type']).toBe('button');
-        expect(firstButton.classes['admin-button']).toBe(true);
-        expect(firstButton.classes['lcc-secondary-button']).toBe(true);
+        expect(button.variant()).toBe('secondary');
+        expect(query(firstButton, 'button').attributes['aria-label']).toBe(
+          'Refresh data',
+        );
       });
 
       it('should display correct icon for each button', () => {
-        const buttonIcons = queryAll(fixture.debugElement, '.button-icon');
-        expect(buttonIcons.length).toBe(mockAdminButtons.length);
+        const buttons = queryAll(fixture.debugElement, '.admin-button');
 
-        expect(query(buttonIcons[0], 'ea-icon-refresh-cw')).toBeTruthy();
-        expect(query(buttonIcons[1], 'ea-icon-settings')).toBeTruthy();
-        expect(query(buttonIcons[2], 'ea-icon-download')).toBeTruthy();
+        expect(query(buttons[0], 'ea-icon-refresh-cw')).toBeTruthy();
+        expect(query(buttons[1], 'ea-icon-settings')).toBeTruthy();
+        expect(query(buttons[2], 'ea-icon-download')).toBeTruthy();
       });
 
-      it('should apply tooltip directive with correct tooltip text', () => {
+      it('should show the action in a tooltip', () => {
         const firstButton = query(fixture.debugElement, '#refresh-button');
         const tooltipDirective = firstButton.injector.get(TooltipDirective);
 
-        expect(tooltipDirective.tooltip()).toBe('Refresh data');
+        expect(tooltipDirective.eaTooltip()).toBe('Refresh data');
       });
 
       it('should call action function when button is clicked', () => {
         mockAdminButtons.forEach((mockButton, index) => {
-          const button = queryAll(fixture.debugElement, '.admin-button')[index];
-          button.triggerEventHandler('click');
+          const button = queryAll(fixture.debugElement, '.admin-button button')[index];
+          button.nativeElement.click();
 
           expect(mockButton.action).toHaveBeenCalled();
         });
@@ -181,18 +182,18 @@ describe('AdminToolbarComponent', () => {
       });
 
       it('should execute the correct action for each button', () => {
-        query(fixture.debugElement, '#refresh-button').triggerEventHandler('click');
+        query(fixture.debugElement, '#refresh-button button').nativeElement.click();
         expect(mockAdminButtons[0].action).toHaveBeenCalledTimes(1);
 
-        query(fixture.debugElement, '#settings-button').triggerEventHandler('click');
+        query(fixture.debugElement, '#settings-button button').nativeElement.click();
         expect(mockAdminButtons[1].action).toHaveBeenCalledTimes(1);
 
-        query(fixture.debugElement, '#export-button').triggerEventHandler('click');
+        query(fixture.debugElement, '#export-button button').nativeElement.click();
         expect(mockAdminButtons[2].action).toHaveBeenCalledTimes(1);
       });
 
       it('should not interfere with other button actions when one is clicked', () => {
-        query(fixture.debugElement, '#refresh-button').triggerEventHandler('click');
+        query(fixture.debugElement, '#refresh-button button').nativeElement.click();
 
         expect(mockAdminButtons[0].action).toHaveBeenCalled();
         expect(mockAdminButtons[1].action).not.toHaveBeenCalled();
@@ -273,36 +274,36 @@ describe('AdminToolbarComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should show a spinner in place of the icon', () => {
-        const button = query(fixture.debugElement, '#upload-button');
+      it('should show the button as loading', () => {
+        const button: ButtonComponent = query(
+          fixture.debugElement,
+          '#upload-button',
+        ).componentInstance;
 
-        expect(query(button, 'ea-spinner')).toBeTruthy();
-        expect(query(button, 'ea-icon-download')).toBeFalsy();
+        expect(button.loading()).toBe(true);
       });
 
       it('should disable the button and mark it as busy', () => {
-        const button = query(fixture.debugElement, '#upload-button');
+        const button = query(fixture.debugElement, '#upload-button button');
 
         expect(button.nativeElement.disabled).toBe(true);
         expect(button.attributes['aria-busy']).toBe('true');
       });
 
       it('should leave the other buttons alone', () => {
-        const button = query(fixture.debugElement, '#settings-button');
+        const button = query(fixture.debugElement, '#settings-button button');
 
-        expect(query(button, 'ea-spinner')).toBeFalsy();
         expect(button.nativeElement.disabled).toBe(false);
-        expect(button.attributes['aria-busy']).toBe('false');
+        expect(button.nativeElement.hasAttribute('aria-busy')).toBe(false);
       });
 
       it('should restore the button once loading ends', () => {
         isLoading.set(false);
         fixture.detectChanges();
 
-        const button = query(fixture.debugElement, '#upload-button');
-        expect(query(button, 'ea-spinner')).toBeFalsy();
-        expect(query(button, 'ea-icon-download')).toBeTruthy();
+        const button = query(fixture.debugElement, '#upload-button button');
         expect(button.nativeElement.disabled).toBe(false);
+        expect(query(button, 'ea-icon-download')).toBeTruthy();
       });
     });
   });

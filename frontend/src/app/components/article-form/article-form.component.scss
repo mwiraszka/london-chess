@@ -1,122 +1,57 @@
 :host {
   display: block;
   width: 100%;
+}
 
-  .image-section-container {
-    $button-size: 34px;
-    $button-gap: 8px;
-    $banner-image-aspect-ratio: 1.5;
-    $banner-image-height: 300px;
+.banner {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
 
-    display: flex;
-    flex-direction: row;
-    gap: $button-gap;
+.banner__frame {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--lcc-borderRadius--large);
+  background-color: var(--lcc-color--general-imageBackdrop);
+
+  lcc-image {
     width: 100%;
-    height: $banner-image-height;
+    height: 100%;
 
-    // To keep the image at a 3:2 aspect ratio on larger screen sizes
-    max-width: calc(
-      $banner-image-height * $banner-image-aspect-ratio + $button-gap + $button-size
-    );
-
-    .image-container {
-      display: flex;
-      flex: 1;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--lcc-borderRadius--large);
-      background-color: var(--lcc-color--general-imageBackdrop);
-
-      lcc-image {
-        width: 100%;
-        max-width: 100%;
-        max-height: 100%;
-        border-radius: var(--lcc-borderRadius--large);
-
-        ::ng-deep img {
-          object-fit: contain;
-          max-height: 100%;
-        }
-      }
-    }
-
-    .image-controls-container {
-      display: flex;
-      align-self: flex-end;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-
-      .select-banner-image-button,
-      .revert-banner-image-button,
-      .insert-image-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px;
-      }
-
-      hr {
-        width: 24px;
-        margin: 16px 0;
-        border-bottom: 2px solid var(--lcc-color--articleForm-buttonsDivider);
-      }
-    }
-  }
-
-  textarea {
-    height: 320px;
-  }
-
-  .restore-button {
-    display: flex;
-    justify-self: end;
-    align-items: center;
-    justify-content: center;
-    grid-column: 2 / 3;
-    padding: 4px;
-
-    &:not(:disabled) {
-      color: var(--lcc-color--general-warning);
-    }
-  }
-
-  .preview-section-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 4px;
-    width: 100%;
-    text-align: left;
-
-    h3 {
-      align-self: flex-start;
-      font-weight: 400;
-      color: var(--lcc-color--articleForm-previewHeaderText);
-    }
-
-    hr {
+    ::ng-deep img {
+      object-fit: contain;
       width: 100%;
-      margin: 4px 0 16px;
-      border-top: 1px solid var(--lcc-color--general-dividerLine);
-    }
-
-    .markdown-container {
-      overflow: hidden;
-      width: 100%;
-      padding: 8px;
-      border-radius: var(--lcc-borderRadius--large);
-      box-shadow: 1px 1px 8px 1px var(--lcc-color--articleForm-markdownPreviewBoxShadow);
+      height: 100%;
     }
   }
 }
 
-// The card body's smaller secondary text would otherwise replace the page's type
-.form-card {
+.banner__controls {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
+  gap: 8px;
+}
+
+.body-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+
+  ea-textarea {
+    align-self: stretch;
+  }
+}
+
+// The card sets smaller, muted text, which would misrepresent the published article
+.body-preview {
+  overflow: hidden;
+  padding: 16px;
   font-size: var(--font-size-md);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--lcc-borderRadius--large);
   color: var(--color-text-primary);
 }

@@ -43,10 +43,12 @@
       </ng-template>
     </div>
 
-    <button
-      class="close-button lcc-icon-button"
-      (click)="clearBanner.emit()">
-      <ea-icon-x />
-    </button>
+    <ea-button
+      class="close-button"
+      size="xs"
+      variant="ghost"
+      [aria-label]="'Close the upcoming events banner'"
+      [icon]="closeIcon"
+      (clicked)="clearBanner.emit()" />
   </div>
 </div>

@@ -1,4 +1,5 @@
 import {
+  AlertComponent,
   AlertTriangleIconComponent,
   AvatarEditorComponent,
   type AvatarEditorCropState,
@@ -69,6 +70,7 @@ import { asSentence } from '@app/utils/sentence.util';
   styleUrl: './account-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AlertComponent,
     AlertTriangleIconComponent,
     AvatarEditorComponent,
     ButtonComponent,
@@ -76,7 +78,6 @@ import { asSentence } from '@app/utils/sentence.util';
     ChessUsernameFieldsComponent,
     DialogComponent,
     InputComponent,
-    LockIconComponent,
     MonitorIconComponent,
     NewPasswordFieldsComponent,
     PageHeaderComponent,
@@ -106,6 +107,7 @@ export class AccountPageComponent implements OnInit {
 
   protected readonly navItems = ACCOUNT_SECTIONS;
   protected readonly pageIcon = SettingsIconComponent;
+  protected readonly privacyIcon = LockIconComponent;
 
   private readonly sectionParam = toSignal(
     this.route.paramMap.pipe(map(params => params.get('section'))),

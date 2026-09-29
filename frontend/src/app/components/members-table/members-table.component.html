@@ -32,7 +32,15 @@
 }
 
 @if (isAdmin() && isSafeMode()) {
-  <lcc-safe-mode-notice entity="members'"></lcc-safe-mode-notice>
+  <ea-alert
+    class="members__safe-mode"
+    live="off"
+    size="sm"
+    variant="success"
+    [icon]="safeModeIcon">
+    Members' personal details have been hidden from view. You can disable Safe Mode from
+    the User Settings menu.
+  </ea-alert>
 }
 
 <ng-template
@@ -41,7 +49,7 @@
   <span
     class="members__name"
     [class.members__name--inactive]="!row.member.isActive"
-    [tooltip]="row.member.isActive ? null : 'Inactive member'">
+    [eaTooltip]="row.member.isActive ? '' : 'Inactive member'">
     <ng-container
       *ngTemplateOutlet="
         memberName;
@@ -51,7 +59,7 @@
       <a
         class="members__champion-link"
         routerLink="/city-champion"
-        tooltip="2025 City Champion">
+        eaTooltip="2025 City Champion">
         <ea-icon-trophy class="members__champion-icon" />
       </a>
     }
@@ -64,7 +72,7 @@
   <span
     class="members__name"
     [class.members__name--inactive]="!row.member.isActive"
-    [tooltip]="row.member.isActive ? null : 'Inactive member'">
+    [eaTooltip]="row.member.isActive ? '' : 'Inactive member'">
     <ng-container
       *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.firstName }" />
   </span>
@@ -76,14 +84,14 @@
   <span
     class="members__name"
     [class.members__name--inactive]="!row.member.isActive"
-    [tooltip]="row.member.isActive ? null : 'Inactive member'">
+    [eaTooltip]="row.member.isActive ? '' : 'Inactive member'">
     <ng-container
       *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.lastName }" />
     @if (isCityChampion(row.member)) {
       <a
         class="members__champion-link"
         routerLink="/city-champion"
-        tooltip="2025 City Champion">
+        eaTooltip="2025 City Champion">
         <ea-icon-trophy class="members__champion-icon" />
       </a>
     }

@@ -58,6 +58,13 @@ describe('ArticleComponent', () => {
       });
     });
 
+    it('should divide the editor from the edit date, and the byline from the body', () => {
+      const spacer = query(fixture.debugElement, '.modification-details ea-divider');
+
+      expect(spacer.componentInstance.orientation()).toBe('vertical');
+      expect(query(fixture.debugElement, 'ea-divider.article-divider')).toBeTruthy();
+    });
+
     it('should truncate article title to 120 characters', () => {
       expect(queryTextContent(fixture.debugElement, '.title')).toHaveLength(120);
     });

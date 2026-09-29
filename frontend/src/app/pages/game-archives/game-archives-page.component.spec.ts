@@ -561,7 +561,7 @@ describe('GameArchivesPageComponent', () => {
         );
 
         expect(rows).toHaveLength(3);
-        expect(queryAll(rows[0], 'lcc-text-skeleton')).toHaveLength(7);
+        expect(queryAll(rows[0], '.ea-data-table__placeholder')).toHaveLength(7);
       });
 
       it('should not open skeleton rows', () => {
@@ -583,7 +583,7 @@ describe('GameArchivesPageComponent', () => {
         queryAll(fixture.debugElement, '.ea-data-table__body .ea-data-table__row'),
       ).toHaveLength(3);
       expect(
-        query(fixture.debugElement, '.ea-data-table__body lcc-text-skeleton'),
+        query(fixture.debugElement, '.ea-data-table__body .ea-data-table__placeholder'),
       ).toBeTruthy();
     });
 

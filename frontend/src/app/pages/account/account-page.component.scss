@@ -163,9 +163,12 @@
 }
 
 .privacy-note {
+  display: block;
   margin-top: 24px;
-  font-size: 14px;
-  line-height: 20px;
+}
+
+.privacy-note__heading {
+  display: block;
 }
 
 .warning-heading {

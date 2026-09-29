@@ -3,7 +3,6 @@ import { InputComponent } from '@eagami/ui';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { FieldLabelWithHelpComponent } from '@app/components/field-label-with-help/field-label-with-help.component';
 import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
 
 @Component({
@@ -11,7 +10,7 @@ import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
   templateUrl: './phone-number-field.component.html',
   styleUrl: './phone-number-field.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FieldLabelWithHelpComponent, InputComponent, ReactiveFormsModule],
+  imports: [InputComponent, ReactiveFormsModule],
 })
 export class PhoneNumberFieldComponent {
   readonly control = input.required<FormControl<string>>();

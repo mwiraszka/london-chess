@@ -1,3 +1,4 @@
+import { DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { DebugElement } from '@angular/core';
@@ -8,9 +9,15 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { MEMBERS_PAGE_SIZES } from '@app/constants/members-table';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
-import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
+import { AdminControlsService, StoreRequestService } from '@app/services';
 import { MembersActions, initialState as membersInitialState } from '@app/store/members';
-import { CITY_CHAMPION, lastOpenedDialog, query, queryAll } from '@app/utils';
+import {
+  CITY_CHAMPION,
+  closedDialogRef,
+  lastOpenedDialog,
+  query,
+  queryAll,
+} from '@app/utils';
 
 import { MemberRow, MembersTableComponent } from './members-table.component';
 
@@ -84,7 +91,7 @@ describe('MembersTableComponent', () => {
         provideMockStore({ initialState: { membersState: membersInitialState } }),
         provideRouter([]),
         { provide: AdminControlsService, useValue: { open: vi.fn() } },
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
@@ -273,8 +280,7 @@ describe('MembersTableComponent', () => {
       await fixture.whenStable();
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -283,7 +289,6 @@ describe('MembersTableComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
       expect(storeRequestSpy).toHaveBeenCalledWith(
         MembersActions.deleteMemberRequested({ member }),
@@ -292,7 +297,7 @@ describe('MembersTableComponent', () => {
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       controlsOf(bodyRows()[0]).deleteCb();
       await fixture.whenStable();
@@ -303,8 +308,12 @@ describe('MembersTableComponent', () => {
     it('should show the public columns in safe mode, with a notice', () => {
       render({ isAdmin: true, isSafeMode: true });
 
+      const notice = query(fixture.debugElement, 'ea-alert');
       expect(headers()).toHaveLength(7);
-      expect(query(fixture.debugElement, 'lcc-safe-mode-notice')).toBeTruthy();
+      expect(notice.componentInstance.variant()).toBe('success');
+      expect(notice.nativeElement.textContent).toContain(
+        "Members' personal details have been hidden from view.",
+      );
     });
   });
 
@@ -373,7 +382,7 @@ describe('MembersTableComponent', () => {
       render({ members: [], isLoading: true });
 
       expect(bodyRows()).toHaveLength(10);
-      expect(queryAll(bodyRows()[0], 'lcc-text-skeleton')).toHaveLength(7);
+      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(7);
     });
 
     it('should show placeholders in place of the members already loaded', () => {

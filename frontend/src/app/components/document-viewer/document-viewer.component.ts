@@ -1,35 +1,39 @@
+import { DialogComponent, ProgressBarComponent } from '@eagami/ui';
 import { PDFProgressData, PdfViewerModule } from 'ng2-pdf-viewer';
 
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-
-import { DialogOutput } from '@app/models';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 
 @Component({
   selector: 'lcc-document-viewer',
   template: `
-    <div
-      class="loading-progress-indicator"
-      [style.width.%]="percentLoaded()">
-    </div>
+    <ea-dialog
+      aria-label="Document"
+      width="2xl">
+      @if (percentLoaded() < 100) {
+        <ea-progress-bar
+          class="loading-progress"
+          label="Loading document"
+          size="sm"
+          [value]="percentLoaded()" />
+      }
 
-    <pdf-viewer
-      [src]="documentPath()"
-      [original-size]="false"
-      [render-text]="true"
-      [render-text-mode]="0"
-      (on-progress)="onProgress($event)">
-    </pdf-viewer>
+      <pdf-viewer
+        [src]="documentPath()"
+        [original-size]="false"
+        [render-text]="true"
+        [render-text-mode]="0"
+        (on-progress)="onProgress($event)">
+      </pdf-viewer>
+    </ea-dialog>
   `,
   styleUrl: './document-viewer.component.scss',
-  imports: [PdfViewerModule],
+  imports: [DialogComponent, PdfViewerModule, ProgressBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DocumentViewerComponent implements DialogOutput<null> {
+export class DocumentViewerComponent {
   public readonly documentPath = input<string>();
 
   public readonly percentLoaded = signal(0);
-
-  public readonly dialogResult = output<null | 'close'>();
 
   public onProgress(progressData: PDFProgressData): void {
     if (progressData.total <= 0 || progressData.loaded > progressData.total) {
