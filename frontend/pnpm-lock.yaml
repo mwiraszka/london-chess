@@ -57,8 +57,8 @@ importers:
         specifier: 6.32.0
         version: 6.32.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-native@0.86.0(@babel/core@8.0.1)(bufferutil@4.1.0)(react@19.2.7)(utf-8-validate@6.0.6))(react@19.2.7)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.4.3)
       '@eagami/ui':
-        specifier: 5.53.0
-        version: 5.53.0(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/forms@22.1.6(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/platform-browser@22.1.6(@angular/animations@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(rxjs@7.8.2))
+        specifier: 5.55.0
+        version: 5.55.0(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/forms@22.1.6(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/platform-browser@22.1.6(@angular/animations@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(rxjs@7.8.2))
       '@googlemaps/js-api-loader':
         specifier: 2.1.1
         version: 2.1.1
@@ -110,6 +110,12 @@ importers:
       ngx-markdown:
         specifier: 22.0.0
         version: 22.0.0(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/platform-browser@22.1.6(@angular/animations@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(clipboard@2.0.11)(emoji-toolkit@10.0.0)(katex@0.16.40)(marked@18.0.13)(prismjs@1.30.0)(rxjs@7.8.2)(zone.js@0.16.3)
+      papaparse:
+        specifier: 5.7.0
+        version: 5.7.0
+      read-excel-file:
+        specifier: 9.3.10
+        version: 9.3.10
       remove-markdown:
         specifier: 0.7.0
         version: 0.7.0
@@ -156,6 +162,9 @@ importers:
       '@types/node':
         specifier: 26.6.0
         version: 26.6.0
+      '@types/papaparse':
+        specifier: 5.5.2
+        version: 5.5.2
       '@types/ws':
         specifier: 8.18.1
         version: 8.18.1
@@ -942,10 +951,10 @@ packages:
       }
     engines: { node: '>=20.19.0' }
 
-  '@eagami/ui@5.53.0':
+  '@eagami/ui@5.55.0':
     resolution:
       {
-        integrity: sha512-otTHYlGXKzD4+VWO3oXrZ31YfbgW8HzOKmf4RYiavjfNVtgPCm/sJTry6nTfHVb4XixyawAWoMAKxV9P0jo+tw==,
+        integrity: sha512-badNVQh4tlhDDyyPYG6rNYChIpsAUffX0T5lqMhFnU9iHH6IG534IeYuw0HBlNMPZ+D+QDBY8QkUxfN2orWajg==,
       }
     engines: { node: '>=20' }
     peerDependencies:
@@ -3885,6 +3894,12 @@ packages:
         integrity: sha512-FWWQhDlKSnEJVe+CTJCQL8Fol7s1MKo3Ud0fjryxoOoH+hwMIPxol0MguYrLi2I0VvIFwOU2DwdWET2+px15qg==,
       }
 
+  '@types/papaparse@5.5.2':
+    resolution:
+      {
+        integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==,
+      }
+
   '@types/uuid@10.0.0':
     resolution:
       {
@@ -5437,6 +5452,12 @@ packages:
       picomatch:
         optional: true
 
+  fflate@0.8.3:
+    resolution:
+      {
+        integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==,
+      }
+
   file-entry-cache@11.1.5:
     resolution:
       {
@@ -6966,6 +6987,12 @@ packages:
       }
     engines: { node: '>=6' }
 
+  papaparse@5.7.0:
+    resolution:
+      {
+        integrity: sha512-qBGxg/7Q3Kl9Wfhrz2Z74UnvnHTXLNG6jmKJFeBvP2+y4lV7So+7SR62+Zd47JvdrCkX+nDcnr0ObPzek/+6RA==,
+      }
+
   parse-imports-exports@0.2.4:
     resolution:
       {
@@ -7323,6 +7350,13 @@ packages:
       }
     engines: { node: '>=0.10.0' }
 
+  read-excel-file@9.3.10:
+    resolution:
+      {
+        integrity: sha512-zFcBdzunLCGBmLRT4Q3mLPJnhKPAXXfGAZ83feODlEqX2aRUbgF1h/n2oY0UF7I8tVwnJNRas6fTRD5veDUs+g==,
+      }
+    engines: { node: '>=18' }
+
   readable-stream@3.6.2:
     resolution:
       {
@@ -7444,6 +7478,13 @@ packages:
       }
     engines: { node: '>=20.19.0' }
     hasBin: true
+
+  saxen@11.2.0:
+    resolution:
+      {
+        integrity: sha512-2bG564AAJcm/3vyZC0Uhs/mACrH+4AHMaKHKAB2M5xMqomUZa27FQ7MYaQGFKVcJk/MVzSEQ34A8QZWW+eiWEw==,
+      }
+    engines: { node: '>= 20.12' }
 
   saxes@6.0.0:
     resolution:
@@ -8008,6 +8049,13 @@ packages:
       }
     engines: { node: '>= 0.8' }
 
+  unzipper-esm@0.13.3:
+    resolution:
+      {
+        integrity: sha512-LUO6VZ6fCzkDbdMev0/fOhoIeVGKaOkTIOoYxVLE0SQjfvmAHK+oywl7lfhloSZIsdGJ25mJ18Mtd9CyTASjrA==,
+      }
+    engines: { node: '>=8.0.0' }
+
   update-browserslist-db@1.3.2:
     resolution:
       {
@@ -8271,6 +8319,13 @@ packages:
         integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==,
       }
     engines: { node: '>=0.10.0' }
+
+  worker-f@0.1.20:
+    resolution:
+      {
+        integrity: sha512-7z5K5z4x++FykhpDTfriT/dOu7CmSap9BBv38DVFU3CD38obopq+DoFH75yBV3butpGm+OeqR9BKdSvYJSnUfQ==,
+      }
+    engines: { node: '>=12' }
 
   wrap-ansi@10.0.0:
     resolution:
@@ -9064,7 +9119,7 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@eagami/ui@5.53.0(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/forms@22.1.6(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/platform-browser@22.1.6(@angular/animations@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(rxjs@7.8.2))':
+  '@eagami/ui@5.55.0(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/forms@22.1.6(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(@angular/platform-browser@22.1.6(@angular/animations@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(@angular/common@22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)))(rxjs@7.8.2))':
     dependencies:
       '@angular/common': 22.1.6(@angular/core@22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2)
       '@angular/core': 22.1.6(@angular/compiler@22.1.6)(rxjs@7.8.2)(zone.js@0.16.3)
@@ -10828,6 +10883,10 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
+  '@types/papaparse@5.5.2':
+    dependencies:
+      '@types/node': 26.6.0
+
   '@types/uuid@10.0.0': {}
 
   '@types/ws@7.4.7':
@@ -11772,6 +11831,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
       picomatch: 4.0.5
+
+  fflate@0.8.3: {}
 
   file-entry-cache@11.1.5:
     dependencies:
@@ -12787,6 +12848,8 @@ snapshots:
 
   p-try@2.2.0: {}
 
+  papaparse@5.7.0: {}
+
   parse-imports-exports@0.2.4:
     dependencies:
       parse-statements: 1.0.11
@@ -13008,6 +13071,13 @@ snapshots:
 
   react@19.2.7: {}
 
+  read-excel-file@9.3.10:
+    dependencies:
+      fflate: 0.8.3
+      saxen: 11.2.0
+      unzipper-esm: 0.13.3
+      worker-f: 0.1.20
+
   readable-stream@3.6.2:
     dependencies:
       inherits: 2.0.4
@@ -13146,6 +13216,8 @@ snapshots:
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.6
+
+  saxen@11.2.0: {}
 
   saxes@6.0.0:
     dependencies:
@@ -13476,6 +13548,11 @@ snapshots:
 
   unpipe@1.0.0: {}
 
+  unzipper-esm@0.13.3:
+    dependencies:
+      graceful-fs: 4.2.11
+      node-int64: 0.4.0
+
   update-browserslist-db@1.3.2(browserslist@4.28.9):
     dependencies:
       browserslist: 4.28.9
@@ -13621,6 +13698,8 @@ snapshots:
       stackback: 0.0.2
 
   word-wrap@1.2.5: {}
+
+  worker-f@0.1.20: {}
 
   wrap-ansi@10.0.0:
     dependencies:
