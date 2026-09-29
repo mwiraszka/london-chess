@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.4.0] - 2026-09-29
+
+### Added
+
+- Manage tournaments from the site: admins add, edit and delete tournaments, import their results from the standings the pairing software exports (an .xlsx workbook, or a .csv for each section), check the import in a preview that flags players new to the archive, and keep unsaved changes as a draft
+- Take tournament registrations online: admins set when registration opens and closes, members register or withdraw on the tournament's page, and everyone registered so far is listed there
+- List upcoming tournaments above the table on the Tournaments page, with where their registration stands
+
+### Changed
+
+- Include upcoming and in-progress tournaments in the Tournaments table, marked with a badge beside their names, and abbreviate the months in its dates
+- Send the home page's "Register for a tournament" button to the Tournaments page
+- Rename the About page to FAQ, with its old address leading to the new one
+- Rebuild the admin forms with labels above the fields, each error written out beneath its field and a "Discard changes" button, and give the event form date and time pickers
+- Accept phone numbers in more formats, and check Lichess and Chess.com usernames against each site's own rules
+- Dim the page behind every dialog and close the dialog on a click outside it, except while its action is still running
+- Restyle the user menu, the right-click admin controls, tooltips, alerts, switches and collapsible sections to match the rest of the site's components
+- Page the schedule's calendar view, starting it at the current month, and mark each event's type with a coloured tag
+- Fill a full row of the schedule's calendar with placeholder months while it loads, as many as the screen fits
+- Mark today in the schedule's list of events only, rather than also in the home page's upcoming events
+- Present the Lifetime Achievement Awards on cards
+- Leave the same space above the footer on every page, and give the sections of the tournament, members, game archive and City Champion pages their intended spacing
+- Show the image explorer in dark mode, and the album name above the photo in the image viewer with its arrows over the photo
+- Show a progress bar while a document loads
+- Move the upload of member ratings to a button in the members page's admin toolbar
+
+### Fixed
+
+- Put the Vitest logo back in its place on the ring of tools on the website changelog page
+- Keep the last month of the schedule's calendar for visitors outside the club's time zone
+- Press the focused button when Enter is pressed in a dialog, instead of always confirming
+- Open an event's article from its dialog with Enter only when the event has one
+- Let the browser's Back button wait on an unsaved changes prompt that is already open, instead of being ignored
+- Correct the wording of the message shown when an image cannot be deleted
+
 ## [v6.3.1] - 2026-09-28
 
 ### Changed
@@ -1997,6 +2032,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.4.0]: https://github.com/mwiraszka/london-chess/compare/v6.3.1...v6.4.0
 [v6.3.1]: https://github.com/mwiraszka/london-chess/compare/v6.3.0...v6.3.1
 [v6.3.0]: https://github.com/mwiraszka/london-chess/compare/v6.2.2...v6.3.0
 [v6.2.2]: https://github.com/mwiraszka/london-chess/compare/v6.2.1...v6.2.2
