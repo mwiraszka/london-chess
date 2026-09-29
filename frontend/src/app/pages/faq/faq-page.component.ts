@@ -11,7 +11,6 @@ import {
   LaptopIconComponent,
   MapIconComponent,
   MapPinIconComponent,
-  MessageCircleIconComponent,
   NavigationIconComponent,
   ShoppingBagIconComponent,
   TrendingUpIconComponent,
@@ -32,9 +31,9 @@ import { Club, InternalLink } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 
 @Component({
-  selector: 'lcc-about-page',
-  templateUrl: './about-page.component.html',
-  styleUrl: './about-page.component.scss',
+  selector: 'lcc-faq-page',
+  templateUrl: './faq-page.component.html',
+  styleUrl: './faq-page.component.scss',
   imports: [
     AccordionComponent,
     AccordionItemComponent,
@@ -43,13 +42,12 @@ import { MetaAndTitleService } from '@app/services';
     LinkListComponent,
     MapPinIconComponent,
     MemberLinkComponent,
-    MessageCircleIconComponent,
     PageHeaderComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AboutPageComponent implements OnInit {
+export class FaqPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
 
   protected readonly pageIcon = InfoIconComponent;
@@ -79,7 +77,7 @@ export class AboutPageComponent implements OnInit {
   };
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle('About');
+    this.metaAndTitleService.updateTitle('FAQ');
     this.metaAndTitleService.updateDescription(
       'Where and when the London Chess Club meets, and answers to common questions about visiting, membership and tournaments.',
     );

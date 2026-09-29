@@ -5,37 +5,37 @@
 }
 
 // A reading width, as on the other text-led pages
-.about {
+.faq-page {
   display: flex;
   flex-direction: column;
   gap: 32px;
   width: 100%;
   max-width: 800px;
-  margin: 8px auto;
+  margin: 8px auto 0;
 }
 
-.about__location-body {
+.faq-page__location-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
 }
 
-.about__location-heading {
+.faq-page__location-heading {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
-.about__heading-icon {
+.faq-page__heading-icon {
   @include icon-size(20px);
 
   color: var(--lcc-color--general-accentIcon);
 }
 
 // The card's smaller body text would otherwise shrink the links
-.about__location-body lcc-link-list {
+.faq-page__location-body lcc-link-list {
   font-size: 16px;
 }
 
@@ -45,21 +45,12 @@
   gap: 24px;
 }
 
-.faq__title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  text-transform: uppercase;
-  color: var(--lcc-color--aboutPage-sectionHeaderText);
-}
-
 // The answers sit on their own panel so they stand apart from the questions
 .faq__answer {
   padding: 16px;
   border-left: 3px solid var(--lcc-color--general-accentIcon);
   border-radius: var(--lcc-borderRadius--large);
-  background-color: var(--lcc-color--aboutPage-answerBackground);
+  background-color: var(--lcc-color--faqPage-answerBackground);
   color: var(--color-text-secondary);
 }
 

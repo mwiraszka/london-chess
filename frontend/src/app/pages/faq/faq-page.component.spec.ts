@@ -4,11 +4,11 @@ import { provideRouter } from '@angular/router';
 import { ApiService, MetaAndTitleService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
-import { AboutPageComponent } from './about-page.component';
+import { FaqPageComponent } from './faq-page.component';
 
-describe('AboutPageComponent', () => {
-  let fixture: ComponentFixture<AboutPageComponent>;
-  let component: AboutPageComponent;
+describe('FaqPageComponent', () => {
+  let fixture: ComponentFixture<FaqPageComponent>;
+  let component: FaqPageComponent;
 
   let metaAndTitleService: MetaAndTitleService;
 
@@ -21,7 +21,7 @@ describe('AboutPageComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [AboutPageComponent],
+      imports: [FaqPageComponent],
       providers: [
         { provide: ApiService, useValue: mockApiService },
         {
@@ -35,7 +35,7 @@ describe('AboutPageComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AboutPageComponent);
+    fixture = TestBed.createComponent(FaqPageComponent);
     component = fixture.componentInstance;
 
     metaAndTitleService = TestBed.inject(MetaAndTitleService);
@@ -49,7 +49,7 @@ describe('AboutPageComponent', () => {
       component.ngOnInit();
 
       expect(updateTitleSpy).toHaveBeenCalledTimes(1);
-      expect(updateTitleSpy).toHaveBeenCalledWith('About');
+      expect(updateTitleSpy).toHaveBeenCalledWith('FAQ');
       expect(updateDescriptionSpy).toHaveBeenCalledTimes(1);
     });
   });
@@ -59,12 +59,15 @@ describe('AboutPageComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should render page header', () => {
-      expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
+    it('should head the page FAQ with no second heading over the questions', () => {
+      expect(
+        query(fixture.debugElement, 'lcc-page-header').componentInstance.heading(),
+      ).toBe('FAQ');
+      expect(query(fixture.debugElement, '.faq h3')).toBeFalsy();
     });
 
     it('should keep the location card with its map and links open', () => {
-      const location = query(fixture.debugElement, '.about__location');
+      const location = query(fixture.debugElement, '.faq-page__location');
 
       expect(query(location, 'lcc-club-card')).toBeTruthy();
       expect(query(location, 'lcc-link-list').componentInstance.links()).toEqual([

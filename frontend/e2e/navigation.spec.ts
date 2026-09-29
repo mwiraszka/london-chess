@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures';
 
 const NAV_LINKS: [name: string, path: string, heading: string][] = [
-  ['About', '/about', 'About'],
+  ['FAQ', '/faq', 'FAQ'],
   ['Members', '/members', 'Members'],
   ['Schedule', '/schedule', 'Schedule'],
   ['News', '/news', 'News'],

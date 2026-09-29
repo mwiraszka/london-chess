@@ -1,19 +1,19 @@
 <lcc-page-header
-  heading="About"
+  heading="FAQ"
   [icon]="pageIcon">
 </lcc-page-header>
 
-<div class="about">
+<div class="faq-page">
   <ea-card
-    class="about__location"
+    class="faq-page__location"
     [fullWidth]="true">
     <h3
       slot="header"
-      class="about__location-heading">
-      <ea-icon-map-pin class="about__heading-icon" />
+      class="faq-page__location-heading">
+      <ea-icon-map-pin class="faq-page__heading-icon" />
       Where and when we meet
     </h3>
-    <div class="about__location-body">
+    <div class="faq-page__location-body">
       <lcc-club-card [club]="lccClub" />
       <lcc-link-list [links]="[schedulePageLink, regionalClubsPageLink]" />
     </div>
@@ -21,14 +21,7 @@
 
   <section
     class="faq"
-    aria-labelledby="faq-heading">
-    <h3
-      id="faq-heading"
-      class="faq__title">
-      <ea-icon-message-circle class="about__heading-icon" />
-      Frequently Asked Questions
-    </h3>
-
+    aria-label="Frequently asked questions">
     <ea-accordion
       [headingLevel]="4"
       [highlightExpanded]="true"
