@@ -10,14 +10,12 @@
 @forward 'abstracts/mixins';
 @forward 'abstracts/variables';
 
-@forward 'layout/truncate';
 @forward 'layout/overlay';
+@forward 'layout/page';
+@forward 'layout/truncate';
 
-@forward 'components/button';
 @forward 'components/form';
-@forward 'components/input';
 @forward 'components/link';
-@forward 'components/privacy-note';
 @forward 'components/scrollbar';
 @forward 'components/search-highlight';
 @forward 'components/table';

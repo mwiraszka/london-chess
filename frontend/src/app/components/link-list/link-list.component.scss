@@ -6,7 +6,8 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 8px;
+  // All of the list's room above and below its links, which a page ending on them drops
+  padding: 12px 8px;
 
   h3 {
     color: var(--lcc-color--linkList-headerText);
@@ -22,13 +23,18 @@
     }
 
     li {
+      display: flex;
       list-style: none;
+
+      & + li {
+        margin-top: 8px;
+      }
 
       a {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin: 4px;
+        margin: 0 4px;
         text-align: center;
         white-space: nowrap;
       }

@@ -1,0 +1,32 @@
+// Every routed page is a centred column the width of the app content. None of these
+// selectors carry specificity, so a page's own :host styles refine them.
+:where(app-root main > :not(router-outlet, lcc-footer)) {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: var(--lcc-width--appContent);
+  // Holds the whole space below the nav, which keeps none of its own, so that a table
+  // heading following the page's scroll comes to rest against it. Pages end flush with
+  // their last content, so the bottom padding is the whole space above the footer.
+  padding: 8px 4px 32px;
+  // Margin needed to prevent scrollbar-gutter style from cutting off page content
+  margin: 0 4px;
+}
+
+:where(body[data-wide-view='true'] app-root main > :not(router-outlet, lcc-footer)) {
+  max-width: none;
+}
+
+// A dialog opens in the top layer, so its host holds no place, or gap, in the page
+:where(app-root main > :not(router-outlet, lcc-footer)) > ea-dialog {
+  display: contents;
+}
+
+// A page ending on its links gives up the space the list keeps below them
+:where(app-root main > :not(router-outlet, lcc-footer)) > lcc-link-list:last-child {
+  padding-bottom: 0;
+}

@@ -1,3 +1,5 @@
+import { DialogService } from '@eagami/ui';
+
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -5,11 +7,11 @@ import { provideRouter } from '@angular/router';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageViewerComponent } from '@app/components/image-viewer/image-viewer.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { ImagesActions } from '@app/store/images';
 import {
+  closedDialogRef,
   customSort,
   lastOpenedDialog,
   query,
@@ -36,11 +38,11 @@ describe('PhotoGridComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminControlsDirective, PhotoGridComponent, TooltipDirective],
+      imports: [AdminControlsDirective, PhotoGridComponent],
       providers: [
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
         {
           provide: StoreRequestService,
@@ -114,9 +116,7 @@ describe('PhotoGridComponent', () => {
 
       await component.onClickAlbumCover(album);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: ImageViewerComponent,
-        isModal: true,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(ImageViewerComponent, {
         inputs: {
           album,
           images: albumPhotos,
@@ -130,10 +130,8 @@ describe('PhotoGridComponent', () => {
     it('should open ImageExplorerComponent dialog with correct data', async () => {
       await component.onOpenImageExplorer();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: expect.any(Function),
+      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
         inputs: { selectable: false },
-        isModal: true,
       });
     });
   });
@@ -160,9 +158,7 @@ describe('PhotoGridComponent', () => {
         image => image.album === MOCK_IMAGES[1].album,
       ).length;
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        isModal: true,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -179,7 +175,7 @@ describe('PhotoGridComponent', () => {
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteAlbum(MOCK_IMAGES[1].album);
 
