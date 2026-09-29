@@ -12,6 +12,9 @@ import { Technology } from '@app/models';
   templateUrl: './tech-ring.component.html',
   styleUrl: './tech-ring.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[style.--icon-count]': 'technologies.length',
+  },
 })
 export class TechRingComponent {
   protected readonly technologies = TECHNOLOGIES;
