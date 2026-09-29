@@ -1,9 +1,10 @@
+import { DialogService } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { DialogService } from '@app/services';
 import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
-import { query } from '@app/utils';
+import { closedDialogRef, query } from '@app/utils';
 
 import { ScheduleToolbarComponent } from './schedule-toolbar.component';
 
@@ -23,7 +24,7 @@ describe('ScheduleToolbarComponent', () => {
         { provide: EXPORT_EVENTS_TO_ICAL, useValue: vi.fn() },
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
       ],
     }).compileComponents();
@@ -55,7 +56,7 @@ describe('ScheduleToolbarComponent', () => {
   describe('onExportToIcal', () => {
     it('should call exportEventsToIcal with events and filename', async () => {
       exportEventsToIcalSpy.mockReturnValue(3);
-      vi.spyOn(dialogService, 'open').mockResolvedValue('confirm');
+      vi.spyOn(dialogService, 'open').mockReturnValue(closedDialogRef('confirm'));
 
       await component.onExportToIcal();
 
@@ -83,7 +84,7 @@ describe('ScheduleToolbarComponent', () => {
 
     it('should generate filename with current date', async () => {
       dateToISOStringSpy.mockReturnValue('2024-01-15T10:30:00.000Z');
-      vi.spyOn(dialogService, 'open').mockResolvedValue('confirm');
+      vi.spyOn(dialogService, 'open').mockReturnValue(closedDialogRef('confirm'));
 
       await component.onExportToIcal();
 
@@ -95,7 +96,7 @@ describe('ScheduleToolbarComponent', () => {
     });
 
     it('should not export when dialog is cancelled', async () => {
-      vi.spyOn(dialogService, 'open').mockResolvedValue('cancel');
+      vi.spyOn(dialogService, 'open').mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToIcal();
 

@@ -1,85 +1,87 @@
-import { CalendarDaysIconComponent, TrophyIconComponent } from '@eagami/ui';
-import { UntilDestroy } from '@ngneat/until-destroy';
+import {
+  ButtonComponent,
+  CalendarDaysIconComponent,
+  DialogComponent,
+  DialogRef,
+} from '@eagami/ui';
 
 import {
   ChangeDetectionStrategy,
   Component,
-  Renderer2,
+  computed,
   inject,
   input,
-  output,
 } from '@angular/core';
 
-import { DialogOutput, Event } from '@app/models';
-import { FormatDatePipe, KebabCasePipe } from '@app/pipes';
+import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
+import { Event } from '@app/models';
+import { FormatDatePipe } from '@app/pipes';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-event-info-dialog',
   template: `
-    <header class="dialog-title">
-      <ea-icon-calendar-days class="calendar-icon" />
-      <span>{{ event().eventDate | formatDate: 'long no-time' }}</span>
-    </header>
+    <ea-dialog
+      width="sm"
+      (keydown.enter)="onEnter($event)">
+      <h3
+        slot="header"
+        class="dialog-title">
+        {{ event().title }}
+      </h3>
 
-    <div class="dialog-body">
-      <div class="event-title">{{ event().title }}</div>
+      <div class="dialog-body">
+        <div class="event-date">
+          <ea-icon-calendar-days
+            class="calendar-icon"
+            aria-hidden="true" />
+          {{ event().eventDate | formatDate: 'long no-time' }}
+        </div>
 
-      <div
-        class="event-type-wrapper"
-        [class]="event().type | kebabCase">
-        <span class="event-type">{{ event().type }}</span>
+        <lcc-event-type-tag
+          class="event-type"
+          [type]="event().type" />
 
-        @if ((event().type | kebabCase) === 'championship') {
-          <ea-icon-trophy class="championship-icon" />
+        @if (details()) {
+          <p class="event-details">{{ details() }}</p>
         }
       </div>
 
-      <div class="event-details">{{ modifiedEventDetails }}</div>
-    </div>
-
-    @if (event().articleId) {
-      <button
-        class="details-button lcc-primary-button"
-        (click)="dialogResult.emit('details')">
-        More details
-      </button>
-    }
+      @if (event().articleId) {
+        <div slot="footer">
+          <ea-button
+            class="details-button"
+            (clicked)="dialogRef.close('details')">
+            More details
+          </ea-button>
+        </div>
+      }
+    </ea-dialog>
   `,
   styleUrl: 'event-info-dialog.component.scss',
   imports: [
+    ButtonComponent,
     CalendarDaysIconComponent,
+    DialogComponent,
+    EventTypeTagComponent,
     FormatDatePipe,
-    KebabCasePipe,
-    TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EventInfoDialogComponent implements DialogOutput<'details'> {
-  private readonly renderer = inject(Renderer2);
+export class EventInfoDialogComponent {
+  protected readonly dialogRef = inject<DialogRef<'details'>>(DialogRef);
 
   readonly event = input.required<Event>();
 
-  public readonly dialogResult = output<'details' | 'close'>();
+  protected readonly details = computed(() =>
+    this.event().details.replace('\\n', '\n\n'),
+  );
 
-  private enterKeyListener!: () => void;
-
-  public get modifiedEventDetails(): string {
-    return this.event().details.replace('\\n', '\n\n');
-  }
-
-  public ngOnInit(): void {
-    this.enterKeyListener = this.renderer.listen(
-      'document',
-      'keydown.enter',
-      (event: KeyboardEvent) => {
-        event.preventDefault();
-        this.dialogResult.emit('details');
-      },
-    );
-  }
-
-  public ngOnDestroy(): void {
-    this.enterKeyListener();
+  // A focused button answers Enter itself, so only Enter from elsewhere opens the article
+  protected onEnter(keydown: globalThis.Event): void {
+    if (!this.event().articleId || keydown.target instanceof HTMLButtonElement) {
+      return;
+    }
+    keydown.preventDefault();
+    this.dialogRef.close('details');
   }
 }

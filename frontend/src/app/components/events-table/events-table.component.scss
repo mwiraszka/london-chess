@@ -26,7 +26,7 @@
 }
 
 // Starts where the date's own padding ends, so the date sits centred in its space
-// The line above today's row, drawn when the past events are shown above it
+// The line marking today, above the first day still to come
 :host ::ng-deep .ea-data-table__row:has(.events__today) {
   border-top: 2px solid var(--lcc-color--schedule-today);
 }
@@ -72,61 +72,15 @@
 }
 
 .events__type {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  width: auto;
-  padding: 2px 8px;
   margin: 2px 0;
-  font-size: 14px;
-  border-radius: var(--lcc-borderRadius--large);
-  color: var(--lcc-color--schedule-eventType);
-
-  &--blitz-tournament-10-mins {
-    background-color: var(--lcc-color--schedule-blitz10TournamentBackground);
-  }
-
-  &--rapid-tournament-25-mins {
-    background-color: var(--lcc-color--schedule-rapid25TournamentBackground);
-  }
-
-  &--rapid-tournament-40-mins {
-    background-color: var(--lcc-color--schedule-rapid40TournamentBackground);
-  }
-
-  &--lecture {
-    background-color: var(--lcc-color--schedule-lectureBackground);
-  }
-
-  &--simul {
-    background-color: var(--lcc-color--schedule-simulBackground);
-  }
-
-  &--championship {
-    background-color: var(--lcc-color--schedule-championshipBackground);
-  }
-
-  &--other {
-    background-color: var(--lcc-color--schedule-otherBackground);
-  }
-
-  &--closed {
-    background-color: var(--lcc-color--schedule-closedBackground);
-  }
-
-  // Keeps the heading line's height while holding the placeholder for the whole line
-  &--placeholder {
-    padding-right: 0;
-    padding-left: 0;
-    background: none;
-  }
 }
 
-.events__championship-icon {
-  @include icon-size(16px);
-
-  color: var(--lcc-color--schedule-championshipMedalIcon);
+// Keeps the heading line's height while holding the placeholder for the whole line
+.events__heading-placeholder {
+  display: inline-flex;
+  padding: 2px 0;
+  margin: 2px 0;
+  font-size: 14px;
 }
 
 .events__details {

@@ -3,12 +3,13 @@
 $month-min-width: 310px;
 $month-max-width: 550px;
 $grid-gap: 16px;
+// Every placeholder month the component renders
+$skeleton-month-count: 12;
 
 :host {
   display: flex;
   container-type: inline-size;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   width: 100%;
 }
 
@@ -34,6 +35,22 @@ $grid-gap: 16px;
       }
     }
   }
+}
+
+// The placeholders fill a single row with as many months as fit side by side, the nth
+// showing from the width where the grid makes room for n columns
+.months-grid--loading .month {
+  @for $n from 2 through $skeleton-month-count {
+    &:nth-child(#{$n}) {
+      @container (width < #{$n * $month-min-width + ($n - 1) * $grid-gap}) {
+        display: none;
+      }
+    }
+  }
+}
+
+.paginator {
+  margin-top: 12px;
 }
 
 .month {
@@ -214,60 +231,6 @@ $grid-gap: 16px;
     font-size: 14px;
     font-weight: bold;
     color: var(--lcc-color--eventsCalendar-primaryTooltipText);
-  }
-
-  .event-type-wrapper {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    width: 100%;
-    padding: 2px 8px;
-    font-size: 13px;
-    border-radius: var(--lcc-borderRadius--large);
-
-    &.blitz-tournament-10-mins {
-      background-color: var(--lcc-color--schedule-blitz10TournamentBackground);
-    }
-
-    &.rapid-tournament-25-mins {
-      background-color: var(--lcc-color--schedule-rapid25TournamentBackground);
-    }
-
-    &.rapid-tournament-40-mins {
-      background-color: var(--lcc-color--schedule-rapid40TournamentBackground);
-    }
-
-    &.lecture {
-      background-color: var(--lcc-color--schedule-lectureBackground);
-    }
-
-    &.simul {
-      background-color: var(--lcc-color--schedule-simulBackground);
-    }
-
-    &.championship {
-      background-color: var(--lcc-color--schedule-championshipBackground);
-    }
-
-    &.other {
-      background-color: var(--lcc-color--schedule-otherBackground);
-    }
-
-    &.closed {
-      background-color: var(--lcc-color--schedule-closedBackground);
-    }
-
-    .event-type {
-      color: var(--lcc-color--eventsCalendar-eventTypeText);
-    }
-
-    .championship-icon {
-      @include icon-size(16px);
-
-      color: var(--lcc-color--schedule-championshipMedalIcon);
-    }
   }
 
   .more-details {

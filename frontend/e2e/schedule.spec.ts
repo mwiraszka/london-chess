@@ -78,7 +78,7 @@ test.describe('schedule', () => {
     );
     await indicator(page, 'simul').click();
 
-    const dialog = page.locator('lcc-dialog');
+    const dialog = page.locator('lcc-event-info-dialog');
     await expect(dialog).toContainText(SIMUL.title);
     await expect(dialog).toContainText(SIMUL.details);
 
@@ -93,54 +93,27 @@ test.describe('schedule', () => {
 
     await indicator(page, 'championship').click();
     await page
-      .locator('lcc-dialog')
+      .locator('lcc-event-info-dialog')
       .getByRole('button', { name: 'More details' })
       .click();
 
     await expect(page).toHaveURL(new RegExp(`/article/view/${LINKED.articleId}$`));
   });
 
-  test('closes only the newly opened dialog on Escape after earlier ones closed', async ({
+  test('closes a dialog opened after an earlier one closed on Escape', async ({
     page,
   }) => {
     await page.goto('/schedule');
-    const dialog = page.locator('lcc-dialog');
-    const client = await page.context().newCDPSession(page);
-    const documentKeydownListeners = async (): Promise<number> => {
-      const { result } = await client.send('Runtime.evaluate', {
-        expression: 'document',
-      });
-      const { listeners } = await client.send('DOMDebugger.getEventListeners', {
-        objectId: result.objectId!,
-      });
-      return listeners.filter(({ type }) => type === 'keydown').length;
-    };
-    await expect(indicator(page, 'simul')).toBeVisible();
-    const listenersBefore = await documentKeydownListeners();
-
-    // Opening and closing in one task closes the dialog before its listeners attach
-    await page.evaluate(() => {
-      document
-        .querySelector<HTMLElement>(
-          'lcc-events-calendar-grid a.event-indicator.simul:not(.other-month)',
-        )!
-        .click();
-      document.querySelector<HTMLElement>('lcc-dialog .close-button')!.click();
-    });
-    // A timer queued now runs after the one the dialog queued to attach its listeners
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve)));
-
+    const dialog = page.locator('lcc-event-info-dialog');
+    await indicator(page, 'simul').click();
+    await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await expect(dialog).toHaveCount(0);
-    expect(await documentKeydownListeners()).toBe(listenersBefore);
 
     await indicator(page, 'closed').click();
     await expect(dialog).toContainText(CLOSURE.title);
-    await expect.poll(documentKeydownListeners).toBeGreaterThan(listenersBefore);
-
     await page.keyboard.press('Escape');
 
     await expect(dialog).toHaveCount(0);
     await expect(page).toHaveURL(/\/schedule$/);
-    await expect.poll(documentKeydownListeners).toBe(listenersBefore);
   });
 });

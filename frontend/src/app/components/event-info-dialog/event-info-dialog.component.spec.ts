@@ -1,52 +1,83 @@
+import { DialogRef } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { query } from '@app/utils';
+import { query, queryTextContent } from '@app/utils';
 
 import { EventInfoDialogComponent } from './event-info-dialog.component';
 
 describe('EventInfoDialogComponent', () => {
   let fixture: ComponentFixture<EventInfoDialogComponent>;
-  let component: EventInfoDialogComponent;
+  let closeSpy: MockInstance;
 
-  let dialogResultSpy: MockInstance;
+  const withArticle = MOCK_EVENTS[4];
+  const withoutArticle = MOCK_EVENTS[0];
+
+  const pressEnter = (target: Element): void => {
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  };
+
+  function render(event = withArticle): void {
+    fixture = TestBed.createComponent(EventInfoDialogComponent);
+    fixture.componentRef.setInput('event', event);
+    fixture.detectChanges();
+  }
 
   beforeEach(async () => {
+    const dialogRef = new DialogRef<'details'>();
+    closeSpy = vi.spyOn(dialogRef, 'close');
+
     await TestBed.configureTestingModule({
       imports: [EventInfoDialogComponent],
+      providers: [{ provide: DialogRef, useValue: dialogRef }],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EventInfoDialogComponent);
-    component = fixture.componentInstance;
-
-    dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
-
-    fixture.componentRef.setInput('event', MOCK_EVENTS[4]); // Event with associated article
-    fixture.detectChanges();
+    render();
   });
 
-  describe('dialog result handling', () => {
-    it('should emit "details" when details button is clicked', () => {
-      query(fixture.debugElement, '.details-button').triggerEventHandler('click');
+  it('should show the event in an open dialog', () => {
+    expect(queryTextContent(fixture.debugElement, '.dialog-title')).toBe(
+      withArticle.title,
+    );
+    expect(queryTextContent(fixture.debugElement, '.event-type')).toBe(withArticle.type);
+    expect(query(fixture.debugElement, 'dialog').nativeElement.hasAttribute('open')).toBe(
+      true,
+    );
+  });
 
-      expect(dialogResultSpy).toHaveBeenCalledWith('details');
+  it('should answer details from the details button', () => {
+    query(fixture.debugElement, '.details-button').triggerEventHandler('clicked');
+
+    expect(closeSpy).toHaveBeenCalledWith('details');
+  });
+
+  it('should answer details when Enter is pressed away from the buttons', () => {
+    pressEnter(query(fixture.debugElement, '.dialog-body').nativeElement);
+
+    expect(closeSpy).toHaveBeenCalledWith('details');
+  });
+
+  it('should close without an answer when the dialog is dismissed', () => {
+    query(fixture.debugElement, '.ea-dialog__close').nativeElement.click();
+
+    expect(closeSpy).toHaveBeenCalledWith();
+  });
+
+  describe('for an event without an article', () => {
+    beforeEach(() => {
+      fixture.destroy();
+      render(withoutArticle);
     });
 
-    it('should emit "details" when enter key is pressed', () => {
-      const enterEvent = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        bubbles: true,
-      });
-      document.dispatchEvent(enterEvent);
-
-      expect(dialogResultSpy).toHaveBeenCalledWith('details');
-    });
-
-    it('should not render "details" button for events with no associated article', () => {
-      fixture.componentRef.setInput('event', MOCK_EVENTS[0]); // Event with no associated article
-      fixture.detectChanges();
-
+    it('should offer no details button', () => {
       expect(query(fixture.debugElement, '.details-button')).toBeFalsy();
+    });
+
+    it('should ignore Enter', () => {
+      pressEnter(query(fixture.debugElement, '.dialog-body').nativeElement);
+
+      expect(closeSpy).not.toHaveBeenCalled();
     });
   });
 });

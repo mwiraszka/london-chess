@@ -1,6 +1,7 @@
 import {
   ButtonComponent,
   CalendarDaysIconComponent,
+  DialogService,
   DownloadIconComponent,
   EmptyStateComponent,
   FilterXIconComponent,
@@ -41,14 +42,13 @@ import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/sched
 import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import {
   AdminButton,
-  BasicDialogResult,
   DataPaginationOptions,
   Dialog,
   Event,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 
@@ -110,6 +110,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           [filteredCount]="vm.filteredCount"
           [isAdmin]="vm.isAdmin"
           [isLoading]="vm.status === 'loading' || vm.isFetching"
+          [markToday]="true"
           [options]="vm.options"
           [showModificationInfo]="vm.isAdmin"
           [widestEvents]="widestEvents()"
@@ -120,9 +121,11 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
           class="schedule-view"
           [class.active]="vm.scheduleView === 'calendar'"
           [events]="vm.filteredEvents"
+          [filteredCount]="vm.filteredCount"
           [isAdmin]="vm.isAdmin"
           [isLoading]="vm.status === 'loading' || vm.isFetching"
-          [options]="vm.options">
+          [options]="vm.options"
+          (optionsChange)="onOptionsChange($event)">
         </lcc-events-calendar-grid>
       } @else {
         <ea-empty-state
@@ -278,11 +281,7 @@ export class SchedulePageComponent implements OnInit {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onOptionsChange(options: DataPaginationOptions<Event>, fetch = true): void {

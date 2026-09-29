@@ -1,6 +1,6 @@
 @if (isLoading()) {
   <div
-    class="months-grid"
+    class="months-grid months-grid--loading"
     aria-busy="true"
     [attr.month-count]="skeletonMonths.length">
     @for (month of skeletonMonths; track month) {
@@ -30,7 +30,7 @@
     @for (calendarMonth of calendarMonths(); track calendarMonth.monthYear) {
       <div
         class="month"
-        [class.no-events]="!calendarMonth.hasEvents"
+        [class.no-events]="!calendarMonth.hasEvents && !calendarMonth.isCurrentMonth"
         [class.today-scroll-point]="calendarMonth.isCurrentMonth">
         <h3 class="month-title">{{ calendarMonth.monthYear }}</h3>
         <div class="calendar-grid">
@@ -53,14 +53,15 @@
                         [adminControls]="isAdmin() ? getAdminControlsConfig(event) : null"
                         class="event-indicator"
                         [class]="event.type | kebabCase"
-                        [class.no-events]="!calendarMonth.hasEvents"
+                        [class.no-events]="
+                          !calendarMonth.hasEvents && !calendarMonth.isCurrentMonth
+                        "
                         [class.other-month]="!day.isCurrentMonth"
-                        [tooltip]="
+                        [eaTooltip]="
                           day.isCurrentMonth && calendarMonth.hasEvents && !isTouchDevice
                             ? eventTooltipContent
-                            : null
+                            : ''
                         "
-                        [tooltipContext]="event"
                         role="button"
                         tabindex="0"
                         [attr.aria-label]="
@@ -74,6 +75,31 @@
                           $event.preventDefault(); onEventIndicator(event)
                         ">
                       </a>
+                      <ng-template #eventTooltipContent>
+                        <div class="event-tooltip">
+                          <div class="event-date-and-time">
+                            <ea-icon-calendar-days class="calendar-icon" />
+                            <span>{{
+                              event.eventDate | formatDate: 'short no-time'
+                            }}</span>
+                          </div>
+
+                          <div class="event-title-and-type">
+                            <div
+                              class="event-title"
+                              [innerHTML]="event.title | highlight: options()?.search">
+                            </div>
+
+                            <lcc-event-type-tag
+                              ink="var(--lcc-color--eventsCalendar-eventTypeText)"
+                              size="xs"
+                              [search]="options()?.search ?? ''"
+                              [type]="event.type" />
+                          </div>
+
+                          <div class="more-details">Click for more details</div>
+                        </div>
+                      </ng-template>
                     }
                   </div>
                 }
@@ -86,35 +112,17 @@
   </div>
 }
 
-<ng-template
-  #eventTooltipContent
-  let-event>
-  <div class="event-tooltip">
-    <div class="event-date-and-time">
-      <ea-icon-calendar-days class="calendar-icon" />
-      <span>{{ event.eventDate | formatDate: 'short no-time' }}</span>
-    </div>
-
-    <div class="event-title-and-type">
-      <div
-        class="event-title"
-        [innerHTML]="event.title | highlight: options()?.search">
-      </div>
-
-      <div
-        class="event-type-wrapper"
-        [class]="event.type | kebabCase">
-        <span
-          class="event-type"
-          [innerHTML]="event.type | highlight: options()?.search">
-        </span>
-
-        @if ((event.type | kebabCase) === 'championship') {
-          <ea-icon-trophy class="championship-icon" />
-        }
-      </div>
-    </div>
-
-    <div class="more-details">Click for more details</div>
+@if (options(); as options) {
+  <div class="paginator">
+    <ea-paginator
+      align="center"
+      size="sm"
+      [page]="options.page"
+      [pageSize]="options.pageSize"
+      [pageSizeOptions]="pageSizes"
+      [showAllOption]="true"
+      [showRangeLabel]="filteredCount() !== null"
+      [totalItems]="filteredCount() ?? 0"
+      (changed)="onPageChanged($event)" />
   </div>
-</ng-template>
+}

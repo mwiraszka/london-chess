@@ -1,0 +1,7 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+.championship-icon {
+  @include icon-size(1em);
+
+  color: var(--lcc-color--schedule-championshipMedalIcon);
+}
