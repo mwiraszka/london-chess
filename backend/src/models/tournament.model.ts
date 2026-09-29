@@ -1,12 +1,28 @@
 import { Schema, Types, model } from 'mongoose';
 
-import { Id, Url } from './core.model';
+import { Id, IsoDate, Url } from './core.model';
 import { GamePlayer, GameResponse } from './game.model';
+import { ModificationInfo } from './modification-info.model';
 
 export type TournamentFormat = 'swiss' | 'round-robin' | 'match' | 'tandem-simul';
 
+export const TOURNAMENT_FORMATS: TournamentFormat[] = [
+  'swiss',
+  'round-robin',
+  'match',
+  'tandem-simul',
+];
+
 export type RoundOutcome =
   'game' | 'forfeit' | 'full-point-bye' | 'half-point-bye' | 'unplayed';
+
+export const ROUND_OUTCOMES: RoundOutcome[] = [
+  'game',
+  'forfeit',
+  'full-point-bye',
+  'half-point-bye',
+  'unplayed',
+];
 
 export type PieceColor = 'white' | 'black';
 
@@ -48,6 +64,11 @@ export interface TournamentSection {
   entries: TournamentEntry[];
 }
 
+export interface TournamentRegistration {
+  memberId: Id;
+  registeredAt: IsoDate;
+}
+
 export interface Tournament {
   id: Id;
   // The club's own numbering
@@ -66,6 +87,12 @@ export interface Tournament {
   // The archive's name for the tournament, when its games are archived
   gameArchiveTournament: string | null;
   sections: TournamentSection[];
+  // Members can register online between these two instants, and never when both are null
+  registrationOpens: IsoDate | null;
+  registrationCloses: IsoDate | null;
+  registrations: TournamentRegistration[];
+  // Null on tournaments recorded before the site could edit them
+  modificationInfo: ModificationInfo | null;
 }
 
 export type TournamentRecord = Omit<Tournament, 'id'> & { _id: Types.ObjectId };
@@ -80,10 +107,13 @@ export type TournamentSummary = Pick<
   | 'format'
   | 'timeControl'
   | 'isRated'
+  | 'registrationOpens'
+  | 'registrationCloses'
 > & {
   sectionCount: number;
   roundCount: number;
   playerCount: number;
+  registrationCount: number;
 };
 
 export type TournamentGame = Pick<
@@ -109,12 +139,61 @@ export type TournamentSectionResponse = Omit<
   games: TournamentGame[];
 };
 
+export interface TournamentRegistrant {
+  memberNumber: number;
+  firstName: string;
+  lastName: string;
+  rating: string;
+  registeredAt: IsoDate;
+}
+
 export type TournamentResponse = Omit<
   Tournament,
-  'id' | 'gameArchiveTournament' | 'sections'
+  'id' | 'gameArchiveTournament' | 'sections' | 'registrations'
 > & {
   sections: TournamentSectionResponse[];
+  registrants: TournamentRegistrant[];
 };
+
+// A player as the pairing software names them, "Last, First"
+export type EntryInput = Omit<
+  TournamentEntry,
+  'playerId' | 'performanceRating' | 'resultNote'
+> & {
+  name: string;
+};
+
+export type SectionInput = Pick<
+  TournamentSection,
+  'name' | 'ratingBand' | 'roundCount' | 'isDoubleRound'
+> & {
+  entries: EntryInput[];
+};
+
+export type TournamentInput = Pick<
+  Tournament,
+  | 'name'
+  | 'subtitle'
+  | 'date'
+  | 'endDate'
+  | 'format'
+  | 'timeControl'
+  | 'isRated'
+  | 'articleUrl'
+  | 'registrationOpens'
+  | 'registrationCloses'
+> & {
+  // Null keeps the results already recorded
+  sections: SectionInput[] | null;
+  modificationInfo: ModificationInfo;
+};
+
+export interface PlayerNameMatch {
+  name: string;
+  // Null when saving the results would add the player to the archive
+  playerId: Id | null;
+  memberNumber: number | null;
+}
 
 export type MemberTournamentResult = Pick<
   TournamentEntry,
@@ -178,6 +257,14 @@ const sectionSchema = new Schema<TournamentSection>(
   { _id: false },
 );
 
+const registrationSchema = new Schema<TournamentRegistration>(
+  {
+    memberId: { type: String, required: true },
+    registeredAt: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const tournamentSchema = new Schema<Tournament>(
   {
     number: { type: Number, required: true, unique: true },
@@ -191,6 +278,10 @@ const tournamentSchema = new Schema<Tournament>(
     articleUrl: { type: String, default: null },
     gameArchiveTournament: { type: String, default: null },
     sections: { type: [sectionSchema], default: [] },
+    registrationOpens: { type: String, default: null },
+    registrationCloses: { type: String, default: null },
+    registrations: { type: [registrationSchema], default: [] },
+    modificationInfo: { type: Object, default: null },
   },
   { versionKey: false },
 );

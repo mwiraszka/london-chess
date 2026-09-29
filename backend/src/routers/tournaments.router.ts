@@ -1,12 +1,25 @@
 import { Router } from 'express';
 
 import {
+  addTournament,
+  deleteTournament,
   getMemberTournaments,
   getTournament,
   getTournaments,
+  matchTournamentPlayers,
+  registerForTournament,
+  updateTournament,
+  withdrawFromTournament,
 } from '../controllers/tournaments.controller';
+import { adminAuth, auth } from '../middlewares/auth.index';
 
 export const tournamentsRouter = Router()
   .get('/', getTournaments)
   .get('/members/:number', getMemberTournaments)
-  .get('/:number', getTournament);
+  .get('/:number', getTournament)
+  .post('/', adminAuth, addTournament)
+  .post('/player-matches', adminAuth, matchTournamentPlayers)
+  .put('/:number', adminAuth, updateTournament)
+  .delete('/:number', adminAuth, deleteTournament)
+  .post('/:number/registration', auth, registerForTournament)
+  .delete('/:number/registration', auth, withdrawFromTournament);

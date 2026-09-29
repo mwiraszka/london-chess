@@ -143,6 +143,10 @@ const record = (overrides: Partial<TournamentRecord> = {}): TournamentRecord => 
       entries: [entry(1, CAT)],
     },
   ],
+  registrationOpens: null,
+  registrationCloses: null,
+  registrations: [],
+  modificationInfo: null,
   ...overrides,
 });
 
