@@ -126,38 +126,45 @@
       </p>
     }
 
-    @for (section of sections(); track section.key) {
-      <section class="section">
-        @if (section.heading; as heading) {
-          <h3 class="section__heading">
-            {{ heading.text }}
-            @if (heading.extra) {
-              <span class="section__heading-extra">({{ heading.extra }})</span>
-            }
-          </h3>
-        }
+    <div class="sections">
+      @for (section of sections(); track section.key) {
+        <section class="section">
+          @if (section.heading; as heading) {
+            <div class="section__title">
+              <h3 class="section__heading">
+                {{ heading.text }}
+                @if (heading.extra) {
+                  <span class="section__heading-extra">({{ heading.extra }})</span>
+                }
+              </h3>
+              <ea-divider class="section__rule" />
+            </div>
+          }
 
-        <lcc-data-table
-          class="crosstable"
-          [aria-label]="
-            section.heading ? 'Standings, ' + section.heading.text : 'Standings'
-          "
-          [columns]="sectionColumns().get(section.key) ?? []"
-          [data]="section.rows" />
-
-        @if (section.games.length) {
-          <h4 class="section__games-heading">Games in the archive</h4>
           <lcc-data-table
-            class="games"
-            [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
-            [clickable]="true"
-            [columns]="gameColumns()"
-            [data]="section.games"
-            [rowHref]="gameHref"
-            (rowActivate)="onOpenGame($event)" />
-        }
-      </section>
-    }
+            class="crosstable"
+            [aria-label]="
+              section.heading ? 'Standings, ' + section.heading.text : 'Standings'
+            "
+            [columns]="sectionColumns().get(section.key) ?? []"
+            [data]="section.rows"
+            [fullWidth]="true" />
+
+          @if (section.games.length) {
+            <h4 class="section__games-heading">Games in the archive</h4>
+            <lcc-data-table
+              class="games"
+              [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
+              [clickable]="true"
+              [columns]="gameColumns()"
+              [data]="section.games"
+              [fullWidth]="true"
+              [rowHref]="gameHref"
+              (rowActivate)="onOpenGame($event)" />
+          }
+        </section>
+      }
+    </div>
   } @else {
     <lcc-page-header
       [heading]="null"
@@ -170,15 +177,18 @@
       <lcc-text-skeleton width="320px" />
     </p>
 
-    <section class="section">
-      <lcc-data-table
-        class="crosstable"
-        aria-label="Standings"
-        [columns]="loadingColumns()"
-        [data]="[]"
-        [loading]="true"
-        [loadingRowCount]="loadingRowCount" />
-    </section>
+    <div class="sections">
+      <section class="section">
+        <lcc-data-table
+          class="crosstable"
+          aria-label="Standings"
+          [columns]="loadingColumns()"
+          [data]="[]"
+          [fullWidth]="true"
+          [loading]="true"
+          [loadingRowCount]="loadingRowCount" />
+      </section>
+    </div>
   }
 
   <lcc-link-list

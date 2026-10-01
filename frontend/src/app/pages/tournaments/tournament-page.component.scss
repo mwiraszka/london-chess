@@ -54,22 +54,39 @@ $details-gap: 24px;
 }
 
 // The page centres blocks at their own width, so the block is capped for its table to scroll
+// Every section takes the width of the widest crosstable, so all the headings and tables
+// share one pair of edges down the page
+.sections {
+  display: flex;
+  align-self: center;
+  flex-direction: column;
+  gap: 32px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 16px;
+}
+
 .section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 100%;
-  margin-top: 16px;
 }
 
 .section__heading,
 .section__games-heading {
   margin: 0;
+  text-align: left;
   color: var(--color-text-primary);
 }
 
 .section__games-heading {
   margin-top: 8px;
+}
+
+.section__rule {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .section__heading-extra {
