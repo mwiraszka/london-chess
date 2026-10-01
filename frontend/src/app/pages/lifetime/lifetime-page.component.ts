@@ -14,6 +14,7 @@ import { MemberProfilesService, MetaAndTitleService } from '@app/services';
   styleUrl: './lifetime-page.component.scss',
   imports: [CardComponent, CommonModule, KebabCasePipe, PageHeaderComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--reading' },
 })
 export class LifetimePageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);

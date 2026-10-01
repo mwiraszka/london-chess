@@ -68,6 +68,7 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--narrow' },
 })
 export class EventEditorPageComponent implements EditorPage, OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);

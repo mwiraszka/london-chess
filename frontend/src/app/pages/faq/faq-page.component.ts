@@ -46,6 +46,7 @@ import { MetaAndTitleService } from '@app/services';
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--reading' },
 })
 export class FaqPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);

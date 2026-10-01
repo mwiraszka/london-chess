@@ -61,6 +61,7 @@ import { ImagesSelectors } from '@app/store/images';
     LoadFailedComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--reading' },
 })
 export class ArticleViewerPageComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);

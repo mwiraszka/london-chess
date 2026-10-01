@@ -57,6 +57,7 @@ import { isCityChampion } from '@app/utils';
     TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--reading' },
 })
 export class MemberProfilePageComponent implements OnInit {
   protected readonly isCityChampion = isCityChampion;

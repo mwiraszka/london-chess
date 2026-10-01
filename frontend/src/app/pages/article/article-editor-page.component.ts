@@ -73,6 +73,7 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--reading' },
 })
 export class ArticleEditorPageComponent implements EditorPage, OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);

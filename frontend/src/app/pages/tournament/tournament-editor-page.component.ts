@@ -65,6 +65,7 @@ import { isRecordNumber } from '@app/utils';
     TournamentFormComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--narrow' },
 })
 export class TournamentEditorPageComponent implements EditorPage, OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);

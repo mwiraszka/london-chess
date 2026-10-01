@@ -292,7 +292,9 @@
               <ul class="sessions">
                 @for (session of sessions(); track session.id) {
                   <li>
-                    <ea-card variant="elevated">
+                    <ea-card
+                      variant="elevated"
+                      [fullWidth]="true">
                       <div class="session">
                         @if (session.isMobile) {
                           <ea-icon-smartphone
