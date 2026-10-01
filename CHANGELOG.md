@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.4.0] - 2026-09-29
+## [v6.4.0] - 2026-10-01
 
 ### Added
 
@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mark today in the schedule's list of events only, rather than also in the home page's upcoming events
 - Present the Lifetime Achievement Awards on cards
 - Leave the same space above the footer on every page, and give the sections of the tournament, members, game archive and City Champion pages their intended spacing
+- Size each page's content to suit it beneath a page header that always spans the page: forms at a narrow width, the FAQ, member profiles, articles and Lifetime Achievement Awards at a reading width, and tables, grids and galleries across the page, with the wide view widening all but the forms
+- Line a tournament's sections up down its page, each crosstable and its archived games at one shared width beneath a ruled heading
+- Stretch the tables on the Tournaments, Game Archives and Members pages across the page, in line with the cards and filters above them
+- Stretch tables in articles across the article, and line up the columns of tables set one after another whose headings match
 - Show the image explorer in dark mode, and the album name above the photo in the image viewer with its arrows over the photo
 - Show a progress bar while a document loads
 - Move the upload of member ratings to a button in the members page's admin toolbar
