@@ -30,7 +30,7 @@ export const fold = (value: string): string =>
 const foldedKey = ({ firstName, lastName }: Omit<ParsedPlayerName, 'suffix'>): string =>
   `${fold(firstName)}|${fold(lastName)}`;
 
-// Pairing software writes "Last, First", with any suffix after the first name
+// SwissSys writes "Last, First", with any suffix after the first name
 export function parsePlayerName(raw: string): ParsedPlayerName {
   const value = raw.trim().replace(/\s+/g, ' ');
   const comma = value.indexOf(',');

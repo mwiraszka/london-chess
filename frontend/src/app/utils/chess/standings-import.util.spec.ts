@@ -9,7 +9,7 @@ import {
 
 const HEADER = ['#', 'Name', 'Rating', 'Rd 1', 'Rd 2', 'Total', 'T-BH-C1', 'T-BH'];
 
-// Four players over two rounds, as the pairing software exports them
+// Four players over two rounds, as SwissSys exports them
 const SECTION_ROWS = [
   HEADER,
   ['1', 'Achyuth, Akshaj', '2048', 'W3 (b)', 'W2 (w)', ' 2.0', '1.5', '2'],

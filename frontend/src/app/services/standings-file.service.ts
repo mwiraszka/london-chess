@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { StandingsFileRead, StandingsImport } from '@app/models';
 import { parseStandings } from '@app/utils';
 
-// Reads the standings files a pairing program exports; the parsers load only when needed
+// Reads the standings files SwissSys exports; the parsers load only when needed
 @Injectable({ providedIn: 'root' })
 export class StandingsFileService {
   public async importStandings(files: readonly File[]): Promise<StandingsImport> {

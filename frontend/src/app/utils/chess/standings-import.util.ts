@@ -27,7 +27,7 @@ const ROUND_HEADER = /^(?:rd|round|r)\.?\s*(\d{1,2})$/i;
 const SCORE_HEADER = /^(total|points|pts|score)$/i;
 const TIEBREAK_HEADER = /^t-|buch|tie-?break|sonneborn|cumulative|median/i;
 
-// Pairing software writes a game as W12 (b), a double round as WD12, and "(-)" for a forfeit
+// SwissSys writes a game as W12 (b), a double round as WD12, and "(-)" for a forfeit
 const GAME_CELL = /^([WDL]{1,2})\s*(\d+)(?:\s*\(([wb-])\))?$/i;
 const FORFEIT_CELL = /^([XF])\s*(\d+)?(?:\s*\([wb-]\))?$/i;
 const BYE_CELL = /^([BHUZ])\s*(?:-+|—)?$/i;
@@ -315,7 +315,7 @@ function parseSheet(sheet: StandingsSheet, sectionName: string): ParsedSection {
 }
 
 /**
- * Reads the standings a pairing program exports, one sheet per section. A lone section
+ * Reads the standings SwissSys exports, one sheet per section. A lone section
  * goes unnamed, as a tournament with a single section is recorded without one.
  */
 export function parseStandings(sheets: StandingsSheet[]): StandingsImport {

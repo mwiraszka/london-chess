@@ -12,7 +12,7 @@ import {
 
 const NEWCOMER = 'Newcomer, Nora';
 
-// Three players over two rounds, as the pairing program exports them
+// Three players over two rounds, as SwissSys exports them
 const STANDINGS_CSV = [
   '#,Name,Rating,Rd 1,Rd 2,Total',
   `1,"${PROFILE_MEMBER.lastName}, ${PROFILE_MEMBER.firstName}",1850,W2 (w),W3 (b),2.0`,
@@ -123,8 +123,8 @@ test.describe('managing tournaments', () => {
 
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue(name);
 
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
 
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue('');
   });
