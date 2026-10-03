@@ -20,7 +20,7 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MemberAccountFieldsComponent } from '@app/components/member-account-fields/member-account-fields.component';
 import { VERIFICATION_CODE_LENGTH } from '@app/constants/auth';
 import { ApiError, ApiService, AuthDrawerService } from '@app/services';
-import { createVerificationCodeControl } from '@app/utils';
+import { createVerificationCodeControl, normalizePhoneNumber } from '@app/utils';
 
 @Component({
   selector: 'lcc-create-account-form',
@@ -100,7 +100,7 @@ export class CreateAccountFormComponent {
         email: email.trim(),
         yearOfBirth,
         city: city.trim(),
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: normalizePhoneNumber(phoneNumber),
         lichessUsername: lichessUsername.trim(),
         chessComUsername: chessComUsername.trim(),
         verificationCode: this.verificationForm.controls.code.value.trim(),

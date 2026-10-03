@@ -7,7 +7,8 @@
   [errorMessages]="errorMessages"
   [formControl]="control()"
   [labelHelp]="help"
-  [maxLength]="20" />
+  [maxLength]="20"
+  (focusout)="onFieldLeft()" />
 
 <ng-template #help>
   <em>Optional.</em>

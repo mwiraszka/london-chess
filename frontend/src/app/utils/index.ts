@@ -74,6 +74,7 @@ export { createMemberAccountGroup } from './forms/create-member-account-group.ut
 export { createMemberDetailsControls } from './forms/create-member-details-controls.util';
 export { createNewPasswordGroup } from './forms/create-new-password-group.util';
 export { createVerificationCodeControl } from './forms/create-verification-code-control.util';
+export { normalizePhoneNumber } from './forms/normalize-phone-number.util';
 
 export { setPaginationParams } from './http/set-pagination-params.util';
 

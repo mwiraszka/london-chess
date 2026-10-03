@@ -2,9 +2,8 @@ export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const MEMBER_DETAIL_RULES = {
   phoneNumber: {
-    pattern: /^[0-9()+\-. ]{7,20}$/,
-    message:
-      'Phone number must be 7 to 20 characters using digits, spaces, and ()+-. only.',
+    pattern: /^(?:(?:\+1|001) ?)?(?:\d{3}-\d{3}-\d{4}|\d{10}|\(\d{3}\) \d{3}[- ]?\d{4})$/,
+    message: 'Please enter a valid phone number.',
   },
   lichessUsername: {
     pattern: /^[a-zA-Z0-9_-]{2,20}$/,

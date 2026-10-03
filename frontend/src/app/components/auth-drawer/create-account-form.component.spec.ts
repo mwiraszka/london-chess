@@ -42,7 +42,7 @@ describe('CreateAccountFormComponent', () => {
       email: 'ann@example.com',
       yearOfBirth: 1990,
       city: ' London ',
-      phoneNumber: ' 416-555-0100 ',
+      phoneNumber: '+1 (416) 555-0100',
       lichessUsername: 'ann_lichess',
       chessComUsername: 'ann_chesscom',
     });

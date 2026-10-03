@@ -28,8 +28,8 @@ describe('validateDetailField', () => {
 
   it('should check phone numbers and usernames against their patterns', () => {
     expect(validateDetailField('phoneNumber', '(519) 555-0100')).toBeNull();
-    expect(validateDetailField('phoneNumber', 'call me')).toMatch(
-      /^Phone number must be/,
+    expect(validateDetailField('phoneNumber', 'call me')).toBe(
+      'Please enter a valid phone number.',
     );
     expect(validateDetailField('chessComUsername', 'ab')).toMatch(
       /^Chess.com username must be/,

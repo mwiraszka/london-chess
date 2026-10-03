@@ -61,6 +61,7 @@ import {
   createMemberDetailsControls,
   createNewPasswordGroup,
   isAccountSection,
+  normalizePhoneNumber,
 } from '@app/utils';
 import { asSentence } from '@app/utils/sentence.util';
 
@@ -182,7 +183,7 @@ export class AccountPageComponent implements OnInit {
       current.lastName.trim() !== saved.lastName ||
       current.yearOfBirth !== saved.yearOfBirth ||
       current.city.trim() !== saved.city ||
-      current.phoneNumber.trim() !== saved.phoneNumber ||
+      normalizePhoneNumber(current.phoneNumber) !== saved.phoneNumber ||
       current.lichessUsername.trim() !== saved.lichessUsername ||
       current.chessComUsername.trim() !== saved.chessComUsername
     );
@@ -395,7 +396,7 @@ export class AccountPageComponent implements OnInit {
         lastName: lastName.trim(),
         yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
         city: city.trim(),
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: normalizePhoneNumber(phoneNumber),
         lichessUsername: lichessUsername.trim(),
         chessComUsername: chessComUsername.trim(),
       });
