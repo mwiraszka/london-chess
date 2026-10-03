@@ -53,8 +53,8 @@ test.describe('home page', () => {
 
     await page.getByRole('button', { name: new RegExp(`^${ALBUMS.picnic}`) }).click();
 
-    const viewer = page.locator('lcc-image-viewer').getByRole('figure');
-    await expect(viewer).toContainText(ALBUMS.picnic);
-    await expect(viewer).toContainText(PICNIC_IMAGES[0].caption);
+    const viewer = page.locator('lcc-image-viewer');
+    await expect(viewer.getByRole('heading', { name: ALBUMS.picnic })).toBeVisible();
+    await expect(viewer.getByRole('figure')).toContainText(PICNIC_IMAGES[0].caption);
   });
 });

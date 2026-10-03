@@ -14,12 +14,14 @@ test.describe('game archives', () => {
     const headers = page.locator('.games .ea-data-table__cell--header');
     const widths = () =>
       headers.evaluateAll(cells => cells.map(cell => cell.getBoundingClientRect().width));
-    await expect(page.locator('.games lcc-text-skeleton').first()).toBeVisible();
+    await expect(
+      page.locator('.games .ea-data-table__row--placeholder').first(),
+    ).toBeVisible();
     const skeletonWidths = await widths();
 
     await games.release();
 
-    await expect(page.locator('.games lcc-text-skeleton')).toHaveCount(0);
+    await expect(page.locator('.games .ea-data-table__row--placeholder')).toHaveCount(0);
     await expect(
       page.locator('.games .ea-data-table__body .ea-data-table__row').first(),
     ).toBeVisible();
