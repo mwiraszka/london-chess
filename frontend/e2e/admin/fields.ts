@@ -1,23 +1,16 @@
 import { Locator, Page, expect } from '../fixtures';
 import { confirm } from './session';
 
-// A required field's label ends in an asterisk, which is part of its accessible name
-export const fieldLabel = (label: string): RegExp => new RegExp(`^${label}( \\*)?$`);
+// The editors label a field as "* Title:" beside it, while forms labelled above their fields,
+// like the tournament editor, mark a required one as "Name *"
+export const fieldLabel = (label: string): RegExp =>
+  new RegExp(`^(\\* )?${label}:?( \\*)?$`);
 
 // Date and time pickers read what is typed once the entry is committed with Enter
 export async function fillField(page: Page, label: string, value: string): Promise<void> {
   const field = page.getByLabel(fieldLabel(label));
   await field.fill(value);
   await field.press('Enter');
-}
-
-export async function chooseOption(
-  page: Page,
-  label: string,
-  option: string,
-): Promise<void> {
-  await page.getByRole('combobox', { name: fieldLabel(label) }).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
 }
 
 // A day in the coming month, written as the date pickers read it

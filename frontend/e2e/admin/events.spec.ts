@@ -1,6 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { setSwitch } from '../switches';
-import { chooseOption, fieldLabel, fillField, nextMonthOn } from './fields';
+import { fieldLabel, fillField, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
@@ -31,11 +31,13 @@ test.describe('managing events', () => {
     await page.goto('/schedule');
     await page.getByRole('link', { name: 'Add an event' }).click();
     await expect(page).toHaveURL(/\/event\/add$/);
-    await fillField(page, 'Date', nextMonthOn(15));
-    await fillField(page, 'Start time', '7:00 PM');
+    await fillField(page, 'Event date', nextMonthOn(15));
+    await fillField(page, 'Event time', '7:00 PM');
     await page.getByLabel(fieldLabel('Title')).fill(title);
     await page.getByLabel(fieldLabel('Details')).fill('Rook endings for club players.');
-    await chooseOption(page, 'Event type', 'Lecture');
+    // The radio itself is visually hidden behind its label, which is what takes the click
+    await page.locator('lcc-event-form').getByText('Lecture', { exact: true }).click();
+    await expect(page.getByRole('radio', { name: 'Lecture' })).toBeChecked();
     const added = page.waitForResponse(
       response =>
         response.url() === `${APP_API}/events` && response.request().method() === 'POST',

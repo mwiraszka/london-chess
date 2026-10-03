@@ -33,7 +33,7 @@ test.describe('managing articles', () => {
     await logIn(page);
 
     await openNewArticleForm(page);
-    await page.getByRole('button', { name: 'Choose a banner image' }).click();
+    await page.getByRole('button', { name: 'Select a new banner image' }).click();
     await chooseFromExplorer(page, BANNER_IMAGES[1].caption);
     await page.getByLabel(fieldLabel('Title')).fill(title);
     await page
@@ -93,27 +93,30 @@ test.describe('managing articles', () => {
     expect((await page.request.get(`${API}/articles/${articleId}`)).status()).toBe(404);
   });
 
-  test('shows what is missing instead of publishing an incomplete article', async ({
+  test('holds back an incomplete article until it has everything it needs', async ({
     page,
   }) => {
     await logIn(page);
     const writes = watchWrites(page, `${APP_API}/articles`);
+    const publish = page.getByRole('button', { name: 'Publish article' });
 
     await openNewArticleForm(page);
     await expect(page.locator('lcc-article-form').getByRole('alert')).toHaveCount(0);
     await page.getByLabel(fieldLabel('Title')).fill(uniqueName('Unfinished notice'));
-    await page.getByRole('button', { name: 'Publish article' }).click();
+    await page.getByLabel(fieldLabel('Content')).focus();
+    await page.getByLabel(fieldLabel('Title')).focus();
 
-    await expect(page.getByText('Choose a banner image')).toBeVisible();
     await expect(fieldError(page, 'Content')).toHaveText('This field is required');
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await expect(publish).toBeDisabled();
 
-    await page.getByRole('button', { name: 'Choose a banner image' }).click();
+    await page.getByRole('button', { name: 'Select a new banner image' }).click();
     await chooseFromExplorer(page, BANNER_IMAGES[0].caption);
-    await expect(page.getByText('Choose a banner image')).toHaveCount(0);
+    await page.getByLabel(fieldLabel('Content')).fill('Ready to go.');
+    await expect(fieldError(page, 'Content')).toHaveCount(0);
+    await expect(publish).toBeEnabled();
 
     expect(writes).toEqual([]);
-    await page.getByRole('button', { name: 'Revert' }).click();
+    await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
   });
 
@@ -126,8 +129,8 @@ test.describe('managing articles', () => {
     await openNewArticleForm(page);
     await page.getByLabel(fieldLabel('Title')).fill(title);
     await page.getByLabel(fieldLabel('Content')).fill('Half **written**.');
-    // The draft reaches the store a moment after typing stops, which enables Discard
-    await expect(page.getByRole('button', { name: 'Revert' })).toBeEnabled();
+    // The draft reaches the store a moment after typing stops, which enables Revert
+    await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
     await leaveAndReturn(page);
 
     await expect(page).toHaveURL(/\/article\/add$/);
@@ -136,7 +139,7 @@ test.describe('managing articles', () => {
     await expect(page.locator('lcc-markdown-renderer strong')).toHaveText('written');
     await expect(page.getByText('Choose a banner image')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Revert' }).click();
+    await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
 
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue('');
@@ -160,7 +163,7 @@ test.describe('managing articles', () => {
       `Opening.\n\n{{{${BANNER_IMAGES[1].id}}}}(((500)))<<<Image caption goes here>>>\n\n\nClosing.`,
     );
 
-    await page.getByRole('button', { name: 'Revert' }).click();
+    await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
   });
 });

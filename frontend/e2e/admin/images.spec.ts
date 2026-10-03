@@ -52,9 +52,7 @@ test.describe('managing images', () => {
       /^data:image/,
     );
     await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
-    const albumField = page.getByRole('combobox', { name: fieldLabel('Album') });
-    await albumField.fill(album);
-    await albumField.press('Escape');
+    await page.getByRole('textbox', { name: 'New album name' }).fill(album);
     const saved = imagesSaved(page);
     await page.getByRole('button', { name: 'Add image' }).click();
     await confirm(page, 'Add');
@@ -110,14 +108,16 @@ test.describe('managing images', () => {
       new RegExp(`/album/edit/${encodeURIComponent(ALBUMS.picnic)}$`),
     );
     const album = editor.getByLabel(fieldLabel('Album title'));
-    const captions = editor.locator('.existing-image').getByLabel(fieldLabel('Caption'));
+    const captions = editor.locator('input[id^="existing-caption-input-"]');
     await expect(album).toHaveValue(ALBUMS.picnic);
     await expect(captions).toHaveCount(PICNIC_IMAGES.length);
 
     await album.fill(`${ALBUMS.picnic} renamed`);
     await captions.first().fill('A caption that was never saved');
-    // The form reports edits a moment after typing stops, which enables Discard
-    await expect(editor.getByRole('button', { name: 'Revert' })).toBeEnabled();
+    // The form reports edits a moment after typing stops, which enables Revert
+    await expect(
+      editor.getByRole('button', { name: 'Revert', exact: true }),
+    ).toBeEnabled();
     await editor
       .locator('lcc-navigation-bar')
       .getByRole('link', { name: 'News', exact: true })
@@ -133,27 +133,25 @@ test.describe('managing images', () => {
     }
   });
 
-  test('asks for a file instead of adding an image without one', async ({ page }) => {
+  test('holds back an image until it has a file', async ({ page }) => {
     await logIn(page);
     const writes = watchWrites(page, `${APP_API}/images`);
+    const addImage = page.getByRole('button', { name: 'Add image' });
 
     await page.goto('/image/add');
     await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
-    const albumField = page.getByRole('combobox', { name: fieldLabel('Album') });
-    await albumField.fill(uniqueName('Blitz night'));
-    await albumField.press('Escape');
-    await page.getByRole('button', { name: 'Add image' }).click();
-
-    await expect(page.getByText('Choose an image to upload')).toBeVisible();
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await page
+      .getByRole('textbox', { name: 'New album name' })
+      .fill(uniqueName('Blitz night'));
+    await expect(addImage).toBeDisabled();
 
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
       .setInputFiles(png('blitz-night.png'));
-    await expect(page.getByText('Choose an image to upload')).toHaveCount(0);
+    await expect(addImage).toBeEnabled();
 
     expect(writes).toEqual([]);
-    await page.getByRole('button', { name: 'Revert' }).click();
+    await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
   });
 
@@ -170,7 +168,7 @@ test.describe('managing images', () => {
     await expect(page.getByAltText('New image preview')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Create album' })).toBeEnabled();
 
-    await page.getByRole('button', { name: 'Revert' }).click();
+    await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
     await expect(page.getByAltText('New image preview')).toHaveCount(0);
   });
