@@ -31,7 +31,10 @@ test.describe('managing events', () => {
     await page.goto('/schedule');
     await page.getByRole('link', { name: 'Add an event' }).click();
     await expect(page).toHaveURL(/\/event\/add$/);
-    await fillField(page, 'Event date', nextMonthOn(15));
+    // The date picker's own aria-label hides the label beside it
+    const eventDate = page.locator('#event-date-input');
+    await eventDate.fill(nextMonthOn(15));
+    await eventDate.press('Enter');
     await fillField(page, 'Event time', '7:00 PM');
     await page.getByLabel(fieldLabel('Title')).fill(title);
     await page.getByLabel(fieldLabel('Details')).fill('Rook endings for club players.');
