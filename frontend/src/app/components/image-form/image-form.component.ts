@@ -1,12 +1,16 @@
 import {
-  AutocompleteComponent,
   ButtonComponent,
   CardComponent,
   DialogService,
+  DividerComponent,
   FileUploaderComponent,
+  FormFieldComponent,
   HistoryIconComponent,
+  ImagePlusIconComponent,
   InputComponent,
-  SelectOption,
+  RadioComponent,
+  RadioGroupComponent,
+  TooltipDirective,
 } from '@eagami/ui';
 import { pick } from 'lodash';
 import { debounceTime } from 'rxjs/operators';
@@ -16,7 +20,6 @@ import {
   Component,
   DestroyRef,
   OnInit,
-  computed,
   inject,
   input,
   output,
@@ -52,14 +55,18 @@ import { textValidator } from '@app/validators';
   templateUrl: './image-form.component.html',
   styleUrl: './image-form.component.scss',
   imports: [
-    AutocompleteComponent,
     ButtonComponent,
     CardComponent,
+    DividerComponent,
     FileUploaderComponent,
+    FormFieldComponent,
     ImageComponent,
     InputComponent,
     ModificationInfoComponent,
+    RadioComponent,
+    RadioGroupComponent,
     ReactiveFormsModule,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -88,19 +95,22 @@ export class ImageFormComponent implements OnInit {
   public readonly requestFetchMainImage = output<Id>();
   public readonly restore = output<Id>();
 
-  protected readonly albumOptions = computed<SelectOption[]>(() =>
-    this.existingAlbums().map(album => ({ value: album, label: album })),
-  );
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
   protected readonly fallbackSrc = IMAGE_FALLBACK_SRC;
   // Only the chosen file's name is saved with the image, so the picker has its own control
   protected readonly fileChoice = new FormControl<readonly File[]>([], {
     nonNullable: true,
   });
+  protected readonly imagePlusIcon = ImagePlusIconComponent;
+  protected readonly newAlbumName = new FormControl('', { nonNullable: true });
   protected readonly newImageDataUrl = signal<Url | null>(null);
   protected readonly restoreIcon = HistoryIconComponent;
 
   public form!: FormGroup<ImageFormGroup>;
+
+  protected get albumExists(): boolean {
+    return this.existingAlbums().includes(this.form.controls.album.value);
+  }
 
   protected get showFileError(): boolean {
     const { filename } = this.form.controls;
@@ -109,11 +119,16 @@ export class ImageFormComponent implements OnInit {
 
   public ngOnInit(): void {
     this.form = this.buildForm();
+    this.resetNewAlbumName();
 
     this.form.valueChanges
       .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
     this.emitChange();
+
+    this.newAlbumName.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(album => this.form.patchValue({ album }));
 
     this.fileChoice.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -156,6 +171,17 @@ export class ImageFormComponent implements OnInit {
     this.form.patchValue({ id, filename, caption });
   }
 
+  // Picking the new album radio while an existing album is chosen brings back the typed name
+  public onAlbumRadioChange(album: string): void {
+    if (!album) {
+      this.form.patchValue({ album: this.newAlbumName.value });
+    }
+  }
+
+  public onNewAlbumInputFocus(): void {
+    this.form.patchValue({ album: this.newAlbumName.value });
+  }
+
   public onRejectFiles(): void {
     this.fileActionFail.emit({
       name: 'LCCError',
@@ -166,8 +192,8 @@ export class ImageFormComponent implements OnInit {
   public async onRestore(): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: 'Restore original image data? All changes will be lost.',
-      confirmButtonText: 'Restore',
+      body: 'Revert to the original image data? All changes will be lost.',
+      confirmButtonText: 'Revert',
       confirmButtonType: 'warning',
     };
 
@@ -190,6 +216,7 @@ export class ImageFormComponent implements OnInit {
         ? pick(imageEntity.image, IMAGE_FORM_DATA_PROPERTIES)
         : { ...INITIAL_IMAGE_FORM_DATA, id },
     );
+    this.resetNewAlbumName();
   }
 
   public onCancel(): void {
@@ -269,6 +296,12 @@ export class ImageFormComponent implements OnInit {
       }),
       albumCover: new FormControl(formData.albumCover, { nonNullable: true }),
       albumOrdinality: new FormControl(formData.albumOrdinality, { nonNullable: true }),
+    });
+  }
+
+  private resetNewAlbumName(): void {
+    this.newAlbumName.setValue(this.albumExists ? '' : this.form.controls.album.value, {
+      emitEvent: false,
     });
   }
 

@@ -5,8 +5,10 @@ import {
   CheckboxComponent,
   DatePickerComponent,
   DialogService,
+  DividerComponent,
   HistoryIconComponent,
   InputComponent,
+  TooltipDirective,
 } from '@eagami/ui';
 import { pick } from 'lodash';
 import { merge } from 'rxjs';
@@ -25,9 +27,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
-import { PhoneNumberFieldComponent } from '@app/components/phone-number-field/phone-number-field.component';
 import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import {
   FORM_CHANGE_DEBOUNCE,
@@ -47,7 +47,12 @@ import {
 } from '@app/models';
 import { StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
-import { fromClubDateTime, toClubDateTime, toDayString } from '@app/utils';
+import {
+  fromClubDateTime,
+  normalizePhoneNumber,
+  toClubDateTime,
+  toDayString,
+} from '@app/utils';
 import {
   emailValidator,
   ratingValidator,
@@ -64,12 +69,12 @@ import {
     ButtonComponent,
     CardComponent,
     CheckboxComponent,
-    ChessUsernameFieldsComponent,
     DatePickerComponent,
+    DividerComponent,
     InputComponent,
     ModificationInfoComponent,
-    PhoneNumberFieldComponent,
     ReactiveFormsModule,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -90,7 +95,16 @@ export class MemberFormComponent implements OnInit {
   }>();
   readonly restore = output<Id | null>();
 
+  protected readonly chessComUsernameErrorMessages = {
+    pattern: MEMBER_DETAIL_RULES.chessComUsername.message,
+  };
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
+  protected readonly lichessUsernameErrorMessages = {
+    pattern: MEMBER_DETAIL_RULES.lichessUsername.message,
+  };
+  protected readonly phoneNumberErrorMessages = {
+    pattern: MEMBER_DETAIL_RULES.phoneNumber.message,
+  };
   protected readonly restoreIcon = HistoryIconComponent;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
@@ -138,8 +152,8 @@ export class MemberFormComponent implements OnInit {
   public async onRestore(): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: 'Restore original member data? All changes will be lost.',
-      confirmButtonText: 'Restore',
+      body: 'Revert to the original member data? All changes will be lost.',
+      confirmButtonText: 'Revert',
       confirmButtonType: 'warning',
     };
 
@@ -169,6 +183,7 @@ export class MemberFormComponent implements OnInit {
 
   // A click that leaves the page starts by leaving a field, so the draft is saved first
   public onFieldLeft(): void {
+    this.normalizePhoneNumberField();
     this.emitChange();
   }
 
@@ -179,6 +194,7 @@ export class MemberFormComponent implements OnInit {
     }
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.normalizePhoneNumberField();
     this.emitChange();
 
     const notifyMember = this.notifyMember.value;
@@ -310,6 +326,14 @@ export class MemberFormComponent implements OnInit {
       instant => !!instant && toDayString(toClubDateTime(instant).day) === pickedDay,
     );
     return savedInstant ?? fromClubDateTime(day, '00:00');
+  }
+
+  private normalizePhoneNumberField(): void {
+    const { phoneNumber } = this.form.controls;
+    const normalized = normalizePhoneNumber(phoneNumber.value);
+    if (normalized !== phoneNumber.value) {
+      phoneNumber.setValue(normalized);
+    }
   }
 
   private emitChange(): void {

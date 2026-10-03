@@ -153,7 +153,7 @@ describe('ArticleFormComponent', () => {
 
       expect(component.form.controls.title.touched).toBe(true);
       expect(errorTexts()).toHaveLength(2);
-      expect(errorTexts()).toContain('Choose a banner image.');
+      expect(errorTexts()).toContain('Choose a banner image');
     });
 
     it('should pass the draft to the store as soon as the form opens', () => {
@@ -410,8 +410,8 @@ describe('ArticleFormComponent', () => {
 
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
         title: 'Confirm',
-        body: 'Restore original article data? All changes will be lost.',
-        confirmButtonText: 'Restore',
+        body: 'Revert to the original article data? All changes will be lost.',
+        confirmButtonText: 'Revert',
         confirmButtonType: 'warning',
       });
       expect(restoreSpy).toHaveBeenCalledWith(originalArticle.id);
@@ -465,7 +465,7 @@ describe('ArticleFormComponent', () => {
 
       expect(errorsBefore).toEqual([]);
       expect(errorTexts()).toHaveLength(2);
-      expect(errorTexts()).toContain('Choose a banner image.');
+      expect(errorTexts()).toContain('Choose a banner image');
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
@@ -562,10 +562,10 @@ describe('ArticleFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should keep the save button enabled for an invalid form, so it can show why', () => {
+    it('should disable the save button while the form is invalid', () => {
       render({ ...formData, body: '' }, true);
 
-      expect(button('.submit-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
     it('should cancel from the cancel button', () => {

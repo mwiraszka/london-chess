@@ -60,7 +60,7 @@ test.describe('managing members', () => {
     await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(lastName);
     // Opening a member is not an edit, so there is nothing to save or discard yet
     await expect(page.getByRole('button', { name: 'Update member' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Revert' })).toBeDisabled();
     await page.getByLabel(fieldLabel('City')).fill('Komoka');
     const updated = page.waitForResponse(
       response =>
@@ -95,7 +95,7 @@ test.describe('managing members', () => {
     await page.getByLabel(fieldLabel('LCC rating')).fill('15OO');
     await page.getByLabel(fieldLabel('City')).focus();
     await expect(fieldError(page, 'LCC rating')).toHaveText(
-      'Enter a rating such as 1500, or 1500/7 for a provisional rating.',
+      'Enter a rating such as 1500, or 1500/7 for a provisional rating',
     );
     await page.getByRole('button', { name: 'Add member' }).click();
 
@@ -114,8 +114,8 @@ test.describe('managing members', () => {
       .click();
 
     expect(writes).toEqual([]);
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
   });
 
   test('keeps a new member draft, with its errors, through leaving the page', async ({
@@ -127,7 +127,7 @@ test.describe('managing members', () => {
     await page.getByLabel(fieldLabel('First name')).fill('Imogen');
     await page.getByLabel(fieldLabel('City')).fill('');
     // The draft reaches the store a moment after typing stops, which enables Discard
-    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Revert' })).toBeEnabled();
     await leaveAndReturn(page);
 
     await expect(page).toHaveURL(/\/member\/add$/);
@@ -135,11 +135,11 @@ test.describe('managing members', () => {
     await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('');
     await expect(fieldError(page, 'City')).toHaveText('This field is required');
 
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
 
     await expect(page.getByLabel(fieldLabel('First name'))).toHaveValue('');
     await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('London');
-    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Revert' })).toBeDisabled();
   });
 });

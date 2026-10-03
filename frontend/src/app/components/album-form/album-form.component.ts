@@ -5,11 +5,12 @@ import {
   DividerComponent,
   FileUploaderComponent,
   HistoryIconComponent,
+  ImagePlusIconComponent,
   InputComponent,
   RadioComponent,
   RadioGroupComponent,
   TooltipDirective,
-  XIconComponent,
+  XCircleIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { omit, pick } from 'lodash';
@@ -115,8 +116,8 @@ export class AlbumFormComponent implements OnInit {
   protected readonly fileChoice = new FormControl<readonly File[]>([], {
     nonNullable: true,
   });
-  protected readonly maxNewImages = MAX_NEW_IMAGES;
-  protected readonly removeIcon = XIconComponent;
+  protected readonly imagePlusIcon = ImagePlusIconComponent;
+  protected readonly removeIcon = XCircleIconComponent;
   protected readonly restoreIcon = HistoryIconComponent;
 
   public form!: FormGroup<AlbumFormGroup>;
@@ -134,9 +135,10 @@ export class AlbumFormComponent implements OnInit {
     );
   }
 
-  protected get showImagesError(): boolean {
-    const { newImages } = this.form.controls;
-    return newImages.touched && newImages.hasError('required');
+  protected get chooseFilesLabel(): string {
+    return this.imageEntities().length || this.form.controls.newImages.length
+      ? 'Add more files'
+      : 'Choose files';
   }
 
   protected get coverImageId(): Id {
@@ -275,8 +277,8 @@ export class AlbumFormComponent implements OnInit {
   public async onRestore(): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: 'Restore original album data? All changes will be lost.',
-      confirmButtonText: 'Restore',
+      body: 'Revert to the original album data? All changes will be lost.',
+      confirmButtonText: 'Revert',
       confirmButtonType: 'warning',
     };
 

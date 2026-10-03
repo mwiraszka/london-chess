@@ -30,11 +30,81 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
+  width: 100%;
+
+  @include respond-to('lt-sm') {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
-// Restoring sits apart from the buttons that leave the form
 .lcc-form-actions__restore {
-  margin-right: auto;
+  @include respond-to('lt-sm') {
+    align-self: flex-start;
+  }
+}
+
+// The buttons that leave the form stay on one row, splitting it between them on a phone
+.lcc-form-actions__primary {
+  display: grid;
+  gap: 8px;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  margin-left: auto;
+
+  @include respond-to('lt-sm') {
+    grid-auto-columns: 1fr;
+    margin-left: 0;
+  }
+}
+
+// A form laid out with its labels in a column beside the fields, as the article form is
+.lcc-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.lcc-form-fields {
+  display: grid;
+  grid-gap: 8px 12px;
+  grid-template-columns: auto 1fr;
+  width: 100%;
+
+  > label {
+    align-self: center;
+    grid-column: 1 / 2;
+    max-width: 100px;
+    font-size: 14px;
+    text-align: right;
+    color: var(--lcc-color--form-labelText);
+    cursor: pointer;
+  }
+
+  > :not(label) {
+    align-self: center;
+    grid-column: 2 / 3;
+    text-align: left;
+  }
+}
+
+.lcc-required-fields-legend {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--lcc-color--form-requiredFieldText);
+
+  &::after {
+    color: var(--lcc-color--form-requiredFieldAsterisk);
+    content: ' *';
+  }
+}
+
+.lcc-required-field::before {
+  color: var(--lcc-color--form-requiredFieldAsterisk);
+  content: '* ';
 }

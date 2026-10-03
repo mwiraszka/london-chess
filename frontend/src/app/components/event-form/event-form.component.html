@@ -1,75 +1,119 @@
 <ea-card [fullWidth]="true">
-  <form
-    class="lcc-editor-form"
-    [formGroup]="form"
-    (focusout)="onFieldLeft()"
-    (ngSubmit)="onSubmit()">
-    <div class="lcc-form-row">
-      <ea-date-picker
-        label="Date"
-        formControlName="eventDay"
-        [required]="true"
-        [weekStartsOn]="weekStartsOn" />
-      <ea-time-picker
-        format="12h"
-        label="Start time"
-        formControlName="eventTime"
-        [minuteStep]="5"
-        [required]="true" />
-    </div>
+  <div class="form-card">
+    <form
+      class="lcc-form"
+      [formGroup]="form"
+      (focusout)="onFieldLeft()"
+      (ngSubmit)="onSubmit()">
+      <div class="lcc-form-fields">
+        <label
+          for="event-date-input"
+          class="lcc-required-field">
+          Event date:
+        </label>
+        <ea-date-picker
+          formControlName="eventDay"
+          [id]="'event-date-input'"
+          [required]="true"
+          [weekStartsOn]="weekStartsOn" />
 
-    <ea-input
-      label="Title"
-      formControlName="title"
-      [errorMessages]="errorMessages"
-      [maxLength]="100"
-      [required]="true" />
+        <label
+          for="event-time-input"
+          class="lcc-required-field">
+          Event time:
+        </label>
+        <ea-time-picker
+          format="12h"
+          formControlName="eventTime"
+          [id]="'event-time-input'"
+          [minuteStep]="5"
+          [required]="true" />
 
-    <ea-textarea
-      label="Details"
-      formControlName="details"
-      [errorMessages]="errorMessages"
-      [maxlength]="200"
-      [required]="true" />
+        <label
+          for="title-input"
+          class="lcc-required-field">
+          Title:
+        </label>
+        <ea-input
+          formControlName="title"
+          [errorMessages]="errorMessages"
+          [id]="'title-input'"
+          [maxLength]="100"
+          [required]="true" />
 
-    <ea-dropdown
-      label="Event type"
-      formControlName="type"
-      [options]="eventTypeOptions"
-      [required]="true" />
+        <label
+          for="details-input"
+          class="lcc-required-field">
+          Details:
+        </label>
+        <ea-textarea
+          formControlName="details"
+          [errorMessages]="errorMessages"
+          [id]="'details-input'"
+          [maxlength]="200"
+          [minHeight]="100"
+          [required]="true" />
 
-    <ea-input
-      hint="Links the event to the article with its full details."
-      label="Article ID"
-      formControlName="articleId"
-      [errorMessages]="errorMessages"
-      [maxLength]="24" />
+        <label class="lcc-required-field">Event type:</label>
+        <ea-radio-group
+          class="event-type-group"
+          aria-label="Event type"
+          formControlName="type"
+          [required]="true">
+          @for (option of eventTypeOptions; track option.value) {
+            <ea-radio
+              [label]="option.label"
+              [value]="option.value" />
+          }
+        </ea-radio-group>
 
-    @if (originalEvent()?.modificationInfo; as info) {
-      <lcc-modification-info [info]="info" />
-    }
+        <label for="article-id-input">Associated Article ID:</label>
+        <ea-input
+          formControlName="articleId"
+          [errorMessages]="errorMessages"
+          [id]="'article-id-input'"
+          [maxLength]="24" />
+      </div>
 
-    <div class="lcc-form-actions">
-      <ea-button
-        class="lcc-form-actions__restore restore-button"
-        variant="ghost"
-        [disabled]="!hasUnsavedChanges()"
-        [icon]="restoreIcon"
-        (clicked)="onRestore()">
-        Discard changes
-      </ea-button>
-      <ea-button
-        class="cancel-button"
-        variant="secondary"
-        (clicked)="onCancel()">
-        Cancel
-      </ea-button>
-      <ea-button
-        class="submit-button"
-        type="submit"
-        [disabled]="!hasUnsavedChanges()">
-        {{ originalEvent() ? 'Update event' : 'Add event' }}
-      </ea-button>
-    </div>
-  </form>
+      <aside class="lcc-required-fields-legend">Required fields</aside>
+
+      <ea-divider class="form-divider" />
+
+      @if (originalEvent()?.modificationInfo; as info) {
+        <lcc-modification-info [info]="info" />
+      }
+
+      <div class="lcc-form-actions">
+        <ea-button
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
+        </ea-button>
+        <div class="lcc-form-actions__primary">
+          <ea-button
+            class="cancel-button"
+            size="sm"
+            variant="secondary"
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
+          <ea-button
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ originalEvent() ? 'Update event' : 'Add event' }}
+          </ea-button>
+        </div>
+      </div>
+    </form>
+  </div>
 </ea-card>

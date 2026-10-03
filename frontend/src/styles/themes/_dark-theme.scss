@@ -34,6 +34,8 @@ body[data-theme='dark'] {
   --lcc-color--adminToolbar-innerBackground: #{clr(grayscale, black-20)};
   --lcc-color--adminToolbar-outerBackground: #{clr(admin, light)};
 
+  --lcc-color--albumForm-headerText: #{clr(grayscale, white-80)};
+
   --lcc-color--app-mainBackground: #{clr(grayscale, gray-25)};
 
   --lcc-color--article-authorText: #{clr(grayscale, white-95)};
@@ -43,6 +45,9 @@ body[data-theme='dark'] {
   --lcc-color--article-dateCreatedText: #{clr(grayscale, gray-65)};
   --lcc-color--article-editorText: #{clr(grayscale, gray-65)};
   --lcc-color--article-markdownContainerBackground: #{clr(grayscale, black-15)};
+
+  --lcc-color--articleForm-markdownPreviewBoxShadow: #{clr(grayscale, gray-25, 0.5)};
+  --lcc-color--articleForm-previewHeaderText: #{clr(grayscale, gray-65)};
 
   --lcc-color--articleGrid-articleCreationDateText: #{clr(grayscale, gray-65)};
   --lcc-color--articleGrid-articleHeaderText: #{clr(grayscale, white-90)};
@@ -89,6 +94,10 @@ body[data-theme='dark'] {
   --lcc-color--footer-primaryText: #{clr(grayscale, white-85)};
   --lcc-color--footer-secondaryText: #{clr(grayscale, gray-65)};
   --lcc-color--footer-verticalSpacer: #{clr(grayscale, gray-50)};
+
+  --lcc-color--form-labelText: #{clr(grayscale, white-85)};
+  --lcc-color--form-requiredFieldAsterisk: #{clr(warning, light)};
+  --lcc-color--form-requiredFieldText: #{clr(grayscale, gray-75)};
 
   --lcc-color--gameArchivesPage-figure: var(--color-brand-secondary-text);
 

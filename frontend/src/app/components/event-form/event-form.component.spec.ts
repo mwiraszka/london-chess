@@ -248,8 +248,8 @@ describe('EventFormComponent', () => {
 
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
         title: 'Confirm',
-        body: 'Restore original event data? All changes will be lost.',
-        confirmButtonText: 'Restore',
+        body: 'Revert to the original event data? All changes will be lost.',
+        confirmButtonText: 'Revert',
         confirmButtonType: 'warning',
       });
       expect(restoreSpy).toHaveBeenCalledWith(originalEvent.id);
@@ -364,10 +364,10 @@ describe('EventFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should keep the save button enabled for an invalid form, so it can show why', () => {
+    it('should disable the save button while the form is invalid', () => {
       render({ ...formData, title: '' }, true);
 
-      expect(button('.submit-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
     it('should cancel from the cancel button', () => {

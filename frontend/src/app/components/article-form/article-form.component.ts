@@ -95,11 +95,11 @@ export class ArticleFormComponent implements OnInit {
   readonly restore = output<Id | null>();
 
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
-  protected readonly insertImageIcon = ImagePlusIconComponent;
+  protected readonly imageIcon = ImageIconComponent;
+  protected readonly imagePlusIcon = ImagePlusIconComponent;
   protected readonly maxBodyImages = MAX_ARTICLE_BODY_IMAGES;
   protected readonly restoreIcon = HistoryIconComponent;
   protected readonly revertBannerIcon = RotateCcwIconComponent;
-  protected readonly selectBannerIcon = ImageIconComponent;
 
   public form!: FormGroup<ArticleFormGroup>;
 
@@ -161,8 +161,8 @@ export class ArticleFormComponent implements OnInit {
   public async onRestore(): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: 'Restore original article data? All changes will be lost.',
-      confirmButtonText: 'Restore',
+      body: 'Revert to the original article data? All changes will be lost.',
+      confirmButtonText: 'Revert',
       confirmButtonType: 'warning',
     };
 

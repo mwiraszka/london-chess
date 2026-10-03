@@ -1,128 +1,184 @@
 <ea-card [fullWidth]="true">
-  <form
-    class="lcc-editor-form"
-    [formGroup]="form"
-    (focusout)="onFieldLeft()"
-    (ngSubmit)="onSubmit()">
-    <div class="lcc-form-row">
-      <ea-input
-        label="First name"
-        formControlName="firstName"
-        [errorMessages]="errorMessages"
-        [maxLength]="50"
-        [required]="true" />
-      <ea-input
-        label="Last name"
-        formControlName="lastName"
-        [errorMessages]="errorMessages"
-        [maxLength]="50"
-        [required]="true" />
-    </div>
-
-    <div class="lcc-form-row">
-      <ea-input
-        label="City"
-        formControlName="city"
-        [errorMessages]="errorMessages"
-        [maxLength]="50"
-        [required]="true" />
-      <ea-input
-        label="LCC rating"
-        formControlName="rating"
-        [errorMessages]="errorMessages"
-        [maxLength]="6"
-        [required]="true" />
-    </div>
-
-    <div class="lcc-form-row">
-      <ea-date-picker
-        label="Date joined"
-        formControlName="dateJoined"
-        [required]="true"
-        [weekStartsOn]="weekStartsOn" />
-      @if (!isSafeMode()) {
+  <div class="form-card">
+    <form
+      class="lcc-form"
+      [formGroup]="form"
+      (focusout)="onFieldLeft()"
+      (ngSubmit)="onSubmit()">
+      <div class="lcc-form-fields">
+        <label
+          for="first-name-input"
+          class="lcc-required-field">
+          First name:
+        </label>
         <ea-input
-          label="Year of birth"
-          placeholder="1990"
-          formControlName="yearOfBirth"
+          formControlName="firstName"
           [errorMessages]="errorMessages"
-          [maxLength]="4" />
-      }
-    </div>
+          [id]="'first-name-input'"
+          [maxLength]="30"
+          [required]="true" />
 
-    @if (isSafeMode()) {
-      <ea-alert
-        class="safe-mode-notice"
-        live="off"
-        variant="info">
-        Member's personal details have been hidden from view. You can disable Safe Mode
-        from the User Settings menu.
-      </ea-alert>
-    } @else {
-      <div class="lcc-form-row">
+        <label
+          for="last-name-input"
+          class="lcc-required-field">
+          Last name:
+        </label>
         <ea-input
-          label="Email"
-          type="email"
-          formControlName="email"
+          formControlName="lastName"
           [errorMessages]="errorMessages"
-          [hint]="
-            isEmailManagedByAccount
-              ? 'This email address is managed by the member\'s account.'
-              : undefined
-          "
-          [maxLength]="50" />
-        <lcc-phone-number-field [control]="form.controls.phoneNumber" />
+          [id]="'last-name-input'"
+          [maxLength]="30"
+          [required]="true" />
+
+        <label
+          for="city-input"
+          class="lcc-required-field">
+          City:
+        </label>
+        <ea-input
+          formControlName="city"
+          [errorMessages]="errorMessages"
+          [id]="'city-input'"
+          [maxLength]="30"
+          [required]="true" />
+
+        <label
+          for="rating-input"
+          class="lcc-required-field">
+          LCC rating:
+        </label>
+        <ea-input
+          formControlName="rating"
+          [errorMessages]="errorMessages"
+          [id]="'rating-input'"
+          [maxLength]="6"
+          [required]="true" />
+
+        <label
+          for="date-joined-input"
+          class="lcc-required-field">
+          Date joined:
+        </label>
+        <ea-date-picker
+          formControlName="dateJoined"
+          [id]="'date-joined-input'"
+          [required]="true"
+          [weekStartsOn]="weekStartsOn" />
+
+        @if (!isSafeMode()) {
+          <label for="email-input">Email:</label>
+          <ea-input
+            type="email"
+            formControlName="email"
+            [eaTooltip]="
+              isEmailManagedByAccount
+                ? 'This email address is managed by the member\'s account.'
+                : ''
+            "
+            [errorMessages]="errorMessages"
+            [id]="'email-input'"
+            [maxLength]="50" />
+
+          <label for="phone-number-input">Phone number:</label>
+          <ea-input
+            type="tel"
+            formControlName="phoneNumber"
+            [errorMessages]="phoneNumberErrorMessages"
+            [id]="'phone-number-input'"
+            [maxLength]="20" />
+
+          <label for="year-of-birth-input">Year of birth:</label>
+          <ea-input
+            formControlName="yearOfBirth"
+            [errorMessages]="errorMessages"
+            [id]="'year-of-birth-input'"
+            [maxLength]="4" />
+        }
+
+        <label for="chess-com-username-input">Chess.com username:</label>
+        <ea-input
+          formControlName="chessComUsername"
+          [errorMessages]="chessComUsernameErrorMessages"
+          [id]="'chess-com-username-input'"
+          [maxLength]="25" />
+
+        <label for="lichess-username-input">Lichess username:</label>
+        <ea-input
+          formControlName="lichessUsername"
+          [errorMessages]="lichessUsernameErrorMessages"
+          [id]="'lichess-username-input'"
+          [maxLength]="20" />
+
+        @if (originalMember()) {
+          <label for="is-active-input">Active:</label>
+          <ea-checkbox
+            formControlName="isActive"
+            [id]="'is-active-input'" />
+        }
       </div>
-    }
 
-    <lcc-chess-username-fields
-      [chessComUsername]="form.controls.chessComUsername"
-      [lichessUsername]="form.controls.lichessUsername" />
+      <aside class="lcc-required-fields-legend">Required fields</aside>
 
-    @if (originalMember()) {
-      <ea-checkbox
-        class="active-checkbox"
-        label="Active member"
-        formControlName="isActive" />
-    }
+      @if (isSafeMode()) {
+        <ea-alert
+          class="safe-mode-notice"
+          live="off"
+          variant="info">
+          Member's personal details have been hidden from view. You can disable Safe Mode
+          from the User Settings menu.
+        </ea-alert>
+      }
 
-    @if (originalMember()?.modificationInfo; as info) {
-      <lcc-modification-info [info]="info" />
-    }
+      <ea-divider class="form-divider" />
 
-    @if (originalMember()) {
-      <ea-checkbox
-        class="notify-member"
-        [formControl]="notifyMember"
-        [hint]="
-          notifyMember.disabled
-            ? 'Add a valid email address and year of birth to email the member.'
-            : undefined
-        "
-        [label]="notifyMemberLabel" />
-    }
+      @if (originalMember()?.modificationInfo; as info) {
+        <lcc-modification-info [info]="info" />
+      }
 
-    <div class="lcc-form-actions">
-      <ea-button
-        class="lcc-form-actions__restore restore-button"
-        variant="ghost"
-        [disabled]="!hasUnsavedChanges()"
-        [icon]="restoreIcon"
-        (clicked)="onRestore()">
-        Discard changes
-      </ea-button>
-      <ea-button
-        class="cancel-button"
-        variant="secondary"
-        (clicked)="onCancel()">
-        Cancel
-      </ea-button>
-      <ea-button
-        class="submit-button"
-        type="submit"
-        [disabled]="!hasUnsavedChanges()">
-        {{ originalMember() ? 'Update member' : 'Add member' }}
-      </ea-button>
-    </div>
-  </form>
+      @if (originalMember()) {
+        <ea-checkbox
+          class="notify-member"
+          size="sm"
+          [eaTooltip]="
+            notifyMember.disabled
+              ? 'Add a valid email address and year of birth to email the member.'
+              : ''
+          "
+          [formControl]="notifyMember"
+          [label]="notifyMemberLabel" />
+      }
+
+      <div class="lcc-form-actions">
+        <ea-button
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
+        </ea-button>
+        <div class="lcc-form-actions__primary">
+          <ea-button
+            class="cancel-button"
+            size="sm"
+            variant="secondary"
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
+          <ea-button
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ originalMember() ? 'Update member' : 'Add member' }}
+          </ea-button>
+        </div>
+      </div>
+    </form>
+  </div>
 </ea-card>

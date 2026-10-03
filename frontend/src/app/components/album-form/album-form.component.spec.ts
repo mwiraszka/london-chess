@@ -110,7 +110,7 @@ describe('AlbumFormComponent', () => {
     ].map(control => control.controls.albumCover.value);
 
   const previews = (): string[] =>
-    queryAll(fixture.debugElement, '.new-image img').map(image =>
+    queryAll(fixture.debugElement, '.image-container > img').map(image =>
       image.nativeElement.getAttribute('src'),
     );
 
@@ -130,7 +130,7 @@ describe('AlbumFormComponent', () => {
   };
 
   const clickCover = (index: number): void => {
-    queryAll(fixture.debugElement, '.cover-radio input[type="radio"]')[
+    queryAll(fixture.debugElement, 'ea-radio input[type="radio"]')[
       index
     ].nativeElement.dispatchEvent(new Event('change'));
     fixture.detectChanges();
@@ -612,8 +612,8 @@ describe('AlbumFormComponent', () => {
 
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
         title: 'Confirm',
-        body: 'Restore original album data? All changes will be lost.',
-        confirmButtonText: 'Restore',
+        body: 'Revert to the original album data? All changes will be lost.',
+        confirmButtonText: 'Revert',
         confirmButtonType: 'warning',
       });
       expect(restoreSpy).toHaveBeenCalledWith(album);
@@ -655,17 +655,15 @@ describe('AlbumFormComponent', () => {
   });
 
   describe('submitting', () => {
-    it('should ask for images instead of creating an empty album', async () => {
+    it('should not create an album without images', async () => {
       render();
       component.form.controls.album.setValue('Blitz night');
       await settle();
-      const errorsBefore = errorTexts();
 
       query(fixture.debugElement, 'form').triggerEventHandler('ngSubmit');
       await settle();
 
-      expect(errorsBefore).toEqual([]);
-      expect(errorTexts()).toEqual(['Add at least one image to create the album.']);
+      expect(component.form.controls.newImages.hasError('required')).toBe(true);
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
@@ -744,29 +742,28 @@ describe('AlbumFormComponent', () => {
   });
 
   describe('template', () => {
-    it('should set new images apart from those an album already has', async () => {
-      render(album, entitiesOf(0, 3));
-      const withoutNew = query(fixture.debugElement, '.new-images-divider');
-
-      await component.onChooseFiles([board('a.png')]);
-      fixture.detectChanges();
-
-      expect(withoutNew).toBeFalsy();
-      expect(queryTextContent(fixture.debugElement, '.new-images-divider')).toBe(
-        'New images',
-      );
-    });
-
-    it('should need images for a new album and offer to add more to an existing one', () => {
+    it('should set new images apart from those an album already has', () => {
       render();
-      const forNew = { label: uploader().label(), required: uploader().required() };
+      const forNew = query(fixture.debugElement, '.new-images-header');
       fixture.destroy();
 
       render(album, entitiesOf(0, 3));
 
-      expect(forNew).toEqual({ label: 'Images', required: true });
-      expect(uploader().label()).toBe('Add images');
-      expect(uploader().required()).toBe(false);
+      expect(forNew).toBeFalsy();
+      expect(queryTextContent(fixture.debugElement, '.new-images-header')).toBe(
+        'New images',
+      );
+    });
+
+    it('should offer to choose files for a new album and add more to an existing one', () => {
+      render();
+      const forNew = uploader().ariaLabel();
+      fixture.destroy();
+
+      render(album, entitiesOf(0, 3));
+
+      expect(forNew).toBe('Choose files');
+      expect(uploader().ariaLabel()).toBe('Add more files');
     });
 
     it('should credit the most recent edit to the album', () => {
@@ -803,11 +800,11 @@ describe('AlbumFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should keep the save button enabled for an invalid form, so it can show why', () => {
+    it('should disable the save button while the form is invalid', () => {
       render(null, [], {}, true);
 
       expect(component.form.invalid).toBe(true);
-      expect(button('.submit-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
     it('should cancel from the cancel button', () => {

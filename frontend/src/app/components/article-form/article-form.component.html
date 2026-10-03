@@ -1,107 +1,134 @@
 <ea-card [fullWidth]="true">
-  <form
-    class="lcc-editor-form"
-    [formGroup]="form"
-    (focusout)="onFieldLeft()"
-    (ngSubmit)="onSubmit()">
-    <ea-form-field
-      label="Banner image"
-      [errorMsg]="showBannerImageError ? 'Choose a banner image.' : undefined"
-      [required]="true">
-      <div class="banner">
-        <div class="banner__frame">
-          <lcc-image [image]="bannerImage()" />
-        </div>
+  <div class="form-card">
+    <form
+      class="lcc-form"
+      [formGroup]="form"
+      (focusout)="onFieldLeft()"
+      (ngSubmit)="onSubmit()">
+      <div class="lcc-form-fields">
+        <label class="lcc-required-field">Banner Image:</label>
+        <ea-form-field
+          [errorMsg]="showBannerImageError ? 'Choose a banner image' : undefined">
+          <div class="image-section-container">
+            <div class="image-container">
+              <lcc-image [image]="bannerImage()" />
+            </div>
 
-        <div class="banner__controls">
+            <div class="image-controls-container">
+              <ea-button
+                class="select-banner-image-button"
+                eaTooltip="Select a new banner image"
+                size="sm"
+                variant="secondary"
+                [aria-label]="'Select a new banner image'"
+                [icon]="imageIcon"
+                (clicked)="onSelectBannerImage()" />
+              <ea-button
+                class="revert-banner-image-button"
+                eaTooltip="Revert banner to original image"
+                size="sm"
+                variant="secondary"
+                [aria-label]="'Revert banner to original image'"
+                [disabled]="isBannerImageOriginal"
+                [icon]="revertBannerIcon"
+                (clicked)="onRevertBannerImage()" />
+
+              <ea-divider
+                class="image-controls-divider"
+                [thick]="true" />
+
+              <ea-button
+                class="insert-image-button"
+                size="sm"
+                variant="secondary"
+                [aria-label]="'Insert image into article body'"
+                [disabled]="!canInsertImage"
+                [eaTooltip]="
+                  canInsertImage
+                    ? 'Insert image into article body'
+                    : 'Maximum of ' + maxBodyImages + ' body images reached'
+                "
+                [icon]="imagePlusIcon"
+                (clicked)="onInsertImage()" />
+            </div>
+          </div>
+        </ea-form-field>
+
+        <label
+          for="title-input"
+          class="lcc-required-field">
+          Title:
+        </label>
+        <ea-input
+          formControlName="title"
+          [errorMessages]="errorMessages"
+          [id]="'title-input'"
+          [maxLength]="120"
+          [required]="true" />
+
+        <label
+          for="body-input"
+          class="lcc-required-field">
+          Content:
+        </label>
+        <ea-textarea
+          formControlName="body"
+          [errorMessages]="errorMessages"
+          [id]="'body-input'"
+          [maxlength]="50000"
+          [minHeight]="320"
+          [required]="true" />
+      </div>
+
+      <aside class="lcc-required-fields-legend">Required fields</aside>
+
+      <div class="preview-section-container">
+        @if (form.controls.body.value) {
+          <h3>Article preview:</h3>
+          <ea-divider class="preview-divider" />
+          <div class="markdown-container">
+            <lcc-markdown-renderer
+              [data]="form.controls.body.value"
+              [images]="bodyImages()" />
+          </div>
+        }
+      </div>
+
+      @if (originalArticle()?.modificationInfo; as info) {
+        <lcc-modification-info [info]="info" />
+      }
+
+      <div class="lcc-form-actions">
+        <ea-button
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
+        </ea-button>
+        <div class="lcc-form-actions__primary">
           <ea-button
-            class="select-banner-image-button"
-            eaTooltip="Choose a banner image"
+            class="cancel-button"
+            size="sm"
             variant="secondary"
-            [aria-label]="'Choose a banner image'"
-            [icon]="selectBannerIcon"
-            (clicked)="onSelectBannerImage()" />
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
           <ea-button
-            class="revert-banner-image-button"
-            variant="secondary"
-            [aria-label]="'Put back the original banner image'"
-            [disabled]="isBannerImageOriginal"
-            [eaTooltip]="
-              isBannerImageOriginal ? '' : 'Put back the original banner image'
-            "
-            [icon]="revertBannerIcon"
-            (clicked)="onRevertBannerImage()" />
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ originalArticle() ? 'Update article' : 'Publish article' }}
+          </ea-button>
         </div>
       </div>
-    </ea-form-field>
-
-    <ea-input
-      label="Title"
-      formControlName="title"
-      [errorMessages]="errorMessages"
-      [maxLength]="120"
-      [required]="true" />
-
-    <div class="body-field">
-      <ea-textarea
-        label="Content"
-        formControlName="body"
-        [errorMessages]="errorMessages"
-        [hint]="
-          'Inserted images go where the cursor was last left, up to ' +
-          maxBodyImages +
-          ' in an article.'
-        "
-        [maxlength]="50000"
-        [minHeight]="320"
-        [required]="true" />
-      <ea-button
-        class="insert-image-button"
-        size="sm"
-        variant="secondary"
-        [disabled]="!canInsertImage"
-        [icon]="insertImageIcon"
-        (clicked)="onInsertImage()">
-        Insert image
-      </ea-button>
-    </div>
-
-    @if (form.controls.body.value) {
-      <ea-divider
-        class="preview-divider"
-        label="Preview" />
-      <div class="body-preview">
-        <lcc-markdown-renderer
-          [data]="form.controls.body.value"
-          [images]="bodyImages()" />
-      </div>
-    }
-
-    @if (originalArticle()?.modificationInfo; as info) {
-      <lcc-modification-info [info]="info" />
-    }
-
-    <div class="lcc-form-actions">
-      <ea-button
-        class="lcc-form-actions__restore restore-button"
-        variant="ghost"
-        [disabled]="!hasUnsavedChanges()"
-        [icon]="restoreIcon"
-        (clicked)="onRestore()">
-        Discard changes
-      </ea-button>
-      <ea-button
-        class="cancel-button"
-        variant="secondary"
-        (clicked)="onCancel()">
-        Cancel
-      </ea-button>
-      <ea-button
-        class="submit-button"
-        type="submit"
-        [disabled]="!hasUnsavedChanges()">
-        {{ originalArticle() ? 'Update article' : 'Publish article' }}
-      </ea-button>
-    </div>
-  </form>
+    </form>
+  </div>
 </ea-card>

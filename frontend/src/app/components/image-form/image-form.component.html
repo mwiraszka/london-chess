@@ -1,72 +1,134 @@
 <ea-card [fullWidth]="true">
-  <form
-    class="lcc-editor-form"
-    [formGroup]="form"
-    (focusout)="onFieldLeft()"
-    (ngSubmit)="onSubmit()">
-    <div class="image-frame">
+  <div class="form-card">
+    <form
+      class="lcc-form"
+      [formGroup]="form"
+      (focusout)="onFieldLeft()"
+      (ngSubmit)="onSubmit()">
+      <div class="lcc-form-fields">
+        @if (imageEntity(); as imageEntity) {
+          <div class="image-container full-span">
+            <lcc-image [image]="imageEntity.image" />
+          </div>
+        } @else {
+          <label
+            for="file-input"
+            class="lcc-required-field">
+            File:
+          </label>
+          <ea-form-field
+            [errorMsg]="showFileError ? 'Choose an image to upload' : undefined">
+            <div class="file-and-preview-container">
+              <div class="image-container">
+                <img
+                  alt="Image preview"
+                  [src]="newImageDataUrl() ?? fallbackSrc" />
+              </div>
+              <ea-file-uploader
+                class="choose-file-button"
+                accept="image/*"
+                aria-label="Choose file"
+                buttonLabel=""
+                eaTooltip="Choose file"
+                size="sm"
+                variant="button"
+                [buttonIcon]="imagePlusIcon"
+                [formControl]="fileChoice"
+                [id]="'file-input'"
+                [multiple]="false"
+                [showConstraints]="false"
+                [showFileList]="false"
+                (rejected)="onRejectFiles()" />
+            </div>
+          </ea-form-field>
+        }
+
+        <label
+          for="caption-input"
+          class="lcc-required-field">
+          Caption:
+        </label>
+        <ea-input
+          formControlName="caption"
+          [errorMessages]="errorMessages"
+          [id]="'caption-input'"
+          [maxLength]="120"
+          [required]="true" />
+
+        <label class="lcc-required-field">Album:</label>
+        <ea-radio-group
+          class="album-group"
+          aria-label="Album"
+          formControlName="album"
+          [errorMessages]="errorMessages"
+          [required]="true"
+          (changed)="onAlbumRadioChange($event)">
+          <div class="albums-grid">
+            @for (album of existingAlbums(); track album) {
+              <ea-radio
+                [label]="album"
+                [value]="album" />
+            }
+            <div class="new-album">
+              <label
+                class="new-album-label"
+                for="new-album-radio">
+                New album
+              </label>
+              <ea-radio
+                [id]="'new-album-radio'"
+                [value]="albumExists ? '' : form.controls.album.value" />
+              <ea-input
+                class="new-album-input"
+                aria-label="New album name"
+                placeholder="New album"
+                [formControl]="newAlbumName"
+                [maxLength]="120"
+                (focusin)="onNewAlbumInputFocus()" />
+            </div>
+          </div>
+        </ea-radio-group>
+      </div>
+
+      <aside class="lcc-required-fields-legend">Required fields</aside>
+
+      <ea-divider class="form-divider" />
+
       @if (imageEntity(); as imageEntity) {
-        <lcc-image [image]="imageEntity.image" />
-      } @else {
-        <img
-          alt="Image preview"
-          [src]="newImageDataUrl() ?? fallbackSrc" />
+        <lcc-modification-info [info]="imageEntity.image.modificationInfo" />
       }
-    </div>
 
-    @if (!imageEntity()) {
-      <ea-file-uploader
-        accept="image/*"
-        label="Image file"
-        [errorMsg]="showFileError ? 'Choose an image to upload.' : undefined"
-        [formControl]="fileChoice"
-        [multiple]="false"
-        [required]="true"
-        [showFileList]="false"
-        (rejected)="onRejectFiles()" />
-    }
-
-    <ea-input
-      label="Caption"
-      formControlName="caption"
-      [errorMessages]="errorMessages"
-      [maxLength]="120"
-      [required]="true" />
-
-    <ea-autocomplete
-      hint="Pick an existing album, or type a new name to start one."
-      label="Album"
-      formControlName="album"
-      [errorMessages]="errorMessages"
-      [maxLength]="120"
-      [options]="albumOptions()"
-      [required]="true" />
-
-    @if (imageEntity(); as imageEntity) {
-      <lcc-modification-info [info]="imageEntity.image.modificationInfo" />
-    }
-
-    <div class="lcc-form-actions">
-      <ea-button
-        class="lcc-form-actions__restore restore-button"
-        variant="ghost"
-        [disabled]="!hasUnsavedChanges()"
-        [icon]="restoreIcon"
-        (clicked)="onRestore()">
-        Discard changes
-      </ea-button>
-      <ea-button
-        class="cancel-button"
-        variant="secondary"
-        (clicked)="onCancel()">
-        Cancel
-      </ea-button>
-      <ea-button
-        class="submit-button"
-        type="submit"
-        [disabled]="!hasUnsavedChanges()">
-        {{ imageEntity() ? 'Update image' : 'Add image' }}
-      </ea-button>
-    </div>
-  </form>
+      <div class="lcc-form-actions">
+        <ea-button
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
+        </ea-button>
+        <div class="lcc-form-actions__primary">
+          <ea-button
+            class="cancel-button"
+            size="sm"
+            variant="secondary"
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
+          <ea-button
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ imageEntity() ? 'Update image' : 'Add image' }}
+          </ea-button>
+        </div>
+      </div>
+    </form>
+  </div>
 </ea-card>

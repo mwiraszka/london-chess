@@ -3,9 +3,11 @@ import {
   CardComponent,
   DatePickerComponent,
   DialogService,
-  DropdownComponent,
+  DividerComponent,
   HistoryIconComponent,
   InputComponent,
+  RadioComponent,
+  RadioGroupComponent,
   TextareaComponent,
   TimePickerComponent,
 } from '@eagami/ui';
@@ -53,9 +55,11 @@ import { idValidator, textValidator } from '@app/validators';
     ButtonComponent,
     CardComponent,
     DatePickerComponent,
-    DropdownComponent,
+    DividerComponent,
     InputComponent,
     ModificationInfoComponent,
+    RadioComponent,
+    RadioGroupComponent,
     ReactiveFormsModule,
     TextareaComponent,
     TimePickerComponent,
@@ -101,8 +105,8 @@ export class EventFormComponent implements OnInit {
   public async onRestore(): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: 'Restore original event data? All changes will be lost.',
-      confirmButtonText: 'Restore',
+      body: 'Revert to the original event data? All changes will be lost.',
+      confirmButtonText: 'Revert',
       confirmButtonType: 'warning',
     };
 

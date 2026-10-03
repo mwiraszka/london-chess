@@ -14,7 +14,13 @@ import { ImageFileService, StoreRequestService } from '@app/services';
 import { ImagesActions } from '@app/store/images';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { GENERATE_UUID } from '@app/tokens';
-import { closedDialogRef, lastOpenedDialog, query, queryTextContent } from '@app/utils';
+import {
+  closedDialogRef,
+  lastOpenedDialog,
+  query,
+  queryAll,
+  queryTextContent,
+} from '@app/utils';
 
 import { ImageFormComponent } from './image-form.component';
 
@@ -85,7 +91,7 @@ describe('ImageFormComponent', () => {
     );
 
   const previewSrc = (): string | null =>
-    query(fixture.debugElement, '.image-frame img').nativeElement.getAttribute('src');
+    query(fixture.debugElement, '.image-container img').nativeElement.getAttribute('src');
 
   // Picks a file the way the browser hands it to the uploader's hidden file input
   const pickFile = (file: File): void => {
@@ -210,7 +216,7 @@ describe('ImageFormComponent', () => {
       await settle();
 
       expect(component.form.controls.caption.touched).toBe(true);
-      expect(errorTexts()).toContain('Choose an image to upload.');
+      expect(errorTexts()).toContain('Choose an image to upload');
       expect(errorTexts()).toHaveLength(2);
     });
 
@@ -349,7 +355,7 @@ describe('ImageFormComponent', () => {
       await storedFile();
       await settle();
 
-      expect(errorsBefore).toEqual(['Choose an image to upload.']);
+      expect(errorsBefore).toEqual(['Choose an image to upload']);
       expect(errorTexts()).toEqual([]);
     });
   });
@@ -367,8 +373,8 @@ describe('ImageFormComponent', () => {
 
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
         title: 'Confirm',
-        body: 'Restore original image data? All changes will be lost.',
-        confirmButtonText: 'Restore',
+        body: 'Revert to the original image data? All changes will be lost.',
+        confirmButtonText: 'Revert',
         confirmButtonType: 'warning',
       });
       expect(restoreSpy).toHaveBeenCalledWith(entity.image.id);
@@ -419,7 +425,7 @@ describe('ImageFormComponent', () => {
       expect(errorsBefore).toEqual([]);
       expect(component.form.controls.caption.touched).toBe(true);
       expect(errorTexts()).toHaveLength(3);
-      expect(errorTexts()).toContain('Choose an image to upload.');
+      expect(errorTexts()).toContain('Choose an image to upload');
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
@@ -475,16 +481,18 @@ describe('ImageFormComponent', () => {
     it('should offer the existing albums to choose from', () => {
       render();
 
-      expect(
-        query(fixture.debugElement, 'ea-autocomplete').componentInstance.options(),
-      ).toEqual(existingAlbums.map(album => ({ value: album, label: album })));
+      const albumLabels = queryAll(fixture.debugElement, '.albums-grid > ea-radio').map(
+        radio => radio.componentInstance.label(),
+      );
+
+      expect(albumLabels).toEqual(existingAlbums);
     });
 
     it('should take a new album name typed into the album field', () => {
       render();
       const albumInput: HTMLInputElement = query(
         fixture.debugElement,
-        'ea-autocomplete input',
+        '.new-album-input input',
       ).nativeElement;
 
       albumInput.value = 'Blitz night';
@@ -502,7 +510,7 @@ describe('ImageFormComponent', () => {
 
       expect(forNew).toBeTruthy();
       expect(query(fixture.debugElement, 'ea-file-uploader')).toBeFalsy();
-      expect(query(fixture.debugElement, '.image-frame lcc-image')).toBeTruthy();
+      expect(query(fixture.debugElement, '.image-container lcc-image')).toBeTruthy();
     });
 
     it('should show who created and edited an existing image only', () => {
@@ -530,10 +538,10 @@ describe('ImageFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should keep the save button enabled for an invalid form, so it can show why', () => {
+    it('should disable the save button while the form is invalid', () => {
       render(null, { ...newImageData, caption: '' }, true);
 
-      expect(button('.submit-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
     it('should cancel from the cancel button', () => {

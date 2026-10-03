@@ -117,7 +117,7 @@ test.describe('managing images', () => {
     await album.fill(`${ALBUMS.picnic} renamed`);
     await captions.first().fill('A caption that was never saved');
     // The form reports edits a moment after typing stops, which enables Discard
-    await expect(editor.getByRole('button', { name: 'Discard changes' })).toBeEnabled();
+    await expect(editor.getByRole('button', { name: 'Revert' })).toBeEnabled();
     await editor
       .locator('lcc-navigation-bar')
       .getByRole('link', { name: 'News', exact: true })
@@ -144,17 +144,17 @@ test.describe('managing images', () => {
     await albumField.press('Escape');
     await page.getByRole('button', { name: 'Add image' }).click();
 
-    await expect(page.getByText('Choose an image to upload.')).toBeVisible();
+    await expect(page.getByText('Choose an image to upload')).toBeVisible();
     await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
 
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
       .setInputFiles(png('blitz-night.png'));
-    await expect(page.getByText('Choose an image to upload.')).toHaveCount(0);
+    await expect(page.getByText('Choose an image to upload')).toHaveCount(0);
 
     expect(writes).toEqual([]);
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
   });
 
   test('offers to create an album only once it has an image', async ({ page }) => {
@@ -170,8 +170,8 @@ test.describe('managing images', () => {
     await expect(page.getByAltText('New image preview')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Create album' })).toBeEnabled();
 
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
     await expect(page.getByAltText('New image preview')).toHaveCount(0);
   });
 });

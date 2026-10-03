@@ -1,148 +1,217 @@
 <ea-card [fullWidth]="true">
-  <form
-    class="lcc-editor-form"
-    [formGroup]="form"
-    (focusout)="onFieldLeft()"
-    (ngSubmit)="onSubmit()">
-    <ea-input
-      label="Album title"
-      formControlName="album"
-      [errorMessages]="errorMessages"
-      [maxLength]="120"
-      [required]="true" />
+  <div class="form-card">
+    <form
+      class="lcc-form"
+      [formGroup]="form"
+      (focusout)="onFieldLeft()"
+      (ngSubmit)="onSubmit()">
+      <div class="lcc-form-fields">
+        <label
+          for="album-input"
+          class="lcc-required-field">
+          Album title:
+        </label>
+        <ea-input
+          formControlName="album"
+          [errorMessages]="errorMessages"
+          [id]="'album-input'"
+          [maxLength]="120"
+          [required]="true" />
+      </div>
 
-    @if (form.controls.existingImages.length || form.controls.newImages.length) {
-      <ea-radio-group
-        aria-label="Album cover"
-        [value]="coverImageId"
-        (changed)="onSetAlbumCover($event)">
+      <div class="images-section">
         @if (form.controls.existingImages.length) {
-          <div
-            class="image-grid"
-            formArrayName="existingImages">
-            @for (
-              imageControl of form.controls.existingImages.controls;
-              track imageControl;
-              let i = $index
-            ) {
-              <div
-                class="image-card existing-image"
-                [formGroupName]="i">
-                <div class="image-frame">
-                  <lcc-image [image]="imageEntities()[i].image" />
-                </div>
-                <ea-radio
-                  class="cover-radio"
-                  label="Album cover"
-                  [value]="imageControl.controls.id.value" />
-                <ea-input
-                  label="Caption"
-                  formControlName="caption"
-                  [errorMessages]="errorMessages"
-                  [maxLength]="120"
-                  [required]="true" />
-                <ea-input
-                  label="Position"
-                  formControlName="albumOrdinality"
-                  [errorMessages]="errorMessages"
-                  [maxLength]="2"
-                  [required]="true" />
-              </div>
-            }
-          </div>
-        }
+          <ea-radio-group
+            class="images-group"
+            aria-label="Album cover"
+            size="sm"
+            [value]="coverImageId"
+            (changed)="onSetAlbumCover($event)">
+            <div
+              formArrayName="existingImages"
+              class="images-grid">
+              @for (
+                imageControl of form.controls.existingImages.controls;
+                track imageControl;
+                let i = $index
+              ) {
+                <div
+                  class="lcc-form-fields"
+                  [formGroupName]="i">
+                  <div class="image-container full-span">
+                    <lcc-image [image]="imageEntities()[i].image" />
+                  </div>
 
+                  <div class="cover-image-input-container">
+                    <ea-radio
+                      label="Use as album cover"
+                      [id]="'existing-cover-radio-' + i"
+                      [value]="imageControl.controls.id.value" />
+                  </div>
+
+                  <label
+                    [for]="'existing-caption-input-' + i"
+                    class="lcc-required-field">
+                    Caption:
+                  </label>
+                  <ea-input
+                    formControlName="caption"
+                    [errorMessages]="errorMessages"
+                    [id]="'existing-caption-input-' + i"
+                    [maxLength]="120"
+                    [required]="true" />
+
+                  <label
+                    [for]="'existing-ordinality-input-' + i"
+                    class="lcc-required-field">
+                    Ordinality:
+                  </label>
+                  <ea-input
+                    class="album-ordinality-input"
+                    formControlName="albumOrdinality"
+                    [errorMessages]="errorMessages"
+                    [id]="'existing-ordinality-input-' + i"
+                    [maxLength]="2"
+                    [required]="true" />
+                </div>
+              }
+            </div>
+          </ea-radio-group>
+        }
+      </div>
+
+      @if (album()) {
+        <ea-divider class="form-divider" />
+        <h3 class="new-images-header">New images</h3>
+      }
+
+      <div class="control-buttons-container">
+        <ea-file-uploader
+          class="choose-files-button"
+          accept="image/*"
+          buttonLabel=""
+          size="sm"
+          variant="button"
+          [aria-label]="chooseFilesLabel"
+          [buttonIcon]="imagePlusIcon"
+          [eaTooltip]="chooseFilesLabel"
+          [formControl]="fileChoice"
+          [multiple]="true"
+          [showConstraints]="false"
+          [showFileList]="false"
+          (rejected)="onRejectFiles()" />
+      </div>
+
+      <div class="images-section">
         @if (form.controls.newImages.length) {
-          @if (album()) {
-            <ea-divider
-              class="new-images-divider"
-              label="New images" />
-          }
+          <ea-radio-group
+            class="images-group"
+            aria-label="Album cover"
+            size="sm"
+            [value]="coverImageId"
+            (changed)="onSetAlbumCover($event)">
+            <div
+              formArrayName="newImages"
+              class="images-grid">
+              @for (
+                imageControl of form.controls.newImages.controls;
+                track imageControl;
+                let i = $index
+              ) {
+                <div
+                  class="lcc-form-fields"
+                  [formGroupName]="i">
+                  <div class="image-container full-span">
+                    <img
+                      alt="New image preview"
+                      [src]="newImageDataUrls()[imageControl.controls.id.value]" />
+                    <ea-button
+                      class="remove-image-button"
+                      eaTooltip="Remove image"
+                      size="sm"
+                      variant="ghost"
+                      [aria-label]="'Remove ' + imageControl.controls.filename.value"
+                      [icon]="removeIcon"
+                      (clicked)="onRemoveNewImage(imageControl.getRawValue(), i)" />
+                  </div>
 
-          <div
-            class="image-grid"
-            formArrayName="newImages">
-            @for (
-              imageControl of form.controls.newImages.controls;
-              track imageControl;
-              let i = $index
-            ) {
-              <div
-                class="image-card new-image"
-                [formGroupName]="i">
-                <div class="image-frame">
-                  <img
-                    alt="New image preview"
-                    [src]="newImageDataUrls()[imageControl.controls.id.value]" />
-                  <ea-button
-                    class="remove-image-button"
-                    eaTooltip="Remove image"
-                    size="sm"
-                    variant="secondary"
-                    [aria-label]="'Remove ' + imageControl.controls.filename.value"
-                    [icon]="removeIcon"
-                    (clicked)="onRemoveNewImage(imageControl.getRawValue(), i)" />
+                  <div class="album-cover-input-container full-span">
+                    <ea-radio
+                      label="Use as album cover"
+                      [id]="'new-cover-radio-' + i"
+                      [value]="imageControl.controls.id.value" />
+                  </div>
+
+                  <label
+                    [for]="'new-caption-input-' + i"
+                    class="lcc-required-field">
+                    Caption:
+                  </label>
+                  <ea-input
+                    formControlName="caption"
+                    [errorMessages]="errorMessages"
+                    [id]="'new-caption-input-' + i"
+                    [maxLength]="120"
+                    [required]="true" />
+
+                  <label
+                    [for]="'new-ordinality-input-' + i"
+                    class="lcc-required-field">
+                    Ordinality:
+                  </label>
+                  <ea-input
+                    class="album-ordinality-input"
+                    formControlName="albumOrdinality"
+                    [errorMessages]="errorMessages"
+                    [id]="'new-ordinality-input-' + i"
+                    [maxLength]="2"
+                    [required]="true" />
                 </div>
-                <ea-radio
-                  class="cover-radio"
-                  label="Album cover"
-                  [value]="imageControl.controls.id.value" />
-                <ea-input
-                  label="Caption"
-                  formControlName="caption"
-                  [errorMessages]="errorMessages"
-                  [maxLength]="120"
-                  [required]="true" />
-                <ea-input
-                  label="Position"
-                  formControlName="albumOrdinality"
-                  [errorMessages]="errorMessages"
-                  [maxLength]="2"
-                  [required]="true" />
-              </div>
-            }
-          </div>
+              }
+            </div>
+          </ea-radio-group>
         }
-      </ea-radio-group>
-    }
+      </div>
 
-    <ea-file-uploader
-      accept="image/*"
-      [errorMsg]="
-        showImagesError ? 'Add at least one image to create the album.' : undefined
-      "
-      [formControl]="fileChoice"
-      [hint]="'Up to ' + maxNewImages + ' new images at a time.'"
-      [label]="album() ? 'Add images' : 'Images'"
-      [required]="!album()"
-      [showFileList]="false"
-      (rejected)="onRejectFiles()" />
+      <aside class="lcc-required-fields-legend">Required fields</aside>
 
-    @if (mostRecentModificationInfo; as info) {
-      <lcc-modification-info [info]="info" />
-    }
+      <ea-divider class="form-divider" />
 
-    <div class="lcc-form-actions">
-      <ea-button
-        class="lcc-form-actions__restore restore-button"
-        variant="ghost"
-        [disabled]="!hasUnsavedChanges()"
-        [icon]="restoreIcon"
-        (clicked)="onRestore()">
-        Discard changes
-      </ea-button>
-      <ea-button
-        class="cancel-button"
-        variant="secondary"
-        (clicked)="onCancel()">
-        Cancel
-      </ea-button>
-      <ea-button
-        class="submit-button"
-        type="submit"
-        [disabled]="!hasUnsavedChanges()">
-        {{ album() ? 'Update album' : 'Create album' }}
-      </ea-button>
-    </div>
-  </form>
+      @if (mostRecentModificationInfo; as info) {
+        <lcc-modification-info [info]="info" />
+      }
+
+      <div class="lcc-form-actions">
+        <ea-button
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
+        </ea-button>
+        <div class="lcc-form-actions__primary">
+          <ea-button
+            class="cancel-button"
+            size="sm"
+            variant="secondary"
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
+          <ea-button
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ album() ? 'Update album' : 'Create album' }}
+          </ea-button>
+        </div>
+      </div>
+    </form>
+  </div>
 </ea-card>

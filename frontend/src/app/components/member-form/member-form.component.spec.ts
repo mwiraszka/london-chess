@@ -1,7 +1,8 @@
-import { ButtonComponent, DialogService } from '@eagami/ui';
+import { ButtonComponent, DialogService, TooltipDirective } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 
+import { TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
@@ -71,6 +72,9 @@ describe('MemberFormComponent', () => {
 
   const button = (selector: string): ButtonComponent =>
     query(fixture.debugElement, selector).componentInstance;
+
+  const tooltipOf = (selector: string): string | TemplateRef<unknown> =>
+    query(fixture.debugElement, selector).injector.get(TooltipDirective).eaTooltip();
 
   const errorTexts = (): string[] =>
     Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('[role="alert"]')).map(
@@ -330,8 +334,8 @@ describe('MemberFormComponent', () => {
 
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
         title: 'Confirm',
-        body: 'Restore original member data? All changes will be lost.',
-        confirmButtonText: 'Restore',
+        body: 'Revert to the original member data? All changes will be lost.',
+        confirmButtonText: 'Revert',
         confirmButtonType: 'warning',
       });
       expect(restoreSpy).toHaveBeenCalledWith(withoutAccount.id);
@@ -511,7 +515,7 @@ describe('MemberFormComponent', () => {
 
       await settle();
 
-      expect(queryTextContent(fixture.debugElement, '.notify-member')).toContain(
+      expect(tooltipOf('.notify-member')).toBe(
         'Add a valid email address and year of birth to email the member.',
       );
     });
@@ -550,13 +554,13 @@ describe('MemberFormComponent', () => {
   describe('template', () => {
     it('should only offer to mark an existing member inactive', () => {
       render(formData, false, withoutAccount);
-      const forExisting = query(fixture.debugElement, '.active-checkbox');
+      const forExisting = query(fixture.debugElement, 'label[for="is-active-input"]');
       fixture.destroy();
 
       render(formData, false, null);
 
       expect(forExisting).toBeTruthy();
-      expect(query(fixture.debugElement, '.active-checkbox')).toBeFalsy();
+      expect(query(fixture.debugElement, 'label[for="is-active-input"]')).toBeFalsy();
     });
 
     it('should hide personal details behind a notice in safe mode', () => {
@@ -565,7 +569,7 @@ describe('MemberFormComponent', () => {
       expect(queryTextContent(fixture.debugElement, '.safe-mode-notice')).toContain(
         'You can disable Safe Mode from the User Settings menu.',
       );
-      expect(query(fixture.debugElement, 'lcc-phone-number-field')).toBeFalsy();
+      expect(query(fixture.debugElement, 'label[for="phone-number-input"]')).toBeFalsy();
       expect(query(fixture.debugElement, 'input[type="email"]')).toBeFalsy();
     });
 
@@ -573,14 +577,14 @@ describe('MemberFormComponent', () => {
       render(formData, false, withoutAccount, false);
 
       expect(query(fixture.debugElement, '.safe-mode-notice')).toBeFalsy();
-      expect(query(fixture.debugElement, 'lcc-phone-number-field')).toBeTruthy();
+      expect(query(fixture.debugElement, 'label[for="phone-number-input"]')).toBeTruthy();
       expect(query(fixture.debugElement, 'input[type="email"]')).toBeTruthy();
     });
 
     it("should explain why an account holder's email address cannot be changed", () => {
       render(pick(withAccount, MEMBER_FORM_DATA_PROPERTIES), false, withAccount);
 
-      expect(fixture.nativeElement.textContent).toContain(
+      expect(tooltipOf('ea-input[type="email"]')).toBe(
         "This email address is managed by the member's account.",
       );
     });
@@ -610,10 +614,10 @@ describe('MemberFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should keep the save button enabled for an invalid form, so it can show why', () => {
+    it('should disable the save button while the form is invalid', () => {
       render({ ...formData, lastName: '' }, true);
 
-      expect(button('.submit-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
     it('should cancel from the cancel button', () => {

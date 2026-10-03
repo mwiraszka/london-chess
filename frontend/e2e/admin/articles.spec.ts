@@ -104,17 +104,17 @@ test.describe('managing articles', () => {
     await page.getByLabel(fieldLabel('Title')).fill(uniqueName('Unfinished notice'));
     await page.getByRole('button', { name: 'Publish article' }).click();
 
-    await expect(page.getByText('Choose a banner image.')).toBeVisible();
+    await expect(page.getByText('Choose a banner image')).toBeVisible();
     await expect(fieldError(page, 'Content')).toHaveText('This field is required');
     await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Choose a banner image' }).click();
     await chooseFromExplorer(page, BANNER_IMAGES[0].caption);
-    await expect(page.getByText('Choose a banner image.')).toHaveCount(0);
+    await expect(page.getByText('Choose a banner image')).toHaveCount(0);
 
     expect(writes).toEqual([]);
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
   });
 
   test('keeps an article draft, with its errors, through leaving the page', async ({
@@ -127,17 +127,17 @@ test.describe('managing articles', () => {
     await page.getByLabel(fieldLabel('Title')).fill(title);
     await page.getByLabel(fieldLabel('Content')).fill('Half **written**.');
     // The draft reaches the store a moment after typing stops, which enables Discard
-    await expect(page.getByRole('button', { name: 'Discard changes' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Revert' })).toBeEnabled();
     await leaveAndReturn(page);
 
     await expect(page).toHaveURL(/\/article\/add$/);
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(title);
     await expect(page.getByLabel(fieldLabel('Content'))).toHaveValue('Half **written**.');
     await expect(page.locator('lcc-markdown-renderer strong')).toHaveText('written');
-    await expect(page.getByText('Choose a banner image.')).toBeVisible();
+    await expect(page.getByText('Choose a banner image')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
 
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue('');
     await expect(page.locator('lcc-markdown-renderer')).toHaveCount(0);
@@ -160,7 +160,7 @@ test.describe('managing articles', () => {
       `Opening.\n\n{{{${BANNER_IMAGES[1].id}}}}(((500)))<<<Image caption goes here>>>\n\n\nClosing.`,
     );
 
-    await page.getByRole('button', { name: 'Discard changes' }).click();
-    await confirm(page, 'Restore');
+    await page.getByRole('button', { name: 'Revert' }).click();
+    await confirm(page, 'Revert');
   });
 });

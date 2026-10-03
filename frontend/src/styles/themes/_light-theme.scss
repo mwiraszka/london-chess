@@ -34,6 +34,8 @@
   --lcc-color--adminToolbar-innerBackground: #{clr(grayscale, white-90)};
   --lcc-color--adminToolbar-outerBackground: #{clr(admin, base)};
 
+  --lcc-color--albumForm-headerText: #{clr(grayscale, black-15)};
+
   --lcc-color--app-mainBackground: #{clr(grayscale, white-95)};
 
   --lcc-color--article-authorText: #{clr(grayscale, black-15)};
@@ -43,6 +45,9 @@
   --lcc-color--article-dateCreatedText: #{clr(grayscale, gray-25)};
   --lcc-color--article-editorText: #{clr(grayscale, gray-25)};
   --lcc-color--article-markdownContainerBackground: #{clr(grayscale, white-90)};
+
+  --lcc-color--articleForm-markdownPreviewBoxShadow: #{clr(grayscale, gray-75, 0.5)};
+  --lcc-color--articleForm-previewHeaderText: #{clr(grayscale, gray-35)};
 
   --lcc-color--articleGrid-articleCreationDateText: #{clr(grayscale, white-80)};
   --lcc-color--articleGrid-articleHeaderText: #{clr(grayscale, white-92)};
@@ -89,6 +94,10 @@
   --lcc-color--footer-primaryText: #{clr(grayscale, black-15)};
   --lcc-color--footer-secondaryText: #{clr(grayscale, gray-50)};
   --lcc-color--footer-verticalSpacer: #{clr(grayscale, gray-75)};
+
+  --lcc-color--form-labelText: #{clr(grayscale, black-15)};
+  --lcc-color--form-requiredFieldAsterisk: #{clr(warning, light)};
+  --lcc-color--form-requiredFieldText: #{clr(grayscale, black-15)};
 
   --lcc-color--gameArchivesPage-figure: #{clr(secondary, base)};
 
