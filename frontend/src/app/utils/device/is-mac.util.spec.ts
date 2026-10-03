@@ -74,16 +74,11 @@ describe('isMac', () => {
   });
 
   it('should return false when navigator is undefined', () => {
-    // Save original navigator
-    const originalNavigator = window.navigator;
+    vi.stubGlobal('navigator', undefined);
 
-    // Replace navigator with undefined
-    // @ts-expect-error - Overriding the readonly property for testing
-    window.navigator = undefined;
+    const result = isMac();
+    vi.unstubAllGlobals();
 
-    expect(isMac()).toBe(false);
-
-    // Restore navigator
-    window.navigator = originalNavigator;
+    expect(result).toBe(false);
   });
 });
