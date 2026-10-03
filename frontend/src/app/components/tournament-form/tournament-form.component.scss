@@ -3,18 +3,18 @@
   width: 100%;
 }
 
-.section-heading {
-  margin-bottom: 8px;
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.registration,
-.results {
+.form-section {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  text-align: left;
+}
+
+.section-heading {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .results__status {
@@ -39,8 +39,4 @@
   overflow-x: auto;
   display: block;
   max-width: 100%;
-}
-
-.results__clear {
-  align-self: flex-start;
 }

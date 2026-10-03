@@ -1,5 +1,5 @@
 <ea-card [fullWidth]="true">
-  <div class="form-card">
+  <div class="lcc-form-card">
     <form
       class="lcc-form"
       [formGroup]="form"
@@ -129,7 +129,7 @@
         </ea-alert>
       }
 
-      <ea-divider class="form-divider" />
+      <ea-divider class="lcc-form-divider" />
 
       @if (originalMember()?.modificationInfo; as info) {
         <lcc-modification-info [info]="info" />

@@ -88,19 +88,3 @@
   white-space: nowrap;
   clip-path: inset(50%);
 }
-
-.form-divider {
-  display: block;
-  width: 100%;
-  margin: 16px 0;
-}
-
-// The card body's smaller secondary text would otherwise replace the page's type
-.form-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
-}

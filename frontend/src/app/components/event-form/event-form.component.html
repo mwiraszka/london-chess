@@ -1,5 +1,5 @@
 <ea-card [fullWidth]="true">
-  <div class="form-card">
+  <div class="lcc-form-card">
     <form
       class="lcc-form"
       [formGroup]="form"
@@ -77,7 +77,7 @@
 
       <aside class="lcc-required-fields-legend">Required fields</aside>
 
-      <ea-divider class="form-divider" />
+      <ea-divider class="lcc-form-divider" />
 
       @if (originalEvent()?.modificationInfo; as info) {
         <lcc-modification-info [info]="info" />

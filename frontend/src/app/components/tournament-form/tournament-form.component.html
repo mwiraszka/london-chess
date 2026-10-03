@@ -1,241 +1,295 @@
 <ea-card [fullWidth]="true">
-  <form
-    class="lcc-editor-form"
-    [formGroup]="form"
-    (focusout)="onFieldLeft()"
-    (ngSubmit)="onSubmit()">
-    <ea-input
-      label="Name"
-      formControlName="name"
-      [errorMessages]="errorMessages"
-      [maxLength]="100"
-      [required]="true" />
+  <div class="lcc-form-card">
+    <form
+      class="lcc-form"
+      [formGroup]="form"
+      (focusout)="onFieldLeft()"
+      (ngSubmit)="onSubmit()">
+      <div class="lcc-form-fields">
+        <label
+          for="name-input"
+          class="lcc-required-field">
+          Name:
+        </label>
+        <ea-input
+          formControlName="name"
+          [errorMessages]="errorMessages"
+          [id]="'name-input'"
+          [maxLength]="100"
+          [required]="true" />
 
-    <ea-input
-      hint="A theme, the simul givers or the match-up."
-      label="Subtitle"
-      formControlName="subtitle"
-      [errorMessages]="errorMessages"
-      [maxLength]="100" />
+        <label for="subtitle-input">Subtitle:</label>
+        <ea-input
+          placeholder="A theme, the simul givers or the match-up"
+          formControlName="subtitle"
+          [errorMessages]="errorMessages"
+          [id]="'subtitle-input'"
+          [maxLength]="100" />
 
-    <div class="lcc-form-row">
-      <ea-date-picker
-        label="Start date"
-        formControlName="date"
-        [required]="true"
-        [weekStartsOn]="weekStartsOn" />
-      <ea-date-picker
-        hint="Leave empty for a tournament played in a day."
-        label="End date"
-        formControlName="endDate"
-        [errorMessages]="errorMessages"
-        [weekStartsOn]="weekStartsOn" />
-    </div>
+        <label
+          for="start-date-input"
+          class="lcc-required-field">
+          Start date:
+        </label>
+        <ea-date-picker
+          formControlName="date"
+          [id]="'start-date-input'"
+          [required]="true"
+          [weekStartsOn]="weekStartsOn" />
 
-    <div class="lcc-form-row">
-      <ea-dropdown
-        label="Format"
-        formControlName="format"
-        [options]="formatOptions"
-        [required]="true" />
-      <ea-input
-        label="Time control"
-        placeholder="G25+5"
-        formControlName="timeControl"
-        [errorMessages]="errorMessages"
-        [maxLength]="30" />
-    </div>
+        <label for="end-date-input">End date:</label>
+        <ea-date-picker
+          formControlName="endDate"
+          [errorMessages]="errorMessages"
+          [id]="'end-date-input'"
+          [weekStartsOn]="weekStartsOn" />
 
-    <ea-checkbox
-      label="Rated"
-      formControlName="isRated" />
+        <label
+          for="format-input"
+          class="lcc-required-field">
+          Format:
+        </label>
+        <ea-dropdown
+          formControlName="format"
+          [id]="'format-input'"
+          [options]="formatOptions"
+          [required]="true" />
 
-    <ea-input
-      label="Associated article ID"
-      formControlName="articleId"
-      [errorMessages]="errorMessages"
-      [maxLength]="24" />
+        <label for="time-control-input">Time control:</label>
+        <ea-input
+          placeholder="G25+5"
+          formControlName="timeControl"
+          [errorMessages]="errorMessages"
+          [id]="'time-control-input'"
+          [maxLength]="30" />
 
-    <ea-divider />
+        <label for="rated-input">Rated:</label>
+        <ea-checkbox
+          formControlName="isRated"
+          [id]="'rated-input'" />
 
-    <section
-      class="registration"
-      aria-labelledby="registration-heading">
-      <h3
-        id="registration-heading"
-        class="section-heading">
-        Registration
-      </h3>
-      <ea-switch
-        hint="Members can register and withdraw on the tournament's page while it is open."
-        label="Take registrations online"
-        formControlName="hasRegistration" />
+        <label for="article-id-input">Associated article ID:</label>
+        <ea-input
+          formControlName="articleId"
+          [errorMessages]="errorMessages"
+          [id]="'article-id-input'"
+          [maxLength]="24" />
+      </div>
 
-      @if (form.controls.hasRegistration.value) {
-        <div class="lcc-form-row">
+      <ea-divider class="lcc-form-divider" />
+
+      <section
+        class="form-section"
+        aria-labelledby="registration-heading">
+        <h3
+          id="registration-heading"
+          class="section-heading">
+          Registration
+        </h3>
+        <div class="lcc-form-fields">
+          <ea-switch
+            hint="Members can register and withdraw on the tournament's page while it is open."
+            label="Take registrations online"
+            formControlName="hasRegistration" />
+
+          <label
+            for="opens-on-input"
+            class="lcc-required-field">
+            Opens on:
+          </label>
           <ea-date-picker
-            label="Opens on"
             formControlName="registrationOpensDay"
+            [id]="'opens-on-input'"
             [required]="true"
             [weekStartsOn]="weekStartsOn" />
+
+          <label
+            for="opens-at-input"
+            class="lcc-required-field">
+            Opens at:
+          </label>
           <ea-time-picker
             format="12h"
-            label="Opens at"
             formControlName="registrationOpensTime"
+            [id]="'opens-at-input'"
             [minuteStep]="5"
             [required]="true" />
-        </div>
-        <div class="lcc-form-row">
+
+          <label
+            for="closes-on-input"
+            class="lcc-required-field">
+            Closes on:
+          </label>
           <ea-date-picker
-            label="Closes on"
             formControlName="registrationClosesDay"
+            [id]="'closes-on-input'"
             [required]="true"
             [weekStartsOn]="weekStartsOn" />
+
+          <label
+            for="closes-at-input"
+            class="lcc-required-field">
+            Closes at:
+          </label>
           <ea-time-picker
             format="12h"
-            label="Closes at"
             formControlName="registrationClosesTime"
             [errorMessages]="errorMessages"
+            [id]="'closes-at-input'"
             [minuteStep]="5"
             [required]="true" />
         </div>
-      }
-    </section>
+      </section>
 
-    <ea-divider />
+      <ea-divider class="lcc-form-divider" />
 
-    <section
-      class="results"
-      aria-labelledby="results-heading">
-      <h3
-        id="results-heading"
-        class="section-heading">
-        Results
-      </h3>
-      <p class="results__status">
-        @if (importedSections()) {
-          Imported results are shown below and will be saved with the tournament.
-        } @else if (recordedResults(); as recorded) {
-          Results recorded: {{ recorded }}. Importing new standings replaces them.
-        } @else {
-          No results have been recorded yet.
-        }
-      </p>
-
-      <ea-file-uploader
-        accept=".xlsx,.csv"
-        hint="An .xlsx workbook with one sheet per section, or one .csv file per section, as SwissSys exports them."
-        label="Import standings"
-        [maxSize]="5242880"
-        [multiple]="true"
-        [value]="standingsFiles()"
-        (valueChange)="onStandingsChosen($event)" />
-
-      @if (importing()) {
-        <p
-          class="results__status"
-          role="status">
-          Reading the standings...
-        </p>
-      }
-
-      @if (listedProblems().length) {
-        <ea-alert
-          class="results__problems"
-          variant="error">
-          <p>These standings could not be imported:</p>
-          <ul>
-            @for (problem of listedProblems(); track $index) {
-              <li>{{ problem }}</li>
-            }
-          </ul>
-          @if (unlistedProblemCount()) {
-            <p>
-              {{ unlistedProblemCount() }} more
-              {{ unlistedProblemCount() === 1 ? 'problem was' : 'problems were' }} found.
-            </p>
+      <section
+        class="form-section results"
+        aria-labelledby="results-heading">
+        <h3
+          id="results-heading"
+          class="section-heading">
+          Results
+        </h3>
+        <p class="results__status">
+          @if (importedSections()) {
+            Imported results are shown below and will be saved with the tournament.
+          } @else if (recordedResults(); as recorded) {
+            Results recorded: {{ recorded }}. Importing new standings replaces them.
+          } @else {
+            No results have been recorded yet.
           }
-        </ea-alert>
-      }
+        </p>
 
-      @if (importedSections()) {
-        @if (newPlayers().length) {
-          <ea-alert variant="info">{{ newPlayersNote() }}</ea-alert>
-        } @else if (playerCheckFailed()) {
-          <ea-alert variant="warning">
-            The names could not be checked against the archive, so any new players will be
-            added when the results are saved.
+        <ea-file-uploader
+          accept=".xlsx,.csv,.pgn,.txt"
+          aria-label="Import standings"
+          hint="An .xlsx workbook with one sheet per section, or one .csv file per section, as SwissSys exports them, or a PGN file (.pgn or .txt) of games to add to the recorded results."
+          [maxSize]="5242880"
+          [multiple]="true"
+          [value]="standingsFiles()"
+          (valueChange)="onStandingsChosen($event)" />
+
+        @if (importedGames()?.length; as newGames) {
+          <p class="results__status">
+            {{ newGames === 1 ? '1 new game' : newGames + ' new games' }} will be added to
+            the game archive.
+          </p>
+        }
+
+        @if (pgnNote(); as note) {
+          <p class="results__status">{{ note }}</p>
+        }
+
+        @if (importing()) {
+          <p
+            class="results__status"
+            role="status">
+            Reading the standings...
+          </p>
+        }
+
+        @if (listedProblems().length) {
+          <ea-alert
+            class="results__problems"
+            variant="error">
+            <p>These standings could not be imported:</p>
+            <ul>
+              @for (problem of listedProblems(); track $index) {
+                <li>{{ problem }}</li>
+              }
+            </ul>
+            @if (unlistedProblemCount()) {
+              <p>
+                {{ unlistedProblemCount() }} more
+                {{ unlistedProblemCount() === 1 ? 'problem was' : 'problems were' }}
+                found.
+              </p>
+            }
           </ea-alert>
         }
 
-        @for (preview of previews(); track preview.key) {
-          <div class="results__section">
-            <div class="lcc-form-row">
-              <ea-input
-                label="Section"
-                [errorMsg]="sectionNameErrors()[preview.index] ?? undefined"
-                [maxLength]="30"
-                [value]="preview.section.name"
-                (valueChange)="onSectionEdited(preview.index, 'name', $event)" />
-              <ea-input
-                label="Rating band"
-                placeholder="Open, U1500"
-                [maxLength]="30"
-                [value]="preview.section.ratingBand"
-                (valueChange)="onSectionEdited(preview.index, 'ratingBand', $event)" />
+        @if (importedSections()) {
+          @if (newPlayers().length) {
+            <ea-alert variant="info">{{ newPlayersNote() }}</ea-alert>
+          } @else if (playerCheckFailed()) {
+            <ea-alert variant="warning">
+              The names could not be checked against the archive, so any new players will
+              be added when the results are saved.
+            </ea-alert>
+          }
+
+          @for (preview of previews(); track preview.key) {
+            <div class="results__section">
+              <div class="lcc-form-row">
+                <ea-input
+                  label="Section"
+                  [errorMsg]="sectionNameErrors()[preview.index] ?? undefined"
+                  [maxLength]="30"
+                  [value]="preview.section.name"
+                  (valueChange)="onSectionEdited(preview.index, 'name', $event)" />
+                <ea-input
+                  label="Rating band"
+                  placeholder="Open, U1500"
+                  [maxLength]="30"
+                  [value]="preview.section.ratingBand"
+                  (valueChange)="onSectionEdited(preview.index, 'ratingBand', $event)" />
+              </div>
+              <lcc-data-table
+                class="results__table"
+                [aria-label]="
+                  preview.section.name
+                    ? 'Imported standings, section ' + preview.section.name
+                    : 'Imported standings'
+                "
+                [columns]="preview.columns"
+                [data]="preview.rows" />
             </div>
-            <lcc-data-table
-              class="results__table"
-              [aria-label]="
-                preview.section.name
-                  ? 'Imported standings, section ' + preview.section.name
-                  : 'Imported standings'
-              "
-              [columns]="preview.columns"
-              [data]="preview.rows" />
-          </div>
+          }
         }
+      </section>
 
-        <ea-button
-          class="results__clear"
-          variant="ghost"
-          (clicked)="onClearImport()">
-          Remove imported results
-        </ea-button>
+      <aside class="lcc-required-fields-legend">Required fields</aside>
+
+      <ea-divider class="lcc-form-divider" />
+
+      @if (originalTournament()?.modificationInfo; as info) {
+        <lcc-modification-info [info]="info" />
       }
-    </section>
 
-    @if (originalTournament()?.modificationInfo; as info) {
-      <lcc-modification-info [info]="info" />
-    }
-
-    <div class="lcc-form-actions">
-      <ea-button
-        class="lcc-form-actions__restore restore-button"
-        variant="ghost"
-        [disabled]="!hasUnsavedChanges()"
-        [icon]="restoreIcon"
-        (clicked)="onRestore()">
-        Revert
-      </ea-button>
-      <div class="lcc-form-actions__primary">
+      <div class="lcc-form-actions">
         <ea-button
-          class="cancel-button"
-          variant="secondary"
-          [fullWidth]="true"
-          (clicked)="onCancel()">
-          Cancel
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
         </ea-button>
-        <ea-button
-          class="submit-button"
-          type="submit"
-          [disabled]="!hasUnsavedChanges() || importing()"
-          [fullWidth]="true">
-          {{ originalTournament() ? 'Update tournament' : 'Add tournament' }}
-        </ea-button>
+        <div class="lcc-form-actions__primary">
+          <ea-button
+            class="cancel-button"
+            size="sm"
+            variant="secondary"
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
+          <ea-button
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges() || importing()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ originalTournament() ? 'Update tournament' : 'Add tournament' }}
+          </ea-button>
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
+  </div>
 </ea-card>
 
 <ng-template
