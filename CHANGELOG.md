@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Manage tournaments from the site: admins add, edit and delete tournaments, import their results from the standings SwissSys exports (an .xlsx workbook, or a .csv for each section), and check the import in a preview that flags players new to the archive
-- Take tournament registrations online: admins set when registration opens and closes, members register or withdraw on the tournament's page, and everyone registered so far is listed there
+- Take tournament registrations online: admins set when registration opens and closes, and members register or withdraw on the tournament's page, which lists everyone who has registered online
 - List upcoming tournaments above the table on the Tournaments page, with where their registration stands
 
 ### Changed
