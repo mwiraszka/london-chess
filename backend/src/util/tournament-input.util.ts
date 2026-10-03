@@ -255,6 +255,35 @@ function gameError(game: unknown, index: number): string | null {
   return null;
 }
 
+// The first problem with a list of sections, or null when every one can be stored
+export function sectionsError(sections: unknown): string | null {
+  if (!Array.isArray(sections)) {
+    return 'sections must be a list';
+  }
+  const names = new Set<string>();
+  for (const section of sections) {
+    const error = sectionError(section, names);
+    if (error) {
+      return error;
+    }
+  }
+  return null;
+}
+
+// The first problem with a list of games read from a PGN, or null when every one can be stored
+export function gamesError(games: unknown): string | null {
+  if (!Array.isArray(games) || games.length > MAX_GAMES) {
+    return `games must be a list of at most ${MAX_GAMES}`;
+  }
+  for (const [index, game] of games.entries()) {
+    const error = gameError(game, index);
+    if (error) {
+      return error;
+    }
+  }
+  return null;
+}
+
 // Checks the whole tournament, down to every round of every entry, before anything is saved
 export function validateTournamentInput(body: unknown): Error | 'valid' {
   const typesResult = validateObjectByTypes(body, tournamentInputTypes);
@@ -296,30 +325,19 @@ export function validateTournamentInput(body: unknown): Error | 'valid' {
   }
 
   if (input.sections !== null) {
-    if (!Array.isArray(input.sections)) {
-      return new Error('sections must be a list');
-    }
-    const names = new Set<string>();
-    for (const section of input.sections) {
-      const error = sectionError(section, names);
-      if (error) {
-        return new Error(error);
-      }
+    const error = sectionsError(input.sections);
+    if (error) {
+      return new Error(error);
     }
   }
 
   if (input.games !== null) {
-    if (!Array.isArray(input.games) || input.games.length > MAX_GAMES) {
-      return new Error(`games must be a list of at most ${MAX_GAMES}`);
+    const error = gamesError(input.games);
+    if (error) {
+      return new Error(error);
     }
     if (input.games.length && input.sections === null) {
       return new Error('games can only be added along with the results they belong to');
-    }
-    for (const [index, game] of input.games.entries()) {
-      const error = gameError(game, index);
-      if (error) {
-        return new Error(error);
-      }
     }
   }
 

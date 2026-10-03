@@ -165,6 +165,19 @@ export type EntryInput = Omit<
   playerId: Id | null;
 };
 
+// How a game read from a PGN compares with the tournament's games in the archive
+export type GameChange = 'new' | 'changed' | 'unchanged';
+
+// What saving imported results and games would change in a recorded tournament
+export interface ImportChanges {
+  // Whether each imported section, in order, differs from the recorded one of its name
+  sectionChanges: boolean[];
+  // The recorded sections the import leaves out, which saving would remove
+  removedSections: string[];
+  // How each imported game compares with the archive
+  games: GameChange[];
+}
+
 // A game read from a PGN, to be added to the tournament's games in the archive
 export type GameInput = Pick<
   Game,

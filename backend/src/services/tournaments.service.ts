@@ -4,7 +4,9 @@ import { Id } from '../models/core.model';
 import { GameModel, GamePlayer, GameRecord } from '../models/game.model';
 import { MemberModel, MemberRecord } from '../models/member.model';
 import {
+  EntryInput,
   MemberTournamentResult,
+  RoundResult,
   SectionInput,
   Tournament,
   TournamentEntry,
@@ -18,7 +20,7 @@ import {
 import { isCollectionId } from '../util/is-collection-id.util';
 import { performanceRatings } from '../util/performance-rating.util';
 import { UNKNOWN_PLAYER, resolvePlayers } from './games.service';
-import { resolvePlayerIds } from './tournament-players.service';
+import { matchPlayerNames, resolvePlayerIds } from './tournament-players.service';
 
 export type ArchiveGame = Pick<
   GameRecord,
@@ -148,19 +150,104 @@ export async function toRegistrants(
     });
 }
 
-// Sections keep the archive sections they already had, since an import cannot name them
+const sameScores = (a: number[], b: number[]): boolean =>
+  a.length === b.length && a.every((score, index) => score === b[index]);
+
+const byRoundNumber = (a: RoundResult, b: RoundResult): number => a.round - b.round;
+
+function sameRounds(a: RoundResult[], b: RoundResult[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const ours = [...a].sort(byRoundNumber);
+  const theirs = [...b].sort(byRoundNumber);
+  return ours.every(
+    (result, index) =>
+      result.round === theirs[index].round &&
+      result.outcome === theirs[index].outcome &&
+      result.points === theirs[index].points &&
+      result.opponentRank === theirs[index].opponentRank &&
+      result.color === theirs[index].color &&
+      sameScores(result.scores, theirs[index].scores),
+  );
+}
+
+function sameSection(
+  input: SectionInput,
+  recorded: TournamentSection,
+  playerIdOf: (entry: EntryInput) => Id | null,
+): boolean {
+  if (
+    input.ratingBand.trim() !== recorded.ratingBand ||
+    input.roundCount !== recorded.roundCount ||
+    input.isDoubleRound !== recorded.isDoubleRound ||
+    input.entries.length !== recorded.entries.length
+  ) {
+    return false;
+  }
+  const recordedByRank = new Map(recorded.entries.map(entry => [entry.rank, entry]));
+  return input.entries.every(entry => {
+    const match = recordedByRank.get(entry.rank);
+    return (
+      !!match &&
+      playerIdOf(entry) === match.playerId &&
+      entry.rating === match.rating &&
+      entry.provisionalGames === match.provisionalGames &&
+      entry.score === match.score &&
+      entry.tiebreak === match.tiebreak &&
+      sameRounds(entry.rounds, match.rounds)
+    );
+  });
+}
+
+/**
+ * Which imported sections differ from the recorded ones, and which recorded ones the import
+ * leaves out. A player named only by name counts as the archive player that name finds, so
+ * a section shows as changed exactly when saving it would change what is stored.
+ */
+export async function compareSections(
+  inputs: SectionInput[],
+  recorded: TournamentSection[],
+): Promise<{ changed: boolean[]; removed: string[] }> {
+  const named = inputs.flatMap(({ entries }) =>
+    entries.filter(({ playerId }) => playerId === null).map(({ name }) => name),
+  );
+  const matches = named.length && recorded.length ? await matchPlayerNames(named) : [];
+  const idsByName = new Map(matches.map(({ name, playerId }) => [name, playerId]));
+  const playerIdOf = (entry: EntryInput): Id | null =>
+    entry.playerId ?? idsByName.get(entry.name.trim()) ?? null;
+
+  const inputNames = new Set(inputs.map(({ name }) => name.trim()));
+  return {
+    changed: inputs.map(input => {
+      const match = recorded.find(({ name }) => name === input.name.trim());
+      return !match || !sameSection(input, match, playerIdOf);
+    }),
+    removed: recorded.map(({ name }) => name).filter(name => !inputNames.has(name)),
+  };
+}
+
+// A section saving leaves unchanged keeps everything it had, down to its performance
+// ratings; a changed one keeps the archive sections it had, since an import cannot name them
 export async function toStoredSections(
   inputs: SectionInput[],
   existing: TournamentSection[],
   format: Tournament['format'],
 ): Promise<TournamentSection[]> {
+  const { changed } = await compareSections(inputs, existing);
   const playerIds = await resolvePlayerIds(
-    inputs.flatMap(({ entries }) =>
-      entries.filter(({ playerId }) => playerId === null).map(({ name }) => name),
-    ),
+    inputs
+      .filter((_, index) => changed[index])
+      .flatMap(({ entries }) =>
+        entries.filter(({ playerId }) => playerId === null).map(({ name }) => name),
+      ),
   );
 
-  return inputs.map(section => {
+  return inputs.map((section, index) => {
+    const recorded = existing.find(({ name }) => name === section.name.trim());
+    if (!changed[index] && recorded) {
+      return recorded;
+    }
     const ratings = performanceRatings(
       section.entries,
       format === 'round-robin',

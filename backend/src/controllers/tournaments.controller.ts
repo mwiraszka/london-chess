@@ -6,8 +6,11 @@ import {
   modificationInfoTypes,
 } from '../models/modification-info.model';
 import {
+  GameInput,
+  ImportChanges,
   MemberTournamentResult,
   PlayerNameMatch,
+  SectionInput,
   Tournament,
   TournamentInput,
   TournamentModel,
@@ -18,7 +21,11 @@ import {
 } from '../models/tournament.model';
 import { findEditor, findLinkedMember } from '../services/member-accounts.service';
 import { findProfilePlayerIds } from '../services/member-players.service';
-import { archiveGames, withGameSections } from '../services/tournament-games.service';
+import {
+  archiveGames,
+  classifyGames,
+  withGameSections,
+} from '../services/tournament-games.service';
 import { takeNextTournamentNumber } from '../services/tournament-numbers.service';
 import {
   matchPlayerNames,
@@ -27,6 +34,7 @@ import {
 } from '../services/tournament-players.service';
 import {
   TOURNAMENT_SUMMARY_PIPELINE,
+  compareSections,
   toMemberTournamentResults,
   toRegistrants,
   toStoredSections,
@@ -34,7 +42,11 @@ import {
 } from '../services/tournaments.service';
 import { clubToday } from '../util/club-date.util';
 import { creditEditor } from '../util/modification-info.util';
-import { validateTournamentInput } from '../util/tournament-input.util';
+import {
+  gamesError,
+  sectionsError,
+  validateTournamentInput,
+} from '../util/tournament-input.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 const MAX_MATCHED_NAMES = 2000;
@@ -335,6 +347,54 @@ export async function matchTournamentPlayers(
     }
 
     res.status(200).json({ data: await matchPlayerNames(names) });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+// What saving these imported results and games would change, as the save works it out
+export async function checkTournamentImport(
+  req: Request<{ number: string }>,
+  res: Response<ApiResponse<ImportChanges>>,
+): Promise<void> {
+  try {
+    const number = parseNumber(req.params.number);
+    const record =
+      number === null
+        ? null
+        : await TournamentModel.findOne(
+            { number },
+            { name: 1, gameArchiveTournament: 1, sections: 1 },
+          ).lean<Pick<TournamentRecord, 'name' | 'gameArchiveTournament' | 'sections'>>();
+    if (!record) {
+      res.status(404).json({
+        message: `Unable to check the import for tournament [${req.params.number}] because it could not be found.`,
+      });
+      return;
+    }
+
+    const sections: unknown = req.body?.sections;
+    const games: unknown = req.body?.games;
+    const problem = sectionsError(sections) ?? gamesError(games);
+    if (problem) {
+      res.status(400).json({
+        message: `Unable to check the import because ${withoutFullStop(problem)}.`,
+      });
+      return;
+    }
+
+    const inputs = sections as SectionInput[];
+    const { changed, removed } = await compareSections(inputs, record.sections);
+    res.status(200).json({
+      data: {
+        sectionChanges: changed,
+        removedSections: removed,
+        games: await classifyGames(
+          record.gameArchiveTournament ?? record.name,
+          games as GameInput[],
+        ),
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }

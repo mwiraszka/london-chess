@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import {
   addTournament,
+  checkTournamentImport,
   deleteTournament,
   getMemberTournaments,
   getTournament,
@@ -20,6 +21,7 @@ export const tournamentsRouter = Router()
   .post('/', adminAuth, addTournament)
   .post('/player-matches', adminAuth, matchTournamentPlayers)
   .put('/:number', adminAuth, updateTournament)
+  .post('/:number/import-changes', adminAuth, checkTournamentImport)
   .delete('/:number', adminAuth, deleteTournament)
   .post('/:number/registration', auth, registerForTournament)
   .delete('/:number/registration', auth, withdrawFromTournament);
