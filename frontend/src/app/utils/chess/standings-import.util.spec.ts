@@ -133,6 +133,7 @@ describe('standings import', () => {
       expect(sections[0].entries[1]).toEqual({
         rank: 2,
         name: 'Collrin, Jack',
+        playerId: null,
         rating: 1862,
         provisionalGames: 7,
         score: 0.5,

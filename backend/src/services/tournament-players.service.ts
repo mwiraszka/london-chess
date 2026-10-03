@@ -157,6 +157,23 @@ export async function resolvePlayerIds(names: string[]): Promise<Map<string, Id>
   return ids;
 }
 
+// The IDs among these that name no player in the archive
+export async function unknownPlayerIds(playerIds: Id[]): Promise<Id[]> {
+  const candidates = [...new Set(playerIds)];
+  if (candidates.some(id => !isCollectionId(id))) {
+    return candidates.filter(id => !isCollectionId(id));
+  }
+  const found = new Set(
+    (
+      await PlayerModel.find(
+        { _id: { $in: candidates.map(id => new Types.ObjectId(id)) } },
+        { _id: 1 },
+      ).lean<Pick<PlayerRecord, '_id'>[]>()
+    ).map(({ _id }) => _id.toString()),
+  );
+  return candidates.filter(id => !found.has(id));
+}
+
 // Players only these results ever named go with them, so a corrected spelling leaves no
 // stray record behind
 export async function removeOrphanedPlayers(playerIds: Id[]): Promise<void> {

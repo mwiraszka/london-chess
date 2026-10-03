@@ -1,7 +1,7 @@
 import { Schema, Types, model } from 'mongoose';
 
 import { Id, IsoDate } from './core.model';
-import { GamePlayer, GameResponse } from './game.model';
+import { Game, GamePlayer, GameResponse } from './game.model';
 import { ModificationInfo } from './modification-info.model';
 
 export type TournamentFormat = 'swiss' | 'round-robin' | 'match' | 'tandem-simul';
@@ -161,7 +161,25 @@ export type EntryInput = Omit<
   'playerId' | 'performanceRating' | 'resultNote'
 > & {
   name: string;
+  // The archive player already recorded for the entry, or null to find one by name
+  playerId: Id | null;
 };
+
+// A game read from a PGN, to be added to the tournament's games in the archive
+export type GameInput = Pick<
+  Game,
+  | 'section'
+  | 'round'
+  | 'date'
+  | 'whitePlayerId'
+  | 'blackPlayerId'
+  | 'result'
+  | 'whiteElo'
+  | 'blackElo'
+  | 'eco'
+  | 'plyCount'
+  | 'moves'
+>;
 
 export type SectionInput = Pick<
   TournamentSection,
@@ -185,6 +203,8 @@ export type TournamentInput = Pick<
 > & {
   // Null keeps the results already recorded
   sections: SectionInput[] | null;
+  // Null when no games came with the results
+  games: GameInput[] | null;
   modificationInfo: ModificationInfo;
 };
 

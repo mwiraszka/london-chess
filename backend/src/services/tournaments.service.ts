@@ -155,7 +155,9 @@ export async function toStoredSections(
   format: Tournament['format'],
 ): Promise<TournamentSection[]> {
   const playerIds = await resolvePlayerIds(
-    inputs.flatMap(({ entries }) => entries.map(({ name }) => name)),
+    inputs.flatMap(({ entries }) =>
+      entries.filter(({ playerId }) => playerId === null).map(({ name }) => name),
+    ),
   );
 
   return inputs.map(section => {
@@ -174,7 +176,7 @@ export async function toStoredSections(
         [],
       entries: section.entries.map((entry, index) => ({
         rank: entry.rank,
-        playerId: playerIds.get(entry.name.trim()) as Id,
+        playerId: entry.playerId ?? (playerIds.get(entry.name.trim()) as Id),
         rating: entry.rating,
         provisionalGames: entry.provisionalGames,
         performanceRating: ratings[index],

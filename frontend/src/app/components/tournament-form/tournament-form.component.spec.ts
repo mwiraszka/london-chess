@@ -43,6 +43,11 @@ describe('TournamentFormComponent', () => {
   let matchPlayersSpy: Mock;
   let storeRequestSpy: Mock;
 
+  const imported = (
+    sections: SectionInput[],
+    problems: string[] = [],
+  ): StandingsImport => ({ sections, games: [], knownGameCount: 0, problems });
+
   const section = (overrides: Partial<SectionInput> = {}): SectionInput => ({
     name: 'A',
     ratingBand: '',
@@ -52,6 +57,7 @@ describe('TournamentFormComponent', () => {
       {
         rank: 1,
         name: 'Doe, Jane',
+        playerId: null,
         rating: 1600,
         provisionalGames: null,
         score: 1,
@@ -70,6 +76,7 @@ describe('TournamentFormComponent', () => {
       {
         rank: 2,
         name: 'Roe, Rick',
+        playerId: null,
         rating: null,
         provisionalGames: null,
         score: 0,
@@ -337,7 +344,7 @@ describe('TournamentFormComponent', () => {
   describe('importing results', () => {
     it('should preview the imported sections and put them in the draft', async () => {
       render(tournamentFormData(MOCK_TOURNAMENTS[2]), false, MOCK_TOURNAMENTS[2]);
-      importStandingsSpy.mockResolvedValue({ sections: [section()], problems: [] });
+      importStandingsSpy.mockResolvedValue(imported([section()]));
 
       await importFile();
 
@@ -354,7 +361,7 @@ describe('TournamentFormComponent', () => {
         ...recorded,
         sections: [{ ...recorded.sections[0], name: 'A', ratingBand: 'Open' }],
       });
-      importStandingsSpy.mockResolvedValue({ sections: [section()], problems: [] });
+      importStandingsSpy.mockResolvedValue(imported([section()]));
 
       await importFile();
 
@@ -363,7 +370,7 @@ describe('TournamentFormComponent', () => {
 
     it('should mark players the archive does not know yet', async () => {
       render();
-      importStandingsSpy.mockResolvedValue({ sections: [section()], problems: [] });
+      importStandingsSpy.mockResolvedValue(imported([section()]));
       matchPlayersSpy.mockReturnValue(
         of({
           data: [
@@ -389,7 +396,7 @@ describe('TournamentFormComponent', () => {
 
     it('should say when the names could not be checked', async () => {
       render();
-      importStandingsSpy.mockResolvedValue({ sections: [section()], problems: [] });
+      importStandingsSpy.mockResolvedValue(imported([section()]));
       matchPlayersSpy.mockReturnValue(throwError(() => new Error('offline')));
 
       await importFile();
@@ -402,7 +409,7 @@ describe('TournamentFormComponent', () => {
     it('should list what stopped an import and keep the results as they were', async () => {
       render();
       const problems = Array.from({ length: 12 }, (_, index) => `Problem ${index + 1}.`);
-      importStandingsSpy.mockResolvedValue({ sections: [], problems });
+      importStandingsSpy.mockResolvedValue(imported([], problems));
 
       await importFile();
 
@@ -420,11 +427,11 @@ describe('TournamentFormComponent', () => {
         .mockReturnValueOnce(
           new Promise<StandingsImport>(resolve => (finishFirst = resolve)),
         )
-        .mockResolvedValueOnce({ sections: [section({ name: 'B' })], problems: [] });
+        .mockResolvedValueOnce(imported([section({ name: 'B' })]));
 
       const first = component.onStandingsChosen([new File(['1'], 'First.xlsx')]);
       await component.onStandingsChosen([new File(['2'], 'Second.xlsx')]);
-      finishFirst({ sections: [section({ name: 'A' })], problems: [] });
+      finishFirst(imported([section({ name: 'A' })]));
       await first;
 
       expect(lastDraft()?.sections?.map(({ name }) => name)).toEqual(['B']);
@@ -433,10 +440,9 @@ describe('TournamentFormComponent', () => {
     it('should rename sections and refuse two with one name', async () => {
       vi.useFakeTimers();
       render();
-      importStandingsSpy.mockResolvedValue({
-        sections: [section({ name: 'A' }), section({ name: 'B' })],
-        problems: [],
-      });
+      importStandingsSpy.mockResolvedValue(
+        imported([section({ name: 'A' }), section({ name: 'B' })]),
+      );
       await importFile();
 
       component.onSectionEdited(1, 'ratingBand', 'U1500');
@@ -461,7 +467,7 @@ describe('TournamentFormComponent', () => {
 
     it('should drop the imported results on request, or when the files are removed', async () => {
       render();
-      importStandingsSpy.mockResolvedValue({ sections: [section()], problems: [] });
+      importStandingsSpy.mockResolvedValue(imported([section()]));
       await importFile();
 
       component.onClearImport();

@@ -285,6 +285,7 @@ function parseSheet(sheet: StandingsSheet, sectionName: string): ParsedSection {
     entries.push({
       rank,
       name,
+      playerId: null,
       rating: rating?.rating ?? null,
       provisionalGames: rating?.provisionalGames ?? null,
       score: score ?? null,
@@ -323,7 +324,12 @@ export function parseStandings(sheets: StandingsSheet[]): StandingsImport {
     sheet.rows.some(row => row.some(cell => clean(cell) !== '')),
   );
   if (!filled.length) {
-    return { sections: [], problems: ['The file holds no standings.'] };
+    return {
+      sections: [],
+      games: [],
+      knownGameCount: 0,
+      problems: ['The file holds no standings.'],
+    };
   }
 
   const names = filled.map(sheet => (filled.length === 1 ? '' : clean(sheet.name)));
@@ -337,6 +343,8 @@ export function parseStandings(sheets: StandingsSheet[]): StandingsImport {
     sections: problems.length
       ? []
       : parsed.flatMap(({ section }) => (section ? [section] : [])),
+    games: [],
+    knownGameCount: 0,
     problems,
   };
 }

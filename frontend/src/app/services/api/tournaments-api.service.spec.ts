@@ -90,6 +90,7 @@ describe('TournamentsApiService', () => {
       registrationOpens: null,
       registrationCloses: null,
       sections: null,
+      games: null,
       modificationInfo: MOCK_MODIFICATION_INFOS[0],
     };
 

@@ -1,22 +1,78 @@
 import { Injectable } from '@angular/core';
 
-import { StandingsFileRead, StandingsImport } from '@app/models';
-import { parseStandings } from '@app/utils';
+import { PgnGame, StandingsFileRead, StandingsImport, Tournament } from '@app/models';
+import { mergePgnGames, parseStandings, readPgnGames } from '@app/utils';
 
-// Reads the standings files SwissSys exports; the parsers load only when needed
+const SPREADSHEET_EXTENSIONS = ['xlsx', 'csv'];
+const PGN_EXTENSIONS = ['pgn', 'txt'];
+
+const extensionOf = (file: File): string =>
+  file.name.split('.').pop()?.toLowerCase() ?? '';
+
+// Reads the standings files SwissSys exports, or a PGN of games to add to the recorded
+// results; the spreadsheet parsers load only when needed
 @Injectable({ providedIn: 'root' })
 export class StandingsFileService {
-  public async importStandings(files: readonly File[]): Promise<StandingsImport> {
+  public async importStandings(
+    files: readonly File[],
+    tournament: Tournament | null,
+  ): Promise<StandingsImport> {
+    const pgnFiles = files.filter(file => PGN_EXTENSIONS.includes(extensionOf(file)));
+    if (pgnFiles.length && pgnFiles.length < files.length) {
+      return this.failed([
+        'Choose either the standings SwissSys exports or PGN files of games, not both at once.',
+      ]);
+    }
+    return pgnFiles.length
+      ? this.importGames(pgnFiles, tournament)
+      : this.importSpreadsheets(files);
+  }
+
+  private async importGames(
+    files: File[],
+    tournament: Tournament | null,
+  ): Promise<StandingsImport> {
+    if (!tournament) {
+      return this.failed([
+        'Games from a PGN can only be added once the tournament and its sections are saved.',
+      ]);
+    }
+
+    const games: PgnGame[] = [];
+    const problems: string[] = [];
+    for (const file of files) {
+      try {
+        const read = readPgnGames(await file.text(), file.name);
+        games.push(...read.games);
+        problems.push(...read.problems);
+      } catch (error) {
+        console.error('[LCC] Unable to read standings file:', error);
+        problems.push(`${file.name} could not be read as a PGN file.`);
+      }
+    }
+    return problems.length ? this.failed(problems) : mergePgnGames(tournament, games);
+  }
+
+  private async importSpreadsheets(files: readonly File[]): Promise<StandingsImport> {
     const reads = await Promise.all(files.map(file => this.readFile(file)));
     const problems = reads.flatMap(read => ('problem' in read ? [read.problem] : []));
     if (problems.length) {
-      return { sections: [], problems };
+      return this.failed(problems);
     }
     return parseStandings(reads.flatMap(read => ('sheets' in read ? read.sheets : [])));
   }
 
+  private failed(problems: string[]): StandingsImport {
+    return { sections: [], games: [], knownGameCount: 0, problems };
+  }
+
   private async readFile(file: File): Promise<StandingsFileRead> {
-    const extension = file.name.split('.').pop()?.toLowerCase();
+    const extension = extensionOf(file);
+    if (!SPREADSHEET_EXTENSIONS.includes(extension)) {
+      return {
+        problem: `${file.name} is not an .xlsx, .csv, .pgn or .txt file.`,
+      };
+    }
     try {
       if (extension === 'xlsx') {
         const { default: readXlsxFile } = await import('read-excel-file/browser');
@@ -28,13 +84,10 @@ export class StandingsFileService {
           })),
         };
       }
-      if (extension === 'csv') {
-        const { parse } = await import('papaparse');
-        const text = (await file.text()).replace(/^\uFEFF/, '');
-        const { data } = parse<string[]>(text, { skipEmptyLines: 'greedy' });
-        return { sheets: [{ name: file.name.replace(/\.[^.]+$/, ''), rows: data }] };
-      }
-      return { problem: `${file.name} is not an .xlsx or .csv file.` };
+      const { parse } = await import('papaparse');
+      const text = (await file.text()).replace(/^\uFEFF/, '');
+      const { data } = parse<string[]>(text, { skipEmptyLines: 'greedy' });
+      return { sheets: [{ name: file.name.replace(/\.[^.]+$/, ''), rows: data }] };
     } catch (error) {
       console.error('[LCC] Unable to read standings file:', error);
       return { problem: `${file.name} could not be read as a spreadsheet.` };

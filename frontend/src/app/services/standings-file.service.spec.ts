@@ -35,9 +35,10 @@ describe('StandingsFileService', () => {
       },
     ]);
 
-    const { sections, problems } = await service.importStandings([
-      new File(['xlsx'], 'Standings.xlsx'),
-    ]);
+    const { sections, problems } = await service.importStandings(
+      [new File(['xlsx'], 'Standings.xlsx')],
+      null,
+    );
 
     expect(problems).toEqual([]);
     expect(sections.map(({ name }) => name)).toEqual(['A', 'B']);
@@ -54,9 +55,10 @@ describe('StandingsFileService', () => {
       '',
     ].join('\r\n');
 
-    const { sections, problems } = await service.importStandings([
-      csv('Open.csv', content),
-    ]);
+    const { sections, problems } = await service.importStandings(
+      [csv('Open.csv', content)],
+      null,
+    );
 
     expect(problems).toEqual([]);
     expect(sections).toHaveLength(1);
@@ -70,10 +72,10 @@ describe('StandingsFileService', () => {
   it('should name each of several CSV files after the file', async () => {
     const content = '#,Name,Total\n1,"Doe, Jane",0\n';
 
-    const { sections } = await service.importStandings([
-      csv('Open.csv', content),
-      csv('U1500.csv', content),
-    ]);
+    const { sections } = await service.importStandings(
+      [csv('Open.csv', content), csv('U1500.csv', content)],
+      null,
+    );
 
     expect(sections.map(({ name }) => name)).toEqual(['Open', 'U1500']);
   });
@@ -81,14 +83,14 @@ describe('StandingsFileService', () => {
   it('should refuse files that are not spreadsheets or cannot be read', async () => {
     readXlsxFile.mockRejectedValue(new Error('Not a zip file'));
 
-    const { sections, problems } = await service.importStandings([
-      new File(['text'], 'notes.txt'),
-      new File(['broken'], 'Broken.xlsx'),
-    ]);
+    const { sections, problems } = await service.importStandings(
+      [new File(['text'], 'notes.doc'), new File(['broken'], 'Broken.xlsx')],
+      null,
+    );
 
     expect(sections).toEqual([]);
     expect(problems).toEqual([
-      'notes.txt is not an .xlsx or .csv file.',
+      'notes.doc is not an .xlsx, .csv, .pgn or .txt file.',
       'Broken.xlsx could not be read as a spreadsheet.',
     ]);
   });

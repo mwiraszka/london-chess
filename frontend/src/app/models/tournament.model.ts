@@ -114,6 +114,8 @@ export type RoundResultInput = Omit<RoundResult, 'gameId'>;
 export interface EntryInput {
   rank: number;
   name: string;
+  // The archive player already recorded for the entry, or null to find one by name
+  playerId: Id | null;
   rating: number | null;
   provisionalGames: number | null;
   score: number | null;
@@ -144,9 +146,28 @@ export type TournamentDetails = Pick<
   | 'registrationCloses'
 >;
 
+// A game read from a PGN, to be added to the tournament's games in the archive
+export type GameInput = Pick<
+  Game,
+  | 'section'
+  | 'round'
+  | 'date'
+  | 'result'
+  | 'whiteElo'
+  | 'blackElo'
+  | 'eco'
+  | 'plyCount'
+  | 'moves'
+> & {
+  whitePlayerId: Id;
+  blackPlayerId: Id;
+};
+
 export type TournamentFormData = TournamentDetails & {
   // Imported results waiting to be saved, or null to keep the recorded ones
   sections: SectionInput[] | null;
+  // Games imported with the results, waiting to be added to the archive
+  games: GameInput[] | null;
 };
 
 export type TournamentInput = TournamentFormData & {
@@ -188,8 +209,20 @@ export interface StandingsSheet {
 
 export type StandingsFileRead = { sheets: StandingsSheet[] } | { problem: string };
 
+// A game as a PGN file records it
+export interface PgnGame {
+  tags: Record<string, string>;
+  // The movetext with its comments and variations, on one line
+  moves: string;
+  plyCount: number;
+}
+
 export interface StandingsImport {
   sections: SectionInput[];
+  // Games from a PGN that the archive does not hold yet
+  games: GameInput[];
+  // Games from a PGN that were already recorded
+  knownGameCount: number;
   // Everything that stopped the import, each a sentence naming where it is
   problems: string[];
 }

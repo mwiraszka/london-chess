@@ -23,6 +23,7 @@ function entry(overrides: Partial<EntryInput> = {}): EntryInput {
   return {
     rank: 1,
     name: 'Doe, Jane',
+    playerId: null,
     rating: 1500,
     provisionalGames: null,
     score: 1,
@@ -64,6 +65,7 @@ function input(overrides: Partial<TournamentInput> = {}): TournamentInput {
     registrationOpens: '2026-10-01T12:00:00.000Z',
     registrationCloses: '2026-10-15T21:00:00.000Z',
     sections: [section()],
+    games: null,
     modificationInfo: MODIFICATION_INFO,
     ...overrides,
   };

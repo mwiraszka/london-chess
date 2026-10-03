@@ -1,5 +1,7 @@
+import { GAME_RESULTS } from '../models/game.model';
 import {
   EntryInput,
+  GameInput,
   ROUND_OUTCOMES,
   RoundResult,
   SectionInput,
@@ -20,6 +22,7 @@ export const tournamentInputTypes: Record<keyof TournamentInput, string | string
   registrationOpens: ['string', 'null'],
   registrationCloses: ['string', 'null'],
   sections: ['object', 'null'],
+  games: ['object', 'null'],
   modificationInfo: 'object',
 };
 
@@ -34,6 +37,7 @@ const sectionInputTypes: Record<keyof SectionInput, string | string[]> = {
 const entryInputTypes: Record<keyof EntryInput, string | string[]> = {
   rank: 'number',
   name: 'string',
+  playerId: ['string', 'null'],
   rating: ['number', 'null'],
   provisionalGames: ['number', 'null'],
   score: ['number', 'null'],
@@ -50,6 +54,21 @@ const roundResultTypes: Record<keyof RoundResult, string | string[]> = {
   color: ['string', 'null'],
 };
 
+const gameInputTypes: Record<keyof GameInput, string | string[]> = {
+  section: 'string',
+  round: 'string',
+  date: 'string',
+  whitePlayerId: 'string',
+  blackPlayerId: 'string',
+  result: 'string',
+  whiteElo: ['number', 'null'],
+  blackElo: ['number', 'null'],
+  eco: 'string',
+  plyCount: 'number',
+  moves: 'string',
+};
+
+const MAX_GAMES = 2000;
 const MAX_ROUNDS = 30;
 const MAX_RATING = 3500;
 const SCORES = [0, 0.5, 1];
@@ -118,11 +137,14 @@ function entryError(
     return `an entry: ${typesResult.message}`;
   }
 
-  const { rank, name, rating, provisionalGames, score, tiebreak, rounds } =
+  const { rank, name, playerId, rating, provisionalGames, score, tiebreak, rounds } =
     entry as EntryInput;
   const where = `rank ${rank}`;
   if (!name.trim()) {
     return `${where} has no player name`;
+  }
+  if (playerId !== null && !ID_PATTERN.test(playerId)) {
+    return `${where} has an invalid player ID`;
   }
   if (rating !== null && !isWholeNumber(rating, 0, MAX_RATING)) {
     return `${where} has an invalid rating`;
@@ -193,6 +215,46 @@ function sectionError(section: unknown, names: Set<string>): string | null {
   return null;
 }
 
+function gameError(game: unknown, index: number): string | null {
+  const where = `game ${index + 1}`;
+  const typesResult = validateObjectByTypes(game, gameInputTypes);
+  if (typesResult !== 'valid') {
+    return `${where}: ${typesResult.message}`;
+  }
+
+  const { round, date, whitePlayerId, blackPlayerId, result, whiteElo, blackElo, eco } =
+    game as GameInput;
+  const { plyCount, moves } = game as GameInput;
+  if (!/^\d{1,2}(?:\.\d{1,3})?$/.test(round)) {
+    return `${where} has an invalid round`;
+  }
+  if (!isDay(date)) {
+    return `${where} has an invalid date`;
+  }
+  if (
+    !ID_PATTERN.test(whitePlayerId) ||
+    !ID_PATTERN.test(blackPlayerId) ||
+    whitePlayerId === blackPlayerId
+  ) {
+    return `${where} has invalid players`;
+  }
+  if (!GAME_RESULTS.includes(result)) {
+    return `${where} has an unknown result`;
+  }
+  if (
+    [whiteElo, blackElo].some(elo => elo !== null && !isWholeNumber(elo, 0, MAX_RATING))
+  ) {
+    return `${where} has an invalid rating`;
+  }
+  if (eco !== '' && !/^[A-E]\d{2}$/.test(eco)) {
+    return `${where} has an invalid ECO code`;
+  }
+  if (!isWholeNumber(plyCount, 0, 2000) || !moves.trim()) {
+    return `${where} has no moves`;
+  }
+  return null;
+}
+
 // Checks the whole tournament, down to every round of every entry, before anything is saved
 export function validateTournamentInput(body: unknown): Error | 'valid' {
   const typesResult = validateObjectByTypes(body, tournamentInputTypes);
@@ -240,6 +302,21 @@ export function validateTournamentInput(body: unknown): Error | 'valid' {
     const names = new Set<string>();
     for (const section of input.sections) {
       const error = sectionError(section, names);
+      if (error) {
+        return new Error(error);
+      }
+    }
+  }
+
+  if (input.games !== null) {
+    if (!Array.isArray(input.games) || input.games.length > MAX_GAMES) {
+      return new Error(`games must be a list of at most ${MAX_GAMES}`);
+    }
+    if (input.games.length && input.sections === null) {
+      return new Error('games can only be added along with the results they belong to');
+    }
+    for (const [index, game] of input.games.entries()) {
+      const error = gameError(game, index);
       if (error) {
         return new Error(error);
       }

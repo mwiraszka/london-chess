@@ -113,6 +113,7 @@ function inputEntry(
   return {
     rank,
     name,
+    playerId: null,
     rating,
     provisionalGames: null,
     score: rounds.reduce((total, { points }) => total + points, 0),
@@ -148,6 +149,7 @@ function tournamentInput(overrides: Partial<TournamentInput> = {}): TournamentIn
     registrationOpens: '2026-10-01T12:00:00.000Z',
     registrationCloses: '2026-10-15T21:00:00.000Z',
     sections: null,
+    games: null,
     modificationInfo: MODIFICATION_INFO,
     ...overrides,
   };

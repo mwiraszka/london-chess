@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 
 import { ApiResponse } from '../models/api-response.model';
-import { modificationInfoTypes } from '../models/modification-info.model';
+import {
+  ModificationInfo,
+  modificationInfoTypes,
+} from '../models/modification-info.model';
 import {
   MemberTournamentResult,
   PlayerNameMatch,
@@ -15,10 +18,12 @@ import {
 } from '../models/tournament.model';
 import { findEditor, findLinkedMember } from '../services/member-accounts.service';
 import { findProfilePlayerIds } from '../services/member-players.service';
+import { archiveGames, withGameSections } from '../services/tournament-games.service';
 import { takeNextTournamentNumber } from '../services/tournament-numbers.service';
 import {
   matchPlayerNames,
   removeOrphanedPlayers,
+  unknownPlayerIds,
 } from '../services/tournament-players.service';
 import {
   TOURNAMENT_SUMMARY_PIPELINE,
@@ -82,6 +87,22 @@ function invalidInput(body: unknown): string | null {
     return `Unable to save the tournament because its modification info is invalid: ${withoutFullStop(infoResult.message)}.`;
   }
   return null;
+}
+
+// Entries and games may name archive players directly, and each must be one the archive holds
+async function unknownPlayerProblem(input: TournamentInput): Promise<string | null> {
+  const ids = [
+    ...(input.sections ?? []).flatMap(({ entries }) =>
+      entries.flatMap(({ playerId }) => (playerId === null ? [] : [playerId])),
+    ),
+    ...(input.games ?? []).flatMap(({ whitePlayerId, blackPlayerId }) => [
+      whitePlayerId,
+      blackPlayerId,
+    ]),
+  ];
+  return ids.length && (await unknownPlayerIds(ids)).length
+    ? 'Unable to save the tournament because it names a player the archive does not hold.'
+    : null;
 }
 
 const entryPlayerIds = (record: Pick<TournamentRecord, 'sections'>): string[] =>
@@ -166,6 +187,19 @@ export async function addTournament(
     }
 
     const input = req.body as TournamentInput;
+    if (input.games?.length) {
+      res.status(400).json({
+        message:
+          'Unable to save the tournament because games can only be added once it has been saved.',
+      });
+      return;
+    }
+    const playerProblem = await unknownPlayerProblem(input);
+    if (playerProblem) {
+      res.status(400).json({ message: playerProblem });
+      return;
+    }
+
     const editor = await findEditor(req.user.id);
     const number = await takeNextTournamentNumber();
     await TournamentModel.create({
@@ -209,16 +243,40 @@ export async function updateTournament(
     }
 
     const input = req.body as TournamentInput;
+    const playerProblem = await unknownPlayerProblem(input);
+    if (playerProblem) {
+      res.status(400).json({ message: playerProblem });
+      return;
+    }
+
     const editor = await findEditor(req.user.id);
-    const sections = input.sections
+    const games = input.games ?? [];
+    const stored = input.sections
       ? await toStoredSections(input.sections, record.sections, input.format)
       : null;
+    const sections = stored && games.length ? withGameSections(stored, games) : stored;
+    // A tournament first given games through the site files them under its own name
+    const gameArchiveTournament = record.gameArchiveTournament ?? input.name.trim();
+    if (games.length) {
+      const now = new Date().toISOString();
+      const gamesInfo: ModificationInfo = {
+        createdBy: editor.name,
+        createdByNumber: editor.number,
+        dateCreated: now,
+        lastEditedBy: editor.name,
+        lastEditedByNumber: editor.number,
+        dateLastEdited: now,
+      };
+      // Games go in first, so saving again after a failure adds none of them twice
+      await archiveGames(gameArchiveTournament, games, gamesInfo);
+    }
     await TournamentModel.updateOne(
       { number },
       {
         $set: {
           ...toDetails(input),
           ...(sections ? { sections } : {}),
+          ...(games.length ? { gameArchiveTournament } : {}),
           modificationInfo: creditEditor(
             input.modificationInfo,
             editor,

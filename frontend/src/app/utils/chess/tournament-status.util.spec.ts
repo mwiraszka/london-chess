@@ -40,6 +40,7 @@ describe('tournament status', () => {
         registrationOpens: MOCK_UPCOMING_TOURNAMENT.registrationOpens,
         registrationCloses: MOCK_UPCOMING_TOURNAMENT.registrationCloses,
         sections: null,
+        games: null,
       });
     });
 

@@ -51,6 +51,7 @@ import {
 import {
   BasicDialogResult,
   Dialog,
+  GameInput,
   ImportPreview,
   ImportPreviewRow,
   PlayerNameMatch,
@@ -134,6 +135,9 @@ export class TournamentFormComponent implements OnInit {
 
   // Results read from a file but not yet saved; null keeps the recorded ones
   protected readonly importedSections = signal<SectionInput[] | null>(null);
+  // Games from a PGN that the archive does not hold yet; null when no PGN was imported
+  protected readonly importedGames = signal<GameInput[] | null>(null);
+  protected readonly pgnNote = signal<string | null>(null);
   protected readonly importProblems = signal<string[]>([]);
   protected readonly importing = signal(false);
   protected readonly standingsFiles = signal<readonly File[]>([]);
@@ -240,7 +244,10 @@ export class TournamentFormComponent implements OnInit {
   public ngOnInit(): void {
     this.form = this.buildForm(this.formData());
     this.importedSections.set(this.formData().sections);
+    // Drafts kept from before games could be imported have none
+    this.importedGames.set(this.formData().games ?? null);
     this.syncRegistrationControls(this.form.controls.hasRegistration.value);
+    this.showRegistrationDefaults();
     this.form.controls.endDate.updateValueAndValidity();
     this.form.controls.registrationClosesTime.updateValueAndValidity();
 
@@ -249,7 +256,10 @@ export class TournamentFormComponent implements OnInit {
       .subscribe(hasRegistration => this.onRegistrationToggled(hasRegistration));
     this.form.controls.date.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.form.controls.endDate.updateValueAndValidity());
+      .subscribe(() => {
+        this.form.controls.endDate.updateValueAndValidity();
+        this.showRegistrationDefaults();
+      });
     merge(
       this.form.controls.registrationOpensDay.valueChanges,
       this.form.controls.registrationOpensTime.valueChanges,
@@ -283,7 +293,8 @@ export class TournamentFormComponent implements OnInit {
     const attempt = ++this.importAttempt;
 
     this.importing.set(true);
-    const { sections, problems } = await this.standingsFileService.importStandings(files);
+    const { sections, games, knownGameCount, problems } =
+      await this.standingsFileService.importStandings(files, this.originalTournament());
     // A later choice of files replaces this one
     if (attempt !== this.importAttempt) {
       return;
@@ -293,6 +304,16 @@ export class TournamentFormComponent implements OnInit {
     if (problems.length) {
       return;
     }
+    const fromPgn = files.some(file => /\.(pgn|txt)$/i.test(file.name));
+    const recordedGames = knownGameCount === 1 ? '1 game' : `${knownGameCount} games`;
+    this.pgnNote.set(
+      !fromPgn || !knownGameCount
+        ? null
+        : games.length
+          ? `Already in the archive and left unchanged: ${recordedGames} from the file.`
+          : 'Every game in the file is already in the archive.',
+    );
+    this.importedGames.set(fromPgn ? games : null);
 
     const known = [
       ...(this.importedSections() ?? []),
@@ -348,6 +369,7 @@ export class TournamentFormComponent implements OnInit {
     this.restore.emit(originalTournament?.number ?? null);
     this.clearImport();
     this.form.reset(this.toFormValue(tournamentFormData(originalTournament)));
+    this.showRegistrationDefaults();
   }
 
   public onCancel(): void {
@@ -372,7 +394,7 @@ export class TournamentFormComponent implements OnInit {
     const dialog: Dialog = {
       title: 'Confirm',
       body: originalTournament
-        ? `Update ${originalTournament.name}?${this.importedSections() ? ' The imported results will replace the recorded ones.' : ''}`
+        ? `Update ${originalTournament.name}?${this.importedGames() ? ' The results and games from the PGN will be added to those already recorded.' : this.importedSections() ? ' The imported results will replace the recorded ones.' : ''}`
         : `Add ${this.form.controls.name.value} to the tournaments?`,
       confirmButtonText: originalTournament ? 'Update' : 'Add',
       confirmAction: () => this.save(),
@@ -406,7 +428,9 @@ export class TournamentFormComponent implements OnInit {
     try {
       const response = await firstValueFrom(
         this.tournamentsApiService.matchPlayers(
-          sections.flatMap(({ entries }) => entries.map(({ name }) => name)),
+          sections.flatMap(({ entries }) =>
+            entries.filter(({ playerId }) => playerId === null).map(({ name }) => name),
+          ),
         ),
       );
       if (attempt === this.importAttempt) {
@@ -428,22 +452,34 @@ export class TournamentFormComponent implements OnInit {
     this.playerMatches.set([]);
     this.playerCheckFailed.set(false);
     this.importedSections.set(null);
+    this.importedGames.set(null);
+    this.pgnNote.set(null);
   }
 
   private onRegistrationToggled(hasRegistration: boolean): void {
-    const controls = this.form.controls;
-    if (hasRegistration && !controls.registrationOpensDay.value) {
-      // Opening straight away and closing as the first day starts suits most tournaments
-      const opens = toClubDateTime(
-        moment.tz(CLUB_TIME_ZONE).startOf('hour').toISOString(),
-      );
-      const firstDay = controls.date.value;
-      controls.registrationOpensDay.setValue(opens.day);
-      controls.registrationOpensTime.setValue(opens.time);
-      controls.registrationClosesDay.setValue(firstDay ?? opens.day);
-      controls.registrationClosesTime.setValue(firstDay ? '18:00' : '23:55');
-    }
     this.syncRegistrationControls(hasRegistration);
+  }
+
+  // While registration is off its fields show the window it would start with, so turning
+  // it on only enables them. Opening straight away and closing as the first day starts
+  // suits most tournaments, and a first day already past or not yet set gives a week
+  private showRegistrationDefaults(): void {
+    const controls = this.form.controls;
+    if (controls.hasRegistration.value) {
+      return;
+    }
+    const opensAt = moment.tz(CLUB_TIME_ZONE).startOf('hour');
+    const firstDayEvening = fromClubDateTime(controls.date.value, '18:00');
+    const closesAt =
+      firstDayEvening && moment(firstDayEvening).isAfter(opensAt)
+        ? firstDayEvening
+        : opensAt.clone().add(1, 'week').toISOString();
+    const opens = toClubDateTime(opensAt.toISOString());
+    const closes = toClubDateTime(closesAt);
+    controls.registrationOpensDay.setValue(opens.day, { emitEvent: false });
+    controls.registrationOpensTime.setValue(opens.time, { emitEvent: false });
+    controls.registrationClosesDay.setValue(closes.day, { emitEvent: false });
+    controls.registrationClosesTime.setValue(closes.time, { emitEvent: false });
   }
 
   private syncRegistrationControls(hasRegistration: boolean): void {
@@ -558,6 +594,7 @@ export class TournamentFormComponent implements OnInit {
           ? fromClubDateTime(value.registrationClosesDay, value.registrationClosesTime)
           : null,
         sections: this.importedSections(),
+        games: this.importedGames(),
       },
     });
   }

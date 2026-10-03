@@ -97,6 +97,7 @@ export const INITIAL_TOURNAMENT_FORM_DATA: TournamentFormData = {
   registrationOpens: null,
   registrationCloses: null,
   sections: null,
+  games: null,
 };
 
 // How many problems an import lists before summing up the rest
