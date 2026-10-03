@@ -56,6 +56,20 @@ describe('MarkdownTableComponent', () => {
     ).toEqual([true, true, true, false, true]);
   });
 
+  it("should make room in the first column for a neighbouring table's heading", () => {
+    fixture.componentRef.setInput('sizingRows', [
+      { id: 'heading-0', html: {}, heading: { label: 'Section', sortable: true } },
+    ]);
+    fixture.detectChanges();
+
+    const sizers = queryAll(
+      fixture.debugElement,
+      '.ea-data-table__sizing .markdown-table__heading-sizer',
+    );
+    expect(sizers.map(textOf)).toEqual(['Section']);
+    expect(sizers[0].classes['markdown-table__heading-sizer--sorts']).toBe(true);
+  });
+
   it('should sort numbers by size, with the unrated first', () => {
     query(fixture.debugElement, 'ea-data-table').triggerEventHandler('sorted', {
       column: 'c2',

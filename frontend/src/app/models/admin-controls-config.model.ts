@@ -14,3 +14,6 @@ export interface AdminControlsConfig {
   itemName?: string;
   bookmarked?: boolean;
 }
+
+// At the top start corner of the item, or centred on its start edge
+export type AdminControlsPlacement = 'top' | 'center';

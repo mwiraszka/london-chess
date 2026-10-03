@@ -1,3 +1,5 @@
+import { TooltipDirective } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LCC, REGIONAL_CLUBS } from '@app/constants/clubs';
@@ -60,9 +62,23 @@ describe('ClubCardComponent', () => {
       expect(emailSection).toBeFalsy();
     });
 
+    it('should rule off the club name with a thick divider', () => {
+      const divider = query(fixture.debugElement, '.club-name + ea-divider');
+
+      expect(divider.componentInstance.thick()).toBe(true);
+    });
+
     it('should render club map component', () => {
       const clubMap = query(fixture.debugElement, 'lcc-club-map');
       expect(clubMap).toBeTruthy();
+    });
+
+    it('should offer to open the map in Google Maps', () => {
+      const clubMap = query(fixture.debugElement, 'lcc-club-map');
+
+      expect(clubMap.injector.get(TooltipDirective).eaTooltip()).toBe(
+        'Open in Google Maps',
+      );
     });
 
     it('should render location icon', () => {

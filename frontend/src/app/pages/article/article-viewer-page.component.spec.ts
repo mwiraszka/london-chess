@@ -1,3 +1,4 @@
+import { DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 import { provideMarkdown } from 'ngx-markdown';
@@ -13,12 +14,7 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Id } from '@app/models';
-import {
-  DialogService,
-  MetaAndTitleService,
-  RoutingService,
-  StoreRequestService,
-} from '@app/services';
+import { MetaAndTitleService, RoutingService, StoreRequestService } from '@app/services';
 import { AppState, initialState as appInitialState } from '@app/store/app';
 import {
   ArticlesActions,
@@ -27,7 +23,7 @@ import {
 } from '@app/store/articles';
 import { AuthState } from '@app/store/auth';
 import { ImagesState, initialState as imagesInitialState } from '@app/store/images';
-import { lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
 
 import { ArticleViewerPageComponent } from './article-viewer-page.component';
 
@@ -104,7 +100,7 @@ describe('ArticleViewerPageComponent', () => {
         provideMarkdown(),
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
         {
           provide: StoreRequestService,
@@ -239,8 +235,7 @@ describe('ArticleViewerPageComponent', () => {
       await component.onDelete(mockArticle);
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -249,7 +244,6 @@ describe('ArticleViewerPageComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
       expect(storeRequestSpy).toHaveBeenCalledWith(
         ArticlesActions.deleteArticleRequested({ article: mockArticle }),
@@ -258,7 +252,7 @@ describe('ArticleViewerPageComponent', () => {
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       // @ts-expect-error Private class member
       await component.onDelete(mockArticle);

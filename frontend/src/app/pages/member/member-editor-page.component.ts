@@ -70,6 +70,7 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--narrow' },
 })
 export class MemberEditorPageComponent implements EditorPage, OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);

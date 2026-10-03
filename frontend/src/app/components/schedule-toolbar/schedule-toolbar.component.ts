@@ -2,6 +2,7 @@ import {
   ButtonComponent,
   CalendarCheckIconComponent,
   CalendarIconComponent,
+  DialogService,
   SwitchComponent,
 } from '@eagami/ui';
 import { UntilDestroy } from '@ngneat/until-destroy';
@@ -17,7 +18,6 @@ import {
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { BasicDialogResult, Dialog, Event } from '@app/models';
-import { DialogService } from '@app/services';
 import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
 
 @UntilDestroy()
@@ -98,14 +98,10 @@ export class ScheduleToolbarComponent {
       confirmButtonType: 'primary',
     };
 
-    const dialogResult = await this.dialogService.open<
+    const dialogResult = await this.dialogService.open<BasicDialogResult>(
       BasicDialogComponent,
-      BasicDialogResult
-    >({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+      { inputs: { dialog } },
+    ).result;
 
     if (dialogResult !== 'confirm') {
       return;

@@ -26,7 +26,7 @@
           class="whatsapp"
           rel="noopener noreferrer"
           target="_blank"
-          tooltip="Club noticeboard on WhatsApp">
+          eaTooltip="Club noticeboard on WhatsApp">
           <div class="image-container">
             <img
               src="assets/club-link-icons/whatsapp.svg"
@@ -41,7 +41,7 @@
           class="instagram"
           rel="noopener noreferrer"
           target="_blank"
-          tooltip="Follow us on Instagram">
+          eaTooltip="Follow us on Instagram">
           <div class="image-container">
             <img
               src="assets/club-link-icons/instagram.svg"
@@ -56,7 +56,7 @@
           class="chesscom"
           rel="noopener noreferrer"
           target="_blank"
-          [tooltip]="chesscomTooltipContent">
+          [eaTooltip]="chesscomTooltipContent">
           <div class="image-container">
             <img
               src="assets/club-link-icons/chesscom.svg"
@@ -71,7 +71,7 @@
           class="email"
           rel="noopener noreferrer"
           target="_blank"
-          [tooltip]="emailTooltipContent">
+          [eaTooltip]="emailTooltipContent">
           <div class="image-container">
             <img
               src="assets/club-link-icons/email.svg"
@@ -86,11 +86,11 @@
     <address class="site-links">
       <section class="about-us">
         <header>ABOUT US</header>
-        <hr />
+        <ea-divider />
         <a
           class="lcc-link"
-          routerLink="/about">
-          About Us
+          routerLink="/faq">
+          FAQ
         </a>
         <a
           class="lcc-link"
@@ -111,7 +111,7 @@
 
       <section class="club-events">
         <header>CLUB EVENTS</header>
-        <hr />
+        <ea-divider />
         <a
           class="lcc-link"
           routerLink="/schedule">
@@ -131,7 +131,7 @@
 
       <section class="archives">
         <header>ARCHIVES</header>
-        <hr />
+        <ea-divider />
         <a
           class="lcc-link"
           routerLink="/photo-gallery">
@@ -151,7 +151,7 @@
 
       <section class="documents">
         <header>DOCUMENTS</header>
-        <hr />
+        <ea-divider />
         <a
           class="lcc-link"
           routerLink="/documents"
@@ -174,7 +174,7 @@
 
       <section class="website">
         <header>WEBSITE</header>
-        <hr />
+        <ea-divider />
         <a
           class="lcc-link"
           routerLink="/website-changelog">
@@ -211,7 +211,9 @@
 
 <small class="copyright-notice">
   <span>Copyright &copy; {{ CURRENT_YEAR }} <b>London Chess Club</b></span>
-  <span class="divider">|</span>
+  <ea-divider
+    class="copyright-divider"
+    orientation="vertical" />
   <span>All Rights Reserved.</span>
 </small>
 

@@ -1,10 +1,9 @@
-import { ExternalLinkIconComponent } from '@eagami/ui';
+import { ExternalLinkIconComponent, TooltipDirective } from '@eagami/ui';
 
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { ExternalLink, InternalLink } from '@app/models';
 import { RouterLinkPipe } from '@app/pipes';
 
@@ -22,9 +21,9 @@ import { RouterLinkPipe } from '@app/pipes';
             <a
               class="lcc-link"
               [href]="link.externalPath"
-              ref="noopener noreferrer"
+              rel="noopener noreferrer"
               target="_blank"
-              [tooltip]="link.tooltip ?? null">
+              [eaTooltip]="link.tooltip ?? ''">
               @if (link.icon) {
                 <span class="link-icon">
                   <ng-container *ngComponentOutlet="link.icon" />
@@ -38,7 +37,7 @@ import { RouterLinkPipe } from '@app/pipes';
               class="lcc-link"
               [routerLink]="link.internalPath | routerLink"
               [queryParams]="link.queryParams"
-              [tooltip]="link.tooltip ?? null">
+              [eaTooltip]="link.tooltip ?? ''">
               @if (link.icon) {
                 <span class="link-icon">
                   <ng-container *ngComponentOutlet="link.icon" />

@@ -39,7 +39,9 @@ import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils
     </div>
     @for (segment of segments(); track $index) {
       @if (segment.kind === 'table') {
-        <lcc-markdown-table [table]="segment.table" />
+        <lcc-markdown-table
+          [sizingRows]="segment.sizingRows"
+          [table]="segment.table" />
       } @else {
         <markdown
           [data]="segment.text"

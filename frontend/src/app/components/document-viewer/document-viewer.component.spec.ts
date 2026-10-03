@@ -1,4 +1,8 @@
+import { DialogRef, ProgressBarComponent } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { query } from '@app/utils';
 
 import { DocumentViewerComponent } from './document-viewer.component';
 
@@ -7,10 +11,15 @@ vi.mock('ng2-pdf-viewer');
 describe('DocumentViewerComponent', () => {
   let fixture: ComponentFixture<DocumentViewerComponent>;
   let component: DocumentViewerComponent;
+  let closeSpy: MockInstance;
 
   beforeEach(async () => {
+    const dialogRef = new DialogRef();
+    closeSpy = vi.spyOn(dialogRef, 'close');
+
     await TestBed.configureTestingModule({
       imports: [DocumentViewerComponent],
+      providers: [{ provide: DialogRef, useValue: dialogRef }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DocumentViewerComponent);
@@ -42,14 +51,26 @@ describe('DocumentViewerComponent', () => {
       expect(component.percentLoaded()).toBe(5);
     });
 
-    it('should reflect percentLoaded in the progress indicator', () => {
+    it('should show the loading progress until the document has loaded', () => {
       component.onProgress({ loaded: 42, total: 100 });
       fixture.detectChanges();
 
-      expect(component.percentLoaded()).toBe(42);
-      expect(
-        fixture.nativeElement.querySelector('.loading-progress-indicator'),
-      ).toBeTruthy();
+      const progressBar: ProgressBarComponent = query(
+        fixture.debugElement,
+        'ea-progress-bar',
+      ).componentInstance;
+      expect(progressBar.value()).toBe(42);
+
+      component.onProgress({ loaded: 100, total: 100 });
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'ea-progress-bar')).toBeFalsy();
     });
+  });
+
+  it('should close when the dialog is dismissed', () => {
+    query(fixture.debugElement, '.ea-dialog__close').nativeElement.click();
+
+    expect(closeSpy).toHaveBeenCalledWith();
   });
 });

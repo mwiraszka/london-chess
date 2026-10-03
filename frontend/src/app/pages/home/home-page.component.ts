@@ -1,6 +1,8 @@
 import {
+  ButtonLinkComponent,
   CalendarDaysIconComponent,
   CameraIconComponent,
+  DialogService,
   DownloadIconComponent,
   InfoIconComponent,
   NewspaperIconComponent,
@@ -24,18 +26,16 @@ import { LinkListComponent } from '@app/components/link-list/link-list.component
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
 import { REGIONAL_CLUBS } from '@app/constants/clubs';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import {
   AdminButton,
   Article,
-  BasicDialogResult,
   Dialog,
   Event,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
@@ -50,6 +50,7 @@ import { combinedLoadStatus } from '@app/utils';
   imports: [
     AdminToolbarComponent,
     ArticleGridComponent,
+    ButtonLinkComponent,
     ClubLinksComponent,
     CommonModule,
     EventsTableComponent,
@@ -57,7 +58,6 @@ import { combinedLoadStatus } from '@app/utils';
     LoadFailedComponent,
     PhotoGridComponent,
     RouterLink,
-    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -82,7 +82,7 @@ export class HomePageComponent implements OnInit {
 
   public aboutPageLink: InternalLink = {
     text: 'More about the London Chess Club',
-    internalPath: 'about',
+    internalPath: 'faq',
     icon: InfoIconComponent,
   };
   public readonly addEventLink: InternalLink = {
@@ -186,11 +186,7 @@ export class HomePageComponent implements OnInit {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onRetryArticles(): void {

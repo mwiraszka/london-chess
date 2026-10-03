@@ -1,4 +1,5 @@
 import {
+  AlertComponent,
   ButtonComponent,
   CodeInputComponent,
   LockIconComponent,
@@ -19,7 +20,7 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MemberAccountFieldsComponent } from '@app/components/member-account-fields/member-account-fields.component';
 import { VERIFICATION_CODE_LENGTH } from '@app/constants/auth';
 import { ApiError, ApiService, AuthDrawerService } from '@app/services';
-import { createVerificationCodeControl } from '@app/utils';
+import { createVerificationCodeControl, normalizePhoneNumber } from '@app/utils';
 
 @Component({
   selector: 'lcc-create-account-form',
@@ -27,9 +28,9 @@ import { createVerificationCodeControl } from '@app/utils';
   styleUrls: ['./auth-form.component.scss', './create-account-form.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AlertComponent,
     ButtonComponent,
     CodeInputComponent,
-    LockIconComponent,
     MemberAccountFieldsComponent,
     ReactiveFormsModule,
   ],
@@ -43,6 +44,7 @@ export class CreateAccountFormComponent {
   private readonly codeInput = viewChild(CodeInputComponent);
 
   protected readonly codeLength = VERIFICATION_CODE_LENGTH;
+  protected readonly privacyIcon = LockIconComponent;
   protected readonly form = this.authDrawer.createAccountForm;
   protected readonly verificationForm = new FormGroup({
     code: createVerificationCodeControl(),
@@ -98,7 +100,7 @@ export class CreateAccountFormComponent {
         email: email.trim(),
         yearOfBirth,
         city: city.trim(),
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: normalizePhoneNumber(phoneNumber),
         lichessUsername: lichessUsername.trim(),
         chessComUsername: chessComUsername.trim(),
         verificationCode: this.verificationForm.controls.code.value.trim(),

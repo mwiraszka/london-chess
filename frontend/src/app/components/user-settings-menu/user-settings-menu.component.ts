@@ -1,4 +1,13 @@
-import { AlertTriangleIconComponent, AvatarComponent, ToastService } from '@eagami/ui';
+import {
+  AlertTriangleIconComponent,
+  AvatarComponent,
+  ButtonComponent,
+  ButtonLinkComponent,
+  DividerComponent,
+  SwitchComponent,
+  ToastService,
+  TooltipDirective,
+} from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
@@ -8,19 +17,13 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  type ElementRef,
   OnInit,
-  afterRenderEffect,
   computed,
   inject,
   output,
-  signal,
-  viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
-import { ToggleSwitchComponent } from '@app/components/toggle-switch/toggle-switch.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { User } from '@app/models';
 import { AuthDrawerService, ClerkService } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
@@ -35,19 +38,20 @@ import { isTouchDevice } from '@app/utils';
   imports: [
     AlertTriangleIconComponent,
     AvatarComponent,
+    ButtonComponent,
+    ButtonLinkComponent,
     CommonModule,
-    ToggleSwitchComponent,
+    DividerComponent,
+    RouterLink,
+    SwitchComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserSettingsMenuComponent implements OnInit {
-  private readonly router = inject(Router);
   private readonly store = inject(Store);
 
   public readonly close = output<void>();
-
-  protected readonly warningIcon = AlertTriangleIconComponent;
 
   public readonly isTouchDevice = isTouchDevice();
 
@@ -75,21 +79,6 @@ export class UserSettingsMenuComponent implements OnInit {
     const last = user?.lastName?.[0] ?? '';
     return (first + last).toUpperCase() || undefined;
   });
-
-  private readonly nameEl = viewChild<ElementRef<HTMLElement>>('nameEl');
-  private readonly emailEl = viewChild<ElementRef<HTMLElement>>('emailEl');
-
-  public readonly nameTruncated = signal(false);
-  public readonly emailTruncated = signal(false);
-
-  constructor() {
-    afterRenderEffect(() => {
-      const name = this.nameEl()?.nativeElement;
-      const email = this.emailEl()?.nativeElement;
-      this.nameTruncated.set(!!name && name.scrollHeight > name.clientHeight);
-      this.emailTruncated.set(!!email && email.scrollHeight > email.clientHeight);
-    });
-  }
 
   public ngOnInit(): void {
     this.viewModel$ = combineLatest([
@@ -126,18 +115,8 @@ export class UserSettingsMenuComponent implements OnInit {
     this.store.dispatch(AppActions.desktopViewToggled());
   }
 
-  public onWebsiteChangelog(): void {
-    this.router.navigate(['website-changelog']);
-    this.close.emit();
-  }
-
   public onLogin(): void {
     this.authDrawerService.openLogin();
-    this.close.emit();
-  }
-
-  public onAccount(): void {
-    this.router.navigate(['account']);
     this.close.emit();
   }
 

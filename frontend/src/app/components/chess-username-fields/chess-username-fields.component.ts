@@ -3,7 +3,6 @@ import { InputComponent } from '@eagami/ui';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { FieldLabelWithHelpComponent } from '@app/components/field-label-with-help/field-label-with-help.component';
 import { ChesscomLogoComponent } from '@app/components/platform-logos/chesscom-logo.component';
 import { LichessLogoComponent } from '@app/components/platform-logos/lichess-logo.component';
 import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
@@ -13,7 +12,7 @@ import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
   templateUrl: './chess-username-fields.component.html',
   styleUrl: './chess-username-fields.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FieldLabelWithHelpComponent, InputComponent, ReactiveFormsModule],
+  imports: [InputComponent, ReactiveFormsModule],
 })
 export class ChessUsernameFieldsComponent {
   readonly chessComUsername = input.required<FormControl<string>>();

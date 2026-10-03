@@ -1,4 +1,5 @@
 import {
+  AlertComponent,
   ButtonComponent,
   CodeInputComponent,
   InputComponent,
@@ -31,6 +32,7 @@ import { createNewPasswordGroup } from '@app/utils';
   styleUrl: './auth-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AlertComponent,
     ButtonComponent,
     CodeInputComponent,
     InputComponent,

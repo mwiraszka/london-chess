@@ -16,3 +16,5 @@ const counterSchema = new Schema<Counter>(
 export const CounterModel = model<Counter>('Counter', counterSchema);
 
 export const MEMBER_NUMBER_COUNTER_ID = 'memberNumber';
+
+export const TOURNAMENT_NUMBER_COUNTER_ID = 'tournamentNumber';

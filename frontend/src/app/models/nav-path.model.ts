@@ -1,11 +1,11 @@
 export type NavPath =
   | ''
-  | 'about'
   | 'album'
   | 'article'
   | 'city-champion'
   | 'documents'
   | 'event'
+  | 'faq'
   | 'game-archives'
   | 'image'
   | 'lifetime-achievement-awards'
@@ -15,5 +15,6 @@ export type NavPath =
   | 'photo-gallery'
   | 'regional-clubs'
   | 'schedule'
+  | 'tournament'
   | 'tournaments'
   | 'website-changelog';

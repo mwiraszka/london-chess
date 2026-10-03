@@ -1,58 +1,79 @@
-@if (config.bookmarkCb && (config.bookmarked | isDefined)) {
-  <button
-    class="admin-control-button bookmark-button"
-    [attr.aria-label]="
-      (config.bookmarked ? 'Remove bookmark from ' : 'Bookmark ') + config.itemName
-    "
-    [tooltip]="bookmarkTooltipContent"
-    (click)="config.bookmarkCb()">
-    <ea-icon-bookmark class="bookmark-icon" />
-  </button>
-}
+@let controls = config();
 
-@if (config.editPath) {
-  <a
-    class="admin-control-button edit-button"
-    [class.disabled]="config.isEditDisabled"
-    [attr.aria-label]="'Edit ' + config.itemName"
-    [tooltip]="editTooltipContent"
-    [rel]="config.editInNewTab ? 'noopener noreferrer' : undefined"
-    [target]="config.editInNewTab ? '_blank' : undefined"
-    [routerLink]="config.isEditDisabled ? undefined : (config.editPath | routerLink)">
-    <ea-icon-edit class="edit-icon" />
-  </a>
-}
+<ea-popover
+  scrollBehavior="close"
+  [anchor]="anchor()"
+  [aria-label]="'Admin controls for ' + controls.itemName"
+  [contextMenu]="true"
+  [offset]="0"
+  [open]="true"
+  [placement]="popoverPlacement()"
+  (closeRequested)="closed.emit()">
+  <!-- Any control used ends the controls, as a click anywhere else does -->
+  <div
+    class="admin-controls"
+    [style.--button-size.px]="controls.buttonSize"
+    (click)="closed.emit()">
+    @if (controls.bookmarkCb && (controls.bookmarked | isDefined)) {
+      <ea-button
+        class="admin-control-button bookmark-button"
+        variant="secondary"
+        [aria-label]="
+          (controls.bookmarked ? 'Remove bookmark from ' : 'Bookmark ') +
+          controls.itemName
+        "
+        [eaTooltip]="bookmarkTooltipContent"
+        [icon]="bookmarkIcon"
+        (clicked)="controls.bookmarkCb()" />
+    }
 
-@if (showDeleteButton) {
-  <button
-    class="admin-control-button delete-button"
-    [disabled]="config.isDeleteDisabled"
-    [attr.aria-label]="'Delete ' + config.itemName"
-    [tooltip]="deleteTooltipContent"
-    (click)="config.isDeleteDisabled ? undefined : config.deleteCb()">
-    <ea-icon-trash class="delete-icon" />
-  </button>
-}
+    @if (controls.editPath) {
+      <a
+        class="admin-control-button edit-button"
+        [class.disabled]="controls.isEditDisabled"
+        [attr.aria-label]="'Edit ' + controls.itemName"
+        [eaTooltip]="editTooltipContent"
+        [rel]="controls.editInNewTab ? 'noopener noreferrer' : undefined"
+        [target]="controls.editInNewTab ? '_blank' : undefined"
+        [routerLink]="
+          controls.isEditDisabled ? undefined : (controls.editPath | routerLink)
+        ">
+        <ea-icon-edit class="edit-icon" />
+      </a>
+    }
+
+    @if (showDeleteButton) {
+      <ea-button
+        class="admin-control-button delete-button"
+        variant="secondary"
+        [aria-label]="'Delete ' + controls.itemName"
+        [disabled]="controls.isDeleteDisabled ?? false"
+        [eaTooltip]="deleteTooltipContent"
+        [icon]="deleteIcon"
+        (clicked)="controls.deleteCb()" />
+    }
+  </div>
+</ea-popover>
 
 <ng-template #bookmarkTooltipContent>
-  <span>{{ config.bookmarked ? 'Remove bookmark from' : 'Bookmark' }}</span>
-  <i class="tooltip-item-name">{{ config.itemName }}</i>
+  <span>{{ controls.bookmarked ? 'Remove bookmark from' : 'Bookmark' }}</span>
+  <i class="tooltip-item-name">{{ controls.itemName }}</i>
 </ng-template>
 
 <ng-template #editTooltipContent>
-  @if (config.isEditDisabled) {
-    <i>{{ config.editDisabledReason }}</i>
+  @if (controls.isEditDisabled) {
+    <i>{{ controls.editDisabledReason }}</i>
   } @else {
     <span>Edit</span>
-    <i class="tooltip-item-name">{{ config.itemName }}</i>
+    <i class="tooltip-item-name">{{ controls.itemName }}</i>
   }
 </ng-template>
 
 <ng-template #deleteTooltipContent>
-  @if (config.isDeleteDisabled) {
-    <i>{{ config.deleteDisabledReason }}</i>
+  @if (controls.isDeleteDisabled) {
+    <i>{{ controls.deleteDisabledReason }}</i>
   } @else {
     <span>Delete</span>
-    <i class="tooltip-item-name">{{ config.itemName }}</i>
+    <i class="tooltip-item-name">{{ controls.itemName }}</i>
   }
 </ng-template>

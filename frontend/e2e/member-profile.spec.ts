@@ -123,7 +123,7 @@ test.describe('member rating progression', () => {
     const results = await holdRequests(page, /\/v1\/tournaments\/members\//);
     await page.goto(`/members/${PROFILE_MEMBER.number}`);
     const card = page
-      .locator('lcc-collapsible-card')
+      .locator('ea-accordion')
       .filter({ has: page.locator('lcc-rating-progression') });
     const skeleton = card.locator('.rating-progression__skeleton');
     await expect(skeleton).toBeVisible();

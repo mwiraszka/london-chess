@@ -92,7 +92,7 @@ export class TouchEventsService {
 
   private onContextMenu(event: MouseEvent): void {
     // If a tooltip is open, prevent the context menu from opening
-    if (this._document.querySelector('.cdk-overlay-container lcc-tooltip')) {
+    if (this._document.querySelector('.ea-tooltip')) {
       event.preventDefault();
     }
   }

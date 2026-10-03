@@ -1,38 +1,42 @@
-@if (currentImage$ | async; as image) {
-  <div class="button-wrapper">
-    <button
-      class="previous-image-button lcc-secondary-button lcc-light-button"
-      [class.active]="isPreviousImageButtonActive"
-      [disabled]="images().length === 1"
-      aria-label="Previous image"
-      tooltip="Previous image"
-      (click)="onPreviousImage()">
-      <ea-icon-chevron-left />
-    </button>
-  </div>
+<ea-dialog
+  width="2xl"
+  (keydown)="onKeydown($event)"
+  (keyup)="onKeyup($event)">
+  <h3
+    slot="header"
+    class="album-name lcc-truncate">
+    {{ album() }}
+  </h3>
 
-  <div class="button-wrapper">
-    <button
-      class="next-image-button lcc-secondary-button lcc-light-button"
-      [class.active]="isNextImageButtonActive"
-      [disabled]="images().length === 1"
-      aria-label="Next image"
-      tooltip="Next image"
-      (click)="onNextImage()">
-      <ea-icon-chevron-right />
-    </button>
-  </div>
+  @if (currentImage$ | async; as image) {
+    <figure [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
+      <div class="image-container">
+        <lcc-image
+          [image]="image"
+          (loaded)="displayedCaption.set(image.caption)" />
 
-  <figure [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
-    <div class="image-container">
-      <lcc-image
-        [image]="image"
-        (loaded)="displayedCaption = image.caption" />
-    </div>
-    <figcaption>
-      <div class="album-name lcc-truncate">{{ album() }}</div>
-      <hr />
-      <div class="image-caption lcc-truncate">{{ displayedCaption }}</div>
-    </figcaption>
-  </figure>
-}
+        <ea-button
+          class="previous-image-button"
+          aria-label="Previous image"
+          eaTooltip="Previous image"
+          variant="secondary"
+          [class.active]="isPreviousImageButtonActive()"
+          [disabled]="images().length === 1"
+          [icon]="previousIcon"
+          (clicked)="onPreviousImage()" />
+
+        <ea-button
+          class="next-image-button"
+          aria-label="Next image"
+          eaTooltip="Next image"
+          variant="secondary"
+          [class.active]="isNextImageButtonActive()"
+          [disabled]="images().length === 1"
+          [icon]="nextIcon"
+          (clicked)="onNextImage()" />
+      </div>
+
+      <figcaption class="image-caption lcc-truncate">{{ displayedCaption() }}</figcaption>
+    </figure>
+  }
+</ea-dialog>

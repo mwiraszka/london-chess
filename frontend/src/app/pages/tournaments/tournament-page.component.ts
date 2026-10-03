@@ -1,8 +1,14 @@
 import {
   AwardIconComponent,
+  ButtonComponent,
+  CardComponent,
   DataTableColumn,
+  DialogService,
+  DividerComponent,
+  EditIconComponent,
   NewspaperIconComponent,
   TooltipDirective,
+  TrashIconComponent,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
@@ -16,11 +22,14 @@ import {
   TemplateRef,
   computed,
   inject,
+  signal,
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
+import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
@@ -34,22 +43,33 @@ import {
   TOURNAMENT_SUBTITLE_LABELS,
 } from '@app/constants/tournaments';
 import {
-  ExternalLink,
+  AdminButton,
+  Dialog,
   InternalLink,
+  RegistrationStatus,
   RoundResult,
   Tournament,
   TournamentEntry,
   TournamentGame,
   TournamentSection,
 } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import {
+  AuthDrawerService,
+  MetaAndTitleService,
+  StoreRequestService,
+  UserService,
+} from '@app/services';
+import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
+  canWithdraw,
+  formatDate,
   formatDateRange,
   formatScore,
   parseSubtitlePeople,
   playerName,
   playerNameLastFirst,
+  registrationStatus,
   roundResultDescription,
   roundResultLabel,
 } from '@app/utils';
@@ -95,9 +115,6 @@ export interface SectionView {
   rows: CrosstableRow[];
   games: GameRow[];
 }
-
-// Reports on the club's own site open as articles
-const SITE_ARTICLE_URL = /^https:\/\/londonchess\.ca\/article\/view\/([\da-f]{24})$/;
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
 
@@ -195,7 +212,11 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   templateUrl: './tournament-page.component.html',
   styleUrl: './tournament-page.component.scss',
   imports: [
+    AdminToolbarComponent,
+    ButtonComponent,
+    CardComponent,
     DataTableComponent,
+    DividerComponent,
     LinkListComponent,
     LoadFailedComponent,
     MemberLinkComponent,
@@ -207,10 +228,14 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentPageComponent implements OnInit {
+  private readonly authDrawer = inject(AuthDrawerService);
+  private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
+  private readonly storeRequests = inject(StoreRequestService);
+  private readonly userService = inject(UserService);
 
   private readonly rankCell = viewChild<CellTemplate<CrosstableRow>>('rankCell');
   private readonly playerCell = viewChild<CellTemplate<CrosstableRow>>('playerCell');
@@ -234,6 +259,22 @@ export class TournamentPageComponent implements OnInit {
   };
 
   protected readonly loadingRowCount = LOADING_ENTRY_COUNT;
+
+  protected readonly isAdmin = this.store.selectSignal(AuthSelectors.selectIsAdmin);
+  protected readonly user = this.store.selectSignal(AuthSelectors.selectUser);
+  protected readonly registering = signal(false);
+
+  protected readonly deleteButton: AdminButton = {
+    id: 'delete-tournament',
+    tooltip: 'Delete this tournament',
+    icon: TrashIconComponent,
+    action: () => {
+      const tournament = this.viewModel()?.tournament;
+      if (tournament) {
+        void this.onDelete(tournament);
+      }
+    },
+  };
 
   private readonly tournamentNumber$ = this.route.paramMap.pipe(
     map(params => Number(params.get('number'))),
@@ -274,23 +315,58 @@ export class TournamentPageComponent implements OnInit {
       ).size,
   );
 
+  protected readonly editLink = computed<InternalLink>(() => ({
+    text: 'Edit this tournament',
+    internalPath: [
+      'tournament',
+      'edit',
+      String(this.viewModel()?.tournamentNumber ?? ''),
+    ],
+    icon: EditIconComponent,
+  }));
+
+  protected readonly hasResults = computed(() =>
+    (this.viewModel()?.tournament?.sections ?? []).some(({ entries }) => entries.length),
+  );
+
+  // Worked out as the tournament loads, the server having the final word on the window
+  protected readonly registration = computed(() => {
+    const tournament = this.viewModel()?.tournament;
+    if (!tournament || this.hasResults()) {
+      return null;
+    }
+    const status = registrationStatus(tournament);
+    if (status === 'none' && !tournament.registrants.length) {
+      return null;
+    }
+    const memberNumber = this.userService.memberNumber();
+    return {
+      status,
+      summary: this.registrationSummary(status, tournament),
+      registrants: tournament.registrants,
+      isRegistered:
+        memberNumber !== null &&
+        tournament.registrants.some(
+          registrant => registrant.memberNumber === memberNumber,
+        ),
+      canWithdraw: canWithdraw(tournament),
+    };
+  });
+
   protected readonly subtitlePeople = computed(() =>
     parseSubtitlePeople(this.viewModel()?.tournament?.subtitle ?? ''),
   );
 
-  protected readonly links = computed<(InternalLink | ExternalLink)[]>(() => {
-    const articleUrl = this.viewModel()?.tournament?.articleUrl;
-    if (!articleUrl) {
+  protected readonly links = computed<InternalLink[]>(() => {
+    const articleId = this.viewModel()?.tournament?.articleId;
+    if (!articleId) {
       return [this.archiveLink];
     }
-    const articleId = articleUrl.match(SITE_ARTICLE_URL)?.[1];
-    const articleLink: InternalLink | ExternalLink = articleId
-      ? {
-          text: 'See article',
-          internalPath: ['article', 'view', articleId],
-          icon: NewspaperIconComponent,
-        }
-      : { text: 'See article', externalPath: articleUrl, icon: NewspaperIconComponent };
+    const articleLink: InternalLink = {
+      text: 'See article',
+      internalPath: ['article', 'view', articleId],
+      icon: NewspaperIconComponent,
+    };
     return [articleLink, this.archiveLink];
   });
 
@@ -355,10 +431,86 @@ export class TournamentPageComponent implements OnInit {
     this.router.navigate(['/game-archives', game.id]);
   }
 
+  public onLogIn(): void {
+    this.authDrawer.openLogin();
+  }
+
+  public async onRegister(tournament: Tournament): Promise<void> {
+    this.registering.set(true);
+    try {
+      await this.storeRequests.dispatch(
+        TournamentsActions.registrationRequested({
+          tournamentNumber: tournament.number,
+          tournamentName: tournament.name,
+        }),
+        [TournamentsActions.registrationSucceeded, TournamentsActions.registrationFailed],
+      );
+    } finally {
+      this.registering.set(false);
+    }
+  }
+
+  public async onWithdraw(tournament: Tournament): Promise<void> {
+    const dialog: Dialog = {
+      title: 'Confirm',
+      body: `Withdraw from ${tournament.name}? You can register again while registration is open.`,
+      confirmButtonText: 'Withdraw',
+      confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(
+          TournamentsActions.withdrawalRequested({
+            tournamentNumber: tournament.number,
+            tournamentName: tournament.name,
+          }),
+          [TournamentsActions.withdrawalSucceeded, TournamentsActions.withdrawalFailed],
+        ),
+    };
+
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
+  }
+
+  public async onDelete(tournament: Tournament): Promise<void> {
+    const dialog: Dialog = {
+      title: 'Confirm',
+      body: `Delete ${tournament.name} (${formatDateRange(tournament.date, tournament.endDate)})? Its results and registrations will be lost.`,
+      confirmButtonText: 'Delete',
+      confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(
+          TournamentsActions.deleteTournamentRequested({
+            tournamentNumber: tournament.number,
+            tournamentName: tournament.name,
+          }),
+          [
+            TournamentsActions.deleteTournamentSucceeded,
+            TournamentsActions.deleteTournamentFailed,
+          ],
+        ),
+    };
+
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
+  }
+
   public onRetry(tournamentNumber: number): void {
     this.store.dispatch(
       TournamentsActions.fetchTournamentRequested({ tournamentNumber }),
     );
+  }
+
+  private registrationSummary(
+    status: RegistrationStatus,
+    { registrationOpens, registrationCloses }: Tournament,
+  ): string {
+    switch (status) {
+      case 'open':
+        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short')}.`;
+      case 'not-open':
+        return `Registration opens ${formatDate(registrationOpens ?? undefined, 'short')}.`;
+      case 'closed':
+        return 'Registration has closed.';
+      default:
+        return 'This tournament does not take registrations online.';
+    }
   }
 
   private crosstableColumns(

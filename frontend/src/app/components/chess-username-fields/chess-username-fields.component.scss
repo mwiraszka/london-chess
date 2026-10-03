@@ -10,10 +10,6 @@
   }
 }
 
-.labeled-field {
-  display: flex;
+.username-field {
   flex: 1;
-  flex-direction: column;
-  // Mirrors the label-to-control gap ea-input uses internally
-  gap: 6px;
 }

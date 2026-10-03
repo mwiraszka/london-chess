@@ -35,6 +35,7 @@ import {
   updateStateVersionsInLocalStorageMetaReducer,
   versionedStorage,
 } from './meta-reducers';
+import { initialState as tournamentsInitialState } from './tournaments/tournaments.reducer';
 
 describe('Meta Reducers', () => {
   let mockReducer: ActionReducer<MetaState>;
@@ -609,6 +610,13 @@ describe('Meta Reducers', () => {
       eventsState: { ...eventsInitialState, totalCount: 12 },
       imagesState: { ...imagesInitialState, totalCount: 34 },
       membersState: { ...membersInitialState, totalCount: 56 },
+      tournamentsState: {
+        ...tournamentsInitialState,
+        newTournamentFormData: {
+          ...tournamentsInitialState.newTournamentFormData,
+          name: 'Unsaved rapid',
+        },
+      },
     });
 
     const run = (state: MetaState, user: User | null): MetaState => {
@@ -629,6 +637,7 @@ describe('Meta Reducers', () => {
       expect(result.eventsState).toEqual(eventsInitialState);
       expect(result.imagesState).toEqual(imagesInitialState);
       expect(result.membersState).toEqual(membersInitialState);
+      expect(result.tournamentsState).toEqual(tournamentsInitialState);
     });
 
     it('should drop every cached record when an admin loses their rights', () => {
@@ -643,6 +652,7 @@ describe('Meta Reducers', () => {
 
       expect(result.articlesState?.lastHomePageFetch).toBe('2026-01-01');
       expect(result.membersState?.totalCount).toBe(56);
+      expect(result.tournamentsState?.newTournamentFormData.name).toBe('Unsaved rapid');
     });
 
     it('should keep cached records while the user is still an admin', () => {

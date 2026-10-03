@@ -137,13 +137,61 @@ $side-by-side-from: 800px;
   }
 }
 
+.tournaments__name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .tournaments__name {
   overflow: hidden;
   display: block;
+  min-width: 0;
   max-width: 400px;
   text-overflow: ellipsis;
 }
 
 .tournaments__subtitle {
+  color: var(--color-text-secondary);
+}
+
+.upcoming {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upcoming__heading {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.upcoming__list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  list-style: none;
+}
+
+.upcoming__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upcoming__name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.upcoming__details,
+.upcoming__registration {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }

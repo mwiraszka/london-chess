@@ -23,30 +23,6 @@
     // variable so its links line up with the content below in every browser
     padding: 0 8px 0 calc(8px + var(--lcc-scrollbar-inset, 0px));
 
-    &::ng-deep > *:not(router-outlet):not(lcc-footer) {
-      position: relative;
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-
-      align-items: center;
-
-      gap: 8px;
-      width: 100%;
-      max-width: var(--lcc-width--appContent);
-      // Holds the whole space below the nav, which keeps none of its own, so that a
-      // table heading following the page's scroll comes to rest against it
-      padding: 8px 4px;
-
-      // Margin needed to prevent scrollbar-gutter style
-      // from cutting off page content
-      margin: 0 4px;
-
-      body[data-wide-view='true'] & {
-        max-width: none;
-      }
-    }
-
     &::ng-deep lcc-footer {
       // Reaches back through the scroller's side paddings, the left one widened
       // by the scrollbar inset, so the background meets both edges

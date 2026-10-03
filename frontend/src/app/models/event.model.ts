@@ -27,6 +27,17 @@ export interface Event {
 
 export type EventFormData = Pick<Event, (typeof EVENT_FORM_DATA_PROPERTIES)[number]>;
 
+// The date and time are picked apart and joined back into the event's instant
 export type EventFormGroup = {
-  [Property in keyof EventFormData]: FormControl<EventFormData[Property]>;
-} & { eventTime: FormControl<string> };
+  [Property in Exclude<keyof EventFormData, 'eventDate'>]: FormControl<
+    EventFormData[Property]
+  >;
+} & {
+  eventDay: FormControl<Date | null>;
+  eventTime: FormControl<string | null>;
+};
+
+export type EventFormValue = Omit<EventFormData, 'eventDate'> & {
+  eventDay: Date | null;
+  eventTime: string | null;
+};

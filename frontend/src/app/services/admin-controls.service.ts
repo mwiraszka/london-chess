@@ -1,119 +1,62 @@
-import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
 import {
+  ApplicationRef,
   ComponentRef,
   DOCUMENT,
+  EnvironmentInjector,
   Injectable,
-  InjectionToken,
-  Injector,
-  RendererFactory2,
   ViewContainerRef,
+  createComponent,
   inject,
 } from '@angular/core';
 
 import { AdminControlsComponent } from '@app/components/admin-controls/admin-controls.component';
-import { AdminControlsConfig } from '@app/models';
+import { AdminControlsConfig, AdminControlsPlacement } from '@app/models';
 
-import { DialogService } from './dialog.service';
-
-export const ADMIN_CONTROLS_CONFIG_TOKEN = new InjectionToken<AdminControlsConfig>(
-  'Admin Controls Config',
-);
-
-export type AdminControlsPlacement = 'top' | 'center';
-
-// At the top left corner of the item, or centred on its left edge
-const POSITIONS: Record<AdminControlsPlacement, ConnectedPosition> = {
-  top: {
-    originX: 'start',
-    originY: 'top',
-    overlayX: 'start',
-    overlayY: 'top',
-    panelClass: 'bottom',
-  },
-  center: {
-    originX: 'start',
-    originY: 'center',
-    overlayX: 'start',
-    overlayY: 'center',
-    panelClass: 'bottom',
-  },
-};
-
-// Shows one item's admin controls at a time, at the top left corner of the item
+// Shows one item's admin controls at a time, over the item it was opened on
 @Injectable({ providedIn: 'root' })
 export class AdminControlsService {
-  private readonly dialogService = inject(DialogService);
+  private readonly appRef = inject(ApplicationRef);
   private readonly document = inject(DOCUMENT);
-  private readonly overlay = inject(Overlay);
-  private readonly renderer = inject(RendererFactory2).createRenderer(null, null);
+  private readonly environmentInjector = inject(EnvironmentInjector);
 
-  private overlayRef: OverlayRef | null = null;
   private componentRef: ComponentRef<AdminControlsComponent> | null = null;
-  private stopListening: (() => void)[] = [];
 
   public get isOpen(): boolean {
-    return !!this.overlayRef?.hasAttached();
+    return this.componentRef !== null;
   }
 
   public open(
     config: AdminControlsConfig,
-    anchor: Element,
+    anchor: HTMLElement,
     viewContainerRef?: ViewContainerRef,
     placement: AdminControlsPlacement = 'top',
   ): void {
     this.close();
-    this.overlayRef?.dispose();
-    this.overlayRef = this.overlay.create({
-      positionStrategy: this.overlay
-        .position()
-        .flexibleConnectedTo(anchor)
-        .withPositions([POSITIONS[placement]]),
-      scrollStrategy: this.overlay.scrollStrategies.close(),
+
+    // Created in the item's own context, so its route's providers reach the controls
+    const componentRef = createComponent(AdminControlsComponent, {
+      environmentInjector:
+        viewContainerRef?.injector.get(EnvironmentInjector) ?? this.environmentInjector,
+      elementInjector: viewContainerRef?.injector,
     });
-
-    const injector = Injector.create({
-      providers: [{ provide: ADMIN_CONTROLS_CONFIG_TOKEN, useValue: config }],
-    });
-    this.componentRef = this.overlayRef.attach(
-      new ComponentPortal(AdminControlsComponent, viewContainerRef, injector),
-    );
-    this.componentRef.instance.destroyed.subscribe(() => this.close());
-
-    // The click that opened the controls must not be the one that closes them
-    setTimeout(() => this.listen());
-
-    const overlayContainer = this.document.querySelector('.cdk-overlay-container');
-    if (overlayContainer) {
-      // Over an open dialog (z-index 1000), otherwise under the sticky app header
-      this.renderer.setStyle(
-        overlayContainer,
-        'z-index',
-        this.dialogService.topDialogRef ? '1100' : '900',
-      );
-    }
+    componentRef.setInput('anchor', anchor);
+    componentRef.setInput('config', config);
+    componentRef.setInput('placement', placement);
+    componentRef.instance.closed.subscribe(() => this.close());
+    this.appRef.attachView(componentRef.hostView);
+    this.document.body.appendChild(componentRef.location.nativeElement);
+    this.componentRef = componentRef;
   }
 
   public close(): void {
-    this.overlayRef?.detach();
-    this.stopListening.forEach(stop => stop());
-    this.stopListening = [];
-  }
+    const componentRef = this.componentRef;
+    if (!componentRef) {
+      return;
+    }
 
-  private listen(): void {
-    this.stopListening = [
-      this.renderer.listen('document', 'click', (event: PointerEvent) => {
-        event.stopPropagation();
-        this.close();
-      }),
-      this.renderer.listen('document', 'keydown.escape', (event: KeyboardEvent) => {
-        event.stopPropagation();
-        this.close();
-      }),
-      this.renderer.listen('document', 'contextmenu', (event: PointerEvent) => {
-        event.preventDefault();
-        this.close();
-      }),
-    ];
+    this.componentRef = null;
+    const host: HTMLElement = componentRef.location.nativeElement;
+    componentRef.destroy();
+    host.remove();
   }
 }

@@ -2,6 +2,7 @@
   @for (technology of technologies; track technology.name; let i = $index) {
     <span
       class="tech"
+      [style.--index]="i"
       [class.tech--active]="activeIndex() === i"
       [class.tech--neighbour]="isNeighbour(i)"
       [class.tech--outer-neighbour]="isOuterNeighbour(i)"

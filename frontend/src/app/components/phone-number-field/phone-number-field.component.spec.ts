@@ -40,14 +40,14 @@ describe('PhoneNumberFieldComponent', () => {
     expect(control.value).toBe('555-123-1234');
   });
 
-  it('should explain on hover how the phone number is used', () => {
-    query(fixture.debugElement, '.field-label__help').triggerEventHandler(
-      'mouseenter',
-      new MouseEvent('mouseenter'),
-    );
+  it('should explain how the phone number is used when its help is opened', () => {
+    query(fixture.debugElement, '.ea-field-label__help-trigger').nativeElement.click();
     fixture.detectChanges();
 
-    expect(document.querySelector('.cdk-overlay-container em')).toBeTruthy();
+    expect(
+      query(fixture.debugElement, '.ea-field-label__help-bubble').nativeElement
+        .textContent,
+    ).toContain('only visible to club admins');
   });
 
   it('should explain a pattern error', () => {

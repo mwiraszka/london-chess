@@ -1,9 +1,11 @@
-import { ExternalLinkIconComponent } from '@eagami/ui';
+import {
+  DividerComponent,
+  ExternalLinkIconComponent,
+  TooltipDirective,
+} from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 
 import packageJson from '../../../../package.json';
 
@@ -11,7 +13,7 @@ import packageJson from '../../../../package.json';
   selector: 'lcc-footer',
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss',
-  imports: [ExternalLinkIconComponent, RouterLink, TooltipDirective],
+  imports: [DividerComponent, ExternalLinkIconComponent, RouterLink, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FooterComponent {

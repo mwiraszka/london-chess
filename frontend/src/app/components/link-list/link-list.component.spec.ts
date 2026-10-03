@@ -1,10 +1,9 @@
-import { GlobeIconComponent, HomeIconComponent } from '@eagami/ui';
+import { GlobeIconComponent, HomeIconComponent, TooltipDirective } from '@eagami/ui';
 
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterLink, provideRouter } from '@angular/router';
 
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { ExternalLink, InternalLink } from '@app/models';
 import { RouterLinkPipe } from '@app/pipes';
@@ -48,7 +47,7 @@ describe('LinkListComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [LinkListComponent, RouterLink, RouterLinkPipe, TooltipDirective],
+      imports: [LinkListComponent, RouterLink, RouterLinkPipe],
       providers: [
         provideRouter([
           {
@@ -94,7 +93,7 @@ describe('LinkListComponent', () => {
 
         if (mockInternalLinks[i].tooltip) {
           const tooltipDirective = linkElement.injector.get(TooltipDirective);
-          expect(tooltipDirective.tooltip()).toBe(mockInternalLinks[i].tooltip);
+          expect(tooltipDirective.eaTooltip()).toBe(mockInternalLinks[i].tooltip);
         }
       });
     });
@@ -120,7 +119,7 @@ describe('LinkListComponent', () => {
 
         if (mockExternalLinks[i].tooltip) {
           const tooltipDirective = linkElement.injector.get(TooltipDirective);
-          expect(tooltipDirective.tooltip()).toBe(mockExternalLinks[i].tooltip);
+          expect(tooltipDirective.eaTooltip()).toBe(mockExternalLinks[i].tooltip);
         }
       });
     });

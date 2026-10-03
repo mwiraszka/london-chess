@@ -11,21 +11,21 @@
   gap: 8px;
   width: 100%;
   // Shell horizontal padding subtracted so wide view cannot shift this page
-  max-width: calc(var(--lcc-width--appContent) - 8px);
+  max-width: calc(var(--lcc-width--wide) - 8px);
   margin: 0 auto;
 }
 
 .account-page__body {
   display: grid;
   gap: 32px;
-  grid-template-columns: auto minmax(0, 800px);
+  grid-template-columns: auto minmax(0, var(--lcc-width--narrow));
   justify-content: center;
   width: 100%;
 
   // Only when both side columns fit does the card itself centre on the page,
   // nav hugging its left edge; narrower screens centre the nav-plus-card block
   @include mixins.respond-to('gt-xxl') {
-    grid-template-columns: 1fr minmax(0, 800px) 1fr;
+    grid-template-columns: 1fr minmax(0, var(--lcc-width--narrow)) 1fr;
   }
 
   @include mixins.respond-to('lt-md') {
@@ -83,7 +83,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 800px;
+  max-width: var(--lcc-width--narrow);
 }
 
 .details-form {
@@ -163,9 +163,12 @@
 }
 
 .privacy-note {
+  display: block;
   margin-top: 24px;
-  font-size: 14px;
-  line-height: 20px;
+}
+
+.privacy-note__heading {
+  display: block;
 }
 
 .warning-heading {

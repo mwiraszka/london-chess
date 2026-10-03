@@ -23,6 +23,7 @@ import { environment } from '@env';
       target="_blank">
       <div
         #mapContainer
+        class="map"
         [id]="club().id + '-location'">
       </div>
     </a>
@@ -39,7 +40,7 @@ import { environment } from '@env';
       }
     }
 
-    div {
+    .map {
       width: 100%;
       height: 100%;
       border-radius: 3px;

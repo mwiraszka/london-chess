@@ -1,4 +1,5 @@
 import {
+  DialogService,
   ImageSearchIconComponent,
   PlusCircleIconComponent,
   SkeletonComponent,
@@ -22,13 +23,11 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import {
   AdminButton,
   AdminControlsConfig,
-  BasicDialogResult,
   Dialog,
-  Id,
   Image,
   InternalLink,
 } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { ImagesActions } from '@app/store/images';
 import { customSort } from '@app/utils';
 
@@ -101,9 +100,7 @@ export class PhotoGridComponent {
   );
 
   public async onClickAlbumCover(album: string): Promise<void> {
-    await this.dialogService.open<ImageViewerComponent, null>({
-      componentType: ImageViewerComponent,
-      isModal: true,
+    await this.dialogService.open(ImageViewerComponent, {
       inputs: {
         album,
         images: this.photoImages()
@@ -111,15 +108,13 @@ export class PhotoGridComponent {
           .sort((a, b) => customSort(a, b, 'albumOrdinality', false, 'caption', false)),
         isAdmin: this.isAdmin(),
       },
-    });
+    }).result;
   }
 
   public async onOpenImageExplorer(): Promise<void> {
-    await this.dialogService.open<ImageExplorerComponent, Id>({
-      componentType: ImageExplorerComponent,
+    await this.dialogService.open(ImageExplorerComponent, {
       inputs: { selectable: false },
-      isModal: true,
-    });
+    }).result;
   }
 
   public getAdminControlsConfig(album: string): AdminControlsConfig {
@@ -147,11 +142,7 @@ export class PhotoGridComponent {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public getAlbumPhotoCountText(album: string): string {

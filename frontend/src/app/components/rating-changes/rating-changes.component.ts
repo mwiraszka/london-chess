@@ -1,18 +1,18 @@
-import { DataTableColumn } from '@eagami/ui';
+import { ButtonComponent, DataTableColumn, DialogComponent, DialogRef } from '@eagami/ui';
 
 import {
   ChangeDetectionStrategy,
   Component,
   TemplateRef,
   computed,
+  inject,
   input,
-  output,
+  signal,
   viewChild,
 } from '@angular/core';
 
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
-import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
-import { BasicDialogResult, DialogOutput, MemberWithNewRatings } from '@app/models';
+import { BasicDialogResult, MemberWithNewRatings } from '@app/models';
 
 export interface RatingChangeRow {
   id: string;
@@ -30,15 +30,17 @@ type CellTemplate = TemplateRef<{ $implicit: RatingChangeRow; value: unknown }>;
   selector: 'lcc-rating-changes',
   templateUrl: './rating-changes.component.html',
   styleUrl: './rating-changes.component.scss',
-  imports: [DataTableComponent, DialogButtonsComponent],
+  imports: [ButtonComponent, DataTableComponent, DialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RatingChangesComponent implements DialogOutput<BasicDialogResult> {
+export class RatingChangesComponent {
+  protected readonly dialogRef = inject<DialogRef<BasicDialogResult>>(DialogRef);
+
   public readonly confirmAction = input<() => Promise<unknown>>();
   public readonly membersWithNewRatings = input<MemberWithNewRatings[]>();
   public readonly unmatchedMembers = input<string[]>();
 
-  readonly dialogResult = output<BasicDialogResult | 'close'>();
+  protected readonly pending = signal(false);
 
   private readonly newRatingCell = viewChild.required<CellTemplate>('newRatingCell');
   private readonly newPeakRatingCell =
@@ -74,4 +76,21 @@ export class RatingChangesComponent implements DialogOutput<BasicDialogResult> {
       cellTemplate: this.newPeakRatingCell(),
     },
   ]);
+
+  public async confirm(): Promise<void> {
+    if (this.pending()) {
+      return;
+    }
+
+    const confirmAction = this.confirmAction();
+    if (confirmAction) {
+      this.pending.set(true);
+      try {
+        await confirmAction();
+      } finally {
+        this.pending.set(false);
+      }
+    }
+    this.dialogRef.close('confirm');
+  }
 }

@@ -10,7 +10,12 @@
       </div>
 
       @if (error()) {
-        <p class="error">{{ error() }}</p>
+        <ea-alert
+          class="auth-error"
+          size="sm"
+          variant="error">
+          {{ error() }}
+        </ea-alert>
       }
     </div>
   }
@@ -30,7 +35,12 @@
         [group]="newPasswordForm" />
 
       @if (error()) {
-        <p class="error">{{ error() }}</p>
+        <ea-alert
+          class="auth-error"
+          size="sm"
+          variant="error">
+          {{ error() }}
+        </ea-alert>
       }
 
       <ea-button
@@ -65,7 +75,12 @@
         formControlName="password" />
 
       @if (error()) {
-        <p class="error">{{ error() }}</p>
+        <ea-alert
+          class="auth-error"
+          size="sm"
+          variant="error">
+          {{ error() }}
+        </ea-alert>
       }
 
       <ea-button
@@ -82,20 +97,22 @@
     <div class="auth-footer">
       <p class="auth-link">
         Don't have an account?
-        <button
-          type="button"
-          class="auth-link__button lcc-link"
-          (click)="authDrawer.setMode('create-account')">
+        <ea-button
+          class="auth-link__button"
+          size="sm"
+          variant="ghost"
+          (clicked)="authDrawer.setMode('create-account')">
           Create account
-        </button>
+        </ea-button>
       </p>
       <p class="auth-link">
-        <button
-          type="button"
-          class="auth-link__button lcc-link"
-          (click)="authDrawer.setMode('forgot-password')">
+        <ea-button
+          class="auth-link__button"
+          size="sm"
+          variant="ghost"
+          (clicked)="authDrawer.setMode('forgot-password')">
           Forgot password?
-        </button>
+        </ea-button>
       </p>
     </div>
   }

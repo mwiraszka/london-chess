@@ -29,6 +29,7 @@ import {
   SeedMember,
   SeedTournament,
   TOURNAMENTS,
+  UPCOMING,
   pairSection,
   standings,
 } from './seed-data';
@@ -194,7 +195,7 @@ async function seedTournaments(playerIds: Map<string, string>): Promise<void> {
       format: tournament.format,
       timeControl: tournament.timeControl,
       isRated: tournament.isRated,
-      articleUrl: null,
+      articleId: null,
       gameArchiveTournament: tournament.gameArchiveTournament,
       sections: tournament.sections.map((section): TournamentSection => {
         const rows = standings(section, tournament.isDoubleRound);
@@ -228,6 +229,31 @@ async function seedTournaments(playerIds: Map<string, string>): Promise<void> {
       }),
     })),
   );
+}
+
+async function seedUpcomingTournament(memberIds: Map<string, string>): Promise<void> {
+  const firstDay = clubEvening(UPCOMING.daysFromNow);
+  await TournamentModel.create({
+    number: UPCOMING.number,
+    name: UPCOMING.name,
+    date: firstDay.toISOString().slice(0, 10),
+    endDate: clubEvening(UPCOMING.daysFromNow + 14)
+      .toISOString()
+      .slice(0, 10),
+    format: 'swiss',
+    timeControl: UPCOMING.timeControl,
+    isRated: true,
+    articleId: null,
+    gameArchiveTournament: null,
+    sections: [],
+    registrationOpens: clubEvening(-1).toISOString(),
+    registrationCloses: clubEvening(UPCOMING.daysFromNow - 1).toISOString(),
+    registrations: UPCOMING.registrantKeys.map(key => ({
+      memberId: memberIds.get(key)!,
+      registeredAt: clubEvening(-1).toISOString(),
+    })),
+    modificationInfo: modificationInfo(clubEvening(-2)),
+  });
 }
 
 async function pictureOf(hue: number, width: number, height: number): Promise<Buffer> {
@@ -307,6 +333,7 @@ export async function seed(adminClerkUserId: string | null): Promise<void> {
   await Promise.all([
     seedGames(playerIds),
     seedTournaments(playerIds),
+    seedUpcomingTournament(memberIds),
     seedImages(),
     seedArticlesAndEvents(),
   ]);

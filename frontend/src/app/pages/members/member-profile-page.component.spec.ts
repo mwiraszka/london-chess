@@ -336,10 +336,9 @@ describe('MemberProfilePageComponent', () => {
 
     const cards = queryAll(fixture.debugElement, '.profile-card');
     expect(cards).toHaveLength(2);
-    cards.forEach(card => {
-      expect(query(card, 'ea-card')).toBeTruthy();
-      expect(query(card, 'ea-skeleton')).toBeTruthy();
-    });
+    expect(query(cards[0], 'ea-card')).toBeTruthy();
+    expect(query(cards[1], 'ea-accordion')).toBeTruthy();
+    cards.forEach(card => expect(query(card, 'ea-skeleton')).toBeTruthy());
     expect(query(fixture.debugElement, '.profile--loading')).toBeTruthy();
     expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('true');
     expect(query(fixture.debugElement, 'lcc-member-tournaments')).toBeFalsy();

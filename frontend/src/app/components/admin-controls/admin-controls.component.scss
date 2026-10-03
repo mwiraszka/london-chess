@@ -1,75 +1,67 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-:host {
+.admin-controls {
   display: flex;
-
   flex-direction: row;
   gap: 2px;
-  --button-size: var(--admin-control-button-size);
+}
 
-  .admin-control-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--button-size);
-    height: var(--button-size);
-    padding: 0;
-    border: 2px solid var(--lcc-color--adminControls-buttonBorder);
-    border-radius: var(--lcc-borderRadius--large);
-    background-color: var(--lcc-color--adminControls-buttonBackground);
+// Sized and coloured through the button's own properties to match the edit link
+// beside them, which has to stay an anchor
+ea-button.admin-control-button {
+  --ea-button-font-size: calc((var(--button-size) - 10px) / 1.5);
+  --ea-button-padding: 0 4px;
+  --ea-button-min-height: var(--button-size);
+  --ea-button-radius: var(--lcc-borderRadius--large);
+  --ea-button-background-color: var(--lcc-color--adminControls-buttonBackground);
+  --ea-button-background-color-hover: var(
+    --lcc-color--adminControls-buttonBackgroundOnHover
+  );
+  --ea-button-border-color: var(--lcc-color--adminControls-buttonBorder);
+}
 
-    .bookmark-icon,
-    .edit-icon,
-    .delete-icon {
-      @include icon-size(calc(var(--button-size) - 8px));
-    }
+.bookmark-button {
+  --ea-button-color: var(--lcc-color--adminControls-bookmarkIcon);
+  --ea-button-color-hover: var(--lcc-color--adminControls-bookmarkIconOnHover);
+}
 
-    &:disabled,
-    &.disabled {
-      background-color: var(
-        --lcc-color--adminControls-disabledButtonBackground
-      ) !important;
-      color: var(--lcc-color--adminControls-disabledButtonIcon) !important;
+.delete-button {
+  --ea-button-color: var(--lcc-color--adminControls-deleteIcon);
+  --ea-button-color-hover: var(--lcc-color--adminControls-deleteIconOnHover);
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-size);
+  height: var(--button-size);
+  padding: 0;
+  border: 2px solid var(--lcc-color--adminControls-buttonBorder);
+  border-radius: var(--lcc-borderRadius--large);
+  background-color: var(--lcc-color--adminControls-buttonBackground);
+  color: var(--lcc-color--adminControls-editIcon);
+
+  .edit-icon {
+    @include icon-size(calc(var(--button-size) - 8px));
+  }
+
+  &.disabled {
+    background-color: var(--lcc-color--adminControls-disabledButtonBackground) !important;
+    color: var(--lcc-color--adminControls-disabledButtonIcon) !important;
+    cursor: default !important;
+    border-color: var(--lcc-color--adminControls-disabledButtonBorder) !important;
+
+    & > * {
       cursor: default !important;
-      border-color: var(--lcc-color--adminControls-disabledButtonBorder) !important;
-
-      & > * {
-        cursor: default !important;
-      }
     }
+  }
 
-    &:focus,
-    &:hover {
-      background-color: var(--lcc-color--adminControls-buttonBackgroundOnHover);
-      cursor: pointer;
-    }
-
-    &.bookmark-button {
-      color: var(--lcc-color--adminControls-bookmarkIcon);
-
-      &:focus,
-      &:hover {
-        color: var(--lcc-color--adminControls-bookmarkIconOnHover);
-      }
-    }
-
-    &.edit-button {
-      color: var(--lcc-color--adminControls-editIcon);
-
-      &:focus,
-      &:hover {
-        color: var(--lcc-color--adminControls-editIconOnHover);
-      }
-    }
-
-    &.delete-button {
-      color: var(--lcc-color--adminControls-deleteIcon);
-
-      &:focus,
-      &:hover {
-        color: var(--lcc-color--adminControls-deleteIconOnHover);
-      }
-    }
+  &:focus,
+  &:hover {
+    background-color: var(--lcc-color--adminControls-buttonBackgroundOnHover);
+    color: var(--lcc-color--adminControls-editIconOnHover);
+    cursor: pointer;
   }
 }
 

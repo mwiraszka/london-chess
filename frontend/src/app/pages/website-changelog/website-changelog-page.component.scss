@@ -11,7 +11,7 @@
   display: grid;
   justify-content: center;
   gap: 0 32px;
-  grid-template-columns: 120px minmax(0, 800px);
+  grid-template-columns: 120px minmax(0, var(--lcc-width--reading));
   // The intro takes a row of its own so the rail starts level with the first card
   grid-template-areas:
     '.    introTitle'
@@ -23,7 +23,7 @@
   // Only when both side columns fit does the card column centre on the page,
   // the rail hugging its left edge; narrower screens centre the whole block
   @include respond-to('gt-xxl') {
-    grid-template-columns: 1fr minmax(0, 800px) 1fr;
+    grid-template-columns: 1fr minmax(0, var(--lcc-width--reading)) 1fr;
     grid-template-areas:
       '.    introTitle .'
       '.    intro      .'
@@ -178,7 +178,7 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  max-width: 800px;
+  max-width: var(--lcc-width--reading);
   margin-bottom: 8px;
 }
 
@@ -349,10 +349,9 @@
 
 .page-links {
   width: 100%;
-  max-width: 800px;
+  max-width: var(--lcc-width--reading);
   // Adds to the release list's 8px bottom margin, matching the gap above the other headings
   margin-top: 24px;
-  margin-bottom: 8px;
 
   .page-links__grid {
     display: grid;

@@ -1,4 +1,4 @@
-import { PAGE_SIZE_ALL } from '@eagami/ui';
+import { DialogRef, DialogService, PAGE_SIZE_ALL } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { firstValueFrom } from 'rxjs';
 
@@ -9,10 +9,16 @@ import { ActivatedRoute } from '@angular/router';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { DataPaginationOptions, Image } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { DataPaginationOptions, Id, Image } from '@app/models';
+import { StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { lastOpenedDialog, query, queryAll, queryTextContent } from '@app/utils';
+import {
+  closedDialogRef,
+  lastOpenedDialog,
+  query,
+  queryAll,
+  queryTextContent,
+} from '@app/utils';
 
 import { ImageExplorerComponent } from './image-explorer.component';
 
@@ -25,7 +31,7 @@ describe('ImageExplorerComponent', () => {
   let store: MockStore;
 
   let dialogOpenSpy: MockInstance;
-  let dialogResultSpy: MockInstance;
+  let closeSpy: MockInstance;
   let dispatchSpy: MockInstance;
   let storeRequestSpy: Mock;
 
@@ -40,6 +46,9 @@ describe('ImageExplorerComponent', () => {
   };
 
   beforeEach(async () => {
+    const dialogRef = new DialogRef<Id>();
+    closeSpy = vi.spyOn(dialogRef, 'close');
+
     await TestBed.configureTestingModule({
       imports: [AdminControlsDirective, ImageExplorerComponent],
       providers: [
@@ -47,9 +56,10 @@ describe('ImageExplorerComponent', () => {
           provide: ActivatedRoute,
           useValue: { paramMap: [] },
         },
+        { provide: DialogRef, useValue: dialogRef },
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
         {
           provide: StoreRequestService,
@@ -74,7 +84,6 @@ describe('ImageExplorerComponent', () => {
     store.overrideSelector(ImagesSelectors.selectIsFetchingFiltered, false);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
     dispatchSpy = vi.spyOn(store, 'dispatch');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
   });
@@ -106,13 +115,13 @@ describe('ImageExplorerComponent', () => {
       expect(config.editInNewTab).toBe(true);
       expect(config.isDeleteDisabled).toBe(false); // mockImages[0] has no article appearances
       expect(config.deleteDisabledReason).toBe(
-        'Image cannot be delete while it is used in an article',
+        'Image cannot be deleted while it is used in an article',
       );
       expect(config.itemName).toBe(mockImages[0].filename);
     });
 
     it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.getAdminControlsConfig(mockImages[0]).deleteCb();
 
@@ -133,8 +142,7 @@ describe('ImageExplorerComponent', () => {
       await component.onDeleteImage(mockImages[1]);
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -143,22 +151,21 @@ describe('ImageExplorerComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
       expect(storeRequestSpy).toHaveBeenCalledWith(
         ImagesActions.deleteImageRequested({ image: mockImages[1] }),
         [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
       );
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteImage(mockImages[1]);
 
       expect(storeRequestSpy).not.toHaveBeenCalled();
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -189,22 +196,22 @@ describe('ImageExplorerComponent', () => {
       );
     });
 
-    it('should emit dialogResult with image id when clicked and selectable is true', () => {
+    it('should answer with the image id when clicked and selectable is true', () => {
       fixture.componentRef.setInput('selectable', true);
       fixture.detectChanges();
 
       query(fixture.debugElement, '.image-card').triggerEventHandler('click');
 
-      expect(dialogResultSpy).toHaveBeenCalledWith(mockImages[0].id);
+      expect(closeSpy).toHaveBeenCalledWith(mockImages[0].id);
     });
 
-    it('should not emit dialogResult when clicked and selectable is false', () => {
+    it('should not answer when clicked and selectable is false', () => {
       fixture.componentRef.setInput('selectable', false);
       fixture.detectChanges();
 
       query(fixture.debugElement, '.image-card').triggerEventHandler('click');
 
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
 
     it('should display image metadata', () => {
@@ -244,7 +251,7 @@ describe('ImageExplorerComponent', () => {
       it('should not let skeleton cards be selected', () => {
         query(fixture.debugElement, '.image-card').triggerEventHandler('click');
 
-        expect(dialogResultSpy).not.toHaveBeenCalled();
+        expect(closeSpy).not.toHaveBeenCalled();
       });
     });
 

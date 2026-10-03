@@ -13,6 +13,9 @@ export interface MarkdownTableRow {
   id: string;
   // Each cell rendered, by column key
   html: Record<string, string>;
+  // Set on a row that is never shown, which sizes the first column for the heading of a
+  // table drawn alongside
+  heading?: { label: string; sortable: boolean };
   // Each cell's sort value, by column key
   [key: string]: unknown;
 }
@@ -23,7 +26,9 @@ export interface MarkdownTable {
 }
 
 export type MarkdownSegment =
-  { kind: 'markdown'; text: string } | { kind: 'table'; table: MarkdownTable };
+  | { kind: 'markdown'; text: string }
+  // The sizing rows are those of the tables drawn alongside, which this one fits as well
+  | { kind: 'table'; table: MarkdownTable; sizingRows: MarkdownTableRow[] };
 
 const DELIMITER_ROW = /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 
@@ -66,6 +71,12 @@ function isTableStart(lines: string[], index: number): boolean {
   );
 }
 
+const isSortableTable = (headings: string[]): boolean =>
+  headings.some(heading => SORTABLE_TABLE_HEADING.test(heading));
+
+const isSortableColumn = (label: string, tableSorts: boolean): boolean =>
+  tableSorts && label !== '' && !ROUND_HEADING.test(label);
+
 function parseTable(lines: string[]): MarkdownTable {
   const headings = splitCells(lines[0]);
   const aligns = splitCells(lines[1]).map(alignOf);
@@ -74,12 +85,12 @@ function parseTable(lines: string[]): MarkdownTable {
     .map(splitCells)
     .map(cells => headings.map((_, index) => cells[index] ?? ''));
 
-  const sortable = headings.some(heading => SORTABLE_TABLE_HEADING.test(heading));
+  const sortable = isSortableTable(headings);
   const columns = headings.map((label, index) => ({
     key: `c${index}`,
     label,
     align: aligns[index] ?? 'left',
-    sortable: sortable && label !== '' && !ROUND_HEADING.test(label),
+    sortable: isSortableColumn(label, sortable),
   }));
   // A column reads as numbers when most of its filled cells are numbers
   const numeric = columns.map((_, index) => {
@@ -99,6 +110,92 @@ function parseTable(lines: string[]): MarkdownTable {
   });
 
   return { columns, rows };
+}
+
+const headingKey = (label: string): string =>
+  label.trim().replace(/\s+/g, ' ').toLowerCase();
+
+// The first column names each row, so only the headings after it tell what a table holds
+function continuesTable(previous: MarkdownTable, table: MarkdownTable): boolean {
+  const [, ...headings] = table.columns;
+  const [, ...previousHeadings] = previous.columns;
+  return (
+    headings.length > 0 &&
+    headings.length === previousHeadings.length &&
+    headings.every(
+      ({ label }, index) =>
+        headingKey(label) === headingKey(previousHeadings[index].label),
+    )
+  );
+}
+
+type MarkdownTableSegment = Extract<MarkdownSegment, { kind: 'table' }>;
+
+// The parts sort alike, and each sizes its columns to fit the rows and first heading of
+// every part, so that all their columns line up
+function alignParts(parts: MarkdownTableSegment[]): MarkdownTableSegment[] {
+  if (parts.length < 2) {
+    return parts;
+  }
+
+  const sorts = parts.some(({ table }) =>
+    isSortableTable(table.columns.map(({ label }) => label)),
+  );
+  const tables = parts.map(({ table }) => ({
+    ...table,
+    columns: table.columns.map(column => ({
+      ...column,
+      sortable: isSortableColumn(column.label, sorts),
+    })),
+  }));
+  const headings: MarkdownTableRow[] = tables.map(({ columns: [first] }, index) => ({
+    id: `heading-${index}`,
+    html: {},
+    heading: { label: first.label, sortable: first.sortable },
+  }));
+
+  return tables.map((table, index) => ({
+    kind: 'table',
+    table,
+    sizingRows: [
+      ...headings,
+      ...tables.flatMap((other, otherIndex) =>
+        otherIndex === index
+          ? []
+          : other.rows.map(row => ({ ...row, id: `part-${otherIndex}-${row.id}` })),
+      ),
+    ],
+  }));
+}
+
+// Tables set one after another with the same headings after the first column read as the
+// parts of one table
+function alignTableParts(segments: MarkdownSegment[]): MarkdownSegment[] {
+  const groups: MarkdownTableSegment[][] = [];
+  segments.forEach((segment, index) => {
+    if (segment.kind !== 'table') {
+      return;
+    }
+    const previous = segments[index - 1];
+    const group = groups.at(-1);
+    if (
+      group &&
+      previous?.kind === 'table' &&
+      continuesTable(previous.table, segment.table)
+    ) {
+      group.push(segment);
+    } else {
+      groups.push([segment]);
+    }
+  });
+
+  const aligned = new Map<MarkdownTableSegment, MarkdownTableSegment>();
+  for (const group of groups) {
+    alignParts(group).forEach((part, index) => aligned.set(group[index], part));
+  }
+  return segments.map(segment =>
+    segment.kind === 'table' ? (aligned.get(segment) ?? segment) : segment,
+  );
 }
 
 // Splits markdown into the text between its tables and the tables themselves
@@ -127,9 +224,9 @@ export function splitMarkdownTables(markdown: string): MarkdownSegment[] {
       index += 1;
     }
     flushText();
-    segments.push({ kind: 'table', table: parseTable(tableLines) });
+    segments.push({ kind: 'table', table: parseTable(tableLines), sizingRows: [] });
   }
   flushText();
 
-  return segments;
+  return alignTableParts(segments);
 }

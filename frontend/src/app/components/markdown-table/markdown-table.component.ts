@@ -26,6 +26,7 @@ import { MarkdownTable, MarkdownTableRow } from '@app/utils';
 })
 export class MarkdownTableComponent {
   public readonly table = input.required<MarkdownTable>();
+  public readonly sizingRows = input<MarkdownTableRow[]>([]);
 
   private readonly cell =
     viewChild.required<TemplateRef<DataTableCellContext<MarkdownTableRow>>>('cell');
@@ -49,6 +50,8 @@ export class MarkdownTableComponent {
   );
 
   protected readonly rows = computed(() => this.table().rows);
+
+  protected readonly firstColumnKey = computed(() => this.table().columns[0]?.key);
 
   public onSorted(sort: DataTableSortState): void {
     this.sort.set(sort);

@@ -8,7 +8,12 @@
       [group]="form" />
 
     @if (error()) {
-      <p class="error">{{ error() }}</p>
+      <ea-alert
+        class="auth-error"
+        size="sm"
+        variant="error">
+        {{ error() }}
+      </ea-alert>
     }
 
     <ea-button
@@ -28,26 +33,23 @@
       receive a confirmation email as soon as your account is ready. Please note that an
       account is not required to attend any club events.
     </p>
-    <p class="privacy-note">
-      <span class="privacy-note__heading">
-        <ea-icon-lock
-          class="privacy-note__icon"
-          aria-hidden="true" />
-        <strong>Privacy</strong>
-      </span>
-      <span>
-        We don't share your information with anyone. Your details are only used by the
-        club.
-      </span>
-    </p>
+    <ea-alert
+      class="privacy-note"
+      size="sm"
+      variant="info"
+      [icon]="privacyIcon">
+      <strong class="privacy-note__heading">Privacy</strong>
+      We don't share your information with anyone. Your details are only used by the club.
+    </ea-alert>
     <p class="auth-link">
       Already have an account?
-      <button
-        type="button"
-        class="auth-link__button lcc-link"
-        (click)="authDrawer.setMode('login')">
+      <ea-button
+        class="auth-link__button"
+        size="sm"
+        variant="ghost"
+        (clicked)="authDrawer.setMode('login')">
         Log in
-      </button>
+      </ea-button>
     </p>
   </div>
 } @else {
@@ -67,7 +69,12 @@
       [errorMsg]="codeError()" />
 
     @if (error()) {
-      <p class="error">{{ error() }}</p>
+      <ea-alert
+        class="auth-error"
+        size="sm"
+        variant="error">
+        {{ error() }}
+      </ea-alert>
     }
 
     <ea-button
@@ -81,18 +88,20 @@
     </ea-button>
 
     <div class="code-actions">
-      <button
-        type="button"
-        class="auth-link__button lcc-link"
-        (click)="onResendCode()">
+      <ea-button
+        class="auth-link__button"
+        size="sm"
+        variant="ghost"
+        (clicked)="onResendCode()">
         Resend code
-      </button>
-      <button
-        type="button"
-        class="auth-link__button lcc-link"
-        (click)="onBackToForm()">
+      </ea-button>
+      <ea-button
+        class="auth-link__button"
+        size="sm"
+        variant="ghost"
+        (clicked)="onBackToForm()">
         Back
-      </button>
+      </ea-button>
     </div>
   </form>
 }

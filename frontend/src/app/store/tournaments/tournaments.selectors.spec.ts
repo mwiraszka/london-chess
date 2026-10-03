@@ -1,8 +1,11 @@
+import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import {
   MOCK_MEMBER_TOURNAMENT_RESULTS,
   MOCK_TOURNAMENTS,
   MOCK_TOURNAMENT_SUMMARIES,
+  MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
+import { tournamentFormData } from '@app/utils';
 
 import {
   TournamentsState,
@@ -98,6 +101,50 @@ describe('Tournaments Selectors', () => {
       ).toBe('loading');
       expect(TournamentsSelectors.selectMemberResultsStatus(7)(withState(failed))).toBe(
         'failed',
+      );
+    });
+  });
+
+  describe('drafts', () => {
+    const number = MOCK_UPCOMING_TOURNAMENT.number;
+    const withUpcoming: TournamentsState = tournamentsAdapter.setAll(
+      [MOCK_UPCOMING_TOURNAMENT],
+      initialState,
+    );
+
+    it('should start from the recorded details, or a blank tournament', () => {
+      expect(
+        TournamentsSelectors.selectTournamentFormData(number)(withState(withUpcoming)),
+      ).toEqual(tournamentFormData(MOCK_UPCOMING_TOURNAMENT));
+      expect(
+        TournamentsSelectors.selectTournamentFormData(null)(withState(withUpcoming)),
+      ).toBe(INITIAL_TOURNAMENT_FORM_DATA);
+    });
+
+    it('should only see unsaved changes once a draft differs from what is recorded', () => {
+      const unchanged = {
+        ...withUpcoming,
+        formData: { [number]: tournamentFormData(MOCK_UPCOMING_TOURNAMENT) },
+      };
+      const renamed = {
+        ...withUpcoming,
+        formData: {
+          [number]: { ...tournamentFormData(MOCK_UPCOMING_TOURNAMENT), name: 'Renamed' },
+        },
+        newTournamentFormData: { ...INITIAL_TOURNAMENT_FORM_DATA, name: 'New' },
+      };
+
+      expect(
+        TournamentsSelectors.selectHasUnsavedChanges(number)(withState(unchanged)),
+      ).toBe(false);
+      expect(
+        TournamentsSelectors.selectHasUnsavedChanges(null)(withState(unchanged)),
+      ).toBe(false);
+      expect(
+        TournamentsSelectors.selectHasUnsavedChanges(number)(withState(renamed)),
+      ).toBe(true);
+      expect(TournamentsSelectors.selectHasUnsavedChanges(null)(withState(renamed))).toBe(
+        true,
       );
     });
   });

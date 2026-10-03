@@ -1,3 +1,5 @@
+import { DialogService } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -6,9 +8,15 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
-import { lastOpenedDialog, query, queryAll, queryTextContent } from '@app/utils';
+import {
+  closedDialogRef,
+  lastOpenedDialog,
+  query,
+  queryAll,
+  queryTextContent,
+} from '@app/utils';
 
 import { ArticleGridComponent } from './article-grid.component';
 
@@ -36,7 +44,7 @@ describe('ArticleGridComponent', () => {
       providers: [
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
         {
           provide: StoreRequestService,
@@ -159,12 +167,11 @@ describe('ArticleGridComponent', () => {
     const mockArticle = MOCK_ARTICLES[0];
 
     it('should open confirmation dialog with correct parameters', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteArticle(mockArticle);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -173,7 +180,6 @@ describe('ArticleGridComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
     });
 
@@ -188,7 +194,7 @@ describe('ArticleGridComponent', () => {
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteArticle(mockArticle);
 
@@ -201,11 +207,10 @@ describe('ArticleGridComponent', () => {
       const bookmarkedArticle = MOCK_ARTICLES[0];
 
       it('should open dialog with remove bookmark message', async () => {
-        dialogOpenSpy.mockResolvedValue('cancel');
+        dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
         await component.onBookmarkArticle(bookmarkedArticle);
 
-        expect(dialogOpenSpy).toHaveBeenCalledWith({
-          componentType: BasicDialogComponent,
+        expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
           inputs: {
             dialog: expect.objectContaining({
               title: 'Confirm',
@@ -214,7 +219,6 @@ describe('ArticleGridComponent', () => {
               confirmButtonType: 'primary',
             }),
           },
-          isModal: true,
         });
       });
 
@@ -236,12 +240,11 @@ describe('ArticleGridComponent', () => {
       const nonBookmarkedArticle = MOCK_ARTICLES[2];
 
       it('should open dialog with add bookmark message', async () => {
-        dialogOpenSpy.mockResolvedValue('cancel');
+        dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
         await component.onBookmarkArticle(nonBookmarkedArticle);
 
-        expect(dialogOpenSpy).toHaveBeenCalledWith({
-          componentType: BasicDialogComponent,
+        expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
           inputs: {
             dialog: expect.objectContaining({
               title: 'Confirm',
@@ -250,7 +253,6 @@ describe('ArticleGridComponent', () => {
               confirmButtonType: 'primary',
             }),
           },
-          isModal: true,
         });
       });
 

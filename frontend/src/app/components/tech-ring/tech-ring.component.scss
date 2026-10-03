@@ -1,8 +1,4 @@
-@use 'sass:math';
 @use '../../../styles/abstracts/mixins' as *;
-
-// Kept in step with the technology list in the component
-$icon-count: 13;
 
 :host {
   --ring-size: 300px;
@@ -24,24 +20,19 @@ $icon-count: 13;
   height: var(--ring-size);
 }
 
+// Laid out clockwise from the top of the ring
 .tech {
+  --angle: calc(360deg / var(--icon-count) * var(--index) - 90deg);
+
   position: absolute;
+  top: calc(50% + sin(var(--angle)) * var(--ring-radius) - var(--icon-size) / 2);
+  left: calc(50% + cos(var(--angle)) * var(--ring-radius) - var(--icon-size) / 2);
   display: block;
   width: var(--icon-size);
   height: var(--icon-size);
   transition:
     transform 200ms ease,
     filter 200ms ease;
-}
-
-@for $i from 1 through $icon-count {
-  // Laid out clockwise from the top of the ring
-  $angle: math.div(360deg, $icon-count) * ($i - 1) - 90deg;
-
-  .tech:nth-of-type(#{$i}) {
-    top: calc(50% + #{math.sin($angle)} * var(--ring-radius) - var(--icon-size) / 2);
-    left: calc(50% + #{math.cos($angle)} * var(--ring-radius) - var(--icon-size) / 2);
-  }
 }
 
 .tech__icon {

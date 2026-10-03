@@ -1,4 +1,4 @@
-import { XIconComponent } from '@eagami/ui';
+import { ButtonComponent, XIconComponent } from '@eagami/ui';
 
 import { NgTemplateOutlet } from '@angular/common';
 import {
@@ -22,7 +22,7 @@ import { FormatDatePipe } from '@app/pipes';
   selector: 'lcc-upcoming-event-banner',
   templateUrl: './upcoming-event-banner.component.html',
   styleUrl: './upcoming-event-banner.component.scss',
-  imports: [FormatDatePipe, NgTemplateOutlet, RouterLink, XIconComponent],
+  imports: [ButtonComponent, FormatDatePipe, NgTemplateOutlet, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
@@ -49,6 +49,7 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
 
   public readonly clearBanner = output<void>();
 
+  protected readonly closeIcon = XIconComponent;
   protected readonly shouldAnimate = signal(false);
   protected readonly animationDuration = signal(20);
 

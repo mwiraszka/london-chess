@@ -71,7 +71,7 @@ export async function openAdminControls(item: Locator): Promise<Locator> {
       ),
   );
   await item.click({ button: 'right' });
-  const controls = item.page().locator('lcc-admin-controls');
+  const controls = item.page().getByRole('dialog', { name: /^Admin controls for / });
   await expect(controls).toBeVisible();
   return controls;
 }
@@ -87,7 +87,7 @@ export async function clickDelete(controls: Locator): Promise<void> {
 }
 
 export async function confirm(page: Page, button: string): Promise<void> {
-  const dialog = page.locator('lcc-dialog');
+  const dialog = page.locator('lcc-basic-dialog');
   await dialog.getByRole('button', { name: button, exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }

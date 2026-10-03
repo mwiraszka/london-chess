@@ -1,0 +1,46 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.section-heading {
+  margin-bottom: 8px;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.registration,
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.results__status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.results__problems ul {
+  padding-left: 24px;
+  margin: 8px 0;
+  list-style: disc;
+}
+
+.results__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// Wide standings scroll within the form rather than widening it
+.results__table {
+  overflow-x: auto;
+  display: block;
+  max-width: 100%;
+}
+
+.results__clear {
+  align-self: flex-start;
+}

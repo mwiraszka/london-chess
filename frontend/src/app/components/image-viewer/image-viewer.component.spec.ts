@@ -1,13 +1,14 @@
+import { DialogRef, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { Image } from '@app/models';
-import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
+import { BasicDialogResult, Image } from '@app/models';
+import { AdminControlsService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { lastOpenedDialog, query, queryTextContent } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query, queryTextContent } from '@app/utils';
 
 import { ImageViewerComponent } from './image-viewer.component';
 
@@ -19,14 +20,13 @@ describe('ImageViewerComponent', () => {
   let adminControlsCloseSpy: MockInstance;
   let adminControlsOpenSpy: MockInstance;
   let dialogOpenSpy: Mock;
-  let dialogResultSpy: MockInstance;
+  let closeSpy: MockInstance;
   let dispatchSpy: MockInstance;
   let storeRequestSpy: Mock;
 
   const createViewer = (images: Image[] = MOCK_IMAGES, isAdmin = true): void => {
     fixture = TestBed.createComponent(ImageViewerComponent);
     component = fixture.componentInstance;
-    dialogResultSpy = vi.spyOn(component.dialogResult, 'emit');
 
     fixture.componentRef.setInput('album', 'Mock Album');
     fixture.componentRef.setInput('images', images);
@@ -51,20 +51,26 @@ describe('ImageViewerComponent', () => {
   const shownImageId = (): string => component.imageId;
 
   const press = (type: 'keydown' | 'keyup', key: string): KeyboardEvent => {
-    const event = new KeyboardEvent(type, { key, cancelable: true });
-    document.dispatchEvent(event);
+    const event = new KeyboardEvent(type, { key, bubbles: true, cancelable: true });
+    query(fixture.debugElement, 'figure').nativeElement.dispatchEvent(event);
     fixture.detectChanges();
     return event;
   };
 
+  const navButton = (name: 'previous' | 'next'): HTMLButtonElement =>
+    query(fixture.debugElement, `.${name}-image-button button`).nativeElement;
+
   beforeEach(async () => {
     vi.useFakeTimers();
+    const dialogRef = new DialogRef();
+    closeSpy = vi.spyOn(dialogRef, 'close');
 
     await TestBed.configureTestingModule({
       imports: [ImageViewerComponent],
       providers: [
         provideMockStore(),
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogRef, useValue: dialogRef },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
@@ -193,7 +199,7 @@ describe('ImageViewerComponent', () => {
     beforeEach(() => createViewer());
 
     it('should go to the next image, and from the last back to the first', () => {
-      query(fixture.debugElement, '.next-image-button').nativeElement.click();
+      navButton('next').click();
       const afterFirst = shownImageId();
       for (let i = 1; i < MOCK_IMAGES.length; i++) {
         component.onNextImage();
@@ -205,7 +211,7 @@ describe('ImageViewerComponent', () => {
     });
 
     it('should go to the previous image, and from the first round to the last', () => {
-      query(fixture.debugElement, '.previous-image-button').nativeElement.click();
+      navButton('previous').click();
       const afterFirst = shownImageId();
       component.onPreviousImage();
 
@@ -218,7 +224,6 @@ describe('ImageViewerComponent', () => {
   describe('keyboard navigation', () => {
     it('should step through the images with the arrow keys and space, once per press', () => {
       createViewer();
-      vi.advanceTimersByTime(0);
 
       press('keydown', 'ArrowRight');
       press('keydown', 'ArrowRight');
@@ -243,7 +248,6 @@ describe('ImageViewerComponent', () => {
 
     it('should take over the navigation keys but leave the others alone', () => {
       createViewer();
-      vi.advanceTimersByTime(0);
 
       const arrowUp = press('keydown', 'ArrowUp');
       const letter = press('keydown', 'a');
@@ -256,7 +260,6 @@ describe('ImageViewerComponent', () => {
 
     it('should not move through a single image', () => {
       createViewer([MOCK_IMAGES[0]]);
-      vi.advanceTimersByTime(0);
 
       press('keydown', 'ArrowRight');
       press('keyup', 'ArrowRight');
@@ -264,16 +267,6 @@ describe('ImageViewerComponent', () => {
       press('keyup', 'ArrowLeft');
 
       expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
-      expect(adminControlsCloseSpy).not.toHaveBeenCalled();
-    });
-
-    it('should stop listening once destroyed', () => {
-      createViewer();
-      vi.advanceTimersByTime(0);
-
-      fixture.destroy();
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
-
       expect(adminControlsCloseSpy).not.toHaveBeenCalled();
     });
   });
@@ -287,6 +280,9 @@ describe('ImageViewerComponent', () => {
       fixture.detectChanges();
 
       expect(queryTextContent(fixture.debugElement, '.album-name')).toBe('Mock Album');
+      expect(
+        query(fixture.debugElement, 'dialog').nativeElement.hasAttribute('open'),
+      ).toBe(true);
       expect(captionBefore).toBe('');
       expect(queryTextContent(fixture.debugElement, '.image-caption')).toBe(
         MOCK_IMAGES[0].caption,
@@ -296,23 +292,15 @@ describe('ImageViewerComponent', () => {
     it('should enable the previous and next buttons for more than one image', () => {
       createViewer();
 
-      expect(
-        query(fixture.debugElement, '.previous-image-button').nativeElement.disabled,
-      ).toBe(false);
-      expect(
-        query(fixture.debugElement, '.next-image-button').nativeElement.disabled,
-      ).toBe(false);
+      expect(navButton('previous').disabled).toBe(false);
+      expect(navButton('next').disabled).toBe(false);
     });
 
     it('should disable the previous and next buttons for a single image', () => {
       createViewer([MOCK_IMAGES[0]]);
 
-      expect(
-        query(fixture.debugElement, '.previous-image-button').nativeElement.disabled,
-      ).toBe(true);
-      expect(
-        query(fixture.debugElement, '.next-image-button').nativeElement.disabled,
-      ).toBe(true);
+      expect(navButton('previous').disabled).toBe(true);
+      expect(navButton('next').disabled).toBe(true);
     });
 
     it('should offer admin controls on the image to an admin only', () => {
@@ -350,12 +338,11 @@ describe('ImageViewerComponent', () => {
     });
 
     it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.getAdminControlsConfig(MOCK_IMAGES[1]).deleteCb();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -363,7 +350,6 @@ describe('ImageViewerComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
     });
   });
@@ -373,9 +359,12 @@ describe('ImageViewerComponent', () => {
 
     describe('when the dialog is confirmed', () => {
       beforeEach(() => {
-        dialogOpenSpy.mockImplementation(async () => {
-          await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-          return 'confirm';
+        dialogOpenSpy.mockImplementation(() => {
+          const confirmation = new DialogRef<BasicDialogResult>();
+          void lastOpenedDialog(dialogOpenSpy)
+            .confirmAction?.()
+            .then(() => confirmation.close('confirm'));
+          return confirmation;
         });
       });
 
@@ -395,7 +384,7 @@ describe('ImageViewerComponent', () => {
 
         await component.onDeleteImage(MOCK_IMAGES[1]);
 
-        expect(dialogResultSpy).toHaveBeenCalledWith(null);
+        expect(closeSpy).toHaveBeenCalledTimes(1);
       });
 
       it('should keep the viewer open when the image fails to delete', async () => {
@@ -408,17 +397,17 @@ describe('ImageViewerComponent', () => {
 
         await component.onDeleteImage(MOCK_IMAGES[1]);
 
-        expect(dialogResultSpy).not.toHaveBeenCalled();
+        expect(closeSpy).not.toHaveBeenCalled();
       });
     });
 
     it('should not delete anything when the dialog is cancelled', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteImage(MOCK_IMAGES[1]);
 
       expect(storeRequestSpy).not.toHaveBeenCalled();
-      expect(dialogResultSpy).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
     });
   });
 });

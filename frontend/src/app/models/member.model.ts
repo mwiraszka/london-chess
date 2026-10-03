@@ -72,8 +72,17 @@ export type MemberAccountFormGroup = MemberDetailsFormGroup & {
 
 export type MemberFormData = Pick<Member, (typeof MEMBER_FORM_DATA_PROPERTIES)[number]>;
 
+// The day joined is picked as a day and saved as an instant
 export type MemberFormGroup = {
-  [Property in keyof MemberFormData]: FormControl<MemberFormData[Property]>;
+  [Property in Exclude<keyof MemberFormData, 'dateJoined'>]: FormControl<
+    MemberFormData[Property]
+  >;
+} & {
+  dateJoined: FormControl<Date | null>;
+};
+
+export type MemberFormValue = Omit<MemberFormData, 'dateJoined'> & {
+  dateJoined: Date | null;
 };
 
 export interface MemberWithNewRatings extends Member {

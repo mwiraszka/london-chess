@@ -1,12 +1,14 @@
+import { DialogRef, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { Subject } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
-import { DialogService, MetaAndTitleService, RoutingService } from '@app/services';
+import { MetaAndTitleService, RoutingService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
-import { query } from '@app/utils';
+import { closedDialogRef, query } from '@app/utils';
 
 import { DocumentsPageComponent } from './documents-page.component';
 
@@ -26,17 +28,20 @@ describe('DocumentsPageComponent', () => {
   let updateTitleSpy: MockInstance;
 
   const fragment$ = new Subject<string | null>();
+  const openDialogs = signal<readonly DialogRef[]>([]);
 
   beforeEach(async () => {
+    openDialogs.set([]);
+
     await TestBed.configureTestingModule({
       imports: [DocumentsPageComponent],
       providers: [
         {
           provide: DialogService,
           useValue: {
-            open: vi.fn(),
+            open: vi.fn(() => closedDialogRef()),
             closeAll: vi.fn(),
-            topDialogRef: null,
+            dialogs: openDialogs,
           },
         },
         {
@@ -110,7 +115,7 @@ describe('DocumentsPageComponent', () => {
     });
 
     it('should open document corresponding to the fragment and remove the fragment when the dialog closes', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef());
 
       // Set currentFragment to match the fragment being tested
       Object.defineProperty(routingService, 'currentFragment', {
@@ -122,9 +127,7 @@ describe('DocumentsPageComponent', () => {
       await fixture.whenStable();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: expect.any(Function),
-        isModal: true,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
         inputs: { documentPath: 'assets/documents/lcc-bylaws.pdf' },
       });
       expect(removeFragmentSpy).toHaveBeenCalledTimes(1);
@@ -144,11 +147,8 @@ describe('DocumentsPageComponent', () => {
       expect(removeFragmentSpy).not.toHaveBeenCalled();
     });
 
-    it('should not open document viewer when top dialog is already open', async () => {
-      Object.defineProperty(dialogService, 'topDialogRef', {
-        value: {},
-        configurable: true,
-      });
+    it('should not open document viewer when a dialog is already open', async () => {
+      openDialogs.set([new DialogRef()]);
 
       fragment$.next('lcc-bylaws.pdf');
       await fixture.whenStable();

@@ -3,6 +3,7 @@
     <form
       class="lcc-form"
       [formGroup]="form"
+      (focusout)="onFieldLeft()"
       (ngSubmit)="onSubmit()">
       <div class="lcc-form-fields">
         @if (imageEntity(); as imageEntity) {
@@ -15,25 +16,31 @@
             class="lcc-required-field">
             File:
           </label>
-          <div class="file-and-preview-container">
-            <div class="image-container">
-              <img
-                [src]="newImageDataUrl || 'assets/fallback-image.png'"
-                alt="Image preview" />
-            </div>
-            <label
-              class="choose-file-button lcc-secondary-button"
-              tooltip="Choose file">
-              <ea-icon-image />
-              <input
-                id="file-input"
-                type="file"
+          <ea-form-field
+            [errorMsg]="showFileError ? 'Choose an image to upload' : undefined">
+            <div class="file-and-preview-container">
+              <div class="image-container">
+                <img
+                  alt="Image preview"
+                  [src]="newImageDataUrl() ?? fallbackSrc" />
+              </div>
+              <ea-file-uploader
+                class="choose-file-button"
                 accept="image/*"
-                (change)="onChooseFile($event)"
-                (cancel)="$event.stopPropagation()" />
-            </label>
-          </div>
-          <lcc-form-error-icon [control]="form.controls.filename"></lcc-form-error-icon>
+                aria-label="Choose file"
+                buttonLabel=""
+                eaTooltip="Choose file"
+                size="sm"
+                variant="button"
+                [buttonIcon]="imagePlusIcon"
+                [formControl]="fileChoice"
+                [id]="'file-input'"
+                [multiple]="false"
+                [showConstraints]="false"
+                [showFileList]="false"
+                (rejected)="onRejectFiles()" />
+            </div>
+          </ea-form-field>
         }
 
         <label
@@ -41,84 +48,86 @@
           class="lcc-required-field">
           Caption:
         </label>
-        <input
-          id="caption-input"
-          type="text"
-          name="caption"
+        <ea-input
           formControlName="caption"
-          maxlength="120" />
-        <lcc-form-error-icon [control]="form.controls.caption"></lcc-form-error-icon>
+          [errorMessages]="errorMessages"
+          [id]="'caption-input'"
+          [maxLength]="120"
+          [required]="true" />
 
         <label class="lcc-required-field">Album:</label>
-        <fieldset
-          class="existing-albums-fieldset"
-          [class.invalid]="form.controls.album.errors && form.controls.album.touched">
-          @for (album of existingAlbums(); track $index) {
-            <div class="existing-album">
-              <input
-                [id]="'album-' + album"
-                type="radio"
-                name="album"
-                [checked]="album === form.controls.album.value"
-                (change)="form.patchValue({ album })" />
+        <ea-radio-group
+          class="album-group"
+          aria-label="Album"
+          formControlName="album"
+          [errorMessages]="errorMessages"
+          [required]="true"
+          (changed)="onAlbumRadioChange($event)">
+          <div class="albums-grid">
+            @for (album of existingAlbums(); track album) {
+              <ea-radio
+                [label]="album"
+                [value]="album" />
+            }
+            <div class="new-album">
               <label
-                class="lcc-truncate"
-                [for]="'album-' + album">
-                {{ album }}
+                class="new-album-label"
+                for="new-album-radio">
+                New album
               </label>
+              <ea-radio
+                [id]="'new-album-radio'"
+                [value]="albumExists ? '' : form.controls.album.value" />
+              <ea-input
+                class="new-album-input"
+                aria-label="New album name"
+                placeholder="New album"
+                [formControl]="newAlbumName"
+                [maxLength]="120"
+                (focusin)="onNewAlbumInputFocus()" />
             </div>
-          }
-          <div class="new-album">
-            <input
-              id="new-album-input"
-              type="radio"
-              name="album"
-              [checked]="!albumExists"
-              (change)="form.patchValue({ album: newAlbumValue })" />
-            <input
-              class="new-album-input"
-              type="text"
-              name="new-album"
-              [value]="newAlbumValue"
-              (input)="onNewAlbumInputChange($event)"
-              (focus)="onNewAlbumInputFocus()"
-              maxlength="120"
-              placeholder="New album" />
           </div>
-        </fieldset>
-        <lcc-form-error-icon [control]="form.controls.album"></lcc-form-error-icon>
-
-        <button
-          class="restore-button lcc-secondary-button"
-          [disabled]="!hasUnsavedChanges()"
-          tooltip="Restore image to its original state"
-          (click)="onRestore()">
-          <ea-icon-history />
-        </button>
+        </ea-radio-group>
       </div>
 
       <aside class="lcc-required-fields-legend">Required fields</aside>
 
-      <hr />
+      <ea-divider class="form-divider" />
 
       @if (imageEntity(); as imageEntity) {
-        <lcc-modification-info [info]="imageEntity.image.modificationInfo">
-        </lcc-modification-info>
+        <lcc-modification-info [info]="imageEntity.image.modificationInfo" />
       }
 
-      <div class="lcc-form-buttons-container">
-        <button
-          class="cancel-button lcc-secondary-button"
-          type="button"
-          (click)="onCancel()">
-          Cancel
-        </button>
-        <button
-          class="submit-button lcc-primary-button"
-          type="submit"
-          [disabled]="form.invalid || !hasUnsavedChanges()">
-          {{ imageEntity() ? 'Update image' : 'Add image' }}
-        </button>
+      <div class="lcc-form-actions">
+        <ea-button
+          class="lcc-form-actions__restore restore-button"
+          size="sm"
+          variant="ghost"
+          [disabled]="!hasUnsavedChanges()"
+          [icon]="restoreIcon"
+          (clicked)="onRestore()">
+          Revert
+        </ea-button>
+        <div class="lcc-form-actions__primary">
+          <ea-button
+            class="cancel-button"
+            size="sm"
+            variant="secondary"
+            [fullWidth]="true"
+            [uppercase]="true"
+            (clicked)="onCancel()">
+            Cancel
+          </ea-button>
+          <ea-button
+            class="submit-button"
+            size="sm"
+            type="submit"
+            [disabled]="form.invalid || !hasUnsavedChanges()"
+            [fullWidth]="true"
+            [uppercase]="true">
+            {{ imageEntity() ? 'Update image' : 'Add image' }}
+          </ea-button>
+        </div>
       </div>
     </form>
   </div>

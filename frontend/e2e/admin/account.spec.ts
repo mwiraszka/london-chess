@@ -9,7 +9,7 @@ test.describe('account page', () => {
     await logIn(page);
 
     await page.getByRole('button', { name: 'Menu' }).click();
-    await page.getByLabel('Account', { exact: true }).click();
+    await page.getByRole('link', { name: 'Account', exact: true }).click();
 
     await expect(page).toHaveURL(/\/account\/profile$/);
     await expect(page.getByRole('heading', { name: 'Account', level: 2 })).toBeVisible();

@@ -1,8 +1,10 @@
 import {
   DataTableColumn,
   DataTableSortState,
+  DialogService,
   DownloadIconComponent,
   FileTextIconComponent,
+  TooltipDirective,
 } from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
@@ -28,10 +30,9 @@ import {
 } from '@app/components/data-table/data-table.component';
 import { DocumentViewerComponent } from '@app/components/document-viewer/document-viewer.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { ClubDocument } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { DialogService, MetaAndTitleService, RoutingService } from '@app/services';
+import { MetaAndTitleService, RoutingService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 
 export interface DocumentRow {
@@ -180,13 +181,11 @@ export class DocumentsPageComponent implements OnInit {
       if (
         fragment &&
         this.documents.find(document => document.fileName === fragment) &&
-        !this.dialogService.topDialogRef
+        this.dialogService.dialogs().length === 0
       ) {
-        await this.dialogService.open<DocumentViewerComponent, null>({
-          componentType: DocumentViewerComponent,
-          isModal: true,
+        await this.dialogService.open(DocumentViewerComponent, {
           inputs: { documentPath: `assets/documents/${fragment}` },
-        });
+        }).result;
 
         // Only remove fragment if it's still the same as when we opened
         // (prevents removing fragment when an old dialog closes after navigation)

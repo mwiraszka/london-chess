@@ -177,10 +177,9 @@ $grid-gap: 8px;
         color: var(--lcc-color--articleGrid-articleHeaderText);
       }
 
-      hr {
-        width: 100%;
+      .card-divider {
+        display: block;
         margin: 8px 0;
-        border-top: 1px solid var(--lcc-color--articleGrid-cardDividerLine);
       }
 
       .article-preview {

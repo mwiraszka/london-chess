@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.4.0] - 2026-10-03
+
+### Added
+
+- Manage tournaments from the site: admins add, edit and delete tournaments, import their results from the standings SwissSys exports (an .xlsx workbook, or a .csv for each section), and check the import in a preview that flags players new to the archive
+- Take tournament registrations online: admins set when registration opens and closes, and members register or withdraw on the tournament's page, which lists everyone who has registered online
+- List upcoming tournaments above the table on the Tournaments page, with where their registration stands
+
+### Changed
+
+- Include upcoming and in-progress tournaments in the Tournaments table, marked with a badge beside their names, and abbreviate the months in its dates
+- Send the home page's "Register for a tournament" button to the Tournaments page
+- Line a tournament's sections up down its page, each crosstable and its archived games at one shared width beneath a ruled heading
+- Make the schedule's calendar easier to browse: it opens on the current month, tags each event by type in colour, and marks today only in the list of events
+- Fit each page's width to its content, with headers spanning the page, tables and photo galleries using the full width, and articles, the FAQ, member profiles and the Lifetime Achievement Awards kept at a comfortable reading width
+- Stretch tables across the page and across articles, line up tables in an article that share the same headings, and even out the spacing between sections and above the footer
+- Refresh the look of menus, tooltips, messages, switches and expandable sections, and dim the page behind pop-ups, which now close when you click outside them
+- Rename the About page to FAQ (the old link still works) and show the Lifetime Achievement Awards on cards
+- Show the album name above each photo in the photo viewer, and a progress bar while a document opens
+
+### Fixed
+
+- Put a misplaced logo back in its place on the website changelog page
+- Stop the schedule's calendar from leaving out its last month for visitors in other time zones
+- Make the Enter key press the highlighted button in pop-ups instead of always confirming, and open an event's article only when it has one
+
 ## [v6.3.1] - 2026-09-28
 
 ### Changed
@@ -1997,6 +2023,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.4.0]: https://github.com/mwiraszka/london-chess/compare/v6.3.1...v6.4.0
 [v6.3.1]: https://github.com/mwiraszka/london-chess/compare/v6.3.0...v6.3.1
 [v6.3.0]: https://github.com/mwiraszka/london-chess/compare/v6.2.2...v6.3.0
 [v6.2.2]: https://github.com/mwiraszka/london-chess/compare/v6.2.1...v6.2.2

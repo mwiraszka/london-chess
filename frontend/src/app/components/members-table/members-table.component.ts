@@ -1,11 +1,15 @@
 import {
+  AlertComponent,
+  CheckCircleIconComponent,
   DataTableColumn,
   DataTableSortState,
+  DialogService,
   EmptyStateComponent,
   FilterXIconComponent,
   PAGE_SIZE_ALL,
   PaginatorComponent,
   PaginatorState,
+  TooltipDirective,
   TrophyIconComponent,
 } from '@eagami/ui';
 
@@ -24,18 +28,10 @@ import { Router, RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
-import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
 import { MEMBERS_PAGE_SIZES } from '@app/constants/members-table';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
-import {
-  AdminControlsConfig,
-  BasicDialogResult,
-  DataPaginationOptions,
-  Dialog,
-  Member,
-} from '@app/models';
+import { AdminControlsConfig, DataPaginationOptions, Dialog, Member } from '@app/models';
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
 import { isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
 
@@ -90,6 +86,7 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
   templateUrl: './members-table.component.html',
   styleUrl: './members-table.component.scss',
   imports: [
+    AlertComponent,
     DataTableComponent,
     EmptyStateComponent,
     FormatDatePipe,
@@ -97,7 +94,6 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
     NgTemplateOutlet,
     PaginatorComponent,
     RouterLink,
-    SafeModeNoticeComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -127,6 +123,7 @@ export class MembersTableComponent {
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
 
   protected readonly emptyIcon = FilterXIconComponent;
+  protected readonly safeModeIcon = CheckCircleIconComponent;
   protected readonly isCityChampion = isCityChampion;
   protected readonly pageSizes = MEMBERS_PAGE_SIZES;
 
@@ -301,10 +298,6 @@ export class MembersTableComponent {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

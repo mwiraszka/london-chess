@@ -1,7 +1,9 @@
 :root {
-  // Container widths & heights
-  --lcc-width--appContent: 1500px;
-  --lcc-width--smallForm: 600px;
+  // Page widths, one per kind of content (see layout/_page.scss): forms, prose and details,
+  // and tables, grids and galleries, the last also being the header's and footer's width
+  --lcc-width--narrow: 640px;
+  --lcc-width--reading: 800px;
+  --lcc-width--wide: 1500px;
 
   // Border radii
   --lcc-borderRadius--small: 3px;

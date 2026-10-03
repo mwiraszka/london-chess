@@ -193,18 +193,16 @@
               receive a confirmation at your email address as soon as the changes have
               been made.
             </p>
-            <p class="privacy-note">
-              <span class="privacy-note__heading">
-                <ea-icon-lock
-                  class="privacy-note__icon"
-                  aria-hidden="true" />
-                <strong>Privacy</strong>
-              </span>
-              <span>
-                We don't share your information with anyone. Your details are only used by
-                the club.
-              </span>
-            </p>
+            <ea-alert
+              class="privacy-note"
+              live="off"
+              size="sm"
+              variant="info"
+              [icon]="privacyIcon">
+              <strong class="privacy-note__heading">Privacy</strong>
+              We don't share your information with anyone. Your details are only used by
+              the club.
+            </ea-alert>
           </ea-card>
         }
 
@@ -294,7 +292,9 @@
               <ul class="sessions">
                 @for (session of sessions(); track session.id) {
                   <li>
-                    <ea-card variant="elevated">
+                    <ea-card
+                      variant="elevated"
+                      [fullWidth]="true">
                       <div class="session">
                         @if (session.isMobile) {
                           <ea-icon-smartphone

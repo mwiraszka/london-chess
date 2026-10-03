@@ -1,10 +1,17 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
   padding: 4px 16px;
   border: 1px solid var(--lcc-color--modificationInfo-border);
   border-radius: var(--lcc-borderRadius--large);
   background-color: var(--lcc-color--modificationInfo-background);
+
+  @include respond-to('lt-sm') {
+    width: 100%;
+  }
 }
 
 .modification-info-container {
@@ -17,6 +24,12 @@
   gap: 8px;
   font-size: 13px;
   color: var(--lcc-color--modificationInfo-secondaryText);
+
+  // On a phone the card spans the form while the credits stay a centred block
+  @include respond-to('lt-sm') {
+    width: fit-content;
+    margin: 0 auto;
+  }
 
   .create-details-container,
   .edit-details-container {
@@ -34,36 +47,59 @@
       color: var(--lcc-color--modificationInfo-icons);
     }
 
+    // A date that wraps onto its own line leaves its separator beyond the clipped edge
     .create-text,
     .edit-text {
-      & > * {
-        line-height: 1.3em;
-        white-space: nowrap;
-      }
+      overflow-x: clip;
+    }
 
-      .name {
-        padding: 0 1em 0 0.5em;
-        color: var(--lcc-color--modificationInfo-primaryText);
-      }
+    .credit-parts {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-left: -24px;
+      line-height: 1.3em;
+      white-space: nowrap;
 
-      .vertical-spacer {
+      @include respond-to('lt-sm') {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-left: 0;
+      }
+    }
+
+    .credit {
+      margin-left: 24px;
+
+      @include respond-to('lt-sm') {
+        margin-left: 0;
+      }
+    }
+
+    .name {
+      padding-left: 0.5em;
+      color: var(--lcc-color--modificationInfo-primaryText);
+    }
+
+    .when {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .vertical-spacer {
+      --ea-divider-length: 1em;
+
+      display: inline-flex;
+      justify-content: center;
+      width: 24px;
+
+      @include respond-to('lt-sm') {
         display: none;
-        color: var(--lcc-color--modificationInfo-verticalSpacer);
-
-        @include respond-to('gt-md') {
-          display: inline;
-        }
       }
+    }
 
-      .date {
-        display: block;
-        color: var(--lcc-color--modificationInfo-primaryText);
-
-        @include respond-to('gt-md') {
-          display: inline;
-          padding-left: 1em;
-        }
-      }
+    .date {
+      color: var(--lcc-color--modificationInfo-primaryText);
     }
   }
 }
