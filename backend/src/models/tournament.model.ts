@@ -1,6 +1,6 @@
 import { Schema, Types, model } from 'mongoose';
 
-import { Id, IsoDate, Url } from './core.model';
+import { Id, IsoDate } from './core.model';
 import { GamePlayer, GameResponse } from './game.model';
 import { ModificationInfo } from './modification-info.model';
 
@@ -83,7 +83,7 @@ export interface Tournament {
   format: TournamentFormat;
   timeControl: string;
   isRated: boolean;
-  articleUrl: Url | null;
+  articleId: Id | null;
   // The archive's name for the tournament, when its games are archived
   gameArchiveTournament: string | null;
   sections: TournamentSection[];
@@ -155,7 +155,7 @@ export type TournamentResponse = Omit<
   registrants: TournamentRegistrant[];
 };
 
-// A player as the pairing software names them, "Last, First"
+// A player as SwissSys names them, "Last, First"
 export type EntryInput = Omit<
   TournamentEntry,
   'playerId' | 'performanceRating' | 'resultNote'
@@ -179,7 +179,7 @@ export type TournamentInput = Pick<
   | 'format'
   | 'timeControl'
   | 'isRated'
-  | 'articleUrl'
+  | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
 > & {
@@ -275,7 +275,7 @@ const tournamentSchema = new Schema<Tournament>(
     format: { type: String, required: true },
     timeControl: { type: String, default: '' },
     isRated: { type: Boolean, default: false },
-    articleUrl: { type: String, default: null },
+    articleId: { type: String, default: null },
     gameArchiveTournament: { type: String, default: null },
     sections: { type: [sectionSchema], default: [] },
     registrationOpens: { type: String, default: null },

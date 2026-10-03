@@ -16,7 +16,7 @@ export const tournamentInputTypes: Record<keyof TournamentInput, string | string
   format: 'string',
   timeControl: 'string',
   isRated: 'boolean',
-  articleUrl: ['string', 'null'],
+  articleId: ['string', 'null'],
   registrationOpens: ['string', 'null'],
   registrationCloses: ['string', 'null'],
   sections: ['object', 'null'],
@@ -53,6 +53,8 @@ const roundResultTypes: Record<keyof RoundResult, string | string[]> = {
 const MAX_ROUNDS = 30;
 const MAX_RATING = 3500;
 const SCORES = [0, 0.5, 1];
+const ID_PATTERN = /^[a-fA-F0-9]{24}$/;
+const TIME_CONTROL_PATTERN = /^(?:G\d{1,3}(?:\+\d{1,2})?|\d{1,2} hours?)$/;
 
 // A day that does not exist, such as February 30, parses as a later one or not at all
 function isDay(value: string): boolean {
@@ -72,14 +74,6 @@ const isWholeNumber = (value: number, min: number, max: number): boolean =>
 
 const isHalfPoints = (value: number): boolean =>
   value >= 0 && Number.isInteger(value * 2);
-
-function isHttpUrl(value: string): boolean {
-  try {
-    return ['http:', 'https:'].includes(new URL(value).protocol);
-  } catch {
-    return false;
-  }
-}
 
 function roundError(
   result: unknown,
@@ -219,8 +213,11 @@ export function validateTournamentInput(body: unknown): Error | 'valid' {
   if (!TOURNAMENT_FORMATS.includes(input.format)) {
     return new Error('format is not one the site knows');
   }
-  if (input.articleUrl !== null && !isHttpUrl(input.articleUrl)) {
-    return new Error('article link must be a web address');
+  if (input.timeControl && !TIME_CONTROL_PATTERN.test(input.timeControl.trim())) {
+    return new Error('time control must look like G25, G25+5 or 3 hours');
+  }
+  if (input.articleId !== null && !ID_PATTERN.test(input.articleId)) {
+    return new Error('article ID must be 24 hexadecimal characters');
   }
 
   const { registrationOpens: opens, registrationCloses: closes } = input;

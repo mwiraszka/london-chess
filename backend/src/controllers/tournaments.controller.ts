@@ -43,7 +43,7 @@ type TournamentDetails = Pick<
   | 'format'
   | 'timeControl'
   | 'isRated'
-  | 'articleUrl'
+  | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
 >;
@@ -62,7 +62,7 @@ function toDetails(input: TournamentInput): TournamentDetails {
     format: input.format,
     timeControl: input.timeControl.trim(),
     isRated: input.isRated,
-    articleUrl: input.articleUrl?.trim() || null,
+    articleId: input.articleId || null,
     registrationOpens: input.registrationOpens,
     registrationCloses: input.registrationCloses,
   };

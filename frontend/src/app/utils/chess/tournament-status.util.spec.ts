@@ -36,7 +36,7 @@ describe('tournament status', () => {
         format: 'swiss',
         timeControl: 'G25+5',
         isRated: true,
-        articleUrl: null,
+        articleId: null,
         registrationOpens: MOCK_UPCOMING_TOURNAMENT.registrationOpens,
         registrationCloses: MOCK_UPCOMING_TOURNAMENT.registrationCloses,
         sections: null,

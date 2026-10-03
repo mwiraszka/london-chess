@@ -77,9 +77,10 @@ import {
 } from '@app/utils';
 import {
   closesAfterOpensValidator,
+  idValidator,
   notBeforeDayValidator,
   textValidator,
-  urlValidator,
+  timeControlValidator,
 } from '@app/validators';
 
 @Component({
@@ -164,10 +165,10 @@ export class TournamentFormComponent implements OnInit {
     return sections.map(({ name }, index) => {
       const trimmed = name.trim();
       if (sections.length > 1 && !trimmed) {
-        return 'Name each section, as there is more than one.';
+        return 'Name each section, as there is more than one';
       }
       return sections.some((other, at) => at !== index && other.name.trim() === trimmed)
-        ? 'Another section already has this name.'
+        ? 'Another section already has this name'
         : null;
     });
   });
@@ -329,8 +330,8 @@ export class TournamentFormComponent implements OnInit {
   public async onRestore(): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
-      body: 'Restore original tournament data? All changes will be lost.',
-      confirmButtonText: 'Restore',
+      body: 'Revert to the original tournament data? All changes will be lost.',
+      confirmButtonText: 'Revert',
       confirmButtonType: 'warning',
     };
 
@@ -474,7 +475,7 @@ export class TournamentFormComponent implements OnInit {
       format: data.format,
       timeControl: data.timeControl,
       isRated: data.isRated,
-      articleUrl: data.articleUrl ?? '',
+      articleId: data.articleId ?? '',
       hasRegistration: !!opens || !!closes,
       registrationOpensDay: opens?.day ?? null,
       registrationOpensTime: opens?.time ?? null,
@@ -502,12 +503,12 @@ export class TournamentFormComponent implements OnInit {
       }),
       timeControl: new FormControl(value.timeControl, {
         nonNullable: true,
-        validators: [Validators.maxLength(30), textValidator],
+        validators: timeControlValidator,
       }),
       isRated: new FormControl(value.isRated, { nonNullable: true }),
-      articleUrl: new FormControl(value.articleUrl, {
+      articleId: new FormControl(value.articleId, {
         nonNullable: true,
-        validators: urlValidator,
+        validators: idValidator,
       }),
       hasRegistration: new FormControl(value.hasRegistration, { nonNullable: true }),
       registrationOpensDay: new FormControl<Date | null>(
@@ -549,7 +550,7 @@ export class TournamentFormComponent implements OnInit {
         format: value.format,
         timeControl: value.timeControl,
         isRated: value.isRated,
-        articleUrl: value.articleUrl.trim() || null,
+        articleId: value.articleId || null,
         registrationOpens: register
           ? fromClubDateTime(value.registrationOpensDay, value.registrationOpensTime)
           : null,

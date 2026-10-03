@@ -45,7 +45,6 @@ import {
 import {
   AdminButton,
   Dialog,
-  ExternalLink,
   InternalLink,
   RegistrationStatus,
   RoundResult,
@@ -116,9 +115,6 @@ export interface SectionView {
   rows: CrosstableRow[];
   games: GameRow[];
 }
-
-// Reports on the club's own site open as articles
-const SITE_ARTICLE_URL = /^https:\/\/londonchess\.ca\/article\/view\/([\da-f]{24})$/;
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
 
@@ -361,19 +357,16 @@ export class TournamentPageComponent implements OnInit {
     parseSubtitlePeople(this.viewModel()?.tournament?.subtitle ?? ''),
   );
 
-  protected readonly links = computed<(InternalLink | ExternalLink)[]>(() => {
-    const articleUrl = this.viewModel()?.tournament?.articleUrl;
-    if (!articleUrl) {
+  protected readonly links = computed<InternalLink[]>(() => {
+    const articleId = this.viewModel()?.tournament?.articleId;
+    if (!articleId) {
       return [this.archiveLink];
     }
-    const articleId = articleUrl.match(SITE_ARTICLE_URL)?.[1];
-    const articleLink: InternalLink | ExternalLink = articleId
-      ? {
-          text: 'See article',
-          internalPath: ['article', 'view', articleId],
-          icon: NewspaperIconComponent,
-        }
-      : { text: 'See article', externalPath: articleUrl, icon: NewspaperIconComponent };
+    const articleLink: InternalLink = {
+      text: 'See article',
+      internalPath: ['article', 'view', articleId],
+      icon: NewspaperIconComponent,
+    };
     return [articleLink, this.archiveLink];
   });
 

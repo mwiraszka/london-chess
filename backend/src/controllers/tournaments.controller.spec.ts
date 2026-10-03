@@ -144,7 +144,7 @@ function tournamentInput(overrides: Partial<TournamentInput> = {}): TournamentIn
     format: 'swiss',
     timeControl: 'G25+5',
     isRated: true,
-    articleUrl: null,
+    articleId: null,
     registrationOpens: '2026-10-01T12:00:00.000Z',
     registrationCloses: '2026-10-15T21:00:00.000Z',
     sections: null,

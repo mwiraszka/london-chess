@@ -195,7 +195,7 @@ async function seedTournaments(playerIds: Map<string, string>): Promise<void> {
       format: tournament.format,
       timeControl: tournament.timeControl,
       isRated: tournament.isRated,
-      articleUrl: null,
+      articleId: null,
       gameArchiveTournament: tournament.gameArchiveTournament,
       sections: tournament.sections.map((section): TournamentSection => {
         const rows = standings(section, tournament.isDoubleRound);
@@ -243,7 +243,7 @@ async function seedUpcomingTournament(memberIds: Map<string, string>): Promise<v
     format: 'swiss',
     timeControl: UPCOMING.timeControl,
     isRated: true,
-    articleUrl: null,
+    articleId: null,
     gameArchiveTournament: null,
     sections: [],
     registrationOpens: clubEvening(-1).toISOString(),

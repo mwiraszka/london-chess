@@ -80,7 +80,7 @@ export const TOURNAMENT_FORM_DATA_PROPERTIES = [
   'format',
   'timeControl',
   'isRated',
-  'articleUrl',
+  'articleId',
   'registrationOpens',
   'registrationCloses',
 ] as const;
@@ -93,7 +93,7 @@ export const INITIAL_TOURNAMENT_FORM_DATA: TournamentFormData = {
   format: 'swiss',
   timeControl: '',
   isRated: true,
-  articleUrl: null,
+  articleId: null,
   registrationOpens: null,
   registrationCloses: null,
   sections: null,

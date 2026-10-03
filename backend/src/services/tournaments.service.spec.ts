@@ -123,7 +123,7 @@ const record = (overrides: Partial<TournamentRecord> = {}): TournamentRecord => 
   format: 'round-robin',
   timeControl: 'G80',
   isRated: true,
-  articleUrl: null,
+  articleId: null,
   gameArchiveTournament: 'Club Championship',
   sections: [
     {

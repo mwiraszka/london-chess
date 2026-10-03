@@ -453,13 +453,6 @@ describe('TournamentPageComponent', () => {
       expect(row.slice(3, 6)).toEqual([expect.any(String), '', '']);
       expect(row[3]).not.toBe('');
     });
-
-    it('should link an article kept elsewhere as it is', () => {
-      show({ ...swiss, articleUrl: 'https://example.com/fall-active' });
-
-      const [article] = queryAll(fixture.debugElement, 'lcc-link-list a');
-      expect(article.attributes['href']).toBe('https://example.com/fall-active');
-    });
   });
 
   describe('an upcoming tournament', () => {

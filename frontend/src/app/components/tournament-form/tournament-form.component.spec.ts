@@ -164,7 +164,7 @@ describe('TournamentFormComponent', () => {
       expect(toDayString(value.endDate!)).toBe('2050-10-29');
       expect(value.format).toBe('swiss');
       expect(value.isRated).toBe(true);
-      expect(value.articleUrl).toBe('');
+      expect(value.articleId).toBe('');
       expect(value.hasRegistration).toBe(true);
       expect(toDayString(value.registrationOpensDay!)).toBe('2026-01-01');
       expect(value.registrationOpensTime).toBe('07:00');
@@ -228,7 +228,7 @@ describe('TournamentFormComponent', () => {
 
       component.form.patchValue({
         name: 'Fall Rapid Open',
-        articleUrl: '  ',
+        articleId: '',
         endDate: null,
       });
       vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
@@ -237,7 +237,7 @@ describe('TournamentFormComponent', () => {
       expect(lastDraft()).toEqual(
         expect.objectContaining({
           name: 'Fall Rapid Open',
-          articleUrl: null,
+          articleId: null,
           endDate: null,
         }),
       );
@@ -311,16 +311,26 @@ describe('TournamentFormComponent', () => {
       expect(errorTexts()).toEqual([FORM_ERROR_MESSAGES['closesBeforeOpens']]);
     });
 
-    it('should accept only a full web address for the article', () => {
-      component.form.controls.articleUrl.setValue('londonchess.ca/article');
-      const partial = component.form.controls.articleUrl.hasError('invalidUrl');
-
-      component.form.controls.articleUrl.setValue(
-        'https://londonchess.ca/article/view/1',
+    it('should accept only an article ID for the article', () => {
+      component.form.controls.articleId.setValue(
+        'https://londonchess.ca/article/view/679ee6041a2b3c4d5e6f7a8b',
       );
+      const link = component.form.controls.articleId.hasError('invalidId');
 
-      expect(partial).toBe(true);
-      expect(component.form.controls.articleUrl.valid).toBe(true);
+      component.form.controls.articleId.setValue('679ee6041a2b3c4d5e6f7a8b');
+
+      expect(link).toBe(true);
+      expect(component.form.controls.articleId.valid).toBe(true);
+    });
+
+    it('should accept only a time control written the way past ones were', () => {
+      component.form.controls.timeControl.setValue('25 minutes');
+      const unknown = component.form.controls.timeControl.hasError('invalidTimeControl');
+
+      component.form.controls.timeControl.setValue('G25+5');
+
+      expect(unknown).toBe(true);
+      expect(component.form.controls.timeControl.valid).toBe(true);
     });
   });
 
@@ -442,8 +452,8 @@ describe('TournamentFormComponent', () => {
           alert.nativeElement.textContent.trim(),
         ),
       ).toEqual([
-        'Another section already has this name.',
-        'Another section already has this name.',
+        'Another section already has this name',
+        'Another section already has this name',
       ]);
       expect(dialogOpenSpy).not.toHaveBeenCalled();
       vi.useRealTimers();

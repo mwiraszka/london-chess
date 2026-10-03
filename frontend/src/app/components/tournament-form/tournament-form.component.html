@@ -51,12 +51,10 @@
       formControlName="isRated" />
 
     <ea-input
-      hint="The article announcing the tournament or reporting on it."
-      label="Article link"
-      placeholder="https://londonchess.ca/article/view/..."
-      type="url"
-      formControlName="articleUrl"
-      [errorMessages]="errorMessages" />
+      label="Associated article ID"
+      formControlName="articleId"
+      [errorMessages]="errorMessages"
+      [maxLength]="24" />
 
     <ea-divider />
 
@@ -126,7 +124,7 @@
 
       <ea-file-uploader
         accept=".xlsx,.csv"
-        hint="An .xlsx workbook with one sheet per section, or one .csv file per section, as the pairing program exports them."
+        hint="An .xlsx workbook with one sheet per section, or one .csv file per section, as SwissSys exports them."
         label="Import standings"
         [maxSize]="5242880"
         [multiple]="true"
@@ -218,20 +216,24 @@
         [disabled]="!hasUnsavedChanges()"
         [icon]="restoreIcon"
         (clicked)="onRestore()">
-        Discard changes
+        Revert
       </ea-button>
-      <ea-button
-        class="cancel-button"
-        variant="secondary"
-        (clicked)="onCancel()">
-        Cancel
-      </ea-button>
-      <ea-button
-        class="submit-button"
-        type="submit"
-        [disabled]="!hasUnsavedChanges() || importing()">
-        {{ originalTournament() ? 'Update tournament' : 'Add tournament' }}
-      </ea-button>
+      <div class="lcc-form-actions__primary">
+        <ea-button
+          class="cancel-button"
+          variant="secondary"
+          [fullWidth]="true"
+          (clicked)="onCancel()">
+          Cancel
+        </ea-button>
+        <ea-button
+          class="submit-button"
+          type="submit"
+          [disabled]="!hasUnsavedChanges() || importing()"
+          [fullWidth]="true">
+          {{ originalTournament() ? 'Update tournament' : 'Add tournament' }}
+        </ea-button>
+      </div>
     </div>
   </form>
 </ea-card>

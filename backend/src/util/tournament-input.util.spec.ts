@@ -60,7 +60,7 @@ function input(overrides: Partial<TournamentInput> = {}): TournamentInput {
     format: 'swiss',
     timeControl: 'G25+5',
     isRated: true,
-    articleUrl: 'https://londonchess.ca/article/view/6a7f6f69f983bd7b3881d3e6',
+    articleId: '6a7f6f69f983bd7b3881d3e6',
     registrationOpens: '2026-10-01T12:00:00.000Z',
     registrationCloses: '2026-10-15T21:00:00.000Z',
     sections: [section()],
@@ -78,7 +78,7 @@ describe('validateTournamentInput', () => {
   it('should accept a complete tournament and one with no results or registration', () => {
     const upcoming = input({
       sections: null,
-      articleUrl: null,
+      articleId: null,
       registrationOpens: null,
       registrationCloses: null,
     });
@@ -131,12 +131,16 @@ describe('validateTournamentInput', () => {
     expect(messageOf(input({ format: 'knockout' as TournamentInput['format'] }))).toBe(
       'format is not one the site knows',
     );
-    expect(messageOf(input({ articleUrl: 'londonchess.ca/article' }))).toBe(
-      'article link must be a web address',
+    expect(messageOf(input({ timeControl: '25 minutes' }))).toBe(
+      'time control must look like G25, G25+5 or 3 hours',
     );
-    expect(messageOf(input({ articleUrl: 'ftp://londonchess.ca/article' }))).toBe(
-      'article link must be a web address',
-    );
+    expect(
+      messageOf(
+        input({
+          articleId: 'https://londonchess.ca/article/view/6a7f6f69f983bd7b3881d3e6',
+        }),
+      ),
+    ).toBe('article ID must be 24 hexadecimal characters');
   });
 
   it('should reject a registration window that is incomplete, malformed or backwards', () => {

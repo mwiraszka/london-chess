@@ -2,7 +2,7 @@ import { DataTableColumn } from '@eagami/ui';
 
 import { FormControl } from '@angular/forms';
 
-import { Id, IsoDate, Url } from './core.model';
+import { Id, IsoDate } from './core.model';
 import { Game, GamePlayer } from './game.model';
 import { ModificationInfo } from './modification-info.model';
 
@@ -79,7 +79,7 @@ export interface Tournament {
   format: TournamentFormat;
   timeControl: string;
   isRated: boolean;
-  articleUrl: Url | null;
+  articleId: Id | null;
   sections: TournamentSection[];
   // Members can register online between these two instants, and never when both are null
   registrationOpens: IsoDate | null;
@@ -110,7 +110,7 @@ export type TournamentSummary = Pick<
 
 export type RoundResultInput = Omit<RoundResult, 'gameId'>;
 
-// A standing as the pairing software exports it, the player named "Last, First"
+// A standing as SwissSys exports it, the player named "Last, First"
 export interface EntryInput {
   rank: number;
   name: string;
@@ -139,7 +139,7 @@ export type TournamentDetails = Pick<
   | 'format'
   | 'timeControl'
   | 'isRated'
-  | 'articleUrl'
+  | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
 >;
@@ -161,7 +161,7 @@ export interface TournamentFormGroup {
   format: FormControl<TournamentFormat>;
   timeControl: FormControl<string>;
   isRated: FormControl<boolean>;
-  articleUrl: FormControl<string>;
+  articleId: FormControl<string>;
   hasRegistration: FormControl<boolean>;
   registrationOpensDay: FormControl<Date | null>;
   registrationOpensTime: FormControl<string | null>;
