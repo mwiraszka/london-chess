@@ -12,9 +12,6 @@
 .DS_Store
 Thumbs.db
 
-# Compiled output
-pnpm-lock.yaml
-
 # IDE - VSCode
 .vscode/*
 !.vscode/settings.json
