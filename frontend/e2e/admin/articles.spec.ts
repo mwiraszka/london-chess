@@ -1,6 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { BANNER_IMAGES } from '../seed';
-import { fieldError, fieldLabel, leaveAndReturn, watchWrites } from './fields';
+import { fieldError, fieldLabel, watchWrites } from './fields';
 import {
   API,
   APP_API,
@@ -120,9 +120,7 @@ test.describe('managing articles', () => {
     await confirm(page, 'Revert');
   });
 
-  test('keeps an article draft, with its errors, through leaving the page', async ({
-    page,
-  }) => {
+  test('keeps an article draft, with its errors, through a reload', async ({ page }) => {
     const title = uniqueName('Draft notice');
     await logIn(page);
 
@@ -131,7 +129,7 @@ test.describe('managing articles', () => {
     await page.getByLabel(fieldLabel('Content')).fill('Half **written**.');
     // The draft reaches the store a moment after typing stops, which enables Revert
     await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
-    await leaveAndReturn(page);
+    await page.reload();
 
     await expect(page).toHaveURL(/\/article\/add$/);
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(title);

@@ -1,6 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { bodyRows } from '../tables';
-import { fieldError, fieldLabel, leaveAndReturn, watchWrites } from './fields';
+import { fieldError, fieldLabel, watchWrites } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
@@ -119,7 +119,7 @@ test.describe('managing members', () => {
     await confirm(page, 'Revert');
   });
 
-  test('keeps a new member draft, with its errors, through leaving the page', async ({
+  test('keeps a new member draft, with its errors, through a reload', async ({
     page,
   }) => {
     await logIn(page);
@@ -129,7 +129,7 @@ test.describe('managing members', () => {
     await page.getByLabel(fieldLabel('City')).fill('');
     // The draft reaches the store a moment after typing stops, which enables Revert
     await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
-    await leaveAndReturn(page);
+    await page.reload();
 
     await expect(page).toHaveURL(/\/member\/add$/);
     await expect(page.getByLabel(fieldLabel('First name'))).toHaveValue('Imogen');

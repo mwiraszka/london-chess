@@ -1,5 +1,4 @@
-import { Locator, Page, expect } from '../fixtures';
-import { confirm } from './session';
+import { Locator, Page } from '../fixtures';
 
 // The editors label a field as "* Title:" beside it, with the text on a line of its own
 export const fieldLabel = (label: string): RegExp =>
@@ -38,15 +37,4 @@ export function watchWrites(page: Page, url: string): string[] {
     }
   });
   return writes;
-}
-
-// Leaves an editor for the news page past the unsaved changes prompt, then comes back
-export async function leaveAndReturn(page: Page): Promise<void> {
-  await page
-    .locator('lcc-navigation-bar')
-    .getByRole('link', { name: 'News', exact: true })
-    .click();
-  await confirm(page, 'Leave');
-  await expect(page).toHaveURL(/\/news$/);
-  await page.goBack();
 }
