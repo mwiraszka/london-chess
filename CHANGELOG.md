@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Run tournaments from the site, with results posted straight from SwissSys
-- Let members register for tournaments online: sign up or withdraw on a tournament's page while registration is open, see who else has signed up, and find upcoming tournaments at the top of the Tournaments page
+- Manage tournaments from the site: admins add, edit and delete tournaments, import their results from the standings SwissSys exports (an .xlsx workbook, or a .csv for each section), check the import in a preview that flags players new to the archive, and keep unsaved changes as a draft
+- Take tournament registrations online: admins set when registration opens and closes, members register or withdraw on the tournament's page, and everyone registered so far is listed there
+- List upcoming tournaments above the table on the Tournaments page, with where their registration stands
 
 ### Changed
 
-- Show upcoming and ongoing tournaments in the Tournaments table, point the home page's "Register for a tournament" button there, and lay out each tournament's sections more neatly
+- Include upcoming and in-progress tournaments in the Tournaments table, marked with a badge beside their names, and abbreviate the months in its dates
+- Send the home page's "Register for a tournament" button to the Tournaments page
+- Line a tournament's sections up down its page, each crosstable and its archived games at one shared width beneath a ruled heading
 - Make the schedule's calendar easier to browse: it opens on the current month, tags each event by type in colour, and marks today only in the list of events
 - Fit each page's width to its content, with headers spanning the page, tables and photo galleries using the full width, and articles, the FAQ, member profiles and the Lifetime Achievement Awards kept at a comfortable reading width
 - Stretch tables across the page and across articles, line up tables in an article that share the same headings, and even out the spacing between sections and above the footer
