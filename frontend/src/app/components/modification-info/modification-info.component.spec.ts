@@ -54,7 +54,7 @@ describe('ModificationInfoComponent', () => {
     });
 
     it('should separate each name from its date with a vertical divider', () => {
-      const dividers = queryAll(fixture.debugElement, '.name + ea-divider');
+      const dividers = queryAll(fixture.debugElement, '.credit + .when > ea-divider');
 
       expect(dividers).toHaveLength(2);
       dividers.forEach(divider => {

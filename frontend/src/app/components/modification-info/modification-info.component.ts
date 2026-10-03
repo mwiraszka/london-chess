@@ -14,17 +14,23 @@ import { FormatDatePipe } from '@app/pipes';
         <ea-icon-file-plus />
 
         <div class="create-text">
-          <span>created by</span>
-          <span class="name">
-            <lcc-member-link
-              [memberNumber]="info().createdByNumber"
-              [name]="info().createdBy"
-              [showAvatar]="true" />
-          </span>
-          <ea-divider
-            class="vertical-spacer"
-            orientation="vertical" />
-          <span class="date">{{ info().dateCreated | formatDate: 'short' }}</span>
+          <div class="credit-parts">
+            <span class="credit">
+              created by
+              <span class="name">
+                <lcc-member-link
+                  [memberNumber]="info().createdByNumber"
+                  [name]="info().createdBy"
+                  [showAvatar]="true" />
+              </span>
+            </span>
+            <span class="when">
+              <ea-divider
+                class="vertical-spacer"
+                orientation="vertical" />
+              <span class="date">{{ info().dateCreated | formatDate: 'short' }}</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -33,17 +39,25 @@ import { FormatDatePipe } from '@app/pipes';
           <ea-icon-edit />
 
           <div class="edit-text">
-            <span>last edited by</span>
-            <span class="name">
-              <lcc-member-link
-                [memberNumber]="info().lastEditedByNumber"
-                [name]="info().lastEditedBy"
-                [showAvatar]="true" />
-            </span>
-            <ea-divider
-              class="vertical-spacer"
-              orientation="vertical" />
-            <span class="date">{{ info().dateLastEdited | formatDate: 'short' }}</span>
+            <div class="credit-parts">
+              <span class="credit">
+                last edited by
+                <span class="name">
+                  <lcc-member-link
+                    [memberNumber]="info().lastEditedByNumber"
+                    [name]="info().lastEditedBy"
+                    [showAvatar]="true" />
+                </span>
+              </span>
+              <span class="when">
+                <ea-divider
+                  class="vertical-spacer"
+                  orientation="vertical" />
+                <span class="date">{{
+                  info().dateLastEdited | formatDate: 'short'
+                }}</span>
+              </span>
+            </div>
           </div>
         </div>
       }
