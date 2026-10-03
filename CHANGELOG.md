@@ -9,42 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Manage tournaments from the site: admins add, edit and delete tournaments, import their results from the standings SwissSys exports (an .xlsx workbook, or a .csv for each section), check the import in a preview that flags players new to the archive, and keep unsaved changes as a draft
-- Take tournament registrations online: admins set when registration opens and closes, members register or withdraw on the tournament's page, and everyone registered so far is listed there
-- List upcoming tournaments above the table on the Tournaments page, with where their registration stands
+- Run tournaments from the site, with results posted straight from SwissSys
+- Let members register for tournaments online: sign up or withdraw on a tournament's page while registration is open, see who else has signed up, and find upcoming tournaments at the top of the Tournaments page
 
 ### Changed
 
-- Include upcoming and in-progress tournaments in the Tournaments table, marked with a badge beside their names, and abbreviate the months in its dates
-- Send the home page's "Register for a tournament" button to the Tournaments page
-- Rename the About page to FAQ, with its old address leading to the new one
-- Rebuild the admin forms on the site's shared components, writing each error out beneath its field and giving the event form date and time pickers
-- Move each admin form's restore button down beside Cancel and Update as Revert, and keep Cancel and Update on one row, spanning the form on a phone
-- Fit the created and last edited details in the admin forms to their content, on one line wherever there is room
-- Store every phone number in one format, accepting the common North American ways of writing one with or without +1 or 001, and check Lichess and Chess.com usernames against each site's own rules
-- Dim the page behind every dialog and close the dialog on a click outside it, except while its action is still running
-- Restyle the user menu, the right-click admin controls, tooltips, alerts, switches and collapsible sections to match the rest of the site's components
-- Page the schedule's calendar view, starting it at the current month, and mark each event's type with a coloured tag
-- Fill a full row of the schedule's calendar with placeholder months while it loads, as many as the screen fits
-- Mark today in the schedule's list of events only, rather than also in the home page's upcoming events
-- Present the Lifetime Achievement Awards on cards
-- Leave the same space above the footer on every page, and give the sections of the tournament, members, game archive and City Champion pages their intended spacing
-- Size each page's content to suit it beneath a page header that always spans the page: forms at a narrow width, the FAQ, member profiles, articles and Lifetime Achievement Awards at a reading width, and tables, grids and galleries across the page, with the wide view widening all but the forms
-- Line a tournament's sections up down its page, each crosstable and its archived games at one shared width beneath a ruled heading
-- Stretch the tables on the Tournaments, Game Archives and Members pages across the page, in line with the cards and filters above them
-- Stretch tables in articles across the article, and line up the columns of tables set one after another whose headings match
-- Show the image explorer in dark mode, and the album name above the photo in the image viewer with its arrows over the photo
-- Show a progress bar while a document loads
-- Move the upload of member ratings to a button in the members page's admin toolbar
+- Show upcoming and ongoing tournaments in the Tournaments table, point the home page's "Register for a tournament" button there, and lay out each tournament's sections more neatly
+- Make the schedule's calendar easier to browse: it opens on the current month, tags each event by type in colour, and marks today only in the list of events
+- Fit each page's width to its content, with headers spanning the page, tables and photo galleries using the full width, and articles, the FAQ, member profiles and the Lifetime Achievement Awards kept at a comfortable reading width
+- Stretch tables across the page and across articles, line up tables in an article that share the same headings, and even out the spacing between sections and above the footer
+- Refresh the look of menus, tooltips, messages, switches and expandable sections, and dim the page behind pop-ups, which now close when you click outside them
+- Rename the About page to FAQ (the old link still works) and show the Lifetime Achievement Awards on cards
+- Show the album name above each photo in the photo viewer, and a progress bar while a document opens
 
 ### Fixed
 
-- Put the Vitest logo back in its place on the ring of tools on the website changelog page
-- Keep the last month of the schedule's calendar for visitors outside the club's time zone
-- Press the focused button when Enter is pressed in a dialog, instead of always confirming
-- Open an event's article from its dialog with Enter only when the event has one
-- Let the browser's Back button wait on an unsaved changes prompt that is already open, instead of being ignored
-- Correct the wording of the message shown when an image cannot be deleted
+- Put a misplaced logo back in its place on the website changelog page
+- Stop the schedule's calendar from leaving out its last month for visitors in other time zones
+- Make the Enter key press the highlighted button in pop-ups instead of always confirming, and open an event's article only when it has one
 
 ## [v6.3.1] - 2026-09-28
 
