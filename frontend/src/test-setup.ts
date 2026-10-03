@@ -46,6 +46,14 @@ Object.defineProperty(Element.prototype, 'scrollIntoView', {
   value: vi.fn(),
 });
 
+// jsdom implements no layout, so a tooltip measuring its text would throw rather than
+// read the empty box every element has there
+Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
+  configurable: true,
+  writable: true,
+  value: () => new DOMRect(),
+});
+
 globalThis.fail = (reason?: string | Error): never => {
   throw reason instanceof Error ? reason : new Error(reason ?? 'fail() called');
 };
