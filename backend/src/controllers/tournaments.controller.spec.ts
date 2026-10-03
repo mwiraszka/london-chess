@@ -5,6 +5,7 @@ import { GameModel } from '../models/game.model';
 import { PlayerModel } from '../models/player.model';
 import {
   EntryInput,
+  GameInput,
   MemberTournamentResult,
   PlayerNameMatch,
   RoundResult,
@@ -1033,6 +1034,219 @@ describe('tournaments routes', () => {
         .set('Authorization', bearer(MEMBER));
 
       expect(response.status).toBe(500);
+    });
+  });
+
+  describe('games from a pgn', () => {
+    const recordedSection = (white: string, black: string) => ({
+      name: 'A1',
+      ratingBand: '',
+      roundCount: 2,
+      isDoubleRound: false,
+      gameArchiveSections: [],
+      entries: [
+        {
+          ...entry(1, white, [played(1, 2, 1)]),
+          performanceRating: 1900,
+          resultNote: '',
+        },
+        {
+          ...entry(2, black, [played(1, 1, 0)]),
+          performanceRating: 1100,
+          resultNote: '',
+        },
+      ],
+    });
+
+    const sectionInput = (white: string, black: string, rounds = 1): SectionInput => ({
+      name: 'A1',
+      ratingBand: '',
+      roundCount: 2,
+      isDoubleRound: false,
+      entries: [
+        {
+          ...inputEntry(1, 'White, Pat', 1500, [played(1, 2, 1)]),
+          playerId: white,
+        },
+        {
+          ...inputEntry(2, 'Black, Pat', 1500, [played(1, 1, 0)]),
+          playerId: black,
+        },
+      ].map(input => ({
+        ...input,
+        rounds: input.rounds.slice(0, rounds),
+        score: input.rounds
+          .slice(0, rounds)
+          .reduce((total, { points }) => total + points, 0),
+      })),
+    });
+
+    const gameInput = (white: string, black: string, overrides = {}): GameInput => ({
+      section: 'A1',
+      round: '1',
+      date: '2023-09-14',
+      whitePlayerId: white,
+      blackPlayerId: black,
+      result: '1-0',
+      whiteElo: 1500,
+      blackElo: 1500,
+      eco: 'C20',
+      plyCount: 3,
+      moves: '1. e4 e5 2. Qh5 1-0',
+      ...overrides,
+    });
+
+    let white: string;
+    let black: string;
+
+    beforeEach(async () => {
+      await createAdmin(ADMIN);
+      white = await createPlayer('White');
+      black = await createPlayer('Black');
+      await createTournament({ sections: [recordedSection(white, black)] });
+    });
+
+    it('should report which sections and games an import would change', async () => {
+      await GameModel.create({
+        ...gameInput(white, black),
+        tournament: 'Championship',
+        year: 2023,
+        modificationInfo: MODIFICATION_INFO,
+      });
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({
+          sections: [
+            sectionInput(white, black),
+            { ...sectionInput(white, black), name: 'B' },
+          ],
+          games: [
+            gameInput(white, black),
+            gameInput(white, black, { moves: '1. e4 e5 2. Qh5 Nc6 1-0', plyCount: 4 }),
+            gameInput(white, black, { round: '2' }),
+          ],
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({
+        sectionChanges: [false, true],
+        removedSections: [],
+        games: ['unchanged', 'changed', 'new'],
+      });
+    });
+
+    it('should name the recorded sections an import leaves out', async () => {
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ sections: [{ ...sectionInput(white, black), name: 'B' }], games: [] });
+
+      expect(response.body.data.removedSections).toEqual(['A1']);
+    });
+
+    it('should refuse to check an unknown tournament or an unreadable import', async () => {
+      const missing = await request(app)
+        .post('/v1/tournaments/99/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ sections: [], games: [] });
+      const unreadable = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ sections: [], games: [gameInput(white, black, { result: 'win' })] });
+
+      expect(missing.status).toBe(404);
+      expect(unreadable.status).toBe(400);
+      expect(unreadable.body.message).toBe(
+        'Unable to check the import because game 1 has an unknown result.',
+      );
+    });
+
+    it('should keep an unchanged section as recorded and add the new games once', async () => {
+      const save = () =>
+        request(app)
+          .put('/v1/tournaments/86')
+          .set('Authorization', bearer(ADMIN))
+          .send(
+            tournamentInput({
+              format: 'round-robin',
+              sections: [sectionInput(white, black)],
+              games: [gameInput(white, black)],
+            }),
+          );
+
+      const first = await save();
+      await save();
+
+      expect(first.status).toBe(200);
+      const saved = await readTournament(86);
+      expect(saved.sections[0].entries[0].performanceRating).toBe(1900);
+      expect(saved.sections[0].gameArchiveSections).toEqual(['A1']);
+      expect(saved.gameArchiveTournament).toBe('Fall Rapid');
+      const games = await GameModel.find({ tournament: 'Fall Rapid' }).lean();
+      expect(games).toHaveLength(1);
+      expect(games[0].opening).not.toBe('');
+      const counted = await PlayerModel.findById(white).lean();
+      expect(counted?.gameCount).toBe(1);
+    });
+
+    it('should rewrite a game the archive holds differently, without counting it again', async () => {
+      await TournamentModel.updateOne(
+        { number: 86 },
+        { $set: { gameArchiveTournament: 'Club Championship' } },
+      );
+      const gameId = await createGame(white, black, 'A1', '1');
+
+      const response = await request(app)
+        .put('/v1/tournaments/86')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            sections: [sectionInput(white, black)],
+            games: [
+              gameInput(white, black, {
+                result: '1/2-1/2',
+                moves: '1. e4 1/2-1/2',
+                plyCount: 1,
+              }),
+            ],
+          }),
+        );
+
+      expect(response.status).toBe(200);
+      const game = await GameModel.findById(gameId).lean();
+      expect(game).toMatchObject({ result: '1/2-1/2', plyCount: 1 });
+      expect(game?.modificationInfo.lastEditedBy).toBe('Ada Admin');
+      const player = await PlayerModel.findById(white).lean();
+      expect(player?.gameCount).toBe(0);
+    });
+
+    it('should refuse games for a tournament not yet saved, or for unknown players', async () => {
+      const adding = await request(app)
+        .post('/v1/tournaments')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            sections: [sectionInput(white, black)],
+            games: [gameInput(white, black)],
+          }),
+        );
+      const unknown = await request(app)
+        .put('/v1/tournaments/86')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            sections: [sectionInput(white, black)],
+            games: [gameInput(white, '6a7f6f69f983bd7b3881d3e6')],
+          }),
+        );
+
+      expect(adding.status).toBe(400);
+      expect(unknown.status).toBe(400);
+      expect(unknown.body.message).toBe(
+        'Unable to save the tournament because it names a player the archive does not hold.',
+      );
     });
   });
 });

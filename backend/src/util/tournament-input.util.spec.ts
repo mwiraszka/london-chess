@@ -1,11 +1,16 @@
 import {
   EntryInput,
+  GameInput,
   RoundResult,
   SectionInput,
   TournamentInput,
 } from '../models/tournament.model';
 import { MODIFICATION_INFO } from '../testing/fixtures';
-import { validateTournamentInput } from './tournament-input.util';
+import {
+  gamesError,
+  sectionsError,
+  validateTournamentInput,
+} from './tournament-input.util';
 
 function round(overrides: Partial<RoundResult> = {}): RoundResult {
   return {
@@ -254,5 +259,64 @@ describe('validateTournamentInput', () => {
     expect(messageOf(withRounds([{ ...round(), extra: 1 } as RoundResult]))).toMatch(
       /^section A, rank 1, a round: /,
     );
+  });
+});
+
+describe('games from a pgn', () => {
+  const game = (): GameInput => ({
+    section: 'A',
+    round: '1',
+    date: '2026-10-15',
+    whitePlayerId: '6a7f6f69f983bd7b3881d3e6',
+    blackPlayerId: '6a7f6f69f983bd7b3881d3e7',
+    result: '1-0',
+    whiteElo: 1500,
+    blackElo: null,
+    eco: 'C20',
+    plyCount: 3,
+    moves: '1. e4 e5 2. Qh5 1-0',
+  });
+
+  const withField = (
+    field: keyof GameInput,
+    value: unknown,
+  ): Record<string, unknown> => ({
+    ...game(),
+    [field]: value,
+  });
+
+  it('should accept games that come with the results they belong to', () => {
+    expect(messageOf(input({ games: [game()] }))).toBeNull();
+    expect(gamesError([game()])).toBeNull();
+  });
+
+  it('should refuse games without results, and games it cannot store', () => {
+    expect(messageOf(input({ sections: null, games: [game()] }))).toBe(
+      'games can only be added along with the results they belong to',
+    );
+    expect(gamesError('games')).toBe('games must be a list of at most 2000');
+    expect(gamesError([withField('round', 'final')])).toBe('game 1 has an invalid round');
+    expect(gamesError([withField('date', '2026-02-30')])).toBe(
+      'game 1 has an invalid date',
+    );
+    expect(gamesError([withField('blackPlayerId', game().whitePlayerId)])).toBe(
+      'game 1 has invalid players',
+    );
+    expect(gamesError([withField('result', 'win')])).toBe('game 1 has an unknown result');
+    expect(gamesError([withField('whiteElo', 5000)])).toBe(
+      'game 1 has an invalid rating',
+    );
+    expect(gamesError([withField('eco', 'Z1')])).toBe('game 1 has an invalid ECO code');
+    expect(gamesError([withField('moves', ' ')])).toBe('game 1 has no moves');
+    expect(gamesError([{ section: 'A' }])).toMatch(/^game 1: /);
+  });
+
+  it('should refuse a section list it cannot read, and an entry with a malformed player', () => {
+    expect(sectionsError('sections')).toBe('sections must be a list');
+    expect(
+      messageOf(
+        input({ sections: [section({ entries: [entry({ playerId: 'player-1' })] })] }),
+      ),
+    ).toBe('section A, rank 1 has an invalid player ID');
   });
 });
