@@ -1,10 +1,9 @@
 import { Locator, Page, expect } from '../fixtures';
 import { confirm } from './session';
 
-// The editors label a field as "* Title:" beside it, while forms labelled above their fields,
-// like the tournament editor, mark a required one as "Name *"
+// The editors label a field as "* Title:" beside it, with the text on a line of its own
 export const fieldLabel = (label: string): RegExp =>
-  new RegExp(`^(\\* )?${label}:?( \\*)?$`);
+  new RegExp(`^\\s*(\\*\\s*)?${label}:?\\s*$`);
 
 // Date and time pickers read what is typed once the entry is committed with Enter
 export async function fillField(page: Page, label: string, value: string): Promise<void> {
