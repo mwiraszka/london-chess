@@ -6,8 +6,11 @@ import { Injectable, inject } from '@angular/core';
 import {
   ApiResponse,
   DbCollection,
+  GameInput,
+  ImportChanges,
   MemberTournamentResult,
   PlayerNameMatch,
+  SectionInput,
   Tournament,
   TournamentInput,
   TournamentRegistrant,
@@ -65,6 +68,17 @@ export class TournamentsApiService {
   public deleteTournament(tournamentNumber: number): Observable<ApiResponse<number>> {
     return this.http.delete<ApiResponse<number>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}`,
+    );
+  }
+
+  public checkImport(
+    tournamentNumber: number,
+    sections: SectionInput[],
+    games: GameInput[],
+  ): Observable<ApiResponse<ImportChanges>> {
+    return this.http.post<ApiResponse<ImportChanges>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}/import-changes`,
+      { sections, games },
     );
   }
 

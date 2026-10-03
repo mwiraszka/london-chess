@@ -63,7 +63,7 @@ export class StandingsFileService {
   }
 
   private failed(problems: string[]): StandingsImport {
-    return { sections: [], games: [], knownGameCount: 0, problems };
+    return { sections: [], games: [], problems };
   }
 
   private async readFile(file: File): Promise<StandingsFileRead> {

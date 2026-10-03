@@ -8,6 +8,8 @@ import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms'
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournaments.mock';
 import {
+  GameChange,
+  GameInput,
   SectionInput,
   StandingsImport,
   Tournament,
@@ -46,7 +48,7 @@ describe('TournamentFormComponent', () => {
   const imported = (
     sections: SectionInput[],
     problems: string[] = [],
-  ): StandingsImport => ({ sections, games: [], knownGameCount: 0, problems });
+  ): StandingsImport => ({ sections, games: [], problems });
 
   const section = (overrides: Partial<SectionInput> = {}): SectionInput => ({
     name: 'A',
@@ -150,7 +152,20 @@ describe('TournamentFormComponent', () => {
         },
         {
           provide: TournamentsApiService,
-          useValue: { matchPlayers: vi.fn().mockReturnValue(of({ data: [] })) },
+          useValue: {
+            matchPlayers: vi.fn().mockReturnValue(of({ data: [] })),
+            // Every imported section changes, as the server would find of new results
+            checkImport: vi.fn(
+              (_number: number, sections: SectionInput[], games: GameInput[]) =>
+                of({
+                  data: {
+                    sectionChanges: sections.map(() => true),
+                    removedSections: [],
+                    games: games.map((): GameChange => 'new'),
+                  },
+                }),
+            ),
+          },
         },
       ],
     }).compileComponents();
@@ -449,6 +464,7 @@ describe('TournamentFormComponent', () => {
       vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
       const band = lastDraft()?.sections?.[1].ratingBand;
       component.onSectionEdited(1, 'name', 'A');
+      await vi.advanceTimersByTimeAsync(FORM_CHANGE_DEBOUNCE);
       fixture.detectChanges();
       await component.onSubmit();
 

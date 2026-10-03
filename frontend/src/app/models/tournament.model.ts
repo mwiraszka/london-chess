@@ -146,6 +146,19 @@ export type TournamentDetails = Pick<
   | 'registrationCloses'
 >;
 
+// How a game read from a PGN compares with the tournament's games in the archive
+export type GameChange = 'new' | 'changed' | 'unchanged';
+
+// What saving imported results and games would change, as the server works it out
+export interface ImportChanges {
+  // Whether each imported section, in order, differs from the recorded one of its name
+  sectionChanges: boolean[];
+  // The recorded sections the import leaves out, which saving would remove
+  removedSections: string[];
+  // How each imported game compares with the archive
+  games: GameChange[];
+}
+
 // A game read from a PGN, to be added to the tournament's games in the archive
 export type GameInput = Pick<
   Game,
@@ -219,10 +232,8 @@ export interface PgnGame {
 
 export interface StandingsImport {
   sections: SectionInput[];
-  // Games from a PGN that the archive does not hold yet
+  // Every game a PGN holds, whether or not the archive already has it
   games: GameInput[];
-  // Games from a PGN that were already recorded
-  knownGameCount: number;
   // Everything that stopped the import, each a sentence naming where it is
   problems: string[];
 }

@@ -21,7 +21,11 @@ export function clubToday(): string {
 // What the tournament's form starts from: its recorded details, or a blank new tournament
 export function tournamentFormData(tournament: Tournament | null): TournamentFormData {
   return tournament
-    ? { ...pick(tournament, TOURNAMENT_FORM_DATA_PROPERTIES), sections: null, games: null }
+    ? {
+        ...pick(tournament, TOURNAMENT_FORM_DATA_PROPERTIES),
+        sections: null,
+        games: null,
+      }
     : INITIAL_TOURNAMENT_FORM_DATA;
 }
 

@@ -9,7 +9,7 @@ import {
   Tournament,
 } from '@app/models';
 
-import { playerNameLastFirst } from './player-name.util';
+import { isSamePlayerName, playerNameLastFirst } from './player-name.util';
 
 interface Entrant {
   sectionIndex: number;
@@ -19,20 +19,7 @@ interface Entrant {
 const TAG_LINE = /^\[(\w+)\s+"((?:[^"\\]|\\.)*)"\]$/;
 const ECO_CODE = /^[A-E]\d{2}$/;
 const PGN_DATE = /^(\d{4})\.(\d{2})\.(\d{2})$/;
-
-const fold = (value: string): string =>
-  value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z]/g, '');
-
-function splitName(name: string): { first: string; last: string } {
-  const comma = name.indexOf(',');
-  return comma === -1
-    ? { first: '', last: fold(name) }
-    : { first: fold(name.slice(comma + 1)), last: fold(name.slice(0, comma)) };
-}
+const RESULT_TOKENS = ['1-0', '0-1', '1/2-1/2', '*'];
 
 // The main line's moves, without move numbers, comments, variations or the result
 function countPlies(movetext: string): number {
@@ -44,10 +31,7 @@ function countPlies(movetext: string): number {
     .split(/\s+/)
     .map(token => token.replace(/^\d+\.+/, ''))
     .filter(
-      token =>
-        token !== '' &&
-        !/^\$\d+$/.test(token) &&
-        !['1-0', '0-1', '1/2-1/2', '*'].includes(token),
+      token => token !== '' && !/^\$\d+$/.test(token) && !RESULT_TOKENS.includes(token),
     ).length;
 }
 
@@ -104,6 +88,18 @@ export function readPgnGames(
         `${describe(game)} says it has ${declared} half-moves, but ${game.plyCount} were read.`,
       );
     }
+    // The movetext ends on the result too, and the two must agree
+    const ending =
+      movetext
+        .replace(/\{[^}]*\}/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .pop() ?? '';
+    if (RESULT_TOKENS.includes(ending) && tags['Result'] && ending !== tags['Result']) {
+      problems.push(
+        `${describe(game)} ends its moves with ${ending}, but its Result tag says ${tags['Result']}.`,
+      );
+    }
     return game;
   });
   return { games, problems };
@@ -121,11 +117,12 @@ function elo(tag: string | undefined): number | null {
 /**
  * Adds a PGN's games to the results a tournament already has. Each game goes to the
  * section its event names and is matched to that section's players, so a name spelt a
- * little differently still finds them. Results already recorded are left as they are,
- * and the archive is only given the games it does not hold yet.
+ * little differently still finds them. A game sets its round's result for both players,
+ * so a corrected result replaces the recorded one, while a game that contradicts the
+ * recorded pairing stops the import.
  */
 export function mergePgnGames(tournament: Tournament, games: PgnGame[]): StandingsImport {
-  const nothing = { sections: [], games: [], knownGameCount: 0 };
+  const nothing = { sections: [], games: [] };
   if (!tournament.sections.length) {
     return {
       ...nothing,
@@ -166,20 +163,8 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
     section =>
       new Set([section.name, ...section.games.map(game => game.section)].filter(Boolean)),
   );
-  const archived = new Map<string, GameResult>();
-  for (const section of tournament.sections) {
-    for (const game of section.games) {
-      const round = game.round.match(/^\d+/)?.[0] ?? game.round;
-      archived.set(
-        `${game.section}|${round}|${game.white.id}|${game.black.id}`,
-        game.result,
-      );
-    }
-  }
-
   const problems: string[] = [];
-  const additions = new Map<string, GameInput>();
-  let knownGameCount = 0;
+  const merged = new Map<string, GameInput>();
 
   const sectionLabel = (event: string): string | null => {
     const value = event.trim().toLowerCase();
@@ -197,28 +182,17 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
   };
 
   const findEntrant = (name: string, sectionIndexes: number[]): Entrant[] => {
-    const wanted = splitName(name);
     const candidates = sectionIndexes.flatMap(sectionIndex =>
       sections[sectionIndex].entries.map(entry => ({
         sectionIndex,
         rank: entry.rank,
-        ...splitName(entry.name),
+        name: entry.name,
       })),
     );
-    const exact = candidates.filter(
-      ({ first, last }) => last === wanted.last && first === wanted.first,
-    );
-    if (exact.length) {
-      return exact;
-    }
-    // A shortened first name, such as Jeff for Jeffrey
-    return candidates.filter(
-      ({ first, last }) =>
-        last === wanted.last &&
-        !!first &&
-        !!wanted.first &&
-        (first.startsWith(wanted.first) || wanted.first.startsWith(first)),
-    );
+    const exact = candidates.filter(entrant => isSamePlayerName(entrant.name, name));
+    return exact.length
+      ? exact
+      : candidates.filter(entrant => isSamePlayerName(entrant.name, name, true));
   };
 
   for (const game of games) {
@@ -293,34 +267,26 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       continue;
     }
 
-    let conflict = false;
-    const missing: (typeof sides)[number][] = [];
-    for (const side of sides) {
-      const entry = sections[side.entrant.sectionIndex].entries.find(
-        ({ rank }) => rank === side.entrant.rank,
-      )!;
-      const recorded = entry.rounds.find(played => played.round === round);
-      if (!recorded) {
-        missing.push(side);
-      } else if (
-        recorded.outcome !== 'game' ||
-        recorded.points !== side.score ||
-        recorded.opponentRank !== (sameSection ? side.opponent.rank : null)
-      ) {
-        conflict = true;
-      }
-    }
-    if (conflict) {
+    const entryOf = ({ sectionIndex, rank }: Entrant) =>
+      sections[sectionIndex].entries.find(entry => entry.rank === rank)!;
+    // A recorded round can take the game's result only when it pairs the same two players
+    const contradicted = sides.some(({ entrant, opponent }) => {
+      const recorded = entryOf(entrant).rounds.find(played => played.round === round);
+      return (
+        !!recorded &&
+        (recorded.outcome !== 'game' ||
+          recorded.opponentRank !== (sameSection ? opponent.rank : null))
+      );
+    });
+    if (contradicted) {
       problems.push(
-        `${label} differs from the result already recorded for round ${round}.`,
+        `${label} does not match the pairing already recorded for round ${round}.`,
       );
       continue;
     }
 
-    for (const side of missing) {
-      const entry = sections[side.entrant.sectionIndex].entries.find(
-        ({ rank }) => rank === side.entrant.rank,
-      )!;
+    for (const side of sides) {
+      const entry = entryOf(side.entrant);
       const played: RoundResultInput = {
         round,
         outcome: 'game',
@@ -329,34 +295,22 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
         opponentRank: sameSection ? side.opponent.rank : null,
         color: side.color,
       };
-      entry.rounds = [...entry.rounds, played].sort((a, b) => a.round - b.round);
+      entry.rounds = [
+        ...entry.rounds.filter(other => other.round !== round),
+        played,
+      ].sort((a, b) => a.round - b.round);
       entry.score = entry.rounds.reduce((total, { points }) => total + points, 0);
     }
 
-    const whitePlayerId = sections[whiteEntrant.sectionIndex].entries.find(
-      ({ rank }) => rank === whiteEntrant.rank,
-    )!.playerId!;
-    const blackPlayerId = sections[blackEntrant.sectionIndex].entries.find(
-      ({ rank }) => rank === blackEntrant.rank,
-    )!.playerId!;
+    const whitePlayerId = entryOf(whiteEntrant).playerId!;
+    const blackPlayerId = entryOf(blackEntrant).playerId!;
     const key = `${archiveSection}|${round}|${whitePlayerId}|${blackPlayerId}`;
-    const archivedResult = archived.get(key);
-    if (archivedResult !== undefined) {
-      if (archivedResult !== result) {
-        problems.push(
-          `${label} is already in the archive with the result ${archivedResult}.`,
-        );
-      } else {
-        knownGameCount++;
-      }
-      continue;
-    }
-    if (additions.has(key)) {
+    if (merged.has(key)) {
       problems.push(`${label} appears more than once.`);
       continue;
     }
     const eco = game.tags['ECO'] ?? '';
-    additions.set(key, {
+    merged.set(key, {
       section: archiveSection,
       round: String(round),
       date: gameDate(game.tags['Date'], tournament.date),
@@ -374,10 +328,5 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
   if (problems.length) {
     return { ...nothing, problems };
   }
-  return {
-    sections,
-    games: [...additions.values()],
-    knownGameCount,
-    problems: [],
-  };
+  return { sections, games: [...merged.values()], problems: [] };
 }

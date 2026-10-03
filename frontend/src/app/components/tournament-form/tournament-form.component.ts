@@ -52,6 +52,7 @@ import {
   BasicDialogResult,
   Dialog,
   GameInput,
+  ImportChanges,
   ImportPreview,
   ImportPreviewRow,
   PlayerNameMatch,
@@ -71,6 +72,7 @@ import {
   formatScore,
   fromClubDateTime,
   fromDayString,
+  playerNameLastFirst,
   roundResultLabel,
   toClubDateTime,
   toDayString,
@@ -135,14 +137,55 @@ export class TournamentFormComponent implements OnInit {
 
   // Results read from a file but not yet saved; null keeps the recorded ones
   protected readonly importedSections = signal<SectionInput[] | null>(null);
-  // Games from a PGN that the archive does not hold yet; null when no PGN was imported
+  // Games from a PGN waiting to be saved: the ones the archive lacks or holds differently;
+  // null when no PGN was imported
   protected readonly importedGames = signal<GameInput[] | null>(null);
-  protected readonly pgnNote = signal<string | null>(null);
+  // What saving the import would change, as the server works it out for a saved tournament
+  protected readonly importChanges = signal<ImportChanges | null>(null);
   protected readonly importProblems = signal<string[]>([]);
   protected readonly importing = signal(false);
+  protected readonly checking = signal(false);
   protected readonly standingsFiles = signal<readonly File[]>([]);
   protected readonly playerMatches = signal<PlayerNameMatch[]>([]);
   protected readonly playerCheckFailed = signal(false);
+
+  // The games the last check compared, in the order of its answer
+  private readonly checkedGames = signal<GameInput[]>([]);
+  // Every game a newly read PGN holds, before the check keeps only those that change
+  private readonly pgnGames = signal<GameInput[]>([]);
+
+  protected readonly gameChanges = computed(() => {
+    const changes = this.importChanges();
+    if (!changes?.games.length) {
+      return null;
+    }
+    const names = new Map(
+      (this.originalTournament()?.sections ?? []).flatMap(({ entries }) =>
+        entries.map(({ player }) => [player.id, playerNameLastFirst(player)] as const),
+      ),
+    );
+    const games = this.checkedGames();
+    return {
+      added: changes.games.filter(change => change === 'new').length,
+      updated: games
+        .filter((_, index) => changes.games[index] === 'changed')
+        .map(
+          game =>
+            `round ${game.round}, ${names.get(game.whitePlayerId)} v ${names.get(game.blackPlayerId)}`,
+        ),
+      unchanged: changes.games.filter(change => change === 'unchanged').length,
+    };
+  });
+
+  protected readonly nothingChanges = computed(() => {
+    const changes = this.importChanges();
+    return (
+      !!changes &&
+      !changes.sectionChanges.some(Boolean) &&
+      !changes.removedSections.length &&
+      changes.games.every(change => change === 'unchanged')
+    );
+  });
 
   protected readonly listedProblems = computed(() =>
     this.importProblems().slice(0, MAX_LISTED_IMPORT_PROBLEMS),
@@ -193,53 +236,61 @@ export class TournamentFormComponent implements OnInit {
   protected readonly previews = computed<ImportPreview[]>(() => {
     const playerCell = this.playerCell();
     const newPlayers = new Set(this.newPlayers());
-    return (this.importedSections() ?? []).map((section, index) => ({
-      key: `${index}`,
-      index,
-      section,
-      columns: [
-        { key: 'rank', label: '#', align: 'right' },
-        {
-          key: 'player',
-          label: 'Player',
-          ...(playerCell ? { cellTemplate: playerCell } : {}),
-        },
-        { key: 'rating', label: 'Rating', align: 'right' },
-        ...Array.from(
-          { length: section.roundCount },
-          (_, round): DataTableColumn<ImportPreviewRow> => ({
-            key: `round-${round + 1}`,
-            label: `Rd ${round + 1}`,
-            align: 'center',
-          }),
-        ),
-        { key: 'score', label: 'Total', align: 'right' },
-      ],
-      rows: section.entries.map(entry => {
-        const row: ImportPreviewRow = {
-          id: `${index}-${entry.rank}`,
-          rank: entry.rank,
-          player: entry.name,
-          isNewPlayer: newPlayers.has(entry.name),
-          rating:
-            entry.rating === null
-              ? 'Unrated'
-              : `${entry.rating}${entry.provisionalGames ? `/${entry.provisionalGames}` : ''}`,
-          score: formatScore(entry.score),
-        };
-        for (let round = 1; round <= section.roundCount; round++) {
-          const result = entry.rounds.find(played => played.round === round);
-          row[`round-${round}`] = result ? roundResultLabel(result) : '';
-        }
-        return row;
-      }),
-    }));
+    const changes = this.importChanges();
+    return (this.importedSections() ?? []).flatMap((section, index) =>
+      changes && !changes.sectionChanges[index]
+        ? []
+        : [
+            {
+              key: `${index}`,
+              index,
+              section,
+              columns: [
+                { key: 'rank', label: '#', align: 'right' },
+                {
+                  key: 'player',
+                  label: 'Player',
+                  ...(playerCell ? { cellTemplate: playerCell } : {}),
+                },
+                { key: 'rating', label: 'Rating', align: 'right' },
+                ...Array.from(
+                  { length: section.roundCount },
+                  (_, round): DataTableColumn<ImportPreviewRow> => ({
+                    key: `round-${round + 1}`,
+                    label: `Rd ${round + 1}`,
+                    align: 'center',
+                  }),
+                ),
+                { key: 'score', label: 'Total', align: 'right' },
+              ],
+              rows: section.entries.map(entry => {
+                const row: ImportPreviewRow = {
+                  id: `${index}-${entry.rank}`,
+                  rank: entry.rank,
+                  player: entry.name,
+                  isNewPlayer: newPlayers.has(entry.name),
+                  rating:
+                    entry.rating === null
+                      ? 'Unrated'
+                      : `${entry.rating}${entry.provisionalGames ? `/${entry.provisionalGames}` : ''}`,
+                  score: formatScore(entry.score),
+                };
+                for (let round = 1; round <= section.roundCount; round++) {
+                  const result = entry.rounds.find(played => played.round === round);
+                  row[`round-${round}`] = result ? roundResultLabel(result) : '';
+                }
+                return row;
+              }),
+            },
+          ],
+    );
   });
 
   public form!: FormGroup<TournamentFormGroup>;
 
   private readonly sectionEdits = new Subject<void>();
   private importAttempt = 0;
+  private checkAttempt = 0;
 
   public ngOnInit(): void {
     this.form = this.buildForm(this.formData());
@@ -273,6 +324,10 @@ export class TournamentFormComponent implements OnInit {
     merge(this.form.valueChanges, this.sectionEdits)
       .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
+    // A renamed section or rating band changes what saving would do, so it is checked again
+    this.sectionEdits
+      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => void this.checkImport());
     this.emitChange();
 
     if (this.hasUnsavedChanges()) {
@@ -281,6 +336,7 @@ export class TournamentFormComponent implements OnInit {
     const sections = this.importedSections();
     if (sections) {
       void this.checkPlayers(sections);
+      void this.checkImport();
     }
   }
 
@@ -293,8 +349,10 @@ export class TournamentFormComponent implements OnInit {
     const attempt = ++this.importAttempt;
 
     this.importing.set(true);
-    const { sections, games, knownGameCount, problems } =
-      await this.standingsFileService.importStandings(files, this.originalTournament());
+    const { sections, games, problems } = await this.standingsFileService.importStandings(
+      files,
+      this.originalTournament(),
+    );
     // A later choice of files replaces this one
     if (attempt !== this.importAttempt) {
       return;
@@ -305,14 +363,7 @@ export class TournamentFormComponent implements OnInit {
       return;
     }
     const fromPgn = files.some(file => /\.(pgn|txt)$/i.test(file.name));
-    const recordedGames = knownGameCount === 1 ? '1 game' : `${knownGameCount} games`;
-    this.pgnNote.set(
-      !fromPgn || !knownGameCount
-        ? null
-        : games.length
-          ? `Already in the archive and left unchanged: ${recordedGames} from the file.`
-          : 'Every game in the file is already in the archive.',
-    );
+    this.pgnGames.set(fromPgn ? games : []);
     this.importedGames.set(fromPgn ? games : null);
 
     const known = [
@@ -325,7 +376,7 @@ export class TournamentFormComponent implements OnInit {
     }));
     this.importedSections.set(imported);
     this.emitChange();
-    await this.checkPlayers(imported);
+    await Promise.all([this.checkPlayers(imported), this.checkImport()]);
   }
 
   public onSectionEdited(
@@ -340,6 +391,10 @@ export class TournamentFormComponent implements OnInit {
           )
         : sections,
     );
+    // Saving waits until the edit has been checked
+    if (this.originalTournament()) {
+      this.checking.set(true);
+    }
     this.sectionEdits.next();
   }
 
@@ -453,7 +508,55 @@ export class TournamentFormComponent implements OnInit {
     this.playerCheckFailed.set(false);
     this.importedSections.set(null);
     this.importedGames.set(null);
-    this.pgnNote.set(null);
+    this.checkAttempt++;
+    this.checking.set(false);
+    this.importChanges.set(null);
+    this.checkedGames.set([]);
+    this.pgnGames.set([]);
+  }
+
+  /**
+   * Asks the server what saving the import would change, which is exactly what the save
+   * itself will do: only the sections it names as changed are shown, and only the games it
+   * finds new or different are kept to be saved.
+   */
+  private async checkImport(): Promise<void> {
+    const tournament = this.originalTournament();
+    const sections = this.importedSections();
+    if (!tournament || !sections) {
+      this.importChanges.set(null);
+      return;
+    }
+
+    const games = this.pgnGames().length ? this.pgnGames() : (this.importedGames() ?? []);
+    const attempt = ++this.checkAttempt;
+    this.checking.set(true);
+    try {
+      const { data } = await firstValueFrom(
+        this.tournamentsApiService.checkImport(tournament.number, sections, games),
+      );
+      if (attempt !== this.checkAttempt) {
+        return;
+      }
+      this.checkedGames.set(games);
+      this.importChanges.set(data);
+      if (this.importedGames() !== null) {
+        this.importedGames.set(
+          games.filter((_, index) => data.games[index] !== 'unchanged'),
+        );
+        this.emitChange();
+      }
+      this.checking.set(false);
+    } catch {
+      if (attempt !== this.checkAttempt) {
+        return;
+      }
+      this.clearImport();
+      this.importProblems.set([
+        'The import could not be checked against the recorded results, so it was not used.',
+      ]);
+      this.emitChange();
+    }
   }
 
   private onRegistrationToggled(hasRegistration: boolean): void {

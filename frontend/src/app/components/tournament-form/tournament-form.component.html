@@ -151,15 +151,15 @@
           class="section-heading">
           Results
         </h3>
-        <p class="results__status">
-          @if (importedSections()) {
-            Imported results are shown below and will be saved with the tournament.
-          } @else if (recordedResults(); as recorded) {
-            Results recorded: {{ recorded }}. Importing new standings replaces them.
-          } @else {
-            No results have been recorded yet.
-          }
-        </p>
+        @if (!importedSections()) {
+          <p class="results__status">
+            @if (recordedResults(); as recorded) {
+              Results recorded: {{ recorded }}. Importing new standings replaces them.
+            } @else {
+              No results have been recorded yet.
+            }
+          </p>
+        }
 
         <ea-file-uploader
           accept=".xlsx,.csv,.pgn,.txt"
@@ -170,23 +170,62 @@
           [value]="standingsFiles()"
           (valueChange)="onStandingsChosen($event)" />
 
-        @if (importedGames()?.length; as newGames) {
-          <p class="results__status">
-            {{ newGames === 1 ? '1 new game' : newGames + ' new games' }} will be added to
-            the game archive.
-          </p>
-        }
-
-        @if (pgnNote(); as note) {
-          <p class="results__status">{{ note }}</p>
-        }
-
         @if (importing()) {
           <p
             class="results__status"
             role="status">
             Reading the standings...
           </p>
+        } @else if (checking()) {
+          <p
+            class="results__status"
+            role="status">
+            Checking the import against the recorded results...
+          </p>
+        } @else if (importChanges(); as changes) {
+          @if (nothingChanges()) {
+            <p class="results__status">
+              Nothing in the file differs from what is already recorded.
+            </p>
+          }
+          @if (previews().length) {
+            <p class="results__status">
+              The sections the import changes are shown below and will be saved with the
+              tournament.
+            </p>
+          }
+          @if (changes.removedSections.length) {
+            <p class="results__status">
+              Saving will remove
+              {{
+                changes.removedSections.length === 1
+                  ? 'section ' + changes.removedSections[0]
+                  : 'sections ' + changes.removedSections.join(', ')
+              }}, which the file leaves out.
+            </p>
+          }
+          @if (gameChanges(); as games) {
+            @if (games.added) {
+              <p class="results__status">
+                {{ games.added === 1 ? '1 new game' : games.added + ' new games' }} will
+                be added to the game archive.
+              </p>
+            }
+            @if (games.updated.length) {
+              <p class="results__status">
+                Saving will update
+                {{ games.updated.length === 1 ? 'this game' : 'these games' }} in the
+                archive: {{ games.updated.join('; ') }}.
+              </p>
+            }
+            @if (games.unchanged) {
+              <p class="results__status">
+                Already in the archive and left unchanged:
+                {{ games.unchanged === 1 ? '1 game' : games.unchanged + ' games' }} from
+                the file.
+              </p>
+            }
+          }
         }
 
         @if (listedProblems().length) {
@@ -209,7 +248,7 @@
           </ea-alert>
         }
 
-        @if (importedSections()) {
+        @if (importedSections() && !importing() && !checking()) {
           @if (newPlayers().length) {
             <ea-alert variant="info">{{ newPlayersNote() }}</ea-alert>
           } @else if (playerCheckFailed()) {
@@ -281,7 +320,7 @@
             class="submit-button"
             size="sm"
             type="submit"
-            [disabled]="form.invalid || !hasUnsavedChanges() || importing()"
+            [disabled]="form.invalid || !hasUnsavedChanges() || importing() || checking()"
             [fullWidth]="true"
             [uppercase]="true">
             {{ originalTournament() ? 'Update tournament' : 'Add tournament' }}

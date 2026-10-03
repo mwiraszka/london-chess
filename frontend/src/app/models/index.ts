@@ -80,7 +80,9 @@ export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
 export type {
   EntryInput,
+  GameChange,
   GameInput,
+  ImportChanges,
   ImportPreview,
   ImportPreviewRow,
   MemberTournamentResult,
