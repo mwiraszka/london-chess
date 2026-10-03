@@ -71,7 +71,7 @@ export async function openAdminControls(item: Locator): Promise<Locator> {
       ),
   );
   await item.click({ button: 'right' });
-  const controls = item.page().locator('lcc-admin-controls .admin-controls');
+  const controls = item.page().getByRole('dialog', { name: /^Admin controls for / });
   await expect(controls).toBeVisible();
   return controls;
 }
