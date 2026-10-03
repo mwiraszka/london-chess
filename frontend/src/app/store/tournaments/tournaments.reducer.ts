@@ -127,9 +127,13 @@ export const tournamentsReducer = createReducer(
         newTournamentFormData: { ...state.newTournamentFormData, ...formData },
       };
     }
-    const draft =
-      state.formData[tournamentNumber] ??
-      tournamentFormData(state.entities[tournamentNumber] ?? null);
+    const tournament = state.entities[tournamentNumber];
+    // A draft is kept against the recorded tournament, so a change arriving once a save
+    // has unloaded it, as the closing editor sends, starts no draft
+    if (!tournament) {
+      return state;
+    }
+    const draft = state.formData[tournamentNumber] ?? tournamentFormData(tournament);
     return {
       ...state,
       formData: { ...state.formData, [tournamentNumber]: { ...draft, ...formData } },
