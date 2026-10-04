@@ -84,10 +84,13 @@ export class StandingsFileService {
           })),
         };
       }
-      const { parse } = await import('papaparse');
+      // Papaparse is CommonJS, which import() exposes only as a default export, so a
+      // module loaded on demand imports it statically instead
+      const { readCsvRows } = await import('@app/utils/file/read-csv-rows.util');
       const text = (await file.text()).replace(/^\uFEFF/, '');
-      const { data } = parse<string[]>(text, { skipEmptyLines: 'greedy' });
-      return { sheets: [{ name: file.name.replace(/\.[^.]+$/, ''), rows: data }] };
+      return {
+        sheets: [{ name: file.name.replace(/\.[^.]+$/, ''), rows: readCsvRows(text) }],
+      };
     } catch (error) {
       console.error('[LCC] Unable to read standings file:', error);
       return { problem: `${file.name} could not be read as a spreadsheet.` };
