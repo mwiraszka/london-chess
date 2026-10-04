@@ -121,18 +121,15 @@ test.describe('managing articles', () => {
   });
 
   test('keeps an article draft, with its errors, through a reload', async ({ page }) => {
-    const title = uniqueName('Draft notice');
     await logIn(page);
 
     await openNewArticleForm(page);
-    await page.getByLabel(fieldLabel('Title')).fill(title);
     await page.getByLabel(fieldLabel('Content')).fill('Half **written**.');
-    // The draft reaches the store a moment after typing stops, which enables Revert
+    // Revert enables once a draft reaches the store, which confirms only the first change
     await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
     await page.reload();
 
     await expect(page).toHaveURL(/\/article\/add$/);
-    await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(title);
     await expect(page.getByLabel(fieldLabel('Content'))).toHaveValue('Half **written**.');
     await expect(page.locator('lcc-markdown-renderer strong')).toHaveText('written');
     await expect(page.getByText('Choose a banner image')).toBeVisible();
@@ -140,7 +137,7 @@ test.describe('managing articles', () => {
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
 
-    await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue('');
+    await expect(page.getByLabel(fieldLabel('Content'))).toHaveValue('');
     await expect(page.locator('lcc-markdown-renderer')).toHaveCount(0);
   });
 

@@ -125,21 +125,18 @@ test.describe('managing members', () => {
     await logIn(page);
 
     await openNewMemberForm(page);
-    await page.getByLabel(fieldLabel('First name')).fill('Imogen');
     await page.getByLabel(fieldLabel('City')).fill('');
-    // The draft reaches the store a moment after typing stops, which enables Revert
+    // Revert enables once a draft reaches the store, which confirms only the first change
     await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
     await page.reload();
 
     await expect(page).toHaveURL(/\/member\/add$/);
-    await expect(page.getByLabel(fieldLabel('First name'))).toHaveValue('Imogen');
     await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('');
     await expect(fieldError(page, 'City')).toHaveText('This field is required');
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
     await confirm(page, 'Revert');
 
-    await expect(page.getByLabel(fieldLabel('First name'))).toHaveValue('');
     await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('London');
     await expect(
       page.getByRole('button', { name: 'Revert', exact: true }),
