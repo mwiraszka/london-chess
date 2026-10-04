@@ -118,7 +118,8 @@ test.describe('managing tournaments', () => {
     await page.goto('/tournament/add');
 
     await page.getByLabel(fieldLabel('Name')).fill(name);
-    await expect(page.locator('lcc-page-header')).toContainText('*');
+    // Revert enables once a draft reaches the store, which confirms only the first change
+    await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
     await page.reload();
 
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue(name);
