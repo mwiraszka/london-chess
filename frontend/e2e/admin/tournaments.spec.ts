@@ -1,6 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { ADMIN, PROFILE_MEMBER, RIVAL_MEMBER, UPCOMING } from '../seed';
-import { fieldLabel, fillDate, nextMonthOn } from './fields';
+import { fieldError, fieldLabel, fillDate, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
@@ -135,12 +135,11 @@ test.describe('managing tournaments', () => {
   }) => {
     await logIn(page);
     await page.goto('/tournament/add');
+    await page.getByLabel(fieldLabel('Name')).focus();
     await page.getByLabel(fieldLabel('Time control')).fill('G10');
 
-    await page.getByRole('button', { name: 'Add tournament' }).click();
-
-    await expect(page.getByRole('alert').filter({ hasText: 'required' })).toHaveCount(2);
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await expect(fieldError(page, 'Name')).toHaveText('This field is required');
+    await expect(page.getByRole('button', { name: 'Add tournament' })).toBeDisabled();
   });
 });
 
