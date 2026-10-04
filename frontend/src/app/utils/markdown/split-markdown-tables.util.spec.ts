@@ -104,4 +104,70 @@ describe('splitMarkdownTables', () => {
 
     expect(segments).toEqual([{ kind: 'markdown', text: '|a|b|\n|1|2|' }]);
   });
+
+  describe('tables set one after another', () => {
+    const sections = '|Section|1st place|2nd place|\n|--|--:|--:|\n|A|$100|$50|';
+    const youth =
+      '|Youth|1st Place| 2nd  place |\n|--|--:|--:|\n|Starter U1000|$TBD|$TBD|';
+
+    const sizingOf = (markdown: string) =>
+      splitMarkdownTables(markdown).map(segment =>
+        segment.kind === 'table' ? segment.sizingRows : [],
+      );
+
+    it('should size each to fit the rows and first headings of all, when their later headings match', () => {
+      const [first, second] = sizingOf(`${sections}\n\n${youth}`);
+
+      expect(first.map(row => row.heading?.label ?? row.html['c0'])).toEqual([
+        'Section',
+        'Youth',
+        'Starter U1000',
+      ]);
+      expect(second.map(row => row.heading?.label ?? row.html['c0'])).toEqual([
+        'Section',
+        'Youth',
+        'A',
+      ]);
+      expect(new Set([...first, ...second].map(({ id }) => id)).size).toBe(4);
+    });
+
+    it('should size each on its own when their later headings differ', () => {
+      const prizes = '|Youth|Prize|Sponsor|\n|--|--|--|\n|Starter|$TBD|Club|';
+
+      expect(sizingOf(`${sections}\n\n${prizes}`)).toEqual([[], []]);
+    });
+
+    it('should size each on its own when text comes between them', () => {
+      expect(sizingOf(`${sections}\n\nThe youth prizes:\n\n${youth}`)).toEqual([
+        [],
+        [],
+        [],
+      ]);
+    });
+
+    it('should never join tables of a single column', () => {
+      expect(sizingOf('|A|\n|--|\n|1|\n\n|B|\n|--|\n|2|')).toEqual([[], []]);
+    });
+
+    it('should sort all the parts alike when any of them sorts', () => {
+      const players = '|Player|Rating|\n|--|--:|\n|Doe, John|1500|';
+      const teams = '|Team|Rating|\n|--|--:|\n|Knights|1600|';
+      const segments = splitMarkdownTables(`${players}\n\n${teams}`);
+
+      expect(
+        segments.map(segment =>
+          segment.kind === 'table'
+            ? segment.table.columns.map(({ sortable }) => sortable)
+            : [],
+        ),
+      ).toEqual([
+        [true, true],
+        [true, true],
+      ]);
+      expect(segments[0].kind === 'table' && segments[0].sizingRows[1].heading).toEqual({
+        label: 'Team',
+        sortable: true,
+      });
+    });
+  });
 });

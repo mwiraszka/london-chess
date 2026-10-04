@@ -18,6 +18,7 @@ import { GamesActions } from '@app/store/games';
 import { ImagesActions } from '@app/store/images';
 import { MembersActions } from '@app/store/members';
 import { NavActions } from '@app/store/nav';
+import { TournamentsActions } from '@app/store/tournaments';
 
 import { environment } from '@env';
 
@@ -134,6 +135,11 @@ describe('AppEffects', () => {
       MembersActions.parseMemberRatingsFromCsvFailed({ error: mockError }),
       MembersActions.updateMemberFailed({ error: mockError }),
       MembersActions.updateMemberRatingsFailed({ error: mockError }),
+      TournamentsActions.addTournamentFailed({ error: mockError }),
+      TournamentsActions.deleteTournamentFailed({ error: mockError }),
+      TournamentsActions.registrationFailed({ error: mockError }),
+      TournamentsActions.updateTournamentFailed({ error: mockError }),
+      TournamentsActions.withdrawalFailed({ error: mockError }),
     ];
 
     it.each(failures.map(action => [action.type, action]))(
@@ -247,6 +253,48 @@ describe('AppEffects', () => {
         'Jo Smith, Al Brown',
       ],
       [NavActions.pageAccessDenied({ pageHeading: 'Members' }), 'info', 'Members'],
+      [
+        TournamentsActions.addTournamentSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+        }),
+        'success',
+        'Added Fall Rapid.',
+      ],
+      [
+        TournamentsActions.updateTournamentSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+        }),
+        'success',
+        'Updated Fall Rapid.',
+      ],
+      [
+        TournamentsActions.deleteTournamentSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+        }),
+        'success',
+        'Deleted Fall Rapid.',
+      ],
+      [
+        TournamentsActions.registrationSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+          registrants: [],
+        }),
+        'success',
+        'You are registered for Fall Rapid.',
+      ],
+      [
+        TournamentsActions.withdrawalSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+          registrants: [],
+        }),
+        'success',
+        'You are no longer registered for Fall Rapid.',
+      ],
     ];
 
     it.each(

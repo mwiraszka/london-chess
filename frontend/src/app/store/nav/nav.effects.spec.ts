@@ -1,3 +1,4 @@
+import { DialogService } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Action } from '@ngrx/store';
@@ -11,12 +12,12 @@ import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { DialogService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { EventsActions } from '@app/store/events';
 import { GamesActions } from '@app/store/games';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { MembersActions } from '@app/store/members';
+import { TournamentsActions } from '@app/store/tournaments';
 
 import { NavActions, NavSelectors } from '.';
 import { NavEffects } from './nav.effects';
@@ -787,6 +788,113 @@ describe('NavEffects', () => {
       const results = collect(effects.restoreFormDataOnNavigationAwayFromEntityRoute$);
 
       expect(results).toEqual([MembersActions.formDataRestored({ memberId: null })]);
+    });
+  });
+
+  describe('tournaments', () => {
+    it('should open a tournament once it is added or updated', () => {
+      actions$ = new ReplaySubject<Action>(2);
+      actions$.next(
+        TournamentsActions.addTournamentSucceeded({
+          tournamentNumber: 185,
+          tournamentName: 'Winter Blitz',
+        }),
+      );
+      actions$.next(
+        TournamentsActions.updateTournamentSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+        }),
+      );
+
+      const results = collect(effects.navigateToTournament$);
+
+      expect(results).toEqual([
+        NavActions.navigationRequested({ path: 'tournaments/185' }),
+        NavActions.navigationRequested({ path: 'tournaments/184' }),
+      ]);
+    });
+
+    it('should leave the editor for the tournament, or the list for a new one', () => {
+      actions$ = new ReplaySubject<Action>(2);
+      actions$.next(TournamentsActions.cancelSelected({ tournamentNumber: 184 }));
+      actions$.next(TournamentsActions.cancelSelected({ tournamentNumber: null }));
+
+      const results = collect(effects.leaveTournamentEditor$);
+
+      expect(results).toEqual([
+        NavActions.navigationRequested({ path: 'tournaments/184' }),
+        NavActions.navigationRequested({ path: 'tournaments' }),
+      ]);
+    });
+
+    it('should leave the page of a tournament just deleted', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/tournaments/184');
+      store.refreshState();
+      actions$.next(
+        TournamentsActions.deleteTournamentSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+        }),
+      );
+
+      const results = collect(effects.navigateToTournamentsAfterDeletion$);
+
+      expect(results).toEqual([NavActions.navigationRequested({ path: 'tournaments' })]);
+    });
+
+    it('should stay put when a tournament is deleted from the list', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/tournaments');
+      store.refreshState();
+      actions$.next(
+        TournamentsActions.deleteTournamentSucceeded({
+          tournamentNumber: 184,
+          tournamentName: 'Fall Rapid',
+        }),
+      );
+
+      const results = collect(effects.navigateToTournamentsAfterDeletion$);
+
+      expect(results).toEqual([]);
+    });
+
+    it('should leave the editor routes to their guards, and turn away malformed ones', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/tournaments');
+      store.refreshState();
+      const emitted: Action[] = [];
+      effects.handleEntityRouteNavigationRequest$.subscribe(action =>
+        emitted.push(action),
+      );
+
+      actions$.next(mockNavigatedAction('/tournament/add'));
+      actions$.next(mockNavigatedAction('/tournament/edit/184'));
+      actions$.next(mockNavigatedAction('/tournament/edit/abc'));
+
+      expect(emitted).toEqual([NavActions.navigationRequested({ path: 'tournaments' })]);
+    });
+
+    it('should drop the draft on leaving the editor', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/tournament/edit/184');
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/tournaments/184'));
+
+      const results = collect(effects.restoreFormDataOnNavigationAwayFromEntityRoute$);
+
+      expect(results).toEqual([
+        TournamentsActions.formDataRestored({ tournamentNumber: 184 }),
+      ]);
+    });
+
+    it('should drop the new draft on leaving the add page', () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/tournament/add');
+      store.refreshState();
+      actions$.next(mockNavigatedAction('/tournaments'));
+
+      const results = collect(effects.restoreFormDataOnNavigationAwayFromEntityRoute$);
+
+      expect(results).toEqual([
+        TournamentsActions.formDataRestored({ tournamentNumber: null }),
+      ]);
     });
   });
 });

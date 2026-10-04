@@ -3,6 +3,7 @@ import moment from 'moment-timezone';
 import {
   ArticleFormData,
   EventFormData,
+  EventType,
   ImageFormData,
   MemberFormData,
 } from '@app/models';
@@ -37,6 +38,28 @@ export const INITIAL_EVENT_FORM_DATA: EventFormData = {
   title: '',
   details: '',
   articleId: '',
+};
+
+export const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
+  { value: 'blitz tournament (10 mins)', label: 'Blitz tournament (10 minutes)' },
+  { value: 'rapid tournament (25 mins)', label: 'Rapid tournament (25 minutes)' },
+  { value: 'rapid tournament (40 mins)', label: 'Rapid tournament (40 minutes)' },
+  { value: 'lecture', label: 'Lecture' },
+  { value: 'simul', label: 'Simul' },
+  { value: 'championship', label: 'Championship' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'other', label: 'Other' },
+];
+
+export const EVENT_TYPE_COLORS: Record<EventType, string> = {
+  'blitz tournament (10 mins)': 'var(--lcc-color--schedule-blitz10TournamentBackground)',
+  'rapid tournament (25 mins)': 'var(--lcc-color--schedule-rapid25TournamentBackground)',
+  'rapid tournament (40 mins)': 'var(--lcc-color--schedule-rapid40TournamentBackground)',
+  lecture: 'var(--lcc-color--schedule-lectureBackground)',
+  simul: 'var(--lcc-color--schedule-simulBackground)',
+  championship: 'var(--lcc-color--schedule-championshipBackground)',
+  closed: 'var(--lcc-color--schedule-closedBackground)',
+  other: 'var(--lcc-color--schedule-otherBackground)',
 };
 
 export const BASE_IMAGE_PROPERTIES = [

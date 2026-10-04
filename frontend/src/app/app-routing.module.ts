@@ -22,12 +22,11 @@ const routes: Routes = [
     loadComponent: () =>
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),
   },
+  // The FAQ was the About page, which articles and bookmarks still link to
   {
     path: 'about',
-    loadChildren: () =>
-      import('./pages/about/about-page-routing.module').then(
-        m => m.AboutPageRoutingModule,
-      ),
+    pathMatch: 'full',
+    redirectTo: 'faq',
   },
   {
     path: 'album',
@@ -67,6 +66,11 @@ const routes: Routes = [
       ),
     canActivate: [accessGuard],
     data: { access: 'admin' },
+  },
+  {
+    path: 'faq',
+    loadChildren: () =>
+      import('./pages/faq/faq-page-routing.module').then(m => m.FaqPageRoutingModule),
   },
   {
     path: 'game-archives',
@@ -130,6 +134,15 @@ const routes: Routes = [
       import('./pages/schedule/schedule-page-routing.module').then(
         m => m.SchedulePageRoutingModule,
       ),
+  },
+  {
+    path: 'tournament',
+    loadChildren: () =>
+      import('./pages/tournament/tournament-editor-routing.module').then(
+        m => m.TournamentEditorRoutingModule,
+      ),
+    canActivate: [accessGuard],
+    data: { access: 'admin' },
   },
   {
     path: 'tournaments',

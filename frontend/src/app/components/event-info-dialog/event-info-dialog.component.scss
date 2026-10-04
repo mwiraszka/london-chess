@@ -1,106 +1,27 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-:host {
+.dialog-title {
+  font: inherit;
+}
+
+.dialog-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: 400px !important;
-  padding: 16px 32px;
-  text-align: start;
+  align-items: flex-start;
+  gap: 12px;
+}
 
-  .dialog-title {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--lcc-color--eventInfoDialog-dividerLine);
+.event-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
 
-    .calendar-icon {
-      @include icon-size(18px);
-
-      min-width: 18px;
-      color: var(--lcc-color--eventInfoDialog-secondaryText);
-    }
+  .calendar-icon {
+    @include icon-size(16px);
   }
+}
 
-  .dialog-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 16px;
-
-    .event-date-and-time {
-      color: var(--lcc-color--eventInfoDialog-primaryText);
-    }
-
-    .event-title {
-      font-weight: bold;
-      color: var(--lcc-color--eventInfoDialog-primaryText);
-    }
-
-    .event-type-wrapper {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      width: 100%;
-      padding: 2px 8px;
-      border-radius: var(--lcc-borderRadius--large);
-
-      &.blitz-tournament-10-mins {
-        background-color: var(--lcc-color--schedule-blitz10TournamentDot);
-      }
-
-      &.rapid-tournament-25-mins {
-        background-color: var(--lcc-color--schedule-rapid25TournamentDot);
-      }
-
-      &.rapid-tournament-40-mins {
-        background-color: var(--lcc-color--schedule-rapid40TournamentDot);
-      }
-
-      &.lecture {
-        background-color: var(--lcc-color--schedule-lectureDot);
-      }
-
-      &.simul {
-        background-color: var(--lcc-color--schedule-simulDot);
-      }
-
-      &.championship {
-        background-color: var(--lcc-color--schedule-championshipDot);
-      }
-
-      &.other {
-        background-color: var(--lcc-color--schedule-otherDot);
-      }
-
-      &.closed {
-        background-color: var(--lcc-color--schedule-closedDot);
-      }
-
-      .event-type {
-        color: var(--lcc-color--eventInfoDialog-secondaryText);
-      }
-
-      .championship-icon {
-        @include icon-size(16px);
-
-        color: var(--lcc-color--schedule-championshipMedalIcon);
-      }
-    }
-
-    .event-details {
-      white-space: pre-line;
-      color: var(--lcc-color--eventInfoDialog-secondaryText);
-    }
-  }
-
-  .details-button {
-    margin-top: 16px;
-  }
+.event-details {
+  white-space: pre-line;
 }

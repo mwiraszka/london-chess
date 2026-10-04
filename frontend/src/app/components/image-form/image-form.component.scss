@@ -3,116 +3,88 @@
 :host {
   display: block;
   width: 100%;
+}
 
-  .file-and-preview-container {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
+.file-and-preview-container {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
 
-    .choose-file-button {
-      display: flex;
-      align-self: end;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-
-      & > input {
-        display: none;
-      }
-    }
-  }
-
-  .image-container {
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    max-height: 300px;
-    border-radius: var(--lcc-borderRadius--large);
-    background-color: var(--lcc-color--general-imageBackdrop);
-
-    &.full-span {
-      grid-column: 1 / -1;
-    }
-
-    img {
-      object-fit: contain;
-      width: auto;
-      max-width: 100%;
-      height: auto;
-      max-height: 300px;
-    }
-
-    lcc-image {
-      width: auto;
-      max-width: 100%;
-      height: auto;
-      max-height: 300px;
-
-      ::ng-deep img {
-        object-fit: contain;
-        max-height: 300px;
-      }
-    }
-  }
-
-  .existing-albums-fieldset {
-    display: grid;
-    gap: 0 16px;
-    grid-template-columns: auto;
-
-    &.invalid {
-      border-color: var(--lcc-color--input-invalidBorder);
-    }
-
-    .existing-album,
-    .new-album {
-      display: flex;
-      flex-direction: row;
-      gap: 4px;
-      height: 42px; // Match height of new album input
-
-      input {
-        margin-left: 8px;
-      }
-
-      label {
-        max-width: unset;
-        text-align: unset;
-      }
-    }
-
-    @include respond-to('gt-md') {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-  }
-
-  .restore-button {
-    display: flex;
-    justify-self: end;
-    align-items: center;
-    justify-content: center;
-    grid-column: 2 / 3;
-    padding: 4px;
-
-    &:not(:disabled) {
-      color: var(--lcc-color--general-warning);
-    }
-  }
-
-  hr {
-    width: 100%;
-    margin: 1em 0;
-    border-top: 1px solid var(--lcc-color--general-dividerLine);
+  .choose-file-button {
+    align-self: flex-end;
   }
 }
 
-// The card body's smaller secondary text would otherwise replace the page's type
-.form-card {
+.image-container {
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
+  justify-content: center;
+  max-height: 300px;
+  border-radius: var(--lcc-borderRadius--large);
+  background-color: var(--lcc-color--general-imageBackdrop);
+
+  &.full-span {
+    grid-column: 1 / -1;
+  }
+
+  img {
+    object-fit: contain;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 300px;
+  }
+
+  lcc-image {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 300px;
+
+    ::ng-deep img {
+      object-fit: contain;
+      max-height: 300px;
+    }
+  }
+}
+
+.album-group {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--lcc-borderRadius--small);
+  background-color: var(--color-bg-base);
+}
+
+.albums-grid {
+  display: grid;
+  align-items: center;
+  gap: 0 16px;
+  grid-template-columns: auto;
+  grid-auto-rows: minmax(42px, auto);
+
+  @include respond-to('gt-md') {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+.new-album {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .new-album-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.new-album-label {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  white-space: nowrap;
+  clip-path: inset(50%);
 }

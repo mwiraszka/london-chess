@@ -1,0 +1,54 @@
+// Every routed page is a centred column spanning the app content, its header meeting the
+// ends of the nav above. None of these selectors carry specificity, so a page's own
+// :host styles refine them.
+:where(app-root main > :not(router-outlet, lcc-footer)) {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: var(--lcc-width--wide);
+  // Holds the whole space below the nav, which keeps none of its own, so that a table
+  // heading following the page's scroll comes to rest against it. Pages end flush with
+  // their last content, so the bottom padding is the whole space above the footer.
+  padding: 8px 4px 32px;
+  // Margin needed to prevent scrollbar-gutter style from cutting off page content
+  margin: 0 4px;
+}
+
+:where(body[data-wide-view='true'] app-root main > :not(router-outlet, lcc-footer)) {
+  max-width: none;
+}
+
+// Below its header, a page keeps its content to the width that suits it: narrow for forms,
+// reading width for prose and details, and the whole page (the default) for tables, grids
+// and galleries
+:where(.lcc-page--narrow, .lcc-page--reading) > :not(lcc-page-header) {
+  width: 100%;
+  max-width: var(--lcc-page-width);
+}
+
+:where(.lcc-page--narrow) {
+  --lcc-page-width: var(--lcc-width--narrow);
+}
+
+:where(.lcc-page--reading) {
+  --lcc-page-width: var(--lcc-width--reading);
+}
+
+// The wide view gives reading content the whole page too, while forms keep their width
+:where(body[data-wide-view='true'] .lcc-page--reading) > :not(lcc-page-header) {
+  max-width: none;
+}
+
+// A dialog opens in the top layer, so its host holds no place, or gap, in the page
+:where(app-root main > :not(router-outlet, lcc-footer)) > ea-dialog {
+  display: contents;
+}
+
+// A page ending on its links gives up the space the list keeps below them
+:where(app-root main > :not(router-outlet, lcc-footer)) > lcc-link-list:last-child {
+  padding-bottom: 0;
+}

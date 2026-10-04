@@ -319,6 +319,15 @@ export const MATCH: SeedTournament = {
 
 export const TOURNAMENTS: SeedTournament[] = [CHAMPIONSHIP, BLITZ, RAPID, MATCH];
 
+// Held a month after the suite runs, with registration open until the evening before
+export const UPCOMING = {
+  number: 105,
+  name: 'Winter Rapid',
+  timeControl: 'G25+5',
+  daysFromNow: 30,
+  registrantKeys: ['tessa'],
+};
+
 // Games of an older event that no tournament record covers
 export const ARCHIVE_ONLY_TOURNAMENT = 'Fall Open';
 

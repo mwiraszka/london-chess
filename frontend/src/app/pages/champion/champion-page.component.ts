@@ -1,11 +1,15 @@
-import { TrophyIconComponent } from '@eagami/ui';
+import {
+  AccordionComponent,
+  AccordionItemComponent,
+  DividerComponent,
+  TrophyIconComponent,
+} from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { take } from 'rxjs/operators';
 
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 
 import { ChampionsTableComponent } from '@app/components/champions-table/champions-table.component';
-import { ExpansionPanelComponent } from '@app/components/expansion-panel/expansion-panel.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PhotoCarouselComponent } from '@app/components/photo-carousel/photo-carousel.component';
@@ -19,8 +23,10 @@ import { isExpired } from '@app/utils';
   templateUrl: './champion-page.component.html',
   styleUrl: './champion-page.component.scss',
   imports: [
+    AccordionComponent,
+    AccordionItemComponent,
     ChampionsTableComponent,
-    ExpansionPanelComponent,
+    DividerComponent,
     MemberLinkComponent,
     PageHeaderComponent,
     PhotoCarouselComponent,

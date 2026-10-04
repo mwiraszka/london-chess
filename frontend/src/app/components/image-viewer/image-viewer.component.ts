@@ -1,4 +1,12 @@
-import { ChevronLeftIconComponent, ChevronRightIconComponent } from '@eagami/ui';
+import {
+  ButtonComponent,
+  ChevronLeftIconComponent,
+  ChevronRightIconComponent,
+  DialogComponent,
+  DialogRef,
+  DialogService,
+  TooltipDirective,
+} from '@eagami/ui';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Action, Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, from, timer } from 'rxjs';
@@ -6,30 +14,19 @@ import { concatMap, map, switchMap, take } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  OnDestroy,
   OnInit,
-  Renderer2,
   inject,
   input,
-  output,
+  signal,
 } from '@angular/core';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
-import {
-  AdminControlsConfig,
-  BasicDialogResult,
-  Dialog,
-  DialogOutput,
-  Id,
-  Image,
-} from '@app/models';
-import { AdminControlsService, DialogService, StoreRequestService } from '@app/services';
+import { AdminControlsConfig, Dialog, Id, Image } from '@app/models';
+import { AdminControlsService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { isPresignedUrlExpired } from '@app/utils';
 
@@ -40,31 +37,30 @@ import { isPresignedUrlExpired } from '@app/utils';
   styleUrl: './image-viewer.component.scss',
   imports: [
     AdminControlsDirective,
-    ChevronLeftIconComponent,
-    ChevronRightIconComponent,
+    ButtonComponent,
     CommonModule,
+    DialogComponent,
     ImageComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ImageViewerComponent
-  implements OnInit, AfterViewInit, OnDestroy, DialogOutput<null>
-{
+export class ImageViewerComponent implements OnInit {
+  private readonly dialogRef = inject(DialogRef);
   private readonly dialogService = inject(DialogService);
-  private readonly renderer = inject(Renderer2);
   private readonly store = inject(Store);
 
   readonly album = input.required<string>();
   readonly images = input.required<Image[]>();
   readonly isAdmin = input.required<boolean>();
 
-  public readonly dialogResult = output<null | 'close'>();
-
   public currentImage$!: Observable<Image | null>;
-  public displayedCaption: string = '';
-  public isNextImageButtonActive = false;
-  public isPreviousImageButtonActive = false;
+
+  protected readonly displayedCaption = signal('');
+  protected readonly isNextImageButtonActive = signal(false);
+  protected readonly isPreviousImageButtonActive = signal(false);
+  protected readonly nextIcon = ChevronRightIconComponent;
+  protected readonly previousIcon = ChevronLeftIconComponent;
 
   public get index(): number {
     return this.indexSubject.getValue();
@@ -79,9 +75,6 @@ export class ImageViewerComponent
   private readonly adminControls = inject(AdminControlsService);
   private readonly storeRequests = inject(StoreRequestService);
 
-  private keydownListener?: () => void;
-  private keyupListener?: () => void;
-
   public ngOnInit(): void {
     this.currentImage$ = this.indexSubject.asObservable().pipe(
       untilDestroyed(this),
@@ -92,15 +85,6 @@ export class ImageViewerComponent
     );
 
     this.prefetchAdjacentImages();
-  }
-
-  public ngAfterViewInit(): void {
-    setTimeout(() => this.initKeyListeners());
-  }
-
-  public ngOnDestroy(): void {
-    this.keydownListener?.();
-    this.keyupListener?.();
   }
 
   public onPreviousImage(): void {
@@ -142,14 +126,10 @@ export class ImageViewerComponent
       },
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
 
     if (outcome?.type === ImagesActions.deleteImageSucceeded.type) {
-      this.dialogResult.emit(null);
+      this.dialogRef.close();
     }
   }
 
@@ -207,50 +187,36 @@ export class ImageViewerComponent
       });
   }
 
-  private initKeyListeners(): void {
-    this.keydownListener = this.renderer.listen(
-      'document',
-      'keydown',
-      (event: KeyboardEvent) => {
-        const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
-        if (!navKeys.includes(event.key)) {
-          return;
-        }
+  // Holding a key down steps once, so a press must be released before the next one counts
+  protected onKeydown(event: KeyboardEvent): void {
+    const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
+    if (!navKeys.includes(event.key)) {
+      return;
+    }
 
-        event.preventDefault();
-        event.stopPropagation();
+    event.preventDefault();
+    event.stopPropagation();
 
-        if (
-          event.key === 'ArrowLeft' &&
-          this.images().length > 1 &&
-          !this.isPreviousImageButtonActive
-        ) {
-          this.isPreviousImageButtonActive = true;
-          this.onPreviousImage();
-        } else if (
-          (event.key === 'ArrowRight' || event.key === ' ') &&
-          this.images().length > 1 &&
-          !this.isNextImageButtonActive
-        ) {
-          this.isNextImageButtonActive = true;
-          this.onNextImage();
-        }
-      },
-    );
+    if (this.images().length <= 1) {
+      return;
+    }
+    if (event.key === 'ArrowLeft' && !this.isPreviousImageButtonActive()) {
+      this.isPreviousImageButtonActive.set(true);
+      this.onPreviousImage();
+    } else if (
+      (event.key === 'ArrowRight' || event.key === ' ') &&
+      !this.isNextImageButtonActive()
+    ) {
+      this.isNextImageButtonActive.set(true);
+      this.onNextImage();
+    }
+  }
 
-    this.keyupListener = this.renderer.listen(
-      'document',
-      'keyup',
-      (event: KeyboardEvent) => {
-        if (event.key === 'ArrowLeft' && this.images().length > 1) {
-          this.isPreviousImageButtonActive = false;
-        } else if (
-          (event.key === 'ArrowRight' || event.key === ' ') &&
-          this.images().length > 1
-        ) {
-          this.isNextImageButtonActive = false;
-        }
-      },
-    );
+  protected onKeyup(event: KeyboardEvent): void {
+    if (event.key === 'ArrowLeft') {
+      this.isPreviousImageButtonActive.set(false);
+    } else if (event.key === 'ArrowRight' || event.key === ' ') {
+      this.isNextImageButtonActive.set(false);
+    }
   }
 }

@@ -1,4 +1,8 @@
-import { DownloadIconComponent, PlusCircleIconComponent } from '@eagami/ui';
+import {
+  DialogService,
+  DownloadIconComponent,
+  PlusCircleIconComponent,
+} from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { firstValueFrom, take } from 'rxjs';
 
@@ -8,10 +12,10 @@ import { provideRouter } from '@angular/router';
 import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
-import { lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
 
 import { SchedulePageComponent } from './schedule-page.component';
 
@@ -51,10 +55,14 @@ describe('SchedulePageComponent', () => {
   const mockTotalCount = 200;
 
   beforeEach(async () => {
+    // The mock events fall in 2050, so the calendar spans only their months
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2050-01-01T17:00:00.000Z'));
+
     await TestBed.configureTestingModule({
       imports: [SchedulePageComponent],
       providers: [
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
@@ -208,13 +216,14 @@ describe('SchedulePageComponent', () => {
     });
 
     it('should open confirmation dialog with correct event count', async () => {
-      const dialogOpenSpy = vi.spyOn(dialogService, 'open').mockResolvedValue('cancel');
+      const dialogOpenSpy = vi
+        .spyOn(dialogService, 'open')
+        .mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToCsv();
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: expect.any(Function),
+      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -223,7 +232,6 @@ describe('SchedulePageComponent', () => {
             confirmButtonType: 'primary',
           }),
         },
-        isModal: false,
       });
     });
 
@@ -238,7 +246,7 @@ describe('SchedulePageComponent', () => {
     });
 
     it('should not export anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onExportToCsv();
 
@@ -409,6 +417,20 @@ describe('SchedulePageComponent', () => {
             'lcc-events-calendar-grid',
           ).componentInstance.isLoading(),
         ).toBe(true);
+      });
+
+      it('should page both schedule views through the same options', () => {
+        fixture.detectChanges();
+        const options = { ...mockOptions, page: 2 };
+
+        query(fixture.debugElement, 'lcc-events-calendar-grid').triggerEventHandler(
+          'optionsChange',
+          options,
+        );
+
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          EventsActions.paginationOptionsChanged({ options, fetch: true }),
+        );
       });
 
       it('should render a failure panel in place of the schedule views when the events fail to load', () => {

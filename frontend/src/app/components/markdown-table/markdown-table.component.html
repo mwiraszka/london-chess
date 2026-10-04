@@ -2,6 +2,8 @@
   [aria-label]="label()"
   [columns]="columns()"
   [data]="rows()"
+  [fullWidth]="true"
+  [sizingRows]="sizingRows()"
   [sort]="sort()"
   (sorted)="onSorted($event)" />
 
@@ -9,5 +11,15 @@
   #cell
   let-row
   let-column="column">
-  <span [innerHTML]="row.html[column.key]"></span>
+  @if (row.heading; as heading) {
+    @if (column.key === firstColumnKey()) {
+      <span
+        class="markdown-table__heading-sizer"
+        [class.markdown-table__heading-sizer--sorts]="heading.sortable">
+        {{ heading.label }}
+      </span>
+    }
+  } @else {
+    <span [innerHTML]="row.html[column.key]"></span>
+  }
 </ng-template>

@@ -1,14 +1,18 @@
 import {
   AwardIconComponent,
+  BadgeComponent,
+  BadgeVariant,
   ButtonComponent,
   CardComponent,
   DataTableColumn,
   DataTableSortState,
+  DialogService,
   DropdownComponent,
   EmptyStateComponent,
   FilterXIconComponent,
   PaginatorComponent,
   PaginatorState,
+  PlusCircleIconComponent,
   SelectOption,
   TooltipDirective,
 } from '@eagami/ui';
@@ -26,8 +30,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 
+import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
+import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
@@ -35,17 +41,32 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import {
   TOURNAMENTS_PAGE_SIZES,
   TOURNAMENT_FORMAT_LABELS,
+  TOURNAMENT_TIMING_BADGES,
   TROPHIES,
 } from '@app/constants/tournaments';
-import { TournamentFormat, TournamentSummary } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
+import {
+  AdminControlsConfig,
+  Dialog,
+  InternalLink,
+  RegistrationStatus,
+  TournamentFormat,
+  TournamentSummary,
+} from '@app/models';
+import { KEEP_SCROLL, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
+  clubToday,
   compareCells,
+  formatDate,
   formatDateRange,
+  isUpcomingTournament,
   pageOf,
+  registrationStatus,
   shortenSubtitle,
   timeControlMinutes,
+  tournamentTiming,
 } from '@app/utils';
 
 // The sort keys hold raw values, so the table orders the rows the way the page does
@@ -55,6 +76,7 @@ export interface TournamentRow {
   date: string;
   dateLabel: string;
   name: string;
+  badge: { label: string; variant: BadgeVariant } | null;
   subtitle: string;
   format: string;
   timeControl: string;
@@ -64,13 +86,15 @@ export interface TournamentRow {
   players: number;
 }
 
-function toTournamentRow(summary: TournamentSummary): TournamentRow {
+function toTournamentRow(summary: TournamentSummary, today: string): TournamentRow {
+  const timing = tournamentTiming(summary, today);
   return {
     id: String(summary.number),
     summary,
     date: summary.date,
-    dateLabel: formatDateRange(summary.date, summary.endDate),
+    dateLabel: formatDateRange(summary.date, summary.endDate, 'short'),
     name: summary.name,
+    badge: timing ? TOURNAMENT_TIMING_BADGES[timing] : null,
     // A simul's givers show only on its own page
     subtitle: summary.format === 'tandem-simul' ? '' : shortenSubtitle(summary.subtitle),
     format: TOURNAMENT_FORMAT_LABELS[summary.format],
@@ -106,6 +130,9 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
   templateUrl: './tournaments-page.component.html',
   styleUrl: './tournaments-page.component.scss',
   imports: [
+    AdminControlsDirective,
+    AdminToolbarComponent,
+    BadgeComponent,
     ButtonComponent,
     CardComponent,
     DataTableComponent,
@@ -115,15 +142,18 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
     MemberLinkComponent,
     PageHeaderComponent,
     PaginatorComponent,
+    RouterLink,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentsPageComponent implements OnInit {
+  private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
+  private readonly storeRequests = inject(StoreRequestService);
 
   private readonly dateCell = viewChild<CellTemplate>('dateCell');
   private readonly nameCell = viewChild<CellTemplate>('nameCell');
@@ -135,9 +165,32 @@ export class TournamentsPageComponent implements OnInit {
   protected readonly pageSizes = TOURNAMENTS_PAGE_SIZES;
   protected readonly trophies = TROPHIES;
 
-  protected readonly summaries = this.store.selectSignal(
+  protected readonly addTournamentLink: InternalLink = {
+    text: 'Add a tournament',
+    internalPath: ['tournament', 'add'],
+    icon: PlusCircleIconComponent,
+  };
+
+  protected readonly isAdmin = this.store.selectSignal(AuthSelectors.selectIsAdmin);
+
+  private readonly allSummaries = this.store.selectSignal(
     TournamentsSelectors.selectSummaries,
   );
+
+  // Soonest first, each with where its online registration stands right now
+  protected readonly upcoming = computed(() => {
+    const now = new Date();
+    return this.allSummaries()
+      .filter(summary => isUpcomingTournament(summary))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.number - b.number)
+      .map(summary => ({
+        summary,
+        dateLabel: formatDateRange(summary.date, summary.endDate),
+        format: TOURNAMENT_FORMAT_LABELS[summary.format],
+        registration: this.registrationBadge(registrationStatus(summary, now), summary),
+      }));
+  });
+
   protected readonly status = this.store.selectSignal(
     TournamentsSelectors.selectSummariesStatus,
   );
@@ -164,20 +217,20 @@ export class TournamentsPageComponent implements OnInit {
 
   protected readonly yearOptions = computed<SelectOption[]>(() => [
     { value: '', label: 'All years' },
-    ...[...new Set(this.summaries().map(({ date }) => date.slice(0, 4)))]
+    ...[...new Set(this.allSummaries().map(({ date }) => date.slice(0, 4)))]
       .sort((a, b) => b.localeCompare(a))
       .map(year => ({ value: year, label: year })),
   ]);
 
   protected readonly timeControlOptions = computed<SelectOption[]>(() => [
     { value: '', label: 'All time controls' },
-    ...[...new Set(this.summaries().map(({ timeControl }) => timeControl))]
+    ...[...new Set(this.allSummaries().map(({ timeControl }) => timeControl))]
       .sort((a, b) => timeControlMinutes(a) - timeControlMinutes(b))
       .map(timeControl => ({ value: timeControl, label: timeControl })),
   ]);
 
   protected readonly formatOptions = computed<SelectOption[]>(() => {
-    const played = new Set(this.summaries().map(({ format }) => format));
+    const played = new Set(this.allSummaries().map(({ format }) => format));
     return [
       { value: '', label: 'All formats' },
       ...(Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[])
@@ -187,7 +240,7 @@ export class TournamentsPageComponent implements OnInit {
   });
 
   protected readonly loading = computed(
-    () => this.status() === 'loading' && !this.summaries().length,
+    () => this.status() === 'loading' && !this.allSummaries().length,
   );
 
   protected readonly empty = computed(() => !this.loading() && !this.rows().length);
@@ -196,14 +249,15 @@ export class TournamentsPageComponent implements OnInit {
     const { year, timeControl, format } = this.filters();
     const { column, direction } = this.sortState();
     const order = direction === 'asc' ? 1 : -1;
-    return this.summaries()
+    const today = clubToday();
+    return this.allSummaries()
       .filter(
         summary =>
           (!year || summary.date.startsWith(year)) &&
           (!timeControl || summary.timeControl === timeControl) &&
           (!format || summary.format === format),
       )
-      .map(toTournamentRow)
+      .map(summary => toTournamentRow(summary, today))
       .sort(
         (a, b) =>
           order * compareCells(a, b, column) ||
@@ -218,10 +272,16 @@ export class TournamentsPageComponent implements OnInit {
   );
 
   // Every tournament sizes the columns, so no filter, order or page moves them
-  protected readonly sizingRows = computed(() => this.summaries().map(toTournamentRow));
+  protected readonly sizingRows = computed(() => {
+    const today = clubToday();
+    return this.allSummaries().map(summary => toTournamentRow(summary, today));
+  });
 
   protected readonly rowHref = ({ summary }: TournamentRow): string =>
     `/tournaments/${summary.number}`;
+
+  protected readonly rowControls = ({ summary }: TournamentRow): AdminControlsConfig =>
+    this.controlsFor(summary);
 
   protected readonly columns = computed<DataTableColumn<TournamentRow>[]>(() => {
     const cells = {
@@ -296,6 +356,59 @@ export class TournamentsPageComponent implements OnInit {
 
   public onRetry(): void {
     this.store.dispatch(TournamentsActions.fetchTournamentsRequested());
+  }
+
+  public controlsFor(summary: TournamentSummary): AdminControlsConfig {
+    return {
+      buttonSize: 31,
+      deleteCb: () => this.onDeleteTournament(summary),
+      editPath: ['tournament', 'edit', String(summary.number)],
+      itemName: summary.name,
+    };
+  }
+
+  public async onDeleteTournament(summary: TournamentSummary): Promise<void> {
+    const dialog: Dialog = {
+      title: 'Confirm',
+      body: `Delete ${summary.name} (${formatDateRange(summary.date, summary.endDate)})? Its results and registrations will be lost.`,
+      confirmButtonText: 'Delete',
+      confirmButtonType: 'warning',
+      confirmAction: () =>
+        this.storeRequests.dispatch(
+          TournamentsActions.deleteTournamentRequested({
+            tournamentNumber: summary.number,
+            tournamentName: summary.name,
+          }),
+          [
+            TournamentsActions.deleteTournamentSucceeded,
+            TournamentsActions.deleteTournamentFailed,
+          ],
+        ),
+    };
+
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
+  }
+
+  private registrationBadge(
+    status: RegistrationStatus,
+    { registrationOpens, registrationCloses }: TournamentSummary,
+  ): { label: string; variant: BadgeVariant } | null {
+    switch (status) {
+      case 'open':
+        return {
+          label: `Registration open until ${formatDate(registrationCloses ?? undefined, 'short')}`,
+          variant: 'success',
+        };
+      case 'not-open':
+        return {
+          label: `Registration opens ${formatDate(registrationOpens ?? undefined, 'short')}`,
+          variant: 'info',
+        };
+      case 'closed':
+        return { label: 'Registration closed', variant: 'default' };
+      default:
+        return null;
+    }
   }
 
   private applyFilters(filters: TournamentFilters): void {

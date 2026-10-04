@@ -1,6 +1,6 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 
-import { loadStatus } from '@app/utils';
+import { areSame, loadStatus, tournamentFormData } from '@app/utils';
 
 import { TournamentsState, tournamentsAdapter } from './tournaments.reducer';
 
@@ -58,4 +58,25 @@ export const selectMemberResultsStatus = (memberNumber: number) =>
     selectFailedLoads,
     (results, failedLoads) =>
       loadStatus(results !== null, failedLoads.includes('member-results')),
+  );
+
+export const selectTournamentFormData = (tournamentNumber: number | null) =>
+  createSelector(selectTournamentsState, state =>
+    tournamentNumber === null
+      ? state.newTournamentFormData
+      : (state.formData[tournamentNumber] ??
+        tournamentFormData(state.entities[tournamentNumber] ?? null)),
+  );
+
+export const selectHasUnsavedChanges = (tournamentNumber: number | null) =>
+  createSelector(
+    selectTournamentsState,
+    selectTournamentFormData(tournamentNumber),
+    (state, formData) =>
+      !areSame(
+        tournamentFormData(
+          tournamentNumber === null ? null : (state.entities[tournamentNumber] ?? null),
+        ),
+        formData,
+      ),
   );

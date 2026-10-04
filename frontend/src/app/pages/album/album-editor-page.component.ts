@@ -72,6 +72,7 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'lcc-page--narrow' },
 })
 export class AlbumEditorPageComponent implements EditorPage, OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);

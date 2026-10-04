@@ -9,9 +9,9 @@ function isDialog(value: unknown): value is Dialog {
 }
 
 export function lastOpenedDialog(openSpy: { mock: { lastCall?: unknown[] } }): Dialog {
-  const config = openSpy.mock.lastCall?.[0];
+  const options = openSpy.mock.lastCall?.[1];
   const dialog =
-    isRecord(config) && isRecord(config['inputs']) ? config['inputs']['dialog'] : null;
+    isRecord(options) && isRecord(options['inputs']) ? options['inputs']['dialog'] : null;
   if (!isDialog(dialog)) {
     throw new Error('No confirmation dialog was opened.');
   }

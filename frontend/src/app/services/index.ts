@@ -1,13 +1,9 @@
-export {
-  ADMIN_CONTROLS_CONFIG_TOKEN,
-  AdminControlsService,
-} from './admin-controls.service';
+export { AdminControlsService } from './admin-controls.service';
 export { ApiError, ApiService } from './api.service';
 export { ArticlesApiService } from './api/articles-api.service';
 export { AuthDrawerService } from './auth-drawer.service';
 export { ChangelogService } from './changelog.service';
 export { ClerkService } from './clerk.service';
-export { DIALOG_CONFIG_TOKEN, DialogService } from './dialog.service';
 export { EventsApiService } from './api/events-api.service';
 export { GamesApiService } from './api/games-api.service';
 export { HealthApiService } from './api/health-api.service';
@@ -20,6 +16,7 @@ export { MetaAndTitleService } from './meta-and-title.service';
 export { PendingRequestsService } from './pending-requests.service';
 export { RefreshService } from './refresh.service';
 export { KEEP_SCROLL, RoutingService } from './routing.service';
+export { StandingsFileService } from './standings-file.service';
 export { StoreRequestService } from './store-request.service';
 export { TouchEventsService } from './touch-events.service';
 export { TournamentsApiService } from './api/tournaments-api.service';

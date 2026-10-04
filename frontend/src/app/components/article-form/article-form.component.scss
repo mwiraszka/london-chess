@@ -47,37 +47,11 @@
       align-items: center;
       gap: 8px;
 
-      .select-banner-image-button,
-      .revert-banner-image-button,
-      .insert-image-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px;
-      }
-
-      hr {
+      .image-controls-divider {
+        display: block;
         width: 24px;
         margin: 16px 0;
-        border-bottom: 2px solid var(--lcc-color--articleForm-buttonsDivider);
       }
-    }
-  }
-
-  textarea {
-    height: 320px;
-  }
-
-  .restore-button {
-    display: flex;
-    justify-self: end;
-    align-items: center;
-    justify-content: center;
-    grid-column: 2 / 3;
-    padding: 4px;
-
-    &:not(:disabled) {
-      color: var(--lcc-color--general-warning);
     }
   }
 
@@ -95,10 +69,10 @@
       color: var(--lcc-color--articleForm-previewHeaderText);
     }
 
-    hr {
+    .preview-divider {
+      display: block;
       width: 100%;
       margin: 4px 0 16px;
-      border-top: 1px solid var(--lcc-color--general-dividerLine);
     }
 
     .markdown-container {
@@ -109,14 +83,4 @@
       box-shadow: 1px 1px 8px 1px var(--lcc-color--articleForm-markdownPreviewBoxShadow);
     }
   }
-}
-
-// The card body's smaller secondary text would otherwise replace the page's type
-.form-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
 }

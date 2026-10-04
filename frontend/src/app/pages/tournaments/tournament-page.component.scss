@@ -54,22 +54,39 @@ $details-gap: 24px;
 }
 
 // The page centres blocks at their own width, so the block is capped for its table to scroll
+// Every section takes the width of the widest crosstable, so all the headings and tables
+// share one pair of edges down the page
+.sections {
+  display: flex;
+  align-self: center;
+  flex-direction: column;
+  gap: 32px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 16px;
+}
+
 .section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 100%;
-  margin-top: 16px;
 }
 
 .section__heading,
 .section__games-heading {
   margin: 0;
+  text-align: left;
   color: var(--color-text-primary);
 }
 
 .section__games-heading {
   margin-top: 8px;
+}
+
+.section__rule {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .section__heading-extra {
@@ -89,4 +106,43 @@ $details-gap: 24px;
 .crosstable__score,
 .games__result--decisive {
   font-weight: bold;
+}
+
+.registration__heading {
+  font: inherit;
+}
+
+.registration__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.registration__status,
+.registration__registered,
+.registration__empty {
+  margin: 0;
+}
+
+.registration__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.registration__list {
+  display: grid;
+  gap: 4px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  padding-left: 24px;
+  margin: 0;
+  list-style: decimal;
+}
+
+.registration__rating {
+  margin-left: 8px;
+  color: var(--color-text-secondary);
 }

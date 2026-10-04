@@ -2,7 +2,6 @@
 
 :host {
   width: 100%;
-  max-width: var(--lcc-width--smallForm);
 }
 
 .profile {
@@ -10,9 +9,7 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  // Same card width as the Website Changelog page
-  max-width: 800px;
-  margin: 8px auto;
+  margin-top: 8px;
 }
 
 .profile-card {
@@ -28,8 +25,15 @@
 }
 
 // The cards keep their size under the skeletons, so nothing shifts when the member arrives
-.profile--loading ea-card {
+.profile--loading ea-card,
+.profile--loading ea-accordion {
   visibility: hidden;
+}
+
+// The sections sit on the same surface as the identity card above them
+.profile-section {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-elevated);
 }
 
 .summary {

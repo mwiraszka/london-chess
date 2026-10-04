@@ -1,4 +1,7 @@
+import { installNativeDialogShim } from '@eagami/ui/testing';
 import { afterEach, vi } from 'vitest';
+
+installNativeDialogShim();
 
 // Guard against fake-timer leakage between tests (Jest reset these implicitly).
 afterEach(() => {
@@ -43,6 +46,14 @@ Object.defineProperty(Element.prototype, 'scrollIntoView', {
   value: vi.fn(),
 });
 
+// jsdom implements no layout, so a tooltip measuring its text would throw rather than
+// read the empty box every element has there
+Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
+  configurable: true,
+  writable: true,
+  value: () => new DOMRect(),
+});
+
 globalThis.fail = (reason?: string | Error): never => {
   throw reason instanceof Error ? reason : new Error(reason ?? 'fail() called');
 };
@@ -66,6 +77,7 @@ const ORIGINAL_CONSOLE_INFO = console.info;
 
 const IGNORED_ERROR_PATTERNS: RegExp[] = [
   /\[LCC] Could not parse document load progress data:/, // Document viewer progress edge cases
+  /\[LCC] Unable to read standings file:/, // Standings import of unreadable files
   /\[LCC] Unable to parse ratings to determine new peak rating/, // Rating util invalid inputs in tests
   /\[LCC] Sort error: property 'key' does not exist/, // custom sort util negative tests
   /\[LCC] Unable to convert data URL and filename to File:/, // dataUrlToFile negative test cases

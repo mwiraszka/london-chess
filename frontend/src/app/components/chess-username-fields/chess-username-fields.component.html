@@ -1,39 +1,29 @@
-<div class="labeled-field">
-  <lcc-field-label-with-help
-    text="Lichess username"
-    forId="lichess-username-input"
-    [icon]="lichessLogo"
-    [helpTooltip]="lichessTooltip" />
-  <ea-input
-    id="lichess-username-input"
-    [maxLength]="20"
-    [errorMessages]="lichessErrorMessages"
-    [formControl]="lichessUsername()" />
-</div>
+<ea-input
+  class="username-field"
+  id="lichess-username-input"
+  label="Lichess username"
+  [errorMessages]="lichessErrorMessages"
+  [formControl]="lichessUsername()"
+  [labelHelp]="lichessHelp"
+  [labelIcon]="lichessLogo"
+  [maxLength]="20" />
 
-<div class="labeled-field">
-  <lcc-field-label-with-help
-    text="Chess.com username"
-    forId="chess-com-username-input"
-    [icon]="chessComLogo"
-    [helpTooltip]="chessComTooltip" />
-  <ea-input
-    id="chess-com-username-input"
-    [maxLength]="25"
-    [errorMessages]="chessComErrorMessages"
-    [formControl]="chessComUsername()" />
-</div>
+<ea-input
+  class="username-field"
+  id="chess-com-username-input"
+  label="Chess.com username"
+  [errorMessages]="chessComErrorMessages"
+  [formControl]="chessComUsername()"
+  [labelHelp]="chessComHelp"
+  [labelIcon]="chessComLogo"
+  [maxLength]="25" />
 
-<ng-template #lichessTooltip>
-  <div>
-    <em>Optional.</em>
-    Your username is used to link to your profile page on Lichess.
-  </div>
+<ng-template #lichessHelp>
+  <em>Optional.</em>
+  Your username is used to link to your profile page on Lichess.
 </ng-template>
 
-<ng-template #chessComTooltip>
-  <div>
-    <em>Optional.</em>
-    Your username is used to link to your profile page on Chess.com.
-  </div>
+<ng-template #chessComHelp>
+  <em>Optional.</em>
+  Your username is used to link to your profile page on Chess.com.
 </ng-template>

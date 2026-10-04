@@ -1,159 +1,169 @@
-@if (viewModel$ | async; as vm) {
-  <lcc-admin-toolbar [adminLinks]="[addImageLink]"></lcc-admin-toolbar>
+<ea-dialog width="full">
+  <h3
+    slot="header"
+    class="dialog-title">
+    Images
+  </h3>
 
-  <div class="filters">
-    <ea-input
-      class="filters__search"
-      label="Search"
-      placeholder="Search by caption, file or album"
-      [formControl]="searchControl"
-      [icon]="searchIcon" />
-  </div>
+  <div class="image-explorer">
+    @if (viewModel$ | async; as vm) {
+      <lcc-admin-toolbar [adminLinks]="[addImageLink]"></lcc-admin-toolbar>
 
-  @if (vm.status === 'failed') {
-    <lcc-load-failed
-      title="Unable to load images"
-      (retry)="onRetry()" />
-  } @else if (!vm.isLoading && !vm.images.length) {
-    <ea-empty-state
-      class="image-explorer__empty"
-      description="No images match your search."
-      [icon]="emptyIcon" />
-  } @else {
-    <div class="image-grid-wrapper">
-      <div
-        class="image-grid"
-        [attr.aria-busy]="vm.isLoading"
-        [attr.card-count]="vm.isLoading ? vm.skeletonCards.length : vm.images.length"
-        cdkScrollable>
-        @if (vm.isLoading) {
-          @for (card of vm.skeletonCards; track card) {
-            <div class="image-card">
-              <div class="image-container">
-                <ea-skeleton
-                  variant="rect"
-                  width="100%"
-                  height="100%" />
-              </div>
-
-              <div class="caption">
-                <label>Caption:</label>
-                <lcc-text-skeleton width="14ch" />
-              </div>
-
-              <div class="filename">
-                <label>Filename:</label>
-                <lcc-text-skeleton width="12ch" />
-              </div>
-
-              <div class="file-size">
-                <label>File size:</label>
-                <lcc-text-skeleton width="6ch" />
-              </div>
-
-              <div class="dimensions">
-                <label>Dimensions:</label>
-                <lcc-text-skeleton width="9ch" />
-              </div>
-
-              <div class="upload-date">
-                <label>Upload date:</label>
-                <lcc-text-skeleton width="16ch" />
-              </div>
-
-              <div class="album">
-                <label>Album:</label>
-                <lcc-text-skeleton width="10ch" />
-              </div>
-
-              <div class="article-appearances">
-                <lcc-text-skeleton width="19ch" />
-              </div>
-            </div>
-          }
-        } @else {
-          @for (image of vm.images; track image.id) {
-            <div
-              class="image-card"
-              [class.selectable]="selectable()"
-              [adminControls]="getAdminControlsConfig(image)"
-              (click)="selectable() ? dialogResult.emit(image.id) : null">
-              <div class="image-container">
-                <lcc-image [image]="image" />
-              </div>
-
-              <div class="caption">
-                <label>Caption:</label>
-                <span
-                  class="lcc-truncate"
-                  [innerHTML]="image.caption | highlight: vm.options.search">
-                </span>
-              </div>
-
-              <div class="filename">
-                <label>Filename:</label>
-                <span
-                  class="lcc-truncate"
-                  [innerHTML]="image.filename | highlight: vm.options.search">
-                </span>
-              </div>
-
-              @if (image.mainFileSize) {
-                <div class="file-size">
-                  <label>File size:</label>
-                  <span class="lcc-truncate">
-                    {{ image.mainFileSize | formatBytes }}
-                  </span>
-                </div>
-              }
-
-              @if (image.mainWidth && image.mainHeight) {
-                <div class="dimensions">
-                  <label>Dimensions:</label>
-                  <span class="lcc-truncate">
-                    {{ image.mainWidth }} x {{ image.mainHeight }} px
-                  </span>
-                </div>
-              }
-
-              <div class="upload-date">
-                <label>Upload date:</label>
-                <span class="lcc-truncate">
-                  {{ image.modificationInfo.dateCreated | formatDate: 'short' }}
-                </span>
-              </div>
-
-              <div class="album">
-                <label>Album:</label>
-                <span
-                  class="lcc-truncate-max-2-lines"
-                  [innerHTML]="image.album | highlight: vm.options.search">
-                </span>
-              </div>
-
-              @if (image?.articleAppearances; as num) {
-                <div class="article-appearances">
-                  <span>(Used in</span>
-                  <b>{{ num }}</b>
-                  <span>{{ num! > 1 ? 'articles' : 'article' }})</span>
-                </div>
-              }
-            </div>
-          }
-        }
+      <div class="filters">
+        <ea-input
+          class="filters__search"
+          label="Search"
+          placeholder="Search by caption, file or album"
+          [formControl]="searchControl"
+          [icon]="searchIcon" />
       </div>
-    </div>
-    <div class="paginator">
-      <ea-paginator
-        align="center"
-        size="sm"
-        [page]="vm.options.page"
-        [pageSize]="vm.options.pageSize"
-        [pageSizeOptions]="pageSizes"
-        [showAllOption]="true"
-        [showRangeLabel]="vm.filteredCount !== null"
-        [totalItems]="vm.filteredCount ?? 0"
-        (changed)="onPageChanged($event, vm.options)" />
-    </div>
-  }
-}
+
+      @if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load images"
+          (retry)="onRetry()" />
+      } @else if (!vm.isLoading && !vm.images.length) {
+        <ea-empty-state
+          class="image-explorer__empty"
+          description="No images match your search."
+          [icon]="emptyIcon" />
+      } @else {
+        <div class="image-grid-wrapper">
+          <div
+            class="image-grid"
+            [attr.aria-busy]="vm.isLoading"
+            [attr.card-count]="vm.isLoading ? vm.skeletonCards.length : vm.images.length"
+            cdkScrollable>
+            @if (vm.isLoading) {
+              @for (card of vm.skeletonCards; track card) {
+                <div class="image-card">
+                  <div class="image-container">
+                    <ea-skeleton
+                      variant="rect"
+                      width="100%"
+                      height="100%" />
+                  </div>
+
+                  <div class="caption">
+                    <label>Caption:</label>
+                    <lcc-text-skeleton width="14ch" />
+                  </div>
+
+                  <div class="filename">
+                    <label>Filename:</label>
+                    <lcc-text-skeleton width="12ch" />
+                  </div>
+
+                  <div class="file-size">
+                    <label>File size:</label>
+                    <lcc-text-skeleton width="6ch" />
+                  </div>
+
+                  <div class="dimensions">
+                    <label>Dimensions:</label>
+                    <lcc-text-skeleton width="9ch" />
+                  </div>
+
+                  <div class="upload-date">
+                    <label>Upload date:</label>
+                    <lcc-text-skeleton width="16ch" />
+                  </div>
+
+                  <div class="album">
+                    <label>Album:</label>
+                    <lcc-text-skeleton width="10ch" />
+                  </div>
+
+                  <div class="article-appearances">
+                    <lcc-text-skeleton width="19ch" />
+                  </div>
+                </div>
+              }
+            } @else {
+              @for (image of vm.images; track image.id) {
+                <div
+                  class="image-card"
+                  [class.selectable]="selectable()"
+                  [adminControls]="getAdminControlsConfig(image)"
+                  (click)="selectable() ? dialogRef.close(image.id) : null">
+                  <div class="image-container">
+                    <lcc-image [image]="image" />
+                  </div>
+
+                  <div class="caption">
+                    <label>Caption:</label>
+                    <span
+                      class="lcc-truncate"
+                      [innerHTML]="image.caption | highlight: vm.options.search">
+                    </span>
+                  </div>
+
+                  <div class="filename">
+                    <label>Filename:</label>
+                    <span
+                      class="lcc-truncate"
+                      [innerHTML]="image.filename | highlight: vm.options.search">
+                    </span>
+                  </div>
+
+                  @if (image.mainFileSize) {
+                    <div class="file-size">
+                      <label>File size:</label>
+                      <span class="lcc-truncate">
+                        {{ image.mainFileSize | formatBytes }}
+                      </span>
+                    </div>
+                  }
+
+                  @if (image.mainWidth && image.mainHeight) {
+                    <div class="dimensions">
+                      <label>Dimensions:</label>
+                      <span class="lcc-truncate">
+                        {{ image.mainWidth }} x {{ image.mainHeight }} px
+                      </span>
+                    </div>
+                  }
+
+                  <div class="upload-date">
+                    <label>Upload date:</label>
+                    <span class="lcc-truncate">
+                      {{ image.modificationInfo.dateCreated | formatDate: 'short' }}
+                    </span>
+                  </div>
+
+                  <div class="album">
+                    <label>Album:</label>
+                    <span
+                      class="lcc-truncate-max-2-lines"
+                      [innerHTML]="image.album | highlight: vm.options.search">
+                    </span>
+                  </div>
+
+                  @if (image?.articleAppearances; as num) {
+                    <div class="article-appearances">
+                      <span>(Used in</span>
+                      <b>{{ num }}</b>
+                      <span>{{ num! > 1 ? 'articles' : 'article' }})</span>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
+        <div class="paginator">
+          <ea-paginator
+            align="center"
+            size="sm"
+            [page]="vm.options.page"
+            [pageSize]="vm.options.pageSize"
+            [pageSizeOptions]="pageSizes"
+            [showAllOption]="true"
+            [showRangeLabel]="vm.filteredCount !== null"
+            [totalItems]="vm.filteredCount ?? 0"
+            (changed)="onPageChanged($event, vm.options)" />
+        </div>
+      }
+    }
+  </div>
+</ea-dialog>

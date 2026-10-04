@@ -1,7 +1,8 @@
+import { TooltipDirective } from '@eagami/ui';
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { FooterComponent } from './footer.component';
@@ -14,7 +15,7 @@ describe('FooterComponent', () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [FooterComponent, RouterModule.forRoot([]), TooltipDirective],
+      imports: [FooterComponent, RouterModule.forRoot([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(FooterComponent);
@@ -77,7 +78,7 @@ describe('FooterComponent', () => {
 
         expect(whatsappLink.nativeElement.href).toContain('bit.ly/LCC-NoticeBoard');
         expect(whatsappLink.nativeElement.target).toBe('_blank');
-        expect(whatsappLink.injector.get(TooltipDirective).tooltip()).toBe(
+        expect(whatsappLink.injector.get(TooltipDirective).eaTooltip()).toBe(
           'Club noticeboard on WhatsApp',
         );
       });
@@ -89,7 +90,7 @@ describe('FooterComponent', () => {
           'instagram.com/londonchessclub_',
         );
         expect(instagramLink.nativeElement.target).toBe('_blank');
-        expect(instagramLink.injector.get(TooltipDirective).tooltip()).toBe(
+        expect(instagramLink.injector.get(TooltipDirective).eaTooltip()).toBe(
           'Follow us on Instagram',
         );
       });
@@ -101,7 +102,7 @@ describe('FooterComponent', () => {
           'chess.com/club/london-chess-club-canada',
         );
         expect(chesscomLink.nativeElement.target).toBe('_blank');
-        expect(chesscomLink.injector.get(TooltipDirective).tooltip()).toBeTruthy();
+        expect(chesscomLink.injector.get(TooltipDirective).eaTooltip()).toBeTruthy();
       });
 
       it('should properly render email link', () => {
@@ -109,7 +110,7 @@ describe('FooterComponent', () => {
 
         expect(emailLink.nativeElement.href).toContain('mailto:welcome@londonchess.ca');
         expect(emailLink.nativeElement.target).toBe('_blank');
-        expect(emailLink.injector.get(TooltipDirective).tooltip()).toBeTruthy();
+        expect(emailLink.injector.get(TooltipDirective).eaTooltip()).toBeTruthy();
       });
     });
 
@@ -127,6 +128,14 @@ describe('FooterComponent', () => {
         expect(sectionHeaders[2]).toBe('ARCHIVES');
         expect(sectionHeaders[3]).toBe('DOCUMENTS');
         expect(sectionHeaders[4]).toBe('WEBSITE');
+      });
+
+      it('should rule off each section heading from its links', () => {
+        const sections = queryAll(fixture.debugElement, '.site-links section');
+
+        sections.forEach(section => {
+          expect(query(section, 'header + ea-divider')).toBeTruthy();
+        });
       });
 
       it('should render correct number of links in each section', () => {
@@ -180,6 +189,12 @@ describe('FooterComponent', () => {
           `Copyright © ${component.CURRENT_YEAR} London Chess Club`,
         );
         expect(copyrightNoticeText).toContain('All Rights Reserved.');
+      });
+
+      it('should separate its two parts with a vertical divider', () => {
+        const divider = query(fixture.debugElement, '.copyright-notice ea-divider');
+
+        expect(divider.componentInstance.orientation()).toBe('vertical');
       });
     });
   });

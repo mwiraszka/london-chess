@@ -1,5 +1,6 @@
 import { InputComponent } from '@eagami/ui';
 
+import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl } from '@angular/forms';
 
@@ -49,23 +50,19 @@ describe('ChessUsernameFieldsComponent', () => {
     expect(chessCom.value).toBe('new_chesscom');
   });
 
-  it('should explain on hover how each username is used', () => {
-    const [lichessHelp, chessComHelp] = queryAll(
-      fixture.debugElement,
-      '.field-label__help',
-    );
+  it('should explain how each username is used when its help is opened', () => {
+    const helpText = (field: DebugElement): string => {
+      query(field, '.ea-field-label__help-trigger').nativeElement.click();
+      fixture.detectChanges();
+      return query(field, '.ea-field-label__help-bubble').nativeElement.textContent;
+    };
+    const [lichessField, chessComField] = queryAll(fixture.debugElement, 'ea-input');
 
-    lichessHelp.triggerEventHandler('mouseenter', new MouseEvent('mouseenter'));
-    fixture.detectChanges();
-    const lichessText = document.querySelector('.cdk-overlay-container')?.textContent;
-    lichessHelp.triggerEventHandler('mouseleave');
-    chessComHelp.triggerEventHandler('mouseenter', new MouseEvent('mouseenter'));
-    fixture.detectChanges();
+    const lichessText = helpText(lichessField);
+    const chessComText = helpText(chessComField);
 
-    const chessComText = document.querySelector('.cdk-overlay-container')?.textContent;
-    expect(lichessText).toContain('Optional.');
-    expect(chessComText).toContain('Optional.');
-    expect(chessComText).not.toBe(lichessText);
+    expect(lichessText).toContain('profile page on Lichess');
+    expect(chessComText).toContain('profile page on Chess.com');
   });
 
   it('should explain a pattern error on each platform differently', () => {

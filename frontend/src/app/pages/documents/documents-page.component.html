@@ -31,7 +31,7 @@
       [href]="'assets/documents/' + row.document.fileName"
       class="documents__download"
       [download]="row.title"
-      [tooltip]="tooltipContent"
+      [eaTooltip]="tooltipContent"
       (click)="$event.stopPropagation()">
       <ea-icon-download class="documents__icon" />
     </a>

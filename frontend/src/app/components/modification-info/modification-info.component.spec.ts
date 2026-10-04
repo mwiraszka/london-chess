@@ -5,7 +5,7 @@ import { MOCK_MODIFICATION_INFOS } from '@app/mocks/modification-info.mock';
 import { MemberProfile } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 import { ApiService, MemberProfilesService } from '@app/services';
-import { formatDate, query, queryTextContent } from '@app/utils';
+import { formatDate, query, queryAll, queryTextContent } from '@app/utils';
 
 import { ModificationInfoComponent } from './modification-info.component';
 
@@ -51,6 +51,15 @@ describe('ModificationInfoComponent', () => {
       expect(queryTextContent(editDetails, '.date')).toBe(
         formatDate(MOCK_MODIFICATION_INFOS[0].dateLastEdited, 'short'),
       );
+    });
+
+    it('should separate each name from its date with a vertical divider', () => {
+      const dividers = queryAll(fixture.debugElement, '.credit + .when > ea-divider');
+
+      expect(dividers).toHaveLength(2);
+      dividers.forEach(divider => {
+        expect(divider.componentInstance.orientation()).toBe('vertical');
+      });
     });
 
     it('should not render edit information when creation and edit dates are the same', () => {

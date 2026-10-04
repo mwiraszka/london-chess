@@ -1,4 +1,9 @@
-import { BookmarkIconComponent, SkeletonComponent } from '@eagami/ui';
+import {
+  BookmarkIconComponent,
+  DialogService,
+  DividerComponent,
+  SkeletonComponent,
+} from '@eagami/ui';
 
 import {
   ChangeDetectionStrategy,
@@ -18,7 +23,6 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import {
   AdminControlsConfig,
   Article,
-  BasicDialogResult,
   DataPaginationOptions,
   Dialog,
   Id,
@@ -30,7 +34,7 @@ import {
   RouterLinkPipe,
   SummarizeArticlePipe,
 } from '@app/pipes';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
 import { isDefined, pageOf, pageRowCount } from '@app/utils';
 
@@ -47,6 +51,7 @@ interface ArticleRow {
   imports: [
     AdminControlsDirective,
     BookmarkIconComponent,
+    DividerComponent,
     FormatDatePipe,
     HighlightPipe,
     ImageComponent,
@@ -150,11 +155,7 @@ export class ArticleGridComponent {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public async onBookmarkArticle(article: Article): Promise<void> {
@@ -176,10 +177,6 @@ export class ArticleGridComponent {
         ),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

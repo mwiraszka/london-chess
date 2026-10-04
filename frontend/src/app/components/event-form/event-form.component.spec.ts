@@ -1,17 +1,18 @@
+import { ButtonComponent, DialogService } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { EVENT_FORM_DATA_PROPERTIES } from '@app/constants';
+import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { DialogService, StoreRequestService } from '@app/services';
+import { Event, EventFormData } from '@app/models';
+import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { lastOpenedDialog, query } from '@app/utils';
-import { generateId } from '@app/utils/common/generate-id.util';
+import { closedDialogRef, lastOpenedDialog, query, toDayString } from '@app/utils';
 
 import { EventFormComponent } from './event-form.component';
 
@@ -19,287 +20,289 @@ describe('EventFormComponent', () => {
   let fixture: ComponentFixture<EventFormComponent>;
   let component: EventFormComponent;
 
-  let dialogService: DialogService;
-
   let cancelSpy: MockInstance;
   let changeSpy: MockInstance;
-  let dialogOpenSpy: MockInstance;
-  let initFormSpy: MockInstance;
-  let initFormValueChangeListenerSpy: MockInstance;
-  let storeRequestSpy: Mock;
+  let dialogOpenSpy: Mock;
   let restoreSpy: MockInstance;
-  let submitSpy: MockInstance;
+  let storeRequestSpy: Mock;
+
+  // 6:30 PM on October 15, 2026 in London, Ontario
+  const eventDate = '2026-10-15T22:30:00.000Z';
+  const formData: EventFormData = {
+    ...pick(MOCK_EVENTS[0], EVENT_FORM_DATA_PROPERTIES),
+    eventDate,
+    articleId: '',
+  };
+
+  function render(
+    data: EventFormData = formData,
+    hasUnsavedChanges = false,
+    originalEvent: Event | null = null,
+  ): void {
+    fixture = TestBed.createComponent(EventFormComponent);
+    component = fixture.componentInstance;
+    cancelSpy = vi.spyOn(component.cancel, 'emit');
+    changeSpy = vi.spyOn(component.change, 'emit');
+    restoreSpy = vi.spyOn(component.restore, 'emit');
+
+    fixture.componentRef.setInput('formData', data);
+    fixture.componentRef.setInput('hasUnsavedChanges', hasUnsavedChanges);
+    fixture.componentRef.setInput('originalEvent', originalEvent);
+    fixture.detectChanges();
+  }
+
+  async function settle(): Promise<void> {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  const lastDraft = (): Partial<EventFormData> => changeSpy.mock.lastCall?.[0].formData;
+
+  const button = (selector: string): ButtonComponent =>
+    query(fixture.debugElement, selector).componentInstance;
+
+  const errorTexts = (): string[] =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('[role="alert"]')).map(
+      element => element.textContent?.trim() ?? '',
+    );
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EventFormComponent, ReactiveFormsModule],
+      imports: [EventFormComponent],
       providers: [
         provideMockStore({ initialState: { membersState: membersInitialState } }),
-        {
-          provide: DialogService,
-          useValue: { open: vi.fn() },
-        },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
-        FormBuilder,
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EventFormComponent);
-    component = fixture.componentInstance;
-
-    dialogService = TestBed.inject(DialogService);
-
-    cancelSpy = vi.spyOn(component.cancel, 'emit');
-    changeSpy = vi.spyOn(component.change, 'emit');
-    dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    // @ts-expect-error Private class member
-    initFormSpy = vi.spyOn(component, 'initForm');
-    initFormValueChangeListenerSpy = vi.spyOn(
-      component,
-      // @ts-expect-error Private class member
-      'initFormValueChangeListener',
-    );
+    dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
-    restoreSpy = vi.spyOn(component.restore, 'emit');
-    submitSpy = vi.spyOn(component, 'onSubmit');
-
-    fixture.componentRef.setInput(
-      'formData',
-      pick(MOCK_EVENTS[0], EVENT_FORM_DATA_PROPERTIES),
-    );
-    fixture.componentRef.setInput('hasUnsavedChanges', false);
-    fixture.componentRef.setInput('originalEvent', null);
-
-    fixture.detectChanges();
   });
 
-  describe('form initialization', () => {
-    describe('handling form data', () => {
-      describe('if form has unsaved changes', () => {
-        beforeEach(() => {
-          vi.useFakeTimers();
+  describe('initialization', () => {
+    it("should split the event's instant into its day and start time on the club clock", () => {
+      render();
 
-          fixture.componentRef.setInput('formData', {
-            ...pick(MOCK_EVENTS[1], EVENT_FORM_DATA_PROPERTIES),
-            eventDate: '2000-01-01T16:00:00.000Z',
-          });
-          fixture.componentRef.setInput('hasUnsavedChanges', true);
-          fixture.componentRef.setInput('originalEvent', null);
-          component.ngOnInit();
+      const { eventDay, eventTime, title, type } = component.form.getRawValue();
+      expect(toDayString(eventDay!)).toBe('2026-10-15');
+      expect(eventTime).toBe('18:30');
+      expect(title).toBe(formData.title);
+      expect(type).toBe(formData.type);
+    });
 
-          component.form.patchValue({
-            articleId: '',
-            eventTime: '6:00 pm',
-          });
-          fixture.detectChanges();
+    it('should start a fresh form without any errors showing', async () => {
+      render({ ...INITIAL_EVENT_FORM_DATA });
 
-          vi.clearAllMocks();
-          component.ngOnInit();
-        });
+      await settle();
 
-        afterEach(() => vi.useRealTimers());
+      expect(component.form.invalid).toBe(true);
+      expect(component.form.touched).toBe(false);
+      expect(errorTexts()).toEqual([]);
+    });
 
-        it('should emit change event with converted values', () => {
-          // Run debounce timer to trigger the valueChanges subscription
-          vi.runAllTimers();
-          expect(changeSpy).toHaveBeenCalled();
-        });
+    it('should show the errors of a restored draft straight away', async () => {
+      render({ ...formData, title: '' }, true);
 
-        it('should initialize the form with touched values from formData', () => {
-          expect(initFormSpy).toHaveBeenCalledTimes(1);
-          expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
+      await settle();
 
-          for (const property of EVENT_FORM_DATA_PROPERTIES) {
-            expect(component.form.controls[property].value).toBe(
-              component.formData()[property],
-            );
-            expect(component.form.controls[property].touched).toBe(true);
-          }
-        });
-      });
+      expect(component.form.controls.title.touched).toBe(true);
+      expect(errorTexts()).toHaveLength(1);
+    });
 
-      describe('if form does not have unsaved changes', () => {
-        beforeEach(() => {
-          vi.useFakeTimers();
+    it('should pass the draft to the store as soon as the form opens', () => {
+      render();
 
-          fixture.componentRef.setInput(
-            'formData',
-            pick(MOCK_EVENTS[2], EVENT_FORM_DATA_PROPERTIES),
-          );
-          fixture.componentRef.setInput('hasUnsavedChanges', false);
-          fixture.componentRef.setInput('originalEvent', MOCK_EVENTS[1]);
-          component.ngOnInit();
-
-          component.form.patchValue({
-            articleId: '',
-            eventTime: '6:00 pm',
-          });
-          fixture.detectChanges();
-
-          vi.clearAllMocks();
-          component.ngOnInit();
-        });
-
-        it('should emit change event with converted values', () => {
-          // Run debounce timer to trigger the valueChanges subscription
-          vi.runAllTimers();
-          expect(changeSpy).toHaveBeenCalled();
-        });
-
-        it('should initialize the form with untouched values from formData', () => {
-          expect(initFormSpy).toHaveBeenCalledTimes(1);
-          expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
-
-          for (const property of EVENT_FORM_DATA_PROPERTIES) {
-            expect(component.form.controls[property].value).toBe(
-              component.formData()[property],
-            );
-            expect(component.form.controls[property].untouched).toBe(true);
-          }
-        });
-      });
+      expect(changeSpy).toHaveBeenCalledTimes(1);
+      expect(lastDraft()).toEqual(formData);
     });
   });
 
-  describe('form validation', () => {
-    describe('required validator', () => {
-      it('should mark empty field as invalid', () => {
-        component.form.patchValue({ title: '' }); // Invalid - title field is required
-        fixture.detectChanges();
-
-        expect(component.form.controls.title.hasError('required')).toBe(true);
-      });
-
-      it('should mark non-empty field as valid', () => {
-        component.form.patchValue({ title: '1000' });
-        fixture.detectChanges();
-
-        expect(component.form.controls.title.hasError('required')).toBe(false);
-      });
-    });
-
-    describe('text validator', () => {
-      it('should mark field with whitespace-only text as valid', () => {
-        component.form.patchValue({
-          title: ' ',
-        });
-        fixture.detectChanges();
-
-        expect(component.form.controls.title.hasError('invalidText')).toBe(false);
-      });
-
-      it('should mark field with emoji as valid', () => {
-        component.form.patchValue({
-          title: '🔥',
-          details: '123',
-        });
-        fixture.detectChanges();
-
-        expect(component.form.controls.title.hasError('invalidText')).toBe(false);
-        expect(component.form.controls.details.hasError('invalidText')).toBe(false);
-      });
-    });
-  });
-
-  describe('onRestore', () => {
+  describe('keeping the draft', () => {
     beforeEach(() => {
-      fixture.componentRef.setInput('hasUnsavedChanges', true);
-      fixture.componentRef.setInput('originalEvent', MOCK_EVENTS[4]);
-      fixture.detectChanges();
-
-      component.ngOnInit();
-
-      vi.clearAllMocks();
       vi.useFakeTimers();
+      render();
+      changeSpy.mockClear();
     });
 
     afterEach(() => vi.useRealTimers());
 
-    it('should emit both change and restore events and re-initialize form if dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('confirm');
+    it('should pass changes on once typing pauses', () => {
+      component.form.controls.title.setValue('Rook endings');
+      component.form.controls.title.setValue('Rook endings night');
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE - 1);
+      const beforePause = changeSpy.mock.calls.length;
 
-      await component.onRestore();
-      vi.runAllTimers();
+      vi.advanceTimersByTime(1);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        isModal: false,
-        inputs: {
-          dialog: {
-            title: 'Confirm',
-            body: 'Restore original event data? All changes will be lost.',
-            confirmButtonText: 'Restore',
-            confirmButtonType: 'warning',
-          },
-        },
-      });
-
-      expect(changeSpy).toHaveBeenCalled();
-      expect(restoreSpy).toHaveBeenCalledWith(MOCK_EVENTS[4].id);
-      expect(initFormSpy).toHaveBeenCalledTimes(1);
-      expect(initFormValueChangeListenerSpy).toHaveBeenCalledTimes(1);
+      expect(beforePause).toBe(0);
+      expect(changeSpy).toHaveBeenCalledTimes(1);
+      expect(lastDraft()).toEqual(
+        expect.objectContaining({ title: 'Rook endings night', eventDate }),
+      );
     });
 
-    it('should not emit change or restore event or re-initialize form if dialog is cancelled', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+    it('should join a new day and time into the instant on the club clock', () => {
+      component.form.patchValue({ eventDay: new Date(2026, 10, 12), eventTime: '19:15' });
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
 
-      await component.onRestore();
-      vi.runAllTimers();
-
-      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(changeSpy).not.toHaveBeenCalled();
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(initFormSpy).not.toHaveBeenCalled();
-      expect(initFormValueChangeListenerSpy).not.toHaveBeenCalled();
+      expect(lastDraft()?.eventDate).toBe('2026-11-13T00:15:00.000Z');
     });
-  });
 
-  describe('onCancel', () => {
-    it('should emit cancel event', () => {
-      component.onCancel();
-      expect(cancelSpy).toHaveBeenCalled();
+    it('should keep the last instant while the day or time is cleared', () => {
+      component.form.controls.eventTime.setValue(null);
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(lastDraft()).not.toHaveProperty('eventDate');
+      expect(component.form.controls.eventTime.hasError('required')).toBe(true);
     });
-  });
 
-  describe('onSubmit', () => {
-    it('should mark all fields as touched if form is invalid on submit', async () => {
-      component.form.patchValue({ title: '' }); // Invalid - title field is required
-      component.form.markAsPristine();
-      component.form.markAsUntouched();
-      fixture.detectChanges();
+    it('should pass the draft on at once when the form is submitted', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+      component.form.controls.details.setValue('Bring a clock.');
 
       await component.onSubmit();
 
+      expect(lastDraft()).toEqual(expect.objectContaining({ details: 'Bring a clock.' }));
+    });
+
+    it('should pass the draft on at once when focus leaves a field', () => {
+      component.form.controls.title.setValue('Quick exit');
+
+      query(fixture.debugElement, 'form').triggerEventHandler('focusout');
+
+      expect(lastDraft()).toEqual(expect.objectContaining({ title: 'Quick exit' }));
+    });
+  });
+
+  describe('validation', () => {
+    beforeEach(() => render());
+
+    it('should require every field but the article ID', () => {
+      component.form.setValue({
+        eventDay: null,
+        eventTime: null,
+        title: '',
+        details: '',
+        type: formData.type,
+        articleId: '',
+      });
+
+      expect(component.form.controls.eventDay.hasError('required')).toBe(true);
+      expect(component.form.controls.eventTime.hasError('required')).toBe(true);
+      expect(component.form.controls.title.hasError('required')).toBe(true);
+      expect(component.form.controls.details.hasError('required')).toBe(true);
+      expect(component.form.controls.articleId.valid).toBe(true);
+    });
+
+    it('should limit the length of the title and details', () => {
+      component.form.patchValue({ title: 'a'.repeat(101), details: 'b'.repeat(201) });
+
+      expect(component.form.controls.title.hasError('maxlength')).toBe(true);
+      expect(component.form.controls.details.hasError('maxlength')).toBe(true);
+    });
+
+    it('should accept any text a person might type, emoji included', () => {
+      component.form.patchValue({ title: 'Rapid 🔥 night', details: 'Café, 7–9 PM' });
+
+      expect(component.form.controls.title.valid).toBe(true);
+      expect(component.form.controls.details.valid).toBe(true);
+    });
+
+    it('should accept only a full article ID', () => {
+      component.form.controls.articleId.setValue('6a7f6f69f983bd7b3881d3e6');
+      const full = component.form.controls.articleId.valid;
+
+      component.form.controls.articleId.setValue('6a7f6f69');
+
+      expect(full).toBe(true);
+      expect(component.form.controls.articleId.hasError('invalidId')).toBe(true);
+    });
+
+    it("should explain the app's own validation errors under the field", async () => {
+      component.form.controls.articleId.setValue('6a7f6f69');
+      component.form.controls.articleId.markAsTouched();
+
+      await settle();
+
+      expect(errorTexts()).toEqual([FORM_ERROR_MESSAGES['invalidId']]);
+    });
+  });
+
+  describe('restoring', () => {
+    const originalEvent = MOCK_EVENTS[4];
+
+    beforeEach(() => {
+      render({ ...formData, title: 'Changed title' }, true, originalEvent);
+      component.form.markAllAsTouched();
+    });
+
+    it('should put the original event back once confirmed', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+      await component.onRestore();
+
+      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
+        title: 'Confirm',
+        body: 'Revert to the original event data? All changes will be lost.',
+        confirmButtonText: 'Revert',
+        confirmButtonType: 'warning',
+      });
+      expect(restoreSpy).toHaveBeenCalledWith(originalEvent.id);
+      expect(component.form.controls.title.value).toBe(originalEvent.title);
+      expect(component.form.touched).toBe(false);
+    });
+
+    it('should empty a new event back to its starting values', async () => {
+      fixture.destroy();
+      render({ ...formData, title: 'Changed title' }, true, null);
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+      await component.onRestore();
+
+      expect(restoreSpy).toHaveBeenCalledWith(null);
+      expect(component.form.controls.title.value).toBe(INITIAL_EVENT_FORM_DATA.title);
+    });
+
+    it('should change nothing when cancelled', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+
+      await component.onRestore();
+
+      expect(restoreSpy).not.toHaveBeenCalled();
+      expect(component.form.controls.title.value).toBe('Changed title');
+    });
+  });
+
+  describe('submitting', () => {
+    it('should show every error instead of asking to save an invalid form', async () => {
+      render({ ...formData, title: '' }, true);
+
+      await component.onSubmit();
+      await settle();
+
       expect(component.form.controls.title.touched).toBe(true);
-      expect(component.form.touched).toBe(true);
+      expect(errorTexts()).toHaveLength(1);
       expect(dialogOpenSpy).not.toHaveBeenCalled();
     });
 
     it('should add a new event from the confirmation dialog', async () => {
-      fixture.componentRef.setInput(
-        'formData',
-        pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
-      );
-      fixture.componentRef.setInput('originalEvent', null);
-      fixture.detectChanges();
+      render(formData, true, null);
 
       await component.onSubmit();
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        isModal: false,
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Add ${component.formData().title} to schedule?`,
-            confirmButtonText: 'Add',
-          }),
-        },
-      });
+      expect(lastOpenedDialog(dialogOpenSpy)).toEqual(
+        expect.objectContaining({
+          body: `Add ${formData.title} to schedule?`,
+          confirmButtonText: 'Add',
+        }),
+      );
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, expect.anything());
       expect(storeRequestSpy).toHaveBeenCalledWith(EventsActions.addEventRequested(), [
         EventsActions.addEventSucceeded,
         EventsActions.addEventFailed,
@@ -307,41 +310,26 @@ describe('EventFormComponent', () => {
     });
 
     it('should update an existing event from the confirmation dialog', async () => {
-      fixture.componentRef.setInput(
-        'formData',
-        pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
-      );
-      fixture.componentRef.setInput('originalEvent', MOCK_EVENTS[2]);
-      fixture.detectChanges();
+      render(formData, true, MOCK_EVENTS[2]);
 
       await component.onSubmit();
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
-        isModal: false,
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Update ${component.originalEvent()!.title} event?`,
-            confirmButtonText: 'Update',
-          }),
-        },
-      });
+      expect(lastOpenedDialog(dialogOpenSpy)).toEqual(
+        expect.objectContaining({
+          body: `Update ${MOCK_EVENTS[2].title} event?`,
+          confirmButtonText: 'Update',
+        }),
+      );
       expect(storeRequestSpy).toHaveBeenCalledWith(
         EventsActions.updateEventRequested({ eventId: MOCK_EVENTS[2].id }),
         [EventsActions.updateEventSucceeded, EventsActions.updateEventFailed],
       );
     });
 
-    it('should not save anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
-      fixture.componentRef.setInput(
-        'formData',
-        pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
-      );
-      fixture.componentRef.setInput('originalEvent', null);
-      fixture.detectChanges();
+    it('should save nothing until the dialog is confirmed', async () => {
+      render(formData, true, null);
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onSubmit();
 
@@ -350,109 +338,58 @@ describe('EventFormComponent', () => {
     });
   });
 
-  describe('template rendering', () => {
-    describe('modification info', () => {
-      it('should render if originalEvent is defined', () => {
-        fixture.componentRef.setInput('originalEvent', MOCK_EVENTS[0]);
-        fixture.detectChanges();
+  describe('template', () => {
+    it('should show who created and edited an existing event only', () => {
+      render(formData, false, MOCK_EVENTS[0]);
+      const forExisting = query(fixture.debugElement, 'lcc-modification-info');
+      fixture.destroy();
 
-        expect(query(fixture.debugElement, 'lcc-modification-info')).toBeTruthy();
-      });
+      render(formData, false, null);
 
-      it('should not render if originalEvent is null', () => {
-        fixture.componentRef.setInput('originalEvent', null);
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, 'lcc-modification-info')).toBeFalsy();
-      });
+      expect(forExisting).toBeTruthy();
+      expect(query(fixture.debugElement, 'lcc-modification-info')).toBeFalsy();
     });
 
-    describe('restore button', () => {
-      it('should be disabled if there are no unsaved changes', () => {
-        fixture.componentRef.setInput('hasUnsavedChanges', false);
-        fixture.detectChanges();
+    it('should only offer to discard or save once something has changed', () => {
+      render(formData, false);
+      const restoreWithout = button('.restore-button').disabled();
+      const submitWithout = button('.submit-button').disabled();
+      fixture.destroy();
 
-        expect(
-          query(fixture.debugElement, '.restore-button').nativeElement.disabled,
-        ).toBe(true);
-      });
+      render(formData, true);
 
-      it('should be enabled if there are unsaved changes', () => {
-        fixture.componentRef.setInput('hasUnsavedChanges', true);
-        fixture.detectChanges();
-
-        expect(
-          query(fixture.debugElement, '.restore-button').nativeElement.disabled,
-        ).toBe(false);
-      });
+      expect(restoreWithout).toBe(true);
+      expect(submitWithout).toBe(true);
+      expect(button('.restore-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    describe('cancel button', () => {
-      it('should be enabled if there are unsaved changes', () => {
-        fixture.componentRef.setInput('hasUnsavedChanges', true);
-        fixture.detectChanges();
+    it('should disable the save button while the form is invalid', () => {
+      render({ ...formData, title: '' }, true);
 
-        const cancelButton = query(fixture.debugElement, '.cancel-button');
-        cancelButton.triggerEventHandler('click');
-
-        expect(cancelButton.nativeElement.disabled).toBe(false);
-        expect(cancelSpy).toHaveBeenCalledTimes(1);
-      });
-
-      it('should also be enabled if there are no unsaved changes', () => {
-        fixture.componentRef.setInput('hasUnsavedChanges', false);
-        fixture.detectChanges();
-
-        const cancelButton = query(fixture.debugElement, '.cancel-button');
-        cancelButton.triggerEventHandler('click');
-
-        expect(cancelButton.nativeElement.disabled).toBe(false);
-        expect(cancelSpy).toHaveBeenCalledTimes(1);
-      });
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
-    describe('submit button', () => {
-      it('should be disabled if there are no unsaved changes', () => {
-        component.form.setValue({
-          ...pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
-          articleId: generateId(24),
-          eventTime: '6:00 pm',
-        });
-        fixture.componentRef.setInput('hasUnsavedChanges', false);
-        fixture.detectChanges();
+    it('should cancel from the cancel button', () => {
+      render();
 
-        const submitButton = query(fixture.debugElement, '.submit-button');
-        expect(submitButton.nativeElement.disabled).toBe(true);
-      });
+      query(fixture.debugElement, '.cancel-button').triggerEventHandler('clicked');
 
-      it('should be disabled if the form is invalid', () => {
-        component.form.setValue({
-          ...pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
-          articleId: generateId(24),
-          eventTime: '6:00pm', // Invalid - unsupported time format
-        });
-        fixture.componentRef.setInput('hasUnsavedChanges', true);
-        fixture.detectChanges();
+      expect(cancelSpy).toHaveBeenCalledTimes(1);
+    });
 
-        const submitButton = query(fixture.debugElement, '.submit-button');
-        expect(submitButton.nativeElement.disabled).toBe(true);
-      });
+    it('should label the save button for adding or updating', () => {
+      render(formData, true, null);
+      const adding = query(fixture.debugElement, '.submit-button').nativeElement
+        .textContent;
+      fixture.destroy();
 
-      it('should be enabled if there are unsaved changes and the form is valid', () => {
-        component.form.setValue({
-          ...pick(MOCK_EVENTS[3], EVENT_FORM_DATA_PROPERTIES),
-          articleId: generateId(24),
-          eventTime: '6:00 pm',
-        });
-        fixture.componentRef.setInput('hasUnsavedChanges', true);
-        fixture.detectChanges();
+      render(formData, true, MOCK_EVENTS[0]);
 
-        query(fixture.debugElement, 'form').triggerEventHandler('ngSubmit');
-
-        const submitButton = query(fixture.debugElement, '.submit-button');
-        expect(submitButton.nativeElement.disabled).toBe(false);
-        expect(submitSpy).toHaveBeenCalledTimes(1);
-      });
+      expect(adding.trim()).toBe('Add event');
+      expect(
+        query(fixture.debugElement, '.submit-button').nativeElement.textContent.trim(),
+      ).toBe('Update event');
     });
   });
 });

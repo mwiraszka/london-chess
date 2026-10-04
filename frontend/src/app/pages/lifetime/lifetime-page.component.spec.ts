@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { MemberProfile } from '@app/models';
 import { MemberProfilesService, MetaAndTitleService } from '@app/services';
-import { query, queryAll } from '@app/utils';
+import { query, queryAll, queryTextContent } from '@app/utils';
 
 import { LifetimePageComponent } from './lifetime-page.component';
 
@@ -88,12 +88,15 @@ describe('LifetimePageComponent', () => {
       expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
     });
 
-    it('should render intro section', () => {
-      expect(query(fixture.debugElement, '.intro-section')).toBeTruthy();
+    it('should render the intro as a card', () => {
+      expect(query(fixture.debugElement, 'ea-card.intro')).toBeTruthy();
     });
 
-    it('should render recipients sections for each year', () => {
-      expect(queryAll(fixture.debugElement, '.recipients-section')).toHaveLength(3);
+    it('should render a card for each year, headed by the year', () => {
+      const cards = queryAll(fixture.debugElement, 'ea-card.recipients-card');
+
+      expect(cards).toHaveLength(3);
+      expect(queryTextContent(cards[0], '.year')).toBe('2025');
     });
 
     it('should render recipients for each year', () => {

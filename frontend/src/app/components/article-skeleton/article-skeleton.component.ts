@@ -1,4 +1,4 @@
-import { SkeletonComponent } from '@eagami/ui';
+import { DividerComponent, SkeletonComponent } from '@eagami/ui';
 
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   selector: 'lcc-article-skeleton',
   templateUrl: './article-skeleton.component.html',
   styleUrls: ['../article/article.component.scss', './article-skeleton.component.scss'],
-  imports: [SkeletonComponent],
+  imports: [DividerComponent, SkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleSkeletonComponent {

@@ -4,9 +4,18 @@
   display: block;
 }
 
-// In the wide view the text runs from the left edge, and the tables line up with it
-:host-context(body[data-wide-view='true']) lcc-data-table {
-  justify-content: flex-start;
+// Stands in for the first heading of a table drawn alongside, never narrower than that
+// heading is drawn: the same text in capitals at the table's full size, which outgrows the
+// heading's smaller capitals, with room for its sort icon
+.markdown-table__heading-sizer {
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.markdown-table__heading-sizer--sorts::after {
+  display: inline-block;
+  width: 1.25em;
+  content: '';
 }
 
 // Cells are rendered markdown, so their links are styled like the article's

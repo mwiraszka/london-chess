@@ -48,38 +48,123 @@
       </p>
     }
 
-    @for (section of sections(); track section.key) {
-      <section class="section">
-        @if (section.heading; as heading) {
-          <h3 class="section__heading">
-            {{ heading.text }}
-            @if (heading.extra) {
-              <span class="section__heading-extra">({{ heading.extra }})</span>
-            }
-          </h3>
-        }
-
-        <lcc-data-table
-          class="crosstable"
-          [aria-label]="
-            section.heading ? 'Standings, ' + section.heading.text : 'Standings'
-          "
-          [columns]="sectionColumns().get(section.key) ?? []"
-          [data]="section.rows" />
-
-        @if (section.games.length) {
-          <h4 class="section__games-heading">Games in the archive</h4>
-          <lcc-data-table
-            class="games"
-            [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
-            [clickable]="true"
-            [columns]="gameColumns()"
-            [data]="section.games"
-            [rowHref]="gameHref"
-            (rowActivate)="onOpenGame($event)" />
-        }
-      </section>
+    @if (isAdmin()) {
+      <lcc-admin-toolbar
+        [adminButtons]="[deleteButton]"
+        [adminLinks]="[editLink()]" />
     }
+
+    @if (registration(); as registration) {
+      <ea-card
+        class="registration"
+        [fullWidth]="true">
+        <h3
+          slot="header"
+          class="registration__heading">
+          Registration
+        </h3>
+        <div class="registration__body">
+          <p class="registration__status">{{ registration.summary }}</p>
+
+          @if (registration.isRegistered) {
+            <div class="registration__actions">
+              <p class="registration__registered">You are registered.</p>
+              @if (registration.canWithdraw) {
+                <ea-button
+                  class="withdraw-button"
+                  variant="secondary"
+                  (clicked)="onWithdraw(tournament)">
+                  Withdraw
+                </ea-button>
+              }
+            </div>
+          } @else if (registration.status === 'open') {
+            <div class="registration__actions">
+              @if (user()) {
+                <ea-button
+                  class="register-button"
+                  [loading]="registering()"
+                  (clicked)="onRegister(tournament)">
+                  Register
+                </ea-button>
+              } @else {
+                <ea-button
+                  class="log-in-button"
+                  (clicked)="onLogIn()">
+                  Log in to register
+                </ea-button>
+              }
+            </div>
+          }
+
+          @if (registration.registrants.length) {
+            <ol
+              class="registration__list"
+              aria-label="Registered players">
+              @for (
+                registrant of registration.registrants;
+                track registrant.memberNumber
+              ) {
+                <li class="registration__registrant">
+                  <lcc-member-link
+                    [memberNumber]="registrant.memberNumber"
+                    [name]="registrant.firstName + ' ' + registrant.lastName" />
+                  <span class="registration__rating">{{ registrant.rating }}</span>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="registration__empty">No one has registered yet.</p>
+          }
+        </div>
+      </ea-card>
+    }
+
+    @if (!hasResults()) {
+      <p class="details details__pending">
+        Standings will appear here once the tournament is under way.
+      </p>
+    }
+
+    <div class="sections">
+      @for (section of sections(); track section.key) {
+        <section class="section">
+          @if (section.heading; as heading) {
+            <div class="section__title">
+              <h3 class="section__heading">
+                {{ heading.text }}
+                @if (heading.extra) {
+                  <span class="section__heading-extra">({{ heading.extra }})</span>
+                }
+              </h3>
+              <ea-divider class="section__rule" />
+            </div>
+          }
+
+          <lcc-data-table
+            class="crosstable"
+            [aria-label]="
+              section.heading ? 'Standings, ' + section.heading.text : 'Standings'
+            "
+            [columns]="sectionColumns().get(section.key) ?? []"
+            [data]="section.rows"
+            [fullWidth]="true" />
+
+          @if (section.games.length) {
+            <h4 class="section__games-heading">Games in the archive</h4>
+            <lcc-data-table
+              class="games"
+              [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
+              [clickable]="true"
+              [columns]="gameColumns()"
+              [data]="section.games"
+              [fullWidth]="true"
+              [rowHref]="gameHref"
+              (rowActivate)="onOpenGame($event)" />
+          }
+        </section>
+      }
+    </div>
   } @else {
     <lcc-page-header
       [heading]="null"
@@ -92,15 +177,18 @@
       <lcc-text-skeleton width="320px" />
     </p>
 
-    <section class="section">
-      <lcc-data-table
-        class="crosstable"
-        aria-label="Standings"
-        [columns]="loadingColumns()"
-        [data]="[]"
-        [loading]="true"
-        [loadingRowCount]="loadingRowCount" />
-    </section>
+    <div class="sections">
+      <section class="section">
+        <lcc-data-table
+          class="crosstable"
+          aria-label="Standings"
+          [columns]="loadingColumns()"
+          [data]="[]"
+          [fullWidth]="true"
+          [loading]="true"
+          [loadingRowCount]="loadingRowCount" />
+      </section>
+    </div>
   }
 
   <lcc-link-list

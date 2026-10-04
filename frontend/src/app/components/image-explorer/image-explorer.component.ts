@@ -1,4 +1,7 @@
 import {
+  DialogComponent,
+  DialogRef,
+  DialogService,
   EmptyStateComponent,
   FilterXIconComponent,
   InputComponent,
@@ -13,16 +16,9 @@ import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
 
-import { CdkScrollable, CdkScrollableModule } from '@angular/cdk/scrolling';
+import { CdkScrollableModule } from '@angular/cdk/scrolling';
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  inject,
-  input,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
@@ -34,17 +30,15 @@ import { PAGE_SIZES, SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
-  BasicDialogResult,
   DataPaginationOptions,
   Dialog,
-  DialogOutput,
   Id,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
 import { FormatBytesPipe, FormatDatePipe, HighlightPipe } from '@app/pipes';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as ImagesSelectors from '@app/store/images/images.selectors';
 import { pageRowCount } from '@app/utils';
@@ -59,6 +53,7 @@ import { pageRowCount } from '@app/utils';
     AdminToolbarComponent,
     CdkScrollableModule,
     CommonModule,
+    DialogComponent,
     EmptyStateComponent,
     FormatBytesPipe,
     FormatDatePipe,
@@ -72,15 +67,13 @@ import { pageRowCount } from '@app/utils';
     TextSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  hostDirectives: [CdkScrollable],
 })
-export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
+export class ImageExplorerComponent implements OnInit {
+  protected readonly dialogRef = inject<DialogRef<Id>>(DialogRef);
   private readonly dialogService = inject(DialogService);
   private readonly store = inject(Store);
 
   public readonly selectable = input<boolean>(true);
-
-  public readonly dialogResult = output<Id | 'close'>();
 
   public viewModel$?: Observable<{
     images: Image[];
@@ -159,7 +152,7 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
       editPath: ['image', 'edit', image.id.split('-')[0]],
       editInNewTab: true,
       isDeleteDisabled: !!image?.articleAppearances,
-      deleteDisabledReason: 'Image cannot be delete while it is used in an article',
+      deleteDisabledReason: 'Image cannot be deleted while it is used in an article',
       itemName: image.filename,
     };
   }
@@ -177,11 +170,7 @@ export class ImageExplorerComponent implements OnInit, DialogOutput<Id> {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onRetry(): void {

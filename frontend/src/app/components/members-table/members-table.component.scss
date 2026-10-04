@@ -12,6 +12,10 @@
   white-space: nowrap;
 }
 
+.members__safe-mode {
+  max-width: var(--lcc-width--narrow);
+}
+
 // An inactive member reads in italics with an asterisk after the name
 .members__name--inactive {
   font-style: italic;

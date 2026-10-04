@@ -1,30 +1,26 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  overflow: hidden;
-  display: block;
-  width: min(100vw, var(--lcc-width--appContent)) !important;
-  height: 80vh;
+  --ea-dialog-body-padding: 0;
+}
+
+.album-name {
+  font: inherit;
 }
 
 figure {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background-color: var(--lcc-color--dialog-background);
+  height: 75vh;
 }
 
 .image-container {
+  position: relative;
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 0; // Ensure proper flex shrinking
+  min-height: 0;
   background-color: var(--lcc-color--imageViewer-background);
 
   lcc-image {
@@ -37,77 +33,37 @@ figure {
       object-fit: contain;
     }
   }
-}
 
-figcaption {
-  width: calc(100% - 8px);
-  padding: 4px 8px;
-  margin: 4px;
+  .previous-image-button,
+  .next-image-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
 
-  .album-name {
-    font-size: 11px;
-    text-align: left;
-    color: var(--lcc-color--imageViewer-albumText);
-  }
-
-  hr {
-    width: 100%;
-    margin: 4px 0;
-    border-top: 1px solid var(--lcc-color--imageViewer-dividerLine);
-  }
-
-  .image-caption {
-    font-size: 12px;
-    text-align: center;
-  }
-
-  @include respond-to('gt-md') {
-    .album-name {
-      font-size: 13px;
-    }
-    .image-caption {
-      font-size: 14px;
-    }
-  }
-
-  @include respond-to('gt-lg') {
-    .album-name {
-      font-size: 14px;
-    }
-
-    .image-caption {
-      font-size: 15px;
-    }
-  }
-}
-
-.button-wrapper {
-  z-index: 1000;
-  position: absolute;
-  top: 50%;
-
-  &:first-of-type {
-    left: 8px;
-  }
-
-  &:last-of-type {
-    right: 8px;
-  }
-
-  button {
-    display: flex;
-    padding: 4px;
-    background-color: var(--lcc-color--imageViewer-buttonBackground) !important;
-
-    &:active,
     &.active {
       filter: brightness(1.5);
     }
+  }
 
-    &:disabled {
-      border-color: var(--lcc-color--imageViewer-buttonDisabledBorder) !important;
-      background-color: var(--lcc-color--imageViewer-buttonDisabledBackground) !important;
-      color: var(--lcc-color--imageViewer-buttonDisabledIcon) !important;
-    }
+  .previous-image-button {
+    left: 8px;
+  }
+
+  .next-image-button {
+    right: 8px;
+  }
+}
+
+figcaption {
+  padding: 12px 24px 16px;
+  font-size: 12px;
+  text-align: center;
+
+  @include respond-to('gt-md') {
+    font-size: 14px;
+  }
+
+  @include respond-to('gt-lg') {
+    font-size: 15px;
   }
 }

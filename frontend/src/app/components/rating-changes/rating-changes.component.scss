@@ -1,16 +1,10 @@
-:host {
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: min-content !important;
-  max-height: 80vh;
-  padding: 16px 24px;
+.dialog-title {
+  font: inherit;
 }
 
-.dialog-title {
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--lcc-color--basicDialog-dividerLine);
+.rating-changes {
+  display: block;
+  margin-top: 16px;
 }
 
 .rating-changes__value--changed {

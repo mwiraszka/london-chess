@@ -34,7 +34,6 @@ describe('ClubMapComponent', () => {
     libraries.marker = markerLibrary;
     fixture = TestBed.createComponent(ClubMapComponent);
     fixture.componentRef.setInput('club', LCC);
-    // @ts-expect-error Private class member
     initMapSpy = vi.spyOn(fixture.componentInstance, 'initMap');
     fixture.detectChanges();
     await initMapSpy.mock.results[0].value;

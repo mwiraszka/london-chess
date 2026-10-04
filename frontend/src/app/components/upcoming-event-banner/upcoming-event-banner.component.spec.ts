@@ -163,7 +163,7 @@ describe('UpcomingEventBannerComponent', () => {
   it('should ask to clear the banner from the close button', () => {
     const clearBannerSpy = vi.spyOn(fixture.componentInstance.clearBanner, 'emit');
 
-    element('.close-button').click();
+    element('.close-button button').click();
 
     expect(clearBannerSpy).toHaveBeenCalledTimes(1);
   });

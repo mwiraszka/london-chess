@@ -66,14 +66,7 @@ section {
       display: flex;
       flex-direction: column;
 
-      ::ng-deep lcc-expansion-panel .expansion-content {
-        padding: 2px 0 0;
-      }
-
       .tables-container {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
         width: 100%;
       }
     }
@@ -94,10 +87,10 @@ section {
         color: var(--lcc-color--championPage-headerText);
       }
 
-      hr {
+      ea-divider {
+        display: block;
         width: 100%;
         margin: 4px 0 8px;
-        border-bottom: 1px solid var(--lcc-color--general-dividerLine);
       }
     }
   }

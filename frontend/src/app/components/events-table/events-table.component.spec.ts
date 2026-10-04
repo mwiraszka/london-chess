@@ -1,3 +1,5 @@
+import { DialogService } from '@eagami/ui';
+
 import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -6,9 +8,9 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
-import { lastOpenedDialog, query, queryAll } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query, queryAll } from '@app/utils';
 
 import { EventRow, EventsTableComponent } from './events-table.component';
 
@@ -64,7 +66,7 @@ describe('EventsTableComponent', () => {
       imports: [EventsTableComponent],
       providers: [
         provideRouter([]),
-        { provide: DialogService, useValue: { open: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
@@ -91,17 +93,24 @@ describe('EventsTableComponent', () => {
       expect(textOf(query(entry, '.events__title'))).toBe(events[1].title);
       expect(textOf(query(entry, '.events__type'))).toBe('championship');
       expect(textOf(query(entry, '.events__details'))).toBe(events[1].details);
-      expect(query(entry, '.events__championship-icon')).toBeTruthy();
-      expect(query(bodyRows()[0], '.events__championship-icon')).toBeFalsy();
+      expect(query(entry, '.events__type .championship-icon')).toBeTruthy();
+      expect(query(bodyRows()[0], '.events__type .championship-icon')).toBeFalsy();
       expect(query(fixture.debugElement, '.events__edited')).toBeFalsy();
       expect(query(fixture.debugElement, 'ea-paginator')).toBeFalsy();
     });
 
     it('should mark the first day still to come for the schedule to scroll to', () => {
-      render({ events: [past, ...events] });
+      render({ events: [past, ...events], markToday: true });
 
       expect(queryAll(fixture.debugElement, '.today-scroll-point')).toHaveLength(1);
       expect(query(bodyRows()[1], '.today-scroll-point')).toBeTruthy();
+    });
+
+    it('should mark no day unless asked to', () => {
+      render({ events: [past, ...events] });
+
+      expect(query(fixture.debugElement, '.today-scroll-point')).toBeFalsy();
+      expect(query(fixture.debugElement, '.events__today')).toBeFalsy();
     });
 
     it('should link an event to its article', () => {
@@ -162,8 +171,7 @@ describe('EventsTableComponent', () => {
       await fixture.whenStable();
       await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -172,7 +180,6 @@ describe('EventsTableComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
       expect(storeRequestSpy).toHaveBeenCalledWith(
         EventsActions.deleteEventRequested({ event }),
@@ -181,7 +188,7 @@ describe('EventsTableComponent', () => {
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       component.getAdminControlsConfig(events[0]).deleteCb?.();
       await fixture.whenStable();
@@ -208,19 +215,20 @@ describe('EventsTableComponent', () => {
     });
 
     it('should draw the line above the first day still to come, among past events', () => {
-      render({ events: [past, ...events] });
-      expect(query(fixture.debugElement, '.events__today')).toBeFalsy();
-
-      render({
-        events: [past, ...events],
-        options: {
-          ...options,
-          filters: { showPastEvents: { ...options.filters.showPastEvents, value: true } },
-        },
-      });
+      render({ events: [past, ...events], markToday: true });
 
       expect(query(bodyRows()[1], '.events__today')).toBeTruthy();
       expect(queryAll(fixture.debugElement, '.events__today')).toHaveLength(1);
+    });
+
+    it('should draw the line above the first day on page one when every event is to come', () => {
+      render({ events, markToday: true, options: { ...options, page: 1 } });
+      const onFirstPage = query(bodyRows()[0], '.events__today');
+
+      render({ events, markToday: true, options: { ...options, page: 2 } });
+
+      expect(onFirstPage).toBeTruthy();
+      expect(query(fixture.debugElement, '.events__today')).toBeFalsy();
     });
 
     it('should highlight what was searched for', () => {

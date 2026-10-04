@@ -1,10 +1,10 @@
+import { DialogService } from '@eagami/ui';
 import { Subject } from 'rxjs';
 
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Navigation, NavigationEnd, Router } from '@angular/router';
 
-import { DialogService } from './dialog.service';
 import { KEEP_SCROLL, RoutingService } from './routing.service';
 
 describe('RoutingService', () => {

@@ -1,31 +1,90 @@
 @use './link';
+@use '../abstracts/mixins' as *;
 
+// The card body's smaller secondary text would otherwise replace the page's type
+.lcc-form-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+.lcc-form-divider {
+  display: block;
+  width: 100%;
+  margin: 16px 0;
+}
+
+// Fields that pair up side by side, stacking where there is no room for both
+.lcc-form-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+
+  > * {
+    flex: 1;
+    min-width: 0;
+  }
+
+  @include respond-to('lt-sm') {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.lcc-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+
+  @include respond-to('lt-sm') {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.lcc-form-actions__restore {
+  @include respond-to('lt-sm') {
+    align-self: flex-start;
+  }
+}
+
+// The buttons that leave the form stay on one row, splitting it between them on a phone
+.lcc-form-actions__primary {
+  display: grid;
+  gap: 8px;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  margin-left: auto;
+
+  @include respond-to('lt-sm') {
+    grid-auto-columns: 1fr;
+    margin-left: 0;
+  }
+}
+
+// A form laid out with its labels in a column beside the fields, as the article form is
 .lcc-form {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   width: 100%;
   text-align: center;
-}
-
-.lcc-form-header {
-  padding: 0.6em 1em;
-  text-align: center;
-
-  h3 {
-    width: 100%;
-    color: var(--lcc-color--form-headerText);
-  }
 }
 
 .lcc-form-fields {
   display: grid;
-  grid-template-columns: auto 1fr auto;
   grid-gap: 8px 12px;
+  grid-template-columns: auto 1fr;
   width: 100%;
 
-  label:not(.file-button) {
+  > label {
     align-self: center;
     grid-column: 1 / 2;
     max-width: 100px;
@@ -35,38 +94,10 @@
     cursor: pointer;
   }
 
-  input,
-  textarea,
-  fieldset {
+  > :not(label) {
     align-self: center;
     grid-column: 2 / 3;
-  }
-
-  fieldset {
-    padding: 4px 12px;
     text-align: left;
-    border: 1px solid var(--lcc-color--input-border);
-    border-radius: var(--lcc-borderRadius--small);
-    background-color: var(--lcc-color--input-background);
-
-    label {
-      margin-left: 4px;
-    }
-  }
-
-  lcc-form-error-icon {
-    align-self: center;
-    grid-column: 3 / 4;
-  }
-}
-
-.lcc-form-buttons-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-
-  button {
-    margin: 0 4px;
   }
 }
 

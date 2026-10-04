@@ -17,11 +17,11 @@
 
     <div class="main-links">
       <a
-        class="tournament-registration-link-button lcc-primary-button"
-        href="https://docs.google.com/forms/d/e/1FAIpQLSfCucQMB9RyiGNWCIAkh9N22S8CMSD5JWhi_A9RdcYSk4AYsg/viewform?usp=sharing&ouid=101543539456051433769"
-        ref="noopener noreferrer"
-        target="_blank"
-        tooltip="Google Docs registration form for upcoming LCC tournaments">
+        eaButtonLink
+        class="tournament-registration-link-button"
+        routerLink="/tournaments"
+        size="lg"
+        [uppercase]="true">
         Register for a tournament
       </a>
       <lcc-link-list [links]="[aboutPageLink]"></lcc-link-list>

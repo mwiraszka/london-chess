@@ -12,3 +12,10 @@ export type DateFormat =
   | 'year';
 
 export type MonthStyle = 'long' | 'short';
+
+export interface ClubDateTime {
+  // Local midnight of the day, as date pickers hold it
+  day: Date;
+  // HH:mm on a 24-hour clock, as time pickers hold it
+  time: string;
+}

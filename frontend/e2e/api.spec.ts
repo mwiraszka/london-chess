@@ -36,6 +36,12 @@ test.describe('API', () => {
     ['put', '/articles/000000000000000000000000'],
     ['post', '/images'],
     ['post', '/users/me/avatar'],
+    ['post', '/tournaments'],
+    ['put', '/tournaments/105'],
+    ['delete', '/tournaments/105'],
+    ['post', '/tournaments/player-matches'],
+    ['post', '/tournaments/105/registration'],
+    ['delete', '/tournaments/105/registration'],
   ] as const) {
     test(`refuses ${method.toUpperCase()} ${path} without a session`, async ({
       request,

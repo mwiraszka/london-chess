@@ -1,101 +1,75 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  box-shadow: 2px 2px 4px 0 var(--lcc-color--userSettingsMenu-boxShadow);
-}
-
-.menu-items {
   display: flex;
   flex-direction: column;
   width: 200px;
   border-bottom-left-radius: var(--lcc-borderRadius--small);
   border-bottom-right-radius: var(--lcc-borderRadius--small);
+  box-shadow: 2px 2px 4px 0 var(--lcc-color--userSettingsMenu-boxShadow);
   background-color: var(--lcc-color--userSettingsMenu-background);
-  cursor: default;
+  color: var(--lcc-color--userSettingsMenu-itemForeground);
+}
 
-  hr {
-    margin: 4px;
-    border-top: 1px solid var(--lcc-color--general-dividerLine);
-  }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 4px;
 
-  .menu-item {
+  .user-text {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    color: var(--lcc-color--userSettingsMenu-itemForeground);
-
-    &.user-info {
-      gap: 8px;
-      margin: 8px 12px 4px;
-
-      .user-text {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-      }
-
-      span {
-        padding: 0;
-      }
-
-      .user-name {
-        font-size: 16px;
-      }
-
-      .user-email {
-        font-size: 12px;
-        color: var(--lcc-color--userSettingsMenu-emailText);
-      }
-    }
-
-    &.theme-toggle,
-    &.wide-view-toggle,
-    &.desktop-view-toggle,
-    &.safe-mode-toggle {
-      display: flex;
-      justify-content: space-between;
-
-      span {
-        padding-right: 8px !important;
-      }
-
-      lcc-toggle-switch {
-        padding-right: 16px;
-      }
-    }
-
-    &.admin-logout a {
-      color: var(--lcc-color--userSettingsMenu-warning);
-    }
-
-    span {
-      padding: 8px 16px;
-      font-size: 14px;
-    }
-
-    a,
-    button {
-      flex: 1;
-
-      &:hover > * {
-        background-color: var(--lcc-color--userSettingsMenu-itemBackgroundOnHover);
-        color: var(--lcc-color--userSettingsMenu-itemTextOnHover);
-        cursor: pointer;
-      }
-
-      span {
-        display: block;
-      }
-    }
-
-    button {
-      padding: unset;
-      text-align: start;
-      border: none;
-      background: inherit;
-      color: inherit;
-    }
+    flex-direction: column;
+    min-width: 0;
   }
+
+  .user-name {
+    font-size: 16px;
+    color: var(--lcc-color--userSettingsMenu-itemForeground);
+  }
+
+  .user-email {
+    font-size: 12px;
+    color: var(--lcc-color--userSettingsMenu-emailText);
+  }
+}
+
+.menu-divider {
+  display: block;
+  margin: 4px 0;
+}
+
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+// Each row lights up edge to edge, its label as far in as the toggles below it
+.menu-button {
+  --ea-button-padding: 8px 16px;
+  --ea-button-radius: 0;
+}
+
+.admin-logout {
+  --ea-button-color: var(--lcc-color--userSettingsMenu-warning);
+}
+
+.menu-toggle {
+  padding: 4px 16px;
+}
+
+.safe-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.safe-mode-warning {
+  display: inline-flex;
+  @include icon-size(20px);
+
+  color: var(--lcc-color--userSettingsMenu-warning);
 }
 
 .safe-mode-warning-tooltip {

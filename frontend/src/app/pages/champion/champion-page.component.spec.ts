@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 
 import { MetaAndTitleService } from '@app/services';
 import { initialState as membersInitialState } from '@app/store/members/members.reducer';
-import { query } from '@app/utils';
+import { query, queryAll } from '@app/utils';
 
 import { ChampionPageComponent } from './champion-page.component';
 
@@ -72,16 +72,22 @@ describe('ChampionPageComponent', () => {
       ).toBeTruthy();
     });
 
+    it('should rule off both section headings', () => {
+      expect(
+        queryAll(fixture.debugElement, '.past-champions-section h3 + ea-divider'),
+      ).toHaveLength(2);
+    });
+
     it("should not render 'other championships' tables by default", () => {
       expect(query(fixture.debugElement, '.junior-champions table')).toBeFalsy();
       expect(query(fixture.debugElement, '.active-champions table')).toBeFalsy();
       expect(query(fixture.debugElement, '.speed-champions table')).toBeFalsy();
     });
 
-    it("should render 'other championships' tables when expansion panels are clicked", () => {
+    it("should render 'other championships' tables when their panels are opened", () => {
       const juniorPanelHeader = query(
         fixture.debugElement,
-        '.junior-champions .expansion-header',
+        '.junior-champions .ea-accordion-item__trigger',
       );
       juniorPanelHeader.triggerEventHandler('click');
       fixture.detectChanges();
@@ -89,7 +95,7 @@ describe('ChampionPageComponent', () => {
 
       const activePanelHeader = query(
         fixture.debugElement,
-        '.active-champions .expansion-header',
+        '.active-champions .ea-accordion-item__trigger',
       );
       activePanelHeader.triggerEventHandler('click');
       fixture.detectChanges();
@@ -97,7 +103,7 @@ describe('ChampionPageComponent', () => {
 
       const speedPanelHeader = query(
         fixture.debugElement,
-        '.speed-champions .expansion-header',
+        '.speed-champions .ea-accordion-item__trigger',
       );
       speedPanelHeader.triggerEventHandler('click');
       fixture.detectChanges();

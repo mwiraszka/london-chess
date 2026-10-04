@@ -1,8 +1,9 @@
 import {
+  DataTableColumn,
+  DialogService,
   PaginatorComponent,
   PaginatorState,
   SkeletonComponent,
-  TrophyIconComponent,
 } from '@eagami/ui';
 
 import {
@@ -21,20 +22,14 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import {
   DataTableCellContext,
   DataTableComponent,
-  LccDataTableColumn,
 } from '@app/components/data-table/data-table.component';
+import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import {
-  AdminControlsConfig,
-  BasicDialogResult,
-  DataPaginationOptions,
-  Dialog,
-  Event,
-} from '@app/models';
-import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService, StoreRequestService } from '@app/services';
+import { AdminControlsConfig, DataPaginationOptions, Dialog, Event } from '@app/models';
+import { FormatDatePipe, HighlightPipe } from '@app/pipes';
+import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
 import { customSort, isUpcomingEvent, pageRowCount } from '@app/utils';
 
@@ -63,6 +58,10 @@ function toEventRows(events: Event[]): EventRow[] {
 }
 
 type CellTemplate = TemplateRef<DataTableCellContext<EventRow>>;
+type PlaceholderTemplate = TemplateRef<{
+  $implicit: DataTableColumn<EventRow>;
+  index: number;
+}>;
 
 @Component({
   selector: 'lcc-events-table',
@@ -71,14 +70,13 @@ type CellTemplate = TemplateRef<DataTableCellContext<EventRow>>;
   imports: [
     AdminControlsDirective,
     DataTableComponent,
+    EventTypeTagComponent,
     FormatDatePipe,
     HighlightPipe,
-    KebabCasePipe,
     PaginatorComponent,
     RouterLink,
     SkeletonComponent,
     TextSkeletonComponent,
-    TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -92,6 +90,7 @@ export class EventsTableComponent {
   public readonly options = input<DataPaginationOptions<Event>>();
   public readonly filteredCount = input<number | null>(null);
   public readonly showModificationInfo = input(false);
+  public readonly markToday = input(false);
   public readonly widestEvents = input<Event[]>([]);
 
   public readonly optionsChange = output<DataPaginationOptions<Event>>();
@@ -101,9 +100,10 @@ export class EventsTableComponent {
 
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
   private readonly entryCell = viewChild.required<CellTemplate>('entryCell');
-  private readonly datePlaceholder = viewChild.required<CellTemplate>('datePlaceholder');
+  private readonly datePlaceholder =
+    viewChild.required<PlaceholderTemplate>('datePlaceholder');
   private readonly entryPlaceholder =
-    viewChild.required<CellTemplate>('entryPlaceholder');
+    viewChild.required<PlaceholderTemplate>('entryPlaceholder');
 
   protected readonly pageSizes = EVENTS_PAGE_SIZES;
 
@@ -127,7 +127,7 @@ export class EventsTableComponent {
   // Sized from the first skeleton on by the widest of every event, not just this page
   protected readonly sizingRows = computed(() => toEventRows(this.widestEvents()));
 
-  protected readonly columns = computed<LccDataTableColumn<EventRow>[]>(() => [
+  protected readonly columns = computed<DataTableColumn<EventRow>[]>(() => [
     {
       key: 'date',
       label: 'Event',
@@ -144,11 +144,17 @@ export class EventsTableComponent {
     },
   ]);
 
-  // The first day shown that is still to come: the line above it parts it from the
-  // past, and the schedule scrolls to it
-  protected readonly todayRowId = computed(
-    () => this.rows().find(({ events }) => events.some(isUpcomingEvent))?.id ?? null,
-  );
+  // Today falls just above the first day still to come, when this page holds the point
+  // where the past ends: somewhere after its first row, or at the very top of page one
+  protected readonly todayRowId = computed(() => {
+    if (!this.markToday()) {
+      return null;
+    }
+    const rows = this.rows();
+    const index = rows.findIndex(({ events }) => events.some(isUpcomingEvent));
+    const startsHere = index > 0 || (index === 0 && (this.options()?.page ?? 1) === 1);
+    return startsHere ? rows[index].id : null;
+  });
 
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
@@ -179,10 +185,6 @@ export class EventsTableComponent {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

@@ -6,8 +6,14 @@ import { Injectable, inject } from '@angular/core';
 import {
   ApiResponse,
   DbCollection,
+  GameInput,
+  ImportChanges,
   MemberTournamentResult,
+  PlayerNameMatch,
+  SectionInput,
   Tournament,
+  TournamentInput,
+  TournamentRegistrant,
   TournamentSummary,
 } from '@app/models';
 
@@ -39,6 +45,64 @@ export class TournamentsApiService {
   ): Observable<ApiResponse<MemberTournamentResult[]>> {
     return this.http.get<ApiResponse<MemberTournamentResult[]>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/members/${memberNumber}`,
+    );
+  }
+
+  public addTournament(tournament: TournamentInput): Observable<ApiResponse<number>> {
+    return this.http.post<ApiResponse<number>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}`,
+      tournament,
+    );
+  }
+
+  public updateTournament(
+    tournamentNumber: number,
+    tournament: TournamentInput,
+  ): Observable<ApiResponse<number>> {
+    return this.http.put<ApiResponse<number>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}`,
+      tournament,
+    );
+  }
+
+  public deleteTournament(tournamentNumber: number): Observable<ApiResponse<number>> {
+    return this.http.delete<ApiResponse<number>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}`,
+    );
+  }
+
+  public checkImport(
+    tournamentNumber: number,
+    sections: SectionInput[],
+    games: GameInput[],
+  ): Observable<ApiResponse<ImportChanges>> {
+    return this.http.post<ApiResponse<ImportChanges>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}/import-changes`,
+      { sections, games },
+    );
+  }
+
+  public matchPlayers(names: string[]): Observable<ApiResponse<PlayerNameMatch[]>> {
+    return this.http.post<ApiResponse<PlayerNameMatch[]>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/player-matches`,
+      { names },
+    );
+  }
+
+  public register(
+    tournamentNumber: number,
+  ): Observable<ApiResponse<TournamentRegistrant[]>> {
+    return this.http.post<ApiResponse<TournamentRegistrant[]>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}/registration`,
+      {},
+    );
+  }
+
+  public withdraw(
+    tournamentNumber: number,
+  ): Observable<ApiResponse<TournamentRegistrant[]>> {
+    return this.http.delete<ApiResponse<TournamentRegistrant[]>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}/registration`,
     );
   }
 }

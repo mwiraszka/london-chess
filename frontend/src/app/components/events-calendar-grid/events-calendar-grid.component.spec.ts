@@ -1,18 +1,19 @@
-import { OverlayContainer } from '@angular/cdk/overlay';
+import { DialogService, TooltipDirective } from '@eagami/ui';
+
+import { TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EventInfoDialogComponent } from '@app/components/event-info-dialog/event-info-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { CalendarMonth, DataPaginationOptions, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
-import { lastOpenedDialog, query, queryAll } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, query, queryAll } from '@app/utils';
 
 import { EventsCalendarGridComponent } from './events-calendar-grid.component';
 
@@ -41,10 +42,12 @@ describe('EventsCalendarGridComponent', () => {
     search: '',
   };
 
-  const overlay = (): HTMLElement =>
-    TestBed.inject(OverlayContainer).getContainerElement();
+  const tooltip = (): HTMLElement | null => document.body.querySelector('.ea-tooltip');
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2050-01-01T17:00:00.000Z'));
+
     await TestBed.configureTestingModule({
       imports: [
         AdminControlsDirective,
@@ -52,13 +55,12 @@ describe('EventsCalendarGridComponent', () => {
         FormatDatePipe,
         HighlightPipe,
         KebabCasePipe,
-        TooltipDirective,
       ],
       providers: [
         { provide: IS_TOUCH_DEVICE, useValue: vi.fn() },
         {
           provide: DialogService,
-          useValue: { open: vi.fn() },
+          useValue: { open: vi.fn(() => closedDialogRef()) },
         },
         {
           provide: StoreRequestService,
@@ -83,6 +85,8 @@ describe('EventsCalendarGridComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => vi.useRealTimers());
+
   describe('getAdminControlsConfig', () => {
     it('should return correct configuration for event', () => {
       const config = component.getAdminControlsConfig(mockEvents[0]);
@@ -93,7 +97,7 @@ describe('EventsCalendarGridComponent', () => {
     });
 
     it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.getAdminControlsConfig(mockEvents[0]).deleteCb();
 
@@ -103,12 +107,11 @@ describe('EventsCalendarGridComponent', () => {
 
   describe('onDeleteEvent', () => {
     it('should open confirmation dialog with correct parameters', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteEvent(mockEvents[0]);
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: BasicDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
         inputs: {
           dialog: expect.objectContaining({
             title: 'Confirm',
@@ -117,7 +120,6 @@ describe('EventsCalendarGridComponent', () => {
             confirmButtonType: 'warning',
           }),
         },
-        isModal: true,
       });
     });
 
@@ -132,7 +134,7 @@ describe('EventsCalendarGridComponent', () => {
     });
 
     it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockResolvedValue('cancel');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
 
       await component.onDeleteEvent(mockEvents[0]);
 
@@ -153,6 +155,58 @@ describe('EventsCalendarGridComponent', () => {
         'February 2050',
         'March 2050',
       ]);
+    });
+
+    it('should reach back to the month of today on the first page', () => {
+      vi.setSystemTime(new Date('2049-12-20T17:00:00.000Z'));
+
+      fixture.componentRef.setInput('events', [...mockEvents]);
+      fixture.detectChanges();
+
+      expect(component.monthYears()).toEqual([
+        'December 2049',
+        'January 2050',
+        'February 2050',
+        'March 2050',
+      ]);
+      expect(
+        query(fixture.debugElement, '.calendar-day.today').nativeElement.textContent,
+      ).toContain('20');
+      expect(query(fixture.debugElement, '.month').classes['no-events']).toBeFalsy();
+    });
+
+    it('should start from the first event on any later page', () => {
+      vi.setSystemTime(new Date('2049-12-20T17:00:00.000Z'));
+
+      fixture.componentRef.setInput('options', { ...mockOptions, page: 2 });
+
+      expect(component.monthYears()[0]).toBe('January 2050');
+    });
+  });
+
+  describe('paging', () => {
+    it('should pass on the page chosen', () => {
+      const optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
+
+      query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
+        page: 3,
+        pageSize: 20,
+      });
+
+      expect(optionsChangeSpy).toHaveBeenCalledWith({
+        ...mockOptions,
+        page: 3,
+        pageSize: 20,
+      });
+    });
+
+    it('should count the events that match', () => {
+      fixture.componentRef.setInput('filteredCount', 42);
+      fixture.detectChanges();
+
+      expect(
+        query(fixture.debugElement, 'ea-paginator').componentInstance.totalItems(),
+      ).toBe(42);
     });
   });
 
@@ -254,15 +308,13 @@ describe('EventsCalendarGridComponent', () => {
     it('should open the event details and go to its article when asked to', async () => {
       const router = TestBed.inject(Router);
       const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-      dialogOpenSpy.mockResolvedValue('details');
+      dialogOpenSpy.mockReturnValue(closedDialogRef('details'));
 
       queryAll(fixture.debugElement, '.event-indicator')[1].triggerEventHandler('click');
       await fixture.whenStable();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith({
-        componentType: EventInfoDialogComponent,
+      expect(dialogOpenSpy).toHaveBeenCalledWith(EventInfoDialogComponent, {
         inputs: { event: MOCK_EVENTS[1] },
-        isModal: true,
       });
       expect(navigateSpy).toHaveBeenCalledWith([
         '/article/view/',
@@ -272,7 +324,7 @@ describe('EventsCalendarGridComponent', () => {
 
     it('should stay put when the event details are closed', async () => {
       const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
-      dialogOpenSpy.mockResolvedValue('close');
+      dialogOpenSpy.mockReturnValue(closedDialogRef());
 
       await component.onEventIndicator(MOCK_EVENTS[1]);
 
@@ -284,19 +336,21 @@ describe('EventsCalendarGridComponent', () => {
       fixture.detectChanges();
       const [blitz, championship] = queryAll(fixture.debugElement, '.event-indicator');
 
-      blitz.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      blitz.nativeElement.focus();
       fixture.detectChanges();
-      const blitzTrophies = overlay().querySelectorAll('.championship-icon').length;
-      blitz.nativeElement.dispatchEvent(new MouseEvent('mouseleave'));
-      championship.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      const blitzTrophies = tooltip()?.querySelectorAll('.championship-icon').length;
+      blitz.nativeElement.blur();
+      championship.nativeElement.focus();
       fixture.detectChanges();
 
       expect(blitzTrophies).toBe(0);
-      expect(overlay().querySelector('.event-title')?.textContent).toBe(
+      expect(tooltip()?.querySelector('.event-title')?.textContent).toBe(
         MOCK_EVENTS[1].title,
       );
-      expect(overlay().querySelector('.event-type mark')?.textContent).toBe('champ');
-      expect(overlay().querySelectorAll('.championship-icon').length).toBe(1);
+      expect(tooltip()?.querySelector('lcc-event-type-tag mark')?.textContent).toBe(
+        'champ',
+      );
+      expect(tooltip()?.querySelectorAll('.championship-icon').length).toBe(1);
     });
   });
 
@@ -343,7 +397,7 @@ describe('EventsCalendarGridComponent', () => {
           const eventIndicator = query(localFixture.debugElement, '.event-indicator');
           const directiveInstance = eventIndicator.injector.get(TooltipDirective);
 
-          expect(directiveInstance.tooltip()).toBeTruthy();
+          expect(directiveInstance.eaTooltip()).toBeInstanceOf(TemplateRef);
         });
       });
 
@@ -366,7 +420,7 @@ describe('EventsCalendarGridComponent', () => {
           const eventIndicator = query(localFixture.debugElement, '.event-indicator');
           const directiveInstance = eventIndicator.injector.get(TooltipDirective);
 
-          expect(directiveInstance.tooltip()).toBeFalsy();
+          expect(directiveInstance.eaTooltip()).toBe('');
         });
       });
     });
@@ -377,12 +431,12 @@ describe('EventsCalendarGridComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should render three skeleton months in place of the calendar', () => {
-        const monthsGrid = query(fixture.debugElement, '.months-grid');
+      it('should render enough skeleton months to fill a row on any screen', () => {
+        const monthsGrid = query(fixture.debugElement, '.months-grid--loading');
 
-        expect(queryAll(monthsGrid, '.month')).toHaveLength(3);
-        expect(queryAll(monthsGrid, '.month-title lcc-text-skeleton')).toHaveLength(3);
-        expect(monthsGrid.attributes['month-count']).toBe('3');
+        expect(queryAll(monthsGrid, '.month')).toHaveLength(12);
+        expect(queryAll(monthsGrid, '.month-title lcc-text-skeleton')).toHaveLength(12);
+        expect(monthsGrid.attributes['month-count']).toBe('12');
         expect(monthsGrid.attributes['aria-busy']).toBe('true');
       });
 

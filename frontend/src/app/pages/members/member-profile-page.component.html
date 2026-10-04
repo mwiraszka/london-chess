@@ -160,9 +160,15 @@
       </div>
 
       <div class="profile-card">
-        <lcc-collapsible-card heading="Rating progression">
-          <lcc-rating-progression [memberNumber]="vm.memberNumber" />
-        </lcc-collapsible-card>
+        <ea-accordion
+          class="profile-section"
+          [expandedValues]="['rating']">
+          <ea-accordion-item
+            label="Rating progression"
+            value="rating">
+            <lcc-rating-progression [memberNumber]="vm.memberNumber" />
+          </ea-accordion-item>
+        </ea-accordion>
         @if (!vm.member) {
           <ea-skeleton
             variant="rect"
@@ -172,13 +178,25 @@
       </div>
 
       @if (vm.member) {
-        <lcc-collapsible-card heading="Tournaments">
-          <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
-        </lcc-collapsible-card>
+        <ea-accordion
+          class="profile-section"
+          [expandedValues]="['tournaments']">
+          <ea-accordion-item
+            label="Tournaments"
+            value="tournaments">
+            <lcc-member-tournaments [memberNumber]="vm.memberNumber" />
+          </ea-accordion-item>
+        </ea-accordion>
 
-        <lcc-collapsible-card heading="Openings">
-          <lcc-member-openings [memberNumber]="vm.memberNumber" />
-        </lcc-collapsible-card>
+        <ea-accordion
+          class="profile-section"
+          [expandedValues]="['openings']">
+          <ea-accordion-item
+            label="Openings"
+            value="openings">
+            <lcc-member-openings [memberNumber]="vm.memberNumber" />
+          </ea-accordion-item>
+        </ea-accordion>
       }
     </div>
   }

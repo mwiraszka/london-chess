@@ -1,11 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
 
-import { OverlayContainer } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { AdminControlsConfig } from '@app/models/admin-controls-config.model';
-import { ADMIN_CONTROLS_CONFIG_TOKEN, KeyStateService } from '@app/services';
+import { KeyStateService } from '@app/services';
 import { query } from '@app/utils';
 
 import { AdminControlsComponent } from './admin-controls.component';
@@ -19,15 +18,21 @@ describe('AdminControlsComponent', () => {
     config = { ...config, ...overrides };
     fixture = TestBed.createComponent(AdminControlsComponent);
     fixture.componentInstance.isTouchDevice = touch;
+    fixture.componentRef.setInput('anchor', document.createElement('div'));
+    fixture.componentRef.setInput('config', config);
     fixture.detectChanges();
   };
 
   const tooltipText = (selector: string): string => {
-    query(fixture.debugElement, selector).nativeElement.dispatchEvent(new Event('focus'));
-    fixture.detectChanges();
-    return (
-      TestBed.inject(OverlayContainer).getContainerElement().textContent?.trim() ?? ''
-    );
+    const trigger: HTMLElement = query(fixture.debugElement, selector).nativeElement;
+    trigger.dispatchEvent(new FocusEvent('focusin'));
+    const text = document.body.querySelector('.ea-tooltip')?.textContent?.trim() ?? '';
+    trigger.dispatchEvent(new FocusEvent('focusout'));
+    return text;
+  };
+
+  const press = (selector: string): void => {
+    query(fixture.debugElement, `${selector} button`).nativeElement.click();
   };
 
   beforeEach(async () => {
@@ -38,7 +43,6 @@ describe('AdminControlsComponent', () => {
       imports: [AdminControlsComponent],
       providers: [
         provideRouter([]),
-        { provide: ADMIN_CONTROLS_CONFIG_TOKEN, useFactory: () => config },
         { provide: KeyStateService, useValue: { ctrlMetaKeyPressed$ } },
       ],
     }).compileComponents();
@@ -48,17 +52,33 @@ describe('AdminControlsComponent', () => {
     create();
 
     expect(
-      fixture.nativeElement.style.getPropertyValue('--admin-control-button-size'),
+      query(fixture.debugElement, '.admin-controls').nativeElement.style.getPropertyValue(
+        '--button-size',
+      ),
     ).toBe('15px');
   });
 
-  it('should emit destroyed when destroyed', () => {
+  it('should sit over the top start corner of the item, or centred on its start edge', () => {
     create();
-    const destroyedSpy = vi.spyOn(fixture.componentInstance.destroyed, 'emit');
+    const popover = () => query(fixture.debugElement, 'ea-popover').componentInstance;
+    const atTop = popover().placement();
 
-    fixture.destroy();
+    fixture.componentRef.setInput('placement', 'center');
+    fixture.detectChanges();
 
-    expect(destroyedSpy).toHaveBeenCalledTimes(1);
+    expect(atTop).toBe('inside-top-start');
+    expect(popover().placement()).toBe('inside-start');
+    expect(popover().contextMenu()).toBe(true);
+  });
+
+  it('should close once a control is used, or when the popover asks to', () => {
+    create({ bookmarkCb: vi.fn(), bookmarked: false });
+    const closedSpy = vi.spyOn(fixture.componentInstance.closed, 'emit');
+
+    press('.bookmark-button');
+    query(fixture.debugElement, 'ea-popover').triggerEventHandler('closeRequested');
+
+    expect(closedSpy).toHaveBeenCalledTimes(2);
   });
 
   describe('bookmark button', () => {
@@ -76,7 +96,7 @@ describe('AdminControlsComponent', () => {
       const bookmarkCb = vi.fn();
       create({ bookmarkCb, bookmarked: false });
 
-      query(fixture.debugElement, '.bookmark-button').triggerEventHandler('click');
+      press('.bookmark-button');
 
       expect(bookmarkCb).toHaveBeenCalledTimes(1);
     });
@@ -84,10 +104,8 @@ describe('AdminControlsComponent', () => {
     it('should describe adding or removing the bookmark', () => {
       create({ bookmarkCb: vi.fn(), bookmarked: false });
       const toAdd = tooltipText('.bookmark-button');
-      query(fixture.debugElement, '.bookmark-button').nativeElement.dispatchEvent(
-        new Event('blur'),
-      );
-      config.bookmarked = true;
+      fixture.componentRef.setInput('config', { ...config, bookmarked: true });
+      fixture.detectChanges();
 
       const toRemove = tooltipText('.bookmark-button');
 
@@ -161,7 +179,7 @@ describe('AdminControlsComponent', () => {
     it('should delete the item when clicked', () => {
       create({}, true);
 
-      query(fixture.debugElement, '.delete-button').triggerEventHandler('click');
+      press('.delete-button');
 
       expect(config.deleteCb).toHaveBeenCalledTimes(1);
       expect(tooltipText('.delete-button')).toContain('Spring Open');
@@ -173,10 +191,13 @@ describe('AdminControlsComponent', () => {
         true,
       );
 
-      const button = query(fixture.debugElement, '.delete-button');
-      button.triggerEventHandler('click');
+      const button: HTMLButtonElement = query(
+        fixture.debugElement,
+        '.delete-button button',
+      ).nativeElement;
+      button.click();
 
-      expect(button.nativeElement.disabled).toBe(true);
+      expect(button.disabled).toBe(true);
       expect(config.deleteCb).not.toHaveBeenCalled();
       expect(tooltipText('.delete-button')).toBe('Used in an article');
     });

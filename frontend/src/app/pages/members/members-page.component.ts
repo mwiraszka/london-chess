@@ -1,10 +1,13 @@
 import {
   ButtonComponent,
+  DialogService,
   DownloadIconComponent,
+  FileUploaderComponent,
   InputComponent,
   PlusCircleIconComponent,
   SearchIconComponent,
   SwitchComponent,
+  TooltipDirective,
   UploadIconComponent,
   UsersIconComponent,
 } from '@eagami/ui';
@@ -17,12 +20,10 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   OnInit,
   inject,
   input,
   signal,
-  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
@@ -35,7 +36,6 @@ import { RatingChangesComponent } from '@app/components/rating-changes/rating-ch
 import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import {
   AdminButton,
-  BasicDialogResult,
   DataPaginationOptions,
   Dialog,
   InternalLink,
@@ -43,7 +43,7 @@ import {
   Member,
   MemberWithNewRatings,
 } from '@app/models';
-import { DialogService, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { MetaAndTitleService, StoreRequestService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -61,15 +61,22 @@ import { isLccError } from '@app/utils';
       </lcc-page-header>
 
       @if (vm.isAdmin) {
-        <input
-          #memberRatingChangesFileInput
-          type="file"
-          accept=".csv"
-          style="display: none"
-          (change)="onMemberRatingChangesFileSelected($event)" />
         <lcc-admin-toolbar
           [adminLinks]="[addMemberLink]"
-          [adminButtons]="[updateRatingsFromCsvButton, exportToCsvButton]">
+          [adminButtons]="[exportToCsvButton]">
+          <ea-file-uploader
+            class="ratings-upload"
+            accept=".csv"
+            aria-label="Update member ratings from CSV"
+            buttonLabel=""
+            eaTooltip="Update member ratings from CSV"
+            variant="button"
+            [buttonIcon]="uploadIcon"
+            [disabled]="isPreparingRatingChanges()"
+            [multiple]="false"
+            [showConstraints]="false"
+            [showFileList]="false"
+            (valueChange)="onRatingsFileChosen($event)" />
         </lcc-admin-toolbar>
       }
 
@@ -118,12 +125,14 @@ import { isLccError } from '@app/utils';
     AdminToolbarComponent,
     ButtonComponent,
     CommonModule,
+    FileUploaderComponent,
     InputComponent,
     LoadFailedComponent,
     MembersTableComponent,
     PageHeaderComponent,
     ReactiveFormsModule,
     SwitchComponent,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -139,25 +148,14 @@ export class MembersPageComponent implements OnInit {
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  public readonly memberRatingChangesFileInput = viewChild<ElementRef<HTMLInputElement>>(
-    'memberRatingChangesFileInput',
-  );
-
   public readonly addMemberLink: InternalLink = {
     internalPath: ['member', 'add'],
     text: 'Add a member',
     icon: PlusCircleIconComponent,
   };
 
-  private readonly isPreparingRatingChanges = signal(false);
-
-  public readonly updateRatingsFromCsvButton: AdminButton = {
-    id: 'update-ratings-from-csv',
-    tooltip: 'Update member ratings from CSV',
-    icon: UploadIconComponent,
-    action: () => this.memberRatingChangesFileInput()?.nativeElement.click(),
-    isLoading: this.isPreparingRatingChanges,
-  };
+  protected readonly isPreparingRatingChanges = signal(false);
+  protected readonly uploadIcon = UploadIconComponent;
 
   public readonly exportToCsvButton: AdminButton = {
     id: 'export-to-csv',
@@ -280,11 +278,7 @@ export class MembersPageComponent implements OnInit {
     this.store.dispatch(MembersActions.fetchFilteredMembersRequested());
   }
 
-  public async onMemberRatingChangesFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-
+  public async onRatingsFileChosen([file]: readonly File[]): Promise<void> {
     if (!file) {
       return;
     }
@@ -299,8 +293,7 @@ export class MembersPageComponent implements OnInit {
     }
 
     const { membersWithNewRatings, unmatchedMembers } = ratingChanges;
-    await this.dialogService.open<RatingChangesComponent, BasicDialogResult>({
-      componentType: RatingChangesComponent,
+    await this.dialogService.open(RatingChangesComponent, {
       inputs: {
         confirmAction: () =>
           this.storeRequests.dispatch(
@@ -313,8 +306,7 @@ export class MembersPageComponent implements OnInit {
         membersWithNewRatings,
         unmatchedMembers,
       },
-      isModal: false,
-    });
+    }).result;
   }
 
   private async prepareRatingChanges(file: File): Promise<{
@@ -411,10 +403,6 @@ export class MembersPageComponent implements OnInit {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: false,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

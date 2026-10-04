@@ -16,7 +16,7 @@ test.describe('logging in and creating an account', () => {
     await page.getByRole('textbox', { name: 'Password' }).fill('not-the-password');
     await page.getByRole('button', { name: 'Log in' }).click();
 
-    await expect(page.locator('lcc-login-form .error')).toHaveText(
+    await expect(page.locator('lcc-login-form').getByRole('alert')).toHaveText(
       'Incorrect email or password.',
     );
   });

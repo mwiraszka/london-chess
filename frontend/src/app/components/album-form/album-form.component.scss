@@ -5,6 +5,14 @@
   width: 100%;
 }
 
+.images-section {
+  width: 100%;
+}
+
+.images-group {
+  display: block;
+}
+
 .images-grid {
   display: grid;
   row-gap: 32px;
@@ -42,18 +50,16 @@
       }
     }
 
-    &:hover .remove-image-button {
-      display: flex;
+    &:hover .remove-image-button,
+    &:focus-within .remove-image-button {
+      opacity: 1;
     }
 
     .remove-image-button {
-      @include icon-size(24px);
-
       position: absolute;
       top: 8px;
       right: 8px;
-      display: none;
-      cursor: pointer;
+      opacity: 0;
     }
   }
 
@@ -73,14 +79,18 @@
 .cover-image-input-container {
   display: flex;
   align-items: center;
-  gap: 4px;
-  grid-column: 2 / 3;
-  text-align: left;
   white-space: nowrap;
 }
 
+.album-cover-input-container {
+  justify-self: center;
+}
+
+// A field error stays on one line instead of wrapping to the narrow input's width
 .album-ordinality-input {
-  width: 40px;
+  justify-self: start;
+  width: 48px;
+  white-space: nowrap;
 }
 
 .new-images-header {
@@ -93,36 +103,4 @@
   align-self: end;
   flex-direction: row;
   gap: 8px;
-
-  .choose-files-button,
-  .restore-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-
-    &:not(:disabled) {
-      color: var(--lcc-color--general-warning);
-    }
-
-    & > input {
-      display: none;
-    }
-  }
-}
-
-hr {
-  width: 100%;
-  margin: 1em 0;
-  border-top: 1px solid var(--lcc-color--general-dividerLine);
-}
-
-// The card body's smaller secondary text would otherwise replace the page's type
-.form-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
 }

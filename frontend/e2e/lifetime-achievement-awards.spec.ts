@@ -5,8 +5,8 @@ test.describe('lifetime achievement awards', () => {
     await page.goto('/lifetime-achievement-awards');
 
     const years = page.locator('main').getByRole('heading', { level: 3 });
-    await expect(years.first()).toHaveText(/^\d{4}$/);
-    const labels = await years.allTextContents();
+    await expect(years.first()).toHaveText(/^\d{4}$/, { useInnerText: true });
+    const labels = await years.allInnerTexts();
     expect(labels.map(Number)).toEqual([...labels.map(Number)].sort((a, b) => b - a));
     await expect(page.locator('main').getByRole('img')).not.toHaveCount(0);
   });

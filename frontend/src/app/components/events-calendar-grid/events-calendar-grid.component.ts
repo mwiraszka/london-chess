@@ -1,4 +1,10 @@
-import { CalendarDaysIconComponent, TrophyIconComponent } from '@eagami/ui';
+import {
+  CalendarDaysIconComponent,
+  DialogService,
+  PaginatorComponent,
+  PaginatorState,
+  TooltipDirective,
+} from '@eagami/ui';
 import moment from 'moment-timezone';
 
 import {
@@ -7,16 +13,17 @@ import {
   computed,
   inject,
   input,
+  output,
 } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { TooltipDirective } from '@app/directives/tooltip.directive';
 import {
   AdminControlsConfig,
-  BasicDialogResult,
   CalendarDay,
   CalendarMonth,
   DataPaginationOptions,
@@ -24,7 +31,7 @@ import {
   Event,
 } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { DialogService, StoreRequestService } from '@app/services';
+import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
 import { customSort } from '@app/utils';
@@ -38,12 +45,13 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   imports: [
     AdminControlsDirective,
     CalendarDaysIconComponent,
+    EventTypeTagComponent,
     FormatDatePipe,
     HighlightPipe,
     KebabCasePipe,
+    PaginatorComponent,
     TextSkeletonComponent,
     TooltipDirective,
-    TrophyIconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -56,10 +64,16 @@ export class EventsCalendarGridComponent {
   public readonly isAdmin = input.required<boolean>();
 
   public readonly isLoading = input(false);
+  // With the options the calendar pages its events, through their change
   public readonly options = input<DataPaginationOptions<Event>>();
+  public readonly filteredCount = input<number | null>(null);
 
+  public readonly optionsChange = output<DataPaginationOptions<Event>>();
+
+  protected readonly pageSizes = EVENTS_PAGE_SIZES;
   protected readonly daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  protected readonly skeletonMonths = [0, 1, 2];
+  // Enough to fill a row on any screen; the stylesheet shows only those that fit in it
+  protected readonly skeletonMonths = Array.from({ length: 12 }, (_, index) => index);
   // Six weeks, the most a month can span
   protected readonly skeletonDays = Array.from({ length: 42 }, (_, index) => index);
   protected readonly isTouchDevice = inject(IS_TOUCH_DEVICE)();
@@ -76,10 +90,17 @@ export class EventsCalendarGridComponent {
 
     const firstEventDate = sortedEvents[0];
     const lastEventDate = sortedEvents[sortedEvents.length - 1];
+    const today = moment.tz('America/Toronto');
 
+    // The first page reaches back to today, so the calendar always shows where it is
+    const isFirstPage = (this.options()?.page ?? 1) === 1;
+    const start = isFirstPage && today.isBefore(firstEventDate) ? today : firstEventDate;
+
+    // Today is the club's while the events are local, so each is reduced to its calendar
+    // month before the two are compared
     const monthYears: string[] = [];
-    const current = firstEventDate.clone().startOf('month');
-    const end = lastEventDate.clone().startOf('month');
+    const current = moment(start.format('YYYY-MM'), 'YYYY-MM');
+    const end = moment(lastEventDate.format('YYYY-MM'), 'YYYY-MM');
 
     while (current.isSameOrBefore(end, 'month')) {
       monthYears.push(current.format('MMMM YYYY'));
@@ -102,6 +123,13 @@ export class EventsCalendarGridComponent {
     };
   }
 
+  public onPageChanged({ page, pageSize }: PaginatorState): void {
+    const options = this.options();
+    if (options) {
+      this.optionsChange.emit({ ...options, page, pageSize });
+    }
+  }
+
   public async onDeleteEvent(event: Event): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
@@ -115,19 +143,13 @@ export class EventsCalendarGridComponent {
         ]),
     };
 
-    await this.dialogService.open<BasicDialogComponent, BasicDialogResult>({
-      componentType: BasicDialogComponent,
-      inputs: { dialog },
-      isModal: true,
-    });
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public async onEventIndicator(event: Event): Promise<void> {
-    const result = await this.dialogService.open<EventInfoDialogComponent, 'details'>({
-      componentType: EventInfoDialogComponent,
+    const result = await this.dialogService.open<'details'>(EventInfoDialogComponent, {
       inputs: { event },
-      isModal: true,
-    });
+    }).result;
 
     if (result === 'details') {
       this.router.navigate(['/article/view/', event.articleId]);

@@ -1,3 +1,4 @@
+import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { Dialog } from '@app/models';
 
 import { lastOpenedDialog } from './last-opened-dialog.util';
@@ -11,15 +12,15 @@ describe('lastOpenedDialog', () => {
 
   it('should return the dialog from the latest call', () => {
     const openSpy = vi.fn();
-    openSpy({ inputs: { dialog: { ...dialog, body: 'Earlier' } } });
-    openSpy({ inputs: { dialog } });
+    openSpy(BasicDialogComponent, { inputs: { dialog: { ...dialog, body: 'Earlier' } } });
+    openSpy(BasicDialogComponent, { inputs: { dialog } });
 
     expect(lastOpenedDialog(openSpy)).toBe(dialog);
   });
 
   it('should fail when no confirmation dialog was opened', () => {
     const openSpy = vi.fn();
-    openSpy({ inputs: { images: [] } });
+    openSpy(BasicDialogComponent, { inputs: { images: [] } });
 
     expect(() => lastOpenedDialog(openSpy)).toThrow('No confirmation dialog was opened.');
   });

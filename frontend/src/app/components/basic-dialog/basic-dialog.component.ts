@@ -1,104 +1,116 @@
-import { ProgressBarComponent } from '@eagami/ui';
+import {
+  ButtonComponent,
+  DialogComponent,
+  DialogRef,
+  ProgressBarComponent,
+} from '@eagami/ui';
 
 import {
   ChangeDetectionStrategy,
   Component,
-  OnDestroy,
-  OnInit,
-  Renderer2,
-  RendererFactory2,
+  computed,
   inject,
   input,
-  output,
-  viewChild,
+  signal,
 } from '@angular/core';
 
-import { DialogButtonsComponent } from '@app/components/dialog-buttons/dialog-buttons.component';
-import { BasicDialogResult, Dialog, DialogOutput } from '@app/models';
+import { BasicDialogResult, Dialog } from '@app/models';
 
 @Component({
   selector: 'lcc-basic-dialog',
   template: `
-    <h3 class="dialog-title">{{ dialog().title }}</h3>
-    <p class="dialog-body">{{ dialog().body }}</p>
-    @if (dialog().uploadProgress?.(); as progress) {
-      <div class="upload-progress">
-        <ea-progress-bar
-          [max]="progress.total"
-          [value]="progress.uploaded" />
-        <p class="upload-progress__text">
-          Uploaded {{ progress.uploaded }} of {{ progress.total }}
-          {{ progress.total === 1 ? 'image' : 'images' }}
-        </p>
+    <ea-dialog
+      width="sm"
+      [closeDisabled]="pending()"
+      [closeOnBackdrop]="!pending()"
+      [closeOnEscape]="!pending()"
+      (keydown.enter)="onEnter($event)">
+      <h3
+        slot="header"
+        class="dialog-title">
+        {{ dialog().title }}
+      </h3>
+
+      <p class="dialog-body">{{ dialog().body }}</p>
+
+      @if (dialog().uploadProgress?.(); as progress) {
+        <div
+          slot="status"
+          class="upload-progress">
+          <ea-progress-bar
+            [label]="uploadLabel()"
+            [max]="progress.total"
+            [value]="progress.uploaded" />
+        </div>
+      }
+
+      <div slot="footer">
+        <ea-button
+          class="cancel-button"
+          variant="secondary"
+          [disabled]="pending()"
+          (clicked)="dialogRef.close('cancel')">
+          {{ dialog().cancelButtonText ?? 'Cancel' }}
+        </ea-button>
+        <ea-button
+          class="confirm-button"
+          [loading]="pending()"
+          [variant]="dialog().confirmButtonType === 'warning' ? 'danger' : 'primary'"
+          (clicked)="confirm()">
+          {{ dialog().confirmButtonText }}
+        </ea-button>
       </div>
-    }
-    <lcc-dialog-buttons
-      [cancelText]="dialog().cancelButtonText ?? 'Cancel'"
-      [confirmAction]="dialog().confirmAction"
-      [confirmText]="dialog().confirmButtonText"
-      [confirmVariant]="dialog().confirmButtonType ?? 'primary'"
-      (result)="dialogResult.emit($event)" />
+    </ea-dialog>
   `,
   styles: `
-    :host {
-      width: 400px !important;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      text-align: start;
-      padding: 16px 32px;
+    .dialog-title {
+      font: inherit;
+    }
 
-      .dialog-title {
-        padding-bottom: 4px;
-        border-bottom: 1px solid var(--lcc-color--basicDialog-dividerLine);
-      }
-
-      .dialog-body {
-        white-space: pre-wrap;
-      }
-
-      .upload-progress {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .upload-progress__text {
-        font-size: 12px;
-        text-align: center;
-      }
+    .dialog-body {
+      white-space: pre-wrap;
     }
   `,
-  imports: [DialogButtonsComponent, ProgressBarComponent],
+  imports: [ButtonComponent, DialogComponent, ProgressBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BasicDialogComponent
-  implements DialogOutput<BasicDialogResult>, OnInit, OnDestroy
-{
+export class BasicDialogComponent {
+  protected readonly dialogRef = inject<DialogRef<BasicDialogResult>>(DialogRef);
+
   readonly dialog = input.required<Dialog>();
 
-  public readonly dialogResult = output<BasicDialogResult | 'close'>();
+  protected readonly pending = signal(false);
 
-  private readonly buttons = viewChild.required(DialogButtonsComponent);
-  private readonly renderer: Renderer2 = inject(RendererFactory2).createRenderer(
-    null,
-    null,
-  );
+  protected readonly uploadLabel = computed(() => {
+    const progress = this.dialog().uploadProgress?.();
+    return progress
+      ? `Uploaded ${progress.uploaded} of ${progress.total} ${progress.total === 1 ? 'image' : 'images'}`
+      : '';
+  });
 
-  private enterKeyListener?: () => void;
+  public async confirm(): Promise<void> {
+    if (this.pending()) {
+      return;
+    }
 
-  public ngOnInit(): void {
-    this.enterKeyListener = this.renderer.listen(
-      'document',
-      'keydown.enter',
-      (event: KeyboardEvent) => {
-        event.preventDefault();
-        void this.buttons().confirm();
-      },
-    );
+    const confirmAction = this.dialog().confirmAction;
+    if (confirmAction) {
+      this.pending.set(true);
+      try {
+        await confirmAction();
+      } finally {
+        this.pending.set(false);
+      }
+    }
+    this.dialogRef.close('confirm');
   }
 
-  public ngOnDestroy(): void {
-    this.enterKeyListener?.();
+  // A focused button answers Enter itself, so only Enter from elsewhere confirms
+  protected onEnter(event: Event): void {
+    if (event.target instanceof HTMLButtonElement) {
+      return;
+    }
+    event.preventDefault();
+    void this.confirm();
   }
 }

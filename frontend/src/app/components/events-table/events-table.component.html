@@ -27,9 +27,7 @@
   <div
     class="events__date"
     [class.today-scroll-point]="row.id === todayRowId()"
-    [class.events__today]="
-      row.id === todayRowId() && options()?.filters?.showPastEvents?.value
-    ">
+    [class.events__today]="row.id === todayRowId()">
     <div>{{ row.events[0].eventDate | formatDate: 'short day-of-week' }}</div>
     <div>
       <b>{{ row.events[0].eventDate | formatDate: 'short month-day' }}</b>
@@ -53,7 +51,7 @@
     <div class="events__entry">
       <div class="events__main">
         <div class="events__heading">
-          <span class="events__type events__type--placeholder">
+          <span class="events__heading-placeholder">
             <lcc-text-skeleton width="42ch" />
           </span>
         </div>
@@ -97,14 +95,10 @@
                 <span [innerHTML]="event.title | highlight: search()"></span>
               }
             </h3>
-            <div
+            <lcc-event-type-tag
               class="events__type"
-              [class]="'events__type--' + (event.type | kebabCase)">
-              <span [innerHTML]="event.type | highlight: search()"></span>
-              @if (event.type === 'championship') {
-                <ea-icon-trophy class="events__championship-icon" />
-              }
-            </div>
+              [search]="search()"
+              [type]="event.type" />
           </div>
 
           <p

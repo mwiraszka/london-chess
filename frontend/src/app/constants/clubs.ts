@@ -1,5 +1,8 @@
 import { Club } from '@app/models';
 
+// The club plays in London, Ontario, so its days and times run on Toronto's clock
+export const CLUB_TIME_ZONE = 'America/Toronto';
+
 export const LCC: Club = {
   id: 'london-chess-club',
   name: 'London Chess Club',
