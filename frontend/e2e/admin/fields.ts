@@ -11,6 +11,13 @@ export async function fillField(page: Page, label: string, value: string): Promi
   await field.press('Enter');
 }
 
+// The date picker's own aria-label hides the label beside it, so it is found by id
+export async function fillDate(page: Page, id: string, value: string): Promise<void> {
+  const field = page.locator(`#${id}`);
+  await field.fill(value);
+  await field.press('Enter');
+}
+
 // A day in the coming month, written as the date pickers read it
 export function nextMonthOn(day: number): string {
   const date = new Date();
