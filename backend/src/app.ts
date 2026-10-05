@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/node';
 import cors, { CorsOptions } from 'cors';
 import express, { NextFunction, Request, Response, Router } from 'express';
 
-import { helloWorld } from './middlewares/hello-world.middleware';
+import { errorHandler, notFound } from './middlewares/error-handler.middleware';
 import { logger } from './middlewares/logger.middleware';
 import { version } from './middlewares/version.middleware';
 import { articlesRouter } from './routers/articles.router';
@@ -25,7 +25,6 @@ Sentry.init({
 });
 
 const router = Router()
-  .use('/v1/test', helloWorld)
   .use('/v1/version', version)
   .use('/v1/articles', articlesRouter)
   .use('/v1/events', eventsRouter)
@@ -45,7 +44,7 @@ const corsOptions: CorsOptions = {
    */
   optionsSuccessStatus: 200,
   origin: (origin, callback) => {
-    // Allow same-origin/non-browser requests (no Origin header) and Vercel previews.
+    // Allow same-origin/non-browser requests (no Origin header) and the club's sites.
     // Withholding the header rather than throwing keeps scanner probes out of the error log
     callback(null, !origin || isAllowedOrigin(origin));
   },
@@ -73,9 +72,12 @@ app
   .use(logger)
   // Svix signature verification needs the raw request body, so this mounts before the JSON parser
   .use('/v1/webhooks', ensureDatabaseConnection, webhooksRouter)
-  .use(express.json({ limit: '50MB' }))
-  .use(express.urlencoded({ extended: true, limit: '50MB' }))
+  // Vercel turns away any larger request before it reaches the app
+  .use(express.json({ limit: '4.5mb' }))
+  .use(express.urlencoded({ extended: true, limit: '4.5mb' }))
   .use(ensureDatabaseConnection)
-  .use(router);
+  .use(router)
+  .use(notFound);
 
 Sentry.setupExpressErrorHandler(app);
+app.use(errorHandler);

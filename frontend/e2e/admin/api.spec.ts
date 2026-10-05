@@ -75,18 +75,18 @@ test.describe('admin API', () => {
     expect((await response.json()).message).toBe('[IM-5.1] No files provided');
   });
 
-  test('rejects an avatar over 5 MB with a clear message', async ({ page, request }) => {
+  test('rejects an avatar over 3 MB with a clear message', async ({ page, request }) => {
     const authorization = await logIn(page);
 
     const response = await request.post(`${API}/users/me/avatar`, {
       headers: { authorization },
       multipart: {
-        file: png('huge.png', 5 * 1024 * 1024),
+        file: png('huge.png', 3 * 1024 * 1024),
         cropped: png('cropped.png'),
       },
     });
 
     expect(response.status()).toBe(400);
-    expect((await response.json()).message).toBe('File must be under 5 MB.');
+    expect((await response.json()).message).toBe('File must be under 3 MB.');
   });
 });

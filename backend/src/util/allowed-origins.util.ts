@@ -6,5 +6,5 @@ const ALLOWED_ORIGINS = [
 ];
 
 export function isAllowedOrigin(origin: string): boolean {
-  return ALLOWED_ORIGINS.includes(origin) || /\.vercel\.app$/.test(origin);
+  return ALLOWED_ORIGINS.includes(origin);
 }
