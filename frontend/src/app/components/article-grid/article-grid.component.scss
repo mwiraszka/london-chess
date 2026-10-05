@@ -83,7 +83,7 @@ $grid-gap: 8px;
     gap: 4px;
     max-width: $card-max-width;
     height: auto;
-    border-radius: var(--lcc-borderRadius--large);
+    border-radius: var(--radius-md);
     box-shadow: 0 4px 16px -4px var(--lcc-color--articleGrid-cardShadow);
     background-color: var(--lcc-color--articleGrid-cardBackground);
     transition:
@@ -110,8 +110,8 @@ $grid-gap: 8px;
       justify-content: center;
       width: 100%;
       aspect-ratio: 3 / 2;
-      border-top-left-radius: var(--lcc-borderRadius--large);
-      border-top-right-radius: var(--lcc-borderRadius--large);
+      border-top-left-radius: var(--radius-md);
+      border-top-right-radius: var(--radius-md);
 
       // The vignette fades only the loaded photo; the skeleton shown while it
       // loads stays a plain rectangle
@@ -165,7 +165,7 @@ $grid-gap: 8px;
         align-items: center;
         justify-content: center;
         height: 62px;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         box-shadow: 0 1px 3px var(--lcc-color--articleGrid-titleShadow);
         background-color: var(--lcc-color--articleGrid-titleBackground);
         padding: 4px 8px;

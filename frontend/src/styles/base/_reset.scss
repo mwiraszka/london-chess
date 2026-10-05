@@ -1,91 +1,42 @@
-*,
-*:before,
-*:after {
-  box-sizing: border-box;
-}
+// Only what the app adds to the reset @eagami/ui loads before it
 
+// Headings, small print and code start at the size around them rather than the browser's,
+// and the root keeps the visitor's own text size
 html,
-body,
-div,
-span,
-object,
-iframe,
-figure,
 h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-blockquote,
-pre,
-a,
-code,
-em,
-img,
 small,
-strike,
-strong,
 sub,
 sup,
-tt,
-b,
-u,
-i,
-ol,
-ul,
-li,
-hr,
-fieldset,
-form,
-label,
-table,
-caption,
-tbody,
-tfoot,
-thead,
-tr,
-th,
-td,
-main,
-canvas,
-embed,
-footer,
-header,
-nav,
-section,
-article,
-video {
-  vertical-align: baseline;
-  padding: 0;
-  margin: 0;
+code,
+pre {
   font-size: 100%;
+}
+
+sub,
+sup {
+  vertical-align: baseline;
+}
+
+th,
+caption {
   text-align: inherit;
-  text-rendering: optimizeLegibility;
-  text-size-adjust: none;
+}
+
+fieldset,
+iframe,
+hr {
   border: 0;
-  color: inherit;
-  -webkit-font-smoothing: antialiased;
 }
 
 body {
   overflow: hidden;
   background-color: var(--color-neutral-700);
+  text-rendering: optimizeLegibility;
 }
 
 a {
-  font-style: normal;
+  color: inherit;
   text-decoration: none;
-
-  &:hover,
-  & > *:hover {
-    cursor: pointer;
-  }
-}
-
-button:not([disabled]) {
-  cursor: pointer;
 }
 
 ol,
@@ -96,9 +47,9 @@ ul {
 blockquote,
 q {
   quotes: none;
-  &:before,
-  &:after {
-    content: '';
+
+  &::before,
+  &::after {
     content: none;
   }
 }

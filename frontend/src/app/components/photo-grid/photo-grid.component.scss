@@ -40,10 +40,10 @@
   .album-cover {
     display: block;
     width: calc(100% - 16px);
-    padding: 6px;
+    padding: 8px;
     margin: 8px;
     border: none;
-    border-radius: var(--lcc-borderRadius--small);
+    border-radius: var(--radius-sm);
     box-shadow: 3px 3px 5px var(--lcc-color--photoGrid-boxShadow);
     background-color: var(--lcc-color--general-cardBackground);
     break-inside: avoid;
@@ -78,7 +78,7 @@
       .album-image-container {
         width: 100%;
         margin-bottom: 2px;
-        border-radius: var(--lcc-borderRadius--small);
+        border-radius: var(--radius-sm);
 
         &.skeleton-image {
           aspect-ratio: 1;
@@ -90,7 +90,7 @@
         width: 100%;
         height: auto;
         margin-bottom: 2px;
-        border-radius: var(--lcc-borderRadius--small);
+        border-radius: var(--radius-sm);
       }
 
       figcaption {

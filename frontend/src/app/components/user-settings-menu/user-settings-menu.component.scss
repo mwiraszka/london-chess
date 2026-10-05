@@ -4,8 +4,8 @@
   display: flex;
   flex-direction: column;
   width: 200px;
-  border-bottom-left-radius: var(--lcc-borderRadius--small);
-  border-bottom-right-radius: var(--lcc-borderRadius--small);
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
   box-shadow: 2px 2px 4px 0 var(--lcc-color--userSettingsMenu-boxShadow);
   background-color: var(--lcc-color--userSettingsMenu-background);
   color: var(--lcc-color--userSettingsMenu-itemForeground);

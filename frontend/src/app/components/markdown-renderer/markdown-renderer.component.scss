@@ -53,7 +53,7 @@
     // h2 headings function as the article's scrollable anchors
     h2 {
       padding-top: 16px;
-      margin-top: 1em;
+      margin-top: 24px;
     }
 
     p {
@@ -96,7 +96,7 @@
       padding: 16px 24px;
       margin: 0 16px;
       border: 1px solid var(--lcc-color--markdownRenderer-blockquoteBorder);
-      border-radius: var(--lcc-borderRadius--large);
+      border-radius: var(--radius-md);
       background-color: var(--lcc-color--markdownRenderer-blockquoteBackground);
 
       & > p {

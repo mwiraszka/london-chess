@@ -30,7 +30,7 @@
   object-fit: cover;
   width: 100%;
   height: auto;
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
 
   // Beside the text it shares the row and stretches to the text's height, cropping
   // rather than distorting
@@ -48,8 +48,6 @@
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
-  font-size: 16px;
-  color: var(--color-text-primary);
 }
 
 // Two rows of two until the card is wide enough for four cards to keep their room
@@ -81,7 +79,7 @@
   white-space: nowrap;
 
   @include respond-to('lt-sm') {
-    gap: 6px;
+    gap: 4px;
   }
 }
 
@@ -116,9 +114,6 @@
 }
 
 .figure__label {
-  font-size: 16px;
-  color: var(--color-text-primary);
-
   @include respond-to('lt-sm') {
     font-size: 14px;
   }

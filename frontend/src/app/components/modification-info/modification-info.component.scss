@@ -7,7 +7,7 @@
   max-width: 100%;
   padding: 4px 16px;
   border: 1px solid var(--lcc-color--modificationInfo-border);
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
   background-color: var(--lcc-color--modificationInfo-background);
 
   @include respond-to('lt-sm') {
@@ -78,7 +78,7 @@
     }
 
     .name {
-      padding-left: 0.5em;
+      padding-left: 8px;
       color: var(--lcc-color--modificationInfo-primaryText);
     }
 

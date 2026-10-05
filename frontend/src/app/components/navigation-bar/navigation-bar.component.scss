@@ -31,15 +31,15 @@ $nav-collapse-width: 800px;
     height: auto;
     // Add border thickness to side padding for non-active links to prevent layout shifts
     // when a link becomes active and a border is added
-    padding: 3px calc(2px + #{$border-thickness});
+    padding: 4px calc(2px + #{$border-thickness});
     font-size: 14px;
 
     font-weight: 400;
     white-space: nowrap;
     border-top: $border-thickness solid transparent;
     border-bottom: $border-thickness solid var(--lcc-color--nav-border);
-    border-top-left-radius: var(--lcc-borderRadius--large);
-    border-top-right-radius: var(--lcc-borderRadius--large);
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
     color: var(--lcc-color--nav-linkForeground);
 
     &:hover {
@@ -52,7 +52,7 @@ $nav-collapse-width: 800px;
     }
 
     &.link-active {
-      padding: 3px 2px;
+      padding: 4px 2px;
       border-right: $border-thickness solid var(--lcc-color--nav-border);
       border-left: $border-thickness solid var(--lcc-color--nav-border);
       background-color: var(--lcc-color--app-mainBackground);
@@ -76,12 +76,12 @@ $nav-collapse-width: 800px;
     }
 
     @include respond-to('gt-xs') {
-      padding-left: calc(5px + #{$border-thickness});
-      padding-right: calc(5px + #{$border-thickness});
+      padding-left: calc(4px + #{$border-thickness});
+      padding-right: calc(4px + #{$border-thickness});
 
       &.link-active {
-        padding-right: 5px;
-        padding-left: 5px;
+        padding-right: 4px;
+        padding-left: 4px;
       }
     }
 

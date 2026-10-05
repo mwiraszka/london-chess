@@ -9,7 +9,7 @@
   text-align: left;
   text-decoration: none;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;

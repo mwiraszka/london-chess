@@ -24,14 +24,14 @@
       flex: 1;
       align-items: center;
       justify-content: center;
-      border-radius: var(--lcc-borderRadius--large);
+      border-radius: var(--radius-md);
       background-color: var(--lcc-color--general-imageBackdrop);
 
       lcc-image {
         width: 100%;
         max-width: 100%;
         max-height: 100%;
-        border-radius: var(--lcc-borderRadius--large);
+        border-radius: var(--radius-md);
 
         ::ng-deep img {
           object-fit: contain;
@@ -79,7 +79,7 @@
       overflow: hidden;
       width: 100%;
       padding: 8px;
-      border-radius: var(--lcc-borderRadius--large);
+      border-radius: var(--radius-md);
       box-shadow: 1px 1px 8px 1px var(--lcc-color--articleForm-markdownPreviewBoxShadow);
     }
   }

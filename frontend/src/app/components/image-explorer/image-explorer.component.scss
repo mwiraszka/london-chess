@@ -79,7 +79,7 @@ $side-padding: 8px;
     max-height: 500px;
     padding: $card-padding;
     border: none;
-    border-radius: var(--lcc-borderRadius--large);
+    border-radius: var(--radius-md);
     box-shadow: 1px 2px 4px var(--lcc-color--general-cardBoxShadow);
     background-color: var(--lcc-color--imageExplorer-cardBackground);
     transition: all 0.2s ease;
@@ -97,7 +97,7 @@ $side-padding: 8px;
       justify-content: center;
       margin-bottom: 8px;
       aspect-ratio: 3 / 2;
-      border-radius: var(--lcc-borderRadius--large);
+      border-radius: var(--radius-md);
       background-color: var(--lcc-color--general-imageBackdrop);
 
       lcc-image {
@@ -124,12 +124,12 @@ $side-padding: 8px;
 
       label {
         display: inline;
-        margin-right: 0.5em;
+        margin-right: 8px;
         font-weight: bold;
       }
 
       b {
-        margin: 0.3em;
+        margin: 4px;
       }
 
       // Stands in for the value, which sits on its own line below the label

@@ -28,7 +28,7 @@
     height: unset;
     padding: 4px 8px;
     line-height: 1.5em;
-    border-radius: var(--lcc-borderRadius--small);
+    border-radius: var(--radius-sm);
     background-color: var(--lcc-color--article-bannerImageHeaderBackground);
     color: var(--lcc-color--article-bannerImageHeaderText);
   }
@@ -81,13 +81,13 @@
     .modification-details {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
 
       .vertical-spacer {
         --ea-divider-length: 1em;
 
         display: flex;
-        margin: 0 0.4em;
+        margin: 0 4px;
       }
 
       .date-last-edited {

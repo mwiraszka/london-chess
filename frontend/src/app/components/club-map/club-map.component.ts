@@ -32,7 +32,7 @@ import { environment } from '@env';
     :host {
       width: 100%;
       min-width: 280px;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       border: 3px solid var(--lcc-color--clubMap-border);
 
       &:hover {
@@ -43,7 +43,7 @@ import { environment } from '@env';
     .map {
       width: 100%;
       height: 100%;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
 
       ::ng-deep .gm-style > div {
         cursor: pointer !important;

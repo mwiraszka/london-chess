@@ -103,16 +103,10 @@ $details-gap: 24px;
   font-weight: bold;
 }
 
-.registration__heading {
-  font: inherit;
-}
-
 .registration__body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
 }
 
 .registration__status,

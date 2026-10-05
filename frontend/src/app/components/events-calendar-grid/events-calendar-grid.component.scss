@@ -147,7 +147,7 @@ $skeleton-month-count: 12;
     width: 16px;
     height: 16px;
     border: 1px solid var(--lcc-color--eventsCalendar-eventIndicatorBorder);
-    border-radius: 50%;
+    border-radius: var(--radius-full);
 
     &:not(.no-events) {
       &.other-month {

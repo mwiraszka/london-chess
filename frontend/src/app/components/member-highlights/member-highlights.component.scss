@@ -36,7 +36,7 @@ $narrow-scale: 0.75;
   padding: 4px 4px 8px;
   border: 0;
   border-bottom: 3px solid transparent;
-  border-radius: var(--lcc-borderRadius--small);
+  border-radius: var(--radius-sm);
   background: none;
   cursor: pointer;
   transition:
@@ -117,7 +117,7 @@ $narrow-scale: 0.75;
   padding: 12px 24px;
   margin: 0;
   border: 1px solid var(--lcc-color--general-dividerLine);
-  border-radius: var(--lcc-borderRadius--small);
+  border-radius: var(--radius-sm);
 
   @container (width < 480px) {
     justify-content: stretch;

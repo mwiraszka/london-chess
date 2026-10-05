@@ -116,7 +116,7 @@ $breakpoints: (
     margin: 12px 0;
 
     @include respond-to('lt-md') {
-      gap: 3px 12px;
+      gap: 4px 12px;
     }
   }
 

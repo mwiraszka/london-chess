@@ -130,9 +130,7 @@
   .text-container {
     p {
       margin-bottom: 16px;
-      font-size: 16px;
       line-height: 24px;
-      color: var(--color-text-primary);
 
       &:last-child {
         margin-bottom: 0;
@@ -241,7 +239,7 @@
   .release-link {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 14px;
     line-height: 1;
     white-space: nowrap;
@@ -309,7 +307,6 @@
     flex-direction: column;
     gap: 4px;
     padding-left: 24px;
-    font-size: 16px;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -362,7 +359,7 @@
   .page-link__title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 14px;
     font-weight: 600;
 

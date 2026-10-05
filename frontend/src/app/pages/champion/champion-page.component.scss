@@ -50,8 +50,7 @@ section {
 
     lcc-photo-carousel {
       max-width: 600px;
-      border-radius: var(--lcc-borderRadius--small);
-      box-shadow: var(--lcc-boxShadow--standard);
+      border-radius: var(--radius-sm);
     }
   }
 

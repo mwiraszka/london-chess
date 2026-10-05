@@ -45,7 +45,7 @@ $side-by-side-from: 800px;
   width: 100%;
   height: auto;
   max-height: 240px;
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
 
   @media (min-width: $side-by-side-from) {
     flex: 1 1 0;
@@ -61,8 +61,6 @@ $side-by-side-from: 800px;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  font-size: 16px;
-  color: var(--color-text-primary);
 
   // Two thirds of the card once there is room, the photo taking the rest
   @include respond-to('gt-xl') {
@@ -178,7 +176,6 @@ $side-by-side-from: 800px;
 }
 
 .upcoming__name {
-  font-size: var(--font-size-md);
   font-weight: 600;
 }
 

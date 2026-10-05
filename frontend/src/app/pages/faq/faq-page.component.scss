@@ -28,11 +28,6 @@
   color: var(--lcc-color--general-accentIcon);
 }
 
-// The card's smaller body text would otherwise shrink the links
-.faq-page__location-body lcc-link-list {
-  font-size: 16px;
-}
-
 .faq {
   display: flex;
   flex-direction: column;
@@ -43,7 +38,7 @@
 .faq__answer {
   padding: 16px;
   border-left: 3px solid var(--lcc-color--general-accentIcon);
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
   background-color: var(--lcc-color--faqPage-answerBackground);
   color: var(--color-text-secondary);
 }
@@ -70,7 +65,7 @@ ea-accordion-item p {
   min-width: 96px;
   padding: 8px 16px;
   border: 1px solid var(--lcc-color--general-dividerLine);
-  border-radius: var(--lcc-borderRadius--small);
+  border-radius: var(--radius-sm);
 
   dt {
     font-size: 12px;

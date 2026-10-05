@@ -19,7 +19,7 @@
   height: 65px;
   font-size: 13px;
   text-align: center;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background-color: var(--lcc-color--schedule-dateBackground);
 }
 

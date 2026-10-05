@@ -50,8 +50,15 @@ ea-dialog .ea-dialog__panel {
   border: var(--border-width-thin) solid var(--color-border-default);
 }
 
-// A heading in a dialog's header takes the header's type, not the app's heading sizes
-ea-dialog :is(h1, h2, h3, h4, h5, h6)[slot='header'] {
+// Card bodies carry the page's type, not the library's smaller secondary text
+ea-card .ea-card__body {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+// A heading in a card's, dialog's or drawer's header takes the header's type, not the
+// app's heading sizes
+:is(ea-card, ea-dialog, ea-drawer) :is(h1, h2, h3, h4, h5, h6)[slot='header'] {
   font: inherit;
 }
 

@@ -12,7 +12,7 @@ ea-button.admin-control-button {
   --ea-button-font-size: calc((var(--button-size) - 10px) / 1.5);
   --ea-button-padding: 0 4px;
   --ea-button-min-height: var(--button-size);
-  --ea-button-radius: var(--lcc-borderRadius--large);
+  --ea-button-radius: var(--radius-md);
   --ea-button-background-color: var(--lcc-color--adminControls-buttonBackground);
   --ea-button-background-color-hover: var(
     --lcc-color--adminControls-buttonBackgroundOnHover
@@ -38,7 +38,7 @@ ea-button.admin-control-button {
   height: var(--button-size);
   padding: 0;
   border: 2px solid var(--lcc-color--adminControls-buttonBorder);
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
   background-color: var(--lcc-color--adminControls-buttonBackground);
   color: var(--lcc-color--adminControls-editIcon);
 
