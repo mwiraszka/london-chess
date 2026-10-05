@@ -1,4 +1,4 @@
-import { ToastService } from '@eagami/ui';
+import { DialogService, ToastService } from '@eagami/ui';
 import { BehaviorSubject } from 'rxjs';
 
 import { WritableSignal, signal } from '@angular/core';
@@ -20,7 +20,7 @@ import {
   MetaAndTitleService,
   UserService,
 } from '@app/services';
-import { queryAll } from '@app/utils';
+import { closedDialogRef, lastOpenedDialog, queryAll } from '@app/utils';
 
 import { AccountPageComponent } from './account-page.component';
 
@@ -46,8 +46,10 @@ describe('AccountPageComponent', () => {
     verifyAndSetPrimaryEmail: Mock;
     extractError: Mock;
     expectSessionEnd: Mock;
+    clearSessionEndExpectation: Mock;
     logOut: Mock;
   };
+  let dialogOpen: Mock;
   let userService: {
     user: WritableSignal<UserRecord | null>;
     hasAvatar: WritableSignal<boolean>;
@@ -146,6 +148,7 @@ describe('AccountPageComponent', () => {
       patch: vi.fn().mockResolvedValue(record),
       delete: vi.fn().mockResolvedValue(undefined),
     };
+    dialogOpen = vi.fn(() => closedDialogRef());
     clerk = {
       user: clerkUser,
       reloadUser: vi.fn().mockResolvedValue(undefined),
@@ -153,6 +156,7 @@ describe('AccountPageComponent', () => {
       verifyAndSetPrimaryEmail: vi.fn().mockResolvedValue(undefined),
       extractError: vi.fn((error: Error) => error.message),
       expectSessionEnd: vi.fn(),
+      clearSessionEndExpectation: vi.fn(),
       logOut: vi.fn().mockResolvedValue(undefined),
     };
     userService = {
@@ -171,6 +175,7 @@ describe('AccountPageComponent', () => {
       imports: [AccountPageComponent],
       providers: [
         provideRouter([]),
+        { provide: DialogService, useValue: { open: dialogOpen } },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -394,28 +399,45 @@ describe('AccountPageComponent', () => {
   });
 
   describe('deleting the account', () => {
-    it('should delete it, log out and go home', async () => {
+    it('should ask first, then delete it, log out and go home', async () => {
       const navigate = vi
         .spyOn(TestBed.inject(Router), 'navigate')
         .mockResolvedValue(true);
       await render('danger');
+      await component['onDeleteAccount']();
+      const dialog = lastOpenedDialog(dialogOpen);
 
-      await component['onConfirmDelete']();
+      await dialog.confirmAction?.();
 
+      expect(dialog).toMatchObject({
+        title: 'Delete account',
+        confirmButtonText: 'Confirm',
+        confirmButtonType: 'warning',
+      });
       expect(clerk.expectSessionEnd).toHaveBeenCalled();
       expect(api.delete).toHaveBeenCalledWith('/users/me');
       expect(clerk.logOut).toHaveBeenCalled();
       expect(navigate).toHaveBeenCalledWith(['/']);
     });
 
-    it('should stay put and explain a deletion that fails', async () => {
+    it('should delete nothing until the dialog is confirmed', async () => {
       await render('danger');
-      api.delete.mockRejectedValue(new Error('Something went wrong'));
 
-      await component['onConfirmDelete']();
+      await component['onDeleteAccount']();
+
+      expect(api.delete).not.toHaveBeenCalled();
+    });
+
+    it("should stay put, explain the API's answer and expect no logout when deletion fails", async () => {
+      await render('danger');
+      api.delete.mockRejectedValue(new ApiError('Unable to delete your account', 500));
+      await component['onDeleteAccount']();
+
+      await lastOpenedDialog(dialogOpen).confirmAction?.();
 
       expect(clerk.logOut).not.toHaveBeenCalled();
-      expect(toast.show).toHaveBeenCalledWith('Something went wrong.', {
+      expect(clerk.clearSessionEndExpectation).toHaveBeenCalled();
+      expect(toast.show).toHaveBeenCalledWith('Unable to delete your account.', {
         title: 'Deletion failed',
         variant: 'error',
       });

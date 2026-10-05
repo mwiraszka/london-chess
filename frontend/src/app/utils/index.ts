@@ -104,6 +104,7 @@ export {
   withFailedLoad,
   withLoadAttempt,
 } from './store/load-status.util';
+export { refreshedFormData } from './store/refreshed-form-data.util';
 
 export { closedDialogRef } from './test/closed-dialog-ref.util';
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
@@ -113,5 +114,6 @@ export { isAccountSection } from './type-guards/is-account-section.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';
+export { isRecord } from './type-guards/is-record.util';
 export { isRecordNumber } from './type-guards/is-record-number.util';
 export { isString } from './type-guards/is-string.util';

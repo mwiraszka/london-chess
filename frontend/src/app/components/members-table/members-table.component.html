@@ -33,15 +33,7 @@
 }
 
 @if (isAdmin() && isSafeMode()) {
-  <ea-alert
-    class="members__safe-mode"
-    live="off"
-    size="sm"
-    variant="success"
-    [icon]="safeModeIcon">
-    Members' personal details have been hidden from view. You can disable Safe Mode from
-    the User Settings menu.
-  </ea-alert>
+  <lcc-safe-mode-notice class="members__safe-mode" />
 }
 
 <ng-template

@@ -44,7 +44,9 @@
             <div class="avatar-section">
               <ea-avatar-editor
                 shape="circle"
+                [accept]="avatarTypes"
                 [canvasSize]="180"
+                [maxFileSize]="maxAvatarSize"
                 [loading]="avatarLoading() || loading()"
                 [currentSrc]="editorSrc()"
                 [cropState]="savedCropState()"
@@ -70,7 +72,7 @@
 
             @if (loading()) {
               <div class="details-form">
-                <div class="name-row">
+                <div class="lcc-form-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -83,7 +85,7 @@
                     </div>
                   }
                 </div>
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <div class="field-skeleton field-skeleton--half">
                     <ea-skeleton
                       variant="text"
@@ -104,7 +106,7 @@
                       height="17.5px" />
                   </div>
                 </div>
-                <div class="name-row">
+                <div class="lcc-form-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -117,7 +119,7 @@
                     </div>
                   }
                 </div>
-                <div class="name-row">
+                <div class="lcc-form-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -135,7 +137,7 @@
               <div
                 class="details-form"
                 [formGroup]="detailsForm">
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <ea-input
                     label="First name"
                     formControlName="firstName"
@@ -146,7 +148,7 @@
                     [required]="true" />
                 </div>
 
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <div class="year-of-birth">
                     <lcc-year-of-birth-field
                       [control]="detailsForm.controls.yearOfBirth" />
@@ -161,7 +163,7 @@
                   </div>
                 </div>
 
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <ea-input
                     label="City"
                     autocomplete="address-level2"
@@ -356,8 +358,7 @@
                 class="danger-button"
                 size="sm"
                 variant="danger"
-                [loading]="deleting()"
-                (clicked)="deleteDialogOpen.set(true)">
+                (clicked)="onDeleteAccount()">
                 Delete account
               </ea-button>
             </div>
@@ -367,26 +368,3 @@
     </div>
   </div>
 </div>
-
-<ea-dialog
-  [(open)]="deleteDialogOpen"
-  width="md">
-  <span slot="header">Delete account</span>
-  <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-  <div slot="footer">
-    <ea-button
-      size="sm"
-      variant="secondary"
-      (clicked)="deleteDialogOpen.set(false)">
-      Cancel
-    </ea-button>
-    <ea-button
-      class="danger-button"
-      size="sm"
-      variant="danger"
-      [loading]="deleting()"
-      (clicked)="onConfirmDelete()">
-      Confirm
-    </ea-button>
-  </div>
-</ea-dialog>

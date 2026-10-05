@@ -1,7 +1,7 @@
 import { Signal } from '@angular/core';
 
 export interface Dialog {
-  title: 'Confirm' | 'Unsaved changes';
+  title: 'Confirm' | 'Delete account' | 'Unsaved changes';
   body: string;
   confirmButtonText: string;
   confirmButtonType?: 'primary' | 'warning';

@@ -5,7 +5,7 @@ import {
   type AvatarEditorCropState,
   ButtonComponent,
   CardComponent,
-  DialogComponent,
+  DialogService,
   InputComponent,
   LockIconComponent,
   MonitorIconComponent,
@@ -34,14 +34,22 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PhoneNumberFieldComponent } from '@app/components/phone-number-field/phone-number-field.component';
 import { YearOfBirthFieldComponent } from '@app/components/year-of-birth-field/year-of-birth-field.component';
-import { ACCOUNT_SECTIONS, SESSION_REFRESH_INTERVAL_MS } from '@app/constants/account';
+import {
+  ACCOUNT_SECTIONS,
+  AVATAR_TYPES,
+  MAX_AVATAR_SIZE,
+  SESSION_REFRESH_INTERVAL_MS,
+} from '@app/constants/account';
+import { UPLOAD_TIMEOUT_MS } from '@app/constants/http';
 import {
   AccountSection,
+  Dialog,
   Member,
   MemberDetailsFormData,
   SessionInfo,
@@ -77,7 +85,6 @@ import { asSentence } from '@app/utils/sentence.util';
     ButtonComponent,
     CardComponent,
     ChessUsernameFieldsComponent,
-    DialogComponent,
     InputComponent,
     MonitorIconComponent,
     NewPasswordFieldsComponent,
@@ -97,6 +104,7 @@ export class AccountPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly clerk = inject(ClerkService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogService = inject(DialogService);
   private readonly memberProfiles = inject(MemberProfilesService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
@@ -106,6 +114,8 @@ export class AccountPageComponent implements OnInit {
 
   private readonly avatarEditor = viewChild(AvatarEditorComponent);
 
+  protected readonly avatarTypes = AVATAR_TYPES;
+  protected readonly maxAvatarSize = MAX_AVATAR_SIZE;
   protected readonly navItems = ACCOUNT_SECTIONS;
   protected readonly pageIcon = SettingsIconComponent;
   protected readonly privacyIcon = LockIconComponent;
@@ -222,9 +232,6 @@ export class AccountPageComponent implements OnInit {
   protected readonly sessions = signal<SessionInfo[]>([]);
   protected readonly sessionsLoading = signal(false);
   private sessionsRequested = false;
-
-  protected readonly deleteDialogOpen = signal(false);
-  protected readonly deleting = signal(false);
 
   constructor() {
     // A section nobody recognises would otherwise sit on the profile pane while
@@ -367,7 +374,7 @@ export class AccountPageComponent implements OnInit {
       this.selectedFile.set(null);
       this.avatarEditor()?.captureOriginal();
     } catch (e: unknown) {
-      this.showClerkErrorToast('Profile update failed', e);
+      this.showErrorToast('Profile update failed', e);
     } finally {
       this.saving.set(false);
     }
@@ -544,32 +551,40 @@ export class AccountPageComponent implements OnInit {
         variant: 'success',
       });
     } catch (e: unknown) {
-      this.showClerkErrorToast('Logout failed', e);
+      this.showErrorToast('Logout failed', e);
     } finally {
       this.revokingOthers.set(false);
     }
   }
 
-  protected async onConfirmDelete(): Promise<void> {
-    this.deleting.set(true);
+  protected async onDeleteAccount(): Promise<void> {
+    const dialog: Dialog = {
+      title: 'Delete account',
+      body: 'Are you sure you want to delete your account? This action cannot be undone.',
+      confirmButtonText: 'Confirm',
+      confirmButtonType: 'warning',
+      confirmAction: () => this.deleteAccount(),
+    };
+    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
+  }
+
+  private async deleteAccount(): Promise<void> {
+    // Deleting the account ends this session, which Clerk may notice before logOut
+    this.clerk.expectSessionEnd();
+    try {
+      await this.api.delete('/users/me');
+    } catch (e: unknown) {
+      this.clerk.clearSessionEndExpectation();
+      this.showErrorToast('Deletion failed', e);
+      return;
+    }
 
     try {
-      this.clerk.expectSessionEnd();
-      await this.api.delete('/users/me');
-      this.deleteDialogOpen.set(false);
-
-      try {
-        await this.clerk.logOut();
-      } catch {
-        // session may already be invalidated
-      }
-
-      await this.router.navigate(['/']);
-    } catch (e: unknown) {
-      this.showClerkErrorToast('Deletion failed', e);
-    } finally {
-      this.deleting.set(false);
+      await this.clerk.logOut();
+    } catch {
+      // session may already be invalidated
     }
+    await this.router.navigate(['/']);
   }
 
   private applySavedDetails(details: Partial<MemberDetailsFormData>): void {
@@ -643,7 +658,9 @@ export class AccountPageComponent implements OnInit {
     }
 
     this.userService.setUser(
-      await this.api.post<UserRecord>('/users/me/avatar', formData),
+      await this.api.post<UserRecord>('/users/me/avatar', formData, {
+        timeoutMs: UPLOAD_TIMEOUT_MS,
+      }),
     );
     this.setCropState(cropState);
     await this.clerk.reloadUser();
@@ -669,7 +686,9 @@ export class AccountPageComponent implements OnInit {
     formData.append('cropped', await this.exportCrop(), 'cropped.png');
     formData.append('cropState', JSON.stringify(cropState));
 
-    const user = await this.api.patch<UserRecord>('/users/me/avatar', formData);
+    const user = await this.api.patch<UserRecord>('/users/me/avatar', formData, {
+      timeoutMs: UPLOAD_TIMEOUT_MS,
+    });
     this.userService.setUser(user);
     this.lastClerkImageUrl.set(user.clerkImageUrl ?? undefined);
     this.savedCropState.set(cropState);
@@ -735,7 +754,8 @@ export class AccountPageComponent implements OnInit {
     return this.api.post<void>('/users/me/sessions/revoke-others', {});
   }
 
-  private showClerkErrorToast(title: string, e: unknown): void {
-    this.toast.show(asSentence(this.clerk.extractError(e)), { title, variant: 'error' });
+  private showErrorToast(title: string, e: unknown): void {
+    const message = e instanceof ApiError ? e.message : this.clerk.extractError(e);
+    this.toast.show(asSentence(message), { title, variant: 'error' });
   }
 }

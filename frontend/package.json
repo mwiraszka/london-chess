@@ -18,7 +18,7 @@
     "build:dev": "node scripts/generate-data.mjs && ng build",
     "build:preview": "node scripts/generate-data.mjs && ng build --configuration preview",
     "build:prod": "node scripts/generate-data.mjs && ng build --configuration production",
-    "build:stats": "node scripts/generate-data.mjs && ng build --stats-json && webpack-bundle-analyzer dist/stats.json",
+    "build:stats": "node scripts/generate-data.mjs && ng build --stats-json && echo 'Load dist/browser-stats.json into https://esbuild.github.io/analyze/'",
     "watch": "node scripts/generate-data.mjs && ng build --watch --configuration development",
     "test": "node scripts/generate-data.mjs && ng test",
     "test:watch": "node scripts/generate-data.mjs && ng test --watch",

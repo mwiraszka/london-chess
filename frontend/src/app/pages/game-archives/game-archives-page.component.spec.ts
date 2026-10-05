@@ -1,4 +1,4 @@
-import { TooltipDirective } from '@eagami/ui';
+import { FilterXIconComponent, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -595,10 +595,12 @@ describe('GameArchivesPageComponent', () => {
       store.refreshState();
       fixture.detectChanges();
 
+      const emptyState = query(fixture.debugElement, 'ea-empty-state');
       expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
-      expect(
-        query(fixture.debugElement, 'ea-empty-state').nativeElement.textContent,
-      ).toContain('No games match these filters.');
+      expect(emptyState.nativeElement.textContent).toContain(
+        'No games match these filters.',
+      );
+      expect(emptyState.componentInstance.icon()).toBe(FilterXIconComponent);
     });
 
     describe('when the games fail to load', () => {

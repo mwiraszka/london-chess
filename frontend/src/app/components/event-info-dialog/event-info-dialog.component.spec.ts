@@ -46,6 +46,16 @@ describe('EventInfoDialogComponent', () => {
     );
   });
 
+  it('should break the details into paragraphs at every escaped line break', () => {
+    fixture.destroy();
+
+    render({ ...withArticle, details: 'Round one\\nRound two\\nRound three' });
+
+    expect(query(fixture.debugElement, '.event-details').nativeElement.textContent).toBe(
+      'Round one\n\nRound two\n\nRound three',
+    );
+  });
+
   it('should answer details from the details button', () => {
     query(fixture.debugElement, '.details-button').triggerEventHandler('clicked');
 

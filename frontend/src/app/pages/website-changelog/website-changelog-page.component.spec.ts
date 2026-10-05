@@ -5,7 +5,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 
 import { MetaAndTitleService, RoutingService } from '@app/services';
-import { initialState as membersInitialState } from '@app/store/members/members.reducer';
 import { queryAll, queryTextContent } from '@app/utils';
 
 import packageJson from '../../../../package.json';
@@ -22,12 +21,12 @@ describe('WebsiteChangelogPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [WebsiteChangelogPageComponent],
       providers: [
+        provideMockStore(),
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
         { provide: RoutingService, useValue: { fragment$ } },
-        provideMockStore({ initialState: { membersState: membersInitialState } }),
       ],
     }).compileComponents();
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);

@@ -1,8 +1,5 @@
 import { Dialog } from '@app/models';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
+import { isRecord } from '@app/utils/type-guards/is-record.util';
 
 function isDialog(value: unknown): value is Dialog {
   return isRecord(value) && typeof value['confirmButtonText'] === 'string';

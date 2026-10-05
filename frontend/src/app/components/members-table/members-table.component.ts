@@ -1,6 +1,4 @@
 import {
-  AlertComponent,
-  CheckCircleIconComponent,
   DataTableColumn,
   DataTableSortState,
   EmptyStateComponent,
@@ -26,6 +24,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
+import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
 import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
@@ -83,7 +82,6 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
   templateUrl: './members-table.component.html',
   styleUrl: './members-table.component.scss',
   imports: [
-    AlertComponent,
     DataTableComponent,
     EmptyStateComponent,
     FormatDatePipe,
@@ -91,6 +89,7 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
     NgTemplateOutlet,
     PaginatorComponent,
     RouterLink,
+    SafeModeNoticeComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -120,7 +119,6 @@ export class MembersTableComponent {
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
 
   protected readonly emptyIcon = FilterXIconComponent;
-  protected readonly safeModeIcon = CheckCircleIconComponent;
   protected readonly isCityChampion = isCityChampion;
   protected readonly pageSizes = PAGE_SIZES;
 

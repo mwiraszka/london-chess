@@ -14,8 +14,6 @@ import {
   ToolIconComponent,
   TrendingUpIconComponent,
 } from '@eagami/ui';
-import { Store } from '@ngrx/store';
-import { take } from 'rxjs/operators';
 
 import { NgComponentOutlet } from '@angular/common';
 import {
@@ -38,8 +36,6 @@ import { TechRingComponent } from '@app/components/tech-ring/tech-ring.component
 import { ChangelogRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 import { MetaAndTitleService, RoutingService } from '@app/services';
-import { MembersActions, MembersSelectors } from '@app/store/members';
-import { isExpired } from '@app/utils';
 
 import packageJson from '../../../../package.json';
 import { CHANGELOG_RELEASES } from './changelog.generated';
@@ -79,7 +75,6 @@ export class WebsiteChangelogPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly router = inject(Router);
   private readonly routingService = inject(RoutingService);
-  private readonly store = inject(Store);
 
   // The badge follows the version the site is actually running, so a version
   // bump moves it to that release's card on its own
@@ -102,17 +97,6 @@ export class WebsiteChangelogPageComponent implements OnInit {
         const release = this.releases.find(({ version }) => version === fragment);
         if (release && !this.isExpanded(release)) {
           this.showRelease(release);
-        }
-      });
-
-    // The maintainer's name links to their member profile, which needs the
-    // members loaded
-    this.store
-      .select(MembersSelectors.selectLastFullFetch)
-      .pipe(take(1))
-      .subscribe(lastFullFetch => {
-        if (isExpired(lastFullFetch)) {
-          this.store.dispatch(MembersActions.fetchAllMembersRequested());
         }
       });
   }

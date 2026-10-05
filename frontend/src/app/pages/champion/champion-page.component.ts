@@ -4,8 +4,6 @@ import {
   DividerComponent,
   TrophyIconComponent,
 } from '@eagami/ui';
-import { Store } from '@ngrx/store';
-import { take } from 'rxjs/operators';
 
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 
@@ -15,8 +13,6 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { PhotoCarouselComponent } from '@app/components/photo-carousel/photo-carousel.component';
 import { ChampionshipTableRowData, Image } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
-import { MembersActions, MembersSelectors } from '@app/store/members';
-import { isExpired } from '@app/utils';
 
 @Component({
   selector: 'lcc-champion-page',
@@ -35,7 +31,6 @@ import { isExpired } from '@app/utils';
 })
 export class ChampionPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
-  private readonly store = inject(Store);
 
   protected readonly pageIcon = TrophyIconComponent;
 
@@ -294,15 +289,5 @@ export class ChampionPageComponent implements OnInit {
     this.metaAndTitleService.updateDescription(
       'All about the London Chess Championship and past winners.',
     );
-
-    // Winner names link to member profiles, which needs the members loaded
-    this.store
-      .select(MembersSelectors.selectLastFullFetch)
-      .pipe(take(1))
-      .subscribe(lastFullFetch => {
-        if (isExpired(lastFullFetch)) {
-          this.store.dispatch(MembersActions.fetchAllMembersRequested());
-        }
-      });
   }
 }

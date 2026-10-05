@@ -279,12 +279,9 @@ describe('MembersTableComponent', () => {
     it('should show the public columns in safe mode, with a notice', () => {
       render({ isAdmin: true, isSafeMode: true });
 
-      const notice = query(fixture.debugElement, 'ea-alert');
+      const notice = query(fixture.debugElement, 'lcc-safe-mode-notice');
       expect(headers()).toHaveLength(7);
-      expect(notice.componentInstance.variant()).toBe('success');
-      expect(notice.nativeElement.textContent).toContain(
-        "Members' personal details have been hidden from view.",
-      );
+      expect(notice).toBeTruthy();
     });
   });
 
