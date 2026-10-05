@@ -1,14 +1,13 @@
 {
   "name": "lcc-server",
-  "version": "6.4.0",
+  "version": "6.5.0",
   "description": "REST API for the London Chess Club website, built with Node and Express",
   "author": "Michal Wiraszka",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mwiraszka/lcc-backend.git"
+    "url": "https://github.com/mwiraszka/london-chess.git"
   },
   "private": true,
-  "main": "src/server.ts",
   "scripts": {
     "backup": "npx tsx --env-file=.env scripts/backup.ts",
     "start": "npx tsx watch --env-file=.env src/server.ts",
@@ -20,9 +19,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint 'src/**' 'api/**' 'e2e/**'",
-    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts'"
+    "lint": "eslint 'src/**' 'api/**' 'e2e/**' 'scripts/**'",
+    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1146.0",
@@ -31,7 +30,6 @@
     "@sentry/node": "11.4.0",
     "cors": "2.8.6",
     "express": "5.2.1",
-    "mongodb": "7.6.0",
     "mongoose": "9.10.4",
     "multer": "2.4.0",
     "nodemailer": "10.0.14",
@@ -46,15 +44,10 @@
     "@types/node": "26.6.4",
     "@types/nodemailer": "8.0.2",
     "@types/supertest": "7.2.1",
-    "@typescript-eslint/eslint-plugin": "8.71.0",
-    "@typescript-eslint/parser": "8.71.0",
     "@vitest/coverage-v8": "5.0.3",
     "eslint": "10.12.0",
-    "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-prettier": "5.5.6",
     "mongodb-memory-server": "11.3.0",
     "prettier": "3.9.9",
-    "prettier-eslint": "17.1.2",
     "supertest": "7.3.1",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
