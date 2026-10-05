@@ -9,11 +9,11 @@ import {
   GameResponse,
   GameResult,
 } from '../models/game.model';
-import { MemberModel, MemberRecord } from '../models/member.model';
+import { MemberModel, MemberName } from '../models/member.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
 import { isCollectionId } from '../util/is-collection-id.util';
 
-export type PlayerSide = 'whitePlayerId' | 'blackPlayerId';
+type PlayerSide = 'whitePlayerId' | 'blackPlayerId';
 
 // The sort fields that order games by a player's name rather than by their own field
 export const PLAYER_SORT_SIDES: Record<string, PlayerSide> = {
@@ -21,7 +21,7 @@ export const PLAYER_SORT_SIDES: Record<string, PlayerSide> = {
   black: 'blackPlayerId',
 };
 
-export interface GameFilters {
+interface GameFilters {
   player?: Id;
   year?: number;
   result?: GameResult;
@@ -136,8 +136,6 @@ export function buildGamesFilter(filters: GameFilters): QueryFilter<Game> {
   if (conditions.length === 1) return conditions[0];
   return { $and: conditions };
 }
-
-type MemberName = Pick<MemberRecord, '_id' | 'firstName' | 'lastName' | 'number'>;
 
 // Every player by id, named after their member record when they have one
 export async function resolvePlayers(playerIds: Id[]): Promise<Map<Id, GamePlayer>> {

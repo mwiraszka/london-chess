@@ -13,7 +13,11 @@ import { modificationInfoTypes } from '../models/modification-info.model';
 import { findEditor } from '../services/member-accounts.service';
 import { isCollectionId } from '../util/is-collection-id.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
-import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
+import {
+  buildPaginationQuery,
+  findPage,
+  parsePaginationParams,
+} from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 export async function getArticles(
@@ -26,29 +30,11 @@ export async function getArticles(
       articleSortingConfig,
     );
 
-    const [queryResults, countResults] = await Promise.all([
-      query.limit !== undefined
-        ? ArticleModel.find(query.filter)
-            .sort(query.sort)
-            .skip(query.skip)
-            .limit(query.limit)
-            .lean()
-        : ArticleModel.find(query.filter).sort(query.sort).skip(query.skip).lean(),
-      ArticleModel.countDocuments(query.filter),
-    ]);
-
-    const findResults = queryResults;
-    const filteredCount = countResults;
-
-    const totalCount = await ArticleModel.countDocuments({});
-
-    const articles: Article[] = findResults.map(result => {
-      const { _id, ...baseArticle } = result;
-      return {
-        ...baseArticle,
-        id: result._id.toString(),
-      };
-    });
+    const { records, filteredCount, totalCount } = await findPage(ArticleModel, query);
+    const articles: Article[] = records.map(({ _id, ...article }) => ({
+      ...article,
+      id: _id.toString(),
+    }));
 
     res.status(200).json({
       data: {

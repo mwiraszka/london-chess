@@ -11,7 +11,7 @@ import {
   MemberTournamentResult,
   PlayerNameMatch,
   SectionInput,
-  Tournament,
+  TournamentDetails,
   TournamentInput,
   TournamentModel,
   TournamentRecord,
@@ -42,6 +42,7 @@ import {
 } from '../services/tournaments.service';
 import { clubToday } from '../util/club-date.util';
 import { creditEditor } from '../util/modification-info.util';
+import { parseRecordNumber } from '../util/parse-record-number.util';
 import {
   gamesError,
   sectionsError,
@@ -50,23 +51,6 @@ import {
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 const MAX_MATCHED_NAMES = 2000;
-
-type TournamentDetails = Pick<
-  Tournament,
-  | 'name'
-  | 'subtitle'
-  | 'date'
-  | 'endDate'
-  | 'format'
-  | 'timeControl'
-  | 'isRated'
-  | 'articleId'
-  | 'registrationOpens'
-  | 'registrationCloses'
->;
-
-const parseNumber = (value: string): number | null =>
-  /^\d+$/.test(value) ? Number(value) : null;
 
 const withoutFullStop = (message: string): string => message.replace(/\.$/, '');
 
@@ -145,9 +129,13 @@ export async function getTournament(
 ): Promise<void> {
   try {
     const { number } = req.params;
-    const record = /^\d+$/.test(number)
-      ? await TournamentModel.findOne({ number: Number(number) }).lean<TournamentRecord>()
-      : null;
+    const tournamentNumber = parseRecordNumber(number);
+    const record =
+      tournamentNumber === null
+        ? null
+        : await TournamentModel.findOne({
+            number: tournamentNumber,
+          }).lean<TournamentRecord>();
 
     if (!record) {
       res.status(404).json({ message: `Unable to find tournament [${number}]` });
@@ -236,7 +224,7 @@ export async function updateTournament(
   res: Response<ApiResponse<number>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null
@@ -312,7 +300,7 @@ export async function deleteTournament(
   res: Response<ApiResponse<number>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null
@@ -358,7 +346,7 @@ export async function checkTournamentImport(
   res: Response<ApiResponse<ImportChanges>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null
@@ -414,7 +402,7 @@ export async function registerForTournament(
   res: Response<ApiResponse<TournamentRegistrant[]>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const exists = number !== null && (await TournamentModel.exists({ number }));
     if (number === null || !exists) {
       res.status(404).json({ message: 'Unable to find this tournament.' });
@@ -468,7 +456,7 @@ export async function withdrawFromTournament(
   res: Response<ApiResponse<TournamentRegistrant[]>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null

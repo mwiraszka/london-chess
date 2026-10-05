@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { QueryFilter } from 'mongoose';
+import { Model, QueryFilter, Types } from 'mongoose';
 
 import {
   PaginationParams,
@@ -113,4 +113,24 @@ export function buildPaginationQuery<T = unknown>(
     sort,
     filter,
   };
+}
+
+// A page of the documents a query matches, with how many match and how many there are
+export async function findPage<T>(
+  model: Model<T>,
+  query: PaginationQuery<T>,
+): Promise<{
+  records: (T & { _id: Types.ObjectId })[];
+  filteredCount: number;
+  totalCount: number;
+}> {
+  const find = model.find(query.filter).sort(query.sort).skip(query.skip);
+  const [records, filteredCount, totalCount] = await Promise.all([
+    (query.limit !== undefined ? find.limit(query.limit) : find).lean<
+      (T & { _id: Types.ObjectId })[]
+    >(),
+    model.countDocuments(query.filter),
+    model.countDocuments({}),
+  ]);
+  return { records, filteredCount, totalCount };
 }

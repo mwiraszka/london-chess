@@ -10,7 +10,7 @@ import {
 } from '../models/tournament.model';
 import { validateObjectByTypes } from './validate-object-by-types.util';
 
-export const tournamentInputTypes: Record<keyof TournamentInput, string | string[]> = {
+const tournamentInputTypes: Record<keyof TournamentInput, string | string[]> = {
   name: 'string',
   subtitle: 'string',
   date: 'string',

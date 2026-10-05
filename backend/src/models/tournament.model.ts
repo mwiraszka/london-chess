@@ -4,7 +4,7 @@ import { Id, IsoDate } from './core.model';
 import { Game, GamePlayer, GameResponse } from './game.model';
 import { ModificationInfo } from './modification-info.model';
 
-export type TournamentFormat = 'swiss' | 'round-robin' | 'match' | 'tandem-simul';
+type TournamentFormat = 'swiss' | 'round-robin' | 'match' | 'tandem-simul';
 
 export const TOURNAMENT_FORMATS: TournamentFormat[] = [
   'swiss',
@@ -13,8 +13,7 @@ export const TOURNAMENT_FORMATS: TournamentFormat[] = [
   'tandem-simul',
 ];
 
-export type RoundOutcome =
-  'game' | 'forfeit' | 'full-point-bye' | 'half-point-bye' | 'unplayed';
+type RoundOutcome = 'game' | 'forfeit' | 'full-point-bye' | 'half-point-bye' | 'unplayed';
 
 export const ROUND_OUTCOMES: RoundOutcome[] = [
   'game',
@@ -24,7 +23,7 @@ export const ROUND_OUTCOMES: RoundOutcome[] = [
   'unplayed',
 ];
 
-export type PieceColor = 'white' | 'black';
+type PieceColor = 'white' | 'black';
 
 export interface RoundResult {
   round: number;
@@ -121,17 +120,17 @@ export type TournamentGame = Pick<
   'id' | 'section' | 'round' | 'date' | 'white' | 'black' | 'result'
 >;
 
-export type RoundResultResponse = RoundResult & {
+type RoundResultResponse = RoundResult & {
   // Null when the game was not archived
   gameId: Id | null;
 };
 
-export type TournamentEntryResponse = Omit<TournamentEntry, 'playerId' | 'rounds'> & {
+type TournamentEntryResponse = Omit<TournamentEntry, 'playerId' | 'rounds'> & {
   player: GamePlayer;
   rounds: RoundResultResponse[];
 };
 
-export type TournamentSectionResponse = Omit<
+type TournamentSectionResponse = Omit<
   TournamentSection,
   'gameArchiveSections' | 'entries'
 > & {
@@ -201,7 +200,7 @@ export type SectionInput = Pick<
   entries: EntryInput[];
 };
 
-export type TournamentInput = Pick<
+export type TournamentDetails = Pick<
   Tournament,
   | 'name'
   | 'subtitle'
@@ -213,7 +212,9 @@ export type TournamentInput = Pick<
   | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
-> & {
+>;
+
+export type TournamentInput = TournamentDetails & {
   // Null keeps the results already recorded
   sections: SectionInput[] | null;
   // Null when no games came with the results

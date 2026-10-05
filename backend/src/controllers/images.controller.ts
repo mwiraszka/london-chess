@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request, Response } from 'express';
-import type { ClientSession } from 'mongodb';
+import type { ClientSession } from 'mongoose';
 import { Types, startSession } from 'mongoose';
 import sharp from 'sharp';
 
@@ -23,7 +23,11 @@ import { findEditor } from '../services/member-accounts.service';
 import { imagesBucket, r2Client } from '../services/storage.service';
 import { isDefined } from '../util/is-defined.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
-import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
+import {
+  buildPaginationQuery,
+  findPage,
+  parsePaginationParams,
+} from '../util/pagination.util';
 
 const URL_EXPIRY_SECONDS = 12 * 3600;
 
@@ -126,18 +130,11 @@ export async function getThumbnailImages(
       imagesSortingConfig,
     );
 
-    const [findResults, filteredCount] = await Promise.all([
-      query.limit !== undefined
-        ? ImageModel.find(query.filter)
-            .sort(query.sort)
-            .skip(query.skip)
-            .limit(query.limit)
-            .lean()
-        : ImageModel.find(query.filter).sort(query.sort).skip(query.skip).lean(),
-      ImageModel.countDocuments(query.filter),
-    ]);
-
-    const totalCount = await ImageModel.countDocuments({});
+    const {
+      records: findResults,
+      filteredCount,
+      totalCount,
+    } = await findPage(ImageModel, query);
 
     const resultIds = findResults.map(r => r._id.toString());
     const articleCounts = await ArticleModel.aggregate<{ _id: string; count: number }>([

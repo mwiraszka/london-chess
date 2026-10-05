@@ -72,7 +72,7 @@ function roundNumber(round: string): number | null {
 
 const pairKey = (a: Id, b: Id): string => [a, b].sort().join('|');
 
-export const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
+const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
 
 // A pairing met more than once is told apart by round
 export function matchRoundGames(

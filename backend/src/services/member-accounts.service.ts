@@ -2,7 +2,7 @@ import { type User } from '@clerk/backend';
 import { isClerkAPIResponseError } from '@clerk/backend/errors';
 import { Types } from 'mongoose';
 
-import { MemberAccount, MemberModel, MemberRecord } from '../models/member.model';
+import { MemberModel, MemberRecord, newMemberAccount } from '../models/member.model';
 import { LinkedMemberRecord } from '../util/member-responses.util';
 import { Editor } from '../util/modification-info.util';
 import { deleteAvatar, uploadAvatar } from './avatar-storage.service';
@@ -123,20 +123,12 @@ export async function linkClerkUser(
     return existing;
   }
 
-  const account: MemberAccount = {
-    clerkUserId: profile.id,
+  const account = newMemberAccount(profile.id, {
     isAdmin: profile.isAdmin,
     // Without a photo, Clerk reports a placeholder imageUrl; store null so it is
     // never mistaken for a real avatar
     clerkImageUrl: profile.hasImage ? profile.imageUrl : null,
-    avatarUrl: null,
-    avatarOriginalUrl: null,
-    avatarManagedByApp: false,
-    clerkImagePending: false,
-    avatarCropState: null,
-    avatarUpdatedAt: null,
-    temporaryPasswordHash: null,
-  };
+  });
 
   let linkedNow = false;
   try {
@@ -207,7 +199,6 @@ export async function syncClerkUser(profile: ClerkProfile): Promise<void> {
         ...syncedFields,
         'account.avatarUrl': url,
         'account.avatarOriginalUrl': url,
-        'account.avatarManagedByApp': false,
         'account.avatarCropState': { zoom: 1, offsetX: 0, offsetY: 0 },
         'account.avatarUpdatedAt': new Date().toISOString(),
       });
@@ -226,7 +217,6 @@ export async function syncClerkUser(profile: ClerkProfile): Promise<void> {
       'account.avatarUrl': null,
       'account.avatarOriginalUrl': null,
       'account.avatarCropState': null,
-      'account.avatarManagedByApp': false,
       'account.avatarUpdatedAt': new Date().toISOString(),
     });
   } else {

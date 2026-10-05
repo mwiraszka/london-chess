@@ -1,18 +1,16 @@
 import { Types } from 'mongoose';
 
 import { Id } from '../models/core.model';
-import { MemberModel, MemberRecord } from '../models/member.model';
+import { MemberModel, MemberName } from '../models/member.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
 import { PlayerNameMatch, TournamentModel } from '../models/tournament.model';
 import { isCollectionId } from '../util/is-collection-id.util';
 
-export interface ParsedPlayerName {
+interface ParsedPlayerName {
   firstName: string;
   lastName: string;
   suffix: string;
 }
-
-type MemberName = Pick<MemberRecord, '_id' | 'firstName' | 'lastName' | 'number'>;
 
 interface Candidates {
   players: PlayerRecord[];

@@ -11,6 +11,8 @@ import {
   MemberRecord,
   editableMemberTypes,
   memberSortingConfig,
+  newMemberAccount,
+  profileMemberFilter,
 } from '../models/member.model';
 import { modificationInfoTypes } from '../models/modification-info.model';
 import { clerkClient } from '../services/clerk.service';
@@ -21,6 +23,7 @@ import { widestMemberIds } from '../services/widest.service';
 import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
+import { hashSecret } from '../util/hash-secret.util';
 import { isCollectionId } from '../util/is-collection-id.util';
 import {
   MemberChange,
@@ -44,10 +47,8 @@ import {
 } from '../util/member-responses.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
-import {
-  generateTemporaryPassword,
-  hashTemporaryPassword,
-} from '../util/temporary-password.util';
+import { parseRecordNumber } from '../util/parse-record-number.util';
+import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 type Scope = 'public' | 'admin';
@@ -209,12 +210,14 @@ export function getMemberByNumber(scope: Scope) {
   ): Promise<void> => {
     try {
       const { number } = req.params;
-      const record = /^\d+$/.test(number)
-        ? await MemberModel.findOne(
-            { number: Number(number), 'account.clerkUserId': { $ne: null } },
-            scope === 'public' ? PUBLIC_PROFILE_PROJECTION : null,
-          ).lean<MemberRecord>()
-        : null;
+      const memberNumber = parseRecordNumber(number);
+      const record =
+        memberNumber === null
+          ? null
+          : await MemberModel.findOne(
+              profileMemberFilter(memberNumber),
+              scope === 'public' ? PUBLIC_PROFILE_PROJECTION : null,
+            ).lean<MemberRecord>();
 
       if (!record) {
         res.status(404).json({ message: `Unable to find member [${number}]` });
@@ -596,7 +599,11 @@ async function saveWithNewAccount({
   ];
   let failedStep = 'save the member';
   try {
-    await save(newAccount(clerkUserId, hashTemporaryPassword(temporaryPassword)));
+    await save(
+      newMemberAccount(clerkUserId, {
+        temporaryPasswordHash: hashSecret(temporaryPassword),
+      }),
+    );
     undoSteps.push(undoSave);
 
     failedStep = 'assign a member number';
@@ -726,21 +733,6 @@ function accountDetailsProblem(member: EditableMemberFields): string | null {
     return 'A valid email address is needed to create an account.';
   }
   return validateDetailField('yearOfBirth', member.yearOfBirth);
-}
-
-function newAccount(clerkUserId: string, temporaryPasswordHash: string): MemberAccount {
-  return {
-    clerkUserId,
-    isAdmin: false,
-    clerkImageUrl: null,
-    avatarUrl: null,
-    avatarOriginalUrl: null,
-    avatarManagedByApp: false,
-    clerkImagePending: false,
-    avatarCropState: null,
-    avatarUpdatedAt: null,
-    temporaryPasswordHash,
-  };
 }
 
 async function readMember(id: Types.ObjectId): Promise<MemberRecord> {

@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { createHash, randomInt } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 
 import { AccountVerificationModel } from '../models/account-verification.model';
 import { ApiResponse } from '../models/api-response.model';
-import { AvatarCropState, MemberModel } from '../models/member.model';
+import { AvatarCropState } from '../models/member.model';
 import {
   avatarPublicUrl,
   avatarPublicUrlPrefix,
@@ -14,6 +14,7 @@ import { clerkClient } from '../services/clerk.service';
 import { sendAdminEmail, sendEmail } from '../services/email.service';
 import {
   findLinkedMember,
+  unlinkClerkUser,
   updateLinkedMember,
 } from '../services/member-accounts.service';
 import { clerkErrorMessage } from '../util/clerk-error.util';
@@ -23,6 +24,7 @@ import {
   buildDetailsChangeRequestEmail,
   buildVerificationCodeEmail,
 } from '../util/emails.util';
+import { hashSecret } from '../util/hash-secret.util';
 import {
   DETAIL_FIELDS,
   DetailField,
@@ -36,7 +38,6 @@ import {
   toAccountRecord,
   toAdminMember,
 } from '../util/member-responses.util';
-import { hashTemporaryPassword } from '../util/temporary-password.util';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -60,6 +61,48 @@ function parseCropState(raw: unknown): AvatarCropState | null {
     // fall through to null
   }
   return null;
+}
+
+function activeSessions(clerkUserId: string) {
+  return clerkClient.sessions.getSessionList({
+    userId: clerkUserId,
+    status: 'active',
+    limit: 100,
+  });
+}
+
+async function setClerkImage(
+  clerkUserId: string,
+  file: Express.Multer.File,
+): Promise<string> {
+  const { imageUrl } = await clerkClient.users.updateUserProfileImage(clerkUserId, {
+    file: new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }),
+  });
+  return imageUrl;
+}
+
+// Pending while Clerk changes its copy, so the webhook that follows leaves the app's photo alone
+async function saveAvatarChange(
+  req: Request,
+  res: Response<ApiResponse<AccountRecord>>,
+  changeClerkImage: () => Promise<string | null>,
+  fields: Record<string, unknown>,
+): Promise<void> {
+  await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
+  const clerkImageUrl = await changeClerkImage();
+
+  const member = await updateLinkedMember(req.user.id, {
+    ...fields,
+    'account.clerkImagePending': false,
+    'account.clerkImageUrl': clerkImageUrl,
+    'account.avatarUpdatedAt': new Date().toISOString(),
+  });
+
+  if (!member) {
+    res.status(404).json({ message: 'Account not found.' });
+    return;
+  }
+  res.status(200).json({ data: toAccountRecord(member) });
 }
 
 export async function getMyMember(
@@ -134,7 +177,7 @@ export async function requestMemberDetailsChange(
   }
 }
 
-export interface UserSession {
+interface UserSession {
   id: string;
   isCurrent: boolean;
   isMobile: boolean;
@@ -150,11 +193,7 @@ export async function listMySessions(
   res: Response<ApiResponse<UserSession[]>>,
 ): Promise<void> {
   try {
-    const sessions = await clerkClient.sessions.getSessionList({
-      userId: req.user.id,
-      status: 'active',
-      limit: 100,
-    });
+    const sessions = await activeSessions(req.user.id);
     res.status(200).json({
       data: sessions.data.map(session => ({
         id: session.id,
@@ -177,11 +216,7 @@ export async function revokeOtherSessions(
   res: Response<ApiResponse<'success'>>,
 ): Promise<void> {
   try {
-    const sessions = await clerkClient.sessions.getSessionList({
-      userId: req.user.id,
-      status: 'active',
-      limit: 100,
-    });
+    const sessions = await activeSessions(req.user.id);
     await Promise.all(
       sessions.data
         .filter(session => session.id !== req.user.sessionId)
@@ -339,10 +374,7 @@ export async function confirmMyPassword(
     }
 
     const { temporaryPasswordHash } = member.account;
-    if (
-      !temporaryPasswordHash ||
-      hashTemporaryPassword(password) === temporaryPasswordHash
-    ) {
+    if (!temporaryPasswordHash || hashSecret(password) === temporaryPasswordHash) {
       res.status(200).json({ data: toAccountRecord(member) });
       return;
     }
@@ -396,26 +428,11 @@ export async function uploadUserAvatar(
       uploadAvatar(req.user.id, cropped.buffer, cropped.mimetype, 'cropped'),
     ]);
 
-    await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
-    const clerkUser = await clerkClient.users.updateUserProfileImage(req.user.id, {
-      file: new Blob([new Uint8Array(cropped.buffer)], { type: cropped.mimetype }),
-    });
-
-    const member = await updateLinkedMember(req.user.id, {
+    await saveAvatarChange(req, res, () => setClerkImage(req.user.id, cropped), {
       'account.avatarUrl': croppedUrl,
       'account.avatarOriginalUrl': originalUrl,
       'account.avatarCropState': cropState,
-      'account.avatarManagedByApp': true,
-      'account.clerkImagePending': false,
-      'account.clerkImageUrl': clerkUser.imageUrl,
-      'account.avatarUpdatedAt': new Date().toISOString(),
     });
-
-    if (!member) {
-      res.status(404).json({ message: 'Account not found.' });
-      return;
-    }
-    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to upload avatar: ${error}` });
   }
@@ -442,24 +459,10 @@ export async function updateCroppedAvatar(
       'cropped',
     );
 
-    await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
-    const clerkUser = await clerkClient.users.updateUserProfileImage(req.user.id, {
-      file: new Blob([new Uint8Array(cropped.buffer)], { type: cropped.mimetype }),
-    });
-
-    const member = await updateLinkedMember(req.user.id, {
+    await saveAvatarChange(req, res, () => setClerkImage(req.user.id, cropped), {
       'account.avatarUrl': croppedUrl,
       'account.avatarCropState': cropState,
-      'account.clerkImagePending': false,
-      'account.clerkImageUrl': clerkUser.imageUrl,
-      'account.avatarUpdatedAt': new Date().toISOString(),
     });
-
-    if (!member) {
-      res.status(404).json({ message: 'Account not found.' });
-      return;
-    }
-    res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
     res.status(500).json({ message: `Unable to update avatar: ${error}` });
   }
@@ -472,27 +475,22 @@ export async function deleteUserAvatar(
   try {
     await deleteAvatar(req.user.id);
 
-    await updateLinkedMember(req.user.id, { 'account.clerkImagePending': true });
-    await clerkClient.users.deleteUserProfileImage(req.user.id);
-    const clerkUser = await clerkClient.users.getUser(req.user.id);
-
-    const member = await updateLinkedMember(req.user.id, {
-      'account.avatarUrl': null,
-      'account.avatarOriginalUrl': null,
-      'account.avatarCropState': null,
-      'account.avatarManagedByApp': false,
-      'account.clerkImagePending': false,
-      // Without a photo, Clerk reports a placeholder imageUrl; store null so
-      // clients fall back to initials
-      'account.clerkImageUrl': clerkUser.hasImage ? clerkUser.imageUrl : null,
-      'account.avatarUpdatedAt': new Date().toISOString(),
-    });
-
-    if (!member) {
-      res.status(404).json({ message: 'Account not found.' });
-      return;
-    }
-    res.status(200).json({ data: toAccountRecord(member) });
+    await saveAvatarChange(
+      req,
+      res,
+      async () => {
+        await clerkClient.users.deleteUserProfileImage(req.user.id);
+        const clerkUser = await clerkClient.users.getUser(req.user.id);
+        // Without a photo, Clerk reports a placeholder imageUrl; store null so
+        // clients fall back to initials
+        return clerkUser.hasImage ? clerkUser.imageUrl : null;
+      },
+      {
+        'account.avatarUrl': null,
+        'account.avatarOriginalUrl': null,
+        'account.avatarCropState': null,
+      },
+    );
   } catch (error) {
     res.status(500).json({ message: `Unable to delete avatar: ${error}` });
   }
@@ -507,17 +505,7 @@ export async function deleteMe(
     // so the auth middleware can't relink the account mid-deletion. If a later
     // step fails, the user.deleted webhook reconciles the leftovers.
     await clerkClient.users.deleteUser(req.user.id);
-
-    try {
-      await deleteAvatar(req.user.id);
-    } catch {
-      // avatar may not exist in R2
-    }
-
-    await MemberModel.updateOne(
-      { 'account.clerkUserId': req.user.id },
-      { $set: { account: null } },
-    );
+    await unlinkClerkUser(req.user.id);
 
     res.status(200).json({ data: 'success' });
   } catch (error) {
@@ -564,10 +552,6 @@ const VERIFICATION_TTL_MS = 10 * 60 * 1000;
 const VERIFICATION_RESEND_MS = 60 * 1000;
 const VERIFICATION_MAX_ATTEMPTS = 5;
 
-function hashVerificationCode(code: string): string {
-  return createHash('sha256').update(code).digest('hex');
-}
-
 // Proving inbox access before a request reaches the admin mailbox keeps the
 // form from being used to flood it
 export async function requestAccountVerification(
@@ -596,7 +580,7 @@ export async function requestAccountVerification(
       { email: normalized },
       {
         email: normalized,
-        codeHash: hashVerificationCode(code),
+        codeHash: hashSecret(code),
         expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
         attempts: 0,
         lastSentAt: new Date(),
@@ -625,7 +609,7 @@ async function consumeVerificationCode(
   if (record.attempts >= VERIFICATION_MAX_ATTEMPTS) {
     return 'Too many incorrect attempts – please request a new code.';
   }
-  if (record.codeHash !== hashVerificationCode(code)) {
+  if (record.codeHash !== hashSecret(code)) {
     record.attempts += 1;
     await record.save();
     return 'That verification code is incorrect.';

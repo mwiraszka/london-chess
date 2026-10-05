@@ -16,7 +16,7 @@ export async function assignMemberNumber(memberId: string): Promise<void> {
 
 // Numbers are handed out once and never reused, so an old profile link can
 // never lead to a different person after a member is deleted
-export async function takeNextMemberNumber(): Promise<number> {
+async function takeNextMemberNumber(): Promise<number> {
   const counter = await CounterModel.findOneAndUpdate(
     { _id: MEMBER_NUMBER_COUNTER_ID },
     { $inc: { next: 1 } },

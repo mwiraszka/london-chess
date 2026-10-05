@@ -9,7 +9,11 @@ import { findEditor } from '../services/member-accounts.service';
 import { widestEventIds } from '../services/widest.service';
 import { isCollectionId } from '../util/is-collection-id.util';
 import { Editor, creditEditor } from '../util/modification-info.util';
-import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
+import {
+  buildPaginationQuery,
+  findPage,
+  parsePaginationParams,
+} from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 export async function getEvents(
@@ -22,29 +26,11 @@ export async function getEvents(
       eventSortingConfig,
     );
 
-    const [queryResults, countResults] = await Promise.all([
-      query.limit !== undefined
-        ? EventModel.find(query.filter)
-            .sort(query.sort)
-            .skip(query.skip)
-            .limit(query.limit)
-            .lean()
-        : EventModel.find(query.filter).sort(query.sort).skip(query.skip).lean(),
-      EventModel.countDocuments(query.filter),
-    ]);
-
-    const findResults = queryResults;
-    const filteredCount = countResults;
-
-    const totalCount = await EventModel.countDocuments({});
-
-    const events: Event[] = findResults.map(result => {
-      const { _id, ...baseEvent } = result;
-      return {
-        ...baseEvent,
-        id: result._id.toString(),
-      };
-    });
+    const { records, filteredCount, totalCount } = await findPage(EventModel, query);
+    const events: Event[] = records.map(({ _id, ...event }) => ({
+      ...event,
+      id: _id.toString(),
+    }));
 
     res.status(200).json({
       data: {

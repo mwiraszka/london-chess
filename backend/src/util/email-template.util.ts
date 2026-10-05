@@ -4,7 +4,7 @@ export interface EmailContent {
   html: string;
 }
 
-export interface EmailLink {
+interface EmailLink {
   href: string;
   label: string;
 }

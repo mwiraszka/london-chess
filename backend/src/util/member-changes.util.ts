@@ -1,4 +1,5 @@
 import { EditableMemberFields } from '../models/member.model';
+import { CLUB_TIME_ZONE } from './club-date.util';
 
 type ChangeableField = Exclude<keyof EditableMemberFields, 'modificationInfo'>;
 
@@ -61,7 +62,7 @@ function formatValue(
 // Join dates are stored as instants, so two on the same club day read as one date
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('en-CA', {
-    timeZone: 'America/Toronto',
+    timeZone: CLUB_TIME_ZONE,
     year: 'numeric',
     month: 'long',
     day: 'numeric',

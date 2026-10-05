@@ -44,19 +44,11 @@ export function validateObjectByTypes<T>(
     }
   }
 
-  const expectedPropertyCount = Object.getOwnPropertyNames(types).length;
-  const objectPropertyCount = Object.getOwnPropertyNames(object).length;
-
-  if (objectPropertyCount > expectedPropertyCount) {
-    return new Error(
-      `${objectPropertyCount - expectedPropertyCount} unknown properties found on the object`,
-    );
-  }
-
-  if (objectPropertyCount < expectedPropertyCount) {
-    return new Error(
-      `${expectedPropertyCount - objectPropertyCount} properties missing on the object`,
-    );
+  const missingCount = Object.getOwnPropertyNames(types).filter(
+    key => !Object.hasOwn(object, key),
+  ).length;
+  if (missingCount) {
+    return new Error(`${missingCount} properties missing on the object`);
   }
 
   return 'valid';
