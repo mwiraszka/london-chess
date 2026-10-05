@@ -20,7 +20,6 @@ export class ClerkService {
 
   private clerk!: Clerk;
 
-  readonly isLoaded = signal(false);
   readonly isLoggedIn = signal(false);
   readonly user = signal<Clerk['user']>(null, { equal: () => false });
 
@@ -43,10 +42,6 @@ export class ClerkService {
     this.syncState();
 
     this.clerk.addListener(() => this.syncState());
-  }
-
-  get client() {
-    return this.clerk;
   }
 
   async logIn(identifier: string, password: string): Promise<LoginResult> {
@@ -162,10 +157,6 @@ export class ClerkService {
     return this.clerk.session?.getToken() ?? null;
   }
 
-  async updateProfile(firstName: string, lastName: string): Promise<void> {
-    await this.clerk.user!.update({ firstName, lastName });
-  }
-
   // Adds the new address and sends a verification code to it. The change is only
   // committed once the code is verified in verifyAndSetPrimaryEmail.
   async createEmail(email: string): Promise<string> {
@@ -257,7 +248,6 @@ export class ClerkService {
     const clerkUser =
       this.clerk.session?.status === 'pending' ? null : (this.clerk.user ?? null);
 
-    this.isLoaded.set(true);
     this.isLoggedIn.set(!!clerkUser);
     this.user.set(clerkUser);
 

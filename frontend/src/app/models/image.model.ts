@@ -40,12 +40,6 @@ export type ImageFormGroup = {
   [Property in keyof ImageFormData]: FormControl<ImageFormData[Property]>;
 };
 
-export interface AlbumFormData {
-  album: string;
-  existingImages: Omit<ImageFormGroup, 'album'>[];
-  newImages: Omit<ImageFormGroup, 'album'>[];
-}
-
 export interface AlbumFormGroup {
   album: FormControl<string>;
   existingImages: FormArray<FormGroup<Omit<ImageFormGroup, 'album'>>>;

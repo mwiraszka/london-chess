@@ -1,10 +1,7 @@
-export { CamelCasePipe } from './camel-case.pipe';
-export { DurationPipe } from './duration.pipe';
 export { FormatBytesPipe } from './format-bytes.pipe';
 export { FormatDatePipe } from './format-date.pipe';
 export { HighlightPipe } from './highlight.pipe';
 export { IsDefinedPipe } from './is-defined.pipe';
-export { IsStringPipe } from './is-string.pipe';
 export { KebabCasePipe } from './kebab-case.pipe';
 export { RangePipe } from './range.pipe';
 export { RouterLinkPipe } from './router-link.pipe';

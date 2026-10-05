@@ -65,14 +65,6 @@ export interface GamesSummary {
   lastYear: number | null;
 }
 
-// The widest values the game archives table shows, so its columns are sized before any game loads
-export interface ArchiveSizing {
-  players: Pick<GamePlayer, 'firstName' | 'lastName' | 'suffix'>[];
-  events: { tournament: string; section: string }[];
-  openings: { eco: string; name: string }[];
-  longestGame: number;
-}
-
 export interface GameFilters {
   player: Id | '';
   year: number | null;

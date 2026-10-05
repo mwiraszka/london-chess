@@ -8,6 +8,8 @@ import {
   MemberFormData,
 } from '@app/models';
 
+import { CLUB_TIME_ZONE } from './clubs';
+
 export const ARTICLE_FORM_DATA_PROPERTIES = ['title', 'body', 'bannerImageId'] as const;
 
 export const MAX_ARTICLE_BODY_IMAGES = 5;
@@ -29,7 +31,7 @@ export const EVENT_FORM_DATA_PROPERTIES = [
 export const INITIAL_EVENT_FORM_DATA: EventFormData = {
   type: 'blitz tournament (10 mins)',
   eventDate: moment()
-    .tz('America/Toronto', false)
+    .tz(CLUB_TIME_ZONE, false)
     .set('hours', 18)
     .set('minutes', 0)
     .set('seconds', 0)
@@ -61,16 +63,6 @@ export const EVENT_TYPE_COLORS: Record<EventType, string> = {
   closed: 'var(--lcc-color--schedule-closedBackground)',
   other: 'var(--lcc-color--schedule-otherBackground)',
 };
-
-export const BASE_IMAGE_PROPERTIES = [
-  'id',
-  'filename',
-  'caption',
-  'album',
-  'albumCover',
-  'albumOrdinality',
-  'modificationInfo',
-] as const;
 
 export const IMAGE_FORM_DATA_PROPERTIES = [
   'id',

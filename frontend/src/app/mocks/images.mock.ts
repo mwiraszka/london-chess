@@ -1,5 +1,16 @@
 import { Image } from '@app/models';
 
+// The fields an image is saved with, before any URLs or sizes are known
+export const BASE_IMAGE_PROPERTIES = [
+  'id',
+  'filename',
+  'caption',
+  'album',
+  'albumCover',
+  'albumOrdinality',
+  'modificationInfo',
+] as const;
+
 export const MOCK_IMAGES: Image[] = [
   {
     id: 'mock-id-1',

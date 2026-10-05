@@ -33,7 +33,6 @@ export type {
 } from './event.model';
 export type {
   ArchivePlayer,
-  ArchiveSizing,
   Game,
   GameFilters,
   GamePlayer,
@@ -47,7 +46,6 @@ export type {
 } from './game.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {
-  AlbumFormData,
   AlbumFormGroup,
   BaseImage,
   Image,
