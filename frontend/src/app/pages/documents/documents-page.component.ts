@@ -6,7 +6,6 @@ import {
   FileTextIconComponent,
   TooltipDirective,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import moment from 'moment-timezone';
 
@@ -14,6 +13,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DOCUMENT,
+  DestroyRef,
   OnInit,
   TemplateRef,
   computed,
@@ -21,6 +21,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 
@@ -45,7 +46,6 @@ export interface DocumentRow {
 
 type CellTemplate = TemplateRef<{ $implicit: DocumentRow; value: unknown }>;
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-documents-page',
   templateUrl: './documents-page.component.html',
@@ -62,6 +62,7 @@ type CellTemplate = TemplateRef<{ $implicit: DocumentRow; value: unknown }>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentsPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogService = inject(DialogService);
   private readonly _document = inject<Document>(DOCUMENT);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
@@ -177,22 +178,24 @@ export class DocumentsPageComponent implements OnInit {
       'A place for all London Chess Club documentation.',
     );
 
-    this.routingService.fragment$.pipe(untilDestroyed(this)).subscribe(async fragment => {
-      if (
-        fragment &&
-        this.documents.find(document => document.fileName === fragment) &&
-        this.dialogService.dialogs().length === 0
-      ) {
-        await this.dialogService.open(DocumentViewerComponent, {
-          inputs: { documentPath: `assets/documents/${fragment}` },
-        }).result;
+    this.routingService.fragment$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async fragment => {
+        if (
+          fragment &&
+          this.documents.find(document => document.fileName === fragment) &&
+          this.dialogService.dialogs().length === 0
+        ) {
+          await this.dialogService.open(DocumentViewerComponent, {
+            inputs: { documentPath: `assets/documents/${fragment}` },
+          }).result;
 
-        // Only remove fragment if it's still the same as when we opened
-        // (prevents removing fragment when an old dialog closes after navigation)
-        if (this.routingService.currentFragment === fragment) {
-          this.routingService.removeFragment();
+          // Only remove fragment if it's still the same as when we opened
+          // (prevents removing fragment when an old dialog closes after navigation)
+          if (this.routingService.currentFragment === fragment) {
+            this.routingService.removeFragment();
+          }
         }
-      }
-    });
+      });
   }
 }

@@ -1,5 +1,4 @@
 import { CameraIconComponent, ShieldCheckIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
@@ -25,7 +24,6 @@ import {
 import { MetaAndTitleService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-image-editor-page',
   template: `
@@ -99,7 +97,6 @@ export class ImageEditorPageComponent implements EditorPage, OnInit {
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => (params['image_id'] ?? null) as string | null),
       switchMap(imageId =>
         combineLatest([

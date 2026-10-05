@@ -55,11 +55,13 @@
           [required]="true" />
 
         <label
+          id="date-joined-label"
           for="date-joined-input"
           class="lcc-required-field">
           Date joined:
         </label>
         <ea-date-picker
+          aria-labelledby="date-joined-label"
           formControlName="dateJoined"
           [id]="'date-joined-input'"
           [required]="true"
@@ -148,37 +150,13 @@
           [label]="notifyMemberLabel" />
       }
 
-      <div class="lcc-form-actions">
-        <ea-button
-          class="lcc-form-actions__restore restore-button"
-          size="sm"
-          variant="ghost"
-          [disabled]="!hasUnsavedChanges()"
-          [icon]="restoreIcon"
-          (clicked)="onRestore()">
-          Revert
-        </ea-button>
-        <div class="lcc-form-actions__primary">
-          <ea-button
-            class="cancel-button"
-            size="sm"
-            variant="secondary"
-            [fullWidth]="true"
-            [uppercase]="true"
-            (clicked)="onCancel()">
-            Cancel
-          </ea-button>
-          <ea-button
-            class="submit-button"
-            size="sm"
-            type="submit"
-            [disabled]="form.invalid || !hasUnsavedChanges()"
-            [fullWidth]="true"
-            [uppercase]="true">
-            {{ originalMember() ? 'Update member' : 'Add member' }}
-          </ea-button>
-        </div>
-      </div>
+      <lcc-form-actions
+        entity="member"
+        [hasUnsavedChanges]="hasUnsavedChanges()"
+        [submitDisabled]="form.invalid || !hasUnsavedChanges()"
+        [submitLabel]="originalMember() ? 'Update member' : 'Add member'"
+        (cancel)="onCancel()"
+        (restore)="onRestore()" />
     </form>
   </div>
 </ea-card>

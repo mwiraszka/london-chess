@@ -24,5 +24,4 @@ import { MemberAccountFormGroup } from '@app/models';
 export class MemberAccountFieldsComponent {
   readonly autofocus = input(false);
   readonly group = input.required<FormGroup<MemberAccountFormGroup>>();
-  readonly yearOfBirthRequired = input(true);
 }

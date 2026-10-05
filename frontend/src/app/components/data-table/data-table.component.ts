@@ -58,7 +58,6 @@ export class DataTableCellDirective<T> {
   imports: [DataTableCellDirective, EaDataTableComponent, NgTemplateOutlet],
   host: {
     '[class.data-table--full-width]': 'fullWidth()',
-    '[class.data-table--sticky-head]': 'stickyHeader()',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -77,7 +76,6 @@ export class DataTableComponent<T extends { id: string }> {
   // Fills its container rather than sitting centred at its content's width
   public readonly fullWidth = input(false);
   // Keeps the header in view for as long as any row is
-  public readonly stickyHeader = input(true);
   // The admin controls of a row, opened by a right click on it
   public readonly rowControls = input<(row: T) => AdminControlsConfig | null>();
 

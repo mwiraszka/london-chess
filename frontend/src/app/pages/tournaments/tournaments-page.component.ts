@@ -6,7 +6,6 @@ import {
   CardComponent,
   DataTableColumn,
   DataTableSortState,
-  DialogService,
   DropdownComponent,
   EmptyStateComponent,
   FilterXIconComponent,
@@ -33,7 +32,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
@@ -47,13 +45,12 @@ import {
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
-  Dialog,
   InternalLink,
   RegistrationStatus,
   TournamentFormat,
   TournamentSummary,
 } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService, StoreRequestService } from '@app/services';
+import { DeletionService, KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
@@ -148,12 +145,11 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentsPageComponent implements OnInit {
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
-  private readonly storeRequests = inject(StoreRequestService);
 
   private readonly dateCell = viewChild<CellTemplate>('dateCell');
   private readonly nameCell = viewChild<CellTemplate>('nameCell');
@@ -361,32 +357,10 @@ export class TournamentsPageComponent implements OnInit {
   public controlsFor(summary: TournamentSummary): AdminControlsConfig {
     return {
       buttonSize: 31,
-      deleteCb: () => this.onDeleteTournament(summary),
+      deleteCb: () => this.deletion.deleteTournament(summary),
       editPath: ['tournament', 'edit', String(summary.number)],
       itemName: summary.name,
     };
-  }
-
-  public async onDeleteTournament(summary: TournamentSummary): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${summary.name} (${formatDateRange(summary.date, summary.endDate)})? Its results and registrations will be lost.`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(
-          TournamentsActions.deleteTournamentRequested({
-            tournamentNumber: summary.number,
-            tournamentName: summary.name,
-          }),
-          [
-            TournamentsActions.deleteTournamentSucceeded,
-            TournamentsActions.deleteTournamentFailed,
-          ],
-        ),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   private registrationBadge(

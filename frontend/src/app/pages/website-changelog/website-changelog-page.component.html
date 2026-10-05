@@ -15,8 +15,8 @@
     @for (release of releases; track release.version) {
       <button
         type="button"
-        class="version-nav__item"
-        [class.version-nav__item--active]="isExpanded(release)"
+        class="lcc-side-nav__item version-nav__item"
+        [class.lcc-side-nav__item--active]="isExpanded(release)"
         (click)="onJumpToRelease(release)">
         <ea-icon-tag
           class="version-nav__icon"

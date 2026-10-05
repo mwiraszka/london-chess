@@ -1,10 +1,8 @@
 import {
-  ButtonComponent,
   CardComponent,
   DatePickerComponent,
   DialogService,
   DividerComponent,
-  HistoryIconComponent,
   InputComponent,
   RadioComponent,
   RadioGroupComponent,
@@ -26,6 +24,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { EVENT_TYPE_OPTIONS, INITIAL_EVENT_FORM_DATA } from '@app/constants';
 import {
@@ -34,7 +33,6 @@ import {
   WEEK_STARTS_ON,
 } from '@app/constants/forms';
 import {
-  BasicDialogResult,
   Dialog,
   Event,
   EventFormData,
@@ -52,10 +50,10 @@ import { idValidator, textValidator } from '@app/validators';
   templateUrl: './event-form.component.html',
   styleUrl: './event-form.component.scss',
   imports: [
-    ButtonComponent,
     CardComponent,
     DatePickerComponent,
     DividerComponent,
+    FormActionsComponent,
     InputComponent,
     ModificationInfoComponent,
     RadioComponent,
@@ -84,7 +82,6 @@ export class EventFormComponent implements OnInit {
 
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
   protected readonly eventTypeOptions = EVENT_TYPE_OPTIONS;
-  protected readonly restoreIcon = HistoryIconComponent;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
   public form!: FormGroup<EventFormGroup>;
@@ -102,23 +99,7 @@ export class EventFormComponent implements OnInit {
     }
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original event data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originalEvent = this.originalEvent();
     this.restore.emit(originalEvent?.id ?? null);
     this.form.reset(this.toFormValue(originalEvent ?? INITIAL_EVENT_FORM_DATA));

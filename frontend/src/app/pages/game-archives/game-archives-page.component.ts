@@ -14,7 +14,6 @@ import {
   SelectOption,
   TooltipDirective,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
 import { Observable, interval } from 'rxjs';
@@ -24,6 +23,7 @@ import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   TemplateRef,
   computed,
@@ -33,6 +33,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationExtras, Params, Router } from '@angular/router';
 
@@ -128,7 +129,6 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
   moves: 'moves',
 };
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-game-archives-page',
   templateUrl: './game-archives-page.component.html',
@@ -151,6 +151,7 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameArchivesPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -328,7 +329,7 @@ export class GameArchivesPageComponent implements OnInit {
           index ? parseGamesQuery(params) : this.arrivalQuery(params),
         ),
         distinctUntilChanged(isEqual),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(query => this.store.dispatch(GamesActions.queryChanged({ query })));
 
@@ -337,7 +338,7 @@ export class GameArchivesPageComponent implements OnInit {
         filter((figures): figures is Figure[] => figures !== null),
         take(1),
         switchMap(countUp),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(figures => this.figures.set(figures));
   }

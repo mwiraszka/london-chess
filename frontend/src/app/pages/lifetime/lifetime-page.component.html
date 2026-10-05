@@ -51,18 +51,18 @@
   </div>
 </ea-card>
 
-@for (group of RECIPIENTS_MAP | keyvalue: originalOrder; track group.key) {
+@for (group of RECIPIENTS; track group.year) {
   <ea-card
     class="recipients-card"
     [fullWidth]="true">
     <h3
       slot="header"
       class="year">
-      {{ group.key }}
+      {{ group.year }}
     </h3>
 
     <div class="recipients">
-      @for (name of group.value; track name) {
+      @for (name of group.names; track name) {
         <ng-template #recipientContent>
           <div class="image-container">
             <img

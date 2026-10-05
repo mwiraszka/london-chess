@@ -1,5 +1,4 @@
 import { CameraIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -15,7 +14,6 @@ import { MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-photo-gallery-page',
   template: `
@@ -63,10 +61,7 @@ export class PhotoGalleryPageComponent implements OnInit {
       this.store.select(AuthSelectors.selectIsAdmin),
       this.store.select(ImagesSelectors.selectPhotoImages),
       this.store.select(ImagesSelectors.selectMetadataStatus),
-    ]).pipe(
-      untilDestroyed(this),
-      map(([isAdmin, photoImages, status]) => ({ isAdmin, photoImages, status })),
-    );
+    ]).pipe(map(([isAdmin, photoImages, status]) => ({ isAdmin, photoImages, status })));
   }
 
   public onRetry(): void {

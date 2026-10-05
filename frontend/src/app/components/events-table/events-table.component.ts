@@ -1,6 +1,5 @@
 import {
   DataTableColumn,
-  DialogService,
   PaginatorComponent,
   PaginatorState,
   SkeletonComponent,
@@ -18,19 +17,17 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import {
   DataTableCellContext,
   DataTableComponent,
 } from '@app/components/data-table/data-table.component';
 import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
+import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { AdminControlsConfig, DataPaginationOptions, Dialog, Event } from '@app/models';
+import { AdminControlsConfig, DataPaginationOptions, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
-import { EventsActions } from '@app/store/events';
+import { DeletionService } from '@app/services';
 import { customSort, isUpcomingEvent, pageRowCount } from '@app/utils';
 
 // A row holds a day and every event of that day, latest edited first
@@ -85,6 +82,7 @@ export class EventsTableComponent {
   public readonly isAdmin = input.required<boolean>();
   // The events of the first so many days are shown, when given
   public readonly dateLimit = input<number>();
+  // Placeholders replace the events during every fetch, so a change of filters shows at once
   public readonly isLoading = input(false);
   // With the options the table pages its events, through their change
   public readonly options = input<DataPaginationOptions<Event>>();
@@ -95,8 +93,7 @@ export class EventsTableComponent {
 
   public readonly optionsChange = output<DataPaginationOptions<Event>>();
 
-  private readonly dialogService = inject(DialogService);
-  private readonly storeRequests = inject(StoreRequestService);
+  private readonly deletion = inject(DeletionService);
 
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
   private readonly entryCell = viewChild.required<CellTemplate>('entryCell');
@@ -105,18 +102,14 @@ export class EventsTableComponent {
   private readonly entryPlaceholder =
     viewChild.required<PlaceholderTemplate>('entryPlaceholder');
 
-  protected readonly pageSizes = EVENTS_PAGE_SIZES;
+  protected readonly pageSizes = PAGE_SIZES;
 
   protected readonly search = computed(() => this.options()?.search ?? '');
 
-  // Placeholders replace the events during every fetch, so a change of filters shows at once
-  protected readonly loading = computed(() => this.isLoading());
-
   protected readonly loadingRowCount = computed(() => {
-    const pageSize = this.options()?.pageSize ?? EVENTS_PAGE_SIZES[0];
+    const pageSize = this.options()?.pageSize ?? PAGE_SIZES[0];
     return (
-      this.dateLimit() ??
-      pageRowCount(pageSize, this.filteredCount() ?? EVENTS_PAGE_SIZES[0])
+      this.dateLimit() ?? pageRowCount(pageSize, this.filteredCount() ?? PAGE_SIZES[0])
     );
   });
 
@@ -159,7 +152,7 @@ export class EventsTableComponent {
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDeleteEvent(event),
+      deleteCb: () => this.deletion.deleteEvent(event),
       editPath: ['event', 'edit', event.id],
       itemName: event.title,
     };
@@ -170,21 +163,5 @@ export class EventsTableComponent {
     if (options) {
       this.optionsChange.emit({ ...options, page, pageSize });
     }
-  }
-
-  public async onDeleteEvent(event: Event): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${event.title}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(EventsActions.deleteEventRequested({ event }), [
-          EventsActions.deleteEventSucceeded,
-          EventsActions.deleteEventFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

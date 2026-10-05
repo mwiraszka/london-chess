@@ -1,7 +1,6 @@
 import {
   ButtonComponent,
   CalendarDaysIconComponent,
-  DialogService,
   DownloadIconComponent,
   EmptyStateComponent,
   FilterXIconComponent,
@@ -10,49 +9,39 @@ import {
   SearchIconComponent,
   SwitchComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
-import { Observable, combineLatest, firstValueFrom } from 'rxjs';
-import {
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  tap,
-  withLatestFrom,
-} from 'rxjs/operators';
+import { Observable, combineLatest } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
   input,
-  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EventsCalendarGridComponent } from '@app/components/events-calendar-grid/events-calendar-grid.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/schedule-toolbar.component';
-import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import {
   AdminButton,
   DataPaginationOptions,
-  Dialog,
   Event,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import { CsvExportService, MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
+import { bindSearchControl } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-schedule-page',
   template: `
@@ -152,10 +141,11 @@ import { EventsActions, EventsSelectors } from '@app/store/events';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulePageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   // The widest events, resolved with the route, size the table before its first page
   public readonly widestEvents = input<Event[]>([]);
 
-  private readonly dialogService = inject(DialogService);
+  private readonly csvExport = inject(CsvExportService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
 
@@ -163,8 +153,6 @@ export class SchedulePageComponent implements OnInit {
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
-
-  private readonly scheduleToolbar = viewChild(ScheduleToolbarComponent);
 
   public readonly addEventLink: InternalLink = {
     text: 'Add an event',
@@ -176,7 +164,7 @@ export class SchedulePageComponent implements OnInit {
     id: 'export-to-csv',
     tooltip: 'Export to CSV',
     icon: DownloadIconComponent,
-    action: () => this.onExportToCsv(),
+    action: () => this.csvExport.exportEvents(),
   };
 
   public viewModel$?: Observable<{
@@ -184,14 +172,11 @@ export class SchedulePageComponent implements OnInit {
     filteredEvents: Event[];
     isAdmin: boolean;
     isFetching: boolean;
-    nextEvent: Event | null;
     options: DataPaginationOptions<Event>;
     scheduleView: 'list' | 'calendar';
     status: LoadStatus;
     totalCount: number;
   }>;
-
-  private readonly storeRequests = inject(StoreRequestService);
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Schedule');
@@ -199,45 +184,29 @@ export class SchedulePageComponent implements OnInit {
       'Scheduled events at the London Chess Club',
     );
 
-    // The box shows the search in force, wherever it was set, and sends new text on a pause
-    this.store
-      .select(EventsSelectors.selectOptions)
-      .pipe(untilDestroyed(this))
-      .subscribe(({ search }) => {
-        if (this.searchControl.value !== search) {
-          this.searchControl.setValue(search, { emitEvent: false });
-        }
-      });
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(SEARCH_DEBOUNCE),
-        distinctUntilChanged(),
-        withLatestFrom(this.store.select(EventsSelectors.selectOptions)),
-        untilDestroyed(this),
-      )
-      .subscribe(([search, options]) =>
-        this.onOptionsChange({ ...options, search, page: 1 }),
-      );
+    bindSearchControl(
+      this.searchControl,
+      this.store.select(EventsSelectors.selectOptions),
+      options => this.onOptionsChange(options),
+      this.destroyRef,
+    );
 
     this.viewModel$ = combineLatest([
       this.store.select(EventsSelectors.selectFilteredCount),
       this.store.select(EventsSelectors.selectFilteredEvents),
       this.store.select(AuthSelectors.selectIsAdmin),
       this.store.select(EventsSelectors.selectIsFetchingFiltered),
-      this.store.select(EventsSelectors.selectNextEvent),
       this.store.select(EventsSelectors.selectOptions),
       this.store.select(EventsSelectors.selectScheduleView),
       this.store.select(EventsSelectors.selectTotalCount),
       this.store.select(EventsSelectors.selectFilteredEventsStatus),
     ]).pipe(
-      untilDestroyed(this),
       map(
         ([
           filteredCount,
           filteredEvents,
           isAdmin,
           isFetching,
-          nextEvent,
           options,
           scheduleView,
           totalCount,
@@ -247,45 +216,17 @@ export class SchedulePageComponent implements OnInit {
           filteredEvents,
           isAdmin,
           isFetching,
-          nextEvent,
           options,
           scheduleView,
           status,
           totalCount,
         }),
       ),
-      tap(() =>
-        setTimeout(() => this.scheduleToolbar()?.changeDetectorRef.markForCheck()),
-      ),
     );
   }
 
-  public async onExportToCsv(): Promise<void> {
-    const eventCount = await firstValueFrom(
-      this.store.select(EventsSelectors.selectTotalCount),
-    );
-
-    if (!eventCount) {
-      return;
-    }
-
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Export all ${eventCount} events to a CSV file?`,
-      confirmButtonText: 'Export',
-      confirmButtonType: 'primary',
-      confirmAction: () =>
-        this.storeRequests.dispatch(EventsActions.exportEventsToCsvRequested(), [
-          EventsActions.exportEventsToCsvSucceeded,
-          EventsActions.exportEventsToCsvFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-  }
-
-  public onOptionsChange(options: DataPaginationOptions<Event>, fetch = true): void {
-    this.store.dispatch(EventsActions.paginationOptionsChanged({ options, fetch }));
+  public onOptionsChange(options: DataPaginationOptions<Event>): void {
+    this.store.dispatch(EventsActions.paginationOptionsChanged({ options }));
   }
 
   public onTogglePastEvents(

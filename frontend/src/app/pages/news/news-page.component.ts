@@ -8,20 +8,25 @@ import {
   PlusCircleIconComponent,
   SearchIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
-import { PAGE_SIZES, SEARCH_DEBOUNCE } from '@app/constants/filters';
+import { PAGE_SIZES } from '@app/constants/filters';
 import {
   Article,
   DataPaginationOptions,
@@ -33,9 +38,8 @@ import { MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { combinedLoadStatus } from '@app/utils';
+import { bindSearchControl, combinedLoadStatus } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-news-page',
   template: `
@@ -108,6 +112,7 @@ import { combinedLoadStatus } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewsPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
 
@@ -139,25 +144,12 @@ export class NewsPageComponent implements OnInit {
       'Read about a variety of topics related to the London Chess Club.',
     );
 
-    // The box shows the search in force, wherever it was set, and sends new text on a pause
-    this.store
-      .select(ArticlesSelectors.selectOptions)
-      .pipe(untilDestroyed(this))
-      .subscribe(({ search }) => {
-        if (this.searchControl.value !== search) {
-          this.searchControl.setValue(search, { emitEvent: false });
-        }
-      });
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(SEARCH_DEBOUNCE),
-        distinctUntilChanged(),
-        withLatestFrom(this.store.select(ArticlesSelectors.selectOptions)),
-        untilDestroyed(this),
-      )
-      .subscribe(([search, options]) =>
-        this.onOptionsChange({ ...options, search, page: 1 }),
-      );
+    bindSearchControl(
+      this.searchControl,
+      this.store.select(ArticlesSelectors.selectOptions),
+      options => this.onOptionsChange(options),
+      this.destroyRef,
+    );
 
     this.viewModel$ = combineLatest([
       this.store.select(ArticlesSelectors.selectFilteredArticles),
@@ -169,7 +161,6 @@ export class NewsPageComponent implements OnInit {
       this.store.select(ArticlesSelectors.selectFilteredArticlesStatus),
       this.store.select(ImagesSelectors.selectMetadataStatus),
     ]).pipe(
-      untilDestroyed(this),
       map(
         ([
           filteredArticles,
@@ -193,8 +184,8 @@ export class NewsPageComponent implements OnInit {
     );
   }
 
-  public onOptionsChange(options: DataPaginationOptions<Article>, fetch = true): void {
-    this.store.dispatch(ArticlesActions.paginationOptionsChanged({ options, fetch }));
+  public onOptionsChange(options: DataPaginationOptions<Article>): void {
+    this.store.dispatch(ArticlesActions.paginationOptionsChanged({ options }));
   }
 
   public onPageChanged(

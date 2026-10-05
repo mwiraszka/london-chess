@@ -27,18 +27,25 @@
           [maxLength]="100" />
 
         <label
+          id="start-date-label"
           for="start-date-input"
           class="lcc-required-field">
           Start date:
         </label>
         <ea-date-picker
+          aria-labelledby="start-date-label"
           formControlName="date"
           [id]="'start-date-input'"
           [required]="true"
           [weekStartsOn]="weekStartsOn" />
 
-        <label for="end-date-input">End date:</label>
+        <label
+          id="end-date-label"
+          for="end-date-input">
+          End date:
+        </label>
         <ea-date-picker
+          aria-labelledby="end-date-label"
           formControlName="endDate"
           [errorMessages]="errorMessages"
           [id]="'end-date-input'"
@@ -93,11 +100,13 @@
             formControlName="hasRegistration" />
 
           <label
+            id="opens-on-label"
             for="opens-on-input"
             class="lcc-required-field">
             Opens on:
           </label>
           <ea-date-picker
+            aria-labelledby="opens-on-label"
             formControlName="registrationOpensDay"
             [id]="'opens-on-input'"
             [required]="true"
@@ -116,11 +125,13 @@
             [required]="true" />
 
           <label
+            id="closes-on-label"
             for="closes-on-input"
             class="lcc-required-field">
             Closes on:
           </label>
           <ea-date-picker
+            aria-labelledby="closes-on-label"
             formControlName="registrationClosesDay"
             [id]="'closes-on-input'"
             [required]="true"
@@ -296,37 +307,15 @@
         <lcc-modification-info [info]="info" />
       }
 
-      <div class="lcc-form-actions">
-        <ea-button
-          class="lcc-form-actions__restore restore-button"
-          size="sm"
-          variant="ghost"
-          [disabled]="!hasUnsavedChanges()"
-          [icon]="restoreIcon"
-          (clicked)="onRestore()">
-          Revert
-        </ea-button>
-        <div class="lcc-form-actions__primary">
-          <ea-button
-            class="cancel-button"
-            size="sm"
-            variant="secondary"
-            [fullWidth]="true"
-            [uppercase]="true"
-            (clicked)="onCancel()">
-            Cancel
-          </ea-button>
-          <ea-button
-            class="submit-button"
-            size="sm"
-            type="submit"
-            [disabled]="form.invalid || !hasUnsavedChanges() || importing() || checking()"
-            [fullWidth]="true"
-            [uppercase]="true">
-            {{ originalTournament() ? 'Update tournament' : 'Add tournament' }}
-          </ea-button>
-        </div>
-      </div>
+      <lcc-form-actions
+        entity="tournament"
+        [hasUnsavedChanges]="hasUnsavedChanges()"
+        [submitDisabled]="
+          form.invalid || !hasUnsavedChanges() || importing() || checking()
+        "
+        [submitLabel]="originalTournament() ? 'Update tournament' : 'Add tournament'"
+        (cancel)="onCancel()"
+        (restore)="onRestore()" />
     </form>
   </div>
 </ea-card>

@@ -10,7 +10,6 @@ import {
   TooltipDirective,
   TrashIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -18,6 +17,7 @@ import { map, switchMap } from 'rxjs/operators';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   TemplateRef,
   computed,
@@ -25,6 +25,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -55,6 +56,7 @@ import {
 } from '@app/models';
 import {
   AuthDrawerService,
+  DeletionService,
   MetaAndTitleService,
   StoreRequestService,
   UserService,
@@ -206,7 +208,6 @@ function toSectionView(
 
 type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-tournament-page',
   templateUrl: './tournament-page.component.html',
@@ -228,7 +229,9 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly authDrawer = inject(AuthDrawerService);
+  private readonly deletion = inject(DeletionService);
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
@@ -271,7 +274,7 @@ export class TournamentPageComponent implements OnInit {
     action: () => {
       const tournament = this.viewModel()?.tournament;
       if (tournament) {
-        void this.onDelete(tournament);
+        void this.deletion.deleteTournament(tournament);
       }
     },
   };
@@ -410,7 +413,7 @@ export class TournamentPageComponent implements OnInit {
             TournamentsSelectors.selectTournamentByNumber(tournamentNumber),
           ),
         ),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(tournament => {
         const days = tournament
@@ -463,28 +466,6 @@ export class TournamentPageComponent implements OnInit {
             tournamentName: tournament.name,
           }),
           [TournamentsActions.withdrawalSucceeded, TournamentsActions.withdrawalFailed],
-        ),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-  }
-
-  public async onDelete(tournament: Tournament): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${tournament.name} (${formatDateRange(tournament.date, tournament.endDate)})? Its results and registrations will be lost.`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(
-          TournamentsActions.deleteTournamentRequested({
-            tournamentNumber: tournament.number,
-            tournamentName: tournament.name,
-          }),
-          [
-            TournamentsActions.deleteTournamentSucceeded,
-            TournamentsActions.deleteTournamentFailed,
-          ],
         ),
     };
 

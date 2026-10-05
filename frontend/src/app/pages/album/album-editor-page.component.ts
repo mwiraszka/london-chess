@@ -1,5 +1,4 @@
 import { CameraIconComponent, ShieldCheckIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
@@ -24,9 +23,8 @@ import {
 import { MetaAndTitleService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 
-@UntilDestroy()
 @Component({
-  selector: 'lcc-images-editor-page',
+  selector: 'lcc-album-editor-page',
   template: `
     @if (viewModel$ | async; as vm) {
       @switch (vm.status) {
@@ -39,7 +37,6 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
 
           <lcc-album-form
             [album]="vm.album"
-            [existingAlbums]="vm.existingAlbums"
             [hasUnsavedChanges]="vm.hasUnsavedChanges"
             [imageEntities]="vm.imageEntities"
             [newImagesFormData]="vm.newImagesFormData"
@@ -89,7 +86,6 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
   };
   public viewModel$?: Observable<{
     album: string | null;
-    existingAlbums: string[];
     hasUnsavedChanges: boolean;
     imageEntities: { image: Image; formData: ImageFormData }[];
     newImagesFormData: Record<string, ImageFormData>;
@@ -99,38 +95,26 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => (params['album'] ?? null) as string | null),
       switchMap(album =>
         combineLatest([
           of(album),
           this.store.select(ImagesSelectors.selectImageEntitiesByAlbum(album)),
           this.store.select(ImagesSelectors.selectNewImagesFormData),
-          this.store.select(ImagesSelectors.selectAllExistingAlbums),
           this.store.select(ImagesSelectors.selectAlbumHasUnsavedChanges(album)),
           album
             ? this.store.select(ImagesSelectors.selectMetadataStatus)
             : of<LoadStatus>('loaded'),
         ]),
       ),
-      map(
-        ([
-          album,
-          imageEntities,
-          newImagesFormData,
-          existingAlbums,
-          hasUnsavedChanges,
-          status,
-        ]) => ({
-          album,
-          existingAlbums,
-          hasUnsavedChanges,
-          imageEntities,
-          newImagesFormData,
-          pageHeading: album ? `Edit ${album}` : 'Create an album',
-          status,
-        }),
-      ),
+      map(([album, imageEntities, newImagesFormData, hasUnsavedChanges, status]) => ({
+        album,
+        hasUnsavedChanges,
+        imageEntities,
+        newImagesFormData,
+        pageHeading: album ? `Edit ${album}` : 'Create an album',
+        status,
+      })),
       tap(viewModel => {
         this.metaAndTitleService.updateTitle(viewModel.pageHeading);
         this.metaAndTitleService.updateDescription(
@@ -144,11 +128,7 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
     this.store.dispatch(ImagesActions.cancelSelected());
   }
 
-  public onChange(multipleFormData?: (Partial<ImageFormData> & { id: string })[]): void {
-    if (!multipleFormData) {
-      return;
-    }
-
+  public onChange(multipleFormData: (Partial<ImageFormData> & { id: string })[]): void {
     this.store.dispatch(ImagesActions.formDataChanged({ multipleFormData }));
   }
 

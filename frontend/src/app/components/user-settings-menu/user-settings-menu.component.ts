@@ -8,7 +8,6 @@ import {
   ToastService,
   TooltipDirective,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -30,7 +29,6 @@ import { AppActions, AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { isTouchDevice } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-user-settings-menu',
   templateUrl: './user-settings-menu.component.html',
@@ -88,7 +86,6 @@ export class UserSettingsMenuComponent implements OnInit {
       this.store.select(AppSelectors.selectIsWideView),
       this.store.select(AppSelectors.selectIsDesktopView),
     ]).pipe(
-      untilDestroyed(this),
       map(([user, isSafeMode, isDarkMode, isWideView, isDesktopView]) => ({
         user,
         isSafeMode,

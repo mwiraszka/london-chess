@@ -1,5 +1,4 @@
 import { NewspaperIconComponent, ShieldCheckIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
@@ -26,7 +25,6 @@ import { MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-article-editor-page',
   template: `
@@ -101,7 +99,6 @@ export class ArticleEditorPageComponent implements EditorPage, OnInit {
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => (params['article_id'] ?? null) as string | null),
       switchMap(articleId =>
         combineLatest([

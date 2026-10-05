@@ -1,11 +1,9 @@
 import {
-  ButtonComponent,
   CardComponent,
   DialogService,
   DividerComponent,
   FileUploaderComponent,
   FormFieldComponent,
-  HistoryIconComponent,
   ImagePlusIconComponent,
   InputComponent,
   RadioComponent,
@@ -29,13 +27,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { IMAGE_FALLBACK_SRC } from '@app/constants/images';
 import {
-  BasicDialogResult,
   Dialog,
   Id,
   Image,
@@ -55,10 +53,10 @@ import { textValidator } from '@app/validators';
   templateUrl: './image-form.component.html',
   styleUrl: './image-form.component.scss',
   imports: [
-    ButtonComponent,
     CardComponent,
     DividerComponent,
     FileUploaderComponent,
+    FormActionsComponent,
     FormFieldComponent,
     ImageComponent,
     InputComponent,
@@ -104,7 +102,6 @@ export class ImageFormComponent implements OnInit {
   protected readonly imagePlusIcon = ImagePlusIconComponent;
   protected readonly newAlbumName = new FormControl('', { nonNullable: true });
   protected readonly newImageDataUrl = signal<Url | null>(null);
-  protected readonly restoreIcon = HistoryIconComponent;
 
   public form!: FormGroup<ImageFormGroup>;
 
@@ -189,23 +186,7 @@ export class ImageFormComponent implements OnInit {
     });
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original image data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const id = this.form.controls.id.value;
     const imageEntity = this.imageEntity();
 

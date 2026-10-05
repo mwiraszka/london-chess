@@ -1,7 +1,6 @@
 import {
   AlertComponent,
   BadgeComponent,
-  ButtonComponent,
   CardComponent,
   CheckboxComponent,
   DataTableColumn,
@@ -10,7 +9,6 @@ import {
   DividerComponent,
   DropdownComponent,
   FileUploaderComponent,
-  HistoryIconComponent,
   InputComponent,
   SwitchComponent,
   TimePickerComponent,
@@ -37,6 +35,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import {
@@ -49,7 +48,6 @@ import {
   TOURNAMENT_FORMAT_OPTIONS,
 } from '@app/constants/tournaments';
 import {
-  BasicDialogResult,
   Dialog,
   GameInput,
   ImportChanges,
@@ -93,7 +91,6 @@ import {
   imports: [
     AlertComponent,
     BadgeComponent,
-    ButtonComponent,
     CardComponent,
     CheckboxComponent,
     DataTableComponent,
@@ -101,6 +98,7 @@ import {
     DividerComponent,
     DropdownComponent,
     FileUploaderComponent,
+    FormActionsComponent,
     InputComponent,
     ModificationInfoComponent,
     ReactiveFormsModule,
@@ -132,7 +130,6 @@ export class TournamentFormComponent implements OnInit {
 
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
   protected readonly formatOptions = TOURNAMENT_FORMAT_OPTIONS;
-  protected readonly restoreIcon = HistoryIconComponent;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
   // Results read from a file but not yet saved; null keeps the recorded ones
@@ -304,7 +301,7 @@ export class TournamentFormComponent implements OnInit {
 
     this.form.controls.hasRegistration.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(hasRegistration => this.onRegistrationToggled(hasRegistration));
+      .subscribe(hasRegistration => this.syncRegistrationControls(hasRegistration));
     this.form.controls.date.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -403,23 +400,7 @@ export class TournamentFormComponent implements OnInit {
     this.emitChange();
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original tournament data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originalTournament = this.originalTournament();
     this.restore.emit(originalTournament?.number ?? null);
     this.clearImport();
@@ -557,10 +538,6 @@ export class TournamentFormComponent implements OnInit {
       ]);
       this.emitChange();
     }
-  }
-
-  private onRegistrationToggled(hasRegistration: boolean): void {
-    this.syncRegistrationControls(hasRegistration);
   }
 
   // While registration is off its fields show the window it would start with, so turning

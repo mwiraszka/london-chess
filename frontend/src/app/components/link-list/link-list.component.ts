@@ -10,10 +10,6 @@ import { RouterLinkPipe } from '@app/pipes';
 @Component({
   selector: 'lcc-link-list',
   template: `
-    @if (header()) {
-      <h3>{{ header() }}</h3>
-    }
-
     <ul [class.single-column]="links().length < 4">
       @for (link of links(); track link) {
         <li>
@@ -61,6 +57,5 @@ import { RouterLinkPipe } from '@app/pipes';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LinkListComponent {
-  public readonly header = input<string>();
   public readonly links = input<Array<InternalLink | ExternalLink>>([]);
 }

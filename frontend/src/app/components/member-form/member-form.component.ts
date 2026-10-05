@@ -1,12 +1,10 @@
 import {
   AlertComponent,
-  ButtonComponent,
   CardComponent,
   CheckboxComponent,
   DatePickerComponent,
   DialogService,
   DividerComponent,
-  HistoryIconComponent,
   InputComponent,
   TooltipDirective,
 } from '@eagami/ui';
@@ -27,6 +25,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import {
@@ -36,7 +35,6 @@ import {
 } from '@app/constants/forms';
 import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
 import {
-  BasicDialogResult,
   Dialog,
   Id,
   IsoDate,
@@ -66,11 +64,11 @@ import {
   styleUrl: './member-form.component.scss',
   imports: [
     AlertComponent,
-    ButtonComponent,
     CardComponent,
     CheckboxComponent,
     DatePickerComponent,
     DividerComponent,
+    FormActionsComponent,
     InputComponent,
     ModificationInfoComponent,
     ReactiveFormsModule,
@@ -105,7 +103,6 @@ export class MemberFormComponent implements OnInit {
   protected readonly phoneNumberErrorMessages = {
     pattern: MEMBER_DETAIL_RULES.phoneNumber.message,
   };
-  protected readonly restoreIcon = HistoryIconComponent;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
   public form!: FormGroup<MemberFormGroup>;
@@ -149,23 +146,7 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original member data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originalMember = this.originalMember();
     this.restore.emit(originalMember?.id ?? null);
     this.form.reset(

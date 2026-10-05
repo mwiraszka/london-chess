@@ -4,7 +4,6 @@ import {
   DialogService,
   DividerComponent,
   FormFieldComponent,
-  HistoryIconComponent,
   ImageIconComponent,
   ImagePlusIconComponent,
   InputComponent,
@@ -31,6 +30,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ImageExplorerComponent } from '@app/components/image-explorer/image-explorer.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { MarkdownRendererComponent } from '@app/components/markdown-renderer/markdown-renderer.component';
@@ -45,7 +45,6 @@ import {
   Article,
   ArticleFormData,
   ArticleFormGroup,
-  BasicDialogResult,
   Dialog,
   Id,
   Image,
@@ -63,6 +62,7 @@ import { textValidator } from '@app/validators';
     ButtonComponent,
     CardComponent,
     DividerComponent,
+    FormActionsComponent,
     FormFieldComponent,
     ImageComponent,
     InputComponent,
@@ -98,7 +98,6 @@ export class ArticleFormComponent implements OnInit {
   protected readonly imageIcon = ImageIconComponent;
   protected readonly imagePlusIcon = ImagePlusIconComponent;
   protected readonly maxBodyImages = MAX_ARTICLE_BODY_IMAGES;
-  protected readonly restoreIcon = HistoryIconComponent;
   protected readonly revertBannerIcon = RotateCcwIconComponent;
 
   public form!: FormGroup<ArticleFormGroup>;
@@ -158,23 +157,7 @@ export class ArticleFormComponent implements OnInit {
     }
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original article data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originalArticle = this.originalArticle();
     const restored = originalArticle
       ? pick(originalArticle, ARTICLE_FORM_DATA_PROPERTIES)

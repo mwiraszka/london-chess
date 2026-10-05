@@ -4,11 +4,9 @@ import {
   ChevronRightIconComponent,
   DialogComponent,
   DialogRef,
-  DialogService,
   TooltipDirective,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { Action, Store } from '@ngrx/store';
+import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, from, timer } from 'rxjs';
 import { concatMap, map, switchMap, take } from 'rxjs/operators';
 
@@ -16,21 +14,21 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { AdminControlsConfig, Dialog, Id, Image } from '@app/models';
-import { AdminControlsService, StoreRequestService } from '@app/services';
+import { AdminControlsConfig, Id, Image } from '@app/models';
+import { AdminControlsService, DeletionService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { isPresignedUrlExpired } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-image-viewer',
   templateUrl: './image-viewer.component.html',
@@ -46,8 +44,9 @@ import { isPresignedUrlExpired } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageViewerComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(DialogRef);
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly store = inject(Store);
 
   readonly album = input.required<string>();
@@ -73,11 +72,10 @@ export class ImageViewerComponent implements OnInit {
   private indexSubject = new BehaviorSubject<number>(0);
 
   private readonly adminControls = inject(AdminControlsService);
-  private readonly storeRequests = inject(StoreRequestService);
 
   public ngOnInit(): void {
     this.currentImage$ = this.indexSubject.asObservable().pipe(
-      untilDestroyed(this),
+      takeUntilDestroyed(this.destroyRef),
       switchMap(index => {
         this.fetchImage(index);
         return this.store.select(ImagesSelectors.selectImageById(this.imageId));
@@ -111,24 +109,8 @@ export class ImageViewerComponent implements OnInit {
     };
   }
 
-  public async onDeleteImage(image: Image): Promise<void> {
-    let outcome: Action | undefined;
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${image.filename}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: async () => {
-        outcome = await this.storeRequests.dispatch(
-          ImagesActions.deleteImageRequested({ image }),
-          [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
-        );
-      },
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-
-    if (outcome?.type === ImagesActions.deleteImageSucceeded.type) {
+  private async onDeleteImage(image: Image): Promise<void> {
+    if (await this.deletion.deleteImage(image)) {
       this.dialogRef.close();
     }
   }
@@ -159,7 +141,7 @@ export class ImageViewerComponent implements OnInit {
     from(indicesToPrefetch)
       .pipe(
         concatMap(index => timer(1000).pipe(map(() => index))),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(index => this.fetchImage(index, true));
   }

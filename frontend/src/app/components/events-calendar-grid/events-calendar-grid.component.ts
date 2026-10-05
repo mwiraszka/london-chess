@@ -17,22 +17,20 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
+import { CLUB_TIME_ZONE } from '@app/constants/clubs';
+import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   CalendarDay,
   CalendarMonth,
   DataPaginationOptions,
-  Dialog,
   Event,
 } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
-import { EventsActions } from '@app/store/events';
+import { DeletionService } from '@app/services';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
 import { customSort } from '@app/utils';
 
@@ -56,9 +54,9 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventsCalendarGridComponent {
+  private readonly deletion = inject(DeletionService);
   private readonly dialogService = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly storeRequests = inject(StoreRequestService);
 
   public readonly events = input.required<Event[]>();
   public readonly isAdmin = input.required<boolean>();
@@ -70,7 +68,7 @@ export class EventsCalendarGridComponent {
 
   public readonly optionsChange = output<DataPaginationOptions<Event>>();
 
-  protected readonly pageSizes = EVENTS_PAGE_SIZES;
+  protected readonly pageSizes = PAGE_SIZES;
   protected readonly daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   // Enough to fill a row on any screen; the stylesheet shows only those that fit in it
   protected readonly skeletonMonths = Array.from({ length: 12 }, (_, index) => index);
@@ -90,7 +88,7 @@ export class EventsCalendarGridComponent {
 
     const firstEventDate = sortedEvents[0];
     const lastEventDate = sortedEvents[sortedEvents.length - 1];
-    const today = moment.tz('America/Toronto');
+    const today = moment.tz(CLUB_TIME_ZONE);
 
     // The first page reaches back to today, so the calendar always shows where it is
     const isFirstPage = (this.options()?.page ?? 1) === 1;
@@ -117,7 +115,7 @@ export class EventsCalendarGridComponent {
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDeleteEvent(event),
+      deleteCb: () => this.deletion.deleteEvent(event),
       editPath: ['event', 'edit', event.id],
       itemName: event.title,
     };
@@ -130,22 +128,6 @@ export class EventsCalendarGridComponent {
     }
   }
 
-  public async onDeleteEvent(event: Event): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${event.title}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(EventsActions.deleteEventRequested({ event }), [
-          EventsActions.deleteEventSucceeded,
-          EventsActions.deleteEventFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-  }
-
   public async onEventIndicator(event: Event): Promise<void> {
     const result = await this.dialogService.open<'details'>(EventInfoDialogComponent, {
       inputs: { event },
@@ -156,15 +138,11 @@ export class EventsCalendarGridComponent {
     }
   }
 
-  public trackWeekByIndex(index: number): number {
-    return index;
-  }
-
   private generateCalendarMonth(monthYear: string): CalendarMonth {
     const events = this.events();
     const startOfMonth = moment(monthYear, 'MMMM YYYY').startOf('month');
     const endOfMonth = moment(monthYear, 'MMMM YYYY').endOf('month');
-    const today = moment.tz('America/Toronto');
+    const today = moment.tz(CLUB_TIME_ZONE);
 
     // Check if this month has any events
     const monthHasEvents = events.some(event =>

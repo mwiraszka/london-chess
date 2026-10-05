@@ -55,10 +55,14 @@
           [maxLength]="120"
           [required]="true" />
 
-        <label class="lcc-required-field">Album:</label>
+        <label
+          id="album-label"
+          class="lcc-required-field">
+          Album:
+        </label>
         <ea-radio-group
-          class="album-group"
-          aria-label="Album"
+          class="lcc-form-radio-box"
+          aria-labelledby="album-label"
           formControlName="album"
           [errorMessages]="errorMessages"
           [required]="true"
@@ -98,37 +102,13 @@
         <lcc-modification-info [info]="imageEntity.image.modificationInfo" />
       }
 
-      <div class="lcc-form-actions">
-        <ea-button
-          class="lcc-form-actions__restore restore-button"
-          size="sm"
-          variant="ghost"
-          [disabled]="!hasUnsavedChanges()"
-          [icon]="restoreIcon"
-          (clicked)="onRestore()">
-          Revert
-        </ea-button>
-        <div class="lcc-form-actions__primary">
-          <ea-button
-            class="cancel-button"
-            size="sm"
-            variant="secondary"
-            [fullWidth]="true"
-            [uppercase]="true"
-            (clicked)="onCancel()">
-            Cancel
-          </ea-button>
-          <ea-button
-            class="submit-button"
-            size="sm"
-            type="submit"
-            [disabled]="form.invalid || !hasUnsavedChanges()"
-            [fullWidth]="true"
-            [uppercase]="true">
-            {{ imageEntity() ? 'Update image' : 'Add image' }}
-          </ea-button>
-        </div>
-      </div>
+      <lcc-form-actions
+        entity="image"
+        [hasUnsavedChanges]="hasUnsavedChanges()"
+        [submitDisabled]="form.invalid || !hasUnsavedChanges()"
+        [submitLabel]="imageEntity() ? 'Update image' : 'Add image'"
+        (cancel)="onCancel()"
+        (restore)="onRestore()" />
     </form>
   </div>
 </ea-card>

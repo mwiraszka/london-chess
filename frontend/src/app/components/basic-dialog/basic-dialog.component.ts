@@ -25,11 +25,7 @@ import { BasicDialogResult, Dialog } from '@app/models';
       [closeOnBackdrop]="!pending()"
       [closeOnEscape]="!pending()"
       (keydown.enter)="onEnter($event)">
-      <h3
-        slot="header"
-        class="dialog-title">
-        {{ dialog().title }}
-      </h3>
+      <h3 slot="header">{{ dialog().title }}</h3>
 
       <p class="dialog-body">{{ dialog().body }}</p>
 
@@ -63,10 +59,6 @@ import { BasicDialogResult, Dialog } from '@app/models';
     </ea-dialog>
   `,
   styles: `
-    .dialog-title {
-      font: inherit;
-    }
-
     .dialog-body {
       white-space: pre-wrap;
     }

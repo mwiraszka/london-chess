@@ -10,8 +10,8 @@
       aria-label="Account settings">
       @for (item of navItems; track item.id) {
         <a
-          class="settings-nav__item"
-          [class.settings-nav__item--active]="activeSection() === item.id"
+          class="lcc-side-nav__item"
+          [class.lcc-side-nav__item--active]="activeSection() === item.id"
           [routerLink]="['/account', item.id]">
           @switch (item.id) {
             @case ('profile') {

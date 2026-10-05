@@ -35,7 +35,6 @@ import { calculateAspectRatio } from '@app/utils';
 })
 export class ImageComponent {
   public readonly image = input.required<Image | null>();
-  public readonly priority = input<boolean>(false);
 
   public readonly loaded = output<void>();
 

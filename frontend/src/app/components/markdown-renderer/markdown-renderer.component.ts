@@ -1,4 +1,3 @@
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { kebabCase } from 'lodash';
 import { MarkdownComponent } from 'ngx-markdown';
 
@@ -7,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DOCUMENT,
+  DestroyRef,
   ElementRef,
   Renderer2,
   computed,
@@ -15,6 +15,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { MarkdownTableComponent } from '@app/components/markdown-table/markdown-table.component';
@@ -23,7 +24,6 @@ import { KebabCasePipe } from '@app/pipes';
 import { RoutingService } from '@app/services';
 import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-markdown-renderer',
   template: `
@@ -55,6 +55,7 @@ import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MarkdownRendererComponent implements AfterViewInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly _document = inject<Document>(DOCUMENT);
   private readonly elementRef = inject(ElementRef);
   private readonly renderer = inject(Renderer2);
@@ -81,7 +82,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
     setTimeout(() => {
       // Scroll to anchor when heading link is clicked
       this.routingService.fragment$
-        .pipe(untilDestroyed(this))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(fragment => this.scrollToAnchor(fragment));
     });
   }
@@ -148,8 +149,6 @@ export class MarkdownRendererComponent implements AfterViewInit {
           } else {
             blockquoteElement.appendChild(quoteIconElement);
           }
-
-          blockquoteElement.style.position = 'relative';
         }
       });
     }

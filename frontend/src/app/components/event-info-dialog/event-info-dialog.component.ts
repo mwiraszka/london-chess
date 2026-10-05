@@ -23,11 +23,7 @@ import { FormatDatePipe } from '@app/pipes';
     <ea-dialog
       width="sm"
       (keydown.enter)="onEnter($event)">
-      <h3
-        slot="header"
-        class="dialog-title">
-        {{ event().title }}
-      </h3>
+      <h3 slot="header">{{ event().title }}</h3>
 
       <div class="dialog-body">
         <div class="event-date">

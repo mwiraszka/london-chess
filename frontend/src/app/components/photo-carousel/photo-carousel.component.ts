@@ -1,12 +1,19 @@
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Subject, timer } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 
-import { ChangeDetectionStrategy, Component, OnInit, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Image } from '@app/models';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-photo-carousel',
   templateUrl: './photo-carousel.component.html',
@@ -20,6 +27,7 @@ import { Image } from '@app/models';
   },
 })
 export class PhotoCarouselComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   public readonly photos = input.required<Partial<Image>[]>();
 
   public readonly currentIndex = signal(0);
@@ -31,7 +39,7 @@ export class PhotoCarouselComponent implements OnInit {
       .pipe(
         startWith(null),
         switchMap(() => timer(4000, 4000)),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.showNextPhoto());
   }

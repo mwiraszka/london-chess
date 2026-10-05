@@ -33,7 +33,7 @@ import { environment } from '@env';
       width: 100%;
       min-width: 280px;
       border-radius: 3px;
-      border: 3px solid #ffffff22;
+      border: 3px solid var(--lcc-color--clubMap-border);
 
       &:hover {
         border-color: var(--lcc-color--link);

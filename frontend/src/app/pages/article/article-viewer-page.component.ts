@@ -1,5 +1,4 @@
-import { DialogService, NewspaperIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { NewspaperIconComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash';
 import { Observable, combineLatest, of } from 'rxjs';
@@ -11,26 +10,22 @@ import { ActivatedRoute } from '@angular/router';
 
 import { ArticleSkeletonComponent } from '@app/components/article-skeleton/article-skeleton.component';
 import { ArticleComponent } from '@app/components/article/article.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   Article,
-  Dialog,
   Id,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
-import { AppSelectors } from '@app/store/app';
+import { DeletionService, MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesSelectors } from '@app/store/images';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-article-viewer-page',
   template: `
@@ -65,7 +60,7 @@ import { ImagesSelectors } from '@app/store/images';
 })
 export class ArticleViewerPageComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
 
@@ -80,15 +75,11 @@ export class ArticleViewerPageComponent implements OnInit {
     bannerImage: Image | null;
     bodyImages: Image[];
     isAdmin: boolean;
-    isWideView: boolean;
     status: LoadStatus;
   }>;
 
-  private readonly storeRequests = inject(StoreRequestService);
-
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => params['article_id'] as Id),
       switchMap(articleId =>
         combineLatest([
@@ -97,7 +88,6 @@ export class ArticleViewerPageComponent implements OnInit {
           this.store.select(ImagesSelectors.selectBannerImageByArticleId(articleId)),
           this.store.select(ImagesSelectors.selectBodyImagesByArticleId(articleId)),
           this.store.select(AuthSelectors.selectIsAdmin),
-          this.store.select(AppSelectors.selectIsWideView),
           this.store.select(ArticlesSelectors.selectArticleStatus(articleId)),
         ]),
       ),
@@ -111,43 +101,24 @@ export class ArticleViewerPageComponent implements OnInit {
         this.metaAndTitleService.updateTitle(article.title);
         this.metaAndTitleService.updateDescription(articlePreview);
       }),
-      map(
-        ([article, articleId, bannerImage, bodyImages, isAdmin, isWideView, status]) => ({
-          article: article ?? null,
-          articleId,
-          bannerImage,
-          bodyImages,
-          isAdmin,
-          isWideView,
-          status,
-        }),
-      ),
+      map(([article, articleId, bannerImage, bodyImages, isAdmin, status]) => ({
+        article: article ?? null,
+        articleId,
+        bannerImage,
+        bodyImages,
+        isAdmin,
+        status,
+      })),
     );
   }
 
   public getAdminControlsConfig(article: Article): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDelete(article),
+      deleteCb: () => this.deletion.deleteArticle(article),
       editPath: ['article', 'edit', article.id!],
       itemName: article.title,
     };
-  }
-
-  private async onDelete(article: Article): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${article.title}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(ArticlesActions.deleteArticleRequested({ article }), [
-          ArticlesActions.deleteArticleSucceeded,
-          ArticlesActions.deleteArticleFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onRetry(articleId: Id): void {

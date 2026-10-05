@@ -2,15 +2,13 @@ import {
   ButtonLinkComponent,
   CalendarDaysIconComponent,
   CameraIconComponent,
-  DialogService,
   DownloadIconComponent,
   InfoIconComponent,
   NewspaperIconComponent,
   PlusCircleIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
-import { Observable, combineLatest, firstValueFrom } from 'rxjs';
+import { Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
@@ -19,30 +17,26 @@ import { RouterLink } from '@angular/router';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ClubLinksComponent } from '@app/components/club-links/club-links.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
-import { REGIONAL_CLUBS } from '@app/constants/clubs';
 import {
   AdminButton,
   Article,
-  Dialog,
   Event,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import { CsvExportService, MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { combinedLoadStatus } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-home-page',
   templateUrl: './home-page.component.html',
@@ -62,11 +56,9 @@ import { combinedLoadStatus } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePageComponent implements OnInit {
-  private readonly dialogService = inject(DialogService);
+  private readonly csvExport = inject(CsvExportService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
-
-  public readonly REGIONAL_CLUBS = REGIONAL_CLUBS;
 
   public viewModel$?: Observable<{
     allImages: Image[];
@@ -75,7 +67,6 @@ export class HomePageComponent implements OnInit {
     articlesStatus: LoadStatus;
     eventsStatus: LoadStatus;
     isAdmin: boolean;
-    nextEvent: Event | null;
     photoImages: Image[];
     photosStatus: LoadStatus;
   }>;
@@ -115,10 +106,8 @@ export class HomePageComponent implements OnInit {
     id: 'export-to-csv',
     tooltip: 'Export to CSV',
     icon: DownloadIconComponent,
-    action: () => this.onExportToCsv(),
+    action: () => this.csvExport.exportEvents(),
   };
-
-  private readonly storeRequests = inject(StoreRequestService);
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('London Chess Club');
@@ -133,19 +122,16 @@ export class HomePageComponent implements OnInit {
       this.store.select(EventsSelectors.selectHomePageEvents),
       this.store.select(ImagesSelectors.selectAllImages),
       this.store.select(AuthSelectors.selectIsAdmin),
-      this.store.select(EventsSelectors.selectNextEvent),
       this.store.select(ArticlesSelectors.selectHomePageArticlesStatus),
       this.store.select(EventsSelectors.selectHomePageEventsStatus),
       this.store.select(ImagesSelectors.selectMetadataStatus),
     ]).pipe(
-      untilDestroyed(this),
       map(
         ([
           homePageArticles,
           homePageEvents,
           allImages,
           isAdmin,
-          nextEvent,
           homePageArticlesStatus,
           eventsStatus,
           photosStatus,
@@ -154,7 +140,6 @@ export class HomePageComponent implements OnInit {
           homePageEvents,
           allImages,
           isAdmin,
-          nextEvent,
           photoImages: allImages.filter(image => !image.album.startsWith('_')),
           // Article cards show their banner images, which come with the photos
           articlesStatus: combinedLoadStatus(homePageArticlesStatus, photosStatus),
@@ -163,30 +148,6 @@ export class HomePageComponent implements OnInit {
         }),
       ),
     );
-  }
-
-  public async onExportToCsv(): Promise<void> {
-    const eventCount = await firstValueFrom(
-      this.store.select(EventsSelectors.selectTotalCount),
-    );
-
-    if (!eventCount) {
-      return;
-    }
-
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Export all ${eventCount} events to a CSV file?`,
-      confirmButtonText: 'Export',
-      confirmButtonType: 'primary',
-      confirmAction: () =>
-        this.storeRequests.dispatch(EventsActions.exportEventsToCsvRequested(), [
-          EventsActions.exportEventsToCsvSucceeded,
-          EventsActions.exportEventsToCsvFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onRetryArticles(): void {
