@@ -8,7 +8,7 @@ import { bearer, clerkClient, clerkUser } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import { createAccountHolder, createMember, readMember } from '../testing/fixtures';
 import { send, sentKeys } from '../testing/storage.mock';
-import { hashTemporaryPassword } from '../util/temporary-password.util';
+import { hashSecret } from '../util/hash-secret.util';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
@@ -639,7 +639,7 @@ describe('users routes', () => {
   describe('POST /v1/users/me/password/confirm', () => {
     it('should clear the temporary password once the member confirms their own', async () => {
       await createAccountHolder({
-        temporaryPasswordHash: hashTemporaryPassword('Temp4Pass'),
+        temporaryPasswordHash: hashSecret('Temp4Pass'),
       });
 
       const response = await request(app)
@@ -653,7 +653,7 @@ describe('users routes', () => {
 
     it('should keep the temporary password when it is the one confirmed', async () => {
       await createAccountHolder({
-        temporaryPasswordHash: hashTemporaryPassword('Temp4Pass'),
+        temporaryPasswordHash: hashSecret('Temp4Pass'),
       });
 
       const response = await request(app)

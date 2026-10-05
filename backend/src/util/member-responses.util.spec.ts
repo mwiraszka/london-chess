@@ -26,7 +26,6 @@ const ACCOUNT: MemberAccount = {
   clerkImageUrl: 'https://img.clerk.com/photo',
   avatarUrl: 'https://avatars.example.com/cropped',
   avatarOriginalUrl: 'https://avatars.example.com/original',
-  avatarManagedByApp: true,
   clerkImagePending: false,
   avatarCropState: { zoom: 1, offsetX: 0, offsetY: 0 },
   avatarUpdatedAt: '2024-01-01T00:00:00.000Z',

@@ -213,7 +213,6 @@ describe('member accounts', () => {
 
     it('should take a photo set in Clerk over the one the app managed', async () => {
       const member = await createAccountHolder({
-        avatarManagedByApp: true,
         avatarCropState: { zoom: 2, offsetX: 1, offsetY: 1 },
       });
       serveClerkPhoto();
@@ -226,7 +225,6 @@ describe('member accounts', () => {
         clerkImageUrl: 'https://img.clerk.com/new',
         avatarUrl: `${AVATARS}/avatars/user_test/original`,
         avatarOriginalUrl: `${AVATARS}/avatars/user_test/original`,
-        avatarManagedByApp: false,
         avatarCropState: { zoom: 1, offsetX: 0, offsetY: 0 },
       });
     });
