@@ -18,7 +18,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { MAX_ARTICLE_BODY_IMAGES } from '@app/constants';
 import { Article, DataPaginationOptions, LccError } from '@app/models';
-import { ArticlesApiService, UserService } from '@app/services';
+import { ArticlesApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
@@ -36,7 +36,6 @@ export class ArticlesEffects {
 
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
-  private readonly userService = inject(UserService);
 
   fetchHomePageArticles$ = createEffect(() => {
     return this.actions$.pipe(
@@ -202,7 +201,7 @@ export class ArticlesEffects {
           ...formData,
           id: '',
           bookmarkDate: null,
-          modificationInfo: creditEditor(user, this.userService.memberNumber()),
+          modificationInfo: creditEditor(user),
         };
 
         return this.articlesApiService.addArticle(article).pipe(
@@ -246,11 +245,7 @@ export class ArticlesEffects {
         const updatedArticle: Article = {
           ...article,
           ...formData,
-          modificationInfo: creditEditor(
-            user,
-            this.userService.memberNumber(),
-            article.modificationInfo,
-          ),
+          modificationInfo: creditEditor(user, article.modificationInfo),
         };
 
         return this.articlesApiService.updateArticle(updatedArticle).pipe(

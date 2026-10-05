@@ -26,6 +26,7 @@ describe('NavigationBarComponent', () => {
     lastName: 'Doe',
     email: 'john.doe@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   beforeEach(async () => {

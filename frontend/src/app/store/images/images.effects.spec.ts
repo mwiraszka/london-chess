@@ -5,7 +5,6 @@ import moment from 'moment-timezone';
 import { Observable, ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 import { filter, take, toArray } from 'rxjs/operators';
 
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { INITIAL_IMAGE_FORM_DATA } from '@app/constants';
@@ -21,7 +20,7 @@ import {
   PaginatedItems,
   User,
 } from '@app/models';
-import { ImageFileService, ImagesApiService, UserService } from '@app/services';
+import { ImageFileService, ImagesApiService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { initialState as articlesInitialState } from '@app/store/articles/articles.reducer';
 import { AuthSelectors } from '@app/store/auth';
@@ -58,6 +57,7 @@ describe('ImagesEffects', () => {
     lastName: 'User',
     email: 'test@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const mockError: LccError = {
@@ -143,7 +143,6 @@ describe('ImagesEffects', () => {
         provideMockActions(() => actions$),
         { provide: ImagesApiService, useValue: imagesApiServiceMock },
         { provide: ImageFileService, useValue: imageFileServiceMock },
-        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockStore({
           initialState: {
             imagesState: mockImagesState,

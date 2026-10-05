@@ -19,7 +19,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { EditableMember, Member, MemberEmail } from '@app/models';
-import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
+import { MemberProfilesService, MembersApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
@@ -45,7 +45,6 @@ export class MembersEffects {
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly getNewPeakRating = inject(GET_NEW_PEAK_RATING);
   private readonly memberProfiles = inject(MemberProfilesService);
-  private readonly userService = inject(UserService);
 
   // A saved member may have a new name or a new profile, and names shown by member
   // number come from the profiles
@@ -213,7 +212,7 @@ export class MembersEffects {
         const member: EditableMember = {
           ...formData,
           peakRating: formData.rating,
-          modificationInfo: creditEditor(user, this.userService.memberNumber()),
+          modificationInfo: creditEditor(user),
         };
 
         return this.membersApiService.addMember(member, notifyMember).pipe(
@@ -245,11 +244,7 @@ export class MembersEffects {
         const editableMember: EditableMember = {
           ...formData,
           peakRating: this.getNewPeakRating(formData.rating, formData.peakRating),
-          modificationInfo: creditEditor(
-            user,
-            this.userService.memberNumber(),
-            member.modificationInfo,
-          ),
+          modificationInfo: creditEditor(user, member.modificationInfo),
         };
 
         return this.membersApiService
@@ -330,11 +325,7 @@ export class MembersEffects {
               ...member,
               rating: newRating,
               peakRating: newPeakRating,
-              modificationInfo: creditEditor(
-                user,
-                this.userService.memberNumber(),
-                member.modificationInfo,
-              ),
+              modificationInfo: creditEditor(user, member.modificationInfo),
             };
           },
         );

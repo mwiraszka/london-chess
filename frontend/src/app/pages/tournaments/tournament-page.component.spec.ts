@@ -2,7 +2,7 @@ import { ButtonComponent, DataTableColumn, DialogRef, DialogService } from '@eag
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
-import { DebugElement, signal } from '@angular/core';
+import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ActivatedRoute,
@@ -21,7 +21,6 @@ import {
   DeletionService,
   MetaAndTitleService,
   StoreRequestService,
-  UserService,
 } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
@@ -43,8 +42,6 @@ describe('TournamentPageComponent', () => {
 
   let dispatchSpy: MockInstance;
   let paramMap: BehaviorSubject<ParamMap>;
-
-  const memberNumber = signal<number | null>(null);
 
   const stateWith = (tournaments: Tournament[], failed = false) => ({
     authState: { user: null },
@@ -95,11 +92,8 @@ describe('TournamentPageComponent', () => {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
-        { provide: UserService, useValue: { memberNumber } },
       ],
     }).compileComponents();
-
-    memberNumber.set(null);
 
     fixture = TestBed.createComponent(TournamentPageComponent);
     router = TestBed.inject(Router);
@@ -465,13 +459,16 @@ describe('TournamentPageComponent', () => {
       lastName: 'Bloggs',
       email: 'joe@example.com',
       isAdmin: false,
+      memberNumber: null,
     };
 
     const signIn = (user: User | null, number: number | null = null) => {
-      store.overrideSelector(AuthSelectors.selectUser, user);
+      store.overrideSelector(
+        AuthSelectors.selectUser,
+        user && { ...user, memberNumber: number },
+      );
       store.overrideSelector(AuthSelectors.selectIsAdmin, !!user?.isAdmin);
       store.refreshState();
-      memberNumber.set(number);
     };
 
     const openUpcoming = (changes: Partial<Tournament> = {}) => {

@@ -4,13 +4,12 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
 import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { ApiResponse, Event, LccError, PaginatedItems, User } from '@app/models';
-import { EventsApiService, UserService } from '@app/services';
+import { EventsApiService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
 import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
@@ -34,6 +33,7 @@ describe('EventsEffects', () => {
     lastName: 'User',
     email: 'test@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const mockError: LccError = {
@@ -64,13 +64,13 @@ describe('EventsEffects', () => {
       entities: MOCK_EVENTS.reduce(
         (acc, event) => ({
           ...acc,
-          [event.id]: { event, formData: INITIAL_EVENT_FORM_DATA },
+          [event.id]: { event, formData: initialEventFormData() },
         }),
         {},
       ),
       failedLoads: [],
       isFetchingFiltered: false,
-      newEventFormData: INITIAL_EVENT_FORM_DATA,
+      newEventFormData: initialEventFormData(),
       lastFullFetch: null,
       lastHomePageFetch: null,
       lastFilteredFetch: null,
@@ -96,7 +96,6 @@ describe('EventsEffects', () => {
         { provide: PARSE_ERROR, useValue: mockParseError },
         provideMockActions(() => actions$),
         { provide: EventsApiService, useValue: eventsApiServiceMock },
-        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockStore({
           initialState: {
             eventsState: mockEventsState,

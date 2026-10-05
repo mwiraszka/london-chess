@@ -1,8 +1,12 @@
+import { firstValueFrom } from 'rxjs';
+
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
-import { environment } from '@env';
+import { REQUEST_TIMEOUT } from '@app/constants/http';
+import { parseError } from '@app/utils/error/parse-error.util';
 
-import { ClerkService } from './clerk.service';
+import { environment } from '@env';
 
 export class ApiError extends Error {
   constructor(
@@ -14,76 +18,59 @@ export class ApiError extends Error {
 }
 
 interface ApiEnvelope<T> {
-  data?: T;
-  message?: string;
+  data: T;
 }
 
+export interface ApiRequestOptions {
+  timeoutMs?: number;
+}
+
+// Answers in the API's data envelope, through the same interceptors as the store's requests
 @Injectable({
   providedIn: 'root',
 })
 export class ApiService {
-  private readonly clerk = inject(ClerkService);
+  private readonly http = inject(HttpClient);
 
-  async get<T>(path: string): Promise<T> {
-    return this.request<T>(path);
+  get<T>(path: string): Promise<T> {
+    return this.request<T>('GET', path);
   }
 
-  async post<T>(path: string, body?: BodyInit | unknown): Promise<T> {
-    const isFormData = body instanceof FormData;
-    return this.request<T>(path, {
-      method: 'POST',
-      ...(isFormData || !body
-        ? { body: body as BodyInit }
-        : {
-            headers: { 'Content-Type': 'application/json' },
-            body: typeof body === 'string' ? body : JSON.stringify(body),
-          }),
-    });
+  post<T>(path: string, body: unknown, options?: ApiRequestOptions): Promise<T> {
+    return this.request<T>('POST', path, body, options);
   }
 
-  async patch<T>(path: string, body: BodyInit | unknown): Promise<T> {
-    const isFormData = body instanceof FormData;
-    return this.request<T>(path, {
-      method: 'PATCH',
-      ...(isFormData
-        ? { body }
-        : {
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          }),
-    });
+  patch<T>(path: string, body: unknown, options?: ApiRequestOptions): Promise<T> {
+    return this.request<T>('PATCH', path, body, options);
   }
 
-  async delete<T>(path: string): Promise<T> {
-    return this.request<T>(path, { method: 'DELETE' });
+  delete<T>(path: string): Promise<T> {
+    return this.request<T>('DELETE', path);
   }
 
-  private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const token = await this.clerk.getToken();
-    const headers = new Headers(init?.headers);
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    options: ApiRequestOptions = {},
+  ): Promise<T> {
+    const context = new HttpContext();
+    if (options.timeoutMs) {
+      context.set(REQUEST_TIMEOUT, options.timeoutMs);
     }
 
-    const response = await fetch(`${environment.lccApiBaseUrl}${path}`, {
-      ...init,
-      headers,
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      const error = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
-      throw new ApiError(
-        error?.message ?? `Request failed (${response.status}).`,
-        response.status,
+    try {
+      const { data } = await firstValueFrom(
+        this.http.request<ApiEnvelope<T>>(method, `${environment.lccApiBaseUrl}${path}`, {
+          body,
+          context,
+        }),
       );
+      return data;
+    } catch (error) {
+      throw error instanceof HttpErrorResponse
+        ? new ApiError(parseError(error).message, error.status)
+        : error;
     }
-
-    if (response.status === 204) {
-      return undefined as T;
-    }
-    const text = await response.text();
-    const envelope = (text ? JSON.parse(text) : undefined) as ApiEnvelope<T> | undefined;
-    return (envelope?.data ?? envelope) as T;
   }
 }

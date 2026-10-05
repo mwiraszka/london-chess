@@ -1,9 +1,12 @@
+import { Store } from '@ngrx/store';
+
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
-import { UserRecord } from '@app/models';
+import { User, UserRecord } from '@app/models';
 import { ApiService } from '@app/services/api.service';
 import { AuthDrawerService } from '@app/services/auth-drawer.service';
 import { ClerkService } from '@app/services/clerk.service';
+import { AuthActions } from '@app/store/auth';
 
 import { environment } from '@env';
 
@@ -14,6 +17,7 @@ export class UserService {
   private readonly api = inject(ApiService);
   private readonly authDrawer = inject(AuthDrawerService);
   private readonly clerk = inject(ClerkService);
+  private readonly store = inject(Store);
 
   private readonly _user = signal<UserRecord | null>(null);
   private loadPromise: Promise<void> | null = null;
@@ -27,7 +31,7 @@ export class UserService {
       if (this.clerk.isLoggedIn()) {
         void this.load();
       } else {
-        this._user.set(null);
+        this.setRecord(null);
       }
     });
   }
@@ -58,8 +62,6 @@ export class UserService {
 
   readonly avatarCropState = computed(() => this._user()?.avatarCropState ?? null);
 
-  readonly memberNumber = computed(() => this._user()?.memberNumber ?? null);
-
   readonly hasAvatar = computed(() => !!this.avatarUrl());
 
   // Calls made while a load is in flight share it, so a record fetched at log in can
@@ -83,10 +85,12 @@ export class UserService {
         await this.clerk.logOut();
         return;
       }
-      this._user.set(user);
+      this.setRecord(user);
       await this.syncClerkImage(user);
-    } catch {
-      // silently ignore; app still works without the user record
+    } catch (error) {
+      // Without the record the visit carries on as logged out, as admin rights and
+      // credit for edits come from it
+      console.error(`[LCC] Unable to load the signed-in member's record: ${error}`);
     }
   }
 
@@ -105,20 +109,20 @@ export class UserService {
       const updated = await this.api.patch<UserRecord>('/users/me', {
         clerkImageUrl: current,
       });
-      this._user.set(updated);
+      this.setRecord(updated);
     } catch {
       // non-critical; the app falls back to initials
     }
   }
 
   setUser(user: UserRecord): void {
-    this._user.set(user);
+    this.setRecord(user);
   }
 
   clearAvatar(): void {
     const current = this._user();
     if (current) {
-      this._user.set({
+      this.setRecord({
         ...current,
         avatarUrl: null,
         avatarOriginalUrl: null,
@@ -126,4 +130,21 @@ export class UserService {
       });
     }
   }
+
+  // The store's user is the record's, so admin rights follow what the API enforces
+  private setRecord(record: UserRecord | null): void {
+    this._user.set(record);
+    this.store.dispatch(AuthActions.userChanged({ user: record && toUser(record) }));
+  }
+}
+
+function toUser({
+  id,
+  firstName,
+  lastName,
+  email,
+  isAdmin,
+  memberNumber,
+}: UserRecord): User {
+  return { id, firstName, lastName, email, isAdmin, memberNumber };
 }

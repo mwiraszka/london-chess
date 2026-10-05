@@ -1,12 +1,10 @@
 import { Clerk } from '@clerk/clerk-js';
 import { ToastService } from '@eagami/ui';
-import { Store } from '@ngrx/store';
 
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { LoginResult, User } from '@app/models';
-import { AuthActions } from '@app/store/auth';
+import { LoginResult } from '@app/models';
 
 import { environment } from '@env';
 
@@ -15,7 +13,6 @@ import { environment } from '@env';
 })
 export class ClerkService {
   private readonly router = inject(Router);
-  private readonly store = inject(Store);
   private readonly toast = inject(ToastService);
 
   private clerk!: Clerk;
@@ -100,6 +97,10 @@ export class ClerkService {
 
   expectSessionEnd(): void {
     this.sessionEndExpected = true;
+  }
+
+  clearSessionEndExpectation(): void {
+    this.sessionEndExpected = false;
   }
 
   async logOut(): Promise<void> {
@@ -251,10 +252,6 @@ export class ClerkService {
     this.isLoggedIn.set(!!clerkUser);
     this.user.set(clerkUser);
 
-    this.store.dispatch(
-      AuthActions.userChanged({ user: clerkUser ? this.mapUser(clerkUser) : null }),
-    );
-
     if (wasLoggedIn && !clerkUser) {
       const expected = this.sessionEndExpected;
       this.sessionEndExpected = false;
@@ -271,15 +268,5 @@ export class ClerkService {
       title: 'Logged out',
       variant: 'info',
     });
-  }
-
-  private mapUser(clerkUser: NonNullable<Clerk['user']>): User {
-    return {
-      id: clerkUser.id,
-      firstName: clerkUser.firstName ?? '',
-      lastName: clerkUser.lastName ?? '',
-      email: clerkUser.primaryEmailAddress?.emailAddress ?? '',
-      isAdmin: clerkUser.publicMetadata['isAdmin'] === true,
-    };
   }
 }

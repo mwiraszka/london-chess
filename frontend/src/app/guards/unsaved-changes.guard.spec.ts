@@ -23,6 +23,7 @@ describe('unsavedChangesGuard', () => {
     lastName: 'Byron',
     email: 'ada@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const adminRoute = Object.assign(new ActivatedRouteSnapshot(), {

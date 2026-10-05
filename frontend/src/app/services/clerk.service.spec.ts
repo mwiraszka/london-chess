@@ -1,11 +1,8 @@
 import { Clerk } from '@clerk/clerk-js';
 import { ToastService } from '@eagami/ui';
-import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-
-import { AuthActions } from '@app/store/auth';
 
 import { environment } from '@env';
 
@@ -71,7 +68,6 @@ describe('ClerkService', () => {
   let service: ClerkService;
   let fake: FakeClerk;
 
-  let dispatchSpy: MockInstance;
   let navigateByUrlSpy: Mock;
   let toastSpy: Mock;
 
@@ -137,34 +133,21 @@ describe('ClerkService', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideMockStore(),
         { provide: Router, useValue: { navigateByUrl: navigateByUrlSpy } },
         { provide: ToastService, useValue: { show: toastSpy } },
       ],
     });
 
     service = TestBed.inject(ClerkService);
-    dispatchSpy = vi.spyOn(TestBed.inject(MockStore), 'dispatch');
 
     await service.load();
   });
 
   describe('load', () => {
-    it('should load Clerk and sync the logged in user to the store', () => {
+    it('should load Clerk and report the logged in user', () => {
       expect(Clerk).toHaveBeenCalledWith(environment.clerkPublishableKey);
       expect(service.isLoggedIn()).toBe(true);
       expect(service.user()).toBe(fake.user);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        AuthActions.userChanged({
-          user: {
-            id: 'user_1',
-            firstName: 'Ann',
-            lastName: 'Lee',
-            email: 'ann@example.com',
-            isAdmin: true,
-          },
-        }),
-      );
     });
 
     it('should route Clerk navigation through the Angular router', () => {
@@ -177,23 +160,6 @@ describe('ClerkService', () => {
       expect(navigateByUrlSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
     });
 
-    it('should map missing user details to empty values and a non-admin', async () => {
-      fake.user = createUser({
-        firstName: null,
-        lastName: null,
-        primaryEmailAddress: null,
-        publicMetadata: {},
-      });
-
-      await service.load();
-
-      expect(dispatchSpy).toHaveBeenLastCalledWith(
-        AuthActions.userChanged({
-          user: { id: 'user_1', firstName: '', lastName: '', email: '', isAdmin: false },
-        }),
-      );
-    });
-
     it('should sign out a session left pending on a new password', async () => {
       fake.session = createSession({ status: 'pending' });
 
@@ -202,9 +168,6 @@ describe('ClerkService', () => {
       expect(fake.signOut).toHaveBeenCalled();
       expect(service.isLoggedIn()).toBe(false);
       expect(service.user()).toBeNull();
-      expect(dispatchSpy).toHaveBeenLastCalledWith(
-        AuthActions.userChanged({ user: null }),
-      );
     });
   });
 
@@ -238,6 +201,16 @@ describe('ClerkService', () => {
       notifyListeners();
 
       expect(toastSpy).not.toHaveBeenCalled();
+    });
+
+    it('should show the notice once an expected session end is called off', () => {
+      service.expectSessionEnd();
+      service.clearSessionEndExpectation();
+      fake.user = null;
+
+      notifyListeners();
+
+      expect(toastSpy).toHaveBeenCalledOnce();
     });
 
     it('should show the notice for a later unexpected session end', () => {

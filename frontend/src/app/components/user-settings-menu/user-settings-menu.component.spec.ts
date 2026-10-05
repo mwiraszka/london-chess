@@ -38,6 +38,7 @@ describe('UserSettingsMenuComponent', () => {
     lastName: 'Doe',
     email: 'john.doe@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const create = (): void => {

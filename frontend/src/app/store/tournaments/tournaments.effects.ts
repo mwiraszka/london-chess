@@ -16,7 +16,7 @@ import {
 
 import { Injectable, inject } from '@angular/core';
 
-import { TournamentsApiService, UserService } from '@app/services';
+import { TournamentsApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
@@ -32,7 +32,6 @@ export class TournamentsEffects {
   private readonly parseError = inject(PARSE_ERROR);
   private readonly store = inject(Store);
   private readonly tournamentsApiService = inject(TournamentsApiService);
-  private readonly userService = inject(UserService);
 
   fetchTournaments$ = createEffect(() => {
     return this.actions$.pipe(
@@ -129,7 +128,7 @@ export class TournamentsEffects {
         this.tournamentsApiService
           .addTournament({
             ...formData,
-            modificationInfo: creditEditor(user, this.userService.memberNumber()),
+            modificationInfo: creditEditor(user),
           })
           .pipe(
             map(response =>
@@ -164,11 +163,7 @@ export class TournamentsEffects {
         this.tournamentsApiService
           .updateTournament(tournamentNumber, {
             ...formData,
-            modificationInfo: creditEditor(
-              user,
-              this.userService.memberNumber(),
-              tournament.modificationInfo,
-            ),
+            modificationInfo: creditEditor(user, tournament.modificationInfo),
           })
           .pipe(
             map(() =>

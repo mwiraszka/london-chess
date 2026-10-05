@@ -16,6 +16,7 @@ describe('route access', () => {
     lastName: 'Byron',
     email: 'ada@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
   const nonAdmin: User = { ...admin, isAdmin: false };
 

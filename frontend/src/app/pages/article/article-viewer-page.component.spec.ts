@@ -77,6 +77,7 @@ describe('ArticleViewerPageComponent', () => {
         lastName: 'User',
         email: 'admin@example.com',
         isAdmin: true,
+        memberNumber: null,
       },
     };
 

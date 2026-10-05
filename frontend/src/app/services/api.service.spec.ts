@@ -1,170 +1,103 @@
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+
+import { REQUEST_TIMEOUT, REQUEST_TIMEOUT_MS } from '@app/constants/http';
 
 import { environment } from '@env';
 
 import { ApiError, ApiService } from './api.service';
-import { ClerkService } from './clerk.service';
 
 describe('ApiService', () => {
   let service: ApiService;
+  let httpMock: HttpTestingController;
 
-  let fetchSpy: Mock<Promise<Response>, Parameters<typeof fetch>>;
-  let getTokenSpy: Mock<Promise<string | null>>;
-
-  const jsonResponse = (body: object, status = 200): Response =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-  const lastRequest = (): { url: string; init: RequestInit; headers: Headers } => {
-    const [url, init = {}] = fetchSpy.mock.lastCall ?? [];
-    return { url: String(url), init, headers: new Headers(init.headers) };
-  };
+  const url = (path: string) => `${environment.lccApiBaseUrl}${path}`;
 
   beforeEach(() => {
-    fetchSpy = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ data: { id: 1 } }));
-    vi.stubGlobal('fetch', fetchSpy);
-    getTokenSpy = vi.fn().mockResolvedValue('token-123');
-
     TestBed.configureTestingModule({
-      providers: [{ provide: ClerkService, useValue: { getToken: getTokenSpy } }],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(ApiService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
+  afterEach(() => httpMock.verify());
+
+  it('should get from the API and unwrap the data', async () => {
+    const result = service.get<{ id: number }>('/members');
+
+    const request = httpMock.expectOne(url('/members'));
+    request.flush({ data: { id: 1 } });
+
+    expect(request.request.method).toBe('GET');
+    expect(await result).toEqual({ id: 1 });
   });
 
-  describe('get', () => {
-    it('should request the API url uncached with a bearer token and unwrap the data', async () => {
-      const result = await service.get<{ id: number }>('/members');
+  it.each([
+    ['post', (body: unknown) => service.post('/users/me/password', body), 'POST'],
+    ['patch', (body: unknown) => service.patch('/users/me', body), 'PATCH'],
+  ])('should %s the body as it is given', async (_, send, method) => {
+    const body = { showYearOfBirth: true };
+    const form = new FormData();
+    const sent = [send(body), send(form)];
 
-      const { url, init, headers } = lastRequest();
-      expect(url).toBe(`${environment.lccApiBaseUrl}/members`);
-      expect(init.cache).toBe('no-store');
-      expect(headers.get('Authorization')).toBe('Bearer token-123');
-      expect(result).toEqual({ id: 1 });
-    });
+    const [json, multipart] = httpMock.match(() => true);
+    json.flush({ data: 'success' });
+    multipart.flush({ data: 'success' });
 
-    it('should omit the authorization header when there is no session token', async () => {
-      getTokenSpy.mockResolvedValue(null);
-
-      await service.get('/members');
-
-      expect(lastRequest().headers.has('Authorization')).toBe(false);
-    });
-
-    it('should return the whole body when it has no data envelope', async () => {
-      fetchSpy.mockResolvedValue(jsonResponse({ ok: true }));
-
-      const result = await service.get('/health');
-
-      expect(result).toEqual({ ok: true });
-    });
-
-    it('should resolve undefined for an empty body', async () => {
-      fetchSpy.mockResolvedValue(new Response('', { status: 200 }));
-
-      const result = await service.get('/members');
-
-      expect(result).toBeUndefined();
-    });
+    expect(json.request.method).toBe(method);
+    expect(json.request.body).toBe(body);
+    expect(multipart.request.body).toBe(form);
+    expect(await Promise.all(sent)).toEqual(['success', 'success']);
   });
 
-  describe('post', () => {
-    it('should send an object body as JSON', async () => {
-      await service.post('/members', { name: 'Ann' });
+  it('should delete through the API', async () => {
+    const result = service.delete<string>('/users/me');
 
-      const { init, headers } = lastRequest();
-      expect(init.method).toBe('POST');
-      expect(headers.get('Content-Type')).toBe('application/json');
-      expect(init.body).toBe('{"name":"Ann"}');
-    });
+    const request = httpMock.expectOne(url('/users/me'));
+    request.flush({ data: 'success' });
 
-    it('should send a string body as is', async () => {
-      await service.post('/members', '{"raw":true}');
-
-      const { init, headers } = lastRequest();
-      expect(headers.get('Content-Type')).toBe('application/json');
-      expect(init.body).toBe('{"raw":true}');
-    });
-
-    it('should send form data without a JSON content type', async () => {
-      const formData = new FormData();
-
-      await service.post('/images', formData);
-
-      const { init, headers } = lastRequest();
-      expect(init.body).toBe(formData);
-      expect(headers.has('Content-Type')).toBe(false);
-    });
-
-    it('should send no body when none is given', async () => {
-      await service.post('/members/1/approve');
-
-      const { init, headers } = lastRequest();
-      expect(init.body).toBeUndefined();
-      expect(headers.has('Content-Type')).toBe(false);
-    });
+    expect(request.request.method).toBe('DELETE');
+    expect(await result).toBe('success');
   });
 
-  describe('patch', () => {
-    it('should send an object body as JSON', async () => {
-      await service.patch('/members/1', { city: 'London' });
+  it('should allow a longer wait when asked to, and the usual one otherwise', () => {
+    void service.post('/users/me/avatar', new FormData(), { timeoutMs: 120_000 });
+    void service.get('/users/me');
 
-      const { init, headers } = lastRequest();
-      expect(init.method).toBe('PATCH');
-      expect(headers.get('Content-Type')).toBe('application/json');
-      expect(init.body).toBe('{"city":"London"}');
-    });
+    const [upload, read] = httpMock.match(() => true);
 
-    it('should send form data without a JSON content type', async () => {
-      const formData = new FormData();
-
-      await service.patch('/images/1', formData);
-
-      const { init, headers } = lastRequest();
-      expect(init.body).toBe(formData);
-      expect(headers.has('Content-Type')).toBe(false);
-    });
+    expect(upload.request.context.get(REQUEST_TIMEOUT)).toBe(120_000);
+    expect(read.request.context.get(REQUEST_TIMEOUT)).toBe(REQUEST_TIMEOUT_MS);
+    upload.flush({ data: null });
+    read.flush({ data: null });
   });
 
-  describe('delete', () => {
-    it('should resolve undefined for a no content response', async () => {
-      fetchSpy.mockResolvedValue(new Response(null, { status: 204 }));
+  it("should throw an ApiError carrying the API's message and status", async () => {
+    const result = service.delete('/users/me');
 
-      const result = await service.delete('/members/1');
+    httpMock
+      .expectOne(url('/users/me'))
+      .flush({ message: 'Account not found.' }, { status: 404, statusText: 'Not Found' });
 
-      expect(lastRequest().init.method).toBe('DELETE');
-      expect(result).toBeUndefined();
-    });
+    await expect(result).rejects.toEqual(new ApiError('Account not found.', 404));
   });
 
-  describe('errors', () => {
-    it('should throw an ApiError with the message and status from the response', async () => {
-      fetchSpy.mockResolvedValue(jsonResponse({ message: 'Member not found.' }, 404));
+  it('should explain a failure whose answer has no message', async () => {
+    const result = service.get('/users/me');
 
-      const request = service.get('/members/1');
+    httpMock
+      .expectOne(url('/users/me'))
+      .flush(null, { status: 502, statusText: 'Bad Gateway' });
 
-      await expect(request).rejects.toThrow(ApiError);
-      await expect(request).rejects.toMatchObject({
-        message: 'Member not found.',
-        status: 404,
-      });
-    });
-
-    it('should fall back to a generic message when the error body is not JSON', async () => {
-      fetchSpy.mockResolvedValue(new Response('Bad gateway', { status: 502 }));
-
-      const request = service.get('/members');
-
-      await expect(request).rejects.toMatchObject({
-        message: 'Request failed (502).',
-        status: 502,
-      });
+    await expect(result).rejects.toMatchObject({
+      status: 502,
+      message: expect.stringContaining('502'),
     });
   });
 });

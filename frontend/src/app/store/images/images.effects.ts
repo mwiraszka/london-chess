@@ -31,7 +31,7 @@ import {
 import { Injectable, inject } from '@angular/core';
 
 import { Article, BaseImage, Image, IndexedDbImageData, LccError } from '@app/models';
-import { ImageFileService, ImagesApiService, UserService } from '@app/services';
+import { ImageFileService, ImagesApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as ArticlesSelectors from '@app/store/articles/articles.selectors';
@@ -61,7 +61,6 @@ export class ImagesEffects {
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly isLccError = inject(IS_LCC_ERROR);
   private readonly parseError = inject(PARSE_ERROR);
-  private readonly userService = inject(UserService);
 
   // Serverless functions cap the request body (~4.5MB), so images are uploaded one
   // file per request with a small concurrency pool rather than one large batch.
@@ -557,7 +556,7 @@ export class ImagesEffects {
             ? true
             : formData.albumCover,
           albumOrdinality: formData.albumOrdinality,
-          modificationInfo: creditEditor(user, this.userService.memberNumber()),
+          modificationInfo: creditEditor(user),
         };
 
         const imageFormData = new FormData();
@@ -616,7 +615,7 @@ export class ImagesEffects {
             album: formData.album,
             albumCover: formData.albumCover,
             albumOrdinality: formData.albumOrdinality,
-            modificationInfo: creditEditor(user, this.userService.memberNumber()),
+            modificationInfo: creditEditor(user),
           });
         }
 
@@ -664,11 +663,7 @@ export class ImagesEffects {
           album: formData.album,
           albumCover: formData.albumCover,
           albumOrdinality: formData.albumOrdinality,
-          modificationInfo: creditEditor(
-            user,
-            this.userService.memberNumber(),
-            image.modificationInfo,
-          ),
+          modificationInfo: creditEditor(user, image.modificationInfo),
         };
 
         const imagesFormData = this.buildImagesFormData([], [], [updatedImage]);
@@ -731,11 +726,7 @@ export class ImagesEffects {
             album: formData.album,
             albumCover: formData.albumCover,
             albumOrdinality: formData.albumOrdinality,
-            modificationInfo: creditEditor(
-              user,
-              this.userService.memberNumber(),
-              image.modificationInfo,
-            ),
+            modificationInfo: creditEditor(user, image.modificationInfo),
           }));
 
           const newImagesMetadata: Omit<BaseImage, 'fileSize'>[] = [];
@@ -763,7 +754,7 @@ export class ImagesEffects {
                 album: formData.album,
                 albumCover: formData.albumCover,
                 albumOrdinality: formData.albumOrdinality,
-                modificationInfo: creditEditor(user, this.userService.memberNumber()),
+                modificationInfo: creditEditor(user),
               });
             }
           }

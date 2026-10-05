@@ -59,7 +59,6 @@ import {
   DeletionService,
   MetaAndTitleService,
   StoreRequestService,
-  UserService,
 } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
@@ -238,7 +237,6 @@ export class TournamentPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly store = inject(Store);
   private readonly storeRequests = inject(StoreRequestService);
-  private readonly userService = inject(UserService);
 
   private readonly rankCell = viewChild<CellTemplate<CrosstableRow>>('rankCell');
   private readonly playerCell = viewChild<CellTemplate<CrosstableRow>>('playerCell');
@@ -342,7 +340,7 @@ export class TournamentPageComponent implements OnInit {
     if (status === 'none' && !tournament.registrants.length) {
       return null;
     }
-    const memberNumber = this.userService.memberNumber();
+    const memberNumber = this.user()?.memberNumber ?? null;
     return {
       status,
       summary: this.registrationSummary(status, tournament),

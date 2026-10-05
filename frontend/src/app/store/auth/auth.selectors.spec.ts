@@ -10,6 +10,7 @@ describe('Auth Selectors', () => {
     lastName: 'Doe',
     email: 'admin@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const mockAuthState: AuthState = {

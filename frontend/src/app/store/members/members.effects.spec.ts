@@ -4,10 +4,9 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
 import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { INITIAL_MEMBER_FORM_DATA } from '@app/constants';
+import { initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   ApiResponse,
@@ -17,7 +16,7 @@ import {
   PaginatedItems,
   User,
 } from '@app/models';
-import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
+import { MemberProfilesService, MembersApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
@@ -48,6 +47,7 @@ describe('MembersEffects', () => {
     lastName: 'User',
     email: 'test@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const mockError: LccError = {
@@ -86,7 +86,7 @@ describe('MembersEffects', () => {
       ),
       failedLoads: [],
       isFetchingFiltered: false,
-      newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+      newMemberFormData: initialMemberFormData(),
       recordsScope: 'admin' as const,
       lastFullFetch: null,
       lastFilteredFetch: null,
@@ -116,7 +116,6 @@ describe('MembersEffects', () => {
         { provide: EXPORT_DATA_TO_CSV, useValue: mockExportDataToCsv },
         { provide: GET_NEW_PEAK_RATING, useValue: mockGetNewPeakRating },
         { provide: MemberProfilesService, useValue: { reload: vi.fn() } },
-        { provide: UserService, useValue: { memberNumber: signal(null) } },
         provideMockActions(() => actions$),
         { provide: MembersApiService, useValue: membersApiServiceMock },
         provideMockStore({

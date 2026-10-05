@@ -4,7 +4,6 @@ import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd } from '@angular/router';
 
@@ -16,7 +15,7 @@ import {
   MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
 import { LccError, TournamentFormData, User } from '@app/models';
-import { TournamentsApiService, UserService } from '@app/services';
+import { TournamentsApiService } from '@app/services';
 import { AppActions } from '@app/store/app';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
 
@@ -62,7 +61,6 @@ describe('TournamentsEffects', () => {
             withdraw: vi.fn(),
           },
         },
-        { provide: UserService, useValue: { memberNumber: signal(100) } },
       ],
     });
 
@@ -239,6 +237,7 @@ describe('TournamentsEffects', () => {
       lastName: 'Admin',
       email: 'ada@example.com',
       isAdmin: true,
+      memberNumber: 100,
     };
     const draft: TournamentFormData = {
       ...INITIAL_TOURNAMENT_FORM_DATA,
