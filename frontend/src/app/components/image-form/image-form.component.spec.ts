@@ -361,22 +361,15 @@ describe('ImageFormComponent', () => {
   });
 
   describe('restoring', () => {
-    it('should put the original image back once confirmed', async () => {
+    it('should put the original image back', () => {
       render(
         { ...entity, formData: { ...entity.formData, caption: 'Changed' } },
         null,
         true,
       );
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original image data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(entity.image.id);
       expect(component.form.getRawValue()).toEqual(entity.formData);
       expect(component.form.touched).toBe(false);
@@ -385,9 +378,8 @@ describe('ImageFormComponent', () => {
     it('should empty a new image back to its starting values and drop its preview', async () => {
       render(null, newImageData, true);
       await getImageSpy.mock.results[0].value;
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
       fixture.detectChanges();
 
       expect(restoreSpy).toHaveBeenCalledWith(newImageData.id);
@@ -396,20 +388,6 @@ describe('ImageFormComponent', () => {
         id: newImageData.id,
       });
       expect(previewSrc()).toBe(IMAGE_FALLBACK_SRC);
-    });
-
-    it('should change nothing when cancelled', async () => {
-      render(
-        { ...entity, formData: { ...entity.formData, caption: 'Changed' } },
-        null,
-        true,
-      );
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.caption.value).toBe('Changed');
     });
   });
 

@@ -6,19 +6,12 @@ import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { DataPaginationOptions, Id, Image } from '@app/models';
-import { StoreRequestService } from '@app/services';
+import { DeletionService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import {
-  closedDialogRef,
-  lastOpenedDialog,
-  query,
-  queryAll,
-  queryTextContent,
-} from '@app/utils';
+import { closedDialogRef, query, queryAll, queryTextContent } from '@app/utils';
 
 import { ImageExplorerComponent } from './image-explorer.component';
 
@@ -27,13 +20,10 @@ describe('ImageExplorerComponent', () => {
   let component: ImageExplorerComponent;
 
   let changeDetectorRef: ChangeDetectorRef;
-  let dialogService: DialogService;
   let store: MockStore;
 
-  let dialogOpenSpy: MockInstance;
   let closeSpy: MockInstance;
   let dispatchSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   const mockImages = MOCK_IMAGES;
   const mockOptions: DataPaginationOptions<Image> = {
@@ -73,20 +63,18 @@ describe('ImageExplorerComponent', () => {
     component = fixture.componentInstance;
 
     changeDetectorRef = fixture.debugElement.injector.get(ChangeDetectorRef);
-    dialogService = TestBed.inject(DialogService);
     store = TestBed.inject(MockStore);
 
     store.overrideSelector(ImagesSelectors.selectFilteredImages, mockImages);
     store.overrideSelector(ImagesSelectors.selectFilteredCount, mockImages.length);
-    store.overrideSelector(ImagesSelectors.selectTotalCount, mockImages.length);
     store.overrideSelector(ImagesSelectors.selectOptions, mockOptions);
     store.overrideSelector(ImagesSelectors.selectFilteredThumbnailsStatus, 'loaded');
     store.overrideSelector(ImagesSelectors.selectIsFetchingFiltered, false);
 
-    dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('initialization', () => {
     it('should fetch the thumbnails for the current options', () => {
@@ -120,12 +108,14 @@ describe('ImageExplorerComponent', () => {
       expect(config.itemName).toBe(mockImages[0].filename);
     });
 
-    it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+    it('should delete an image from its admin controls', () => {
+      const deleteImage = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteImage')
+        .mockResolvedValue(false);
 
-      await component.getAdminControlsConfig(mockImages[0]).deleteCb();
+      component.getAdminControlsConfig(mockImages[0]).deleteCb();
 
-      expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Delete');
+      expect(deleteImage).toHaveBeenCalledExactlyOnceWith(mockImages[0]);
     });
 
     it('should disable delete for images used in articles', () => {
@@ -134,38 +124,6 @@ describe('ImageExplorerComponent', () => {
       const config = component.getAdminControlsConfig(imageWithArticles);
 
       expect(config.isDeleteDisabled).toBe(true);
-    });
-  });
-
-  describe('image deletion', () => {
-    it('should delete the image from the confirmation dialog', async () => {
-      await component.onDeleteImage(mockImages[1]);
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${mockImages[1].filename}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        ImagesActions.deleteImageRequested({ image: mockImages[1] }),
-        [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
-      );
-      expect(closeSpy).not.toHaveBeenCalled();
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteImage(mockImages[1]);
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
-      expect(closeSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -302,7 +260,6 @@ describe('ImageExplorerComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         ImagesActions.paginationOptionsChanged({
           options: { ...mockOptions, search: 'board', page: 1 },
-          fetch: true,
         }),
       );
     });
@@ -329,7 +286,6 @@ describe('ImageExplorerComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         ImagesActions.paginationOptionsChanged({
           options: { ...mockOptions, page: 3, pageSize: 50 },
-          fetch: true,
         }),
       );
     });

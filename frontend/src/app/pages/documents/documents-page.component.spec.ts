@@ -87,6 +87,8 @@ describe('DocumentsPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
+  afterEach(() => TestBed.inject(MockStore).resetSelectors());
+
   describe('initialization', () => {
     beforeEach(() => {
       component.ngOnInit();

@@ -76,7 +76,6 @@ describe('AlbumFormComponent', () => {
     restoreSpy = vi.spyOn(component.restore, 'emit');
 
     fixture.componentRef.setInput('album', albumName);
-    fixture.componentRef.setInput('existingAlbums', [album]);
     fixture.componentRef.setInput('hasUnsavedChanges', hasUnsavedChanges);
     fixture.componentRef.setInput('imageEntities', imageEntities);
     fixture.componentRef.setInput('newImagesFormData', newImagesFormData);
@@ -596,7 +595,7 @@ describe('AlbumFormComponent', () => {
   });
 
   describe('restoring', () => {
-    it('should put the original images back and drop the new ones once confirmed', async () => {
+    it('should put the original images back and drop the new ones', async () => {
       const [first, second] = entitiesOf(0, 3);
       render(
         album,
@@ -605,17 +604,10 @@ describe('AlbumFormComponent', () => {
         true,
       );
       await getAllImagesSpy.mock.results[0].value;
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
       fixture.detectChanges();
 
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original album data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(album);
       expect(component.form.controls.existingImages.at(1).controls.caption.value).toBe(
         MOCK_IMAGES[3].caption,
@@ -626,11 +618,10 @@ describe('AlbumFormComponent', () => {
       expect(component.form.touched).toBe(false);
     });
 
-    it('should empty a new album', async () => {
+    it('should empty a new album', () => {
       render(null, [], newImagesOf(0), true);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
       expect(component.form.getRawValue()).toEqual({
@@ -638,19 +629,6 @@ describe('AlbumFormComponent', () => {
         existingImages: [],
         newImages: [],
       });
-    });
-
-    it('should change nothing when cancelled', async () => {
-      render(album, entitiesOf(0, 3), {}, true);
-      component.form.controls.existingImages.at(0).controls.caption.setValue('Changed');
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.existingImages.at(0).controls.caption.value).toBe(
-        'Changed',
-      );
     });
   });
 

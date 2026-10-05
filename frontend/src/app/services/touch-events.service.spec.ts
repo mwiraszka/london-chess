@@ -6,6 +6,19 @@ import { IS_TOUCH_DEVICE } from '@app/tokens';
 import { TouchEventsService } from './touch-events.service';
 
 describe('TouchEventsService', () => {
+  // jsdom has no Touch constructor, so the touch points are set on a real event
+  const touchStart = (
+    points: { clientX: number; clientY: number }[],
+    target: EventTarget | null = null,
+  ): TouchEvent => {
+    const event = new TouchEvent('touchstart', { cancelable: true });
+    Object.defineProperty(event, 'touches', { value: points });
+    if (target) {
+      Object.defineProperty(event, 'target', { value: target });
+    }
+    return event;
+  };
+
   let service: TouchEventsService;
   let mockDocument: Document;
 
@@ -85,9 +98,7 @@ describe('TouchEventsService', () => {
     });
 
     it('should set timeout on single touch start', () => {
-      const touchEvent = {
-        touches: [{ clientX: 100, clientY: 100 }],
-      } as unknown as TouchEvent;
+      const touchEvent = touchStart([{ clientX: 100, clientY: 100 }]);
 
       touchStartHandler(touchEvent);
 
@@ -95,12 +106,10 @@ describe('TouchEventsService', () => {
     });
 
     it('should not set timeout on multi-touch', () => {
-      const touchEvent = {
-        touches: [
-          { clientX: 100, clientY: 100 },
-          { clientX: 200, clientY: 200 },
-        ],
-      } as unknown as TouchEvent;
+      const touchEvent = touchStart([
+        { clientX: 100, clientY: 100 },
+        { clientX: 200, clientY: 200 },
+      ]);
 
       touchStartHandler(touchEvent);
 
@@ -108,9 +117,7 @@ describe('TouchEventsService', () => {
     });
 
     it('should clear timeout on touch end', () => {
-      const touchStartEvent = {
-        touches: [{ clientX: 100, clientY: 100 }],
-      } as unknown as TouchEvent;
+      const touchStartEvent = touchStart([{ clientX: 100, clientY: 100 }]);
 
       touchStartHandler(touchStartEvent);
       touchEndHandler();
@@ -127,11 +134,7 @@ describe('TouchEventsService', () => {
 
       const dispatchEventSpy = vi.spyOn(element, 'dispatchEvent');
 
-      const touchEvent = {
-        touches: [{ clientX: 100, clientY: 200 }],
-        target: element,
-        preventDefault: vi.fn(),
-      } as unknown as TouchEvent;
+      const touchEvent = touchStart([{ clientX: 100, clientY: 200 }], element);
 
       touchStartHandler(touchEvent);
       vi.advanceTimersByTime(500);
@@ -155,10 +158,7 @@ describe('TouchEventsService', () => {
       const element = mockDocument.createElement('div');
       mockDocument.body.appendChild(element);
 
-      const touchEvent = {
-        touches: [{ clientX: 100, clientY: 200 }],
-        target: element,
-      } as unknown as TouchEvent;
+      const touchEvent = touchStart([{ clientX: 100, clientY: 200 }], element);
 
       touchStartHandler(touchEvent);
       vi.advanceTimersByTime(500);
@@ -179,11 +179,7 @@ describe('TouchEventsService', () => {
 
       const dispatchEventSpy = vi.spyOn(child, 'dispatchEvent');
 
-      const touchEvent = {
-        touches: [{ clientX: 150, clientY: 250 }],
-        target: child,
-        preventDefault: vi.fn(),
-      } as unknown as TouchEvent;
+      const touchEvent = touchStart([{ clientX: 150, clientY: 250 }], child);
 
       touchStartHandler(touchEvent);
       vi.advanceTimersByTime(500);
@@ -232,23 +228,14 @@ describe('TouchEventsService', () => {
       element.setAttribute('adminControls', '');
       mockDocument.body.appendChild(element);
 
-      const mockSelection = {
-        removeAllRanges: vi.fn(),
-      };
-      vi.spyOn(window, 'getSelection').mockReturnValue(
-        mockSelection as unknown as Selection,
-      );
+      const removeAllRanges = vi.spyOn(window.getSelection()!, 'removeAllRanges');
 
-      const touchEvent = {
-        touches: [{ clientX: 100, clientY: 200 }],
-        target: element,
-        preventDefault: vi.fn(),
-      } as unknown as TouchEvent;
+      const touchEvent = touchStart([{ clientX: 100, clientY: 200 }], element);
 
       touchStartHandler(touchEvent);
       vi.advanceTimersByTime(500);
 
-      expect(mockSelection.removeAllRanges).toHaveBeenCalled();
+      expect(removeAllRanges).toHaveBeenCalled();
 
       vi.useRealTimers();
     });

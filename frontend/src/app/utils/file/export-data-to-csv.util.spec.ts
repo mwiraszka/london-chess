@@ -1,3 +1,5 @@
+import type { MockedFunction } from 'vitest';
+
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
@@ -6,26 +8,28 @@ import { EntityType, Image, LccError, Member } from '@app/models';
 
 import { exportDataToCsv } from './export-data-to-csv.util';
 
+// Vitest cannot `new` an arrow-fn mock, so the Blob mock uses a regular
+// function expression which is constructable.
+Object.defineProperty(window, 'Blob', {
+  value: vi.fn(function (content: BlobPart[], options?: BlobPropertyBag) {
+    return { content, options };
+  }),
+  writable: true,
+});
+
 describe('exportDataToCsv', () => {
   let appendChildSpy: MockInstance;
-  let blobSpy: MockInstance;
+  let blobSpy: MockedFunction<typeof Blob>;
   let clickSpy: MockInstance;
   let createElementSpy: MockInstance;
   let mockLink: HTMLAnchorElement;
   let removeChildSpy: MockInstance;
-  let setAttributeSpy: Mock;
+  let setAttributeSpy: MockInstance;
 
   beforeEach(() => {
-    setAttributeSpy = vi.fn();
-    clickSpy = vi.fn();
-
-    mockLink = {
-      click: clickSpy,
-      download: '',
-      href: '',
-      setAttribute: setAttributeSpy,
-      style: {} as CSSStyleDeclaration,
-    } as unknown as HTMLAnchorElement;
+    mockLink = document.createElement('a');
+    setAttributeSpy = vi.spyOn(mockLink, 'setAttribute');
+    clickSpy = vi.spyOn(mockLink, 'click').mockImplementation(() => undefined);
 
     createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
     appendChildSpy = vi
@@ -38,13 +42,7 @@ describe('exportDataToCsv', () => {
     // Mock URL.createObjectURL
     window.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
 
-    // Mock Blob constructor. Vitest cannot `new` an arrow-fn mock, so use a
-    // regular function expression which is constructable.
-    blobSpy = (vi.spyOn(window, 'Blob') as unknown as MockInstance).mockImplementation(
-      function (content: BlobPart[], options?: BlobPropertyBag) {
-        return { content, options } as unknown as Blob;
-      },
-    );
+    blobSpy = vi.mocked(window.Blob);
   });
 
   afterEach(() => {
@@ -114,7 +112,7 @@ describe('exportDataToCsv', () => {
   });
 
   it('should handle errors during export', () => {
-    blobSpy.mockImplementation(() => {
+    blobSpy.mockImplementationOnce(() => {
       throw new Error('Blob creation failed');
     });
 
@@ -190,8 +188,7 @@ describe('exportDataToCsv', () => {
     const result = exportDataToCsv(mockImages, 'types-test.csv');
 
     expect(result).toBe(1);
-    const blobCall = blobSpy.mock.calls[blobSpy.mock.calls.length - 1];
-    const csvContent = blobCall[0][0] as string;
+    const csvContent = String(blobSpy.mock.lastCall?.[0]?.[0]);
 
     expect(csvContent).toContain('true');
     expect(csvContent).toContain('987654');

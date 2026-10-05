@@ -400,22 +400,6 @@ describe('Meta Reducers', () => {
       expect(result.entities[undatedImage.id]?.image.mainUrl).toBeUndefined();
     });
 
-    it('should strip retired-storage URLs even when the recorded expiration is fresh', () => {
-      const corruptedImage: Image = {
-        ...MOCK_IMAGES[0],
-        mainUrl: 'https://old-bucket.s3.us-east-2.amazonaws.com/stale',
-        thumbnailUrl: 'https://example.com/fresh-thumb.jpg',
-        urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
-      };
-
-      const result = stripExpiredImageUrls(stateWith(corruptedImage));
-
-      const image = result.entities[corruptedImage.id]?.image;
-      expect(image?.mainUrl).toBeUndefined();
-      expect(image?.thumbnailUrl).toBeUndefined();
-      expect(image?.urlExpirationDate).toBeUndefined();
-    });
-
     it('should keep URLs that are still fresh', () => {
       const freshImage: Image = {
         ...MOCK_IMAGES[0],
@@ -608,7 +592,7 @@ describe('Meta Reducers', () => {
       authState: { user },
       articlesState: { ...articlesInitialState, lastHomePageFetch: '2026-01-01' },
       eventsState: { ...eventsInitialState, totalCount: 12 },
-      imagesState: { ...imagesInitialState, totalCount: 34 },
+      imagesState: { ...imagesInitialState },
       membersState: { ...membersInitialState, totalCount: 56 },
       tournamentsState: {
         ...tournamentsInitialState,

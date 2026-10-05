@@ -52,6 +52,7 @@ describe('accessGuard', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 

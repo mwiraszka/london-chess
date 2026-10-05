@@ -32,7 +32,6 @@ describe('Articles Selectors', () => {
       filteredArticles: [MOCK_ARTICLES[2], MOCK_ARTICLES[3]],
       options: mockOptions,
       filteredCount: 15,
-      totalCount: 25,
     }),
     entities: {
       [MOCK_ARTICLES[0].id]: {
@@ -247,25 +246,6 @@ describe('Articles Selectors', () => {
       const result = ArticlesSelectors.selectFilteredCount.projector(state);
 
       expect(result).toBeNull();
-    });
-  });
-
-  describe('selectTotalCount', () => {
-    it('should select the total count', () => {
-      const result = ArticlesSelectors.selectTotalCount.projector(mockArticlesState);
-
-      expect(result).toBe(25);
-    });
-
-    it('should select zero when total count is zero', () => {
-      const state: ArticlesState = {
-        ...mockArticlesState,
-        totalCount: 0,
-      };
-
-      const result = ArticlesSelectors.selectTotalCount.projector(state);
-
-      expect(result).toBe(0);
     });
   });
 

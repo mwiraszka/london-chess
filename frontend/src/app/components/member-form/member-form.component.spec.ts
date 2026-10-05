@@ -325,45 +325,27 @@ describe('MemberFormComponent', () => {
   });
 
   describe('restoring', () => {
-    it('should put the original member back once confirmed', async () => {
+    it('should put the original member back', () => {
       render({ ...formData, city: 'Changed city' }, true, withoutAccount);
       component.form.markAllAsTouched();
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original member data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(withoutAccount.id);
       expect(component.form.controls.city.value).toBe(withoutAccount.city);
       expect(toDayString(component.form.controls.dateJoined.value!)).toBe('2019-02-15');
       expect(component.form.touched).toBe(false);
     });
 
-    it('should empty a new member back to its starting values', async () => {
+    it('should empty a new member back to its starting values', () => {
       render({ ...formData, firstName: 'Imogen' }, true, null);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
       expect(component.form.controls.firstName.value).toBe('');
       expect(component.form.controls.city.value).toBe(INITIAL_MEMBER_FORM_DATA.city);
       expect(component.form.controls.rating.value).toBe(INITIAL_MEMBER_FORM_DATA.rating);
-    });
-
-    it('should change nothing when cancelled', async () => {
-      render({ ...formData, city: 'Changed city' }, true, withoutAccount);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.city.value).toBe('Changed city');
     });
   });
 

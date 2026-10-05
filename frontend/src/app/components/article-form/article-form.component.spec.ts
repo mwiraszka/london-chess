@@ -401,19 +401,12 @@ describe('ArticleFormComponent', () => {
   });
 
   describe('restoring', () => {
-    it('should put the original article back once confirmed', async () => {
+    it('should put the original article back', () => {
       render({ ...formData, title: 'Changed title' }, true, originalArticle);
       component.form.markAllAsTouched();
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original article data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(originalArticle.id);
       expect(component.form.getRawValue()).toEqual(
         pick(originalArticle, ARTICLE_FORM_DATA_PROPERTIES),
@@ -421,36 +414,24 @@ describe('ArticleFormComponent', () => {
       expect(component.form.touched).toBe(false);
     });
 
-    it('should fetch the original banner image when the draft had replaced it', async () => {
+    it('should fetch the original banner image when the draft had replaced it', () => {
       render(formData, true, originalArticle);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(requestFetchMainImageSpy).toHaveBeenCalledWith(
         originalArticle.bannerImageId,
       );
     });
 
-    it('should empty a new article back to its starting values', async () => {
+    it('should empty a new article back to its starting values', () => {
       render(formData, true, null);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
       expect(component.form.getRawValue()).toEqual(INITIAL_ARTICLE_FORM_DATA);
       expect(requestFetchMainImageSpy).not.toHaveBeenCalled();
-    });
-
-    it('should change nothing when cancelled', async () => {
-      render({ ...formData, title: 'Changed title' }, true, originalArticle);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.title.value).toBe('Changed title');
     });
   });
 

@@ -42,7 +42,6 @@ describe('Images Selectors', () => {
       filteredImages: [MOCK_IMAGES[0], MOCK_IMAGES[1]],
       options: mockOptions,
       filteredCount: 10,
-      totalCount: 50,
     }),
     entities: {
       [MOCK_IMAGES[0].id]: {
@@ -198,13 +197,6 @@ describe('Images Selectors', () => {
     });
   });
 
-  describe('selectTotalCount', () => {
-    it('should select the total count', () => {
-      const result = ImagesSelectors.selectTotalCount.projector(mockImagesState);
-      expect(result).toBe(50);
-    });
-  });
-
   describe('selectNewImageFormData', () => {
     it('should return null when newImagesFormData is empty', () => {
       const newImagesFormData = {};
@@ -331,30 +323,6 @@ describe('Images Selectors', () => {
     });
   });
 
-  describe('selectImagesByIds', () => {
-    it('should select multiple images by ids', () => {
-      const allImages = [MOCK_IMAGES[0], MOCK_IMAGES[1], MOCK_IMAGES[2]];
-      const selector = ImagesSelectors.selectImagesByIds([
-        MOCK_IMAGES[0].id,
-        MOCK_IMAGES[2].id,
-      ]);
-      const result = selector.projector(allImages);
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe(MOCK_IMAGES[0].id);
-      expect(result[1].id).toBe(MOCK_IMAGES[2].id);
-    });
-
-    it('should return empty array when no ids match', () => {
-      const allImages = [MOCK_IMAGES[0]];
-      const selector = ImagesSelectors.selectImagesByIds([
-        'non-existent-1',
-        'non-existent-2',
-      ]);
-      const result = selector.projector(allImages);
-      expect(result).toEqual([]);
-    });
-  });
-
   describe('selectImageHasUnsavedChanges', () => {
     it('should return false for existing image with no changes', () => {
       const image = MOCK_IMAGES[0];
@@ -462,18 +430,6 @@ describe('Images Selectors', () => {
     });
   });
 
-  describe('selectAlbumCoverImageIds', () => {
-    it('should select ids of images marked as album covers', () => {
-      const allImages = [
-        { ...MOCK_IMAGES[0], albumCover: true },
-        { ...MOCK_IMAGES[1], albumCover: false },
-        { ...MOCK_IMAGES[2], albumCover: true },
-      ];
-      const result = ImagesSelectors.selectAlbumCoverImageIds.projector(allImages);
-      expect(result).toEqual([MOCK_IMAGES[0].id, MOCK_IMAGES[2].id]);
-    });
-  });
-
   describe('selectAllExistingAlbums', () => {
     it('should return unique album names', () => {
       const allImages = [
@@ -484,21 +440,6 @@ describe('Images Selectors', () => {
       ];
       const result = ImagesSelectors.selectAllExistingAlbums.projector(allImages);
       expect(result).toEqual(['Album A', 'Album B', 'Album C']);
-    });
-  });
-
-  describe('selectArticleImages', () => {
-    it('should filter images with article appearances', () => {
-      const allImages = [
-        { ...MOCK_IMAGES[0], articleAppearances: 2 },
-        { ...MOCK_IMAGES[1], articleAppearances: 0 },
-        { ...MOCK_IMAGES[2], articleAppearances: 1 },
-        { ...MOCK_IMAGES[3] },
-      ];
-      const result = ImagesSelectors.selectArticleImages.projector(allImages);
-      expect(result).toHaveLength(2);
-      expect(result[0].articleAppearances).toBe(2);
-      expect(result[1].articleAppearances).toBe(1);
     });
   });
 

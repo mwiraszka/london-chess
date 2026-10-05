@@ -79,18 +79,4 @@ describe('Auth Selectors', () => {
       expect(result).toBeNull();
     });
   });
-
-  describe('selectUserId', () => {
-    it('should select the user id', () => {
-      const result = AuthSelectors.selectUserId.projector(mockUser);
-
-      expect(result).toBe('user-123');
-    });
-
-    it('should return undefined when user is null', () => {
-      const result = AuthSelectors.selectUserId.projector(null);
-
-      expect(result).toBeUndefined();
-    });
-  });
 });

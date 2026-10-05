@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 
+import { MOCK_TOURNAMENTS } from '@app/mocks/tournaments.mock';
+import { Tournament } from '@app/models';
+
 import { StandingsFileService } from './standings-file.service';
 
 const readXlsxFile = vi.hoisted(() => vi.fn());
@@ -7,6 +10,31 @@ const readXlsxFile = vi.hoisted(() => vi.fn());
 vi.mock('read-excel-file/browser', () => ({ default: readXlsxFile }));
 
 const HEADER = ['#', 'Name', 'Rating', 'Rd 1', 'Total'];
+
+// One section of two players with no rounds recorded yet
+const TOURNAMENT: Tournament = {
+  ...MOCK_TOURNAMENTS[0],
+  sections: [
+    {
+      ...MOCK_TOURNAMENTS[0].sections[0],
+      roundCount: 1,
+      entries: MOCK_TOURNAMENTS[0].sections[0].entries
+        .slice(0, 2)
+        .map(entry => ({ ...entry, rounds: [] })),
+      games: [],
+    },
+  ],
+};
+
+const PGN = [
+  '[Event "Fall Active"]',
+  '[Round "1"]',
+  '[White "Doe, John"]',
+  '[Black "Smith, Jane"]',
+  '[Result "1-0"]',
+  '',
+  '1. e4 e5 1-0',
+].join('\n');
 
 describe('StandingsFileService', () => {
   let service: StandingsFileService;
@@ -93,5 +121,67 @@ describe('StandingsFileService', () => {
       'notes.doc is not an .xlsx, .csv, .pgn or .txt file.',
       'Broken.xlsx could not be read as a spreadsheet.',
     ]);
+  });
+
+  it('should add the games of a PGN file, even one named .txt, to the tournament', async () => {
+    const { sections, games, problems } = await service.importStandings(
+      [new File([PGN], 'Round 1.txt')],
+      TOURNAMENT,
+    );
+
+    expect(problems).toEqual([]);
+    expect(games).toEqual([
+      expect.objectContaining({ round: '1', result: '1-0', plyCount: 2 }),
+    ]);
+    expect(sections[0].entries[0].rounds).toEqual([
+      expect.objectContaining({ round: 1, scores: [1], opponentRank: 2, color: 'white' }),
+    ]);
+  });
+
+  it('should add nothing while any PGN file has a problem', async () => {
+    const { sections, games, problems } = await service.importStandings(
+      [new File([PGN], 'Round 1.pgn'), new File([''], 'Notes.txt')],
+      TOURNAMENT,
+    );
+
+    expect(problems).toEqual(['Notes.txt holds no games.']);
+    expect(sections).toEqual([]);
+    expect(games).toEqual([]);
+  });
+
+  it('should refuse PGN files mixed with spreadsheets', async () => {
+    const result = await service.importStandings(
+      [new File([PGN], 'Round 1.pgn'), csv('Open.csv', '#,Name\n')],
+      TOURNAMENT,
+    );
+
+    expect(result).toEqual({
+      sections: [],
+      games: [],
+      problems: [
+        'Choose either the standings SwissSys exports or PGN files of games, not both at once.',
+      ],
+    });
+  });
+
+  it('should refuse PGN files before the tournament is saved', async () => {
+    const { problems } = await service.importStandings(
+      [new File([PGN], 'Round 1.pgn')],
+      null,
+    );
+
+    expect(problems).toEqual([
+      'Games from a PGN can only be added once the tournament and its sections are saved.',
+    ]);
+  });
+
+  it('should name a PGN file that cannot be read', async () => {
+    const unreadable = Object.assign(new File([''], 'Round 1.pgn'), {
+      text: () => Promise.reject(new Error('Permission denied')),
+    });
+
+    const { problems } = await service.importStandings([unreadable], TOURNAMENT);
+
+    expect(problems).toEqual(['Round 1.pgn could not be read as a PGN file.']);
   });
 });

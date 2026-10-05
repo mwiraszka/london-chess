@@ -23,12 +23,13 @@ Object.defineProperty(window, 'Blob', {
 describe('exportEventsToIcal', () => {
   let mockLink: HTMLAnchorElement;
 
+  // The calendar file's text, as the last export handed it to a Blob
+  const exported = (): string => String(vi.mocked(window.Blob).mock.lastCall?.[0]?.[0]);
+
   beforeEach(() => {
-    mockLink = {
-      href: '',
-      setAttribute: vi.fn(),
-      click: vi.fn(),
-    } as unknown as HTMLAnchorElement;
+    mockLink = document.createElement('a');
+    vi.spyOn(mockLink, 'setAttribute');
+    vi.spyOn(mockLink, 'click').mockImplementation(() => undefined);
 
     vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
     vi.spyOn(document.body, 'appendChild').mockImplementation(node => node);
@@ -103,5 +104,30 @@ describe('exportEventsToIcal', () => {
     expect(icalContent).toContain('Line 1\\nLine 2\\nLine 3');
     // Should not contain unescaped newlines
     expect(icalContent).not.toContain('Line 1\nLine 2');
+  });
+
+  it('should give each event its start in UTC, a three-hour length and a lasting id', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-05T12:00:00.000Z'));
+    const event = {
+      ...MOCK_EVENTS[0],
+      id: 'abc123',
+      eventDate: '2026-10-08T22:20:00.000Z',
+    };
+
+    exportEventsToIcal([event], 'test.ics');
+
+    expect(exported()).toContain('DTSTART:20261008T222000Z');
+    expect(exported()).toContain('DTEND:20261009T012000Z');
+    expect(exported()).toContain('DTSTAMP:20261005T120000Z');
+    expect(exported()).toContain('UID:abc123@londonchessclub.ca');
+  });
+
+  it('should escape the commas and semicolons a calendar reads as separators', () => {
+    const event = { ...MOCK_EVENTS[0], title: 'Blitz; rapid, and more' };
+
+    exportEventsToIcal([event], 'test.ics');
+
+    expect(exported()).toContain('SUMMARY:Blitz\\; rapid\\, and more');
   });
 });

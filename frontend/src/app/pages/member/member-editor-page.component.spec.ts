@@ -13,7 +13,6 @@ import { MetaAndTitleService } from '@app/services';
 import { initialState as appInitialState } from '@app/store/app';
 import {
   MembersActions,
-  MembersSelectors,
   MembersState,
   initialState as membersInitialState,
 } from '@app/store/members';
@@ -32,12 +31,13 @@ describe('MemberEditorPageComponent', () => {
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
+  let mockMembersState: MembersState;
   let mockParamsSubject: BehaviorSubject<{ member_id?: Id }>;
 
   beforeEach(async () => {
     mockParamsSubject = new BehaviorSubject<{ member_id?: Id }>({});
 
-    const mockMembersState: MembersState = {
+    mockMembersState = {
       ...membersInitialState,
       recordsScope: 'admin',
       ids: MOCK_MEMBERS.map(member => member.id),
@@ -228,7 +228,10 @@ describe('MemberEditorPageComponent', () => {
 
     describe('when the member to edit has only a public record', () => {
       beforeEach(() => {
-        store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
+        store.setState({
+          appState: appInitialState,
+          membersState: { ...mockMembersState, recordsScope: 'public' },
+        });
         mockParamsSubject.next({ member_id: MOCK_MEMBERS[0].id });
 
         fixture.detectChanges();
@@ -268,5 +271,39 @@ describe('MemberEditorPageComponent', () => {
         );
       });
     });
+  });
+
+  it('should flag edits to a member that are not yet saved', async () => {
+    const [member] = MOCK_MEMBERS;
+    store.setState({
+      appState: appInitialState,
+      membersState: {
+        ...membersInitialState,
+        recordsScope: 'admin',
+        ids: [member.id],
+        entities: {
+          [member.id]: {
+            member,
+            formData: {
+              ...pick(member, MEMBER_FORM_DATA_PROPERTIES),
+              firstName: 'Renamed',
+            },
+          },
+        },
+      },
+    });
+    mockParamsSubject.next({ member_id: member.id });
+    fixture.detectChanges();
+
+    const vm = await firstValueFrom(component.viewModel$!);
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+    expect(query(fixture.debugElement, '.end-with-asterisk')).toBeTruthy();
+    expect(
+      query(
+        fixture.debugElement,
+        'lcc-member-form',
+      ).componentInstance.hasUnsavedChanges(),
+    ).toBe(true);
   });
 });

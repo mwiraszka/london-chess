@@ -1,7 +1,4 @@
-import {
-  calculateAspectRatio,
-  calculateDecimalAspectRatio,
-} from './calculate-aspect-ratio.util';
+import { calculateAspectRatio } from './calculate-aspect-ratio.util';
 
 const errorMessage = 'Width and height must be greater than 0';
 
@@ -23,19 +20,5 @@ describe('calculateAspectRatio', () => {
     expect(() => calculateAspectRatio(0, 100)).toThrow(errorMessage);
     expect(() => calculateAspectRatio(100, 0)).toThrow(errorMessage);
     expect(() => calculateAspectRatio(-100, 100)).toThrow(errorMessage);
-  });
-});
-
-describe('calculateDecimalAspectRatio', () => {
-  it('should calculate correct decimal aspect ratio', () => {
-    expect(calculateDecimalAspectRatio(1920, 1080)).toBeCloseTo(1.7778, 4);
-    expect(calculateDecimalAspectRatio(800, 600)).toBeCloseTo(1.3333, 4);
-    expect(calculateDecimalAspectRatio(1200, 1200)).toBe(1);
-  });
-
-  it('should throw error for invalid dimensions', () => {
-    expect(() => calculateDecimalAspectRatio(0, 100)).toThrow(errorMessage);
-    expect(() => calculateDecimalAspectRatio(100, 0)).toThrow(errorMessage);
-    expect(() => calculateDecimalAspectRatio(-100, 100)).toThrow(errorMessage);
   });
 });

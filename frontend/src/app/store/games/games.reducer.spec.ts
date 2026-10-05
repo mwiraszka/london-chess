@@ -51,12 +51,19 @@ describe('Games Reducer', () => {
     });
 
     it('should forget a failure once the load is attempted again', () => {
-      const failed = gamesReducer(
+      let failed = gamesReducer(
         initialState,
         GamesActions.fetchFilteredGamesFailed({ error: mockError }),
       );
+      failed = gamesReducer(failed, GamesActions.fetchGameFailed({ error: mockError }));
+      failed = gamesReducer(
+        failed,
+        GamesActions.fetchArchiveReferenceFailed({ error: mockError }),
+      );
 
-      const state = gamesReducer(failed, GamesActions.fetchFilteredGamesRequested());
+      let state = gamesReducer(failed, GamesActions.fetchFilteredGamesRequested());
+      state = gamesReducer(state, GamesActions.fetchGameRequested({ gameId: 'g1' }));
+      state = gamesReducer(state, GamesActions.fetchArchiveReferenceRequested());
 
       expect(state.failedLoads).toEqual([]);
     });

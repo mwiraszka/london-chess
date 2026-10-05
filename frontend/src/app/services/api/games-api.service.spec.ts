@@ -119,4 +119,14 @@ describe('GamesApiService', () => {
         .flush({ data: { white: [], black: [] } });
     });
   });
+
+  it('should ask for the widest games once a visit, however often they are wanted', () => {
+    const received: unknown[] = [];
+    service.getWidestGames().subscribe(response => received.push(response));
+    service.getWidestGames().subscribe(response => received.push(response));
+
+    httpMock.expectOne(`${apiBaseUrl}/widest`).flush({ data: MOCK_GAMES });
+
+    expect(received).toEqual([{ data: MOCK_GAMES }, { data: MOCK_GAMES }]);
+  });
 });

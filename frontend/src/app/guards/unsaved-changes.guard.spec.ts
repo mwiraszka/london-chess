@@ -1,5 +1,5 @@
 import { DialogRef, DialogService } from '@eagami/ui';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
@@ -55,6 +55,7 @@ describe('unsavedChangesGuard', () => {
   });
 
   afterEach(() => {
+    TestBed.inject(MockStore).resetSelectors();
     vi.clearAllMocks();
   });
 

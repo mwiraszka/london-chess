@@ -193,7 +193,6 @@ describe('Events Reducer', () => {
 
       const action = EventsActions.paginationOptionsChanged({
         options: newOptions,
-        fetch: false,
       });
       const state = eventsReducer(initialState, action);
 
@@ -209,7 +208,6 @@ describe('Events Reducer', () => {
 
       const action = EventsActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: true,
       });
       const state = eventsReducer(previousState, action);
 

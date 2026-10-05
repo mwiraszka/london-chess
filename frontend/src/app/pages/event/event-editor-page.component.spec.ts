@@ -265,4 +265,30 @@ describe('EventEditorPageComponent', () => {
       });
     });
   });
+
+  it('should flag edits to an event that are not yet saved', async () => {
+    const [event] = MOCK_EVENTS;
+    store.setState({
+      eventsState: {
+        ...eventsInitialState,
+        ids: [event.id],
+        entities: {
+          [event.id]: {
+            event,
+            formData: { ...pick(event, EVENT_FORM_DATA_PROPERTIES), title: 'Renamed' },
+          },
+        },
+      },
+    });
+    mockParamsSubject.next({ event_id: event.id });
+    fixture.detectChanges();
+
+    const vm = await firstValueFrom(component.viewModel$!);
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+    expect(query(fixture.debugElement, '.end-with-asterisk')).toBeTruthy();
+    expect(
+      query(fixture.debugElement, 'lcc-event-form').componentInstance.hasUnsavedChanges(),
+    ).toBe(true);
+  });
 });

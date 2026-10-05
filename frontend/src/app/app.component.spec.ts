@@ -76,6 +76,8 @@ describe('AppComponent', () => {
     store.refreshState();
   });
 
+  afterEach(() => store.resetSelectors());
+
   describe('initialization', () => {
     beforeEach(() => {
       fixture.detectChanges();
@@ -111,10 +113,7 @@ describe('AppComponent', () => {
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
       expect(vm).toStrictEqual({
-        bannerLastCleared: null,
         isDarkMode: false,
-        isDesktopView: false,
-        isWideView: false,
         nextEvents: [MOCK_EVENTS[0]],
         showUpcomingEventBanner: false,
       });

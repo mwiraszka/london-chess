@@ -1,6 +1,6 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { pick, uniq } from 'lodash';
+import { pick } from 'lodash';
 import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -50,7 +50,6 @@ describe('AlbumEditorPageComponent', () => {
         {} as Record<string, { image: Image; formData: ImageFormData }>,
       ),
       lastMetadataFetch: '2025-01-01T00:00:00.000Z',
-      totalCount: MOCK_IMAGES.length,
     };
 
     await TestBed.configureTestingModule({
@@ -102,7 +101,6 @@ describe('AlbumEditorPageComponent', () => {
 
         expect(vm).toStrictEqual({
           album: 'Album of the Year',
-          existingAlbums: uniq(MOCK_IMAGES.map(image => image.album)),
           hasUnsavedChanges: false,
           imageEntities: expect.any(Array),
           newImagesFormData: {},
@@ -133,7 +131,6 @@ describe('AlbumEditorPageComponent', () => {
 
         expect(vm).toStrictEqual({
           album: null,
-          existingAlbums: uniq(MOCK_IMAGES.map(image => image.album)),
           hasUnsavedChanges: false,
           imageEntities: expect.any(Array),
           newImagesFormData: {},
@@ -179,12 +176,6 @@ describe('AlbumEditorPageComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith(
         ImagesActions.formDataChanged({ multipleFormData }),
       );
-    });
-
-    it('should ignore a change without form data', () => {
-      albumForm().triggerEventHandler('change', {});
-
-      expect(dispatchSpy).not.toHaveBeenCalled();
     });
 
     it('should report a failed file action', () => {
@@ -280,5 +271,35 @@ describe('AlbumEditorPageComponent', () => {
         );
       });
     });
+  });
+
+  it('should flag edits to an album that are not yet saved', async () => {
+    const [image] = MOCK_IMAGES;
+    store.setState({
+      imagesState: {
+        ...imagesInitialState,
+        ids: [image.id],
+        entities: {
+          [image.id]: {
+            image,
+            formData: {
+              ...pick(image, IMAGE_FORM_DATA_PROPERTIES),
+              caption: 'Recaptioned',
+            },
+          },
+        },
+        lastMetadataFetch: '2025-01-01T00:00:00.000Z',
+      },
+    });
+    mockParamsSubject.next({ album: image.album });
+    fixture.detectChanges();
+
+    const vm = await firstValueFrom(component.viewModel$!);
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+    expect(query(fixture.debugElement, '.end-with-asterisk')).toBeTruthy();
+    expect(
+      query(fixture.debugElement, 'lcc-album-form').componentInstance.hasUnsavedChanges(),
+    ).toBe(true);
   });
 });

@@ -79,6 +79,8 @@ describe('NewsPageComponent', () => {
     store.refreshState();
   });
 
+  afterEach(() => store.resetSelectors());
+
   describe('ngOnInit', () => {
     beforeEach(() => {
       component.ngOnInit();
@@ -145,17 +147,7 @@ describe('NewsPageComponent', () => {
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.paginationOptionsChanged({ options, fetch: true }),
-      );
-    });
-
-    it('should dispatch paginationOptionsChanged action with custom fetch value', () => {
-      const options = mockOptions;
-      component.onOptionsChange(options, false);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        ArticlesActions.paginationOptionsChanged({ options, fetch: false }),
+        ArticlesActions.paginationOptionsChanged({ options }),
       );
     });
   });
@@ -219,7 +211,6 @@ describe('NewsPageComponent', () => {
         expect(dispatchSpy).toHaveBeenCalledWith(
           ArticlesActions.paginationOptionsChanged({
             options: { ...mockOptions, search: 'blitz', page: 1 },
-            fetch: true,
           }),
         );
       });
@@ -233,7 +224,6 @@ describe('NewsPageComponent', () => {
         expect(dispatchSpy).toHaveBeenCalledWith(
           ArticlesActions.paginationOptionsChanged({
             options: { ...mockOptions, page: 2, pageSize: 20 },
-            fetch: true,
           }),
         );
       });

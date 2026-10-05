@@ -40,6 +40,8 @@ describe('memberProfileGuard', () => {
     dispatchSpy = vi.spyOn(store, 'dispatch');
   });
 
+  afterEach(() => store.resetSelectors());
+
   it('should redirect home without a request when the number is malformed', () => {
     const result = runGuard('abc');
 

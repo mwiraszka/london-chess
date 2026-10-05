@@ -241,40 +241,22 @@ describe('EventFormComponent', () => {
       component.form.markAllAsTouched();
     });
 
-    it('should put the original event back once confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+    it('should put the original event back', () => {
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
-      await component.onRestore();
-
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original event data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(originalEvent.id);
       expect(component.form.controls.title.value).toBe(originalEvent.title);
       expect(component.form.touched).toBe(false);
     });
 
-    it('should empty a new event back to its starting values', async () => {
+    it('should empty a new event back to its starting values', () => {
       fixture.destroy();
       render({ ...formData, title: 'Changed title' }, true, null);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
       expect(component.form.controls.title.value).toBe(INITIAL_EVENT_FORM_DATA.title);
-    });
-
-    it('should change nothing when cancelled', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.title.value).toBe('Changed title');
     });
   });
 

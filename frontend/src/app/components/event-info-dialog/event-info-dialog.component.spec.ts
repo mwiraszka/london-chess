@@ -37,7 +37,7 @@ describe('EventInfoDialogComponent', () => {
   });
 
   it('should show the event in an open dialog', () => {
-    expect(queryTextContent(fixture.debugElement, '.dialog-title')).toBe(
+    expect(queryTextContent(fixture.debugElement, '[slot="header"]')).toBe(
       withArticle.title,
     );
     expect(queryTextContent(fixture.debugElement, '.event-type')).toBe(withArticle.type);

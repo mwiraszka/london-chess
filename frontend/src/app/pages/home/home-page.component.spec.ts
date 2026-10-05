@@ -17,12 +17,16 @@ import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  CsvExportService,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, query } from '@app/utils';
 
 import { HomePageComponent } from './home-page.component';
 
@@ -30,14 +34,10 @@ describe('HomePageComponent', () => {
   let fixture: ComponentFixture<HomePageComponent>;
   let component: HomePageComponent;
 
-  let dialogService: DialogService;
   let metaAndTitleService: MetaAndTitleService;
   let store: MockStore;
 
-  let dialogOpenSpy: MockInstance;
   let dispatchSpy: MockInstance;
-  let onExportToCsvSpy: MockInstance;
-  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
@@ -48,14 +48,13 @@ describe('HomePageComponent', () => {
     { ...MOCK_IMAGES[2], id: 'abc123', album: '_internal' },
   ];
   const mockIsAdmin = true;
-  const mockNextEvent = MOCK_EVENTS[0];
   const mockPhotoImages = mockAllImages.filter(image => !image.album.startsWith('_'));
-  const mockTotalCount = 999;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HomePageComponent],
       providers: [
+        { provide: CsvExportService, useValue: { exportEvents: vi.fn() } },
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
@@ -73,18 +72,13 @@ describe('HomePageComponent', () => {
       ],
     }).compileComponents();
 
-    dialogService = TestBed.inject(DialogService);
-
     fixture = TestBed.createComponent(HomePageComponent);
     component = fixture.componentInstance;
 
     metaAndTitleService = TestBed.inject(MetaAndTitleService);
     store = TestBed.inject(MockStore);
 
-    dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    onExportToCsvSpy = vi.spyOn(component, 'onExportToCsv');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
@@ -95,13 +89,13 @@ describe('HomePageComponent', () => {
     store.overrideSelector(EventsSelectors.selectHomePageEvents, mockHomePageEvents);
     store.overrideSelector(ImagesSelectors.selectAllImages, mockAllImages);
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
-    store.overrideSelector(EventsSelectors.selectNextEvent, mockNextEvent);
-    store.overrideSelector(EventsSelectors.selectTotalCount, mockTotalCount);
     store.overrideSelector(ArticlesSelectors.selectHomePageArticlesStatus, 'loaded');
     store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loaded');
     store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loaded');
     store.refreshState();
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('ngOnInit', () => {
     beforeEach(() => {
@@ -122,7 +116,6 @@ describe('HomePageComponent', () => {
         homePageEvents: mockHomePageEvents,
         allImages: mockAllImages,
         isAdmin: mockIsAdmin,
-        nextEvent: mockNextEvent,
         photoImages: mockPhotoImages,
         articlesStatus: 'loaded',
         eventsStatus: 'loaded',
@@ -162,59 +155,6 @@ describe('HomePageComponent', () => {
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
       expect(vm.articlesStatus).toBe('failed');
-    });
-  });
-
-  describe('onExportToCsv', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
-
-    it('should return early if event count is zero', async () => {
-      store.overrideSelector(EventsSelectors.selectTotalCount, 0);
-      store.refreshState();
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).not.toHaveBeenCalled();
-    });
-
-    it('should open confirmation dialog with correct event count', async () => {
-      const dialogOpenSpy = vi
-        .spyOn(dialogService, 'open')
-        .mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Export all ${mockTotalCount} events to a CSV file?`,
-            confirmButtonText: 'Export',
-            confirmButtonType: 'primary',
-          }),
-        },
-      });
-    });
-
-    it('should export the events from the confirmation dialog', async () => {
-      await component.onExportToCsv();
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        EventsActions.exportEventsToCsvRequested(),
-        [EventsActions.exportEventsToCsvSucceeded, EventsActions.exportEventsToCsvFailed],
-      );
-    });
-
-    it('should not export anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onExportToCsv();
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -302,10 +242,10 @@ describe('HomePageComponent', () => {
       });
     });
 
-    it('should call onExportToCsv when exportToCsvButton action is called', () => {
+    it('should export the events from the export button', () => {
       component.exportToCsvButton.action();
 
-      expect(onExportToCsvSpy).toHaveBeenCalledTimes(1);
+      expect(TestBed.inject(CsvExportService).exportEvents).toHaveBeenCalledOnce();
     });
   });
 

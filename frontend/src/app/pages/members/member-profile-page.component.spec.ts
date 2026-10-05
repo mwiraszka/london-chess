@@ -95,6 +95,8 @@ describe('MemberProfilePageComponent', () => {
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
   });
 
+  afterEach(() => store.resetSelectors());
+
   describe("the member's openings", () => {
     it('should be fetched once for the openings card', () => {
       const dispatchSpy = vi.spyOn(store, 'dispatch');

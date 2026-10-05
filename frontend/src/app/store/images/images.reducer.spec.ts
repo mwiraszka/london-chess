@@ -1,11 +1,7 @@
 import { pick } from 'lodash';
 
-import {
-  BASE_IMAGE_PROPERTIES,
-  IMAGE_FORM_DATA_PROPERTIES,
-  INITIAL_IMAGE_FORM_DATA,
-} from '@app/constants';
-import { MOCK_IMAGES } from '@app/mocks/images.mock';
+import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
+import { BASE_IMAGE_PROPERTIES, MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, LccError } from '@app/models';
 import { BaseImage } from '@app/models/image.model';
 
@@ -179,14 +175,12 @@ describe('Images Reducer', () => {
       const action = ImagesActions.fetchFilteredThumbnailsSucceeded({
         images,
         filteredCount: 1,
-        totalCount: 10,
       });
       const state = imagesReducer(initialState, action);
 
       expect(state.entities['mock-id-1']?.image).toEqual(MOCK_IMAGES[0]);
       expect(state.filteredImages).toEqual(images);
       expect(state.filteredCount).toBe(1);
-      expect(state.totalCount).toBe(10);
       expect(state.lastFilteredThumbnailsFetch).toBe(now);
     });
   });
@@ -242,7 +236,6 @@ describe('Images Reducer', () => {
 
       const action = ImagesActions.paginationOptionsChanged({
         options: newOptions,
-        fetch: false,
       });
       const state = imagesReducer(initialState, action);
 
@@ -258,7 +251,6 @@ describe('Images Reducer', () => {
 
       const action = ImagesActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: true,
       });
       const state = imagesReducer(previousState, action);
 
@@ -391,8 +383,11 @@ describe('Images Reducer', () => {
     });
   });
 
-  describe('updateImageSucceeded', () => {
-    it('should update existing image', () => {
+  describe('updateImageSucceeded and automaticAlbumCoverSwitchSucceeded', () => {
+    it.each([
+      ImagesActions.updateImageSucceeded,
+      ImagesActions.automaticAlbumCoverSwitchSucceeded,
+    ])('should update the existing image on %s', updated => {
       const previousState: ImagesState = imagesAdapter.upsertOne(
         {
           image: MOCK_IMAGES[0],
@@ -412,8 +407,10 @@ describe('Images Reducer', () => {
         ...mockBaseImage,
         caption: 'Updated Caption',
       };
-      const action = ImagesActions.updateImageSucceeded({ baseImage: updatedBaseImage });
-      const state = imagesReducer(previousState, action);
+      const state = imagesReducer(
+        previousState,
+        updated({ baseImage: updatedBaseImage }),
+      );
 
       expect(state.entities['mock-id-1']?.image.caption).toBe('Updated Caption');
     });
@@ -772,23 +769,6 @@ describe('Images Reducer', () => {
     });
   });
 
-  describe('allNewImagesRemoved', () => {
-    it('should clear all new images formData', () => {
-      const previousState: ImagesState = {
-        ...initialState,
-        newImagesFormData: {
-          'new-1': INITIAL_IMAGE_FORM_DATA,
-          'new-2': INITIAL_IMAGE_FORM_DATA,
-        },
-      };
-
-      const action = ImagesActions.allNewImagesRemoved();
-      const state = imagesReducer(previousState, action);
-
-      expect(state.newImagesFormData).toEqual({});
-    });
-  });
-
   describe('state immutability', () => {
     it('should not mutate the previous state', () => {
       const previousState: ImagesState = { ...initialState };
@@ -851,7 +831,6 @@ describe('Images Reducer', () => {
           ImagesActions.fetchFilteredThumbnailsSucceeded({
             images: [thumbnail],
             filteredCount: 1,
-            totalCount: 1,
           }),
         );
         const batchState = imagesReducer(

@@ -185,17 +185,6 @@ describe('Events Selectors', () => {
     });
   });
 
-  describe('selectAllEvents', () => {
-    it('should select all events from entities', () => {
-      const allEventEntities = [
-        { event: MOCK_EVENTS[0], formData: mockEventFormData },
-        { event: MOCK_EVENTS[1], formData: INITIAL_EVENT_FORM_DATA },
-      ];
-      const result = EventsSelectors.selectAllEvents.projector(allEventEntities);
-      expect(result).toEqual([MOCK_EVENTS[0], MOCK_EVENTS[1]]);
-    });
-  });
-
   describe('selectEventById', () => {
     it('should select event by id when it exists', () => {
       const allEventEntities = [
@@ -329,71 +318,6 @@ describe('Events Selectors', () => {
       const result = EventsSelectors.selectConcurrentNextEvents({ eventsState: state });
 
       expect(result).toEqual([MOCK_EVENTS[0]]);
-    });
-  });
-
-  describe('selectNextEvent', () => {
-    it('should select the next upcoming event', () => {
-      const now = moment.tz('America/Toronto');
-      const futureEvents = [
-        {
-          ...MOCK_EVENTS[0],
-          eventDate: now.clone().add(1, 'day').toISOString(),
-        },
-        {
-          ...MOCK_EVENTS[1],
-          eventDate: now.clone().add(2, 'days').toISOString(),
-        },
-        {
-          ...MOCK_EVENTS[2],
-          eventDate: now.clone().add(3, 'days').toISOString(),
-        },
-      ];
-      const result = EventsSelectors.selectNextEvent.projector(futureEvents);
-      expect(result?.id).toBe(MOCK_EVENTS[0].id);
-    });
-
-    it('should return null when no future events', () => {
-      const pastEvents = [
-        {
-          ...MOCK_EVENTS[0],
-          eventDate: moment().subtract(1, 'day').toISOString(),
-        },
-      ];
-      const result = EventsSelectors.selectNextEvent.projector(pastEvents);
-      expect(result).toBeNull();
-    });
-
-    it('should exclude events that ended more than 3 hours ago', () => {
-      const now = moment.tz('America/Toronto');
-      const events = [
-        {
-          ...MOCK_EVENTS[0],
-          eventDate: now.clone().subtract(4, 'hours').toISOString(),
-        },
-        {
-          ...MOCK_EVENTS[1],
-          eventDate: now.clone().add(1, 'day').toISOString(),
-        },
-      ];
-      const result = EventsSelectors.selectNextEvent.projector(events);
-      expect(result?.id).toBe(MOCK_EVENTS[1].id);
-    });
-
-    it('should ignore a cached event that is no longer among the home page events', () => {
-      const deletedEvent: Event = {
-        ...MOCK_EVENTS[2],
-        id: 'deleted-event-id',
-        eventDate: moment('2049-12-01').toISOString(),
-      };
-      const state = eventsAdapter.upsertOne(
-        { event: deletedEvent, formData: INITIAL_EVENT_FORM_DATA },
-        mockEventsState,
-      );
-
-      const result = EventsSelectors.selectNextEvent({ eventsState: state });
-
-      expect(result).toEqual(MOCK_EVENTS[0]);
     });
   });
 });

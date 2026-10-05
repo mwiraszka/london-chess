@@ -59,6 +59,8 @@ describe('PhotoGalleryPageComponent', () => {
     store.refreshState();
   });
 
+  afterEach(() => store.resetSelectors());
+
   describe('ngOnInit', () => {
     beforeEach(() => {
       component.ngOnInit();

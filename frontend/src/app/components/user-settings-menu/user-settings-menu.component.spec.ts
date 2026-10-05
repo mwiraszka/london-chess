@@ -84,6 +84,8 @@ describe('UserSettingsMenuComponent', () => {
     dispatchSpy = vi.spyOn(store, 'dispatch');
   });
 
+  afterEach(() => store.resetSelectors());
+
   describe('logged in', () => {
     beforeEach(() => {
       create();

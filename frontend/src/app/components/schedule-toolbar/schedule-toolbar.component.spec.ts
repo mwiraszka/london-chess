@@ -1,4 +1,4 @@
-import { DialogService } from '@eagami/ui';
+import { ButtonComponent, DialogService } from '@eagami/ui';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -16,6 +16,16 @@ describe('ScheduleToolbarComponent', () => {
   let dateToISOStringSpy: MockInstance;
   let exportEventsToIcalSpy: MockInstance;
   let todayScrollPointSpy: MockInstance;
+
+  const todayButton = (): ButtonComponent =>
+    query(fixture.debugElement, '.schedule-toolbar__today').componentInstance;
+
+  // Whatever the schedule views draw is only read once a render has finished
+  async function rerender(): Promise<void> {
+    fixture.componentRef.setInput('filteredEvents', [...MOCK_EVENTS.slice(0, 3)]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -142,33 +152,22 @@ describe('ScheduleToolbarComponent', () => {
       expect(() => component.onToday()).not.toThrow();
     });
 
-    it('should disable today button when today scroll point does not exist', () => {
+    it('should disable today button when today scroll point does not exist', async () => {
       todayScrollPointSpy.mockReturnValue(null);
 
-      // Force change detection to pick up the new mock value
-      component.changeDetectorRef.detectChanges();
+      await rerender();
 
-      expect(
-        query(
-          fixture.debugElement,
-          '.schedule-toolbar__today',
-        ).componentInstance.disabled(),
-      ).toBe(true);
+      expect(todayButton().disabled()).toBe(true);
     });
 
-    it('should enable today button when today scroll point exists', () => {
-      const mockElement = { scrollIntoView: vi.fn() };
-      todayScrollPointSpy.mockReturnValue(mockElement as unknown as Element);
+    it('should enable today button once a today scroll point is drawn', async () => {
+      todayScrollPointSpy.mockReturnValue(null);
+      await rerender();
+      todayScrollPointSpy.mockReturnValue(document.createElement('div'));
 
-      // Force change detection to pick up the new mock value
-      component.changeDetectorRef.detectChanges();
+      await rerender();
 
-      expect(
-        query(
-          fixture.debugElement,
-          '.schedule-toolbar__today',
-        ).componentInstance.disabled(),
-      ).toBe(false);
+      expect(todayButton().disabled()).toBe(false);
     });
   });
 

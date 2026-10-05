@@ -218,6 +218,19 @@ describe('Members Selectors', () => {
     });
   });
 
+  describe('selectMemberByNumber', () => {
+    it('should select the member with the number, or none', () => {
+      const numbered = { ...MOCK_MEMBERS[1], number: 7 };
+      const allMembers = [MOCK_MEMBERS[0], numbered];
+
+      const found = MembersSelectors.selectMemberByNumber(7).projector(allMembers);
+      const missing = MembersSelectors.selectMemberByNumber(9999).projector(allMembers);
+
+      expect(found).toEqual(numbered);
+      expect(missing).toBeNull();
+    });
+  });
+
   describe('selectMemberFormDataById', () => {
     it('should select form data for existing member', () => {
       const allMemberEntities = [

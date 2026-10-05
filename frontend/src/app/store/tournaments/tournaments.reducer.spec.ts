@@ -10,7 +10,11 @@ import { LccError } from '@app/models';
 import { tournamentFormData } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
-import { initialState, tournamentsReducer } from './tournaments.reducer';
+import {
+  TournamentsState,
+  initialState,
+  tournamentsReducer,
+} from './tournaments.reducer';
 
 describe('Tournaments Reducer', () => {
   const mockError: LccError = { name: 'LCCError', message: 'Something went wrong' };
@@ -51,15 +55,16 @@ describe('Tournaments Reducer', () => {
     });
 
     it('should forget a failure once the load is attempted again', () => {
-      const failed = tournamentsReducer(
-        initialState,
-        TournamentsActions.fetchTournamentFailed({ error: mockError }),
-      );
+      const failed: TournamentsState = {
+        ...initialState,
+        failedLoads: ['summaries', 'tournament', 'member-results'],
+      };
 
-      const state = tournamentsReducer(
-        failed,
+      const state = [
+        TournamentsActions.fetchTournamentsRequested(),
         TournamentsActions.fetchTournamentRequested({ tournamentNumber: 90 }),
-      );
+        TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
+      ].reduce(tournamentsReducer, failed);
 
       expect(state.failedLoads).toEqual([]);
     });

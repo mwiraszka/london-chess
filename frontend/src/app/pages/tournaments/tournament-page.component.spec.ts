@@ -1,4 +1,4 @@
-import { DataTableColumn, DialogRef, DialogService } from '@eagami/ui';
+import { ButtonComponent, DataTableColumn, DialogRef, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -18,6 +18,7 @@ import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournamen
 import { BasicDialogResult, Tournament, User } from '@app/models';
 import {
   AuthDrawerService,
+  DeletionService,
   MetaAndTitleService,
   StoreRequestService,
   UserService,
@@ -107,6 +108,8 @@ describe('TournamentPageComponent', () => {
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('a Swiss tournament with its rounds', () => {
     beforeEach(() => open(90));
@@ -579,26 +582,71 @@ describe('TournamentPageComponent', () => {
       expect(registration()).toBeFalsy();
     });
 
-    it('should give admins links to edit and delete the tournament', async () => {
+    it('should keep the register button busy only until the request is answered', async () => {
+      signIn(member, 44);
+      openUpcoming();
+      let answer!: () => void;
+      vi.mocked(TestBed.inject(StoreRequestService).dispatch).mockReturnValue(
+        new Promise(
+          resolve =>
+            (answer = () =>
+              resolve(
+                TournamentsActions.registrationFailed({
+                  error: { name: 'LCCError', message: 'Registration has closed.' },
+                }),
+              )),
+        ),
+      );
+      const registerButton = (): ButtonComponent =>
+        query(fixture.debugElement, '.register-button').componentInstance;
+
+      query(fixture.debugElement, '.register-button').triggerEventHandler('clicked');
+      fixture.detectChanges();
+      const busy = registerButton().loading();
+      answer();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(busy).toBe(true);
+      expect(registerButton().loading()).toBe(false);
+    });
+
+    it('should not offer to withdraw once the tournament is under way', () => {
+      signIn(member, 7);
+
+      openUpcoming({ date: '2026-01-01' });
+
+      expect(textOf(query(fixture.debugElement, '.registration__registered'))).toBe(
+        'You are registered.',
+      );
+      expect(query(fixture.debugElement, '.withdraw-button')).toBeFalsy();
+    });
+
+    it('should let an admin delete the tournament', () => {
       signIn({ ...member, isAdmin: true });
       openUpcoming();
-      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+      const deleteTournament = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteTournament')
+        .mockResolvedValue(false);
 
       query(
         fixture.debugElement,
         'lcc-admin-toolbar #delete-tournament',
       ).triggerEventHandler('clicked');
-      await fixture.whenStable();
+
+      expect(deleteTournament).toHaveBeenCalledExactlyOnceWith(MOCK_UPCOMING_TOURNAMENT);
+    });
+
+    it('should give admins a link to edit the tournament', () => {
+      signIn({ ...member, isAdmin: true });
+
+      openUpcoming();
 
       expect(
         queryAll(fixture.debugElement, 'lcc-admin-toolbar lcc-link-list a').map(link =>
           link.injector.get(RouterLink).urlTree?.toString(),
         ),
       ).toEqual([`/tournament/edit/${MOCK_UPCOMING_TOURNAMENT.number}`]);
-      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
-        'Delete Fall Rapid (October 15–29, 2050)? Its results and registrations will be lost.',
-      );
     });
   });
 });

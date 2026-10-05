@@ -2,7 +2,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import moment from 'moment-timezone';
-import { ReplaySubject, of, throwError } from 'rxjs';
+import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -18,6 +18,7 @@ import {
   User,
 } from '@app/models';
 import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
+import * as AppActions from '@app/store/app/app.actions';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
 import {
@@ -137,6 +138,33 @@ describe('MembersEffects', () => {
     mockGetNewPeakRating.mockImplementation((rating, peakRating) => peakRating);
   });
 
+  afterEach(() => store.resetSelectors());
+
+  describe('reloadMemberProfiles$', () => {
+    it.each([
+      [
+        'a member is added',
+        MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0], emailSent: null }),
+      ],
+      [
+        'a member is updated',
+        MembersActions.updateMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          originalMemberName: 'John Doe',
+          emailSent: null,
+        }),
+      ],
+      ['the app is refreshed', AppActions.refreshAppRequested()],
+    ])('should load the member profiles again once %s', (_, action) => {
+      const reload = vi.mocked(TestBed.inject(MemberProfilesService).reload);
+      effects.reloadMemberProfiles$.subscribe();
+
+      actions$.next(action);
+
+      expect(reload).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('replacePublicRecordsForAdmin$', () => {
     it('should fetch every member for an admin while the stored records are public', () => {
       store.overrideSelector(AuthSelectors.selectIsAdmin, true);
@@ -178,40 +206,32 @@ describe('MembersEffects', () => {
       store.refreshState();
     });
 
-    it('should fetch all members successfully', () =>
-      withDone(done => {
-        membersApiService.getAllMembers.mockReturnValue(of(mockApiResponse));
+    it('should fetch all members successfully', async () => {
+      membersApiService.getAllMembers.mockReturnValue(of(mockApiResponse));
 
-        actions$.next(MembersActions.fetchAllMembersRequested());
+      actions$.next(MembersActions.fetchAllMembersRequested());
+      const action = await firstValueFrom(effects.fetchAllMembers$);
 
-        effects.fetchAllMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchAllMembersSucceeded({
-              members: mockApiResponse.data.items,
-              totalCount: mockApiResponse.data.totalCount,
-              scope: 'admin',
-            }),
-          );
-          expect(membersApiService.getAllMembers).toHaveBeenCalledWith('admin');
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.fetchAllMembersSucceeded({
+          members: mockApiResponse.data.items,
+          totalCount: mockApiResponse.data.totalCount,
+          scope: 'admin',
+        }),
+      );
+      expect(membersApiService.getAllMembers).toHaveBeenCalledWith('admin');
+    });
 
-    it('should handle fetch all members failure', () =>
-      withDone(done => {
-        membersApiService.getAllMembers.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should handle fetch all members failure', async () => {
+      membersApiService.getAllMembers.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.fetchAllMembersRequested());
+      actions$.next(MembersActions.fetchAllMembersRequested());
+      const action = await firstValueFrom(effects.fetchAllMembers$);
 
-        effects.fetchAllMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchAllMembersFailed({ error: mockError }),
-          );
-          expect(mockParseError).toHaveBeenCalledWith(mockError);
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchAllMembersFailed({ error: mockError }));
+      expect(mockParseError).toHaveBeenCalledWith(mockError);
+    });
   });
 
   describe('fetchFilteredMembers$', () => {
@@ -235,137 +255,87 @@ describe('MembersEffects', () => {
       store.refreshState();
     });
 
-    it('should fetch filtered members with options from store', () =>
-      withDone(done => {
-        membersApiService.getFilteredMembers.mockReturnValue(of(mockApiResponse));
+    it('should fetch filtered members with options from store', async () => {
+      membersApiService.getFilteredMembers.mockReturnValue(of(mockApiResponse));
 
-        actions$.next(MembersActions.fetchFilteredMembersRequested());
+      actions$.next(MembersActions.fetchFilteredMembersRequested());
+      const action = await firstValueFrom(effects.fetchFilteredMembers$);
 
-        effects.fetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersSucceeded({
-              members: mockApiResponse.data.items,
-              filteredCount: mockApiResponse.data.filteredCount,
-              totalCount: mockApiResponse.data.totalCount,
-              scope: 'admin',
-            }),
-          );
-          expect(membersApiService.getFilteredMembers).toHaveBeenCalledWith(
-            'admin',
-            mockOptions,
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.fetchFilteredMembersSucceeded({
+          members: mockApiResponse.data.items,
+          filteredCount: mockApiResponse.data.filteredCount,
+          totalCount: mockApiResponse.data.totalCount,
+          scope: 'admin',
+        }),
+      );
+      expect(membersApiService.getFilteredMembers).toHaveBeenCalledWith(
+        'admin',
+        mockOptions,
+      );
+    });
 
-    it('should handle fetch filtered members failure', () =>
-      withDone(done => {
-        membersApiService.getFilteredMembers.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should handle fetch filtered members failure', async () => {
+      membersApiService.getFilteredMembers.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.fetchFilteredMembersRequested());
+      actions$.next(MembersActions.fetchFilteredMembersRequested());
+      const action = await firstValueFrom(effects.fetchFilteredMembers$);
 
-        effects.fetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchFilteredMembersFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.fetchFilteredMembersFailed({ error: mockError }),
+      );
+    });
   });
 
   describe('refetchFilteredMembers$', () => {
-    it('should trigger refetch after addMemberSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0], emailSent: null }),
-        );
+    it('should trigger refetch after addMemberSucceeded', async () => {
+      actions$.next(
+        MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0], emailSent: null }),
+      );
+      const action = await firstValueFrom(effects.refetchFilteredMembers$);
 
-        effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
+    });
 
-    it('should trigger refetch after updateMemberSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.updateMemberSucceeded({
-            member: MOCK_MEMBERS[0],
-            originalMemberName: 'Old Name',
-            emailSent: null,
-          }),
-        );
+    it('should trigger refetch after updateMemberSucceeded', async () => {
+      actions$.next(
+        MembersActions.updateMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          originalMemberName: 'Old Name',
+          emailSent: null,
+        }),
+      );
+      const action = await firstValueFrom(effects.refetchFilteredMembers$);
 
-        effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
+    });
 
-    it('should trigger refetch after updateMemberRatingsSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.updateMemberRatingsSucceeded({
-            members: [MOCK_MEMBERS[0]],
-            unnotifiedMemberNames: [],
-          }),
-        );
+    it('should trigger refetch after updateMemberRatingsSucceeded', async () => {
+      actions$.next(
+        MembersActions.updateMemberRatingsSucceeded({
+          members: [MOCK_MEMBERS[0]],
+          unnotifiedMemberNames: [],
+        }),
+      );
+      const action = await firstValueFrom(effects.refetchFilteredMembers$);
 
-        effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
+    });
 
-    it('should trigger refetch after deleteMemberSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.deleteMemberSucceeded({
-            memberId: MOCK_MEMBERS[0].id,
-            memberName: 'Test Member',
-          }),
-        );
+    it('should trigger refetch after deleteMemberSucceeded', async () => {
+      actions$.next(
+        MembersActions.deleteMemberSucceeded({
+          memberId: MOCK_MEMBERS[0].id,
+          memberName: 'Test Member',
+        }),
+      );
+      const action = await firstValueFrom(effects.refetchFilteredMembers$);
 
-        effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
+    });
 
-    it('should trigger refetch after paginationOptionsChanged', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.paginationOptionsChanged({
-            options: {
-              page: 1,
-              pageSize: 10,
-              sortBy: 'lastName',
-              sortOrder: 'asc',
-              filters: {
-                showInactiveMembers: {
-                  label: 'Show inactive members',
-                  value: false,
-                },
-              },
-              search: '',
-            },
-            fetch: true,
-          }),
-        );
-
-        effects.refetchFilteredMembers$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
-          done();
-        });
-      }));
-
-    it('should not refetch when the options change without asking for a fetch', () => {
-      vi.useFakeTimers();
-      mockIsExpired.mockReturnValue(false);
-      const results: Action[] = [];
-      effects.refetchFilteredMembers$.subscribe(action => results.push(action));
-
+    it('should trigger refetch after paginationOptionsChanged', async () => {
       actions$.next(
         MembersActions.paginationOptionsChanged({
           options: {
@@ -381,12 +351,11 @@ describe('MembersEffects', () => {
             },
             search: '',
           },
-          fetch: false,
         }),
       );
-      vi.advanceTimersByTime(0);
+      const action = await firstValueFrom(effects.refetchFilteredMembers$);
 
-      expect(results).toHaveLength(0);
+      expect(action).toEqual(MembersActions.fetchFilteredMembersRequested());
     });
 
     it('should check for stale members as soon as it starts', () => {
@@ -444,77 +413,65 @@ describe('MembersEffects', () => {
   });
 
   describe('fetchMember$', () => {
-    it('should fetch a single member successfully', () =>
-      withDone(done => {
-        const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
-        membersApiService.getMember.mockReturnValue(of(mockResponse));
+    it('should fetch a single member successfully', async () => {
+      const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
+      membersApiService.getMember.mockReturnValue(of(mockResponse));
 
-        actions$.next(
-          MembersActions.fetchMemberRequested({ memberId: MOCK_MEMBERS[0].id }),
-        );
+      actions$.next(
+        MembersActions.fetchMemberRequested({ memberId: MOCK_MEMBERS[0].id }),
+      );
+      const action = await firstValueFrom(effects.fetchMember$);
 
-        effects.fetchMember$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              scope: 'admin',
-            }),
-          );
-          expect(membersApiService.getMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.fetchMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          scope: 'admin',
+        }),
+      );
+      expect(membersApiService.getMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
+    });
 
-    it('should handle fetch member failure', () =>
-      withDone(done => {
-        membersApiService.getMember.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should handle fetch member failure', async () => {
+      membersApiService.getMember.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.fetchMemberRequested({ memberId: 'invalid-id' }));
+      actions$.next(MembersActions.fetchMemberRequested({ memberId: 'invalid-id' }));
+      const action = await firstValueFrom(effects.fetchMember$);
 
-        effects.fetchMember$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchMemberFailed({ error: mockError }));
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchMemberFailed({ error: mockError }));
+    });
   });
 
   describe('fetchMemberByNumber$', () => {
-    it('should fetch a member by number in the viewer scope', () =>
-      withDone(done => {
-        store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
-        store.refreshState();
-        const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
-        membersApiService.getMemberByNumber.mockReturnValue(of(mockResponse));
+    it('should fetch a member by number in the viewer scope', async () => {
+      store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
+      store.refreshState();
+      const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
+      membersApiService.getMemberByNumber.mockReturnValue(of(mockResponse));
 
-        actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 0 }));
+      actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 0 }));
+      const action = await firstValueFrom(effects.fetchMemberByNumber$);
 
-        effects.fetchMemberByNumber$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              scope: 'admin',
-            }),
-          );
-          expect(membersApiService.getMemberByNumber).toHaveBeenCalledWith(0, 'admin');
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.fetchMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          scope: 'admin',
+        }),
+      );
+      expect(membersApiService.getMemberByNumber).toHaveBeenCalledWith(0, 'admin');
+    });
 
-    it('should handle fetch member by number failure', () =>
-      withDone(done => {
-        store.overrideSelector(AuthSelectors.selectApiScope, 'public');
-        store.refreshState();
-        membersApiService.getMemberByNumber.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should handle fetch member by number failure', async () => {
+      store.overrideSelector(AuthSelectors.selectApiScope, 'public');
+      store.refreshState();
+      membersApiService.getMemberByNumber.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 999 }));
+      actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 999 }));
+      const action = await firstValueFrom(effects.fetchMemberByNumber$);
 
-        effects.fetchMemberByNumber$.subscribe(action => {
-          expect(action).toEqual(MembersActions.fetchMemberFailed({ error: mockError }));
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.fetchMemberFailed({ error: mockError }));
+    });
   });
 
   describe('addMember$', () => {
@@ -523,67 +480,55 @@ describe('MembersEffects', () => {
       store.refreshState();
     });
 
-    it('should add member successfully', () =>
-      withDone(done => {
-        const mockAddResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
+    it('should add member successfully', async () => {
+      const mockAddResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
 
-        membersApiService.addMember.mockReturnValue(of(mockAddResponse));
+      membersApiService.addMember.mockReturnValue(of(mockAddResponse));
 
-        actions$.next(MembersActions.addMemberRequested({ notifyMember: false }));
+      actions$.next(MembersActions.addMemberRequested({ notifyMember: false }));
+      const action = await firstValueFrom(effects.addMember$);
 
-        effects.addMember$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.addMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              emailSent: null,
-            }),
-          );
-          expect(membersApiService.addMember).toHaveBeenCalledWith(
-            expect.objectContaining({
-              modificationInfo: expect.objectContaining({
-                createdBy: 'Test User',
-                lastEditedBy: 'Test User',
-              }),
-            }),
-            false,
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.addMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          emailSent: null,
+        }),
+      );
+      expect(membersApiService.addMember).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modificationInfo: expect.objectContaining({
+            createdBy: 'Test User',
+            lastEditedBy: 'Test User',
+          }),
+        }),
+        false,
+      );
+    });
 
-    it('should report the welcome email when the new member is emailed', () =>
-      withDone(done => {
-        membersApiService.addMember.mockReturnValue(of({ data: MOCK_MEMBERS[0] }));
+    it('should report the welcome email when the new member is emailed', async () => {
+      membersApiService.addMember.mockReturnValue(of({ data: MOCK_MEMBERS[0] }));
 
-        actions$.next(MembersActions.addMemberRequested({ notifyMember: true }));
+      actions$.next(MembersActions.addMemberRequested({ notifyMember: true }));
+      const action = await firstValueFrom(effects.addMember$);
 
-        effects.addMember$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.addMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              emailSent: 'welcome',
-            }),
-          );
-          expect(membersApiService.addMember).toHaveBeenCalledWith(
-            expect.anything(),
-            true,
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.addMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          emailSent: 'welcome',
+        }),
+      );
+      expect(membersApiService.addMember).toHaveBeenCalledWith(expect.anything(), true);
+    });
 
-    it('should handle add member failure', () =>
-      withDone(done => {
-        membersApiService.addMember.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should handle add member failure', async () => {
+      membersApiService.addMember.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.addMemberRequested({ notifyMember: false }));
+      actions$.next(MembersActions.addMemberRequested({ notifyMember: false }));
+      const action = await firstValueFrom(effects.addMember$);
 
-        effects.addMember$.subscribe(action => {
-          expect(action).toEqual(MembersActions.addMemberFailed({ error: mockError }));
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.addMemberFailed({ error: mockError }));
+    });
   });
 
   describe('updateMember$', () => {
@@ -593,127 +538,107 @@ describe('MembersEffects', () => {
       mockGetNewPeakRating.mockReturnValue('2900');
     });
 
-    it('should update member successfully', () =>
-      withDone(done => {
-        const memberId = MOCK_MEMBERS[0].id;
-        const mockUpdateResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
+    it('should update member successfully', async () => {
+      const memberId = MOCK_MEMBERS[0].id;
+      const mockUpdateResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
 
-        membersApiService.updateMember.mockReturnValue(of(mockUpdateResponse));
+      membersApiService.updateMember.mockReturnValue(of(mockUpdateResponse));
 
-        actions$.next(
-          MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
-        );
+      actions$.next(
+        MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
+      );
+      const action = await firstValueFrom(effects.updateMember$);
 
-        effects.updateMember$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.updateMemberSucceeded({
-              member: MOCK_MEMBERS[0],
-              originalMemberName: `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
-              emailSent: null,
-            }),
-          );
-          expect(membersApiService.updateMember).toHaveBeenCalledWith(
-            memberId,
-            expect.objectContaining({
-              modificationInfo: expect.objectContaining({ lastEditedBy: 'Test User' }),
-            }),
-            false,
-          );
-          expect(membersApiService.updateMember.mock.calls[0][1]).not.toHaveProperty(
-            'id',
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.updateMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          originalMemberName: `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
+          emailSent: null,
+        }),
+      );
+      expect(membersApiService.updateMember).toHaveBeenCalledWith(
+        memberId,
+        expect.objectContaining({
+          modificationInfo: expect.objectContaining({ lastEditedBy: 'Test User' }),
+        }),
+        false,
+      );
+      expect(membersApiService.updateMember.mock.calls[0][1]).not.toHaveProperty('id');
+    });
 
-    it('should report the changes email for a member with an account', () =>
-      withDone(done => {
-        const memberId = MOCK_MEMBERS[0].id;
-        membersApiService.updateMember.mockReturnValue(of({ data: MOCK_MEMBERS[0] }));
+    it('should report the changes email for a member with an account', async () => {
+      const memberId = MOCK_MEMBERS[0].id;
+      membersApiService.updateMember.mockReturnValue(of({ data: MOCK_MEMBERS[0] }));
 
-        actions$.next(
-          MembersActions.updateMemberRequested({ memberId, notifyMember: true }),
-        );
+      actions$.next(
+        MembersActions.updateMemberRequested({ memberId, notifyMember: true }),
+      );
+      const action = await firstValueFrom(effects.updateMember$);
 
-        effects.updateMember$.subscribe(action => {
-          expect(action).toEqual(expect.objectContaining({ emailSent: 'changes' }));
-          expect(membersApiService.updateMember).toHaveBeenCalledWith(
-            memberId,
-            expect.anything(),
-            true,
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(expect.objectContaining({ emailSent: 'changes' }));
+      expect(membersApiService.updateMember).toHaveBeenCalledWith(
+        memberId,
+        expect.anything(),
+        true,
+      );
+    });
 
-    it('should report the welcome email for a member given an account', () =>
-      withDone(done => {
-        const memberId = MOCK_MEMBERS[2].id;
-        const savedMember: Member = { ...MOCK_MEMBERS[2], hasAccount: true };
-        membersApiService.updateMember.mockReturnValue(of({ data: savedMember }));
+    it('should report the welcome email for a member given an account', async () => {
+      const memberId = MOCK_MEMBERS[2].id;
+      const savedMember: Member = { ...MOCK_MEMBERS[2], hasAccount: true };
+      membersApiService.updateMember.mockReturnValue(of({ data: savedMember }));
 
-        actions$.next(
-          MembersActions.updateMemberRequested({ memberId, notifyMember: true }),
-        );
+      actions$.next(
+        MembersActions.updateMemberRequested({ memberId, notifyMember: true }),
+      );
+      const action = await firstValueFrom(effects.updateMember$);
 
-        effects.updateMember$.subscribe(action => {
-          expect(action).toEqual(
-            expect.objectContaining({ member: savedMember, emailSent: 'welcome' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        expect.objectContaining({ member: savedMember, emailSent: 'welcome' }),
+      );
+    });
 
-    it('should handle update member failure', () =>
-      withDone(done => {
-        const memberId = MOCK_MEMBERS[0].id;
+    it('should handle update member failure', async () => {
+      const memberId = MOCK_MEMBERS[0].id;
 
-        membersApiService.updateMember.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+      membersApiService.updateMember.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(
-          MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
-        );
+      actions$.next(
+        MembersActions.updateMemberRequested({ memberId, notifyMember: false }),
+      );
+      const action = await firstValueFrom(effects.updateMember$);
 
-        effects.updateMember$.subscribe(action => {
-          expect(action).toEqual(MembersActions.updateMemberFailed({ error: mockError }));
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.updateMemberFailed({ error: mockError }));
+    });
   });
 
   describe('deleteMember$', () => {
-    it('should delete member successfully', () =>
-      withDone(done => {
-        const mockDeleteResponse: ApiResponse<string> = { data: MOCK_MEMBERS[0].id };
-        membersApiService.deleteMember.mockReturnValue(of(mockDeleteResponse));
+    it('should delete member successfully', async () => {
+      const mockDeleteResponse: ApiResponse<string> = { data: MOCK_MEMBERS[0].id };
+      membersApiService.deleteMember.mockReturnValue(of(mockDeleteResponse));
 
-        actions$.next(MembersActions.deleteMemberRequested({ member: MOCK_MEMBERS[0] }));
+      actions$.next(MembersActions.deleteMemberRequested({ member: MOCK_MEMBERS[0] }));
+      const action = await firstValueFrom(effects.deleteMember$);
 
-        effects.deleteMember$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.deleteMemberSucceeded({
-              memberId: MOCK_MEMBERS[0].id,
-              memberName: `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
-            }),
-          );
-          expect(membersApiService.deleteMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.deleteMemberSucceeded({
+          memberId: MOCK_MEMBERS[0].id,
+          memberName: `${MOCK_MEMBERS[0].firstName} ${MOCK_MEMBERS[0].lastName}`,
+        }),
+      );
+      expect(membersApiService.deleteMember).toHaveBeenCalledWith(MOCK_MEMBERS[0].id);
+    });
 
-    it('should handle delete member failure', () =>
-      withDone(done => {
-        membersApiService.deleteMember.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should handle delete member failure', async () => {
+      membersApiService.deleteMember.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.deleteMemberRequested({ member: MOCK_MEMBERS[0] }));
+      actions$.next(MembersActions.deleteMemberRequested({ member: MOCK_MEMBERS[0] }));
+      const action = await firstValueFrom(effects.deleteMember$);
 
-        effects.deleteMember$.subscribe(action => {
-          expect(action).toEqual(MembersActions.deleteMemberFailed({ error: mockError }));
-          done();
-        });
-      }));
+      expect(action).toEqual(MembersActions.deleteMemberFailed({ error: mockError }));
+    });
   });
 
   describe('exportMembersToCsv$', () => {
@@ -722,61 +647,52 @@ describe('MembersEffects', () => {
       store.refreshState();
     });
 
-    it('should export members to CSV successfully', () =>
-      withDone(done => {
-        const exportedCount = 5;
-        membersApiService.getAllMembers.mockReturnValue(of(mockApiResponse));
-        mockExportDataToCsv.mockReturnValue(exportedCount);
+    it('should export members to CSV successfully', async () => {
+      const exportedCount = 5;
+      membersApiService.getAllMembers.mockReturnValue(of(mockApiResponse));
+      mockExportDataToCsv.mockReturnValue(exportedCount);
 
-        actions$.next(MembersActions.exportMembersToCsvRequested());
+      actions$.next(MembersActions.exportMembersToCsvRequested());
+      const action = await firstValueFrom(effects.exportMembersToCsv$);
 
-        effects.exportMembersToCsv$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.exportMembersToCsvSucceeded({ exportedCount }),
-          );
-          expect(membersApiService.getAllMembers).toHaveBeenCalledWith('admin');
-          expect(mockExportDataToCsv).toHaveBeenCalledWith(
-            mockApiResponse.data.items,
-            expect.stringMatching(/^members_export_\d{4}-\d{2}-\d{2}\.csv$/),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.exportMembersToCsvSucceeded({ exportedCount }),
+      );
+      expect(membersApiService.getAllMembers).toHaveBeenCalledWith('admin');
+      expect(mockExportDataToCsv).toHaveBeenCalledWith(
+        mockApiResponse.data.items,
+        expect.stringMatching(/^members_export_\d{4}-\d{2}-\d{2}\.csv$/),
+      );
+    });
 
-    it('should handle export failure when exportDataToCsv returns error', () =>
-      withDone(done => {
-        const exportError: LccError = {
-          name: 'LCCError',
-          message: 'Export failed',
-        };
-        membersApiService.getAllMembers.mockReturnValue(of(mockApiResponse));
-        mockExportDataToCsv.mockReturnValue(exportError);
+    it('should handle export failure when exportDataToCsv returns error', async () => {
+      const exportError: LccError = {
+        name: 'LCCError',
+        message: 'Export failed',
+      };
+      membersApiService.getAllMembers.mockReturnValue(of(mockApiResponse));
+      mockExportDataToCsv.mockReturnValue(exportError);
 
-        actions$.next(MembersActions.exportMembersToCsvRequested());
+      actions$.next(MembersActions.exportMembersToCsvRequested());
+      const action = await firstValueFrom(effects.exportMembersToCsv$);
 
-        effects.exportMembersToCsv$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.exportMembersToCsvFailed({ error: exportError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.exportMembersToCsvFailed({ error: exportError }),
+      );
+    });
 
-    it('should report an export failure when the members cannot be fetched', () =>
-      withDone(done => {
-        membersApiService.getAllMembers.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+    it('should report an export failure when the members cannot be fetched', async () => {
+      membersApiService.getAllMembers.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(MembersActions.exportMembersToCsvRequested());
+      actions$.next(MembersActions.exportMembersToCsvRequested());
+      const action = await firstValueFrom(effects.exportMembersToCsv$);
 
-        effects.exportMembersToCsv$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.exportMembersToCsvFailed({ error: mockError }),
-          );
-          expect(mockExportDataToCsv).not.toHaveBeenCalled();
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.exportMembersToCsvFailed({ error: mockError }),
+      );
+      expect(mockExportDataToCsv).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateMemberRatings$', () => {
@@ -785,64 +701,58 @@ describe('MembersEffects', () => {
       store.refreshState();
     });
 
-    it('should update member ratings successfully', () =>
-      withDone(done => {
-        const membersWithNewRatings = [
-          { ...MOCK_MEMBERS[0], newRating: '2900', newPeakRating: '2900' },
-          { ...MOCK_MEMBERS[1], newRating: '2800', newPeakRating: '2850' },
-        ];
-        const mockUpdateResponse: ApiResponse<MemberRatingsUpdate> = {
-          data: {
-            updatedIds: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
-            unnotifiedMemberNames: ['Magnus Carlsen'],
-          },
-        };
+    it('should update member ratings successfully', async () => {
+      const membersWithNewRatings = [
+        { ...MOCK_MEMBERS[0], newRating: '2900', newPeakRating: '2900' },
+        { ...MOCK_MEMBERS[1], newRating: '2800', newPeakRating: '2850' },
+      ];
+      const mockUpdateResponse: ApiResponse<MemberRatingsUpdate> = {
+        data: {
+          updatedIds: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
+          unnotifiedMemberNames: ['Magnus Carlsen'],
+        },
+      };
 
-        membersApiService.updateMembers.mockReturnValue(of(mockUpdateResponse));
+      membersApiService.updateMembers.mockReturnValue(of(mockUpdateResponse));
 
-        actions$.next(
-          MembersActions.updateMemberRatingsRequested({ membersWithNewRatings }),
-        );
+      actions$.next(
+        MembersActions.updateMemberRatingsRequested({ membersWithNewRatings }),
+      );
+      const action = await firstValueFrom(effects.updateMemberRatings$);
 
-        effects.updateMemberRatings$.subscribe(action => {
-          expect(action.type).toBe(MembersActions.updateMemberRatingsSucceeded.type);
-          const payload = action as ReturnType<
-            typeof MembersActions.updateMemberRatingsSucceeded
-          >;
-          expect(payload.members).toHaveLength(2);
-          expect(payload.members[0].rating).toBe('2900');
-          expect(payload.members[1].rating).toBe('2800');
-          expect(payload.unnotifiedMemberNames).toEqual(['Magnus Carlsen']);
-          expect(membersApiService.updateMembers).toHaveBeenCalledWith([
-            expect.objectContaining({ id: MOCK_MEMBERS[0].id, rating: '2900' }),
-            expect.objectContaining({ id: MOCK_MEMBERS[1].id, rating: '2800' }),
-          ]);
-          expect(membersApiService.updateMembers.mock.calls[0][0][0]).not.toHaveProperty(
-            'number',
-          );
-          done();
-        });
-      }));
+      expect(action.type).toBe(MembersActions.updateMemberRatingsSucceeded.type);
+      const payload = action as ReturnType<
+        typeof MembersActions.updateMemberRatingsSucceeded
+      >;
+      expect(payload.members).toHaveLength(2);
+      expect(payload.members[0].rating).toBe('2900');
+      expect(payload.members[1].rating).toBe('2800');
+      expect(payload.unnotifiedMemberNames).toEqual(['Magnus Carlsen']);
+      expect(membersApiService.updateMembers).toHaveBeenCalledWith([
+        expect.objectContaining({ id: MOCK_MEMBERS[0].id, rating: '2900' }),
+        expect.objectContaining({ id: MOCK_MEMBERS[1].id, rating: '2800' }),
+      ]);
+      expect(membersApiService.updateMembers.mock.calls[0][0][0]).not.toHaveProperty(
+        'number',
+      );
+    });
 
-    it('should handle update member ratings failure', () =>
-      withDone(done => {
-        const membersWithNewRatings = [
-          { ...MOCK_MEMBERS[0], newRating: '2900', newPeakRating: '2900' },
-        ];
+    it('should handle update member ratings failure', async () => {
+      const membersWithNewRatings = [
+        { ...MOCK_MEMBERS[0], newRating: '2900', newPeakRating: '2900' },
+      ];
 
-        membersApiService.updateMembers.mockReturnValue(throwError(() => mockError));
-        mockParseError.mockReturnValue(mockError);
+      membersApiService.updateMembers.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
 
-        actions$.next(
-          MembersActions.updateMemberRatingsRequested({ membersWithNewRatings }),
-        );
+      actions$.next(
+        MembersActions.updateMemberRatingsRequested({ membersWithNewRatings }),
+      );
+      const action = await firstValueFrom(effects.updateMemberRatings$);
 
-        effects.updateMemberRatings$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.updateMemberRatingsFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.updateMemberRatingsFailed({ error: mockError }),
+      );
+    });
   });
 });

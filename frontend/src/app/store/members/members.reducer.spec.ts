@@ -261,7 +261,6 @@ describe('Members Reducer', () => {
 
       const action = MembersActions.paginationOptionsChanged({
         options: newOptions,
-        fetch: false,
       });
       const state = membersReducer(initialState, action);
 
@@ -275,7 +274,6 @@ describe('Members Reducer', () => {
       };
       const action = MembersActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: true,
       });
 
       const state = membersReducer(previousState, action);

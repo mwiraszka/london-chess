@@ -46,7 +46,6 @@ describe('Articles Reducer', () => {
           search: '',
         },
         filteredCount: null,
-        totalCount: 0,
       });
     });
   });
@@ -67,12 +66,16 @@ describe('Articles Reducer', () => {
     it('should forget a failure once its load is attempted again', () => {
       const previousState: ArticlesState = {
         ...initialState,
-        failedLoads: ['homePage', 'filtered'],
+        failedLoads: ['homePage', 'filtered', 'article'],
       };
 
-      const state = articlesReducer(
+      let state = articlesReducer(
         previousState,
         ArticlesActions.fetchHomePageArticlesRequested(),
+      );
+      state = articlesReducer(
+        state,
+        ArticlesActions.fetchArticleRequested({ articleId: MOCK_ARTICLES[0].id }),
       );
 
       expect(state.failedLoads).toEqual(['filtered']);
@@ -104,7 +107,6 @@ describe('Articles Reducer', () => {
       const articles = [MOCK_ARTICLES[0], MOCK_ARTICLES[1]];
       const action = ArticlesActions.fetchHomePageArticlesSucceeded({
         articles,
-        totalCount: 2,
       });
       const state = articlesReducer(initialState, action);
 
@@ -112,7 +114,6 @@ describe('Articles Reducer', () => {
       expect(state.entities['a7b8c9d0e1f2a3b4']?.article).toEqual(MOCK_ARTICLES[0]);
       expect(state.entities['b8c9d0e1f2a3b4c5']?.article).toEqual(MOCK_ARTICLES[1]);
       expect(state.homePageArticles).toEqual(articles);
-      expect(state.totalCount).toBe(2);
       expect(state.lastHomePageFetch).toBeTruthy();
     });
 
@@ -134,7 +135,6 @@ describe('Articles Reducer', () => {
       const updatedArticle = { ...MOCK_ARTICLES[0], title: 'Updated from server' };
       const action = ArticlesActions.fetchHomePageArticlesSucceeded({
         articles: [updatedArticle],
-        totalCount: 1,
       });
       const state = articlesReducer(previousState, action);
 
@@ -159,7 +159,6 @@ describe('Articles Reducer', () => {
       const updatedArticle = { ...MOCK_ARTICLES[0], title: 'Updated Title' };
       const action = ArticlesActions.fetchHomePageArticlesSucceeded({
         articles: [updatedArticle],
-        totalCount: 1,
       });
       const state = articlesReducer(previousState, action);
 
@@ -177,7 +176,6 @@ describe('Articles Reducer', () => {
       const action = ArticlesActions.fetchFilteredArticlesSucceeded({
         articles,
         filteredCount: 1,
-        totalCount: 10,
       });
       const state = articlesReducer(initialState, action);
 
@@ -185,7 +183,6 @@ describe('Articles Reducer', () => {
       expect(state.entities['a7b8c9d0e1f2a3b4']?.article).toEqual(MOCK_ARTICLES[0]);
       expect(state.filteredArticles).toEqual(articles);
       expect(state.filteredCount).toBe(1);
-      expect(state.totalCount).toBe(10);
       expect(state.lastFilteredFetch).toBeTruthy();
     });
   });
@@ -200,7 +197,6 @@ describe('Articles Reducer', () => {
 
       const action = ArticlesActions.paginationOptionsChanged({
         options: newOptions,
-        fetch: false,
       });
       const state = articlesReducer(initialState, action);
 
@@ -216,7 +212,6 @@ describe('Articles Reducer', () => {
 
       const action = ArticlesActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: true,
       });
       const state = articlesReducer(previousState, action);
 
@@ -523,7 +518,6 @@ describe('Articles Reducer', () => {
         initialState,
         ArticlesActions.paginationOptionsChanged({
           options: initialState.options,
-          fetch: true,
         }),
       );
 
@@ -543,18 +537,6 @@ describe('Articles Reducer', () => {
       );
 
       expect(refreshing.isFetchingFiltered).toBe(false);
-    });
-
-    it('should not hold placeholders for options that fetch nothing', () => {
-      const state = articlesReducer(
-        initialState,
-        ArticlesActions.paginationOptionsChanged({
-          options: initialState.options,
-          fetch: false,
-        }),
-      );
-
-      expect(state.isFetchingFiltered).toBe(false);
     });
   });
 });

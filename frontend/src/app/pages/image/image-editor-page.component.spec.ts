@@ -49,7 +49,6 @@ describe('ImageEditorPageComponent', () => {
         },
         {} as Record<string, { image: Image; formData: ImageFormData }>,
       ),
-      totalCount: MOCK_IMAGES.length,
     };
 
     await TestBed.configureTestingModule({
@@ -286,5 +285,34 @@ describe('ImageEditorPageComponent', () => {
         );
       });
     });
+  });
+
+  it('should flag edits to an image that are not yet saved', async () => {
+    const [image] = MOCK_IMAGES;
+    store.setState({
+      imagesState: {
+        ...imagesInitialState,
+        ids: [image.id],
+        entities: {
+          [image.id]: {
+            image,
+            formData: {
+              ...pick(image, IMAGE_FORM_DATA_PROPERTIES),
+              caption: 'Recaptioned',
+            },
+          },
+        },
+      },
+    });
+    mockParamsSubject.next({ image_id: image.id });
+    fixture.detectChanges();
+
+    const vm = await firstValueFrom(component.viewModel$!);
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+    expect(query(fixture.debugElement, '.end-with-asterisk')).toBeTruthy();
+    expect(
+      query(fixture.debugElement, 'lcc-image-form').componentInstance.hasUnsavedChanges(),
+    ).toBe(true);
   });
 });

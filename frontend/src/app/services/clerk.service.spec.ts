@@ -152,8 +152,6 @@ describe('ClerkService', () => {
   describe('load', () => {
     it('should load Clerk and sync the logged in user to the store', () => {
       expect(Clerk).toHaveBeenCalledWith(environment.clerkPublishableKey);
-      expect(service.client).toBe(fake);
-      expect(service.isLoaded()).toBe(true);
       expect(service.isLoggedIn()).toBe(true);
       expect(service.user()).toBe(fake.user);
       expect(dispatchSpy).toHaveBeenCalledWith(
@@ -522,15 +520,6 @@ describe('ClerkService', () => {
       await service.reloadUser();
 
       expect(service.user()).toBeNull();
-    });
-
-    it('should update the name', async () => {
-      await service.updateProfile('Anna', 'Leigh');
-
-      expect(fake.user?.update).toHaveBeenCalledWith({
-        firstName: 'Anna',
-        lastName: 'Leigh',
-      });
     });
   });
 

@@ -2,7 +2,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { ReplaySubject, of, throwError } from 'rxjs';
+import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -77,55 +77,47 @@ describe('TournamentsEffects', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 
   describe('fetchTournaments$', () => {
-    it('should fetch every tournament', () =>
-      withDone(done => {
-        tournamentsApiService.getTournaments.mockReturnValue(
-          of({ data: MOCK_TOURNAMENT_SUMMARIES }),
-        );
+    it('should fetch every tournament', async () => {
+      tournamentsApiService.getTournaments.mockReturnValue(
+        of({ data: MOCK_TOURNAMENT_SUMMARIES }),
+      );
 
-        actions$.next(TournamentsActions.fetchTournamentsRequested());
+      actions$.next(TournamentsActions.fetchTournamentsRequested());
+      const action = await firstValueFrom(effects.fetchTournaments$);
 
-        effects.fetchTournaments$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.fetchTournamentsSucceeded({
-              summaries: MOCK_TOURNAMENT_SUMMARIES,
-            }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.fetchTournamentsSucceeded({
+          summaries: MOCK_TOURNAMENT_SUMMARIES,
+        }),
+      );
+    });
 
-    it('should report a failed fetch', () =>
-      withDone(done => {
-        tournamentsApiService.getTournaments.mockReturnValue(throwError(() => mockError));
+    it('should report a failed fetch', async () => {
+      tournamentsApiService.getTournaments.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(TournamentsActions.fetchTournamentsRequested());
+      actions$.next(TournamentsActions.fetchTournamentsRequested());
+      const action = await firstValueFrom(effects.fetchTournaments$);
 
-        effects.fetchTournaments$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.fetchTournamentsFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.fetchTournamentsFailed({ error: mockError }),
+      );
+    });
   });
 
   describe('refetchTournaments$', () => {
-    it('should fetch on arriving at the archives once the summaries have expired', () =>
-      withDone(done => {
-        mockIsExpired.mockReturnValue(true);
+    it('should fetch on arriving at the archives once the summaries have expired', async () => {
+      mockIsExpired.mockReturnValue(true);
 
-        actions$.next(navigatedTo('/tournaments?year=2024'));
+      actions$.next(navigatedTo('/tournaments?year=2024'));
+      const action = await firstValueFrom(effects.refetchTournaments$);
 
-        effects.refetchTournaments$.subscribe(action => {
-          expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
+    });
 
     it('should not fetch while the summaries are fresh', () => {
       mockIsExpired.mockReturnValue(false);
@@ -150,21 +142,18 @@ describe('TournamentsEffects', () => {
   });
 
   describe('refetchTournamentsOnRefresh$', () => {
-    it('should fetch again on refresh once the summaries have been shown', () =>
-      withDone(done => {
-        store.overrideSelector(
-          TournamentsSelectors.selectLastSummariesFetch,
-          '2026-01-15T10:00:00.000Z',
-        );
-        store.refreshState();
+    it('should fetch again on refresh once the summaries have been shown', async () => {
+      store.overrideSelector(
+        TournamentsSelectors.selectLastSummariesFetch,
+        '2026-01-15T10:00:00.000Z',
+      );
+      store.refreshState();
 
-        actions$.next(AppActions.refreshAppRequested());
+      actions$.next(AppActions.refreshAppRequested());
+      const action = await firstValueFrom(effects.refetchTournamentsOnRefresh$);
 
-        effects.refetchTournamentsOnRefresh$.subscribe(action => {
-          expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
+    });
 
     it('should not fetch on refresh before the summaries have been shown', () => {
       const results: Action[] = [];
@@ -177,84 +166,70 @@ describe('TournamentsEffects', () => {
   });
 
   describe('fetchTournament$', () => {
-    it('should fetch the tournament', () =>
-      withDone(done => {
-        tournamentsApiService.getTournament.mockReturnValue(
-          of({ data: MOCK_TOURNAMENTS[0] }),
-        );
+    it('should fetch the tournament', async () => {
+      tournamentsApiService.getTournament.mockReturnValue(
+        of({ data: MOCK_TOURNAMENTS[0] }),
+      );
 
-        actions$.next(
-          TournamentsActions.fetchTournamentRequested({ tournamentNumber: 90 }),
-        );
+      actions$.next(
+        TournamentsActions.fetchTournamentRequested({ tournamentNumber: 90 }),
+      );
+      const action = await firstValueFrom(effects.fetchTournament$);
 
-        effects.fetchTournament$.subscribe(action => {
-          expect(tournamentsApiService.getTournament).toHaveBeenCalledWith(90);
-          expect(action).toEqual(
-            TournamentsActions.fetchTournamentSucceeded({
-              tournament: MOCK_TOURNAMENTS[0],
-            }),
-          );
-          done();
-        });
-      }));
+      expect(tournamentsApiService.getTournament).toHaveBeenCalledWith(90);
+      expect(action).toEqual(
+        TournamentsActions.fetchTournamentSucceeded({
+          tournament: MOCK_TOURNAMENTS[0],
+        }),
+      );
+    });
 
-    it('should report a failed fetch', () =>
-      withDone(done => {
-        tournamentsApiService.getTournament.mockReturnValue(throwError(() => mockError));
+    it('should report a failed fetch', async () => {
+      tournamentsApiService.getTournament.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(
-          TournamentsActions.fetchTournamentRequested({ tournamentNumber: 5 }),
-        );
+      actions$.next(TournamentsActions.fetchTournamentRequested({ tournamentNumber: 5 }));
+      const action = await firstValueFrom(effects.fetchTournament$);
 
-        effects.fetchTournament$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.fetchTournamentFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.fetchTournamentFailed({ error: mockError }),
+      );
+    });
   });
 
   describe('fetchMemberTournaments$', () => {
-    it("should fetch the member's results", () =>
-      withDone(done => {
-        tournamentsApiService.getMemberTournaments.mockReturnValue(
-          of({ data: MOCK_MEMBER_TOURNAMENT_RESULTS }),
-        );
+    it("should fetch the member's results", async () => {
+      tournamentsApiService.getMemberTournaments.mockReturnValue(
+        of({ data: MOCK_MEMBER_TOURNAMENT_RESULTS }),
+      );
 
-        actions$.next(
-          TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
-        );
+      actions$.next(
+        TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
+      );
+      const action = await firstValueFrom(effects.fetchMemberTournaments$);
 
-        effects.fetchMemberTournaments$.subscribe(action => {
-          expect(tournamentsApiService.getMemberTournaments).toHaveBeenCalledWith(2);
-          expect(action).toEqual(
-            TournamentsActions.fetchMemberTournamentsSucceeded({
-              memberNumber: 2,
-              results: MOCK_MEMBER_TOURNAMENT_RESULTS,
-            }),
-          );
-          done();
-        });
-      }));
+      expect(tournamentsApiService.getMemberTournaments).toHaveBeenCalledWith(2);
+      expect(action).toEqual(
+        TournamentsActions.fetchMemberTournamentsSucceeded({
+          memberNumber: 2,
+          results: MOCK_MEMBER_TOURNAMENT_RESULTS,
+        }),
+      );
+    });
 
-    it('should report a failed fetch', () =>
-      withDone(done => {
-        tournamentsApiService.getMemberTournaments.mockReturnValue(
-          throwError(() => mockError),
-        );
+    it('should report a failed fetch', async () => {
+      tournamentsApiService.getMemberTournaments.mockReturnValue(
+        throwError(() => mockError),
+      );
 
-        actions$.next(
-          TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
-        );
+      actions$.next(
+        TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
+      );
+      const action = await firstValueFrom(effects.fetchMemberTournaments$);
 
-        effects.fetchMemberTournaments$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.fetchMemberTournamentsFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.fetchMemberTournamentsFailed({ error: mockError }),
+      );
+    });
   });
 
   describe('saving tournaments', () => {
@@ -288,159 +263,131 @@ describe('TournamentsEffects', () => {
 
     afterEach(() => vi.useRealTimers());
 
-    it('should add the draft of a new tournament credited to the admin', () =>
-      withDone(done => {
-        tournamentsApiService.addTournament.mockReturnValue(of({ data: 185 }));
+    it('should add the draft of a new tournament credited to the admin', async () => {
+      tournamentsApiService.addTournament.mockReturnValue(of({ data: 185 }));
 
-        actions$.next(TournamentsActions.addTournamentRequested());
+      actions$.next(TournamentsActions.addTournamentRequested());
+      const action = await firstValueFrom(effects.addTournament$);
 
-        effects.addTournament$.subscribe(action => {
-          expect(tournamentsApiService.addTournament).toHaveBeenCalledWith({
-            ...draft,
-            modificationInfo: {
-              createdBy: 'Ada Admin',
-              createdByNumber: 100,
-              dateCreated: '2026-09-27T12:00:00.000Z',
-              lastEditedBy: 'Ada Admin',
-              lastEditedByNumber: 100,
-              dateLastEdited: '2026-09-27T12:00:00.000Z',
-            },
-          });
-          expect(action).toEqual(
-            TournamentsActions.addTournamentSucceeded({
-              tournamentNumber: 185,
-              tournamentName: 'Winter Blitz',
-            }),
-          );
-          done();
-        });
-      }));
+      expect(tournamentsApiService.addTournament).toHaveBeenCalledWith({
+        ...draft,
+        modificationInfo: {
+          createdBy: 'Ada Admin',
+          createdByNumber: 100,
+          dateCreated: '2026-09-27T12:00:00.000Z',
+          lastEditedBy: 'Ada Admin',
+          lastEditedByNumber: 100,
+          dateLastEdited: '2026-09-27T12:00:00.000Z',
+        },
+      });
+      expect(action).toEqual(
+        TournamentsActions.addTournamentSucceeded({
+          tournamentNumber: 185,
+          tournamentName: 'Winter Blitz',
+        }),
+      );
+    });
 
-    it('should update a tournament, keeping who created it', () =>
-      withDone(done => {
-        tournamentsApiService.updateTournament.mockReturnValue(of({ data: number }));
+    it('should update a tournament, keeping who created it', async () => {
+      tournamentsApiService.updateTournament.mockReturnValue(of({ data: number }));
 
-        actions$.next(
-          TournamentsActions.updateTournamentRequested({ tournamentNumber: number }),
-        );
+      actions$.next(
+        TournamentsActions.updateTournamentRequested({ tournamentNumber: number }),
+      );
+      const action = await firstValueFrom(effects.updateTournament$);
 
-        effects.updateTournament$.subscribe(action => {
-          expect(tournamentsApiService.updateTournament).toHaveBeenCalledWith(number, {
-            ...draft,
-            modificationInfo: expect.objectContaining({
-              createdBy: MOCK_UPCOMING_TOURNAMENT.modificationInfo?.createdBy,
-              lastEditedBy: 'Ada Admin',
-            }),
-          });
-          expect(action).toEqual(
-            TournamentsActions.updateTournamentSucceeded({
-              tournamentNumber: number,
-              tournamentName: 'Winter Blitz',
-            }),
-          );
-          done();
-        });
-      }));
+      expect(tournamentsApiService.updateTournament).toHaveBeenCalledWith(number, {
+        ...draft,
+        modificationInfo: expect.objectContaining({
+          createdBy: MOCK_UPCOMING_TOURNAMENT.modificationInfo?.createdBy,
+          lastEditedBy: 'Ada Admin',
+        }),
+      });
+      expect(action).toEqual(
+        TournamentsActions.updateTournamentSucceeded({
+          tournamentNumber: number,
+          tournamentName: 'Winter Blitz',
+        }),
+      );
+    });
 
-    it('should report a failed save', () =>
-      withDone(done => {
-        tournamentsApiService.addTournament.mockReturnValue(throwError(() => mockError));
+    it('should report a failed save', async () => {
+      tournamentsApiService.addTournament.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(TournamentsActions.addTournamentRequested());
+      actions$.next(TournamentsActions.addTournamentRequested());
+      const action = await firstValueFrom(effects.addTournament$);
 
-        effects.addTournament$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.addTournamentFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.addTournamentFailed({ error: mockError }),
+      );
+    });
 
-    it('should delete a tournament', () =>
-      withDone(done => {
-        tournamentsApiService.deleteTournament.mockReturnValue(of({ data: 90 }));
+    it('should delete a tournament', async () => {
+      tournamentsApiService.deleteTournament.mockReturnValue(of({ data: 90 }));
 
-        actions$.next(
-          TournamentsActions.deleteTournamentRequested({
-            tournamentNumber: 90,
-            tournamentName: 'Fall Active',
-          }),
-        );
+      actions$.next(
+        TournamentsActions.deleteTournamentRequested({
+          tournamentNumber: 90,
+          tournamentName: 'Fall Active',
+        }),
+      );
+      const action = await firstValueFrom(effects.deleteTournament$);
 
-        effects.deleteTournament$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.deleteTournamentSucceeded({
-              tournamentNumber: 90,
-              tournamentName: 'Fall Active',
-            }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.deleteTournamentSucceeded({
+          tournamentNumber: 90,
+          tournamentName: 'Fall Active',
+        }),
+      );
+    });
   });
 
   describe('registration', () => {
     const request = { tournamentNumber: 184, tournamentName: 'Fall Rapid' };
 
-    it('should register and pass on the latest registrants', () =>
-      withDone(done => {
-        tournamentsApiService.register.mockReturnValue(
-          of({ data: MOCK_UPCOMING_TOURNAMENT.registrants }),
-        );
+    it('should register and pass on the latest registrants', async () => {
+      tournamentsApiService.register.mockReturnValue(
+        of({ data: MOCK_UPCOMING_TOURNAMENT.registrants }),
+      );
 
-        actions$.next(TournamentsActions.registrationRequested(request));
+      actions$.next(TournamentsActions.registrationRequested(request));
+      const action = await firstValueFrom(effects.register$);
 
-        effects.register$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.registrationSucceeded({
-              ...request,
-              registrants: MOCK_UPCOMING_TOURNAMENT.registrants,
-            }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.registrationSucceeded({
+          ...request,
+          registrants: MOCK_UPCOMING_TOURNAMENT.registrants,
+        }),
+      );
+    });
 
-    it('should report a refused registration', () =>
-      withDone(done => {
-        tournamentsApiService.register.mockReturnValue(throwError(() => mockError));
+    it('should report a refused registration', async () => {
+      tournamentsApiService.register.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(TournamentsActions.registrationRequested(request));
+      actions$.next(TournamentsActions.registrationRequested(request));
+      const action = await firstValueFrom(effects.register$);
 
-        effects.register$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.registrationFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(TournamentsActions.registrationFailed({ error: mockError }));
+    });
 
-    it('should withdraw and pass on the latest registrants', () =>
-      withDone(done => {
-        tournamentsApiService.withdraw.mockReturnValue(of({ data: [] }));
+    it('should withdraw and pass on the latest registrants', async () => {
+      tournamentsApiService.withdraw.mockReturnValue(of({ data: [] }));
 
-        actions$.next(TournamentsActions.withdrawalRequested(request));
+      actions$.next(TournamentsActions.withdrawalRequested(request));
+      const action = await firstValueFrom(effects.withdraw$);
 
-        effects.withdraw$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.withdrawalSucceeded({ ...request, registrants: [] }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        TournamentsActions.withdrawalSucceeded({ ...request, registrants: [] }),
+      );
+    });
 
-    it('should report a refused withdrawal', () =>
-      withDone(done => {
-        tournamentsApiService.withdraw.mockReturnValue(throwError(() => mockError));
+    it('should report a refused withdrawal', async () => {
+      tournamentsApiService.withdraw.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(TournamentsActions.withdrawalRequested(request));
+      actions$.next(TournamentsActions.withdrawalRequested(request));
+      const action = await firstValueFrom(effects.withdraw$);
 
-        effects.withdraw$.subscribe(action => {
-          expect(action).toEqual(
-            TournamentsActions.withdrawalFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(TournamentsActions.withdrawalFailed({ error: mockError }));
+    });
   });
 });

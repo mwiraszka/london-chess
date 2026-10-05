@@ -3,7 +3,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject, firstValueFrom } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router } from '@angular/router';
@@ -79,6 +79,7 @@ describe('NavEffects', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 
@@ -89,18 +90,15 @@ describe('NavEffects', () => {
   }
 
   describe('appendPathToHistory$', () => {
-    it('should append new path to history when path changes', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
-        store.refreshState();
+    it('should append new path to history when path changes', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/schedule'));
+      actions$.next(mockNavigatedAction('/schedule'));
+      const action = await firstValueFrom(effects.appendPathToHistory$);
 
-        effects.appendPathToHistory$.subscribe(action => {
-          expect(action).toEqual(NavActions.appendPathToHistory({ path: '/schedule' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.appendPathToHistory({ path: '/schedule' }));
+    });
 
     it('should ignore fragment differences when comparing paths', () => {
       store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
@@ -124,17 +122,15 @@ describe('NavEffects', () => {
   });
 
   describe('closeAllDialogsOnNavigation$', () => {
-    it('should close all dialogs on NavigationEnd event', () =>
-      withDone(done => {
-        effects.closeAllDialogsOnNavigation$.subscribe(() => {
-          expect(dialogService.closeAll).toHaveBeenCalledTimes(1);
-          done();
-        });
+    it('should close all dialogs on NavigationEnd event', () => {
+      effects.closeAllDialogsOnNavigation$.subscribe();
 
-        (router.events as ReplaySubject<NavigationEnd>).next(
-          new NavigationEnd(1, '/schedule', '/schedule'),
-        );
-      }));
+      (router.events as ReplaySubject<NavigationEnd>).next(
+        new NavigationEnd(1, '/schedule', '/schedule'),
+      );
+
+      expect(dialogService.closeAll).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('redirectOnAccessDenied$', () => {
@@ -191,46 +187,37 @@ describe('NavEffects', () => {
   });
 
   describe('navigateToMembers$', () => {
-    it('should navigate to members on cancelSelected', () =>
-      withDone(done => {
-        actions$.next(MembersActions.cancelSelected());
+    it('should navigate to members on cancelSelected', async () => {
+      actions$.next(MembersActions.cancelSelected());
+      const action = await firstValueFrom(effects.navigateToMembers$);
 
-        effects.navigateToMembers$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
+    });
 
-    it('should navigate to members on addMemberSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.addMemberSucceeded({
-            member: MOCK_MEMBERS[0],
-            emailSent: null,
-          }),
-        );
+    it('should navigate to members on addMemberSucceeded', async () => {
+      actions$.next(
+        MembersActions.addMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          emailSent: null,
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToMembers$);
 
-        effects.navigateToMembers$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
+    });
 
-    it('should navigate to members on updateMemberSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          MembersActions.updateMemberSucceeded({
-            member: MOCK_MEMBERS[0],
-            originalMemberName: 'John Doe',
-            emailSent: null,
-          }),
-        );
+    it('should navigate to members on updateMemberSucceeded', async () => {
+      actions$.next(
+        MembersActions.updateMemberSucceeded({
+          member: MOCK_MEMBERS[0],
+          originalMemberName: 'John Doe',
+          emailSent: null,
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToMembers$);
 
-        effects.navigateToMembers$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
+    });
   });
 
   describe('leaveMissingRecord$', () => {
@@ -242,16 +229,12 @@ describe('NavEffects', () => {
       ['an event', EventsActions.fetchEventFailed],
       ['a game', GamesActions.fetchGameFailed],
       ['a member', MembersActions.fetchMemberFailed],
-    ])('should navigate home when %s does not exist', (_, fetchFailed) =>
-      withDone(done => {
-        actions$.next(fetchFailed({ error: notFound }));
+    ])('should navigate home when %s does not exist', async (_, fetchFailed) => {
+      actions$.next(fetchFailed({ error: notFound }));
+      const action = await firstValueFrom(effects.leaveMissingRecord$);
 
-        effects.leaveMissingRecord$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: '/' }));
-          done();
-        });
-      }),
-    );
+      expect(action).toEqual(NavActions.navigationRequested({ path: '/' }));
+    });
 
     it.each([
       ['an article', ArticlesActions.fetchArticleFailed],
@@ -272,102 +255,81 @@ describe('NavEffects', () => {
   });
 
   describe('navigateToSchedule$', () => {
-    it('should navigate to schedule on cancelSelected', () =>
-      withDone(done => {
-        actions$.next(EventsActions.cancelSelected());
+    it('should navigate to schedule on cancelSelected', async () => {
+      actions$.next(EventsActions.cancelSelected());
+      const action = await firstValueFrom(effects.navigateToSchedule$);
 
-        effects.navigateToSchedule$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
+    });
 
-    it('should navigate to schedule on addEventSucceeded', () =>
-      withDone(done => {
-        actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
+    it('should navigate to schedule on addEventSucceeded', async () => {
+      actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
+      const action = await firstValueFrom(effects.navigateToSchedule$);
 
-        effects.navigateToSchedule$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
+    });
 
-    it('should navigate to schedule on updateEventSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          EventsActions.updateEventSucceeded({
-            event: MOCK_EVENTS[0],
-            originalEventTitle: 'Old Test',
-          }),
-        );
+    it('should navigate to schedule on updateEventSucceeded', async () => {
+      actions$.next(
+        EventsActions.updateEventSucceeded({
+          event: MOCK_EVENTS[0],
+          originalEventTitle: 'Old Test',
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToSchedule$);
 
-        effects.navigateToSchedule$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
+    });
   });
 
   describe('navigateToNews$', () => {
-    it('should navigate to news on cancelSelected', () =>
-      withDone(done => {
-        actions$.next(ArticlesActions.cancelSelected());
+    it('should navigate to news on cancelSelected', async () => {
+      actions$.next(ArticlesActions.cancelSelected());
+      const action = await firstValueFrom(effects.navigateToNews$);
 
-        effects.navigateToNews$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+    });
 
-    it('should navigate to news on publishArticleSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          ArticlesActions.publishArticleSucceeded({
-            article: MOCK_ARTICLES[0],
-          }),
-        );
+    it('should navigate to news on publishArticleSucceeded', async () => {
+      actions$.next(
+        ArticlesActions.publishArticleSucceeded({
+          article: MOCK_ARTICLES[0],
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToNews$);
 
-        effects.navigateToNews$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+    });
 
-    it('should navigate to news on updateArticleSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          ArticlesActions.updateArticleSucceeded({
-            article: MOCK_ARTICLES[0],
-            originalArticleTitle: 'Old Title',
-          }),
-        );
+    it('should navigate to news on updateArticleSucceeded', async () => {
+      actions$.next(
+        ArticlesActions.updateArticleSucceeded({
+          article: MOCK_ARTICLES[0],
+          originalArticleTitle: 'Old Title',
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToNews$);
 
-        effects.navigateToNews$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+    });
   });
 
   describe('navigateToNewsAfterArticleDeletion$', () => {
-    it('should navigate to news when viewing deleted article', () =>
-      withDone(done => {
-        const articleId = 'article123';
-        store.overrideSelector(
-          NavSelectors.selectCurrentPath,
-          `/article/view/${articleId}`,
-        );
-        store.refreshState();
+    it('should navigate to news when viewing deleted article', async () => {
+      const articleId = 'article123';
+      store.overrideSelector(
+        NavSelectors.selectCurrentPath,
+        `/article/view/${articleId}`,
+      );
+      store.refreshState();
 
-        actions$.next(
-          ArticlesActions.deleteArticleSucceeded({ articleId, articleTitle: 'Test' }),
-        );
+      actions$.next(
+        ArticlesActions.deleteArticleSucceeded({ articleId, articleTitle: 'Test' }),
+      );
+      const action = await firstValueFrom(effects.navigateToNewsAfterArticleDeletion$);
 
-        effects.navigateToNewsAfterArticleDeletion$.subscribe(action => {
-          expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+    });
 
     it('should not navigate when not viewing the deleted article', () => {
       store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
@@ -386,75 +348,50 @@ describe('NavEffects', () => {
   });
 
   describe('navigateToPhotoGallery$', () => {
-    it('should navigate to photo-gallery on cancelSelected', () =>
-      withDone(done => {
-        actions$.next(ImagesActions.cancelSelected());
+    it('should navigate to photo-gallery on cancelSelected', async () => {
+      actions$.next(ImagesActions.cancelSelected());
+      const action = await firstValueFrom(effects.navigateToPhotoGallery$);
 
-        effects.navigateToPhotoGallery$.subscribe(action => {
-          expect(action).toEqual(
-            NavActions.navigationRequested({ path: 'photo-gallery' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'photo-gallery' }));
+    });
 
-    it('should navigate to photo-gallery on addImageSucceeded', () =>
-      withDone(done => {
-        actions$.next(ImagesActions.addImageSucceeded({ image: MOCK_IMAGES[0] }));
+    it('should navigate to photo-gallery on addImageSucceeded', async () => {
+      actions$.next(ImagesActions.addImageSucceeded({ image: MOCK_IMAGES[0] }));
+      const action = await firstValueFrom(effects.navigateToPhotoGallery$);
 
-        effects.navigateToPhotoGallery$.subscribe(action => {
-          expect(action).toEqual(
-            NavActions.navigationRequested({ path: 'photo-gallery' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'photo-gallery' }));
+    });
 
-    it('should navigate to photo-gallery on addImagesSucceeded', () =>
-      withDone(done => {
-        actions$.next(ImagesActions.addImagesSucceeded({ images: [MOCK_IMAGES[0]] }));
+    it('should navigate to photo-gallery on addImagesSucceeded', async () => {
+      actions$.next(ImagesActions.addImagesSucceeded({ images: [MOCK_IMAGES[0]] }));
+      const action = await firstValueFrom(effects.navigateToPhotoGallery$);
 
-        effects.navigateToPhotoGallery$.subscribe(action => {
-          expect(action).toEqual(
-            NavActions.navigationRequested({ path: 'photo-gallery' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'photo-gallery' }));
+    });
 
-    it('should navigate to photo-gallery on updateImageSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          ImagesActions.updateImageSucceeded({
-            baseImage: MOCK_IMAGES[0],
-          }),
-        );
+    it('should navigate to photo-gallery on updateImageSucceeded', async () => {
+      actions$.next(
+        ImagesActions.updateImageSucceeded({
+          baseImage: MOCK_IMAGES[0],
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToPhotoGallery$);
 
-        effects.navigateToPhotoGallery$.subscribe(action => {
-          expect(action).toEqual(
-            NavActions.navigationRequested({ path: 'photo-gallery' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'photo-gallery' }));
+    });
 
-    it('should navigate to photo-gallery on updateAlbumSucceeded', () =>
-      withDone(done => {
-        actions$.next(
-          ImagesActions.updateAlbumSucceeded({
-            album: 'Test Album',
-            newImages: [],
-            updatedImages: [],
-          }),
-        );
+    it('should navigate to photo-gallery on updateAlbumSucceeded', async () => {
+      actions$.next(
+        ImagesActions.updateAlbumSucceeded({
+          album: 'Test Album',
+          newImages: [],
+          updatedImages: [],
+        }),
+      );
+      const action = await firstValueFrom(effects.navigateToPhotoGallery$);
 
-        effects.navigateToPhotoGallery$.subscribe(action => {
-          expect(action).toEqual(
-            NavActions.navigationRequested({ path: 'photo-gallery' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'photo-gallery' }));
+    });
   });
 
   describe('handleEntityRouteNavigationRequest$', () => {
@@ -471,164 +408,92 @@ describe('NavEffects', () => {
       expect(emitted).toEqual([]);
     });
 
-    it('should fetch article when navigating to article edit', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
-        store.refreshState();
+    it('should fetch article when navigating to article edit', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      actions$.next(mockNavigatedAction('/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.fetchArticleRequested({
-              articleId: 'a7b8c9d0e1f2a3b4c5d6e7f8',
-            }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ArticlesActions.fetchArticleRequested({
+          articleId: 'a7b8c9d0e1f2a3b4c5d6e7f8',
+        }),
+      );
+    });
 
-    it('should select createAnArticle when navigating to article add', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
-        store.refreshState();
+    it('should fetch event when navigating to event edit', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/schedule');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/article/add'));
+      actions$.next(mockNavigatedAction('/event/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(ArticlesActions.createAnArticleSelected());
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        EventsActions.fetchEventRequested({ eventId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      );
+    });
 
-    it('should fetch event when navigating to event edit', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/schedule');
-        store.refreshState();
+    it('should fetch member when navigating to member edit', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/event/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      actions$.next(mockNavigatedAction('/member/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.fetchEventRequested({ eventId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.fetchMemberRequested({ memberId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      );
+    });
 
-    it('should select addAnEvent when navigating to event add', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/schedule');
-        store.refreshState();
+    it('should fetch image when navigating to image edit', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/event/add'));
+      actions$.next(mockNavigatedAction('/image/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(EventsActions.addAnEventSelected());
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ImagesActions.fetchMainImageRequested({
+          imageId: 'a7b8c9d0e1f2a3b4c5d6e7f8',
+        }),
+      );
+    });
 
-    it('should fetch member when navigating to member edit', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
-        store.refreshState();
+    it('should fetch album thumbnails when navigating to album edit', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/member/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      actions$.next(mockNavigatedAction('/album/edit/Test%20Album'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.fetchMemberRequested({ memberId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ImagesActions.fetchAlbumThumbnailsRequested({ album: 'Test Album' }),
+      );
+    });
 
-    it('should select addAMember when navigating to member add', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/members');
-        store.refreshState();
+    it('should fetch album thumbnails when navigating to album view', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/member/add'));
+      actions$.next(mockNavigatedAction('/album/view/Test%20Album'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(MembersActions.addAMemberSelected());
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ImagesActions.fetchAlbumThumbnailsRequested({ album: 'Test Album' }),
+      );
+    });
 
-    it('should fetch image when navigating to image edit', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
-        store.refreshState();
+    it.each(['/article/add', '/event/add', '/member/add', '/image/add', '/album/add'])(
+      'should load nothing for %s, an editor that starts empty',
+      url => {
+        actions$.next(mockNavigatedAction(url));
 
-        actions$.next(mockNavigatedAction('/image/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+        const results = collect(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            ImagesActions.fetchMainImageRequested({
-              imageId: 'a7b8c9d0e1f2a3b4c5d6e7f8',
-            }),
-          );
-          done();
-        });
-      }));
-
-    it('should select addAnImage when navigating to image add', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
-        store.refreshState();
-
-        actions$.next(mockNavigatedAction('/image/add'));
-
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(ImagesActions.addAnImageSelected());
-          done();
-        });
-      }));
-
-    it('should fetch album thumbnails when navigating to album edit', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
-        store.refreshState();
-
-        actions$.next(mockNavigatedAction('/album/edit/Test%20Album'));
-
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            ImagesActions.fetchAlbumThumbnailsRequested({ album: 'Test Album' }),
-          );
-          done();
-        });
-      }));
-
-    it('should fetch album thumbnails when navigating to album view', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
-        store.refreshState();
-
-        actions$.next(mockNavigatedAction('/album/view/Test%20Album'));
-
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            ImagesActions.fetchAlbumThumbnailsRequested({ album: 'Test Album' }),
-          );
-          done();
-        });
-      }));
-
-    it('should select createAnAlbum when navigating to album add', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
-        store.refreshState();
-
-        actions$.next(mockNavigatedAction('/album/add'));
-
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(ImagesActions.createAnAlbumSelected());
-          done();
-        });
-      }));
+        expect(results).toEqual([]);
+      },
+    );
 
     it.each([
       ['/article/edit/not-an-id', 'news'],
@@ -647,118 +512,107 @@ describe('NavEffects', () => {
     it('should only handle a record route once when just its fragment changes', () => {
       const results = collect(effects.handleEntityRouteNavigationRequest$);
 
-      actions$.next(mockNavigatedAction('/article/add'));
-      actions$.next(mockNavigatedAction('/article/add#body'));
+      actions$.next(mockNavigatedAction('/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
+      actions$.next(mockNavigatedAction('/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8#body'));
 
-      expect(results).toEqual([ArticlesActions.createAnArticleSelected()]);
+      expect(results).toEqual([
+        ArticlesActions.fetchArticleRequested({ articleId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      ]);
     });
 
-    it('should navigate to photo-gallery for invalid album route', () =>
-      withDone(done => {
-        store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
-        store.refreshState();
+    it('should navigate to photo-gallery for invalid album route', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/photo-gallery');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/album/invalid'));
+      actions$.next(mockNavigatedAction('/album/invalid'));
+      const action = await firstValueFrom(effects.handleEntityRouteNavigationRequest$);
 
-        effects.handleEntityRouteNavigationRequest$.subscribe(action => {
-          expect(action).toEqual(
-            NavActions.navigationRequested({ path: 'photo-gallery' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'photo-gallery' }));
+    });
   });
 
   describe('restoreFormDataOnNavigationAwayFromEntityRoute$', () => {
-    it('should restore article form data when navigating away from article route', () =>
-      withDone(done => {
-        store.overrideSelector(
-          NavSelectors.selectCurrentPath,
-          '/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
-        );
-        store.refreshState();
+    it('should restore article form data when navigating away from article route', async () => {
+      store.overrideSelector(
+        NavSelectors.selectCurrentPath,
+        '/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
+      );
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/news'));
+      actions$.next(mockNavigatedAction('/news'));
+      const action = await firstValueFrom(
+        effects.restoreFormDataOnNavigationAwayFromEntityRoute$,
+      );
 
-        effects.restoreFormDataOnNavigationAwayFromEntityRoute$.subscribe(action => {
-          expect(action).toEqual(
-            ArticlesActions.formDataRestored({ articleId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ArticlesActions.formDataRestored({ articleId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      );
+    });
 
-    it('should restore event form data when navigating away from event route', () =>
-      withDone(done => {
-        store.overrideSelector(
-          NavSelectors.selectCurrentPath,
-          '/event/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
-        );
-        store.refreshState();
+    it('should restore event form data when navigating away from event route', async () => {
+      store.overrideSelector(
+        NavSelectors.selectCurrentPath,
+        '/event/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
+      );
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/schedule'));
+      actions$.next(mockNavigatedAction('/schedule'));
+      const action = await firstValueFrom(
+        effects.restoreFormDataOnNavigationAwayFromEntityRoute$,
+      );
 
-        effects.restoreFormDataOnNavigationAwayFromEntityRoute$.subscribe(action => {
-          expect(action).toEqual(
-            EventsActions.formDataRestored({ eventId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        EventsActions.formDataRestored({ eventId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      );
+    });
 
-    it('should restore member form data when navigating away from member route', () =>
-      withDone(done => {
-        store.overrideSelector(
-          NavSelectors.selectCurrentPath,
-          '/member/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
-        );
-        store.refreshState();
+    it('should restore member form data when navigating away from member route', async () => {
+      store.overrideSelector(
+        NavSelectors.selectCurrentPath,
+        '/member/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
+      );
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/members'));
+      actions$.next(mockNavigatedAction('/members'));
+      const action = await firstValueFrom(
+        effects.restoreFormDataOnNavigationAwayFromEntityRoute$,
+      );
 
-        effects.restoreFormDataOnNavigationAwayFromEntityRoute$.subscribe(action => {
-          expect(action).toEqual(
-            MembersActions.formDataRestored({ memberId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        MembersActions.formDataRestored({ memberId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      );
+    });
 
-    it('should restore image form data when navigating away from image route', () =>
-      withDone(done => {
-        store.overrideSelector(
-          NavSelectors.selectCurrentPath,
-          '/image/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
-        );
-        store.refreshState();
+    it('should restore image form data when navigating away from image route', async () => {
+      store.overrideSelector(
+        NavSelectors.selectCurrentPath,
+        '/image/edit/a7b8c9d0e1f2a3b4c5d6e7f8',
+      );
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/photo-gallery'));
+      actions$.next(mockNavigatedAction('/photo-gallery'));
+      const action = await firstValueFrom(
+        effects.restoreFormDataOnNavigationAwayFromEntityRoute$,
+      );
 
-        effects.restoreFormDataOnNavigationAwayFromEntityRoute$.subscribe(action => {
-          expect(action).toEqual(
-            ImagesActions.imageFormDataRestored({ imageId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ImagesActions.imageFormDataRestored({ imageId: 'a7b8c9d0e1f2a3b4c5d6e7f8' }),
+      );
+    });
 
-    it('should restore album form data when navigating away from album route', () =>
-      withDone(done => {
-        store.overrideSelector(
-          NavSelectors.selectCurrentPath,
-          '/album/edit/Test%20Album',
-        );
-        store.refreshState();
+    it('should restore album form data when navigating away from album route', async () => {
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/album/edit/Test%20Album');
+      store.refreshState();
 
-        actions$.next(mockNavigatedAction('/photo-gallery'));
+      actions$.next(mockNavigatedAction('/photo-gallery'));
+      const action = await firstValueFrom(
+        effects.restoreFormDataOnNavigationAwayFromEntityRoute$,
+      );
 
-        effects.restoreFormDataOnNavigationAwayFromEntityRoute$.subscribe(action => {
-          expect(action).toEqual(
-            ImagesActions.albumFormDataRestored({ album: 'Test Album' }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        ImagesActions.albumFormDataRestored({ album: 'Test Album' }),
+      );
+    });
 
     it('should not restore form data when staying on same entity type', () => {
       store.overrideSelector(NavSelectors.selectCurrentPath, '/article/edit/abc123');

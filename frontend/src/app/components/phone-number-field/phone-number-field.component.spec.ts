@@ -58,4 +58,29 @@ describe('PhoneNumberFieldComponent', () => {
 
     expect(field.errorMessages()?.['pattern']).toBeTruthy();
   });
+
+  it('should rewrite a number in the stored format once the field is left', () => {
+    control.setValue('(519) 555 0123');
+
+    input().dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+
+    expect(control.value).toBe('519-555-0123');
+  });
+
+  it('should leave a number it cannot read as typed, for the pattern error to explain', () => {
+    control.setValue('555-0123');
+
+    input().dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+
+    expect(control.value).toBe('555-0123');
+  });
+
+  it('should not touch a number already in the stored format', () => {
+    const changes = vi.fn();
+    control.valueChanges.subscribe(changes);
+
+    input().dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+
+    expect(changes).not.toHaveBeenCalled();
+  });
 });

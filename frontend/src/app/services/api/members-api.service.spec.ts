@@ -251,4 +251,22 @@ describe('MembersApiService', () => {
       req.flush(mockResponse);
     });
   });
+
+  it('should ask once a visit for the widest members each scope may see', () => {
+    service.getWidestMembers('admin').subscribe();
+    service.getWidestMembers('admin').subscribe();
+    service.getWidestMembers('public').subscribe();
+
+    const admin = httpMock.expectOne(
+      apiBaseUrl.replace('/admin/members', '/admin/members/widest'),
+    );
+    const visitor = httpMock.expectOne(
+      apiBaseUrl.replace('/admin/members', '/public/members/widest'),
+    );
+    admin.flush({ data: MOCK_MEMBERS });
+    visitor.flush({ data: [] });
+
+    expect(admin.request.method).toBe('GET');
+    expect(visitor.request.method).toBe('GET');
+  });
 });

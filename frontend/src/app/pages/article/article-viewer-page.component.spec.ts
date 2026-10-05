@@ -8,13 +8,17 @@ import { take } from 'rxjs/operators';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ARTICLE_FORM_DATA_PROPERTIES, IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Id } from '@app/models';
-import { MetaAndTitleService, RoutingService, StoreRequestService } from '@app/services';
+import {
+  DeletionService,
+  MetaAndTitleService,
+  RoutingService,
+  StoreRequestService,
+} from '@app/services';
 import { AppState, initialState as appInitialState } from '@app/store/app';
 import {
   ArticlesActions,
@@ -23,7 +27,7 @@ import {
 } from '@app/store/articles';
 import { AuthState } from '@app/store/auth';
 import { ImagesState, initialState as imagesInitialState } from '@app/store/images';
-import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, query } from '@app/utils';
 
 import { ArticleViewerPageComponent } from './article-viewer-page.component';
 
@@ -31,13 +35,10 @@ describe('ArticleViewerPageComponent', () => {
   let fixture: ComponentFixture<ArticleViewerPageComponent>;
   let component: ArticleViewerPageComponent;
 
-  let dialogService: DialogService;
   let metaAndTitleService: MetaAndTitleService;
   let store: MockStore;
 
-  let dialogOpenSpy: MockInstance;
   let dispatchSpy: MockInstance;
-  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
@@ -67,7 +68,6 @@ describe('ArticleViewerPageComponent', () => {
           formData: pick(mockArticle, ARTICLE_FORM_DATA_PROPERTIES),
         },
       },
-      totalCount: 1,
     };
 
     mockAuthState = {
@@ -89,7 +89,6 @@ describe('ArticleViewerPageComponent', () => {
           formData: pick(mockBannerImage, IMAGE_FORM_DATA_PROPERTIES),
         },
       },
-      totalCount: 1,
     };
 
     TestBed.configureTestingModule({
@@ -127,13 +126,10 @@ describe('ArticleViewerPageComponent', () => {
     fixture = TestBed.createComponent(ArticleViewerPageComponent);
     component = fixture.componentInstance;
 
-    dialogService = TestBed.inject(DialogService);
     store = TestBed.inject(MockStore);
     metaAndTitleService = TestBed.inject(MetaAndTitleService);
 
-    dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
 
@@ -154,7 +150,6 @@ describe('ArticleViewerPageComponent', () => {
         isAdmin: true,
         bannerImage: mockBannerImage,
         bodyImages: [],
-        isWideView: false,
         status: 'loaded',
       });
     });
@@ -210,9 +205,12 @@ describe('ArticleViewerPageComponent', () => {
         itemName: mockArticle.title,
       });
 
+      const deleteArticle = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteArticle')
+        .mockResolvedValue(false);
       config?.deleteCb();
 
-      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
+      expect(deleteArticle).toHaveBeenCalledExactlyOnceWith(mockArticle);
     });
 
     it('should not offer the controls to anyone else', () => {
@@ -226,38 +224,6 @@ describe('ArticleViewerPageComponent', () => {
       fixture.detectChanges();
 
       expect(adminControls()).toBeNull();
-    });
-  });
-
-  describe('onDelete', () => {
-    it('should delete the article from the confirmation dialog', async () => {
-      // @ts-expect-error Private class member
-      await component.onDelete(mockArticle);
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${mockArticle.title}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        ArticlesActions.deleteArticleRequested({ article: mockArticle }),
-        [ArticlesActions.deleteArticleSucceeded, ArticlesActions.deleteArticleFailed],
-      );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      // @ts-expect-error Private class member
-      await component.onDelete(mockArticle);
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 

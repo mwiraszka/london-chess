@@ -179,4 +179,14 @@ describe('EventsApiService', () => {
       req.flush(mockResponse);
     });
   });
+
+  it('should ask for the widest events once a visit, however often they are wanted', () => {
+    const received: unknown[] = [];
+    service.getWidestEvents().subscribe(response => received.push(response));
+    service.getWidestEvents().subscribe(response => received.push(response));
+
+    httpMock.expectOne(`${apiBaseUrl}/widest`).flush({ data: MOCK_EVENTS });
+
+    expect(received).toEqual([{ data: MOCK_EVENTS }, { data: MOCK_EVENTS }]);
+  });
 });

@@ -1,4 +1,4 @@
-import { DialogRef, DialogService, TooltipDirective } from '@eagami/ui';
+import { DialogService, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -15,14 +15,17 @@ import {
   MOCK_TOURNAMENT_SUMMARIES,
   MOCK_UPCOMING_SUMMARY,
 } from '@app/mocks/tournaments.mock';
-import { BasicDialogResult } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  DeletionService,
+  KEEP_SCROLL,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
   closedDialogRef,
   clubToday,
-  lastOpenedDialog,
   query,
   queryAll,
   queryTextContent,
@@ -96,6 +99,8 @@ describe('TournamentsPageComponent', () => {
     store.overrideSelector(AuthSelectors.selectIsAdmin, false);
     store.refreshState();
   });
+
+  afterEach(() => store.resetSelectors());
 
   it('should set the page title', () => {
     fixture.detectChanges();
@@ -446,32 +451,17 @@ describe('TournamentsPageComponent', () => {
       ).toEqual([expect.objectContaining({ internalPath: ['tournament', 'add'] })]);
     });
 
-    it('should edit and delete a tournament from its controls', async () => {
+    it('should edit and delete a tournament from its controls', () => {
       const [summary] = MOCK_TOURNAMENT_SUMMARIES;
-      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
-      dialogOpenSpy.mockImplementation(() => {
-        const confirmation = new DialogRef<BasicDialogResult>();
-        void lastOpenedDialog(dialogOpenSpy)
-          .confirmAction?.()
-          .then(() => confirmation.close('confirm'));
-        return confirmation;
-      });
+      const deleteTournament = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteTournament')
+        .mockResolvedValue(false);
 
       const controls = fixture.componentInstance.controlsFor(summary);
       controls.deleteCb();
-      await fixture.whenStable();
 
       expect(controls.editPath).toEqual(['tournament', 'edit', String(summary.number)]);
-      expect(TestBed.inject(StoreRequestService).dispatch).toHaveBeenCalledWith(
-        TournamentsActions.deleteTournamentRequested({
-          tournamentNumber: summary.number,
-          tournamentName: summary.name,
-        }),
-        [
-          TournamentsActions.deleteTournamentSucceeded,
-          TournamentsActions.deleteTournamentFailed,
-        ],
-      );
+      expect(deleteTournament).toHaveBeenCalledExactlyOnceWith(summary);
     });
   });
 });

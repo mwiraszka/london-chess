@@ -1,6 +1,7 @@
 import { MOCK_GAMES } from '@app/mocks/games.mock';
 
 import {
+  isSamePlayerName,
   playerName,
   playerNameLastFirst,
   playerScores,
@@ -42,5 +43,29 @@ describe('resultLabel', () => {
     expect(resultLabel('0-1')).toBe('Black wins');
     expect(resultLabel('1/2-1/2')).toBe('Draw');
     expect(resultLabel('*')).toBe('Unfinished');
+  });
+});
+
+describe('isSamePlayerName', () => {
+  it('should match names that differ only in accents, case and punctuation', () => {
+    expect(isSamePlayerName('Núñez, Élena', 'nunez, ELENA')).toBe(true);
+    expect(isSamePlayerName("O'Brien, Mary-Kate", 'OBrien, Mary Kate')).toBe(true);
+  });
+
+  it('should not match a different surname or first name', () => {
+    expect(isSamePlayerName('Bell, Jeffrey', 'Ball, Jeffrey')).toBe(false);
+    expect(isSamePlayerName('Bell, Jeffrey', 'Bell, Jeff')).toBe(false);
+  });
+
+  it('should match a shortened first name only when allowed', () => {
+    expect(isSamePlayerName('Bell, Jeffrey', 'Bell, Jeff', true)).toBe(true);
+    expect(isSamePlayerName('Bell, Jeff', 'Bell, Jeffrey', true)).toBe(true);
+    expect(isSamePlayerName('Bell, Jeffrey', 'Bell, Geoffrey', true)).toBe(false);
+  });
+
+  it('should treat a name without a comma as a surname alone', () => {
+    expect(isSamePlayerName('Bell', 'BELL')).toBe(true);
+    expect(isSamePlayerName('Bell', 'Bell, Jeffrey')).toBe(false);
+    expect(isSamePlayerName('Bell', 'Bell, Jeffrey', true)).toBe(false);
   });
 });

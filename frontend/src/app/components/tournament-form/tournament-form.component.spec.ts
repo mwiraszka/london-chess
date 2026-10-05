@@ -1,6 +1,6 @@
 import { ButtonComponent, DialogService } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -10,6 +10,7 @@ import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournamen
 import {
   GameChange,
   GameInput,
+  ImportChanges,
   SectionInput,
   StandingsImport,
   Tournament,
@@ -507,11 +508,10 @@ describe('TournamentFormComponent', () => {
   });
 
   describe('restoring', () => {
-    it('should put the original tournament back and drop any import once confirmed', async () => {
+    it('should put the original tournament back and drop any import', () => {
       render({ ...upcoming, name: 'Changed', sections: [section()] }, true);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       fixture.detectChanges();
 
@@ -519,16 +519,6 @@ describe('TournamentFormComponent', () => {
       expect(component.form.controls.name.value).toBe('Fall Rapid');
       expect(queryAll(fixture.debugElement, '.results__section')).toHaveLength(0);
       expect(component.form.touched).toBe(false);
-    });
-
-    it('should change nothing when cancelled', async () => {
-      render({ ...upcoming, name: 'Changed' }, true);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.name.value).toBe('Changed');
     });
   });
 
@@ -615,6 +605,139 @@ describe('TournamentFormComponent', () => {
       query(fixture.debugElement, '.cancel-button').triggerEventHandler('clicked');
 
       expect(cancelSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('checking an import against the recorded results', () => {
+    const recorded = MOCK_TOURNAMENTS[0];
+    const [john, jane, joe] = recorded.sections[0].entries.map(({ player }) => player.id);
+    const checkImportSpy = (): Mock =>
+      vi.mocked(TestBed.inject(TournamentsApiService).checkImport);
+
+    const pgnGame = (white: string, black: string, round: string): GameInput => ({
+      section: '',
+      round,
+      date: '2023-10-19',
+      whitePlayerId: white,
+      blackPlayerId: black,
+      result: '1-0',
+      whiteElo: null,
+      blackElo: null,
+      eco: '',
+      plyCount: 2,
+      moves: '1. e4 e5 1-0',
+    });
+    const games = [
+      pgnGame(john, jane, '1'),
+      pgnGame(jane, joe, '2'),
+      pgnGame(joe, john, '3'),
+    ];
+
+    async function importPgn(
+      changes: GameChange[],
+      sectionChanged = true,
+    ): Promise<void> {
+      checkImportSpy().mockReturnValue(
+        of({
+          data: { sectionChanges: [sectionChanged], removedSections: [], games: changes },
+        }),
+      );
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games,
+        problems: [],
+      });
+      render(tournamentFormData(recorded), false, recorded);
+
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      await settle();
+    }
+
+    const statusTexts = (): string[] =>
+      queryAll(fixture.debugElement, '.results__status').map(({ nativeElement }) =>
+        nativeElement.textContent.replace(/\s+/g, ' ').trim(),
+      );
+
+    it('should ask the server what the imported sections and games would change', async () => {
+      await importPgn(['new', 'new', 'new']);
+
+      expect(checkImportSpy()).toHaveBeenCalledWith(recorded.number, [section()], games);
+    });
+
+    it('should keep for saving only the games the server finds new or different', async () => {
+      await importPgn(['new', 'unchanged', 'changed']);
+
+      expect(lastDraft().games).toEqual([games[0], games[2]]);
+      expect(statusTexts()).toEqual(
+        expect.arrayContaining([
+          '1 new game will be added to the game archive.',
+          'Saving will update this game in the archive: round 3, Bloggs, Joe v Doe, John.',
+          'Already in the archive and left unchanged: 1 game from the file.',
+        ]),
+      );
+    });
+
+    it('should say so when nothing in the file differs from what is recorded', async () => {
+      await importPgn(['unchanged', 'unchanged', 'unchanged'], false);
+
+      expect(statusTexts()).toContain(
+        'Nothing in the file differs from what is already recorded.',
+      );
+      expect(lastDraft().games).toEqual([]);
+    });
+
+    it('should hold the save until the server has answered', async () => {
+      const answer = new Subject<{ data: ImportChanges }>();
+      checkImportSpy().mockReturnValue(answer);
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games,
+        problems: [],
+      });
+      render(tournamentFormData(recorded), true, recorded);
+
+      const choosing = component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      await importStandingsSpy.mock.results[0].value;
+      fixture.detectChanges();
+
+      expect(button('.submit-button').disabled()).toBe(true);
+      answer.next({ data: { sectionChanges: [true], removedSections: [], games: [] } });
+      answer.complete();
+      await choosing;
+    });
+
+    it('should drop an import the server could not check', async () => {
+      checkImportSpy().mockReturnValue(throwError(() => new Error('offline')));
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games,
+        problems: [],
+      });
+      render(tournamentFormData(recorded), false, recorded);
+
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      await settle();
+
+      expect(lastDraft()).toEqual(
+        expect.objectContaining({ sections: null, games: null }),
+      );
+      expect(errorTexts()).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining(
+            'The import could not be checked against the recorded results, so it was not used.',
+          ),
+        ]),
+      );
+    });
+
+    it('should not check the results of a tournament that is not saved yet', async () => {
+      importStandingsSpy.mockResolvedValue(imported([section()]));
+      render(INITIAL_TOURNAMENT_FORM_DATA, false, null);
+
+      await importFile();
+      await settle();
+
+      expect(checkImportSpy()).not.toHaveBeenCalled();
     });
   });
 });

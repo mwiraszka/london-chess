@@ -75,6 +75,8 @@ describe('GameArchivesPageComponent', () => {
     store.refreshState();
   });
 
+  afterEach(() => store.resetSelectors());
+
   describe('the URL', () => {
     it('should set the query from the URL', () => {
       queryParams.next({ year: '1994' });

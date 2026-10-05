@@ -13,6 +13,7 @@ import {
 } from '@app/mocks/tournaments.mock';
 import {
   ApiResponse,
+  ImportChanges,
   MemberTournamentResult,
   PlayerNameMatch,
   Tournament,
@@ -138,6 +139,23 @@ describe('TournamentsApiService', () => {
       expect(request.request.method).toBe('POST');
       expect(request.request.body).toEqual({ names: ['Doe, John'] });
       expect(received).toEqual({ data: matches });
+    });
+
+    it('should ask what saving imported results and games would change', () => {
+      const changes: ImportChanges = {
+        sectionChanges: [true],
+        removedSections: ['B'],
+        games: ['new'],
+      };
+      let received: ApiResponse<ImportChanges> | undefined;
+      service.checkImport(184, [], []).subscribe(result => (received = result));
+
+      const request = httpMock.expectOne(`${apiBaseUrl}/184/import-changes`);
+      request.flush({ data: changes });
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ sections: [], games: [] });
+      expect(received).toEqual({ data: changes });
     });
   });
 

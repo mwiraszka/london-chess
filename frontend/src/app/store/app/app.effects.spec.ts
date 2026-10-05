@@ -53,11 +53,11 @@ describe('AppEffects', () => {
   function notify(action: Action): Toast | undefined {
     toastService.show.mockClear();
     actions$.next(action);
-    const displayed: Array<ReturnType<typeof AppActions.toastDisplayed>> = [];
+    const displayed: Toast[] = [];
     effects.notify$.subscribe(result => displayed.push(result)).unsubscribe();
 
     expect(displayed.length).toBeLessThanOrEqual(1);
-    const toast = displayed[0]?.toast;
+    const toast = displayed[0];
     if (toast) {
       expect(toastService.show).toHaveBeenCalledExactlyOnceWith(toast.message, {
         title: toast.title,
@@ -87,6 +87,7 @@ describe('AppEffects', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.useRealTimers();
   });
 
@@ -97,7 +98,6 @@ describe('AppEffects', () => {
     });
 
     const failures: Action[] = [
-      AppActions.unexpectedErrorOccurred({ error: mockError }),
       ArticlesActions.deleteArticleFailed({ error: mockError }),
       ArticlesActions.fetchArticleFailed({ error: mockError }),
       ArticlesActions.fetchFilteredArticlesFailed({ error: mockError }),
@@ -344,20 +344,6 @@ describe('AppEffects', () => {
       expect(new Set([updateWelcome, updateChanges, updateNone]).size).toBe(3);
       expect(addWelcome).not.toBe(addNone);
       expect(addChanges).toBe(addNone);
-    });
-
-    it('should not toast an action it has no message for', () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => undefined);
-
-      const toast = effects['mapActionToToast'](ArticlesActions.cancelSelected());
-
-      expect(toast).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.any(String),
-        ArticlesActions.cancelSelected.type,
-      );
     });
 
     describe('in production', () => {

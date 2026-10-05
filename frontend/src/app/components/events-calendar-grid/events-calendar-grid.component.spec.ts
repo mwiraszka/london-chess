@@ -4,16 +4,14 @@ import { TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EventInfoDialogComponent } from '@app/components/event-info-dialog/event-info-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { CalendarMonth, DataPaginationOptions, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
-import { EventsActions } from '@app/store/events';
+import { DeletionService, StoreRequestService } from '@app/services';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
-import { closedDialogRef, lastOpenedDialog, query, queryAll } from '@app/utils';
+import { closedDialogRef, query, queryAll } from '@app/utils';
 
 import { EventsCalendarGridComponent } from './events-calendar-grid.component';
 
@@ -24,7 +22,6 @@ describe('EventsCalendarGridComponent', () => {
   let dialogService: DialogService;
 
   let dialogOpenSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   const mockEvents = MOCK_EVENTS.slice(0, 2);
   const mockIsAdmin = true;
@@ -76,7 +73,6 @@ describe('EventsCalendarGridComponent', () => {
     dialogService = TestBed.inject(DialogService);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
     fixture.componentRef.setInput('events', mockEvents);
     fixture.componentRef.setInput('isAdmin', mockIsAdmin);
@@ -96,49 +92,14 @@ describe('EventsCalendarGridComponent', () => {
       expect(config.itemName).toBe(mockEvents[0].title);
     });
 
-    it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+    it('should delete an event from its admin controls', () => {
+      const deleteEvent = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteEvent')
+        .mockResolvedValue(false);
 
-      await component.getAdminControlsConfig(mockEvents[0]).deleteCb();
+      component.getAdminControlsConfig(mockEvents[0]).deleteCb();
 
-      expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Delete');
-    });
-  });
-
-  describe('onDeleteEvent', () => {
-    it('should open confirmation dialog with correct parameters', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteEvent(mockEvents[0]);
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${mockEvents[0].title}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-    });
-
-    it('should delete the event from the confirmation dialog', async () => {
-      await component.onDeleteEvent(mockEvents[0]);
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        EventsActions.deleteEventRequested({ event: mockEvents[0] }),
-        [EventsActions.deleteEventSucceeded, EventsActions.deleteEventFailed],
-      );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteEvent(mockEvents[0]);
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
+      expect(deleteEvent).toHaveBeenCalledExactlyOnceWith(mockEvents[0]);
     });
   });
 
@@ -207,13 +168,6 @@ describe('EventsCalendarGridComponent', () => {
       expect(
         query(fixture.debugElement, 'ea-paginator').componentInstance.totalItems(),
       ).toBe(42);
-    });
-  });
-
-  describe('trackWeekByIndex', () => {
-    it('should return the index', () => {
-      expect(component.trackWeekByIndex(0)).toBe(0);
-      expect(component.trackWeekByIndex(5)).toBe(5);
     });
   });
 

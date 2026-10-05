@@ -12,10 +12,14 @@ import { provideRouter } from '@angular/router';
 import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  CsvExportService,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
-import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, query } from '@app/utils';
 
 import { SchedulePageComponent } from './schedule-page.component';
 
@@ -23,21 +27,16 @@ describe('SchedulePageComponent', () => {
   let fixture: ComponentFixture<SchedulePageComponent>;
   let component: SchedulePageComponent;
 
-  let dialogService: DialogService;
   let metaAndTitleService: MetaAndTitleService;
   let store: MockStore;
 
-  let dialogOpenSpy: MockInstance;
   let dispatchSpy: MockInstance;
-  let onExportToCsvSpy: MockInstance;
-  let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
 
   const mockFilteredCount = 50;
   const mockFilteredEvents = MOCK_EVENTS.slice(0, 5);
   const mockIsAdmin = true;
-  const mockNextEvent = MOCK_EVENTS[2];
   const mockOptions: DataPaginationOptions<Event> = {
     page: 1,
     pageSize: 10,
@@ -62,6 +61,7 @@ describe('SchedulePageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SchedulePageComponent],
       providers: [
+        { provide: CsvExportService, useValue: { exportEvents: vi.fn() } },
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
@@ -82,14 +82,10 @@ describe('SchedulePageComponent', () => {
     fixture = TestBed.createComponent(SchedulePageComponent);
     component = fixture.componentInstance;
 
-    dialogService = TestBed.inject(DialogService);
     metaAndTitleService = TestBed.inject(MetaAndTitleService);
     store = TestBed.inject(MockStore);
 
-    dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    onExportToCsvSpy = vi.spyOn(component, 'onExportToCsv');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
 
@@ -97,7 +93,6 @@ describe('SchedulePageComponent', () => {
     store.overrideSelector(EventsSelectors.selectFilteredEvents, mockFilteredEvents);
     store.overrideSelector(AuthSelectors.selectIsAdmin, mockIsAdmin);
     store.overrideSelector(EventsSelectors.selectIsFetchingFiltered, false);
-    store.overrideSelector(EventsSelectors.selectNextEvent, mockNextEvent);
     store.overrideSelector(EventsSelectors.selectOptions, mockOptions);
     store.overrideSelector(EventsSelectors.selectScheduleView, mockScheduleView);
     store.overrideSelector(EventsSelectors.selectTotalCount, mockTotalCount);
@@ -107,6 +102,7 @@ describe('SchedulePageComponent', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllTimers();
     vi.useRealTimers();
   });
@@ -130,62 +126,11 @@ describe('SchedulePageComponent', () => {
         filteredEvents: mockFilteredEvents,
         isAdmin: mockIsAdmin,
         isFetching: false,
-        nextEvent: mockNextEvent,
         options: mockOptions,
         scheduleView: mockScheduleView,
         status: 'loaded',
         totalCount: mockTotalCount,
       });
-    });
-
-    it('should call scheduleToolbar?.changeDetectorRef.markForCheck() when viewModel$ emits', () => {
-      vi.useFakeTimers();
-
-      // Trigger change detection to ensure ViewChild is initialized
-      fixture.detectChanges();
-
-      // Create a spy on the scheduleToolbar's changeDetectorRef.markForCheck method
-      const scheduleToolbarMarkForCheckSpy = vi.spyOn(
-        // @ts-expect-error Private class member
-        component.scheduleToolbar().changeDetectorRef,
-        'markForCheck',
-      );
-
-      // Drain the setTimeout scheduled by the initial viewModel$ emission, then
-      // reset the spy so only emissions triggered below are counted
-      vi.advanceTimersByTime(1);
-      scheduleToolbarMarkForCheckSpy.mockClear();
-
-      // Change a store value to trigger a new emission from viewModel$
-      store.overrideSelector(EventsSelectors.selectFilteredCount, 99);
-      store.refreshState();
-
-      // Advance time to execute all setTimeout callbacks
-      vi.advanceTimersByTime(1);
-
-      expect(scheduleToolbarMarkForCheckSpy).toHaveBeenCalledTimes(1);
-
-      // Change another store value to ensure multiple emissions are handled as expected
-      store.overrideSelector(EventsSelectors.selectScheduleView, 'calendar');
-      store.refreshState();
-
-      vi.advanceTimersByTime(1);
-
-      expect(scheduleToolbarMarkForCheckSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle gracefully when scheduleToolbar is undefined', async () => {
-      // Don't trigger change detection to keep ViewChild undefined
-
-      // Ensure scheduleToolbar is undefined
-      expect(component['scheduleToolbar']()).toBeUndefined();
-
-      // This should not throw an error due to optional chaining
-      expect(() => {
-        // Trigger a viewModel$ emission
-        store.overrideSelector(EventsSelectors.selectFilteredCount, 88);
-        store.refreshState();
-      }).not.toThrow();
     });
   });
 
@@ -201,61 +146,8 @@ describe('SchedulePageComponent', () => {
     });
   });
 
-  describe('onExportToCsv', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
-
-    it('should return early if event count is zero', async () => {
-      store.overrideSelector(EventsSelectors.selectTotalCount, 0);
-      store.refreshState();
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).not.toHaveBeenCalled();
-    });
-
-    it('should open confirmation dialog with correct event count', async () => {
-      const dialogOpenSpy = vi
-        .spyOn(dialogService, 'open')
-        .mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Export all ${mockTotalCount} events to a CSV file?`,
-            confirmButtonText: 'Export',
-            confirmButtonType: 'primary',
-          }),
-        },
-      });
-    });
-
-    it('should export the events from the confirmation dialog', async () => {
-      await component.onExportToCsv();
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        EventsActions.exportEventsToCsvRequested(),
-        [EventsActions.exportEventsToCsvSucceeded, EventsActions.exportEventsToCsvFailed],
-      );
-    });
-
-    it('should not export anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onExportToCsv();
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
-    });
-  });
-
   describe('onOptionsChange', () => {
-    it('should dispatch paginationOptionsChanged action with fetch true by default', () => {
+    it('should dispatch paginationOptionsChanged with the options', () => {
       const options: DataPaginationOptions<Event> = {
         ...mockOptions,
         page: 1,
@@ -264,20 +156,7 @@ describe('SchedulePageComponent', () => {
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        EventsActions.paginationOptionsChanged({ options, fetch: true }),
-      );
-    });
-
-    it('should dispatch paginationOptionsChanged action with fetch false when specified', () => {
-      const options: DataPaginationOptions<Event> = {
-        ...mockOptions,
-        search: 'test',
-      };
-      component.onOptionsChange(options, false);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        EventsActions.paginationOptionsChanged({ options, fetch: false }),
+        EventsActions.paginationOptionsChanged({ options }),
       );
     });
   });
@@ -320,10 +199,10 @@ describe('SchedulePageComponent', () => {
       });
     });
 
-    it('should call onExportToCsv when exportToCsvButton action is called', () => {
+    it('should export the events from the export button', () => {
       component.exportToCsvButton.action();
 
-      expect(onExportToCsvSpy).toHaveBeenCalledTimes(1);
+      expect(TestBed.inject(CsvExportService).exportEvents).toHaveBeenCalledOnce();
     });
   });
 
@@ -429,7 +308,7 @@ describe('SchedulePageComponent', () => {
         );
 
         expect(dispatchSpy).toHaveBeenCalledWith(
-          EventsActions.paginationOptionsChanged({ options, fetch: true }),
+          EventsActions.paginationOptionsChanged({ options }),
         );
       });
 
@@ -473,7 +352,6 @@ describe('SchedulePageComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         EventsActions.paginationOptionsChanged({
           options: { ...mockOptions, search: 'blitz', page: 1 },
-          fetch: true,
         }),
       );
     });
@@ -506,7 +384,6 @@ describe('SchedulePageComponent', () => {
               showPastEvents: { ...mockOptions.filters.showPastEvents, value: true },
             },
           },
-          fetch: true,
         }),
       );
     });
@@ -524,7 +401,6 @@ describe('SchedulePageComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         EventsActions.paginationOptionsChanged({
           options: { ...mockOptions, page: 1, search: '' },
-          fetch: true,
         }),
       );
     });

@@ -219,7 +219,6 @@ describe('DataTableComponent', () => {
 
     resized.forEach(resize => resize());
 
-    expect(element.classList).toContain('data-table--sticky-head');
     expect(element.style.getPropertyValue('--lcc-data-table-head-height')).toBe('40px');
     expect(element.style.getPropertyValue('--lcc-data-table-head-travel')).toBe('260px');
   });

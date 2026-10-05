@@ -65,6 +65,7 @@ describe('NavigationBarComponent', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 
