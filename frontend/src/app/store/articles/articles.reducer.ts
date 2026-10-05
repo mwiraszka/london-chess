@@ -4,7 +4,7 @@ import { pick } from 'lodash';
 
 import { ARTICLE_FORM_DATA_PROPERTIES, INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
 import { Article, ArticleFormData, DataPaginationOptions, IsoDate } from '@app/models';
-import { areSame, withFailedLoad, withLoadAttempt } from '@app/utils';
+import { refreshedFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as ArticlesActions from './articles.actions';
 
@@ -84,19 +84,15 @@ export const articlesReducer = createReducer(
       articlesAdapter.upsertMany(
         articles.map(article => {
           const existingEntity = state.entities[article.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(
-              existingEntity.formData,
-              pick(article, ARTICLE_FORM_DATA_PROPERTIES),
-            );
 
           return {
             article,
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              existingEntity?.formData,
+              existingEntity &&
+                pick(existingEntity.article, ARTICLE_FORM_DATA_PROPERTIES),
+              pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -113,19 +109,15 @@ export const articlesReducer = createReducer(
       articlesAdapter.upsertMany(
         articles.map(article => {
           const existingEntity = state.entities[article.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(
-              existingEntity.formData,
-              pick(article, ARTICLE_FORM_DATA_PROPERTIES),
-            );
 
           return {
             article,
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              existingEntity?.formData,
+              existingEntity &&
+                pick(existingEntity.article, ARTICLE_FORM_DATA_PROPERTIES),
+              pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -147,11 +139,15 @@ export const articlesReducer = createReducer(
   })),
 
   on(ArticlesActions.fetchArticleSucceeded, (state, { article }): ArticlesState => {
-    const previousFormData = state.entities[article.id]?.formData;
+    const existingEntity = state.entities[article.id];
     return articlesAdapter.upsertOne(
       {
         article,
-        formData: previousFormData ?? pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+        formData: refreshedFormData(
+          existingEntity?.formData,
+          existingEntity && pick(existingEntity.article, ARTICLE_FORM_DATA_PROPERTIES),
+          pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+        ),
       },
       state,
     );

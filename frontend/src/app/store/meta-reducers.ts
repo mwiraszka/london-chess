@@ -53,9 +53,9 @@ const hydratedStates: (keyof MetaState)[] = [
 // State saved by an app version older than these no longer fits its reducer
 const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   articlesState: [6, 2, 0],
-  eventsState: [6, 2, 0],
+  eventsState: [6, 5, 0],
   imagesState: [6, 2, 0],
-  membersState: [6, 2, 0],
+  membersState: [6, 5, 0],
   tournamentsState: [6, 4, 0],
 };
 

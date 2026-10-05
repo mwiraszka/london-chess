@@ -99,7 +99,7 @@ describe('Meta Reducers', () => {
 
     it('should leave no key behind that a version before 6.3.0 could load', () => {
       localStorage.setItem('appState_v6.2.2', '{"theme": "dark"}');
-      localStorage.setItem('eventsState_v6.2.2', '{"entities": {}}');
+      localStorage.setItem('articlesState_v6.2.2', '{"entities": {}}');
       localStorage.setItem('imagesState_v6.2.2', '{"entities": {}}');
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
@@ -108,7 +108,7 @@ describe('Meta Reducers', () => {
 
       expect(Object.keys(localStorage).filter(key => key.includes('_v'))).toEqual([]);
       expect(localStorage.getItem(stateStorageKey('appState'))).toBe('{"theme": "dark"}');
-      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBe(
+      expect(localStorage.getItem(stateStorageKey('articlesState'))).toBe(
         '{"entities": {}}',
       );
     });
@@ -127,15 +127,29 @@ describe('Meta Reducers', () => {
       });
     });
 
-    it('should keep event state saved in a compatible shape', () => {
-      const oldEventsState = JSON.stringify({ entities: {} });
-      localStorage.setItem('eventsState_v6.2.0', oldEventsState);
+    it('should keep article state saved in a compatible shape', () => {
+      const oldArticlesState = JSON.stringify({ entities: {} });
+      localStorage.setItem('articlesState_v6.2.0', oldArticlesState);
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
-      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBe(oldEventsState);
+      expect(localStorage.getItem(stateStorageKey('articlesState'))).toBe(
+        oldArticlesState,
+      );
+    });
+
+    it('should drop event and member state saved before new drafts started empty', () => {
+      localStorage.setItem(stateStorageKey('eventsState', '6.4.0'), '{"entities": {}}');
+      localStorage.setItem(stateStorageKey('membersState', '6.4.0'), '{"entities": {}}');
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBeNull();
+      expect(localStorage.getItem(stateStorageKey('membersState'))).toBeNull();
     });
 
     it('should drop state saved by a newer version of the app', () => {
@@ -585,6 +599,7 @@ describe('Meta Reducers', () => {
       lastName: 'Byron',
       email: 'ada@example.com',
       isAdmin: true,
+      memberNumber: null,
     };
     const nonAdmin: User = { ...admin, isAdmin: false };
 

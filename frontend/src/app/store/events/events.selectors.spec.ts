@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
 
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event, EventFormData } from '@app/models';
 
@@ -34,7 +34,7 @@ describe('Events Selectors', () => {
     ...eventsAdapter.getInitialState({
       failedLoads: [],
       isFetchingFiltered: false,
-      newEventFormData: INITIAL_EVENT_FORM_DATA,
+      newEventFormData: initialEventFormData(),
       lastHomePageFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
       homePageEvents: [MOCK_EVENTS[0], MOCK_EVENTS[1]],
@@ -51,7 +51,7 @@ describe('Events Selectors', () => {
       },
       [MOCK_EVENTS[1].id]: {
         event: MOCK_EVENTS[1],
-        formData: INITIAL_EVENT_FORM_DATA,
+        formData: initialEventFormData(),
       },
     },
     ids: [MOCK_EVENTS[0].id, MOCK_EVENTS[1].id],
@@ -189,7 +189,7 @@ describe('Events Selectors', () => {
     it('should select event by id when it exists', () => {
       const allEventEntities = [
         { event: MOCK_EVENTS[0], formData: mockEventFormData },
-        { event: MOCK_EVENTS[1], formData: INITIAL_EVENT_FORM_DATA },
+        { event: MOCK_EVENTS[1], formData: initialEventFormData() },
       ];
       const selector = EventsSelectors.selectEventById(MOCK_EVENTS[1].id);
       const result = selector.projector(allEventEntities);
@@ -223,7 +223,23 @@ describe('Events Selectors', () => {
       const allEventEntities = [{ event: MOCK_EVENTS[0], formData: mockEventFormData }];
       const selector = EventsSelectors.selectEventFormDataById(null);
       const result = selector.projector(mockEventsState, allEventEntities);
-      expect(result).toEqual(INITIAL_EVENT_FORM_DATA);
+      expect(result).toBe(mockEventsState.newEventFormData);
+    });
+
+    it("should start a new event from today's defaults before any draft", () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T16:00:00.000Z'));
+      const selector = EventsSelectors.selectEventFormDataById(null);
+
+      const result = selector.projector(
+        { ...mockEventsState, newEventFormData: null },
+        [],
+      );
+
+      expect(result).toEqual({
+        ...initialEventFormData(),
+        eventDate: '2026-10-05T22:00:00.000Z',
+      });
     });
   });
 
@@ -311,7 +327,7 @@ describe('Events Selectors', () => {
         eventDate: moment('2049-12-01').toISOString(),
       };
       const state = eventsAdapter.upsertOne(
-        { event: deletedEvent, formData: INITIAL_EVENT_FORM_DATA },
+        { event: deletedEvent, formData: initialEventFormData() },
         mockEventsState,
       );
 

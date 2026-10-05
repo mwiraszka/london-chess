@@ -1,6 +1,6 @@
 import { pick } from 'lodash';
 
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { LccError, Member, MemberFormData } from '@app/models';
 
@@ -52,7 +52,7 @@ describe('Members Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+        newMemberFormData: null,
         failedLoads: [],
         isFetchingFiltered: false,
         recordsScope: null,
@@ -353,7 +353,7 @@ describe('Members Reducer', () => {
         member: mockMember,
         formData: null,
       });
-      expect(state.newMemberFormData).toEqual(INITIAL_MEMBER_FORM_DATA);
+      expect(state.newMemberFormData).toBeNull();
     });
   });
 
@@ -480,12 +480,21 @@ describe('Members Reducer', () => {
   });
 
   describe('formDataChanged', () => {
-    it('should update newMemberFormData when memberId is null', () => {
+    it('should start a new member from the defaults for today when memberId is null', () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T16:00:00.000Z'));
       const formData = { firstName: 'New Name' };
-      const action = MembersActions.formDataChanged({ memberId: null, formData });
-      const state = membersReducer(initialState, action);
 
-      expect(state.newMemberFormData.firstName).toBe('New Name');
+      const state = membersReducer(
+        initialState,
+        MembersActions.formDataChanged({ memberId: null, formData }),
+      );
+
+      expect(initialState.newMemberFormData).toBeNull();
+      expect(state.newMemberFormData).toEqual({
+        ...initialMemberFormData(),
+        firstName: 'New Name',
+      });
     });
 
     it('should start a draft from the member record', () => {
@@ -528,7 +537,7 @@ describe('Members Reducer', () => {
       const previousState: MembersState = {
         ...initialState,
         newMemberFormData: {
-          ...INITIAL_MEMBER_FORM_DATA,
+          ...initialMemberFormData(),
           firstName: 'Draft',
         },
       };
@@ -536,7 +545,7 @@ describe('Members Reducer', () => {
       const action = MembersActions.formDataRestored({ memberId: null });
       const state = membersReducer(previousState, action);
 
-      expect(state.newMemberFormData).toEqual(INITIAL_MEMBER_FORM_DATA);
+      expect(state.newMemberFormData).toBeNull();
     });
 
     it('should discard the member draft', () => {
@@ -544,7 +553,7 @@ describe('Members Reducer', () => {
         {
           member: mockMember,
           formData: {
-            ...INITIAL_MEMBER_FORM_DATA,
+            ...initialMemberFormData(),
             firstName: 'Modified',
           },
         },
@@ -571,10 +580,19 @@ describe('Members Reducer', () => {
     });
   });
   describe('a fetch of filtered members', () => {
-    it('should be marked as under way until it succeeds or fails', () => {
-      const fetching = membersReducer(
+    it('should leave the rows on screen while they refresh in the background', () => {
+      const refreshing = membersReducer(
         initialState,
         MembersActions.fetchFilteredMembersRequested(),
+      );
+
+      expect(refreshing.isFetchingFiltered).toBe(false);
+    });
+
+    it('should hold placeholders from a new page, filter or search until it succeeds or fails', () => {
+      const fetching = membersReducer(
+        initialState,
+        MembersActions.paginationOptionsChanged({ options: initialState.options }),
       );
 
       expect(fetching.isFetchingFiltered).toBe(true);

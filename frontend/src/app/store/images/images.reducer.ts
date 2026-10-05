@@ -4,7 +4,12 @@ import { compact, pick } from 'lodash';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { DataPaginationOptions, Id, Image, ImageFormData, IsoDate } from '@app/models';
-import { customSort, withFailedLoad, withLoadAttempt } from '@app/utils';
+import {
+  customSort,
+  refreshedFormData,
+  withFailedLoad,
+  withLoadAttempt,
+} from '@app/utils';
 
 import * as ImagesActions from './images.actions';
 
@@ -79,10 +84,9 @@ export const imagesReducer = createReducer(
     withFailedLoad(state, 'metadata'),
   ),
 
-  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState => ({
-    ...withLoadAttempt(state, 'filteredThumbnails'),
-    isFetchingFiltered: true,
-  })),
+  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState =>
+    withLoadAttempt(state, 'filteredThumbnails'),
+  ),
   on(ImagesActions.fetchFilteredThumbnailsFailed, (state): ImagesState => ({
     ...withFailedLoad(state, 'filteredThumbnails'),
     isFetchingFiltered: false,
@@ -117,7 +121,11 @@ export const imagesReducer = createReducer(
             thumbnailUrl: originalEntity?.image.thumbnailUrl,
             urlExpirationDate: originalEntity?.image.urlExpirationDate,
           },
-          formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+          formData: refreshedFormData(
+            originalEntity?.formData,
+            originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+            pick(image, IMAGE_FORM_DATA_PROPERTIES),
+          ),
         };
       }),
       {
@@ -145,7 +153,11 @@ export const imagesReducer = createReducer(
                   )
                 : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
             },
-            formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              originalEntity?.formData,
+              originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+              pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -177,7 +189,11 @@ export const imagesReducer = createReducer(
                   )
                 : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
             },
-            formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              originalEntity?.formData,
+              originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+              pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -190,9 +206,12 @@ export const imagesReducer = createReducer(
       ),
   ),
 
+  // Only a page, filter or search the visitor asked for swaps the rows for placeholders, so
+  // a refresh in the background leaves the ones on screen in place
   on(ImagesActions.paginationOptionsChanged, (state, { options }): ImagesState => ({
     ...state,
     options,
+    isFetchingFiltered: true,
   })),
 
   on(ImagesActions.fetchMainImageSucceeded, (state, { image }): ImagesState => {
@@ -208,7 +227,11 @@ export const imagesReducer = createReducer(
             ? earlierIso(image.urlExpirationDate, originalEntity.image.urlExpirationDate)
             : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
         },
-        formData: originalEntity?.formData ?? pick(image, IMAGE_FORM_DATA_PROPERTIES),
+        formData: refreshedFormData(
+          originalEntity?.formData,
+          originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+          pick(image, IMAGE_FORM_DATA_PROPERTIES),
+        ),
       },
       state,
     );

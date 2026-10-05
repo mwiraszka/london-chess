@@ -128,6 +128,52 @@ describe('Images Reducer', () => {
     });
   });
 
+  describe('refreshing an image with a draft', () => {
+    const image = MOCK_IMAGES[0];
+    const saved = pick(image, IMAGE_FORM_DATA_PROPERTIES);
+    const withDraft = (caption: string): ImagesState =>
+      imagesAdapter.upsertOne({ image, formData: { ...saved, caption } }, initialState);
+    const refreshed = { ...image, album: 'Renamed elsewhere' };
+
+    it.each([
+      [
+        'all metadata',
+        ImagesActions.fetchAllImagesMetadataSucceeded({ images: [refreshed] }),
+      ],
+      [
+        'a page of thumbnails',
+        ImagesActions.fetchFilteredThumbnailsSucceeded({
+          images: [refreshed],
+          filteredCount: 1,
+        }),
+      ],
+      [
+        'a batch of thumbnails',
+        ImagesActions.fetchBatchThumbnailsSucceeded({
+          images: [refreshed],
+          context: 'photos-in-album',
+        }),
+      ],
+      ['the main image', ImagesActions.fetchMainImageSucceeded({ image: refreshed })],
+    ])('should keep unsaved edits through %s', (_, action) => {
+      const state = imagesReducer(withDraft('My caption'), action);
+
+      expect(state.entities[image.id]?.formData).toEqual({
+        ...saved,
+        caption: 'My caption',
+      });
+    });
+
+    it('should take on the refreshed copy when nothing was edited', () => {
+      const state = imagesReducer(
+        withDraft(image.caption),
+        ImagesActions.fetchMainImageSucceeded({ image: refreshed }),
+      );
+
+      expect(state.entities[image.id]?.formData.album).toBe('Renamed elsewhere');
+    });
+  });
+
   describe('fetchAllImagesMetadataSucceeded', () => {
     it('should upsert base images with metadata only', () => {
       const images = [mockBaseImage];
@@ -782,10 +828,19 @@ describe('Images Reducer', () => {
     });
   });
   describe('a fetch of filtered thumbnails', () => {
-    it('should be marked as under way until it succeeds or fails', () => {
-      const fetching = imagesReducer(
+    it('should leave the thumbnails on screen while they refresh in the background', () => {
+      const refreshing = imagesReducer(
         initialState,
         ImagesActions.fetchFilteredThumbnailsRequested(),
+      );
+
+      expect(refreshing.isFetchingFiltered).toBe(false);
+    });
+
+    it('should hold placeholders from a new page, filter or search until it succeeds or fails', () => {
+      const fetching = imagesReducer(
+        initialState,
+        ImagesActions.paginationOptionsChanged({ options: initialState.options }),
       );
 
       expect(fetching.isFetchingFiltered).toBe(true);

@@ -5,7 +5,7 @@ import { pick } from 'lodash';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
 import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { Event, EventFormData } from '@app/models';
@@ -96,7 +96,7 @@ describe('EventFormComponent', () => {
     });
 
     it('should start a fresh form without any errors showing', async () => {
-      render({ ...INITIAL_EVENT_FORM_DATA });
+      render({ ...initialEventFormData() });
 
       await settle();
 
@@ -114,11 +114,12 @@ describe('EventFormComponent', () => {
       expect(errorTexts()).toHaveLength(1);
     });
 
-    it('should pass the draft to the store as soon as the form opens', () => {
+    it('should leave the store alone until the form is edited', () => {
       render();
 
-      expect(changeSpy).toHaveBeenCalledTimes(1);
-      expect(lastDraft()).toEqual(formData);
+      query(fixture.debugElement, 'form').triggerEventHandler('focusout');
+
+      expect(changeSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -126,7 +127,8 @@ describe('EventFormComponent', () => {
     beforeEach(() => {
       vi.useFakeTimers();
       render();
-      changeSpy.mockClear();
+      // As once someone has typed in it
+      component.form.markAsDirty();
     });
 
     afterEach(() => vi.useRealTimers());
@@ -256,7 +258,7 @@ describe('EventFormComponent', () => {
       query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
-      expect(component.form.controls.title.value).toBe(INITIAL_EVENT_FORM_DATA.title);
+      expect(component.form.controls.title.value).toBe(initialEventFormData().title);
     });
   });
 

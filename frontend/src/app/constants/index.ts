@@ -28,19 +28,22 @@ export const EVENT_FORM_DATA_PROPERTIES = [
   'articleId',
 ] as const;
 
-export const INITIAL_EVENT_FORM_DATA: EventFormData = {
-  type: 'blitz tournament (10 mins)',
-  eventDate: moment()
-    .tz(CLUB_TIME_ZONE, false)
-    .set('hours', 18)
-    .set('minutes', 0)
-    .set('seconds', 0)
-    .set('milliseconds', 0)
-    .toISOString(),
-  title: '',
-  details: '',
-  articleId: '',
-};
+// Made fresh for each new draft, so it always starts on the current day
+export function initialEventFormData(): EventFormData {
+  return {
+    type: 'blitz tournament (10 mins)',
+    eventDate: moment()
+      .tz(CLUB_TIME_ZONE, false)
+      .set('hours', 18)
+      .set('minutes', 0)
+      .set('seconds', 0)
+      .set('milliseconds', 0)
+      .toISOString(),
+    title: '',
+    details: '',
+    articleId: '',
+  };
+}
 
 export const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: 'blitz tournament (10 mins)', label: 'Blitz tournament (10 minutes)' },
@@ -97,17 +100,20 @@ export const MEMBER_FORM_DATA_PROPERTIES = [
   'dateJoined',
 ] as const;
 
-export const INITIAL_MEMBER_FORM_DATA: MemberFormData = {
-  firstName: '',
-  lastName: '',
-  city: 'London',
-  rating: '1000/0',
-  peakRating: '',
-  dateJoined: moment().toISOString(),
-  isActive: true,
-  chessComUsername: '',
-  lichessUsername: '',
-  yearOfBirth: '',
-  email: '',
-  phoneNumber: '',
-};
+// Made fresh for each new draft, so a new member joins on the current day
+export function initialMemberFormData(): MemberFormData {
+  return {
+    firstName: '',
+    lastName: '',
+    city: 'London',
+    rating: '1000/0',
+    peakRating: '',
+    dateJoined: moment().toISOString(),
+    isActive: true,
+    chessComUsername: '',
+    lichessUsername: '',
+    yearOfBirth: '',
+    email: '',
+    phoneNumber: '',
+  };
+}

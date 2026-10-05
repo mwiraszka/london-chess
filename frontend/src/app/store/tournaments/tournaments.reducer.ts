@@ -11,7 +11,7 @@ import {
   TournamentRegistrant,
   TournamentSummary,
 } from '@app/models';
-import { tournamentFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
+import { areSame, tournamentFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 
@@ -88,8 +88,19 @@ export const tournamentsReducer = createReducer(
   ),
   on(
     TournamentsActions.fetchTournamentSucceeded,
-    (state, { tournament }): TournamentsState =>
-      tournamentsAdapter.upsertOne(tournament, state),
+    (state, { tournament }): TournamentsState => {
+      const draft = state.formData[tournament.number];
+      const previous = state.entities[tournament.number];
+      // A draft without edits gives way to the refreshed tournament
+      const hasEdits =
+        !!draft && !!previous && !areSame(draft, tournamentFormData(previous));
+      return tournamentsAdapter.upsertOne(
+        tournament,
+        hasEdits
+          ? state
+          : { ...state, formData: omit(state.formData, tournament.number) },
+      );
+    },
   ),
 
   on(TournamentsActions.fetchMemberTournamentsRequested, (state): TournamentsState =>

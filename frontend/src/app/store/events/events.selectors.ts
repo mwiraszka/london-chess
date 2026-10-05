@@ -1,7 +1,7 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { pick } from 'lodash';
 
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { initialEventFormData } from '@app/constants';
 import { Id } from '@app/models';
 import { areSame, customSort, isUpcomingEvent, loadStatus } from '@app/utils';
 
@@ -88,7 +88,8 @@ export const selectEventFormDataById = (id: Id | null) =>
     selectAllEventEntities,
     (state, allEventEntities) =>
       allEventEntities?.find(entity => entity.event.id === id)?.formData ??
-      state.newEventFormData,
+      state.newEventFormData ??
+      initialEventFormData(),
   );
 
 export const selectHasUnsavedChanges = (id: Id | null) =>
@@ -97,7 +98,7 @@ export const selectHasUnsavedChanges = (id: Id | null) =>
     selectEventFormDataById(id),
     (event, eventFormData) => {
       const formPropertiesOfOriginalEvent = pick(
-        event ?? INITIAL_EVENT_FORM_DATA,
+        event ?? initialEventFormData(),
         Object.getOwnPropertyNames(eventFormData),
       );
 

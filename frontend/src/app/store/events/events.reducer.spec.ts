@@ -1,4 +1,4 @@
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { LccError } from '@app/models';
 
@@ -30,7 +30,7 @@ describe('Events Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        newEventFormData: INITIAL_EVENT_FORM_DATA,
+        newEventFormData: null,
         failedLoads: [],
         isFetchingFiltered: false,
         lastHomePageFetch: null,
@@ -139,10 +139,19 @@ describe('Events Reducer', () => {
   });
 
   describe('a fetch of filtered events', () => {
-    it('should be marked as under way until it succeeds or fails', () => {
-      const fetching = eventsReducer(
+    it('should leave the rows on screen while they refresh in the background', () => {
+      const refreshing = eventsReducer(
         initialState,
         EventsActions.fetchFilteredEventsRequested(),
+      );
+
+      expect(refreshing.isFetchingFiltered).toBe(false);
+    });
+
+    it('should hold placeholders from a new page, filter or search until it succeeds or fails', () => {
+      const fetching = eventsReducer(
+        initialState,
+        EventsActions.paginationOptionsChanged({ options: initialState.options }),
       );
 
       expect(fetching.isFetchingFiltered).toBe(true);
@@ -270,7 +279,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] });
       const state = eventsReducer(previousState, action);
 
-      expect(state.newEventFormData).toEqual(INITIAL_EVENT_FORM_DATA);
+      expect(state.newEventFormData).toBeNull();
     });
   });
 
@@ -399,12 +408,16 @@ describe('Events Reducer', () => {
   });
 
   describe('formDataChanged', () => {
-    it('should update newEventFormData when eventId is null', () => {
+    it('should start a new event from the defaults for today when eventId is null', () => {
       const formData = { title: 'New Title' };
       const action = EventsActions.formDataChanged({ eventId: null, formData });
       const state = eventsReducer(initialState, action);
 
-      expect(state.newEventFormData.title).toBe('New Title');
+      expect(initialState.newEventFormData).toBeNull();
+      expect(state.newEventFormData).toEqual({
+        ...initialEventFormData(),
+        title: 'New Title',
+      });
     });
 
     it('should update existing event formData', () => {
@@ -452,7 +465,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.formDataRestored({ eventId: null });
       const state = eventsReducer(previousState, action);
 
-      expect(state.newEventFormData).toEqual(INITIAL_EVENT_FORM_DATA);
+      expect(state.newEventFormData).toBeNull();
     });
 
     it('should restore event formData from original event', () => {

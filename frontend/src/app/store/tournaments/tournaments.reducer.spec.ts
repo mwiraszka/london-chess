@@ -190,6 +190,35 @@ describe('Tournaments Reducer', () => {
     });
   });
 
+  describe('refreshing a tournament with a draft', () => {
+    const number = MOCK_UPCOMING_TOURNAMENT.number;
+    const saved = tournamentFormData(MOCK_UPCOMING_TOURNAMENT);
+    const withDraft = (name: string): TournamentsState => ({
+      ...tournamentsReducer(
+        initialState,
+        TournamentsActions.fetchTournamentSucceeded({
+          tournament: MOCK_UPCOMING_TOURNAMENT,
+        }),
+      ),
+      formData: { [number]: { ...saved, name } },
+    });
+    const refresh = TournamentsActions.fetchTournamentSucceeded({
+      tournament: { ...MOCK_UPCOMING_TOURNAMENT, timeControl: 'G30+5' },
+    });
+
+    it('should keep unsaved edits', () => {
+      const state = tournamentsReducer(withDraft('Fall Rapid Open'), refresh);
+
+      expect(state.formData[number]?.name).toBe('Fall Rapid Open');
+    });
+
+    it('should let a draft without edits give way to the refreshed tournament', () => {
+      const state = tournamentsReducer(withDraft(saved.name), refresh);
+
+      expect(state.formData).toEqual({});
+    });
+  });
+
   describe('saving', () => {
     const loaded = {
       ...tournamentsReducer(

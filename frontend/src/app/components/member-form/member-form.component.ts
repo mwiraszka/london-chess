@@ -1,5 +1,4 @@
 import {
-  AlertComponent,
   CardComponent,
   CheckboxComponent,
   DatePickerComponent,
@@ -27,7 +26,8 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import {
   FORM_CHANGE_DEBOUNCE,
   FORM_ERROR_MESSAGES,
@@ -63,7 +63,6 @@ import {
   templateUrl: './member-form.component.html',
   styleUrl: './member-form.component.scss',
   imports: [
-    AlertComponent,
     CardComponent,
     CheckboxComponent,
     DatePickerComponent,
@@ -72,6 +71,7 @@ import {
     InputComponent,
     ModificationInfoComponent,
     ReactiveFormsModule,
+    SafeModeNoticeComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -132,7 +132,6 @@ export class MemberFormComponent implements OnInit {
     this.form.valueChanges
       .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
-    this.emitChange();
 
     merge(
       this.form.controls.email.valueChanges,
@@ -153,7 +152,7 @@ export class MemberFormComponent implements OnInit {
       this.toFormValue(
         originalMember
           ? pick(originalMember, MEMBER_FORM_DATA_PROPERTIES)
-          : INITIAL_MEMBER_FORM_DATA,
+          : initialMemberFormData(),
       ),
     );
   }
@@ -317,7 +316,11 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
+  // Only an edit makes a draft, so opening a form changes nothing in the store
   private emitChange(): void {
+    if (!this.form.dirty) {
+      return;
+    }
     const { dateJoined: day, ...fields } = this.form.getRawValue();
     const dateJoined = this.toDateJoined(day);
     this.change.emit({

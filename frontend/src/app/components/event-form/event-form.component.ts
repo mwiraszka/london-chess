@@ -26,7 +26,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
-import { EVENT_TYPE_OPTIONS, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { EVENT_TYPE_OPTIONS, initialEventFormData } from '@app/constants';
 import {
   FORM_CHANGE_DEBOUNCE,
   FORM_ERROR_MESSAGES,
@@ -92,7 +92,6 @@ export class EventFormComponent implements OnInit {
     this.form.valueChanges
       .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
-    this.emitChange();
 
     if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
@@ -102,7 +101,7 @@ export class EventFormComponent implements OnInit {
   public onRestore(): void {
     const originalEvent = this.originalEvent();
     this.restore.emit(originalEvent?.id ?? null);
-    this.form.reset(this.toFormValue(originalEvent ?? INITIAL_EVENT_FORM_DATA));
+    this.form.reset(this.toFormValue(originalEvent ?? initialEventFormData()));
   }
 
   public onCancel(): void {
@@ -185,7 +184,11 @@ export class EventFormComponent implements OnInit {
     });
   }
 
+  // Only an edit makes a draft, so opening a form changes nothing in the store
   private emitChange(): void {
+    if (!this.form.dirty) {
+      return;
+    }
     const { eventDay, eventTime, ...fields } = this.form.getRawValue();
     const eventDate = fromClubDateTime(eventDay, eventTime);
     this.change.emit({

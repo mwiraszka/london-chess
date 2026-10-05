@@ -1,7 +1,7 @@
 import { pick } from 'lodash';
 import moment from 'moment-timezone';
 
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DataPaginationOptions, Member, MemberFormData } from '@app/models';
 
@@ -42,7 +42,7 @@ describe('Members Selectors', () => {
     ...membersAdapter.getInitialState({
       failedLoads: [],
       isFetchingFiltered: false,
-      newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+      newMemberFormData: initialMemberFormData(),
       recordsScope: 'admin',
       lastFullFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
@@ -268,7 +268,20 @@ describe('Members Selectors', () => {
       ];
       const selector = MembersSelectors.selectMemberFormDataById(null);
       const result = selector.projector(mockMembersState, allMemberEntities);
-      expect(result).toEqual(INITIAL_MEMBER_FORM_DATA);
+      expect(result).toBe(mockMembersState.newMemberFormData);
+    });
+
+    it("should start a new member from today's defaults before any draft", () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T16:00:00.000Z'));
+      const selector = MembersSelectors.selectMemberFormDataById(null);
+
+      const result = selector.projector(
+        { ...mockMembersState, newMemberFormData: null },
+        [],
+      );
+
+      expect(result).toEqual(initialMemberFormData());
     });
   });
 

@@ -6,7 +6,7 @@ import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { Id, MemberFormData } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
@@ -119,6 +119,8 @@ describe('MemberEditorPageComponent', () => {
 
     describe('without member_id route param', () => {
       beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-05T16:00:00.000Z'));
         component.ngOnInit();
       });
 
@@ -126,7 +128,7 @@ describe('MemberEditorPageComponent', () => {
         const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
         expect(vm).toStrictEqual({
-          formData: INITIAL_MEMBER_FORM_DATA,
+          formData: initialMemberFormData(),
           hasUnsavedChanges: false,
           isSafeMode: false,
           memberId: null,

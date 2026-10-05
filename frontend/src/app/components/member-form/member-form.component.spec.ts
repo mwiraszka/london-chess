@@ -6,7 +6,7 @@ import { TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
@@ -108,7 +108,7 @@ describe('MemberFormComponent', () => {
     });
 
     it('should start a fresh form without any errors showing', async () => {
-      render({ ...INITIAL_MEMBER_FORM_DATA });
+      render({ ...initialMemberFormData() });
 
       await settle();
 
@@ -126,26 +126,32 @@ describe('MemberFormComponent', () => {
       expect(errorTexts()).toHaveLength(1);
     });
 
-    it('should pass the draft to the store as soon as the form opens', () => {
+    it('should leave the store alone until the form is edited', () => {
       render();
 
-      expect(changeSpy).toHaveBeenCalledTimes(1);
-      expect(changeSpy).toHaveBeenCalledWith({ memberId: null, formData });
+      query(fixture.debugElement, 'form').triggerEventHandler('focusout');
+
+      expect(changeSpy).not.toHaveBeenCalled();
     });
 
-    it('should not count opening a member as an edit, whatever time of day they joined', () => {
+    it('should keep the instant a member joined, whatever time of day it was', () => {
       const afternoon = '2019-02-15T18:42:00.000Z';
-
       render({ ...formData, dateJoined: afternoon }, false, {
         ...withoutAccount,
         dateJoined: afternoon,
       });
+      component.form.markAsDirty();
+
+      query(fixture.debugElement, 'form').triggerEventHandler('focusout');
 
       expect(lastDraft()?.dateJoined).toBe(afternoon);
     });
 
     it("should leave an account holder's email address to their account", () => {
       render(pick(withAccount, MEMBER_FORM_DATA_PROPERTIES), false, withAccount);
+      component.form.markAsDirty();
+
+      query(fixture.debugElement, 'form').triggerEventHandler('focusout');
 
       expect(component.form.controls.email.disabled).toBe(true);
       expect(lastDraft()?.email).toBe(withAccount.email);
@@ -156,7 +162,8 @@ describe('MemberFormComponent', () => {
     beforeEach(() => {
       vi.useFakeTimers();
       render(formData, false, withoutAccount);
-      changeSpy.mockClear();
+      // As once someone has typed in it
+      component.form.markAsDirty();
     });
 
     afterEach(() => vi.useRealTimers());
@@ -344,14 +351,14 @@ describe('MemberFormComponent', () => {
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
       expect(component.form.controls.firstName.value).toBe('');
-      expect(component.form.controls.city.value).toBe(INITIAL_MEMBER_FORM_DATA.city);
-      expect(component.form.controls.rating.value).toBe(INITIAL_MEMBER_FORM_DATA.rating);
+      expect(component.form.controls.city.value).toBe(initialMemberFormData().city);
+      expect(component.form.controls.rating.value).toBe(initialMemberFormData().rating);
     });
   });
 
   describe('submitting', () => {
     it('should show every error instead of asking to save an invalid form', async () => {
-      render({ ...INITIAL_MEMBER_FORM_DATA, firstName: 'Imogen' });
+      render({ ...initialMemberFormData(), firstName: 'Imogen' });
       await settle();
       const errorsBefore = errorTexts();
 
@@ -548,9 +555,7 @@ describe('MemberFormComponent', () => {
     it('should hide personal details behind a notice in safe mode', () => {
       render(formData, false, withoutAccount, true);
 
-      expect(queryTextContent(fixture.debugElement, '.safe-mode-notice')).toContain(
-        'You can disable Safe Mode from the User Settings menu.',
-      );
+      expect(query(fixture.debugElement, 'lcc-safe-mode-notice')).toBeTruthy();
       expect(query(fixture.debugElement, 'label[for="phone-number-input"]')).toBeFalsy();
       expect(query(fixture.debugElement, 'input[type="email"]')).toBeFalsy();
     });
@@ -558,7 +563,7 @@ describe('MemberFormComponent', () => {
     it('should show personal details outside safe mode', () => {
       render(formData, false, withoutAccount, false);
 
-      expect(query(fixture.debugElement, '.safe-mode-notice')).toBeFalsy();
+      expect(query(fixture.debugElement, 'lcc-safe-mode-notice')).toBeFalsy();
       expect(query(fixture.debugElement, 'label[for="phone-number-input"]')).toBeTruthy();
       expect(query(fixture.debugElement, 'input[type="email"]')).toBeTruthy();
     });

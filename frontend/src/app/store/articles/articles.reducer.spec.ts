@@ -162,11 +162,32 @@ describe('Articles Reducer', () => {
       });
       const state = articlesReducer(previousState, action);
 
-      // Should update article but preserve formData (formData only updates on explicit actions)
       expect(state.entities['a7b8c9d0e1f2a3b4']?.article.title).toBe('Updated Title');
-      expect(state.entities['a7b8c9d0e1f2a3b4']?.formData.title).toBe(
-        MOCK_ARTICLES[0].title,
+      expect(state.entities['a7b8c9d0e1f2a3b4']?.formData.title).toBe('Updated Title');
+    });
+
+    it('should keep a draft with unsaved edits when the article is refreshed', () => {
+      const previousState: ArticlesState = articlesAdapter.upsertOne(
+        {
+          article: MOCK_ARTICLES[0],
+          formData: {
+            title: 'My edit',
+            body: MOCK_ARTICLES[0].body,
+            bannerImageId: MOCK_ARTICLES[0].bannerImageId,
+          },
+        },
+        initialState,
       );
+
+      const state = articlesReducer(
+        previousState,
+        ArticlesActions.fetchArticleSucceeded({
+          article: { ...MOCK_ARTICLES[0], title: 'Updated Title' },
+        }),
+      );
+
+      expect(state.entities['a7b8c9d0e1f2a3b4']?.article.title).toBe('Updated Title');
+      expect(state.entities['a7b8c9d0e1f2a3b4']?.formData.title).toBe('My edit');
     });
   });
 
