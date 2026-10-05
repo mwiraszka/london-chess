@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update packages and tidy up the website behind the scenes
+- Refresh the look of the site with a new typeface, and even out text sizes, spacing and rounded corners across its pages and cards
+
+### Fixed
+
+- Keep the schedule, the members list and the photo gallery on screen while they refresh in the background, instead of flashing placeholders
+- Show every line break in an event's details
+- Stop pages and pop-ups from getting stuck when the site's server runs into a problem
 
 ## [v6.4.0] - 2026-10-04
 
