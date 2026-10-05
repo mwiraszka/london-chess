@@ -12,7 +12,7 @@ import {
   updateTournament,
   withdrawFromTournament,
 } from '../controllers/tournaments.controller';
-import { adminAuth, auth } from '../middlewares/auth.index';
+import { adminAuth, authenticate } from '../middlewares/auth.middleware';
 
 export const tournamentsRouter = Router()
   .get('/', getTournaments)
@@ -23,5 +23,5 @@ export const tournamentsRouter = Router()
   .put('/:number', adminAuth, updateTournament)
   .post('/:number/import-changes', adminAuth, checkTournamentImport)
   .delete('/:number', adminAuth, deleteTournament)
-  .post('/:number/registration', auth, registerForTournament)
-  .delete('/:number/registration', auth, withdrawFromTournament);
+  .post('/:number/registration', authenticate, registerForTournament)
+  .delete('/:number/registration', authenticate, withdrawFromTournament);

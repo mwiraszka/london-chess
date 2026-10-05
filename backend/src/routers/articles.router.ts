@@ -7,7 +7,7 @@ import {
   getArticles,
   updateArticle,
 } from '../controllers/articles.controller';
-import { adminAuth } from '../middlewares/auth.index';
+import { adminAuth } from '../middlewares/auth.middleware';
 
 export const articlesRouter = Router()
   .get('/', getArticles)

@@ -71,3 +71,5 @@ declare global {
     }
   }
 }
+
+export const adminAuth = [authenticate, requireAdmin];

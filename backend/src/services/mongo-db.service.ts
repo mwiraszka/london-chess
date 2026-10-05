@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const { MONGODB_URI, MONGODB_DATABASE, NODE_ENVIRONMENT } = process.env;
+const { MONGODB_URI, MONGODB_DATABASE } = process.env;
 if (!MONGODB_URI || !MONGODB_DATABASE) {
   throw new Error('Unable to parse MongoDB environment variables.');
 }
@@ -31,17 +31,11 @@ const bindConnectionListeners = (): void => {
   listenersBound = true;
 
   mongoose.connection.on('connected', () => {
-    const envLabel = NODE_ENVIRONMENT === 'dev-offline' ? 'local MongoDB' : 'MongoDB';
-    console.log(`Connected to ${envLabel} (database: ${MONGODB_DATABASE}).`);
+    console.log(`Connected to MongoDB (database: ${MONGODB_DATABASE}).`);
   });
 
   mongoose.connection.on('error', error => {
     console.error(`MongoDB connection error: ${error}`);
-    if (NODE_ENVIRONMENT === 'dev-offline') {
-      console.error(
-        'Hint: Make sure MongoDB is running locally. Install with: brew install mongodb-community && brew services start mongodb-community',
-      );
-    }
   });
 
   mongoose.connection.on('disconnected', () => {
@@ -59,8 +53,10 @@ export const connectToDatabase = async (): Promise<typeof mongoose> => {
 
     cache.promise = mongoose.connect(MONGODB_URI, {
       dbName: MONGODB_DATABASE,
-      serverSelectionTimeoutMS: NODE_ENVIRONMENT === 'dev-offline' ? 5000 : 10000,
-      socketTimeoutMS: NODE_ENVIRONMENT === 'dev-offline' ? 30000 : 45000,
+      // Inside Vercel's 30 s function limit, so a stalled database answers with an error
+      // before the platform cuts the request off
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 20000,
       maxPoolSize: 10,
     });
   }
