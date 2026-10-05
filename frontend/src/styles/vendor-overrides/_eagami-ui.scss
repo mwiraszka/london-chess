@@ -26,8 +26,7 @@
 }
 
 // Compact author avatars beside small byline text
-lcc-modification-info ea-avatar .ea-avatar,
-lcc-article ea-avatar.editor-avatar .ea-avatar {
+lcc-modification-info ea-avatar .ea-avatar {
   --ea-avatar-size: 18px;
 }
 
@@ -49,6 +48,11 @@ body[data-theme='dark'] ea-dialog {
 // the dimmed page behind it
 ea-dialog .ea-dialog__panel {
   border: var(--border-width-thin) solid var(--color-border-default);
+}
+
+// A heading in a dialog's header takes the header's type, not the app's heading sizes
+ea-dialog :is(h1, h2, h3, h4, h5, h6)[slot='header'] {
+  font: inherit;
 }
 
 // The app's own inputs sit a tone above the dark page, so the library's fields and

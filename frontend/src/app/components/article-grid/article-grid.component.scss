@@ -84,7 +84,7 @@ $grid-gap: 8px;
     max-width: $card-max-width;
     height: auto;
     border-radius: var(--lcc-borderRadius--large);
-    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 16px -4px var(--lcc-color--articleGrid-cardShadow);
     background-color: var(--lcc-color--articleGrid-cardBackground);
     transition:
       transform 0.3s ease,
@@ -99,7 +99,7 @@ $grid-gap: 8px;
     &:not(.skeleton):hover {
       background-color: var(--lcc-color--articleGrid-cardBackgroundOnHover);
       cursor: pointer;
-      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 24px -4px var(--lcc-color--articleGrid-cardShadowOnHover);
       transform: scale(1.005);
     }
 
@@ -118,12 +118,12 @@ $grid-gap: 8px;
       &:not(.skeleton-image) ::ng-deep img {
         mask-image: radial-gradient(
           ellipse 95% 95% at 50% 45%,
-          black 30%,
+          var(--lcc-color--articleGrid-vignetteMask) 30%,
           transparent 100%
         );
         -webkit-mask-image: radial-gradient(
           ellipse 95% 95% at 50% 45%,
-          black 30%,
+          var(--lcc-color--articleGrid-vignetteMask) 30%,
           transparent 100%
         );
       }
@@ -166,8 +166,8 @@ $grid-gap: 8px;
         justify-content: center;
         height: 62px;
         border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        background-color: rgba(255, 255, 255, 0.025);
+        box-shadow: 0 1px 3px var(--lcc-color--articleGrid-titleShadow);
+        background-color: var(--lcc-color--articleGrid-titleBackground);
         padding: 4px 8px;
       }
 

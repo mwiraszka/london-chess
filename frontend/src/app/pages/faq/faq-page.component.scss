@@ -1,9 +1,5 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-:host {
-  width: 100%;
-}
-
 .faq-page {
   display: flex;
   flex-direction: column;

@@ -1,3 +1,5 @@
+@use '../../../styles/abstracts/mixins' as *;
+
 // The trophies stand at the sizes they have on the tournaments page
 $trophy-height: 140px;
 $bowl-scale: 0.68;
@@ -134,10 +136,7 @@ $narrow-scale: 0.75;
 }
 
 .fact__label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-secondary);
+  @include stat-label;
 }
 
 .fact__value {

@@ -3,13 +3,6 @@
 // [data-theme="light"] is the default and fallback theme
 :root {
   --lcc-color--faqPage-answerBackground: #{clr(grayscale, white-98)};
-  --lcc-color--aboutPage-addressAndTimeText: #{clr(grayscale, black-10)};
-  --lcc-color--aboutPage-boardChairText: #{clr(grayscale, gray-35)};
-  --lcc-color--aboutPage-cardBackground: #{clr(grayscale, white-95)};
-  --lcc-color--aboutPage-cardBoxShadow: #{clr(grayscale, white-85, 0.7)};
-  --lcc-color--aboutPage-cellBorder: #{clr(grayscale, white-92)};
-  --lcc-color--aboutPage-cellBackground1: #{clr(grayscale, white-98)};
-  --lcc-color--aboutPage-cellBackground2: #{clr(grayscale, white-95)};
 
   --lcc-color--adminControls-bookmarkIcon: #{clr(secondary, base)};
   --lcc-color--adminControls-bookmarkIconOnHover: #{clr(secondary, light)};
@@ -56,15 +49,19 @@
   --lcc-color--articleGrid-bookmarkIcon: #{clr(grayscale, white-90, 0.6)};
   --lcc-color--articleGrid-cardBackground: #{clr(primary, base)};
   --lcc-color--articleGrid-cardBackgroundOnHover: #{clr(primary, base, 0.95)};
+  // Shared by both themes, which set no value of their own
+  --lcc-color--articleGrid-cardShadow: #{clr(grayscale, black, 0.25)};
+  --lcc-color--articleGrid-cardShadowOnHover: #{clr(grayscale, black, 0.35)};
+  --lcc-color--articleGrid-titleBackground: #{clr(grayscale, white, 0.025)};
+  --lcc-color--articleGrid-titleShadow: #{clr(grayscale, black, 0.1)};
+  --lcc-color--articleGrid-vignetteMask: #{clr(grayscale, black)};
 
   --lcc-color--championPage-cellBackground: #{clr(grayscale, white-90)};
   --lcc-color--championPage-cellBorder: #{clr(grayscale, white-85, 0.5)};
   --lcc-color--championPage-championshipIcon: #{clr(secondary, base)};
   --lcc-color--championPage-headerText: #{clr(grayscale, black-15)};
-  --lcc-color--championPage-linkText: #{clr(primary, base)};
   --lcc-color--championPage-primaryText: #{clr(grayscale, gray-25)};
   --lcc-color--championPage-primaryTextBold: #{clr(grayscale, black-5)};
-  --lcc-color--championPage-secondaryText: #{clr(grayscale, gray-35)};
 
   --lcc-color--documentsPage-documentLabelOnHover: #{clr(primary, light)};
   --lcc-color--documentsPage-downloadLinkOnHover: #{clr(primary, light)};
@@ -92,7 +89,6 @@
   --lcc-color--footer-copyrightSectionBackground: #{clr(primary, base)};
   --lcc-color--footer-copyrightSectionText: #{clr(grayscale, white-95)};
   --lcc-color--footer-primaryText: #{clr(grayscale, black-15)};
-  --lcc-color--footer-secondaryText: #{clr(grayscale, gray-50)};
   --lcc-color--footer-verticalSpacer: #{clr(grayscale, gray-75)};
 
   --lcc-color--form-labelText: #{clr(grayscale, black-15)};
@@ -137,8 +133,6 @@
   --lcc-color--linkDisabled: #{clr(grayscale, gray-50)};
   --lcc-color--linkOnHover: #{clr(primary, base)};
   --lcc-color--linkUnderline: #{clr(primary, base, 0.8)};
-
-  --lcc-color--linkList-headerText: #{clr(grayscale, gray-35)};
 
   --lcc-color--markdownRenderer-background: #{clr(grayscale, white-95)};
   --lcc-color--markdownRenderer-blockquoteBackground: #{clr(grayscale, white-90)};
@@ -186,7 +180,6 @@
   --lcc-color--photoCarousel-photoBackground: #{clr(grayscale, white-80)};
 
   --lcc-color--photoGrid-albumNameText: #{clr(grayscale, black-15)};
-  --lcc-color--photoGrid-albumNameTextHover: #{clr(grayscale, black-2)};
   --lcc-color--photoGrid-boxShadow: #{clr(grayscale, white-85, 0.7)};
   --lcc-color--photoGrid-photoCountText: #{clr(grayscale, gray-50)};
 
@@ -231,9 +224,6 @@
   --lcc-color--searchHighlight-background: #{clr(highlight, light)};
   --lcc-color--searchHighlight-text: #{clr(grayscale, black-10)};
 
-  --lcc-color--sessionExpiryDialog-dividerLine: #{clr(grayscale, white-80)};
-  --lcc-color--sessionExpiryDialog-timeRemainingText: #{clr(warning, base)};
-
   --lcc-color--pageHeader-adminIcon: #{clr(admin, dark)};
   --lcc-color--pageHeader-asteriskText: #{clr(grayscale, gray-35)};
   --lcc-color--pageHeader-background: #{clr(grayscale, white-95)};
@@ -241,8 +231,6 @@
   --lcc-color--pageHeader-icon: #{clr(secondary, base)};
   --lcc-color--pageHeader-text: #{clr(grayscale, black-10)};
 
-  --lcc-color--table-boxShadow: #{clr(grayscale, white-85, 0.7)};
-  --lcc-color--table-footerForeground: #{clr(grayscale, gray-35)};
   --lcc-color--table-headerBackgroundOnHover: #{clr(primary, light)};
   --lcc-color--table-headerBackground: #{clr(primary, base)};
   --lcc-color--table-headerForeground: #{clr(grayscale, white-95)};
@@ -278,14 +266,15 @@
   --lcc-color--upcomingEventBanner-boldTextOnHover: #{clr(grayscale, gray-35)};
   --lcc-color--upcomingEventBanner-borderBottom: #{clr(grayscale, gray-50)};
   --lcc-color--upcomingEventBanner-closeIcon: #{clr(grayscale, gray-25)};
-  --lcc-color--upcomingEventBanner-closeIconOnHover: black;
+  --lcc-color--upcomingEventBanner-closeIconOnHover: #{clr(grayscale, black)};
   --lcc-color--upcomingEventBanner-eventDivider: #{clr(grayscale, gray-65)};
   --lcc-color--upcomingEventBanner-text: #{clr(grayscale, gray-25)};
-  --lcc-color--upcomingEventBanner-textOnHover: #{clr(grayscale, black-2)};
 
   --lcc-color--userSettingsMenu-background: #{clr(grayscale, white-98)};
   --lcc-color--userSettingsMenu-emailText: #{clr(grayscale, gray-50)};
   --lcc-color--userSettingsMenu-boxShadow: #{clr(grayscale, white-90, 0.7)};
   --lcc-color--userSettingsMenu-itemForeground: #{clr(grayscale, black-15)};
   --lcc-color--userSettingsMenu-warning: #{clr(warning, lighter)};
+  // Shared by both themes, which set no value of their own
+  --lcc-color--clubMap-border: #{clr(grayscale, white, 0.133)};
 }

@@ -1,28 +1,5 @@
 @use '../abstracts/mixins' as *;
 
-@mixin lcc-link {
-  @include lcc-link-underline;
-
-  font-size: inherit;
-  font-weight: 200;
-  line-height: 1.4;
-  color: var(--lcc-color--link);
-  transition:
-    color 300ms,
-    text-decoration-color 300ms;
-
-  &:hover {
-    color: var(--lcc-color--linkOnHover);
-  }
-
-  &[disabled],
-  &[disabled]:hover {
-    font-style: italic;
-    color: var(--lcc-color--linkDisabled);
-    pointer-events: none;
-  }
-}
-
 .lcc-link {
   @include lcc-link;
 }

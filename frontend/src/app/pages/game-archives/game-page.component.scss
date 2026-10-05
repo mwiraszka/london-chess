@@ -3,11 +3,8 @@
 $board-width: 432px;
 
 :host {
-  display: flex;
-  flex-direction: column;
   align-items: stretch;
   gap: 16px;
-  width: 100%;
 }
 
 // Stacked, the details and board share the board's width; side by side, the

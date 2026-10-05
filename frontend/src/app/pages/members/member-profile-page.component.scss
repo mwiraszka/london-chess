@@ -1,9 +1,5 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-:host {
-  width: 100%;
-}
-
 .profile {
   display: flex;
   flex-direction: column;
@@ -152,10 +148,7 @@
   }
 
   .rating__label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--color-text-secondary);
+    @include stat-label;
   }
 
   .rating__value {
@@ -215,10 +208,7 @@ $accounts-inset: $stats-inset + $stats-border-width;
   }
 
   .stat__label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--color-text-secondary);
+    @include stat-label;
   }
 
   .stat__value {

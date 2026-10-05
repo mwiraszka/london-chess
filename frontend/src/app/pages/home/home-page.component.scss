@@ -78,12 +78,6 @@
           max-height: 250px;
         }
       }
-
-      ::ng-deep .events-table {
-        width: 100%;
-        min-width: unset;
-        max-width: unset;
-      }
     }
 
     &.articles-section {

@@ -1,4 +1,3 @@
-@use '../../../styles/components/link';
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
@@ -33,7 +32,7 @@
 
   markdown ::ng-deep {
     a {
-      @include link.lcc-link;
+      @include lcc-link;
     }
 
     li {

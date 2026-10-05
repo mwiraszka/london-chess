@@ -1,5 +1,6 @@
 @charset 'utf-8';
 
+@forward 'base/animations';
 @forward 'base/reset';
 @forward 'base/typography';
 
@@ -10,7 +11,6 @@
 @forward 'abstracts/mixins';
 @forward 'abstracts/variables';
 
-@forward 'layout/overlay';
 @forward 'layout/page';
 @forward 'layout/truncate';
 
@@ -18,7 +18,7 @@
 @forward 'components/link';
 @forward 'components/scrollbar';
 @forward 'components/search-highlight';
-@forward 'components/table';
+@forward 'components/side-nav';
 
 @forward 'vendors/lichess-pgn-viewer/lichess-pgn-viewer';
 

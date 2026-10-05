@@ -1,12 +1,8 @@
 @use 'sass:map';
-@use 'sass:math';
 @use 'sass:meta';
 
 /* Viewport breakpoint map */
 $breakpoints: (
-  'lt-xxs': (
-    max-width: 350px,
-  ),
   'gt-xxs': (
     min-width: 350px,
   ),
@@ -34,14 +30,8 @@ $breakpoints: (
   'gt-lg': (
     min-width: 1000px,
   ),
-  'lt-xl': (
-    max-width: 1200px,
-  ),
   'gt-xl': (
     min-width: 1200px,
-  ),
-  'lt-xxl': (
-    max-width: 1500px,
   ),
   'gt-xxl': (
     min-width: 1500px,
@@ -56,14 +46,7 @@ $breakpoints: (
   $raw-query: map.get($breakpoints, $breakpoint);
 
   @if $raw-query {
-    $query: null;
-    @if meta.type-of($raw-query) == 'string' {
-      $query: meta.unquote($raw-query);
-    } @else {
-      $query: meta.inspect($raw-query);
-    }
-
-    @media #{$query} {
+    @media #{meta.inspect($raw-query)} {
       @content;
     }
   } @else {
@@ -81,6 +64,29 @@ $breakpoints: (
 
   &:hover {
     text-decoration-color: var(--lcc-color--linkUnderline);
+  }
+}
+
+@mixin lcc-link {
+  @include lcc-link-underline;
+
+  font-size: inherit;
+  font-weight: 200;
+  line-height: 1.4;
+  color: var(--lcc-color--link);
+  transition:
+    color 300ms,
+    text-decoration-color 300ms;
+
+  &:hover {
+    color: var(--lcc-color--linkOnHover);
+  }
+
+  &[disabled],
+  &[disabled]:hover {
+    font-style: italic;
+    color: var(--lcc-color--linkDisabled);
+    pointer-events: none;
   }
 }
 
@@ -134,6 +140,14 @@ $breakpoints: (
   min-width: $size;
   height: $size;
   font-size: $size;
+}
+
+// The small capitals naming a figure above its value
+@mixin stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
 }
 
 @mixin data-table-colors {
