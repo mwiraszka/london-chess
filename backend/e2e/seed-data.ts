@@ -105,6 +105,7 @@ export interface SeedGame {
 
 // Where the fake image storage serves its objects
 export const STORAGE_PORT = 3100;
+export const IMAGES_BUCKET = 'images';
 
 const hexId = (group: number, index: number): string =>
   `e2e0${String(group).padStart(4, '0')}${String(index).padStart(16, '0')}`;
@@ -624,14 +625,4 @@ export function standings(section: SeedSection, isDoubleRound = false): SeedStan
         section.playerKeys.indexOf(a.playerKey) - section.playerKeys.indexOf(b.playerKey),
     )
     .map((row, index) => ({ ...row, rank: index + 1 }));
-}
-
-export function rankOf(tournament: SeedTournament, playerKey: string): number | null {
-  for (const section of tournament.sections) {
-    const standing = standings(section, tournament.isDoubleRound).find(
-      row => row.playerKey === playerKey,
-    );
-    if (standing) return standing.rank;
-  }
-  return null;
 }

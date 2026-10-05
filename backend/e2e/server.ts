@@ -1,7 +1,7 @@
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import nodemailer from 'nodemailer';
 
-import { STORAGE_PORT, UNAVAILABLE_IMAGE } from './seed-data';
+import { IMAGES_BUCKET, STORAGE_PORT, UNAVAILABLE_IMAGE } from './seed-data';
 
 // Serves the API for the end-to-end suite against a throwaway database seeded on every
 // start. Storage and email are faked in this process; Clerk is the development instance,
@@ -37,17 +37,15 @@ async function main(): Promise<void> {
 
   // Set before any app module loads, since several read their settings on import
   Object.assign(process.env, {
-    PORT: String(API_PORT),
     MONGODB_URI: replSet.getUri(),
     MONGODB_DATABASE: 'lcc-e2e',
-    NODE_ENVIRONMENT: 'e2e',
     CLERK_SECRET_KEY: CLERK_SECRET_KEY ?? 'sk_test_e2e_without_clerk',
     // Nothing reaches the webhook, but the app refuses to start without a secret
     CLERK_WEBHOOK_SECRET: 'whsec_ZTJlLXdlYmhvb2stc2VjcmV0',
     R2_ACCOUNT_ID: 'e2e',
     R2_ACCESS_KEY_ID: 'e2e',
     R2_SECRET_ACCESS_KEY: 'e2e',
-    R2_IMAGES_BUCKET_NAME: 'images',
+    R2_IMAGES_BUCKET_NAME: IMAGES_BUCKET,
     R2_AVATARS_BUCKET_NAME: 'avatars',
     R2_AVATARS_PUBLIC_URL: `http://localhost:${STORAGE_PORT}/avatars`,
     ZOHO_SMTP_USER: 'e2e',

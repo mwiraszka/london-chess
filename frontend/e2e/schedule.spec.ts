@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import { Page, expect, test } from './fixtures';
 import { EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from './seed';
 import { flipSwitch, setSwitch } from './switches';
@@ -116,4 +118,45 @@ test.describe('schedule', () => {
     await expect(dialog).toHaveCount(0);
     await expect(page).toHaveURL(/\/schedule$/);
   });
+
+  test('exports the events on screen to an iCalendar file', async ({ page }) => {
+    await page.goto('/schedule');
+    await page.getByRole('button', { name: 'Export to iCalendar' }).click();
+    const dialog = page.locator('lcc-basic-dialog');
+    await expect(dialog).toContainText(
+      `The ${UPCOMING_EVENTS.length} currently visible events will be exported`,
+    );
+
+    const download = page.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'Export', exact: true }).click();
+    const file = await download;
+
+    expect(file.suggestedFilename()).toMatch(
+      /^london_chess_club_events_\d{4}-\d{2}-\d{2}\.ics$/,
+    );
+    const calendar = await readFile(await file.path(), 'utf8');
+    for (const event of UPCOMING_EVENTS) {
+      expect(calendar).toContain(`SUMMARY:${event.title}`);
+    }
+    for (const event of PAST_EVENTS) {
+      expect(calendar).not.toContain(`SUMMARY:${event.title}`);
+    }
+  });
+
+  for (const calendarView of [false, true]) {
+    test(`scrolls back to today from the ${calendarView ? 'calendar' : 'list'} view`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 640 });
+      await page.goto('/schedule');
+      await setSwitch(page, 'Calendar view', calendarView);
+      await flipSwitch(page, 'Show past events');
+      const today = page.locator('.schedule-view.active .today-scroll-point');
+      await expect(today).not.toBeInViewport();
+
+      await page.getByRole('button', { name: 'Today' }).click();
+
+      await expect(today).toBeInViewport();
+    });
+  }
 });

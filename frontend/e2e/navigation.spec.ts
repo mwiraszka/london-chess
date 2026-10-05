@@ -79,16 +79,28 @@ test.describe('navigation', () => {
   }
 
   for (const path of [
+    '/album/add',
+    '/album/edit/Album',
     '/article/add',
+    '/article/edit/000000000000000000000000',
     '/event/add',
-    '/member/add',
+    '/event/edit/000000000000000000000000',
     '/image/add',
+    '/image/edit/000000000000000000000000',
+    '/member/add',
+    '/member/edit/000000000000000000000000',
+    '/tournament/add',
+    '/tournament/edit/105',
     '/account',
+    '/account/security',
   ]) {
-    test(`keeps a visitor who is not logged in out of ${path}`, async ({ page }) => {
+    test(`sends a visitor who is not logged in from ${path} home to log in`, async ({
+      page,
+    }) => {
       await page.goto(path);
 
-      await expect(page).not.toHaveURL(new RegExp(`${path}$`));
+      await expect(page).toHaveURL(/\/$/);
+      await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible();
     });
   }
 });

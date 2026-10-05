@@ -20,6 +20,7 @@ import {
   CHAMPION_MEMBER_DETAILS,
   EVENTS,
   IMAGES,
+  IMAGES_BUCKET,
   MOVES,
   OTHER_MEMBERS,
   PLAYERS,
@@ -33,8 +34,6 @@ import {
   pairSection,
   standings,
 } from './seed-data';
-
-export const IMAGES_BUCKET = 'images';
 
 const DAY_MS = 24 * 3600 * 1000;
 

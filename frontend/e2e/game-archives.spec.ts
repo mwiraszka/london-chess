@@ -1,7 +1,21 @@
-import { expect, test } from './fixtures';
+import { Page, expect, test } from './fixtures';
 import { holdRequests } from './requests';
 
 const GAMES_PAGE = /\/v1\/games\?/;
+
+function rows(page: Page) {
+  return page.locator('.games .ea-data-table__body .ea-data-table__row');
+}
+
+async function sortedMoves(page: Page, order: 'asc' | 'desc'): Promise<void> {
+  const response = page.waitForResponse(
+    response =>
+      GAMES_PAGE.test(response.url()) &&
+      response.url().includes(`sortBy=moves&sortOrder=${order}`),
+  );
+  await page.getByRole('columnheader', { name: 'Moves' }).getByRole('button').click();
+  await response;
+}
 
 test.describe('game archives', () => {
   test('lays the table out at its final width before any game arrives', async ({
@@ -84,5 +98,51 @@ test.describe('game archives', () => {
     await page.goto('/game-archives/000000000000000000000000');
 
     await expect(page).toHaveURL(/\/$/);
+  });
+
+  test('sorts the games by a column, one way and then the other', async ({ page }) => {
+    await page.goto('/game-archives');
+    await expect(rows(page).first()).toBeVisible();
+    const header = page.getByRole('columnheader', { name: 'Moves' });
+    const moves = async () =>
+      (await rows(page).locator('td:last-child').allInnerTexts()).map(Number);
+
+    await sortedMoves(page, 'asc');
+
+    await expect(page).toHaveURL(/\?sort=moves&order=asc$/);
+    await expect(header).toHaveAttribute('aria-sort', 'ascending');
+    const ascending = await moves();
+    expect(ascending).toEqual([...ascending].sort((a, b) => a - b));
+
+    await sortedMoves(page, 'desc');
+
+    await expect(page).toHaveURL(/\?sort=moves$/);
+    await expect(header).toHaveAttribute('aria-sort', 'descending');
+    const descending = await moves();
+    expect(descending).toEqual([...descending].sort((a, b) => b - a));
+  });
+
+  test('opens on the filter and order a link asks for', async ({ page }) => {
+    await page.goto('/game-archives?result=0-1&sort=moves&order=asc');
+
+    const results = rows(page).locator('.games__result');
+    await expect(results.first()).toHaveText('0-1');
+    await expect(results.filter({ hasNotText: '0-1' })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'Moves' })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+  });
+
+  test('opens as it was last left when a link asks for nothing in particular', async ({
+    page,
+  }) => {
+    await page.goto('/game-archives?result=0-1&sort=moves&order=asc');
+    await expect(rows(page).first().locator('.games__result')).toHaveText('0-1');
+
+    await page.goto('/game-archives');
+
+    await expect(page).toHaveURL(/\/game-archives\?result=0-1&sort=moves&order=asc$/);
+    await expect(rows(page).first().locator('.games__result')).toHaveText('0-1');
   });
 });

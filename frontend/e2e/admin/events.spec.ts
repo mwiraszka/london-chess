@@ -1,6 +1,9 @@
+import { readFile } from 'node:fs/promises';
+
 import { Page, expect, test } from '../fixtures';
+import { EVENTS } from '../seed';
 import { setSwitch } from '../switches';
-import { fieldLabel, fillDate, fillField, nextMonthOn } from './fields';
+import { fieldLabel, fillField, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
@@ -31,7 +34,7 @@ test.describe('managing events', () => {
     await page.goto('/schedule');
     await page.getByRole('link', { name: 'Add an event' }).click();
     await expect(page).toHaveURL(/\/event\/add$/);
-    await fillDate(page, 'event-date-input', nextMonthOn(15));
+    await fillField(page, 'Event date', nextMonthOn(15));
     await fillField(page, 'Event time', '7:00 PM');
     await page.getByLabel(fieldLabel('Title')).fill(title);
     await page.getByLabel(fieldLabel('Details')).fill('Rook endings for club players.');
@@ -76,5 +79,57 @@ test.describe('managing events', () => {
     await confirm(page, 'Delete');
 
     await expect(edited).toHaveCount(0);
+  });
+
+  test('keeps an admin on unsaved changes until they choose to leave', async ({
+    page,
+  }) => {
+    const title = 'An event that is never saved';
+    await logIn(page);
+    await page.goto('/schedule');
+    await page.getByRole('link', { name: 'Add an event' }).click();
+    await page.getByLabel(fieldLabel('Title')).fill(title);
+    // The form reports edits a moment after typing stops, which enables Revert
+    await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
+    const news = page
+      .locator('lcc-navigation-bar')
+      .getByRole('link', { name: 'News', exact: true });
+
+    await news.click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      'Any unsaved changes to the event will be lost.',
+    );
+    await confirm(page, 'Cancel');
+
+    await expect(page).toHaveURL(/\/event\/add$/);
+    await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(title);
+
+    await news.click();
+    await confirm(page, 'Leave');
+
+    await expect(page).toHaveURL(/\/news$/);
+  });
+
+  test('exports every event to a CSV file', async ({ page }) => {
+    await logIn(page);
+    await page.goto('/schedule');
+    await page
+      .locator('lcc-admin-toolbar')
+      .getByRole('button', { name: 'Export to CSV' })
+      .click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      `Export all ${EVENTS.length} events to a CSV file?`,
+    );
+
+    const download = page.waitForEvent('download');
+    await confirm(page, 'Export');
+    const file = await download;
+
+    expect(file.suggestedFilename()).toMatch(/^events_export_\d{4}-\d{2}-\d{2}\.csv$/);
+    const csv = await readFile(await file.path(), 'utf8');
+    expect(csv.split('\n')[0]).toContain('Title');
+    for (const event of EVENTS) {
+      expect(csv).toContain(event.title);
+    }
   });
 });
