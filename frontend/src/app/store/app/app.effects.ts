@@ -23,100 +23,89 @@ import { environment } from '@env';
 import * as AppActions from './app.actions';
 import * as AppSelectors from './app.selectors';
 
-type NotifyAction = ReturnType<
-  | (typeof AppActions)[keyof typeof AppActions]
-  | (typeof ArticlesActions)[keyof typeof ArticlesActions]
-  | (typeof EventsActions)[keyof typeof EventsActions]
-  | (typeof GamesActions)[keyof typeof GamesActions]
-  | (typeof ImagesActions)[keyof typeof ImagesActions]
-  | (typeof MembersActions)[keyof typeof MembersActions]
-  | (typeof NavActions)[keyof typeof NavActions]
-  | (typeof TournamentsActions)[keyof typeof TournamentsActions]
->;
+const ACTIONS_TO_NOTIFY = [
+  ArticlesActions.deleteArticleFailed,
+  ArticlesActions.deleteArticleSucceeded,
+  ArticlesActions.fetchArticleFailed,
+  ArticlesActions.fetchFilteredArticlesFailed,
+  ArticlesActions.fetchHomePageArticlesFailed,
+  ArticlesActions.publishArticleFailed,
+  ArticlesActions.publishArticleSucceeded,
+  ArticlesActions.updateArticleFailed,
+  ArticlesActions.updateArticleSucceeded,
+
+  EventsActions.addEventFailed,
+  EventsActions.addEventSucceeded,
+  EventsActions.deleteEventFailed,
+  EventsActions.deleteEventSucceeded,
+  EventsActions.exportEventsToCsvFailed,
+  EventsActions.exportEventsToCsvSucceeded,
+  EventsActions.fetchEventFailed,
+  EventsActions.fetchFilteredEventsFailed,
+  EventsActions.fetchHomePageEventsFailed,
+  EventsActions.updateEventFailed,
+  EventsActions.updateEventSucceeded,
+
+  GamesActions.fetchArchiveReferenceFailed,
+  GamesActions.fetchFilteredGamesFailed,
+  GamesActions.fetchGameFailed,
+
+  ImagesActions.addImageFailed,
+  ImagesActions.addImagesFailed,
+  ImagesActions.addImageSucceeded,
+  ImagesActions.addImagesSucceeded,
+  ImagesActions.automaticAlbumCoverSwitchFailed,
+  ImagesActions.automaticAlbumCoverSwitchSucceeded,
+  ImagesActions.deleteAlbumFailed,
+  ImagesActions.deleteAlbumSucceeded,
+  ImagesActions.deleteImageFailed,
+  ImagesActions.deleteImageSucceeded,
+  ImagesActions.fetchAllImagesMetadataFailed,
+  ImagesActions.fetchBatchThumbnailsFailed,
+  ImagesActions.fetchFilteredThumbnailsFailed,
+  ImagesActions.fetchMainImageFailed,
+  ImagesActions.imageFileActionFailed,
+  ImagesActions.updateAlbumFailed,
+  ImagesActions.updateImageFailed,
+  ImagesActions.updateAlbumSucceeded,
+  ImagesActions.updateImageSucceeded,
+
+  MembersActions.addMemberFailed,
+  MembersActions.addMemberSucceeded,
+  MembersActions.deleteMemberFailed,
+  MembersActions.deleteMemberSucceeded,
+  MembersActions.exportMembersToCsvFailed,
+  MembersActions.exportMembersToCsvSucceeded,
+  MembersActions.fetchMemberFailed,
+  MembersActions.fetchAllMembersFailed,
+  MembersActions.fetchFilteredMembersFailed,
+  MembersActions.parseMemberRatingsFromCsvFailed,
+  MembersActions.updateMemberFailed,
+  MembersActions.updateMemberSucceeded,
+  MembersActions.updateMemberRatingsSucceeded,
+  MembersActions.updateMemberRatingsFailed,
+
+  NavActions.pageAccessDenied,
+
+  TournamentsActions.addTournamentFailed,
+  TournamentsActions.addTournamentSucceeded,
+  TournamentsActions.deleteTournamentFailed,
+  TournamentsActions.deleteTournamentSucceeded,
+  TournamentsActions.registrationFailed,
+  TournamentsActions.registrationSucceeded,
+  TournamentsActions.updateTournamentFailed,
+  TournamentsActions.updateTournamentSucceeded,
+  TournamentsActions.withdrawalFailed,
+  TournamentsActions.withdrawalSucceeded,
+] as const;
+
+type NotifyAction = ReturnType<(typeof ACTIONS_TO_NOTIFY)[number]>;
 
 @Injectable()
 export class AppEffects {
   private readonly actions$ = inject(Actions);
   private readonly store = inject(Store);
   private readonly toastService = inject(ToastService);
-
-  readonly ACTIONS_TO_NOTIFY = [
-    AppActions.unexpectedErrorOccurred,
-
-    ArticlesActions.deleteArticleFailed,
-    ArticlesActions.deleteArticleSucceeded,
-    ArticlesActions.fetchArticleFailed,
-    ArticlesActions.fetchFilteredArticlesFailed,
-    ArticlesActions.fetchHomePageArticlesFailed,
-    ArticlesActions.publishArticleFailed,
-    ArticlesActions.publishArticleSucceeded,
-    ArticlesActions.updateArticleFailed,
-    ArticlesActions.updateArticleSucceeded,
-
-    EventsActions.addEventFailed,
-    EventsActions.addEventSucceeded,
-    EventsActions.deleteEventFailed,
-    EventsActions.deleteEventSucceeded,
-    EventsActions.exportEventsToCsvFailed,
-    EventsActions.exportEventsToCsvSucceeded,
-    EventsActions.fetchEventFailed,
-    EventsActions.fetchFilteredEventsFailed,
-    EventsActions.fetchHomePageEventsFailed,
-    EventsActions.updateEventFailed,
-    EventsActions.updateEventSucceeded,
-
-    GamesActions.fetchArchiveReferenceFailed,
-    GamesActions.fetchFilteredGamesFailed,
-    GamesActions.fetchGameFailed,
-
-    ImagesActions.addImageFailed,
-    ImagesActions.addImagesFailed,
-    ImagesActions.addImageSucceeded,
-    ImagesActions.addImagesSucceeded,
-    ImagesActions.automaticAlbumCoverSwitchFailed,
-    ImagesActions.automaticAlbumCoverSwitchSucceeded,
-    ImagesActions.deleteAlbumFailed,
-    ImagesActions.deleteAlbumSucceeded,
-    ImagesActions.deleteImageFailed,
-    ImagesActions.deleteImageSucceeded,
-    ImagesActions.fetchAllImagesMetadataFailed,
-    ImagesActions.fetchBatchThumbnailsFailed,
-    ImagesActions.fetchFilteredThumbnailsFailed,
-    ImagesActions.fetchMainImageFailed,
-    ImagesActions.imageFileActionFailed,
-    ImagesActions.updateAlbumFailed,
-    ImagesActions.updateImageFailed,
-    ImagesActions.updateAlbumSucceeded,
-    ImagesActions.updateImageSucceeded,
-
-    MembersActions.addMemberFailed,
-    MembersActions.addMemberSucceeded,
-    MembersActions.deleteMemberFailed,
-    MembersActions.deleteMemberSucceeded,
-    MembersActions.exportMembersToCsvFailed,
-    MembersActions.exportMembersToCsvSucceeded,
-    MembersActions.fetchMemberFailed,
-    MembersActions.fetchAllMembersFailed,
-    MembersActions.fetchFilteredMembersFailed,
-    MembersActions.parseMemberRatingsFromCsvFailed,
-    MembersActions.updateMemberFailed,
-    MembersActions.updateMemberSucceeded,
-    MembersActions.updateMemberRatingsSucceeded,
-    MembersActions.updateMemberRatingsFailed,
-
-    NavActions.pageAccessDenied,
-
-    TournamentsActions.addTournamentFailed,
-    TournamentsActions.addTournamentSucceeded,
-    TournamentsActions.deleteTournamentFailed,
-    TournamentsActions.deleteTournamentSucceeded,
-    TournamentsActions.registrationFailed,
-    TournamentsActions.registrationSucceeded,
-    TournamentsActions.updateTournamentFailed,
-    TournamentsActions.updateTournamentSucceeded,
-    TournamentsActions.withdrawalFailed,
-    TournamentsActions.withdrawalSucceeded,
-  ] as const;
 
   readonly SUPPRESSED_TOASTS_IN_PROD = [
     ArticlesActions.fetchFilteredArticlesFailed,
@@ -148,35 +137,36 @@ export class AppEffects {
     MembersActions.fetchMemberFailed,
   ] as const;
 
-  notify$ = createEffect(() => {
-    return this.actions$.pipe(
-      ofType(...this.ACTIONS_TO_NOTIFY),
-      filter(action => !this.isMissingRecord(action)),
-      tap(action => {
-        if ('error' in action) {
-          console.error('[LCC]', action.error);
-        }
-      }),
-      concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
-      filter(
-        ([action, isAdmin]) =>
-          isAdmin ||
-          !environment.production ||
-          !this.SUPPRESSED_TOASTS_IN_PROD.some(
-            actionCreator => actionCreator.type === action.type,
-          ),
-      ),
-      map(([action]) => this.mapActionToToast(action)),
-      filter(isDefined),
-      tap(toast =>
-        this.toastService.show(toast.message, {
-          title: toast.title,
-          variant: toast.type,
+  notify$ = createEffect(
+    () => {
+      return this.actions$.pipe(
+        ofType(...ACTIONS_TO_NOTIFY),
+        filter(action => !this.isMissingRecord(action)),
+        tap(action => {
+          if ('error' in action) {
+            console.error('[LCC]', action.error);
+          }
         }),
-      ),
-      map(toast => AppActions.toastDisplayed({ toast })),
-    );
-  });
+        concatLatestFrom(() => this.store.select(AuthSelectors.selectIsAdmin)),
+        filter(
+          ([action, isAdmin]) =>
+            isAdmin ||
+            !environment.production ||
+            !this.SUPPRESSED_TOASTS_IN_PROD.some(
+              actionCreator => actionCreator.type === action.type,
+            ),
+        ),
+        map(([action]) => this.mapActionToToast(action)),
+        tap(toast =>
+          this.toastService.show(toast.message, {
+            title: toast.title,
+            variant: toast.type,
+          }),
+        ),
+      );
+    },
+    { dispatch: false },
+  );
 
   reinstateUpcomingEventBanner$ = createEffect(() =>
     this.store.select(AppSelectors.selectBannerLastCleared).pipe(
@@ -213,14 +203,8 @@ export class AppEffects {
     return `Successfully updated ${name}.`;
   }
 
-  private mapActionToToast(action: NotifyAction): Toast | null {
+  private mapActionToToast(action: NotifyAction): Toast {
     switch (action.type) {
-      case AppActions.unexpectedErrorOccurred.type:
-        return {
-          title: 'Unexpected error',
-          message: this.getErrorMessage(action.error),
-          type: 'warning',
-        };
       case ArticlesActions.deleteArticleFailed.type:
         return {
           title: 'Article deletion',
@@ -643,10 +627,6 @@ export class AppEffects {
           message: `You are no longer registered for ${action.tournamentName}.`,
           type: 'success',
         };
-
-      default:
-        console.warn('No toast mapping found for action:', action.type);
-        return null;
     }
   }
 }

@@ -23,7 +23,7 @@ import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as ArticlesActions from './articles.actions';
 import * as ArticlesSelectors from './articles.selectors';
@@ -55,7 +55,6 @@ export class ArticlesEffects {
           map(response =>
             ArticlesActions.fetchHomePageArticlesSucceeded({
               articles: response.data.items,
-              totalCount: response.data.totalCount,
             }),
           ),
           catchError(error =>
@@ -80,7 +79,6 @@ export class ArticlesEffects {
             ArticlesActions.fetchFilteredArticlesSucceeded({
               articles: response.data.items,
               filteredCount: response.data.filteredCount,
-              totalCount: response.data.totalCount,
             }),
           ),
           catchError(error =>
@@ -127,10 +125,7 @@ export class ArticlesEffects {
           ArticlesActions.deleteArticleSucceeded,
         ),
       ),
-      this.actions$.pipe(
-        ofType(ArticlesActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
-      ),
+      this.actions$.pipe(ofType(ArticlesActions.paginationOptionsChanged)),
     );
 
     const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
@@ -207,14 +202,7 @@ export class ArticlesEffects {
           ...formData,
           id: '',
           bookmarkDate: null,
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, this.userService.memberNumber()),
         };
 
         return this.articlesApiService.addArticle(article).pipe(
@@ -258,12 +246,11 @@ export class ArticlesEffects {
         const updatedArticle: Article = {
           ...article,
           ...formData,
-          modificationInfo: {
-            ...article.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(
+            user,
+            this.userService.memberNumber(),
+            article.modificationInfo,
+          ),
         };
 
         return this.articlesApiService.updateArticle(updatedArticle).pipe(

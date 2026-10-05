@@ -11,7 +11,7 @@ import {
   Member,
   MemberFormData,
 } from '@app/models';
-import { areSame } from '@app/utils';
+import { areSame, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as MembersActions from './members.actions';
 
@@ -119,14 +119,6 @@ function withRecordsScope(state: MembersState, scope: ApiScope): MembersState {
     filteredMembers: [],
     filteredCount: null,
   });
-}
-
-function withLoadAttempt(state: MembersState, load: MembersLoad): MembersState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: MembersState, load: MembersLoad): MembersState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
 }
 
 function withUpdatedMembers(members: Member[], updates: Member[]): Member[] {

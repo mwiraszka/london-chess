@@ -56,10 +56,6 @@ export const selectScheduleView = createSelector(
 const { selectAll: selectAllEventEntities } =
   eventsAdapter.getSelectors(selectEventsState);
 
-export const selectAllEvents = createSelector(selectAllEventEntities, allEventEntities =>
-  allEventEntities?.map(entity => entity.event),
-);
-
 export const selectEventById = (id: Id | null) =>
   createSelector(
     selectAllEventEntities,
@@ -108,16 +104,6 @@ export const selectHasUnsavedChanges = (id: Id | null) =>
       return !areSame(formPropertiesOfOriginalEvent, eventFormData);
     },
   );
-
-export const selectNextEvent = createSelector(selectHomePageEvents, homePageEvents => {
-  return (
-    [...homePageEvents]
-      .sort((a, b) =>
-        customSort(a, b, 'eventDate', false, 'modificationInfo.dateLastEdited', true),
-      )
-      .find(isUpcomingEvent) ?? null
-  );
-});
 
 export const selectConcurrentNextEvents = createSelector(
   selectHomePageEvents,

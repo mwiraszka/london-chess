@@ -4,7 +4,7 @@ import { pick } from 'lodash';
 
 import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
 import { DataPaginationOptions, Event, EventFormData, IsoDate } from '@app/models';
-import { areSame } from '@app/utils';
+import { areSame, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as EventsActions from './events.actions';
 
@@ -61,14 +61,6 @@ export const initialState: EventsState = eventsAdapter.getInitialState({
   totalCount: 0,
   scheduleView: 'calendar',
 });
-
-function withLoadAttempt(state: EventsState, load: EventsLoad): EventsState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: EventsState, load: EventsLoad): EventsState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
 
 export const eventsReducer = createReducer(
   initialState,

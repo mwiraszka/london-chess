@@ -11,6 +11,7 @@ import {
   IsoDate,
   MemberOpenings,
 } from '@app/models';
+import { withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as GamesActions from './games.actions';
 
@@ -47,14 +48,6 @@ export const initialState: GamesState = gamesAdapter.getInitialState({
   summary: null,
   memberOpenings: {},
 });
-
-function withLoadAttempt(state: GamesState, load: GamesLoad): GamesState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: GamesState, load: GamesLoad): GamesState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
 
 export const gamesReducer = createReducer(
   initialState,

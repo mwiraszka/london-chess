@@ -16,5 +16,3 @@ export const selectApiScope = createSelector(selectIsAdmin, (isAdmin): ApiScope 
 );
 
 export const selectUser = createSelector(selectAuthState, state => state.user);
-
-export const selectUserId = createSelector(selectUser, user => user?.id);

@@ -72,10 +72,6 @@ export const selectFilteredCount = createSelector(selectImagesState, state => {
   return state.filteredCount;
 });
 
-export const selectTotalCount = createSelector(selectImagesState, state => {
-  return state.totalCount;
-});
-
 export const selectNewImageFormData = createSelector(
   selectNewImagesFormData,
   newImagesFormData => {
@@ -121,11 +117,6 @@ export const selectImageById = (id: Id) =>
   createSelector(
     selectAllImages,
     allImages => allImages.find(image => image.id === id) ?? null,
-  );
-
-export const selectImagesByIds = (ids: Id[]) =>
-  createSelector(selectAllImages, allImages =>
-    allImages.filter(image => ids.find(id => id === image.id)),
   );
 
 export const selectImageHasUnsavedChanges = (id: Id | null) =>
@@ -176,10 +167,6 @@ export const selectAlbumHasUnsavedChanges = (album: string | null) =>
     },
   );
 
-export const selectAlbumCoverImageIds = createSelector(selectAllImages, allImages => {
-  return allImages.filter(image => image.albumCover).map(image => image.id);
-});
-
 export const selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls = createSelector(
   selectAllImages,
   allImages => {
@@ -197,10 +184,6 @@ export const selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls = createSel
 
 export const selectAllExistingAlbums = createSelector(selectAllImages, allImages => {
   return uniq(allImages.map(image => image.album));
-});
-
-export const selectArticleImages = createSelector(selectAllImages, allImages => {
-  return allImages.filter(image => (image?.articleAppearances ?? 0) > 0);
 });
 
 export const selectIdsOfArticleBannerImagesWithMissingOrExpiredThumbnailUrls = (

@@ -11,7 +11,7 @@ import {
   TournamentRegistrant,
   TournamentSummary,
 } from '@app/models';
-import { tournamentFormData } from '@app/utils';
+import { tournamentFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 
@@ -40,20 +40,6 @@ export const initialState: TournamentsState = tournamentsAdapter.getInitialState
   formData: {},
   newTournamentFormData: INITIAL_TOURNAMENT_FORM_DATA,
 });
-
-function withLoadAttempt(
-  state: TournamentsState,
-  load: TournamentsLoad,
-): TournamentsState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(
-  state: TournamentsState,
-  load: TournamentsLoad,
-): TournamentsState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
 
 function withRegistrants(
   state: TournamentsState,

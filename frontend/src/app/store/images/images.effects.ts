@@ -44,7 +44,7 @@ import {
   IS_LCC_ERROR,
   PARSE_ERROR,
 } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as ImagesActions from './images.actions';
 import * as ImagesSelectors from './images.selectors';
@@ -167,7 +167,6 @@ export class ImagesEffects {
             ImagesActions.fetchFilteredThumbnailsSucceeded({
               images: response.data.items,
               filteredCount: response.data.filteredCount,
-              totalCount: response.data.totalCount,
             }),
           ),
           catchError(error =>
@@ -423,10 +422,7 @@ export class ImagesEffects {
           ImagesActions.automaticAlbumCoverSwitchSucceeded,
         ),
       ),
-      this.actions$.pipe(
-        ofType(ImagesActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
-      ),
+      this.actions$.pipe(ofType(ImagesActions.paginationOptionsChanged)),
     );
 
     const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
@@ -561,14 +557,7 @@ export class ImagesEffects {
             ? true
             : formData.albumCover,
           albumOrdinality: formData.albumOrdinality,
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, this.userService.memberNumber()),
         };
 
         const imageFormData = new FormData();
@@ -627,14 +616,7 @@ export class ImagesEffects {
             album: formData.album,
             albumCover: formData.albumCover,
             albumOrdinality: formData.albumOrdinality,
-            modificationInfo: {
-              createdBy: `${user.firstName} ${user.lastName}`,
-              createdByNumber: this.userService.memberNumber(),
-              dateCreated: moment().toISOString(),
-              lastEditedBy: `${user.firstName} ${user.lastName}`,
-              lastEditedByNumber: this.userService.memberNumber(),
-              dateLastEdited: moment().toISOString(),
-            },
+            modificationInfo: creditEditor(user, this.userService.memberNumber()),
           });
         }
 
@@ -682,12 +664,11 @@ export class ImagesEffects {
           album: formData.album,
           albumCover: formData.albumCover,
           albumOrdinality: formData.albumOrdinality,
-          modificationInfo: {
-            ...image.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(
+            user,
+            this.userService.memberNumber(),
+            image.modificationInfo,
+          ),
         };
 
         const imagesFormData = this.buildImagesFormData([], [], [updatedImage]);
@@ -750,12 +731,11 @@ export class ImagesEffects {
             album: formData.album,
             albumCover: formData.albumCover,
             albumOrdinality: formData.albumOrdinality,
-            modificationInfo: {
-              ...image.modificationInfo,
-              lastEditedBy: `${user.firstName} ${user.lastName}`,
-              lastEditedByNumber: this.userService.memberNumber(),
-              dateLastEdited: moment().toISOString(),
-            },
+            modificationInfo: creditEditor(
+              user,
+              this.userService.memberNumber(),
+              image.modificationInfo,
+            ),
           }));
 
           const newImagesMetadata: Omit<BaseImage, 'fileSize'>[] = [];
@@ -783,14 +763,7 @@ export class ImagesEffects {
                 album: formData.album,
                 albumCover: formData.albumCover,
                 albumOrdinality: formData.albumOrdinality,
-                modificationInfo: {
-                  createdBy: `${user.firstName} ${user.lastName}`,
-                  createdByNumber: this.userService.memberNumber(),
-                  dateCreated: moment().toISOString(),
-                  lastEditedBy: `${user.firstName} ${user.lastName}`,
-                  lastEditedByNumber: this.userService.memberNumber(),
-                  dateLastEdited: moment().toISOString(),
-                },
+                modificationInfo: creditEditor(user, this.userService.memberNumber()),
               });
             }
           }

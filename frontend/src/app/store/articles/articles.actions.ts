@@ -13,7 +13,7 @@ export const fetchHomePageArticlesRequested = createAction(
 );
 export const fetchHomePageArticlesSucceeded = createAction(
   '[Articles] Fetch home page articles succeeded',
-  props<{ articles: Article[]; totalCount: number }>(),
+  props<{ articles: Article[] }>(),
 );
 export const fetchHomePageArticlesFailed = createAction(
   '[Articles] Fetch home page articles failed',
@@ -25,7 +25,7 @@ export const fetchFilteredArticlesRequested = createAction(
 );
 export const fetchFilteredArticlesSucceeded = createAction(
   '[Articles] Fetch filtered articles succeeded',
-  props<{ articles: Article[]; filteredCount: number; totalCount: number }>(),
+  props<{ articles: Article[]; filteredCount: number }>(),
 );
 export const fetchFilteredArticlesFailed = createAction(
   '[Articles] Fetch filtered articles failed',
@@ -43,10 +43,6 @@ export const fetchArticleSucceeded = createAction(
 export const fetchArticleFailed = createAction(
   '[Articles] Fetch article failed',
   props<{ error: LccError }>(),
-);
-
-export const createAnArticleSelected = createAction(
-  '[Articles] Create an article selected',
 );
 
 export const publishArticleRequested = createAction(
@@ -93,7 +89,7 @@ export const deleteArticleFailed = createAction(
 
 export const paginationOptionsChanged = createAction(
   '[Articles] Pagination options changed',
-  props<{ options: DataPaginationOptions<Article>; fetch: boolean }>(),
+  props<{ options: DataPaginationOptions<Article> }>(),
 );
 
 export const cancelSelected = createAction('[Articles] Cancel selected');

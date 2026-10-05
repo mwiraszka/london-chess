@@ -2,7 +2,6 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { of } from 'rxjs';
 import {
   catchError,
@@ -17,12 +16,11 @@ import {
 
 import { Injectable, inject } from '@angular/core';
 
-import { ModificationInfo, User } from '@app/models';
 import { TournamentsApiService, UserService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 import * as TournamentsSelectors from './tournaments.selectors';
@@ -129,7 +127,10 @@ export class TournamentsEffects {
       ]),
       concatMap(([, formData, user]) =>
         this.tournamentsApiService
-          .addTournament({ ...formData, modificationInfo: this.credit(user, null) })
+          .addTournament({
+            ...formData,
+            modificationInfo: creditEditor(user, this.userService.memberNumber()),
+          })
           .pipe(
             map(response =>
               TournamentsActions.addTournamentSucceeded({
@@ -163,7 +164,11 @@ export class TournamentsEffects {
         this.tournamentsApiService
           .updateTournament(tournamentNumber, {
             ...formData,
-            modificationInfo: this.credit(user, tournament.modificationInfo),
+            modificationInfo: creditEditor(
+              user,
+              this.userService.memberNumber(),
+              tournament.modificationInfo,
+            ),
           })
           .pipe(
             map(() =>
@@ -246,18 +251,4 @@ export class TournamentsEffects {
       ),
     );
   });
-
-  private credit(user: User, original: ModificationInfo | null): ModificationInfo {
-    const name = `${user.firstName} ${user.lastName}`;
-    const number = this.userService.memberNumber();
-    const now = moment().toISOString();
-    return {
-      createdBy: original?.createdBy ?? name,
-      createdByNumber: original ? original.createdByNumber : number,
-      dateCreated: original?.dateCreated ?? now,
-      lastEditedBy: name,
-      lastEditedByNumber: number,
-      dateLastEdited: now,
-    };
-  }
 }

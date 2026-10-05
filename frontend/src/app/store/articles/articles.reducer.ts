@@ -4,7 +4,7 @@ import { pick } from 'lodash';
 
 import { ARTICLE_FORM_DATA_PROPERTIES, INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
 import { Article, ArticleFormData, DataPaginationOptions, IsoDate } from '@app/models';
-import { areSame } from '@app/utils';
+import { areSame, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as ArticlesActions from './articles.actions';
 
@@ -25,7 +25,6 @@ export interface ArticlesState extends EntityState<{
   filteredArticles: Article[];
   options: DataPaginationOptions<Article>;
   filteredCount: number | null;
-  totalCount: number;
 }
 
 export const articlesAdapter = createEntityAdapter<{
@@ -52,16 +51,7 @@ export const initialState: ArticlesState = articlesAdapter.getInitialState({
     search: '',
   },
   filteredCount: null,
-  totalCount: 0,
 });
-
-function withLoadAttempt(state: ArticlesState, load: ArticlesLoad): ArticlesState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: ArticlesState, load: ArticlesLoad): ArticlesState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
 
 export const articlesReducer = createReducer(
   initialState,
@@ -90,7 +80,7 @@ export const articlesReducer = createReducer(
 
   on(
     ArticlesActions.fetchHomePageArticlesSucceeded,
-    (state, { articles, totalCount }): ArticlesState =>
+    (state, { articles }): ArticlesState =>
       articlesAdapter.upsertMany(
         articles.map(article => {
           const existingEntity = state.entities[article.id];
@@ -113,14 +103,13 @@ export const articlesReducer = createReducer(
           ...state,
           homePageArticles: articles,
           lastHomePageFetch: new Date().toISOString(),
-          totalCount,
         },
       ),
   ),
 
   on(
     ArticlesActions.fetchFilteredArticlesSucceeded,
-    (state, { articles, filteredCount, totalCount }): ArticlesState =>
+    (state, { articles, filteredCount }): ArticlesState =>
       articlesAdapter.upsertMany(
         articles.map(article => {
           const existingEntity = state.entities[article.id];
@@ -145,21 +134,17 @@ export const articlesReducer = createReducer(
           filteredArticles: articles,
           lastFilteredFetch: new Date().toISOString(),
           filteredCount,
-          totalCount,
         },
       ),
   ),
 
   // Only a page or search the reader asked for swaps the articles for placeholders, so a
   // refresh in the background leaves the ones on screen in place
-  on(
-    ArticlesActions.paginationOptionsChanged,
-    (state, { options, fetch }): ArticlesState => ({
-      ...state,
-      options,
-      isFetchingFiltered: state.isFetchingFiltered || fetch,
-    }),
-  ),
+  on(ArticlesActions.paginationOptionsChanged, (state, { options }): ArticlesState => ({
+    ...state,
+    options,
+    isFetchingFiltered: true,
+  })),
 
   on(ArticlesActions.fetchArticleSucceeded, (state, { article }): ArticlesState => {
     const previousFormData = state.entities[article.id]?.formData;

@@ -15,3 +15,22 @@ export function combinedLoadStatus(...statuses: LoadStatus[]): LoadStatus {
   }
   return statuses.includes('loading') ? 'loading' : 'loaded';
 }
+
+interface WithFailedLoads<Load> {
+  failedLoads: Load[];
+}
+
+// Trying a load again clears its earlier failure
+export function withLoadAttempt<State extends WithFailedLoads<Load>, Load>(
+  state: State,
+  load: Load,
+): State {
+  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
+}
+
+export function withFailedLoad<State extends WithFailedLoads<Load>, Load>(
+  state: State,
+  load: Load,
+): State {
+  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
+}

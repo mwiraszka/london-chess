@@ -38,11 +38,6 @@ export const selectFilteredCount = createSelector(
   state => state.filteredCount,
 );
 
-export const selectTotalCount = createSelector(
-  selectArticlesState,
-  state => state.totalCount,
-);
-
 const { selectAll: selectAllArticleEntities } =
   articlesAdapter.getSelectors(selectArticlesState);
 

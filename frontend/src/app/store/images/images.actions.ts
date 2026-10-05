@@ -20,7 +20,7 @@ export const fetchFilteredThumbnailsRequested = createAction(
 );
 export const fetchFilteredThumbnailsSucceeded = createAction(
   '[Images] Fetch filtered thumbnails succeeded',
-  props<{ images: Image[]; filteredCount: number; totalCount: number }>(),
+  props<{ images: Image[]; filteredCount: number }>(),
 );
 export const fetchFilteredThumbnailsFailed = createAction(
   '[Images] Fetch filtered thumbnails failed',
@@ -42,7 +42,6 @@ export const fetchBatchThumbnailsSucceeded = createAction(
   '[Images] Fetch batch thumbnails succeeded',
   props<{
     images: Image[];
-    album?: string;
     context: 'album-covers' | 'article-banner-images' | 'photos-in-album';
   }>(),
 );
@@ -73,8 +72,6 @@ export const fetchMainImageInBackgroundFailed = createAction(
   props<{ error: LccError }>(),
 );
 
-export const addAnImageSelected = createAction('[Images] Add an image selected');
-
 export const addImageRequested = createAction(
   '[Images] Add image requested',
   props<{ imageId: Id }>(),
@@ -87,8 +84,6 @@ export const addImageFailed = createAction(
   '[Images] Add image failed',
   props<{ error: LccError }>(),
 );
-
-export const createAnAlbumSelected = createAction('[Images] Create an album selected');
 
 export const addImagesRequested = createAction('[Images] Add images requested');
 export const addImagesSucceeded = createAction(
@@ -163,7 +158,7 @@ export const deleteAlbumFailed = createAction(
 
 export const paginationOptionsChanged = createAction(
   '[Images] Pagination options changed',
-  props<{ options: DataPaginationOptions<Image>; fetch: boolean }>(),
+  props<{ options: DataPaginationOptions<Image> }>(),
 );
 
 export const cancelSelected = createAction('[Images] Cancel selected');
@@ -197,5 +192,3 @@ export const newImageRemoved = createAction(
   '[Images] New image removed',
   props<{ imageId: Id }>(),
 );
-
-export const allNewImagesRemoved = createAction('[Images] All new images removed');

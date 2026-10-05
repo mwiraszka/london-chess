@@ -3,7 +3,6 @@ import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
 import { pick } from 'lodash';
-import moment from 'moment-timezone';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
@@ -30,7 +29,7 @@ import {
   IS_EXPIRED,
   PARSE_ERROR,
 } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as MembersActions from './members.actions';
 import * as MembersSelectors from './members.selectors';
@@ -135,10 +134,7 @@ export class MembersEffects {
           MembersActions.deleteMemberSucceeded,
         ),
       ),
-      this.actions$.pipe(
-        ofType(MembersActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
-      ),
+      this.actions$.pipe(ofType(MembersActions.paginationOptionsChanged)),
     );
 
     const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
@@ -217,14 +213,7 @@ export class MembersEffects {
         const member: EditableMember = {
           ...formData,
           peakRating: formData.rating,
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, this.userService.memberNumber()),
         };
 
         return this.membersApiService.addMember(member, notifyMember).pipe(
@@ -256,12 +245,11 @@ export class MembersEffects {
         const editableMember: EditableMember = {
           ...formData,
           peakRating: this.getNewPeakRating(formData.rating, formData.peakRating),
-          modificationInfo: {
-            ...member.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(
+            user,
+            this.userService.memberNumber(),
+            member.modificationInfo,
+          ),
         };
 
         return this.membersApiService
@@ -342,12 +330,11 @@ export class MembersEffects {
               ...member,
               rating: newRating,
               peakRating: newPeakRating,
-              modificationInfo: {
-                ...member.modificationInfo,
-                lastEditedBy: `${user.firstName} ${user.lastName}`,
-                lastEditedByNumber: this.userService.memberNumber(),
-                dateLastEdited: moment().toISOString(),
-              },
+              modificationInfo: creditEditor(
+                user,
+                this.userService.memberNumber(),
+                member.modificationInfo,
+              ),
             };
           },
         );

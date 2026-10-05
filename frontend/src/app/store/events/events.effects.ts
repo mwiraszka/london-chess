@@ -2,7 +2,6 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
@@ -22,7 +21,7 @@ import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as EventsActions from './events.actions';
 import * as EventsSelectors from './events.selectors';
@@ -130,10 +129,7 @@ export class EventsEffects {
           EventsActions.deleteEventSucceeded,
         ),
       ),
-      this.actions$.pipe(
-        ofType(EventsActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
-      ),
+      this.actions$.pipe(ofType(EventsActions.paginationOptionsChanged)),
     );
 
     const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
@@ -194,14 +190,7 @@ export class EventsEffects {
         const event: Event = {
           ...formData,
           id: '',
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, this.userService.memberNumber()),
         };
 
         return this.eventsApiService.addEvent(event).pipe(
@@ -232,12 +221,11 @@ export class EventsEffects {
         const updatedEvent = {
           ...event,
           ...formData,
-          modificationInfo: {
-            ...event.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(
+            user,
+            this.userService.memberNumber(),
+            event.modificationInfo,
+          ),
         };
 
         return this.eventsApiService.updateEvent(updatedEvent).pipe(

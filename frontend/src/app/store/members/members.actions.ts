@@ -58,8 +58,6 @@ export const fetchMemberByNumberRequested = createAction(
   props<{ memberNumber: number }>(),
 );
 
-export const addAMemberSelected = createAction('[Members] Add a member selected');
-
 export const addMemberRequested = createAction(
   '[Members] Add member requested',
   props<{ notifyMember: boolean }>(),
@@ -114,7 +112,7 @@ export const deleteMemberFailed = createAction(
 
 export const paginationOptionsChanged = createAction(
   '[Members] Pagination options changed',
-  props<{ options: DataPaginationOptions<Member>; fetch: boolean }>(),
+  props<{ options: DataPaginationOptions<Member> }>(),
 );
 
 export const cancelSelected = createAction('[Members] Cancel selected');

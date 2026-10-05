@@ -4,7 +4,7 @@ import { compact, pick } from 'lodash';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { DataPaginationOptions, Id, Image, ImageFormData, IsoDate } from '@app/models';
-import { customSort } from '@app/utils';
+import { customSort, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as ImagesActions from './images.actions';
 
@@ -27,7 +27,6 @@ export interface ImagesState extends EntityState<{
   filteredImages: Image[];
   options: DataPaginationOptions<Image>;
   filteredCount: number | null;
-  totalCount: number;
 }
 
 export const imagesAdapter = createEntityAdapter<{
@@ -57,7 +56,6 @@ export const initialState: ImagesState = imagesAdapter.getInitialState({
     search: '',
   },
   filteredCount: null,
-  totalCount: 0,
 });
 
 // A shared expiration covers whichever of the two presigned URLs an entity
@@ -69,14 +67,6 @@ function earlierIso(a: IsoDate | undefined, b: IsoDate | undefined): IsoDate | u
     return a ?? b;
   }
   return a < b ? a : b;
-}
-
-function withLoadAttempt(state: ImagesState, load: ImagesLoad): ImagesState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: ImagesState, load: ImagesLoad): ImagesState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
 }
 
 export const imagesReducer = createReducer(
@@ -139,7 +129,7 @@ export const imagesReducer = createReducer(
 
   on(
     ImagesActions.fetchFilteredThumbnailsSucceeded,
-    (state, { images, filteredCount, totalCount }): ImagesState => {
+    (state, { images, filteredCount }): ImagesState => {
       return imagesAdapter.upsertMany(
         images.map(image => {
           const originalEntity = image ? state.entities[image.id] : null;
@@ -164,7 +154,6 @@ export const imagesReducer = createReducer(
           lastFilteredThumbnailsFetch: new Date(Date.now()).toISOString(),
           filteredImages: images,
           filteredCount,
-          totalCount,
         },
       );
     },
@@ -428,13 +417,6 @@ export const imagesReducer = createReducer(
     return {
       ...state,
       newImagesFormData: restNewImagesFormData,
-    };
-  }),
-
-  on(ImagesActions.allNewImagesRemoved, (state): ImagesState => {
-    return {
-      ...state,
-      newImagesFormData: {},
     };
   }),
 );

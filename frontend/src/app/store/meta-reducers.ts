@@ -1,4 +1,3 @@
-import { RouterState } from '@ngrx/router-store';
 import { Action, ActionReducer, MetaReducer } from '@ngrx/store';
 import { compact, omit, pick } from 'lodash';
 import { localStorageSync } from 'ngrx-store-localstorage';
@@ -37,11 +36,10 @@ export interface MetaState {
   imagesState?: ImagesState;
   membersState?: MembersState;
   navState?: NavState;
-  routerState?: RouterState;
   tournamentsState?: TournamentsState;
 }
 
-const hydratedStates = [
+const hydratedStates: (keyof MetaState)[] = [
   'appState',
   'articlesState',
   'eventsState',
@@ -50,7 +48,7 @@ const hydratedStates = [
   'membersState',
   'navState',
   'tournamentsState',
-] as Array<keyof Exclude<MetaState, RouterState>>;
+];
 
 // State saved by an app version older than these no longer fits its reducer
 const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
@@ -286,18 +284,9 @@ export function clearRecordsOnAccessLossMetaReducer(
   };
 }
 
-// Image storage moved off AWS S3, so any persisted URL still pointing there is
-// dead regardless of its recorded expiration (older app versions could stamp a
-// fresh expiration onto an entity while keeping its old URL)
-const RETIRED_STORAGE_HOST = 'amazonaws.com';
-
-function pointsAtRetiredStorage(url: string | undefined): boolean {
-  return !!url && url.includes(RETIRED_STORAGE_HOST);
-}
-
 /**
  * Drops persisted presigned URLs that are already expired (or inside the
- * refresh buffer), or that point at retired storage, while rehydrating, so
+ * refresh buffer) while rehydrating, so
  * components render placeholders and wait for fresh URLs instead of loading
  * doomed ones. Dropping any also forgets when the images were last fetched,
  * since those fetches no longer stand behind the URLs, so fresh ones are
@@ -313,9 +302,7 @@ export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
     const image = entity?.image;
     const stale =
       !!(image?.mainUrl || image?.thumbnailUrl) &&
-      (isPresignedUrlExpired(image?.urlExpirationDate) ||
-        pointsAtRetiredStorage(image?.mainUrl) ||
-        pointsAtRetiredStorage(image?.thumbnailUrl));
+      isPresignedUrlExpired(image?.urlExpirationDate);
 
     stripped ||= !!entity && stale;
     updatedEntities[id] =
