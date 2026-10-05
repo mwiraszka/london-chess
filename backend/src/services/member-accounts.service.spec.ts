@@ -55,10 +55,6 @@ describe('member accounts', () => {
     vi.stubEnv('R2_AVATARS_PUBLIC_URL', AVATARS);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   describe('findEditor', () => {
     it('should credit the admin by their member name and number', async () => {
       await createAccountHolder({}, { number: 4 });

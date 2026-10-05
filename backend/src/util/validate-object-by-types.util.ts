@@ -21,11 +21,6 @@ export function validateObjectByTypes<T>(
     return new Error('not a valid object.');
   }
 
-  // TODO: Can be removed once MongoDB get requests updated to remove __v property
-  if ('__v' in object) {
-    delete (object as Record<string, unknown>)['__v'];
-  }
-
   for (const [key, value] of Object.entries(object)) {
     if (!Object.getOwnPropertyNames(types).includes(key)) {
       return new Error(`input contains unknown property ${key}`);

@@ -5,3 +5,7 @@ import { inject } from 'vitest';
 // Each spec file gets its own database, so files running in parallel never share data
 process.env['MONGODB_URI'] = inject('mongoUri');
 process.env['MONGODB_DATABASE'] = `lcc-test-${randomUUID()}`;
+
+afterEach(() => {
+  vi.useRealTimers();
+});

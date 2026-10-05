@@ -1,3 +1,5 @@
+const MIN_YEAR_OF_BIRTH = 1900;
+
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const MEMBER_DETAIL_RULES = {
@@ -44,8 +46,8 @@ export function validateDetailField(field: DetailField, value: string): string |
       ? `${DETAIL_FIELDS[field]} is required.`
       : null;
   }
-  if (field === 'yearOfBirth' && !/^\d{4}$/.test(value)) {
-    return 'Year of birth must be a four-digit year.';
+  if (field === 'yearOfBirth' && !isYearOfBirth(value)) {
+    return `Year of birth must be a year from ${MIN_YEAR_OF_BIRTH} to ${new Date().getFullYear()}.`;
   }
   if (field === 'city' && value.length > 50) {
     return 'City must be 50 characters or fewer.';
@@ -61,11 +63,9 @@ export function validateDetailField(field: DetailField, value: string): string |
   return null;
 }
 
-export function isValidYearOfBirth(value: unknown): value is number {
+function isYearOfBirth(value: string): boolean {
+  const year = Number(value);
   return (
-    typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value >= 1900 &&
-    value <= new Date().getFullYear()
+    /^\d{4}$/.test(value) && year >= MIN_YEAR_OF_BIRTH && year <= new Date().getFullYear()
   );
 }

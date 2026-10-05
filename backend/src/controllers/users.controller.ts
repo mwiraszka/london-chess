@@ -5,7 +5,6 @@ import { AccountVerificationModel } from '../models/account-verification.model';
 import { ApiResponse } from '../models/api-response.model';
 import { AvatarCropState } from '../models/member.model';
 import {
-  avatarPublicUrl,
   avatarPublicUrlPrefix,
   deleteAvatar,
   uploadAvatar,
@@ -29,7 +28,6 @@ import {
   DETAIL_FIELDS,
   DetailField,
   EMAIL_PATTERN,
-  isValidYearOfBirth,
   validateDetailField,
 } from '../util/member-details.util';
 import {
@@ -43,24 +41,44 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 type UploadedFiles = Record<string, Express.Multer.File[]> | undefined;
 
-function parseCropState(raw: unknown): AvatarCropState | null {
-  if (typeof raw !== 'string') {
+const CROP_STATE_PROBLEM = 'Crop state must give a numeric zoom, offsetX and offsetY.';
+const IMAGE_TYPES_PROBLEM = 'must be a JPEG, PNG, or WebP image.';
+
+// Undefined when the value is not a crop state
+function toCropState(value: unknown): AvatarCropState | undefined {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'zoom' in value &&
+    'offsetX' in value &&
+    'offsetY' in value
+  ) {
+    const { zoom, offsetX, offsetY } = value;
+    if (
+      typeof zoom === 'number' &&
+      typeof offsetX === 'number' &&
+      typeof offsetY === 'number'
+    ) {
+      return { zoom, offsetX, offsetY };
+    }
+  }
+  return undefined;
+}
+
+// The crop state sent as JSON text alongside an upload: null when none was sent, and
+// undefined when what was sent is not one
+function uploadedCropState(raw: unknown): AvatarCropState | null | undefined {
+  if (raw === undefined) {
     return null;
   }
-  try {
-    const parsed = JSON.parse(raw) as Partial<AvatarCropState> | null;
-    if (
-      parsed &&
-      typeof parsed.zoom === 'number' &&
-      typeof parsed.offsetX === 'number' &&
-      typeof parsed.offsetY === 'number'
-    ) {
-      return { zoom: parsed.zoom, offsetX: parsed.offsetX, offsetY: parsed.offsetY };
-    }
-  } catch {
-    // fall through to null
+  if (typeof raw !== 'string') {
+    return undefined;
   }
-  return null;
+  try {
+    return toCropState(JSON.parse(raw));
+  } catch {
+    return undefined;
+  }
 }
 
 function activeSessions(clerkUserId: string) {
@@ -233,24 +251,10 @@ export async function getMe(
   res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
-    let member = await findLinkedMember(req.user.id);
+    const member = await findLinkedMember(req.user.id);
     if (!member) {
       res.status(404).json({ message: 'Account not found.' });
       return;
-    }
-    // Older records store avatar URLs under a retired public prefix; the
-    // object keys are deterministic, so point them at the current location
-    // and persist the repair
-    const { avatarOriginalUrl, avatarUrl } = member.account;
-    if (
-      avatarOriginalUrl &&
-      !avatarOriginalUrl.startsWith(`${avatarPublicUrlPrefix()}/`)
-    ) {
-      member =
-        (await updateLinkedMember(req.user.id, {
-          'account.avatarOriginalUrl': avatarPublicUrl(req.user.id, 'original'),
-          'account.avatarUrl': avatarUrl ? avatarPublicUrl(req.user.id, 'cropped') : null,
-        })) ?? member;
     }
     res.status(200).json({ data: toAccountRecord(member) });
   } catch (error) {
@@ -271,8 +275,12 @@ export async function updateMe(
 
     const updates: Record<string, unknown> = {};
     if (avatarCropState !== undefined) {
-      updates['account.avatarCropState'] =
-        avatarCropState === null ? null : parseCropState(JSON.stringify(avatarCropState));
+      const cropState = avatarCropState === null ? null : toCropState(avatarCropState);
+      if (cropState === undefined) {
+        res.status(400).json({ message: CROP_STATE_PROBLEM });
+        return;
+      }
+      updates['account.avatarCropState'] = cropState;
     }
     if (clerkImageUrl !== undefined) {
       if (clerkImageUrl !== null && typeof clerkImageUrl !== 'string') {
@@ -413,15 +421,22 @@ export async function uploadUserAvatar(
       return;
     }
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
-      res.status(400).json({ message: 'File must be a JPEG, PNG, or WebP image.' });
+      res.status(400).json({ message: `File ${IMAGE_TYPES_PROBLEM}` });
       return;
     }
     if (!cropped) {
       res.status(400).json({ message: 'Cropped file is required.' });
       return;
     }
-
-    const cropState = parseCropState(req.body['cropState']);
+    if (!ALLOWED_IMAGE_TYPES.includes(cropped.mimetype)) {
+      res.status(400).json({ message: `Cropped file ${IMAGE_TYPES_PROBLEM}` });
+      return;
+    }
+    const cropState = uploadedCropState(req.body['cropState']);
+    if (cropState === undefined) {
+      res.status(400).json({ message: CROP_STATE_PROBLEM });
+      return;
+    }
 
     const [originalUrl, croppedUrl] = await Promise.all([
       uploadAvatar(req.user.id, file.buffer, file.mimetype, 'original'),
@@ -449,8 +464,15 @@ export async function updateCroppedAvatar(
       res.status(400).json({ message: 'Cropped file is required.' });
       return;
     }
-
-    const cropState = parseCropState(req.body['cropState']);
+    if (!ALLOWED_IMAGE_TYPES.includes(cropped.mimetype)) {
+      res.status(400).json({ message: `Cropped file ${IMAGE_TYPES_PROBLEM}` });
+      return;
+    }
+    const cropState = uploadedCropState(req.body['cropState']);
+    if (cropState === undefined) {
+      res.status(400).json({ message: CROP_STATE_PROBLEM });
+      return;
+    }
 
     const croppedUrl = await uploadAvatar(
       req.user.id,
@@ -596,26 +618,36 @@ export async function requestAccountVerification(
   }
 }
 
+// Deletes a matching live code in one step, so a code is accepted once, and never after
+// the attempts run out, however many requests race for it
 async function consumeVerificationCode(
   email: string,
   code: string,
 ): Promise<string | null> {
-  const record = await AccountVerificationModel.findOne({
+  const live = {
     email: email.trim().toLowerCase(),
+    expiresAt: { $gt: new Date() },
+    attempts: { $lt: VERIFICATION_MAX_ATTEMPTS },
+  };
+  if (
+    await AccountVerificationModel.findOneAndDelete({
+      ...live,
+      codeHash: hashSecret(code),
+    })
+  ) {
+    return null;
+  }
+
+  const counted = await AccountVerificationModel.updateOne(live, {
+    $inc: { attempts: 1 },
   });
-  if (!record || record.expiresAt.getTime() < Date.now()) {
-    return 'Your verification code has expired – please request a new one.';
-  }
-  if (record.attempts >= VERIFICATION_MAX_ATTEMPTS) {
-    return 'Too many incorrect attempts – please request a new code.';
-  }
-  if (record.codeHash !== hashSecret(code)) {
-    record.attempts += 1;
-    await record.save();
+  if (counted.modifiedCount) {
     return 'That verification code is incorrect.';
   }
-  await record.deleteOne();
-  return null;
+  const record = await AccountVerificationModel.findOne({ email: live.email });
+  return record && record.expiresAt.getTime() > Date.now()
+    ? 'Too many incorrect attempts – please request a new code.'
+    : 'Your verification code has expired – please request a new one.';
 }
 
 export async function requestAccount(
@@ -656,8 +688,13 @@ export async function requestAccount(
       res.status(400).json({ message: 'A valid email address is required.' });
       return;
     }
-    if (!isValidYearOfBirth(yearOfBirth)) {
-      res.status(400).json({ message: 'A valid year of birth is required.' });
+    if (typeof yearOfBirth !== 'string') {
+      res.status(400).json({ message: 'Year of birth must be text.' });
+      return;
+    }
+    const yearProblem = validateDetailField('yearOfBirth', yearOfBirth.trim());
+    if (yearProblem) {
+      res.status(400).json({ message: yearProblem });
       return;
     }
     const { verificationCode } = req.body as { verificationCode?: unknown };
@@ -668,12 +705,6 @@ export async function requestAccount(
       res.status(400).json({ message: 'A six-digit verification code is required.' });
       return;
     }
-    const codeProblem = await consumeVerificationCode(email, verificationCode.trim());
-    if (codeProblem) {
-      res.status(400).json({ message: codeProblem });
-      return;
-    }
-
     if (typeof city !== 'string' || !city.trim()) {
       res.status(400).json({ message: 'City is required.' });
       return;
@@ -709,12 +740,19 @@ export async function requestAccount(
       }
     }
 
+    // Only a request that is otherwise complete spends the code
+    const codeProblem = await consumeVerificationCode(email, verificationCode.trim());
+    if (codeProblem) {
+      res.status(400).json({ message: codeProblem });
+      return;
+    }
+
     const name = `${firstName.trim()} ${lastName.trim()}`;
     await sendAdminEmail(
       buildAccountRequestEmail(name, [
         ['Name', name],
         ['Email', email],
-        ['Year of birth', String(yearOfBirth)],
+        ['Year of birth', yearOfBirth.trim()],
         ['City', city.trim()],
         ...extras,
       ]),

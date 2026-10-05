@@ -1,7 +1,7 @@
 import { ModificationInfo } from '../models/modification-info.model';
 import { Editor, creditEditor } from './modification-info.util';
 
-const submitted: ModificationInfo = {
+const original: ModificationInfo = {
   createdBy: 'Original Author',
   createdByNumber: 4,
   dateCreated: '2024-01-01T00:00:00.000Z',
@@ -13,23 +13,30 @@ const submitted: ModificationInfo = {
 const editor: Editor = { name: 'Signed In', number: 1 };
 
 describe('creditEditor', () => {
-  it('should credit the signed-in admin as creator and editor of a new record', () => {
-    const info = creditEditor(submitted, editor, true);
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-05T12:00:00.000Z'));
+  });
+
+  it('should credit the signed-in admin with a new record, made now', () => {
+    const info = creditEditor(editor, null);
 
     expect(info).toEqual({
-      ...submitted,
       createdBy: 'Signed In',
       createdByNumber: 1,
+      dateCreated: '2026-10-05T12:00:00.000Z',
+      dateLastEdited: '2026-10-05T12:00:00.000Z',
       lastEditedBy: 'Signed In',
       lastEditedByNumber: 1,
     });
   });
 
-  it('should keep the original creator and credit the signed-in admin as editor', () => {
-    const info = creditEditor(submitted, editor, false);
+  it('should keep who made a record and when, crediting the signed-in admin with the edit', () => {
+    const info = creditEditor(editor, original);
 
     expect(info).toEqual({
-      ...submitted,
+      ...original,
+      dateLastEdited: '2026-10-05T12:00:00.000Z',
       lastEditedBy: 'Signed In',
       lastEditedByNumber: 1,
     });

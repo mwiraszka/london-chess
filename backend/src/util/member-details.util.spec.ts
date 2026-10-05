@@ -1,4 +1,4 @@
-import { isValidYearOfBirth, validateDetailField } from './member-details.util';
+import { validateDetailField } from './member-details.util';
 
 describe('validateDetailField', () => {
   it('should require only the required fields', () => {
@@ -19,11 +19,16 @@ describe('validateDetailField', () => {
     expect(validateDetailField('lastName', 'x'.repeat(50))).toBeNull();
   });
 
-  it('should need a four-digit year of birth', () => {
-    expect(validateDetailField('yearOfBirth', '90')).toBe(
-      'Year of birth must be a four-digit year.',
-    );
-    expect(validateDetailField('yearOfBirth', '1990')).toBeNull();
+  it('should need a year of birth from 1900 up to the current year', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
+    const message = 'Year of birth must be a year from 1900 to 2026.';
+
+    expect(validateDetailField('yearOfBirth', '90')).toBe(message);
+    expect(validateDetailField('yearOfBirth', '1899')).toBe(message);
+    expect(validateDetailField('yearOfBirth', '2027')).toBe(message);
+    expect(validateDetailField('yearOfBirth', '1900')).toBeNull();
+    expect(validateDetailField('yearOfBirth', '2026')).toBeNull();
   });
 
   it('should check phone numbers and usernames against their patterns', () => {
@@ -35,25 +40,5 @@ describe('validateDetailField', () => {
       /^Chess.com username must be/,
     );
     expect(validateDetailField('lichessUsername', 'jane_doe-1')).toBeNull();
-  });
-});
-
-describe('isValidYearOfBirth', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('should accept whole years from 1900 up to the current year', () => {
-    expect(isValidYearOfBirth(1900)).toBe(true);
-    expect(isValidYearOfBirth(2026)).toBe(true);
-    expect(isValidYearOfBirth(2027)).toBe(false);
-    expect(isValidYearOfBirth(1899)).toBe(false);
-    expect(isValidYearOfBirth(1990.5)).toBe(false);
-    expect(isValidYearOfBirth('1990')).toBe(false);
   });
 });

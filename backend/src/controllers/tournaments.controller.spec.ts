@@ -167,10 +167,6 @@ async function readTournament(number: number): Promise<TournamentRecord> {
 describe('tournaments routes', () => {
   useTestDatabase();
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   function freezeTime(iso: string): void {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(iso));
@@ -554,7 +550,6 @@ describe('tournaments routes', () => {
             }),
           ],
         }),
-        { ...tournamentInput(), modificationInfo: {} },
       ];
 
       const responses = await Promise.all(
@@ -570,7 +565,6 @@ describe('tournaments routes', () => {
       expect(responses[5].body.message).toBe(
         'Unable to save the tournament because section A, rank 1, a round names an opponent who is not in the section.',
       );
-      expect(responses[6].body.message).toMatch(/^Unable to save the tournament because/);
       expect(await TournamentModel.countDocuments()).toBe(0);
     });
 

@@ -5,18 +5,18 @@ export interface Editor {
   number: number | null;
 }
 
-// Attribution always comes from the signed-in admin's member record, never from
-// the request body
+// Attribution and timestamps always come from the server: the signed-in admin's member
+// record, the time of the save and, for an existing record, what was stored when it was made
 export function creditEditor(
-  info: ModificationInfo,
   editor: Editor,
-  isNew: boolean,
+  original: ModificationInfo | null,
 ): ModificationInfo {
+  const now = new Date().toISOString();
   return {
-    createdBy: isNew ? editor.name : info.createdBy,
-    createdByNumber: isNew ? editor.number : info.createdByNumber,
-    dateCreated: info.dateCreated,
-    dateLastEdited: info.dateLastEdited,
+    createdBy: original ? original.createdBy : editor.name,
+    createdByNumber: original ? original.createdByNumber : editor.number,
+    dateCreated: original ? original.dateCreated : now,
+    dateLastEdited: now,
     lastEditedBy: editor.name,
     lastEditedByNumber: editor.number,
   };

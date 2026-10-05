@@ -16,7 +16,7 @@ function avatarKey(userId: string, variant: AvatarVariant): string {
   return `avatars/${userId}/${variant}`;
 }
 
-export function avatarPublicUrl(userId: string, variant: AvatarVariant): string {
+function avatarPublicUrl(userId: string, variant: AvatarVariant): string {
   return `${avatarPublicUrlPrefix()}/${avatarKey(userId, variant)}`;
 }
 

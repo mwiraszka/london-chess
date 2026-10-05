@@ -2,7 +2,6 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
-  S3ServiceException,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request, Response } from 'express';
@@ -11,7 +10,6 @@ import { Types, startSession } from 'mongoose';
 import sharp from 'sharp';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
-import { ArticleModel } from '../models/article.model';
 import { Id } from '../models/core.model';
 import {
   CombinedImage,
@@ -19,10 +17,13 @@ import {
   ImageModel,
   imagesSortingConfig,
 } from '../models/image.model';
+import { ModificationInfo } from '../models/modification-info.model';
+import { articleAppearances } from '../services/image-usage.service';
 import { findEditor } from '../services/member-accounts.service';
 import { imagesBucket, r2Client } from '../services/storage.service';
+import { isCollectionId } from '../util/is-collection-id.util';
 import { isDefined } from '../util/is-defined.util';
-import { Editor, creditEditor } from '../util/modification-info.util';
+import { creditEditor } from '../util/modification-info.util';
 import {
   buildPaginationQuery,
   findPage,
@@ -36,67 +37,23 @@ const URL_EXPIRY_SECONDS = 12 * 3600;
 // of validity remaining when served from cache.
 const IMAGE_CACHE_MAX_AGE_SECONDS = URL_EXPIRY_SECONDS / 2;
 
-async function withTransactionTimeout<T>(
+// Committed whole or not at all
+async function inTransaction<T>(
   operation: (session: ClientSession) => Promise<T>,
-  onTimeout?: () => void,
-  timeoutMs: number = 120000, // 2 minutes
 ): Promise<T> {
-  const session: ClientSession = await startSession();
-  session.startTransaction({
-    maxCommitTimeMS: timeoutMs,
-  });
-
-  let timedOut = false;
-  let cleanedUp = false;
-
-  const cleanup = async () => {
-    if (cleanedUp) {
-      return;
-    }
-    cleanedUp = true;
-
-    try {
-      if (session.inTransaction()) {
-        await session.abortTransaction();
-      }
-    } catch (err) {
-      console.error('Error aborting transaction:', err);
-    } finally {
-      session.endSession();
-    }
-  };
-
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(async () => {
-      timedOut = true;
-      await cleanup();
-      if (onTimeout) {
-        onTimeout();
-      }
-      reject(new Error('LCC_TRANSACTION_TIMEOUT'));
-    }, timeoutMs);
-  });
-
+  const session = await startSession();
   try {
-    const result = await Promise.race([operation(session), timeoutPromise]);
-
-    if (timedOut) {
-      throw new Error('LCC_TRANSACTION_TIMEOUT');
-    }
-
+    session.startTransaction();
+    const result = await operation(session);
     await session.commitTransaction();
-    session.endSession();
-
     return result;
   } catch (error) {
-    if (!cleanedUp) {
-      await cleanup();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
     }
-
     throw error;
   } finally {
-    clearTimeout(timer);
+    await session.endSession();
   }
 }
 
@@ -136,12 +93,9 @@ export async function getThumbnailImages(
       totalCount,
     } = await findPage(ImageModel, query);
 
-    const resultIds = findResults.map(r => r._id.toString());
-    const articleCounts = await ArticleModel.aggregate<{ _id: string; count: number }>([
-      { $match: { bannerImageId: { $in: resultIds } } },
-      { $group: { _id: '$bannerImageId', count: { $sum: 1 } } },
-    ]);
-    const articleCountMap = new Map(articleCounts.map(a => [a._id, a.count]));
+    const articleCountMap = await articleAppearances(
+      findResults.map(r => r._id.toString()),
+    );
 
     // Process images in parallel to get combined data
     const imagePromises = findResults.map(async result => {
@@ -175,15 +129,9 @@ export async function getThumbnailImages(
       }),
     });
   } catch (error) {
-    if (error instanceof S3ServiceException) {
-      res.status(error.$metadata?.httpStatusCode ?? 500).json({
-        message: `[IM-2.3] Unable to retrieve thumbnail images object data from storage bucket: ${error?.message}`,
-      });
-    } else {
-      res.status(500).json({
-        message: `[IM-2.4] Unable to retrieve thumbnail images due to an unknown error: ${error}`,
-      });
-    }
+    res.status(500).json({
+      message: `[IM-2.4] Unable to retrieve thumbnail images due to an unknown error: ${error}`,
+    });
   }
 }
 
@@ -213,7 +161,7 @@ export async function getBatchThumbnailImages(
       return;
     }
 
-    const invalidIds = imageIds.filter(id => !Types.ObjectId.isValid(id));
+    const invalidIds = imageIds.filter(id => !isCollectionId(id));
     if (invalidIds.length > 0) {
       res.status(400).json({
         message: `[IM-3.3] Invalid image ID(s): ${invalidIds.join(', ')}`,
@@ -221,17 +169,11 @@ export async function getBatchThumbnailImages(
       return;
     }
 
-    const [mongoResults, articleCounts] = await Promise.all([
-      ImageModel.find({
-        _id: { $in: imageIds.map(id => new Types.ObjectId(id)) },
-      }).lean(),
-      ArticleModel.aggregate<{ _id: string; count: number }>([
-        { $match: { bannerImageId: { $in: imageIds } } },
-        { $group: { _id: '$bannerImageId', count: { $sum: 1 } } },
-      ]),
+    const [mongoResults, articleCountMap] = await Promise.all([
+      ImageModel.find({ _id: { $in: imageIds } }).lean(),
+      articleAppearances(imageIds),
     ]);
     const docMap = new Map(mongoResults.map(r => [r._id.toString(), r]));
-    const articleCountMap = new Map(articleCounts.map(a => [a._id, a.count]));
 
     // Process images in parallel for better performance
     const imagePromises = imageIds.map(async id => {
@@ -264,15 +206,9 @@ export async function getBatchThumbnailImages(
     res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
     res.status(200).json({ data: combinedImages });
   } catch (error) {
-    if (error instanceof S3ServiceException) {
-      res.status(error.$metadata?.httpStatusCode ?? 500).json({
-        message: `[IM-3.7] Unable to retrieve batch image data from storage bucket: ${error?.message}`,
-      });
-    } else {
-      res.status(500).json({
-        message: `[IM-3.8] Unable to retrieve batch images due to an error: ${error}`,
-      });
-    }
+    res.status(500).json({
+      message: `[IM-3.8] Unable to retrieve batch images due to an error: ${error}`,
+    });
   }
 }
 
@@ -283,12 +219,7 @@ export async function getMainImage(
   try {
     const { id } = req.params;
 
-    if (!Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: `[IM-4.0] Invalid image ID: ${id}` });
-      return;
-    }
-
-    const combinedImage = await _getCombinedImage(id, 'main');
+    const combinedImage = isCollectionId(id) ? await _getCombinedImage(id, 'main') : null;
 
     if (!combinedImage) {
       res.status(404).json({
@@ -299,16 +230,10 @@ export async function getMainImage(
 
     res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
     res.status(200).json({ data: combinedImage });
-  } catch (error) {
-    if (error instanceof S3ServiceException) {
-      res.status(error.$metadata?.httpStatusCode ?? 500).json({
-        message: `[IM-4.2] Unable to retrieve image object data from storage bucket: ${error?.message}`,
-      });
-    } else {
-      res.status(500).json({
-        message: '[IM-4.3] Unable to retrieve image due to an unknown error',
-      });
-    }
+  } catch {
+    res.status(500).json({
+      message: '[IM-4.3] Unable to retrieve image due to an unknown error',
+    });
   }
 }
 
@@ -325,37 +250,33 @@ export async function addImages(
       return;
     }
 
-    const parsedImageMetadataArray = (
-      Array.isArray(imageMetadata) ? imageMetadata : [imageMetadata]
-    ).map(metadata => JSON.parse(metadata)) as Image[];
+    const parsedImageMetadataArray = parseImageMetadata(imageMetadata);
 
     if (parsedImageMetadataArray.length !== files.length) {
       res.status(400).json({ message: '[IM-5.2] Image metadata mismatch' });
       return;
     }
 
-    const editor = await findEditor(req.user.id);
-    const combinedImages = await withTransactionTimeout(async session => {
-      return await _processNewImages(files, parsedImageMetadataArray, editor, session);
-    });
+    const images = await prepareNewImages(
+      files,
+      parsedImageMetadataArray,
+      creditEditor(await findEditor(req.user.id), null),
+    );
+    await storeNewImages(images);
+    try {
+      await inTransaction(session =>
+        ImageModel.insertMany(
+          images.map(({ document }) => document),
+          { session },
+        ),
+      );
+    } catch (error) {
+      await deleteStoredImages(images.map(({ id }) => id));
+      throw error;
+    }
 
-    res.status(201).json({ data: combinedImages });
+    res.status(201).json({ data: await toCombinedImages(images) });
   } catch (error) {
-    if (error instanceof Error && error.message === 'LCC_TRANSACTION_TIMEOUT') {
-      res.status(504).json({
-        message: '[IM-5.4] Operation timed out. Please try again with fewer images.',
-      });
-      return;
-    }
-
-    if (error instanceof Error && error.message.includes('ExceededTimeLimit')) {
-      res.status(504).json({
-        message:
-          '[IM-5.5] Database operation timed out. Please try again with fewer images.',
-      });
-      return;
-    }
-
     res.status(500).json({ message: `[IM-5.3] Unknown error: ${error}` });
   }
 }
@@ -379,61 +300,72 @@ export async function updateImages(
       }
     }
 
-    const imageMetadata = req.body.imageMetadata as string | string[] | undefined;
-    const editor = await findEditor(req.user.id);
+    const invalidIds = existingImages
+      .map(({ id }) => id)
+      .filter(id => !isCollectionId(id));
+    if (invalidIds.length) {
+      res
+        .status(400)
+        .json({ message: `[IM-6.5] Invalid image ID(s): ${invalidIds.join(', ')}` });
+      return;
+    }
 
-    const { newImages, updatedImages } = await withTransactionTimeout(async session => {
-      const updatedImages: Image[] = [];
-      for (const image of existingImages) {
-        const result = await ImageModel.updateOne(
-          { _id: new Types.ObjectId(image.id) },
-          { $set: prepareImageForDB(image, editor, false) },
+    const imageMetadata = req.body.imageMetadata as string | string[] | undefined;
+    const parsedImageMetadata =
+      files.length && imageMetadata ? parseImageMetadata(imageMetadata) : [];
+    if (parsedImageMetadata.length !== files.length) {
+      res.status(400).json({ message: '[IM-6.1] Image metadata mismatch' });
+      return;
+    }
+
+    const editor = await findEditor(req.user.id);
+    const stored = new Map(
+      (
+        await ImageModel.find(
+          { _id: { $in: existingImages.map(({ id }) => id) } },
+          { modificationInfo: 1 },
+        ).lean()
+      ).map(({ _id, modificationInfo }) => [_id.toString(), modificationInfo]),
+    );
+    const newImages = await prepareNewImages(
+      files,
+      parsedImageMetadata,
+      creditEditor(editor, null),
+    );
+
+    await storeNewImages(newImages);
+    let updatedImages: Image[];
+    try {
+      updatedImages = await inTransaction(async session => {
+        const updated: Image[] = [];
+        for (const image of existingImages) {
+          const original = stored.get(image.id);
+          const result = original
+            ? await ImageModel.updateOne(
+                { _id: image.id },
+                { $set: prepareImageForDB(image, creditEditor(editor, original)) },
+                { session },
+              )
+            : null;
+          if (result?.matchedCount) {
+            updated.push(image);
+          }
+        }
+        await ImageModel.insertMany(
+          newImages.map(({ document }) => document),
           { session },
         );
+        return updated;
+      });
+    } catch (error) {
+      await deleteStoredImages(newImages.map(({ id }) => id));
+      throw error;
+    }
 
-        if (result.matchedCount > 0) {
-          updatedImages.push(image);
-        }
-      }
-
-      let newImages: CombinedImage[] = [];
-      if (files.length > 0 && imageMetadata) {
-        const parsedImageMetadata = (
-          Array.isArray(imageMetadata) ? imageMetadata : [imageMetadata]
-        ).map(metadata => JSON.parse(metadata)) as Image[];
-
-        if (parsedImageMetadata.length !== files.length) {
-          throw new Error('[IM-6.1] Image metadata mismatch');
-        }
-
-        newImages = await _processNewImages(files, parsedImageMetadata, editor, session);
-      }
-
-      return { newImages, updatedImages };
+    res.status(200).json({
+      data: { newImages: await toCombinedImages(newImages), updatedImages },
     });
-
-    res.status(200).json({ data: { newImages, updatedImages } });
   } catch (error) {
-    if (error instanceof Error && error.message === 'LCC_TRANSACTION_TIMEOUT') {
-      res.status(504).json({
-        message: '[IM-6.3] Operation timed out. Please try again with fewer images.',
-      });
-      return;
-    }
-
-    if (error instanceof Error && error.message.includes('ExceededTimeLimit')) {
-      res.status(504).json({
-        message:
-          '[IM-6.4] Database operation timed out. Please try again with fewer images.',
-      });
-      return;
-    }
-
-    if (error instanceof Error && error.message === '[IM-6.1] Image metadata mismatch') {
-      res.status(400).json({ message: error.message });
-      return;
-    }
-
     res.status(500).json({ message: `[IM-6.2] Unknown error: ${error}` });
   }
 }
@@ -444,40 +376,27 @@ export async function deleteImage(
 ): Promise<void> {
   try {
     const { id } = req.params;
-    const mainCommand = new DeleteObjectCommand({
-      Bucket: imagesBucket(),
-      Key: id,
-    });
-    const mainResponse = await r2Client().send(mainCommand);
 
-    const thumbnailCommand = new DeleteObjectCommand({
-      Bucket: imagesBucket(),
-      Key: `${id}-thumb`,
-    });
-    const thumbnailResponse = await r2Client().send(thumbnailCommand);
-
-    // Status 204 (no content) response means that the resource was either successfully
-    // deleted or that it could not be found; assume that it succeeded
-    if (
-      mainResponse.$metadata.httpStatusCode === 204 &&
-      thumbnailResponse.$metadata.httpStatusCode === 204
-    ) {
-      const result = await ImageModel.deleteOne({ _id: new Types.ObjectId(id) });
-
-      if (result.deletedCount === 0) {
-        res.status(404).json({
-          message: `[IM-7.1] Image object deleted, but unable to delete additional image data from database because image [${id}] could not be found.`,
-        });
-        return;
-      }
-
-      res.status(200).json({ data: id });
+    if (!isCollectionId(id) || !(await ImageModel.exists({ _id: id }))) {
+      res.status(404).json({
+        message: `[IM-7.1] Unable to delete image [${id}] because it could not be found.`,
+      });
       return;
     }
 
-    res
-      .status(500)
-      .json({ message: '[IM-7.2] Unable to delete image from storage bucket' });
+    if ((await articleAppearances([id])).has(id)) {
+      res.status(400).json({
+        message: '[IM-7.2] Cannot delete this image because it is used in articles',
+      });
+      return;
+    }
+
+    // The record goes first, so a failure leaves at worst unseen objects, never a
+    // listed image with nothing to show
+    await ImageModel.deleteOne({ _id: id });
+    await deleteStoredImages([id]);
+
+    res.status(200).json({ data: id });
   } catch (error) {
     res.status(500).json({ message: `[IM-7.3] Unknown error: ${error}` });
   }
@@ -498,17 +417,11 @@ export async function deleteAlbum(
       return;
     }
 
-    for (const image of images) {
-      const articleAppearances = await ArticleModel.countDocuments({
-        bannerImageId: image._id.toString(),
+    if ((await articleAppearances(images.map(({ _id }) => _id.toString()))).size) {
+      res.status(400).json({
+        message: `[IM-8.2] Cannot delete ${album} because it contains images that are used in articles`,
       });
-
-      if (articleAppearances > 0) {
-        res.status(400).json({
-          message: `[IM-8.2] Cannot delete ${album} because it contains images that are used in articles`,
-        });
-        return;
-      }
+      return;
     }
 
     const deletedImageIds: string[] = [];
@@ -518,14 +431,7 @@ export async function deleteAlbum(
       images.map(async image => {
         const id = image._id.toString();
         try {
-          await Promise.all([
-            r2Client().send(new DeleteObjectCommand({ Bucket: imagesBucket(), Key: id })),
-            r2Client().send(
-              new DeleteObjectCommand({ Bucket: imagesBucket(), Key: `${id}-thumb` }),
-            ),
-          ]);
-
-          const result = await ImageModel.deleteOne({ _id: new Types.ObjectId(id) });
+          const result = await ImageModel.deleteOne({ _id: id });
 
           if (result.deletedCount > 0) {
             deletedImageIds.push(id);
@@ -537,6 +443,8 @@ export async function deleteAlbum(
         }
       }),
     );
+
+    await deleteStoredImages(deletedImageIds);
 
     if (errors.length > 0) {
       console.error(`[IM-8.5] Errors while deleting album '${album}':`, errors);
@@ -579,11 +487,11 @@ async function _getCombinedImage(
   });
 
   let imageMetadata: Omit<Image, 'id'>;
-  let articleAppearances: number;
+  let appearances: number;
 
   if (preloaded) {
     imageMetadata = preloaded.doc;
-    articleAppearances = preloaded.articleAppearances;
+    appearances = preloaded.articleAppearances;
   } else {
     const mongoResponse = await ImageModel.findById(id).lean();
 
@@ -594,7 +502,7 @@ async function _getCombinedImage(
 
     const { _id, ...rest } = mongoResponse;
     imageMetadata = rest;
-    articleAppearances = await ArticleModel.countDocuments({ bannerImageId: id });
+    appearances = (await articleAppearances([id])).get(id) ?? 0;
   }
 
   const combinedImage: CombinedImage = {
@@ -605,129 +513,150 @@ async function _getCombinedImage(
     ).toISOString(),
     mainUrl: imageSize === 'main' ? signedUrl : undefined,
     thumbnailUrl: imageSize === 'thumbnail' ? signedUrl : undefined,
-    articleAppearances,
+    articleAppearances: appearances,
   };
 
   return combinedImage;
 }
 
-async function _processNewImages(
+interface NewImage {
+  id: Id;
+  document: Omit<Image, 'id'> & { _id: Types.ObjectId };
+  main: Buffer;
+  thumbnail: Buffer;
+  mimetype: string;
+}
+
+function parseImageMetadata(imageMetadata: string | string[]): Image[] {
+  return (Array.isArray(imageMetadata) ? imageMetadata : [imageMetadata]).map(
+    metadata => JSON.parse(metadata) as Image,
+  );
+}
+
+async function prepareNewImages(
   files: Express.Multer.File[],
   metadataArray: Image[],
-  editor: Editor,
-  session: ClientSession,
-): Promise<CombinedImage[]> {
-  const processedBuffers = await Promise.all(
+  modificationInfo: ModificationInfo,
+): Promise<NewImage[]> {
+  return Promise.all(
     files.map(async (file, i) => {
-      const [mainBuffer, thumbnailBuffer] = await Promise.all([
-        sharp(file.buffer, { animated: file.mimetype === 'image/gif' })
-          .resize({ height: 1800, width: 1800, fit: 'inside', withoutEnlargement: true })
-          .toBuffer(),
-        sharp(file.buffer, { animated: file.mimetype === 'image/gif' })
-          .resize({ height: 320, width: 320, fit: 'inside', withoutEnlargement: true })
-          .toBuffer(),
-      ]);
-
-      const [mainMetadata, thumbnailMetadata] = await Promise.all([
-        sharp(mainBuffer).metadata(),
-        sharp(thumbnailBuffer).metadata(),
-      ]);
-
-      const mongoDBImage = prepareImageForDB(
-        metadataArray[i],
-        editor,
-        true,
-        mainMetadata,
-        thumbnailMetadata,
+      const [main, thumbnail] = await Promise.all(
+        [1800, 320].map(size =>
+          sharp(file.buffer, { animated: file.mimetype === 'image/gif' })
+            .resize({
+              height: size,
+              width: size,
+              fit: 'inside',
+              withoutEnlargement: true,
+            })
+            .toBuffer(),
+        ),
       );
+      const [mainMetadata, thumbnailMetadata] = await Promise.all([
+        sharp(main).metadata(),
+        sharp(thumbnail).metadata(),
+      ]);
+      const _id = new Types.ObjectId();
 
       return {
-        file,
-        i,
-        mainBuffer,
-        thumbnailBuffer,
-        mongoDBImage,
+        id: _id.toString(),
+        document: {
+          _id,
+          ...prepareImageForDB(
+            metadataArray[i],
+            modificationInfo,
+            mainMetadata,
+            thumbnailMetadata,
+          ),
+        },
+        main,
+        thumbnail,
+        mimetype: file.mimetype,
       };
     }),
   );
+}
 
-  const documentsToInsert = processedBuffers.map(p => p.mongoDBImage);
-  const insertResult = await ImageModel.insertMany(documentsToInsert, { session });
-
-  const savedImages = processedBuffers.map((processed, i) => ({
-    id: insertResult[i]._id.toString(),
-    mainBuffer: processed.mainBuffer,
-    thumbnailBuffer: processed.thumbnailBuffer,
-    mongoDBImage: processed.mongoDBImage,
-    mimetype: processed.file.mimetype,
-  }));
-
-  await Promise.all(
-    savedImages.map(async saved => {
-      const [mainResponse, thumbnailResponse] = await Promise.all([
+// Stores every image's main and thumbnail objects, or removes the ones it stored and
+// rethrows the first failure
+async function storeNewImages(images: NewImage[]): Promise<void> {
+  const results = await Promise.allSettled(
+    images.flatMap(({ id, main, thumbnail, mimetype }) =>
+      [
+        { Key: id, Body: main },
+        { Key: `${id}-thumb`, Body: thumbnail },
+      ].map(object =>
         r2Client().send(
           new PutObjectCommand({
             Bucket: imagesBucket(),
-            Body: saved.mainBuffer,
-            Key: saved.id,
-            ContentType: saved.mimetype,
+            ContentType: mimetype,
+            ...object,
           }),
         ),
-        r2Client().send(
-          new PutObjectCommand({
-            Bucket: imagesBucket(),
-            Body: saved.thumbnailBuffer,
-            Key: `${saved.id}-thumb`,
-            ContentType: saved.mimetype,
-          }),
-        ),
-      ]);
-
-      if (
-        mainResponse.$metadata.httpStatusCode !== 200 ||
-        thumbnailResponse.$metadata.httpStatusCode !== 200
-      ) {
-        throw new Error(`[IM-10.1] Unable to upload image to storage bucket`);
-      }
-    }),
+      ),
+    ),
   );
+  const failure = results.find(
+    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  );
+  if (failure) {
+    await deleteStoredImages(images.map(({ id }) => id));
+    throw failure.reason;
+  }
+}
 
-  const combinedImages = await Promise.all(
-    savedImages.map(async saved => {
-      const [mainUrl, thumbnailUrl] = await Promise.all([
-        getSignedUrl(
-          r2Client(),
-          new GetObjectCommand({ Bucket: imagesBucket(), Key: saved.id }),
-          { expiresIn: URL_EXPIRY_SECONDS },
+// Objects left behind take up space but show nothing, so a failure to remove them is
+// logged for cleanup rather than failing a request that has otherwise done its work
+async function deleteStoredImages(ids: Id[]): Promise<void> {
+  const keys = ids.flatMap(id => [id, `${id}-thumb`]);
+  const results = await Promise.allSettled(
+    keys.map(Key =>
+      r2Client().send(new DeleteObjectCommand({ Bucket: imagesBucket(), Key })),
+    ),
+  );
+  results.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      console.error(
+        `[IM-10.1] Unable to delete stored object ${keys[i]}: ${result.reason}`,
+      );
+    }
+  });
+}
+
+async function toCombinedImages(images: NewImage[]): Promise<CombinedImage[]> {
+  return Promise.all(
+    images.map(async ({ id, document }) => {
+      const { _id, ...stored } = document;
+      const [mainUrl, thumbnailUrl] = await Promise.all(
+        [id, `${id}-thumb`].map(Key =>
+          getSignedUrl(
+            r2Client(),
+            new GetObjectCommand({ Bucket: imagesBucket(), Key }),
+            {
+              expiresIn: URL_EXPIRY_SECONDS,
+            },
+          ),
         ),
-        getSignedUrl(
-          r2Client(),
-          new GetObjectCommand({ Bucket: imagesBucket(), Key: `${saved.id}-thumb` }),
-          { expiresIn: URL_EXPIRY_SECONDS },
-        ),
-      ]);
+      );
 
       return {
-        ...saved.mongoDBImage,
-        id: saved.id,
+        ...stored,
+        id,
         urlExpirationDate: new Date(
           new Date().getTime() + URL_EXPIRY_SECONDS * 1000,
         ).toISOString(),
         mainUrl,
         thumbnailUrl,
         articleAppearances: 0,
-      } as CombinedImage;
+      };
     }),
   );
-
-  return combinedImages;
 }
 
 // Remove all S3-specific properties and order remaining properties alphabetically
 function prepareImageForDB(
   image: Image,
-  editor: Editor,
-  isNew: boolean,
+  modificationInfo: ModificationInfo,
   mainMetadata?: sharp.Metadata,
   thumbnailMetadata?: sharp.Metadata,
 ): Omit<Image, 'id'> {
@@ -740,7 +669,7 @@ function prepareImageForDB(
     mainFileSize: mainMetadata?.size,
     mainHeight: mainMetadata?.height,
     mainWidth: mainMetadata?.width,
-    modificationInfo: creditEditor(image.modificationInfo, editor, isNew),
+    modificationInfo,
     thumbnailFileSize: thumbnailMetadata?.size,
     thumbnailHeight: thumbnailMetadata?.height,
     thumbnailWidth: thumbnailMetadata?.width,

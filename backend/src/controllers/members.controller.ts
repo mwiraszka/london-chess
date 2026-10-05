@@ -14,7 +14,7 @@ import {
   newMemberAccount,
   profileMemberFilter,
 } from '../models/member.model';
-import { modificationInfoTypes } from '../models/modification-info.model';
+import { ModificationInfo } from '../models/modification-info.model';
 import { clerkClient } from '../services/clerk.service';
 import { sendEmail } from '../services/email.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
@@ -45,7 +45,7 @@ import {
   toPublicMember,
   toPublicProfile,
 } from '../util/member-responses.util';
-import { Editor, creditEditor } from '../util/modification-info.util';
+import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
@@ -284,8 +284,7 @@ export async function addMember(
 
     const member = prepareMemberForDB(
       req.body as EditableMemberFields,
-      await findEditor(req.user.id),
-      true,
+      creditEditor(await findEditor(req.user.id), null),
     );
 
     if (req.query['notify'] !== 'true') {
@@ -345,8 +344,7 @@ export async function updateMember(
 
     const member = prepareMemberForDB(
       req.body as EditableMemberFields,
-      await findEditor(req.user.id),
-      false,
+      creditEditor(await findEditor(req.user.id), existing.modificationInfo),
     );
     if (existing.account && member.email !== existing.email) {
       res.status(400).json({
@@ -442,18 +440,29 @@ export async function updateMembers(
     }
 
     const editor = await findEditor(req.user.id);
+    const stored = new Map(
+      (
+        await MemberModel.find(
+          { _id: { $in: [...updates.keys()] } },
+          { modificationInfo: 1 },
+        ).lean<Pick<MemberRecord, '_id' | 'modificationInfo'>[]>()
+      ).map(record => [record._id.toString(), record.modificationInfo]),
+    );
     const session = await MemberModel.startSession();
     const updatedIds: Id[] = [];
     try {
       await session.withTransaction(async () => {
         for (const { id, ...member } of members) {
-          const result = await MemberModel.updateOne(
-            { _id: id },
-            { $set: prepareMemberForDB(member, editor, false) },
-            { session },
-          );
+          const original = stored.get(id);
+          const result = original
+            ? await MemberModel.updateOne(
+                { _id: id },
+                { $set: prepareMemberForDB(member, creditEditor(editor, original)) },
+                { session },
+              )
+            : null;
 
-          if (result.matchedCount === 0) {
+          if (!result?.matchedCount) {
             throw new Error(`NOT_FOUND:${id}`);
           }
           updatedIds.push(id);
@@ -517,26 +526,15 @@ export async function deleteMember(
 
 function validateEditableMember(body: unknown): string | null {
   const memberValidationResult = validateObjectByTypes(body, editableMemberTypes);
-  if (memberValidationResult !== 'valid') {
-    return `Invalid member: ${memberValidationResult.message}`;
-  }
-
-  const modInfoValidationResult = validateObjectByTypes(
-    (body as EditableMemberFields).modificationInfo,
-    modificationInfoTypes,
-  );
-  if (modInfoValidationResult !== 'valid') {
-    return `Invalid member modification info: ${modInfoValidationResult.message}`;
-  }
-
-  return null;
+  return memberValidationResult === 'valid'
+    ? null
+    : `Invalid member: ${memberValidationResult.message}`;
 }
 
 // Remove id property and order remaining properties alphabetically
 function prepareMemberForDB(
   member: EditableMemberFields,
-  editor: Editor,
-  isNew: boolean,
+  modificationInfo: ModificationInfo,
 ): EditableMemberFields {
   return {
     chessComUsername: member.chessComUsername,
@@ -547,7 +545,7 @@ function prepareMemberForDB(
     isActive: member.isActive,
     lastName: member.lastName,
     lichessUsername: member.lichessUsername,
-    modificationInfo: creditEditor(member.modificationInfo, editor, isNew),
+    modificationInfo,
     peakRating: member.peakRating,
     phoneNumber: member.phoneNumber,
     rating: member.rating,
@@ -614,7 +612,7 @@ async function saveWithNewAccount({
     const email = buildWelcomeEmail(
       record,
       temporaryPassword,
-      siteUrl,
+      `${siteUrl}/account`,
       profileUrlFor(siteUrl, record),
     );
     await sendEmail(record.email, email);

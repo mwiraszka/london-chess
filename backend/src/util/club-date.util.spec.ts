@@ -12,7 +12,5 @@ describe('clubToday', () => {
     vi.setSystemTime(new Date('2026-07-01T12:00:00.000Z'));
 
     expect(clubToday()).toBe('2026-07-01');
-
-    vi.useRealTimers();
   });
 });

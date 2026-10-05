@@ -135,16 +135,23 @@ describe('articles routes', () => {
       expect(await ArticleModel.countDocuments()).toBe(0);
     });
 
-    it('should reject an article with malformed modification info', async () => {
+    it('should credit the signed-in admin with the article, made now', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T12:00:00.000Z'));
       await createAdmin(ADMIN);
 
       const response = await request(app)
         .post('/v1/articles')
         .set('Authorization', bearer(ADMIN))
-        .send({ ...articlePayload(), modificationInfo: { createdBy: 1 } });
+        .send(articlePayload());
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toMatch(/^Invalid article modification info/);
+      const saved = await ArticleModel.findById(response.body.data).lean();
+      expect(saved?.modificationInfo).toMatchObject({
+        createdBy: 'Ada Admin',
+        dateCreated: '2026-10-05T12:00:00.000Z',
+        lastEditedBy: 'Ada Admin',
+        dateLastEdited: '2026-10-05T12:00:00.000Z',
+      });
     });
 
     it('should respond with a server error when the article cannot be saved', async () => {
@@ -160,21 +167,32 @@ describe('articles routes', () => {
   });
 
   describe('PUT /v1/articles/:id', () => {
-    it('should update the article and keep its original creator', async () => {
+    it('should update the article and keep its original creator, whatever the request says', async () => {
       await createAdmin(ADMIN);
       const id = await createArticle();
 
       const response = await request(app)
         .put(`/v1/articles/${id}`)
         .set('Authorization', bearer(ADMIN))
-        .send(articlePayload({ id, title: 'Renamed' }));
+        .send(
+          articlePayload({
+            id,
+            title: 'Renamed',
+            modificationInfo: {
+              ...MODIFICATION_INFO,
+              createdBy: 'Forged',
+              dateCreated: '2000-01-01T00:00:00.000Z',
+            },
+          }),
+        );
 
       expect(response.status).toBe(200);
       expect(response.body.data).toBe(id);
       const saved = await ArticleModel.findById(id).lean();
       expect(saved?.title).toBe('Renamed');
       expect(saved?.modificationInfo).toMatchObject({
-        createdBy: 'Someone Else',
+        createdBy: MODIFICATION_INFO.createdBy,
+        dateCreated: MODIFICATION_INFO.dateCreated,
         lastEditedBy: 'Ada Admin',
       });
     });
@@ -209,24 +227,19 @@ describe('articles routes', () => {
       expect(response.status).toBe(404);
     });
 
-    it('should reject invalid articles and modification info', async () => {
+    it('should reject an invalid article', async () => {
       await createAdmin(ADMIN);
       const id = await createArticle();
 
-      const invalidArticle = await request(app)
+      const response = await request(app)
         .put(`/v1/articles/${id}`)
         .set('Authorization', bearer(ADMIN))
         .send({ title: 5 });
-      const invalidInfo = await request(app)
-        .put(`/v1/articles/${id}`)
-        .set('Authorization', bearer(ADMIN))
-        .send({ ...articlePayload(), modificationInfo: {} });
 
-      expect(invalidArticle.status).toBe(400);
-      expect(invalidInfo.status).toBe(400);
+      expect(response.status).toBe(400);
     });
 
-    it('should respond with a server error for a malformed id', async () => {
+    it('should respond with not found for a malformed id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
@@ -234,7 +247,7 @@ describe('articles routes', () => {
         .set('Authorization', bearer(ADMIN))
         .send(articlePayload());
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
     });
   });
 
@@ -261,14 +274,14 @@ describe('articles routes', () => {
       expect(response.status).toBe(404);
     });
 
-    it('should respond with a server error for a malformed id', async () => {
+    it('should respond with not found for a malformed id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
         .delete('/v1/articles/not-an-id')
         .set('Authorization', bearer(ADMIN));
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
     });
   });
 });

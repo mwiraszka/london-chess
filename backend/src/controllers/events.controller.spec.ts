@@ -34,10 +34,6 @@ async function createEvent(overrides: Partial<Event> = {}): Promise<string> {
 describe('events routes', () => {
   useTestDatabase();
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   describe('GET /v1/events', () => {
     it('should leave out past events when asked', async () => {
       vi.useFakeTimers({ toFake: ['Date'] });
@@ -140,7 +136,9 @@ describe('events routes', () => {
   });
 
   describe('POST /v1/events', () => {
-    it('should save the event credited to the signed-in admin', async () => {
+    it('should save the event credited to the signed-in admin, made now', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T12:00:00.000Z'));
       await createAdmin(ADMIN);
 
       const response = await request(app)
@@ -151,23 +149,22 @@ describe('events routes', () => {
       expect(response.status).toBe(201);
       const saved = await EventModel.findById(response.body.data).lean();
       expect(saved?.title).toBe('Blitz night');
-      expect(saved?.modificationInfo.createdBy).toBe('Ada Admin');
+      expect(saved?.modificationInfo).toMatchObject({
+        createdBy: 'Ada Admin',
+        dateCreated: '2026-10-05T12:00:00.000Z',
+        dateLastEdited: '2026-10-05T12:00:00.000Z',
+      });
     });
 
-    it('should reject invalid events and modification info', async () => {
+    it('should reject an invalid event', async () => {
       await createAdmin(ADMIN);
 
-      const invalidEvent = await request(app)
+      const response = await request(app)
         .post('/v1/events')
         .set('Authorization', bearer(ADMIN))
         .send({ ...eventPayload(), title: 5 });
-      const invalidInfo = await request(app)
-        .post('/v1/events')
-        .set('Authorization', bearer(ADMIN))
-        .send({ ...eventPayload(), modificationInfo: {} });
 
-      expect(invalidEvent.status).toBe(400);
-      expect(invalidInfo.status).toBe(400);
+      expect(response.status).toBe(400);
       expect(await EventModel.countDocuments()).toBe(0);
     });
 
@@ -184,19 +181,28 @@ describe('events routes', () => {
   });
 
   describe('PUT /v1/events/:id', () => {
-    it('should update the event', async () => {
+    it('should update the event, keeping who made it whatever the request says', async () => {
       await createAdmin(ADMIN);
       const id = await createEvent();
 
       const response = await request(app)
         .put(`/v1/events/${id}`)
         .set('Authorization', bearer(ADMIN))
-        .send(eventPayload({ id, title: 'Rapid night' }));
+        .send(
+          eventPayload({
+            id,
+            title: 'Rapid night',
+            modificationInfo: { ...MODIFICATION_INFO, createdBy: 'Forged' },
+          }),
+        );
 
       expect(response.status).toBe(200);
       const saved = await EventModel.findById(id).lean();
       expect(saved?.title).toBe('Rapid night');
-      expect(saved?.modificationInfo.lastEditedBy).toBe('Ada Admin');
+      expect(saved?.modificationInfo).toMatchObject({
+        createdBy: MODIFICATION_INFO.createdBy,
+        lastEditedBy: 'Ada Admin',
+      });
     });
 
     it('should accept a save that changes nothing', async () => {
@@ -232,24 +238,19 @@ describe('events routes', () => {
       });
     });
 
-    it('should reject invalid events and modification info', async () => {
+    it('should reject an invalid event', async () => {
       await createAdmin(ADMIN);
       const id = await createEvent();
 
-      const invalidEvent = await request(app)
+      const response = await request(app)
         .put(`/v1/events/${id}`)
         .set('Authorization', bearer(ADMIN))
         .send({ type: false });
-      const invalidInfo = await request(app)
-        .put(`/v1/events/${id}`)
-        .set('Authorization', bearer(ADMIN))
-        .send({ ...eventPayload(), modificationInfo: {} });
 
-      expect(invalidEvent.status).toBe(400);
-      expect(invalidInfo.status).toBe(400);
+      expect(response.status).toBe(400);
     });
 
-    it('should respond with a server error for a malformed id', async () => {
+    it('should respond with not found for a malformed id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
@@ -257,7 +258,7 @@ describe('events routes', () => {
         .set('Authorization', bearer(ADMIN))
         .send(eventPayload());
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
     });
   });
 
@@ -284,14 +285,14 @@ describe('events routes', () => {
       expect(response.status).toBe(404);
     });
 
-    it('should respond with a server error for a malformed id', async () => {
+    it('should respond with not found for a malformed id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
         .delete('/v1/events/not-an-id')
         .set('Authorization', bearer(ADMIN));
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
     });
   });
 });

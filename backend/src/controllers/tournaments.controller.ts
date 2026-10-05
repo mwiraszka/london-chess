@@ -2,10 +2,6 @@ import { Request, Response } from 'express';
 
 import { ApiResponse } from '../models/api-response.model';
 import {
-  ModificationInfo,
-  modificationInfoTypes,
-} from '../models/modification-info.model';
-import {
   GameInput,
   ImportChanges,
   MemberTournamentResult,
@@ -48,7 +44,6 @@ import {
   sectionsError,
   validateTournamentInput,
 } from '../util/tournament-input.util';
-import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 const MAX_MATCHED_NAMES = 2000;
 
@@ -74,13 +69,6 @@ function invalidInput(body: unknown): string | null {
   const inputResult = validateTournamentInput(body);
   if (inputResult !== 'valid') {
     return `Unable to save the tournament because ${withoutFullStop(inputResult.message)}.`;
-  }
-  const infoResult = validateObjectByTypes(
-    (body as TournamentInput).modificationInfo,
-    modificationInfoTypes,
-  );
-  if (infoResult !== 'valid') {
-    return `Unable to save the tournament because its modification info is invalid: ${withoutFullStop(infoResult.message)}.`;
   }
   return null;
 }
@@ -210,7 +198,7 @@ export async function addTournament(
         ? await toStoredSections(input.sections, [], input.format)
         : [],
       registrations: [],
-      modificationInfo: creditEditor(input.modificationInfo, editor, true),
+      modificationInfo: creditEditor(editor, null),
     });
 
     res.status(201).json({ data: number });
@@ -258,17 +246,8 @@ export async function updateTournament(
     // A tournament first given games through the site files them under its own name
     const gameArchiveTournament = record.gameArchiveTournament ?? input.name.trim();
     if (games.length) {
-      const now = new Date().toISOString();
-      const gamesInfo: ModificationInfo = {
-        createdBy: editor.name,
-        createdByNumber: editor.number,
-        dateCreated: now,
-        lastEditedBy: editor.name,
-        lastEditedByNumber: editor.number,
-        dateLastEdited: now,
-      };
       // Games go in first, so saving again after a failure adds none of them twice
-      await archiveGames(gameArchiveTournament, games, gamesInfo);
+      await archiveGames(gameArchiveTournament, games, creditEditor(editor, null));
     }
     await TournamentModel.updateOne(
       { number },
@@ -277,11 +256,7 @@ export async function updateTournament(
           ...toDetails(input),
           ...(sections ? { sections } : {}),
           ...(games.length ? { gameArchiveTournament } : {}),
-          modificationInfo: creditEditor(
-            input.modificationInfo,
-            editor,
-            !record.modificationInfo,
-          ),
+          modificationInfo: creditEditor(editor, record.modificationInfo ?? null),
         },
       },
     );

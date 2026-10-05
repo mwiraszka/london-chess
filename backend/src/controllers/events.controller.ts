@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
-import { Types } from 'mongoose';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import { Event, EventModel, eventSortingConfig, eventTypes } from '../models/event.model';
-import { modificationInfoTypes } from '../models/modification-info.model';
+import { ModificationInfo } from '../models/modification-info.model';
 import { findEditor } from '../services/member-accounts.service';
 import { widestEventIds } from '../services/widest.service';
 import { isCollectionId } from '../util/is-collection-id.util';
-import { Editor, creditEditor } from '../util/modification-info.util';
+import { creditEditor } from '../util/modification-info.util';
 import {
   buildPaginationQuery,
   findPage,
@@ -98,21 +97,9 @@ export async function addEvent(
       return;
     }
 
-    const modInfoValidationResult = validateObjectByTypes(
-      (req.body as Event).modificationInfo,
-      modificationInfoTypes,
-    );
-    if (modInfoValidationResult !== 'valid') {
-      res.status(400).json({
-        message: `Invalid event modification info: ${modInfoValidationResult.message}`,
-      });
-      return;
-    }
-
     const preparedEvent = prepareEventForDB(
       req.body,
-      await findEditor(req.user.id),
-      true,
+      creditEditor(await findEditor(req.user.id), null),
     );
     const result = await EventModel.create(preparedEvent);
 
@@ -137,28 +124,22 @@ export async function updateEvent(
       return;
     }
 
-    const modInfoValidationResult = validateObjectByTypes(
-      (req.body as Event).modificationInfo,
-      modificationInfoTypes,
-    );
-    if (modInfoValidationResult !== 'valid') {
-      res.status(400).json({
-        message: `Invalid event modification info: ${modInfoValidationResult.message}`,
-      });
-      return;
-    }
+    const stored = isCollectionId(id)
+      ? await EventModel.findById(id, { modificationInfo: 1 }).lean()
+      : null;
+    const result = stored
+      ? await EventModel.updateOne(
+          { _id: id },
+          {
+            $set: prepareEventForDB(
+              req.body,
+              creditEditor(await findEditor(req.user.id), stored.modificationInfo),
+            ),
+          },
+        )
+      : null;
 
-    const preparedEvent = prepareEventForDB(
-      req.body,
-      await findEditor(req.user.id),
-      false,
-    );
-    const result = await EventModel.updateOne(
-      { _id: new Types.ObjectId(id) },
-      { $set: preparedEvent },
-    );
-
-    if (result.matchedCount === 0) {
+    if (!result?.matchedCount) {
       res.status(404).json({
         message: `Unable to update event [${id}] because it could not be found.`,
       });
@@ -178,9 +159,9 @@ export async function deleteEvent(
   try {
     const { id } = req.params;
 
-    const result = await EventModel.deleteOne({ _id: new Types.ObjectId(id) });
+    const result = isCollectionId(id) ? await EventModel.deleteOne({ _id: id }) : null;
 
-    if (result.deletedCount === 0) {
+    if (!result?.deletedCount) {
       res.status(404).json({
         message: `Unable to delete event [${id}] because it could not be found.`,
       });
@@ -196,14 +177,13 @@ export async function deleteEvent(
 // Remove id property and order remaining properties alphabetically
 function prepareEventForDB(
   event: Event,
-  editor: Editor,
-  isNew: boolean,
+  modificationInfo: ModificationInfo,
 ): Omit<Event, 'id'> {
   return {
     articleId: event.articleId,
     details: event.details,
     eventDate: event.eventDate,
-    modificationInfo: creditEditor(event.modificationInfo, editor, isNew),
+    modificationInfo,
     title: event.title,
     type: event.type,
   };

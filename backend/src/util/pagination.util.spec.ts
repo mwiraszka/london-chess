@@ -193,10 +193,6 @@ describe('parsePaginationParams', () => {
     vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should read the page, sorting, search and known filters from the query', async () => {
     const response = await request(app).get('/').query({
       page: '2',

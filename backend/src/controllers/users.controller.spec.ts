@@ -42,7 +42,7 @@ function accountRequest(overrides: Record<string, unknown> = {}) {
     firstName: 'Jane',
     lastName: 'Doe',
     email: 'jane@example.com',
-    yearOfBirth: 1990,
+    yearOfBirth: '1990',
     city: 'London',
     verificationCode: '000000',
     ...overrides,
@@ -56,10 +56,6 @@ describe('users routes', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
     vi.stubEnv('R2_AVATARS_PUBLIC_URL', AVATARS);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   describe('POST /v1/users/account-requests/verification', () => {
@@ -141,8 +137,8 @@ describe('users routes', () => {
       [{ firstName: ' ' }, 'First and last name are required.'],
       [{ lastName: 5 }, 'First and last name are required.'],
       [{ email: 'nope' }, 'A valid email address is required.'],
-      [{ yearOfBirth: 2027 }, 'A valid year of birth is required.'],
-      [{ yearOfBirth: '1990' }, 'A valid year of birth is required.'],
+      [{ yearOfBirth: '2027' }, 'Year of birth must be a year from 1900 to 2026.'],
+      [{ yearOfBirth: 1990 }, 'Year of birth must be text.'],
       [{ verificationCode: '12345' }, 'A six-digit verification code is required.'],
     ])(
       'should reject the request %o before checking the code',
@@ -210,15 +206,37 @@ describe('users routes', () => {
       [{ city: 'x'.repeat(51) }, 'City must be 50 characters or fewer.'],
       [{ phoneNumber: 5195550100 }, 'Phone number must be text.'],
       [{ lichessUsername: 'a' }, expect.stringMatching(/^Lichess username must be/)],
-    ])('should reject the details %o after a valid code', async (overrides, message) => {
+    ])(
+      'should reject the details %o, keeping the code for the corrected request',
+      async (overrides, message) => {
+        const code = await verificationCode();
+        const rejected = await request(app)
+          .post('/v1/users/account-requests')
+          .send(accountRequest({ ...overrides, verificationCode: code }));
+
+        const corrected = await request(app)
+          .post('/v1/users/account-requests')
+          .send(accountRequest({ verificationCode: code }));
+
+        expect(rejected.status).toBe(400);
+        expect(rejected.body.message).toEqual(message);
+        expect(corrected.status).toBe(200);
+      },
+    );
+
+    it('should accept a code only once, however many requests race for it', async () => {
       const code = await verificationCode();
 
-      const response = await request(app)
-        .post('/v1/users/account-requests')
-        .send(accountRequest({ ...overrides, verificationCode: code }));
+      const responses = await Promise.all(
+        Array.from({ length: 3 }, () =>
+          request(app)
+            .post('/v1/users/account-requests')
+            .send(accountRequest({ verificationCode: code })),
+        ),
+      );
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toEqual(message);
+      expect(responses.map(({ status }) => status).sort()).toEqual([200, 400, 400]);
+      expect(sendAdminEmail).toHaveBeenCalledOnce();
     });
 
     it('should respond with a server error when the admin email cannot be sent', async () => {
@@ -249,57 +267,12 @@ describe('users routes', () => {
       });
     });
 
-    it('should point avatar URLs saved under a retired prefix at the current location', async () => {
-      await createAccountHolder({
-        avatarOriginalUrl: 'https://old.test/avatars/user_test/original',
-        avatarUrl: 'https://old.test/avatars/user_test/cropped',
-      });
-
-      const response = await request(app)
-        .get('/v1/users/me')
-        .set('Authorization', bearer(USER));
-
-      expect(response.body.data).toMatchObject({
-        avatarOriginalUrl: `${AVATARS}/avatars/user_test/original`,
-        avatarUrl: `${AVATARS}/avatars/user_test/cropped`,
-      });
-      const saved = await MemberModel.findOne({ 'account.clerkUserId': USER }).lean();
-      expect(saved?.account?.avatarOriginalUrl).toBe(
-        `${AVATARS}/avatars/user_test/original`,
-      );
-    });
-
-    it('should repair only the original when there is no cropped avatar', async () => {
-      await createAccountHolder({
-        avatarOriginalUrl: 'https://old.test/avatars/user_test/original',
-      });
-
-      const response = await request(app)
-        .get('/v1/users/me')
-        .set('Authorization', bearer(USER));
-
-      expect(response.body.data.avatarUrl).toBeNull();
-    });
-
     it('should respond with not found for a user without a member record', async () => {
       const response = await request(app)
         .get('/v1/users/me')
         .set('Authorization', bearer(USER));
 
       expect(response.status).toBe(404);
-    });
-
-    it('should respond with a server error when avatar storage is not configured', async () => {
-      vi.stubEnv('R2_AVATARS_PUBLIC_URL', '');
-      await createAccountHolder({
-        avatarOriginalUrl: `${AVATARS}/avatars/user_test/original`,
-      });
-
-      const response = await request(app)
-        .get('/v1/users/me')
-        .set('Authorization', bearer(USER));
-
-      expect(response.status).toBe(500);
     });
   });
 
@@ -496,20 +469,34 @@ describe('users routes', () => {
       });
     });
 
-    it('should clear a crop state that is null or malformed', async () => {
+    it('should clear the crop state when sent null', async () => {
       await createAccountHolder({ avatarCropState: { zoom: 2, offsetX: 0, offsetY: 0 } });
 
-      const cleared = await request(app)
+      const response = await request(app)
         .patch('/v1/users/me')
         .set('Authorization', bearer(USER))
         .send({ avatarCropState: null });
-      const malformed = await request(app)
+
+      expect(response.body.data.avatarCropState).toBeNull();
+    });
+
+    it('should reject a malformed crop state, keeping the saved one', async () => {
+      await createAccountHolder({ avatarCropState: { zoom: 2, offsetX: 0, offsetY: 0 } });
+
+      const response = await request(app)
         .patch('/v1/users/me')
         .set('Authorization', bearer(USER))
         .send({ avatarCropState: { zoom: 'big' } });
 
-      expect(cleared.body.data.avatarCropState).toBeNull();
-      expect(malformed.body.data.avatarCropState).toBeNull();
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe(
+        'Crop state must give a numeric zoom, offsetX and offsetY.',
+      );
+      expect((await MemberModel.findOne().lean())?.account?.avatarCropState).toEqual({
+        zoom: 2,
+        offsetX: 0,
+        offsetY: 0,
+      });
     });
 
     it('should reject a Clerk image or preference of the wrong type', async () => {
@@ -761,7 +748,7 @@ describe('users routes', () => {
       expect(saved?.account?.clerkImagePending).toBe(false);
     });
 
-    it('should ignore a crop state that is not valid JSON', async () => {
+    it('should reject a crop state that is not valid JSON', async () => {
       await createAccountHolder();
 
       const response = await request(app)
@@ -771,7 +758,8 @@ describe('users routes', () => {
         .attach('cropped', PNG, { filename: 'cropped.png', contentType: 'image/png' })
         .field('cropState', '{');
 
-      expect(response.body.data.avatarCropState).toBeNull();
+      expect(response.status).toBe(400);
+      expect(send).not.toHaveBeenCalled();
     });
 
     it('should need a supported image and its cropped version', async () => {
@@ -786,15 +774,23 @@ describe('users routes', () => {
         .post('/v1/users/me/avatar')
         .set('Authorization', bearer(USER))
         .attach('file', PNG, { filename: 'photo.png', contentType: 'image/png' });
+      const wrongCropType = await request(app)
+        .post('/v1/users/me/avatar')
+        .set('Authorization', bearer(USER))
+        .attach('file', PNG, { filename: 'photo.png', contentType: 'image/png' })
+        .attach('cropped', PNG, { filename: 'cropped.html', contentType: 'text/html' });
 
       expect(missing.body.message).toBe('File is required.');
       expect(wrongType.body.message).toBe('File must be a JPEG, PNG, or WebP image.');
       expect(withoutCrop.body.message).toBe('Cropped file is required.');
+      expect(wrongCropType.body.message).toBe(
+        'Cropped file must be a JPEG, PNG, or WebP image.',
+      );
       expect(send).not.toHaveBeenCalled();
     });
 
-    it('should turn away an image over 5 MB', async () => {
-      const oversized = Buffer.alloc(5 * 1024 * 1024 + 1);
+    it('should turn away an image over 3 MB', async () => {
+      const oversized = Buffer.alloc(3 * 1024 * 1024 + 1);
 
       const response = await request(app)
         .post('/v1/users/me/avatar')
@@ -802,7 +798,7 @@ describe('users routes', () => {
         .attach('file', oversized, { filename: 'photo.png', contentType: 'image/png' });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('File must be under 5 MB.');
+      expect(response.body.message).toBe('File must be under 3 MB.');
       expect(send).not.toHaveBeenCalled();
     });
 
@@ -850,12 +846,20 @@ describe('users routes', () => {
       });
     });
 
-    it('should need the cropped image', async () => {
-      const response = await request(app)
+    it('should need a supported cropped image', async () => {
+      const missing = await request(app)
         .patch('/v1/users/me/avatar')
         .set('Authorization', bearer(USER));
+      const wrongType = await request(app)
+        .patch('/v1/users/me/avatar')
+        .set('Authorization', bearer(USER))
+        .attach('cropped', PNG, { filename: 'cropped.html', contentType: 'text/html' });
 
-      expect(response.status).toBe(400);
+      expect(missing.status).toBe(400);
+      expect(wrongType.body.message).toBe(
+        'Cropped file must be a JPEG, PNG, or WebP image.',
+      );
+      expect(send).not.toHaveBeenCalled();
     });
 
     it('should respond with not found without a member record', async () => {

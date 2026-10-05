@@ -57,13 +57,4 @@ describe('validateObjectByTypes', () => {
 
     expect(result).toEqual(new Error('2 properties missing on the object'));
   });
-
-  it('should ignore and remove a Mongo version key', () => {
-    const object = { name: 'Jane', note: null, details: {}, __v: 0 };
-
-    const result = validateObjectByTypes(object, TYPES);
-
-    expect(result).toBe('valid');
-    expect(object).not.toHaveProperty('__v');
-  });
 });

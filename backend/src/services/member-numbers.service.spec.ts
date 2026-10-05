@@ -1,3 +1,4 @@
+import { MemberModel } from '../models/member.model';
 import { useTestDatabase } from '../testing/database';
 import { createMember, readMember, startMemberNumbers } from '../testing/fixtures';
 import { assignMemberNumber } from './member-numbers.service';
@@ -32,11 +33,23 @@ describe('assignMemberNumber', () => {
     await expect(assignMemberNumber('64b7f0c2a1d3e4f5a6b7c8d9')).resolves.toBeUndefined();
   });
 
-  it('should refuse to number a member before the counter is set up', async () => {
+  it('should carry on past the highest number when the counter is not set up', async () => {
+    await createMember({ number: 41 });
     const member = await createMember();
 
-    await expect(assignMemberNumber(member._id.toString())).rejects.toThrow(
-      'The member number counter has not been initialized.',
-    );
+    await assignMemberNumber(member._id.toString());
+
+    expect((await readMember(member._id)).number).toBe(42);
+  });
+
+  it('should never hand out the number of a member who was deleted', async () => {
+    const leaver = await createMember();
+    const joiner = await createMember();
+    await assignMemberNumber(leaver._id.toString());
+    await MemberModel.deleteOne({ _id: leaver._id });
+
+    await assignMemberNumber(joiner._id.toString());
+
+    expect((await readMember(joiner._id)).number).toBe(2);
   });
 });
