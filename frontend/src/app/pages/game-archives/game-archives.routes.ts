@@ -1,5 +1,4 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { gameGuard } from '@app/guards/game.guard';
 import { widestGamesResolver } from '@app/resolvers/widest.resolvers';
@@ -7,7 +6,7 @@ import { widestGamesResolver } from '@app/resolvers/widest.resolvers';
 import { GameArchivesPageComponent } from './game-archives-page.component';
 import { GamePageComponent } from './game-page.component';
 
-const routes: Routes = [
+export const GAME_ARCHIVES_ROUTES: Routes = [
   {
     path: '',
     component: GameArchivesPageComponent,
@@ -23,9 +22,3 @@ const routes: Routes = [
     redirectTo: '',
   },
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
-export class GameArchivesPageRoutingModule {}

@@ -1,12 +1,11 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { memberProfileGuard } from '@app/guards/member-profile.guard';
 import { widestMembersResolver } from '@app/resolvers/widest.resolvers';
 
 import { MembersPageComponent } from './members-page.component';
 
-const routes: Routes = [
+export const MEMBERS_ROUTES: Routes = [
   {
     path: '',
     component: MembersPageComponent,
@@ -23,9 +22,3 @@ const routes: Routes = [
     redirectTo: '/',
   },
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
-export class MembersPageRoutingModule {}

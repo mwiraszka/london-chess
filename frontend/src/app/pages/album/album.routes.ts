@@ -1,12 +1,11 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { accessGuard } from '@app/guards/auth.guard';
 import { unsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
 
 import { AlbumEditorPageComponent } from './album-editor-page.component';
 
-const routes: Routes = [
+export const ALBUM_ROUTES: Routes = [
   {
     path: 'add',
     component: AlbumEditorPageComponent,
@@ -26,9 +25,3 @@ const routes: Routes = [
     redirectTo: '/',
   },
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
-export class AlbumPageRoutingModule {}

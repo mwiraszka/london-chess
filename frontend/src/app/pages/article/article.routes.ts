@@ -1,5 +1,4 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { articleGuard } from '@app/guards/article.guard';
 import { accessGuard } from '@app/guards/auth.guard';
@@ -9,7 +8,7 @@ import { unsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
 import { ArticleEditorPageComponent } from './article-editor-page.component';
 import { ArticleViewerPageComponent } from './article-viewer-page.component';
 
-const routes: Routes = [
+export const ARTICLE_ROUTES: Routes = [
   {
     path: 'view/:article_id',
     component: ArticleViewerPageComponent,
@@ -34,9 +33,3 @@ const routes: Routes = [
     redirectTo: '/',
   },
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
-export class ArticlePageRoutingModule {}

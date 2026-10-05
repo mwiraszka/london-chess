@@ -1,17 +1,12 @@
 import { applyPalette, derivePalette, provideEagamiUi } from '@eagami/ui';
 import { EffectsModule } from '@ngrx/effects';
-import { StoreRouterConnectingModule, routerReducer } from '@ngrx/router-store';
+import { StoreRouterConnectingModule } from '@ngrx/router-store';
 import { Action, StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import * as Sentry from '@sentry/angular';
 import { MarkdownModule } from 'ngx-markdown';
 
-import {
-  provideHttpClient,
-  withInterceptorsFromDi,
-  withJsonpSupport,
-  withXhr,
-} from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import {
   ErrorHandler,
   enableProdMode,
@@ -19,9 +14,14 @@ import {
   inject,
   provideAppInitializer,
 } from '@angular/core';
-import { BrowserModule, bootstrapApplication } from '@angular/platform-browser';
+import { bootstrapApplication } from '@angular/platform-browser';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withRouterConfig,
+} from '@angular/router';
 
-import { AppRoutingModule } from '@app/app-routing.module';
+import { APP_ROUTES } from '@app/app.routes';
 import {
   AuthInterceptorProvider,
   CacheControlInterceptorProvider,
@@ -40,7 +40,6 @@ import { MembersStoreModule } from '@app/store/members';
 import { MetaState, metaReducers } from '@app/store/meta-reducers';
 import { NavStoreModule } from '@app/store/nav';
 import { TournamentsStoreModule } from '@app/store/tournaments';
-import { actionSanitizer } from '@app/utils';
 
 import { environment } from '@env';
 
@@ -75,11 +74,9 @@ bootstrapApplication(AppComponent, {
   providers: [
     { provide: ErrorHandler, useValue: Sentry.createErrorHandler() },
     importProvidersFrom(
-      AppRoutingModule,
       AppStoreModule,
       ArticlesStoreModule,
       AuthStoreModule,
-      BrowserModule,
       EffectsModule.forRoot([]),
       EventsStoreModule,
       GamesStoreModule,
@@ -88,7 +85,7 @@ bootstrapApplication(AppComponent, {
       MembersStoreModule,
       NavStoreModule,
       StoreModule.forRoot<MetaState, Action<string>>(
-        { routerState: routerReducer },
+        {},
         {
           metaReducers,
           runtimeChecks: {
@@ -101,12 +98,16 @@ bootstrapApplication(AppComponent, {
         name: 'London Chess Club - NgRx Store DevTools',
         logOnly: environment.production,
         maxAge: 100,
-        actionSanitizer,
       }),
       StoreRouterConnectingModule.forRoot(),
       TournamentsStoreModule,
     ),
-    provideHttpClient(withXhr(), withInterceptorsFromDi(), withJsonpSupport()),
+    provideRouter(
+      APP_ROUTES,
+      withComponentInputBinding(),
+      withRouterConfig({ onSameUrlNavigation: 'reload' }),
+    ),
+    provideHttpClient(withXhr(), withInterceptorsFromDi()),
     provideEagamiUi(),
     provideAppInitializer(async () => {
       const clerkService = inject(ClerkService);

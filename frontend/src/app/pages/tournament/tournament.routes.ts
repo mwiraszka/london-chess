@@ -1,5 +1,4 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { accessGuard } from '@app/guards/auth.guard';
 import { tournamentGuard } from '@app/guards/tournament.guard';
@@ -7,7 +6,7 @@ import { unsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
 
 import { TournamentEditorPageComponent } from './tournament-editor-page.component';
 
-const routes: Routes = [
+export const TOURNAMENT_ROUTES: Routes = [
   {
     path: 'add',
     component: TournamentEditorPageComponent,
@@ -27,9 +26,3 @@ const routes: Routes = [
     redirectTo: '/tournaments',
   },
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
-export class TournamentEditorRoutingModule {}
