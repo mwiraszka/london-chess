@@ -3,3 +3,7 @@
 .lcc-link {
   @include lcc-link;
 }
+
+:is(p, li) .lcc-link {
+  @include lcc-link-in-text;
+}

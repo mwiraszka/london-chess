@@ -33,6 +33,7 @@
   markdown ::ng-deep {
     a {
       @include lcc-link;
+      @include lcc-link-in-text;
     }
 
     li {

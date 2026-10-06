@@ -67,6 +67,12 @@ $breakpoints: (
   }
 }
 
+// A link inside running text needs more than its colour to stand apart from the words
+// around it, so its underline shows at rest too
+@mixin lcc-link-in-text {
+  text-decoration-color: var(--lcc-color--linkUnderline);
+}
+
 @mixin lcc-link {
   @include lcc-link-underline;
 

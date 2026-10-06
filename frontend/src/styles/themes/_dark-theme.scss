@@ -19,8 +19,8 @@ body[data-theme='dark'] {
 
   --lcc-color--authDrawer-background: #{clr(grayscale, black-15)};
 
-  --lcc-color--accountPage-danger: #{clr(warning, lighter)};
-  --lcc-color--accountPage-dangerHover: #{clr(warning, light)};
+  --lcc-color--accountPage-danger: #{clr(warning, light)};
+  --lcc-color--accountPage-dangerHover: #{clr(warning, base)};
 
   --lcc-color--adminToolbar-adminIcon: #{clr(admin, base, 0.1)};
   --lcc-color--adminToolbar-boxShadow: #{clr(grayscale, black-20, 0.7)};
@@ -35,14 +35,14 @@ body[data-theme='dark'] {
   --lcc-color--article-bannerImageBackground: #{clr(grayscale, black-15)};
   --lcc-color--article-bannerImageHeaderBackground: #{clr(grayscale, white-98, 0.8)};
   --lcc-color--article-bannerImageHeaderText: #{clr(grayscale, black-2)};
-  --lcc-color--article-dateCreatedText: #{clr(grayscale, gray-65)};
+  --lcc-color--article-dateCreatedText: #{clr(grayscale, gray-75)};
   --lcc-color--article-editorText: #{clr(grayscale, gray-65)};
   --lcc-color--article-markdownContainerBackground: #{clr(grayscale, black-15)};
 
   --lcc-color--articleForm-markdownPreviewBoxShadow: #{clr(grayscale, gray-25, 0.5)};
   --lcc-color--articleForm-previewHeaderText: #{clr(grayscale, gray-65)};
 
-  --lcc-color--articleGrid-articleCreationDateText: #{clr(grayscale, gray-65)};
+  --lcc-color--articleGrid-articleCreationDateText: #{clr(grayscale, white-80)};
   --lcc-color--articleGrid-articleHeaderText: #{clr(grayscale, white-90)};
   --lcc-color--articleGrid-articleSummarySecondaryText: #{clr(grayscale, gray-75)};
   --lcc-color--articleGrid-articleSummaryText: #{clr(grayscale, white-85)};
@@ -72,10 +72,10 @@ body[data-theme='dark'] {
   --lcc-color--eventsCalendar-eventTypeText: #{clr(grayscale, white-95)};
   --lcc-color--eventsCalendar-gridBorder: #{clr(grayscale, gray-35)};
   --lcc-color--eventsCalendar-insideMonthBackground: #{clr(grayscale, black-20)};
-  --lcc-color--eventsCalendar-insideMonthText: #{clr(grayscale, gray-50)};
+  --lcc-color--eventsCalendar-insideMonthText: #{clr(grayscale, gray-75)};
   --lcc-color--eventsCalendar-monthHeaderText: #{clr(grayscale, white-80)};
   --lcc-color--eventsCalendar-outsideMonthBackground: #{clr(grayscale, black-15)};
-  --lcc-color--eventsCalendar-outsideMonthText: #{clr(grayscale, gray-35, 0.5)};
+  --lcc-color--eventsCalendar-outsideMonthText: #{clr(grayscale, gray-65)};
   --lcc-color--eventsCalendar-primaryTooltipText: #{clr(grayscale, white-90)};
   --lcc-color--eventsCalendar-secondaryTooltipText: #{clr(grayscale, gray-75)};
 
@@ -123,9 +123,9 @@ body[data-theme='dark'] {
   --lcc-color--lifetimePage-figureCaptionText: #{clr(grayscale, white-90)};
   --lcc-color--lifetimePage-portraitBorder: #{clr(grayscale, gray-35, 0.3)};
 
-  --lcc-color--link: #{clr(primary, lighter)};
+  --lcc-color--link: #{clr(primary, lightest)};
   --lcc-color--linkDisabled: #{clr(grayscale, gray-35)};
-  --lcc-color--linkOnHover: #{clr(primary, lightest)};
+  --lcc-color--linkOnHover: #{clr(grayscale, white)};
   --lcc-color--linkUnderline: #{clr(primary, lightest, 0.8)};
 
   --lcc-color--markdownRenderer-background: #{clr(grayscale, black-20)};
@@ -143,7 +143,7 @@ body[data-theme='dark'] {
   --lcc-color--membersTable-cityChampionIcon: #{clr(secondary, base)};
   --lcc-color--membersTable-cityChampionIconHover: #{clr(secondary, lighter)};
   --lcc-color--membersTable-inactiveMemberAsterisk: #{clr(grayscale, gray-75)};
-  --lcc-color--membersTable-inactiveMemberText: #{clr(grayscale, gray-65, 0.8)};
+  --lcc-color--membersTable-inactiveMemberText: #{clr(grayscale, white-80)};
 
   --lcc-color--modificationInfo-background: #{clr(primary, base, 0.5)};
   --lcc-color--modificationInfo-border: #{clr(grayscale, gray-75, 0.2)};
@@ -164,7 +164,7 @@ body[data-theme='dark'] {
   --lcc-color--websiteChangelogPage-secondaryText: #{clr(grayscale, gray-65)};
 
   --lcc-color--pageHeader-adminIcon: #{clr(admin, base)};
-  --lcc-color--pageHeader-asteriskText: #{clr(grayscale, gray-50)};
+  --lcc-color--pageHeader-asteriskText: #{clr(grayscale, gray-65)};
   --lcc-color--pageHeader-background: #{clr(grayscale, black-15)};
   --lcc-color--pageHeader-boxShadow: #{clr(grayscale, gray-25, 0.7)};
   --lcc-color--pageHeader-icon: #{clr(secondary, base)};
@@ -208,7 +208,7 @@ body[data-theme='dark'] {
   --lcc-color--schedule-rapid25TournamentBackground: #{clr(
       event-rapid-25-tournament,
       light,
-      0.5
+      0.3
     )};
   --lcc-color--schedule-rapid25TournamentDot: #{clr(event-rapid-25-tournament, light)};
   --lcc-color--schedule-rapid40TournamentBackground: #{clr(
