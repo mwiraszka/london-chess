@@ -1,6 +1,5 @@
 import { ToastComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { Observable, combineLatest, fromEvent } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 
@@ -33,6 +32,7 @@ import { Event } from '@app/models';
 import { RefreshService, RoutingService, TouchEventsService } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
 import { EventsSelectors } from '@app/store/events';
+import moment from '@app/utils/datetime/moment';
 
 import { environment } from '@env';
 
@@ -40,6 +40,13 @@ import { environment } from '@env';
   selector: 'app-root',
   template: `
     @if (viewModel$ | async; as vm) {
+      <a
+        class="lcc-skip-link"
+        href="#main-content"
+        (click)="onSkipToContent($event)">
+        Skip to content
+      </a>
+
       @if (vm.showUpcomingEventBanner && vm.nextEvents.length) {
         <lcc-upcoming-event-banner
           [nextEvents]="vm.nextEvents"
@@ -53,12 +60,18 @@ import { environment } from '@env';
 
       <lcc-pull-to-refresh-indicator />
 
-      <main
-        #mainElement
+      <div
+        #scroller
+        class="scroller"
         cdkScrollable>
-        <router-outlet></router-outlet>
+        <main
+          #mainContent
+          id="main-content"
+          tabindex="-1">
+          <router-outlet></router-outlet>
+        </main>
         <lcc-footer></lcc-footer>
-      </main>
+      </div>
     }
 
     @if (!environment.production) {
@@ -98,7 +111,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   protected readonly environment = environment;
   protected readonly gitBranchName = GIT_BRANCH_NAME;
 
-  public readonly mainElement = viewChild.required('mainElement', { read: ElementRef });
+  public readonly scroller = viewChild.required('scroller', { read: ElementRef });
+  public readonly mainContent = viewChild.required('mainContent', { read: ElementRef });
 
   public viewModel$?: Observable<{
     isDarkMode: boolean;
@@ -148,7 +162,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   public ngAfterViewInit(): void {
-    this.refreshService.initialize(this.mainElement().nativeElement);
+    this.refreshService.initialize(this.scroller().nativeElement);
     this.initNavigationListenerForScrollingBackToTop();
     this.measureScrollbarInset();
     fromEvent(window, 'resize')
@@ -160,12 +174,19 @@ export class AppComponent implements OnInit, AfterViewInit {
   // variable lets the scroller mirror it on its left edge and the nav apply
   // the same inset, keeping everything on one centre line
   private measureScrollbarInset(): void {
-    const main = this.mainElement().nativeElement;
-    const inset = main.offsetWidth - main.clientWidth;
+    const scroller = this.scroller().nativeElement;
+    const inset = scroller.offsetWidth - scroller.clientWidth;
     this._document.documentElement.style.setProperty(
       '--lcc-scrollbar-inset',
       `${inset}px`,
     );
+  }
+
+  // Handled here rather than by the browser, whose jump to the fragment the router would
+  // treat as a navigation
+  public onSkipToContent(event: MouseEvent): void {
+    event.preventDefault();
+    this.mainContent().nativeElement.focus();
   }
 
   public onClearBanner(): void {
@@ -178,7 +199,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         takeUntilDestroyed(this.destroyRef),
         filter(fragment => !fragment),
       )
-      .subscribe(() => this.mainElement().nativeElement.scrollTo({ top: 0 }));
+      .subscribe(() => this.scroller().nativeElement.scrollTo({ top: 0 }));
   }
 
   private updateViewportForDesktopView(isDesktopView: boolean): void {
@@ -192,7 +213,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       const scale = window.innerWidth / targetWidth;
       viewport.setAttribute(
         'content',
-        `width=${targetWidth}, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=3.0, user-scalable=yes`,
+        `width=${targetWidth}, initial-scale=${scale}, minimum-scale=${scale}, user-scalable=yes`,
       );
     } else {
       viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');

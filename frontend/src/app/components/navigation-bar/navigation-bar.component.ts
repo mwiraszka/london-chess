@@ -46,7 +46,7 @@ import { AuthSelectors } from '@app/store/auth';
     UserSettingsMenuComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(window:resize)': 'onResize()' },
+  host: { 'aria-label': 'Main', role: 'navigation', '(window:resize)': 'onResize()' },
 })
 export class NavigationBarComponent {
   private readonly clerkService = inject(ClerkService);

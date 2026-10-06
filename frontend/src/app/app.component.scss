@@ -7,7 +7,7 @@
   height: 100dvh;
   background-color: var(--lcc-color--app-mainBackground);
 
-  main {
+  .scroller {
     overflow-x: hidden;
     // A permanent scrollbar track keeps the width constant, so content never
     // jumps when a page grows past the fold
@@ -15,19 +15,35 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    align-items: center;
     height: 100%;
     background-color: var(--lcc-color--app-mainBackground);
     // The classic scrollbar consumes the right edge; mirroring its measured
     // width on the left keeps content centred, and the nav shares the same
     // variable so its links line up with the content below in every browser
     padding: 0 8px 0 calc(8px + var(--lcc-scrollbar-inset, 0px));
+  }
 
-    &::ng-deep lcc-footer {
-      // Reaches back through the scroller's side paddings, the left one widened
-      // by the scrollbar inset, so the background meets both edges
-      align-self: stretch;
-      margin: auto -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
+  main {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    align-items: center;
+
+    // Only ever focused by the skip link, to move keyboard users past the header
+    &:focus {
+      outline: none;
     }
+  }
+
+  lcc-footer {
+    // Reaches back through the scroller's side paddings, the left one widened
+    // by the scrollbar inset, so the background meets both edges
+    align-self: stretch;
+    margin: 0 -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
+  }
+
+  // Shown once a page has rendered above it, so it never starts just under the header
+  .scroller:has(> main > router-outlet:last-child) > lcc-footer {
+    display: none;
   }
 }

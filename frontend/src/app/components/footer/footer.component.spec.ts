@@ -119,22 +119,20 @@ describe('FooterComponent', () => {
         const sections = queryAll(fixture.debugElement, '.site-links section');
         expect(sections.length).toBe(5);
 
-        const sectionHeaders = sections.map(section =>
-          queryTextContent(section, 'header'),
-        );
+        const sectionHeaders = sections.map(section => queryTextContent(section, 'h2'));
 
-        expect(sectionHeaders[0]).toBe('ABOUT US');
-        expect(sectionHeaders[1]).toBe('CLUB EVENTS');
-        expect(sectionHeaders[2]).toBe('ARCHIVES');
-        expect(sectionHeaders[3]).toBe('DOCUMENTS');
-        expect(sectionHeaders[4]).toBe('WEBSITE');
+        expect(sectionHeaders[0]).toBe('About us');
+        expect(sectionHeaders[1]).toBe('Club events');
+        expect(sectionHeaders[2]).toBe('Archives');
+        expect(sectionHeaders[3]).toBe('Documents');
+        expect(sectionHeaders[4]).toBe('Website');
       });
 
       it('should rule off each section heading from its links', () => {
         const sections = queryAll(fixture.debugElement, '.site-links section');
 
         sections.forEach(section => {
-          expect(query(section, 'header + ea-divider')).toBeTruthy();
+          expect(query(section, 'h2 + ea-divider')).toBeTruthy();
         });
       });
 

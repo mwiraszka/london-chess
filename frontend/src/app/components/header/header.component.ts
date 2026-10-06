@@ -6,7 +6,7 @@ import { RangePipe } from '@app/pipes';
 @Component({
   selector: 'lcc-header',
   template: `
-    <div class="app-header-container">
+    <header class="app-header-container">
       <section class="branding">
         <a
           class="branding-link"
@@ -15,8 +15,7 @@ import { RangePipe } from '@app/pipes';
             <img
               src="assets/lcc-branding.svg"
               alt="London Chess Club"
-              decoding="async"
-              fetchpriority="high" />
+              decoding="async" />
           </div>
         </a>
         <a
@@ -31,10 +30,10 @@ import { RangePipe } from '@app/pipes';
           <img
             [class]="'pieces-' + num"
             src="assets/chess-pieces.svg"
-            alt="Chess pieces" />
+            alt="" />
         }
       </section>
-    </div>
+    </header>
   `,
   styleUrl: './header.component.scss',
   imports: [RangePipe, RouterModule],

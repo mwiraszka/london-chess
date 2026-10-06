@@ -63,13 +63,13 @@ test.describe('game archives', () => {
     await expect(
       page.locator('.games .ea-data-table__body .ea-data-table__row').first(),
     ).toBeVisible();
-    const main = page.locator('main');
-    await main.evaluate(element => element.scrollTo({ top: 400 }));
+    const scroller = page.locator('.scroller');
+    await scroller.evaluate(element => element.scrollTo({ top: 400 }));
 
     await page.locator('.filters__result button', { hasText: '1-0' }).click();
 
     await expect(page).toHaveURL(/result=1-0/);
-    expect(await main.evaluate(element => element.scrollTop)).toBe(400);
+    expect(await scroller.evaluate(element => element.scrollTop)).toBe(400);
   });
 
   test('links every row to its game', async ({ page }) => {

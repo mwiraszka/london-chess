@@ -15,6 +15,7 @@ import packageJson from '../../../../package.json';
   styleUrl: './footer.component.scss',
   imports: [DividerComponent, ExternalLinkIconComponent, RouterLink, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { role: 'contentinfo' },
 })
 export class FooterComponent {
   public readonly CURRENT_VERSION = packageJson.version;

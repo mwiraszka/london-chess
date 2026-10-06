@@ -5,6 +5,7 @@
     @for (link of links; track link.internalPath) {
       <a
         [attr.aria-label]="link.text"
+        ariaCurrentWhenActive="page"
         class="nav-link"
         routerLinkActive="link-active"
         [routerLink]="link.internalPath | routerLink"

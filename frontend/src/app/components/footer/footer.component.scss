@@ -82,6 +82,7 @@
         'website';
       gap: 16px;
       font-size: 12px;
+      font-style: italic;
 
       @include respond-to('gt-md') {
         grid-template-columns: 1fr 1fr;
@@ -118,7 +119,9 @@
           grid-area: website;
         }
 
-        header {
+        h2 {
+          font-size: inherit;
+          text-transform: uppercase;
           font-style: normal;
         }
 
