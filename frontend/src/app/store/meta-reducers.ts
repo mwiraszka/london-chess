@@ -1,5 +1,5 @@
-import { Action, ActionReducer, MetaReducer } from '@ngrx/store';
-import { compact, omit, pick } from 'lodash';
+import { Action, ActionReducer, INIT, MetaReducer, UPDATE } from '@ngrx/store';
+import { compact, omit, pick } from 'lodash-es';
 import { localStorageSync } from 'ngrx-store-localstorage';
 
 import { isPresignedUrlExpired } from '@app/utils';
@@ -229,7 +229,8 @@ export const versionedStorage = {
 };
 
 /**
- * Re-hydrates state from local storage
+ * Re-hydrates state from local storage. Writing it back is left to
+ * persistStateMetaReducer.
  */
 export function hydrationMetaReducer(
   reducer: ActionReducer<MetaState>,
@@ -244,8 +245,6 @@ export function hydrationMetaReducer(
 
       return {
         [stateKey]: {
-          serialize: (stateSlice: object) =>
-            omit(stateSlice, Object.keys(unpersistedFields)),
           deserialize:
             stateKey === 'imagesState'
               ? (stateSlice: ImagesState) => stripExpiredImageUrls(restore(stateSlice))
@@ -256,7 +255,56 @@ export function hydrationMetaReducer(
     rehydrate: true,
     restoreDates: false,
     storage: versionedStorage,
+    syncCondition: () => false,
   })(reducer);
+}
+
+/**
+ * Saves the hydrated slices to local storage once per task, and only the slices that
+ * changed, so a burst of actions costs a single write rather than a full one after each.
+ */
+export function persistStateMetaReducer(
+  reducer: ActionReducer<MetaState>,
+): ActionReducer<MetaState> {
+  const lastSaved = new Map<keyof MetaState, unknown>();
+  let latestState: MetaState | undefined;
+  let isSaveQueued = false;
+
+  const save = () => {
+    isSaveQueued = false;
+    for (const stateKey of hydratedStates) {
+      const stateSlice = latestState?.[stateKey];
+      if (!stateSlice || lastSaved.get(stateKey) === stateSlice) {
+        continue;
+      }
+      lastSaved.set(stateKey, stateSlice);
+      const unpersistedFields = Object.keys(UNPERSISTED_FIELDS[stateKey] ?? {});
+      versionedStorage.setItem(
+        stateKey,
+        JSON.stringify(omit(stateSlice, unpersistedFields)),
+      );
+    }
+  };
+
+  return (state, action) => {
+    const nextState = reducer(state, action);
+
+    // A slice's first state is the one rehydrated from local storage, so it needs no saving
+    if (action.type === INIT || action.type === UPDATE) {
+      for (const stateKey of hydratedStates) {
+        if (!lastSaved.has(stateKey) && nextState[stateKey]) {
+          lastSaved.set(stateKey, nextState[stateKey]);
+        }
+      }
+    }
+
+    latestState = nextState;
+    if (!isSaveQueued) {
+      isSaveQueued = true;
+      queueMicrotask(save);
+    }
+    return nextState;
+  };
 }
 
 /**
@@ -340,6 +388,7 @@ export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
 export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compact([
   environment.production ? undefined : actionLogMetaReducer,
   updateStateVersionsInLocalStorageMetaReducer,
+  persistStateMetaReducer,
   hydrationMetaReducer,
   clearRecordsOnAccessLossMetaReducer,
 ]);

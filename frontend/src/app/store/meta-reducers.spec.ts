@@ -1,5 +1,5 @@
 import { Action, ActionReducer, Store, StoreModule } from '@ngrx/store';
-import { omit, pick } from 'lodash';
+import { omit, pick } from 'lodash-es';
 import { firstValueFrom } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
@@ -30,6 +30,7 @@ import {
   clearRecordsOnAccessLossMetaReducer,
   hydrationMetaReducer,
   metaReducers,
+  persistStateMetaReducer,
   stateStorageKey,
   stripExpiredImageUrls,
   updateStateVersionsInLocalStorageMetaReducer,
@@ -505,7 +506,7 @@ describe('Meta Reducers', () => {
       filters: { ...INITIAL_GAMES_QUERY.filters, year: 1994 },
     };
 
-    it('should leave request outcomes out of local storage', () => {
+    it('should leave request outcomes out of local storage', async () => {
       const state: MetaState = {
         articlesState: { ...articlesInitialState, failedLoads: ['homePage'] },
         imagesState: {
@@ -515,9 +516,10 @@ describe('Meta Reducers', () => {
         },
       };
       mockReducer = vi.fn(() => state);
-      const wrappedReducer = hydrationMetaReducer(mockReducer);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
 
       wrappedReducer(state, { type: '[Test] State changed' });
+      await Promise.resolve();
 
       const savedArticles = JSON.parse(versionedStorage.getItem('articlesState') ?? '{}');
       const savedImages = JSON.parse(versionedStorage.getItem('imagesState') ?? '{}');
@@ -527,7 +529,7 @@ describe('Meta Reducers', () => {
       expect(savedImages).not.toHaveProperty('uploadProgress');
     });
 
-    it('should leave the drafts of new images out of local storage', () => {
+    it('should leave the drafts of new images out of local storage', async () => {
       const state: MetaState = {
         imagesState: {
           ...imagesInitialState,
@@ -537,22 +539,25 @@ describe('Meta Reducers', () => {
         },
       };
       mockReducer = vi.fn(() => state);
-      const wrappedReducer = hydrationMetaReducer(mockReducer);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
 
       wrappedReducer(state, { type: '[Test] State changed' });
+      await Promise.resolve();
 
       const savedImages = JSON.parse(versionedStorage.getItem('imagesState') ?? '{}');
+      expect(savedImages).toHaveProperty('ids');
       expect(savedImages).not.toHaveProperty('newImagesFormData');
     });
 
-    it('should remember only how the archives were last queried', () => {
+    it('should remember only how the archives were last queried', async () => {
       const state: MetaState = {
         gamesState: { ...gamesInitialState, filteredCount: 12, query: rememberedQuery },
       };
       mockReducer = vi.fn(() => state);
-      const wrappedReducer = hydrationMetaReducer(mockReducer);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
 
       wrappedReducer(state, { type: '[Test] State changed' });
+      await Promise.resolve();
 
       expect(JSON.parse(versionedStorage.getItem('gamesState') ?? '{}')).toEqual({
         query: rememberedQuery,
@@ -620,6 +625,87 @@ describe('Meta Reducers', () => {
         expect(state.membersState?.failedLoads).toEqual(['filtered']);
         expect(state.imagesState?.uploadProgress).toEqual({ uploaded: 1, total: 2 });
       });
+    });
+  });
+
+  describe('persistStateMetaReducer', () => {
+    const changed = (members: number): MetaState => ({
+      membersState: { ...membersInitialState, totalCount: members },
+      gamesState: { ...gamesInitialState, query: INITIAL_GAMES_QUERY },
+    });
+    let setItemSpy: MockInstance;
+
+    beforeEach(() => {
+      setItemSpy = vi.spyOn(versionedStorage, 'setItem');
+    });
+
+    it('should save a burst of actions once, when the task ends', async () => {
+      let state = changed(1);
+      mockReducer = vi.fn(() => state);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+
+      [2, 3, 4].forEach(members => {
+        state = changed(members);
+        wrappedReducer(state, { type: '[Test] State changed' });
+      });
+      expect(setItemSpy).not.toHaveBeenCalled();
+      await Promise.resolve();
+
+      const savedKeys = setItemSpy.mock.calls.map(([key]) => key);
+      expect(savedKeys.filter(key => key === 'membersState')).toHaveLength(1);
+      expect(
+        JSON.parse(versionedStorage.getItem('membersState') ?? '{}').totalCount,
+      ).toBe(4);
+    });
+
+    it('should only save the slices an action changed', async () => {
+      const first = changed(1);
+      const second = {
+        ...first,
+        membersState: { ...first.membersState!, totalCount: 2 },
+      };
+      mockReducer = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+      wrappedReducer(undefined, { type: '[Test] First' });
+      await Promise.resolve();
+      setItemSpy.mockClear();
+
+      wrappedReducer(first, { type: '[Test] Second' });
+      await Promise.resolve();
+
+      expect(setItemSpy.mock.calls.map(([key]) => key)).toEqual(['membersState']);
+    });
+
+    it('should not save the state the store starts with', async () => {
+      mockReducer = vi.fn(() => changed(1));
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+
+      wrappedReducer(undefined, { type: '@ngrx/store/init' });
+      await Promise.resolve();
+
+      expect(setItemSpy).not.toHaveBeenCalled();
+    });
+
+    it('should save what changed before a slice is added, but not the added slice', async () => {
+      const before = changed(1);
+      const edited = {
+        ...before,
+        membersState: { ...before.membersState!, totalCount: 2 },
+      };
+      const added = { ...edited, eventsState: eventsInitialState };
+      mockReducer = vi
+        .fn()
+        .mockReturnValueOnce(before)
+        .mockReturnValueOnce(edited)
+        .mockReturnValueOnce(added);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+      wrappedReducer(undefined, { type: '@ngrx/store/init' });
+
+      wrappedReducer(before, { type: '[Test] State changed' });
+      wrappedReducer(edited, { type: '@ngrx/store/update-reducers' });
+      await Promise.resolve();
+
+      expect(setItemSpy.mock.calls.map(([key]) => key)).toEqual(['membersState']);
     });
   });
 
