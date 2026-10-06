@@ -46,6 +46,7 @@
                     }
                     @if (isCityChampion(member)) {
                       <a
+                        aria-label="2025 City Champion"
                         class="champion-link"
                         routerLink="/city-champion"
                         eaTooltip="2025 City Champion">
@@ -71,8 +72,8 @@
             </div>
 
             <div class="facts">
-              <dl class="stats">
-                <div class="stats__pair">
+              <div class="stats">
+                <dl class="stats__pair">
                   <div class="stat">
                     <dt class="stat__label">Peak rating</dt>
                     <dd class="stat__value">{{ member.peakRating }}</dd>
@@ -83,11 +84,11 @@
                       <dd class="stat__value">{{ member.city }}</dd>
                     </div>
                   }
-                </div>
+                </dl>
                 @if (
                   yearJoined(member) || (member.showYearOfBirth && member.yearOfBirth)
                 ) {
-                  <div class="stats__pair">
+                  <dl class="stats__pair">
                     @if (yearJoined(member); as year) {
                       <div class="stat">
                         <dt class="stat__label">Member since</dt>
@@ -100,9 +101,9 @@
                         <dd class="stat__value">{{ member.yearOfBirth }}</dd>
                       </div>
                     }
-                  </div>
+                  </dl>
                 }
-              </dl>
+              </div>
 
               @if (member.chessComUsername || member.lichessUsername) {
                 <dl class="chess-accounts">

@@ -36,6 +36,7 @@ import { TechRingComponent } from '@app/components/tech-ring/tech-ring.component
 import { ChangelogRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 import { MetaAndTitleService, RoutingService } from '@app/services';
+import { scrollBehavior } from '@app/utils';
 
 import packageJson from '../../../../package.json';
 import { CHANGELOG_RELEASES } from './changelog.generated';
@@ -150,7 +151,7 @@ export class WebsiteChangelogPageComponent implements OnInit {
       () =>
         document
           .getElementById(this.releaseId(release))
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+          ?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }),
       { injector: this.injector },
     );
   }

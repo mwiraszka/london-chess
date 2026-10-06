@@ -93,7 +93,11 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
     // Calculate actual content width accounting for duplicates if present
     const singleItemWidth = this.shouldAnimate() ? contentWidth / 2 : contentWidth;
 
-    this.shouldAnimate.set(singleItemWidth > containerWidth);
+    // Visitors who ask for less motion scroll the message by hand instead
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    this.shouldAnimate.set(!prefersReducedMotion && singleItemWidth > containerWidth);
 
     if (this.shouldAnimate()) {
       // Calculate duration based on content width: ~50 pixels per second for smooth scrolling

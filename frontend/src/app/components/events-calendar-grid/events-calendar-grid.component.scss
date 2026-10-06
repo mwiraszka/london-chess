@@ -141,7 +141,9 @@ $skeleton-month-count: 12;
   flex-flow: row wrap;
   min-width: 0;
   justify-content: center;
-  gap: 2px;
+  // With the 16px indicators, keeps each one 24px from the next, the smallest spacing
+  // a touch target can have
+  gap: 8px;
 
   .event-indicator {
     width: 16px;

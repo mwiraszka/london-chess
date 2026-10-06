@@ -19,6 +19,7 @@ import {
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { BasicDialogResult, Dialog, Event } from '@app/models';
 import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
+import { scrollBehavior } from '@app/utils';
 
 @Component({
   selector: 'lcc-schedule-toolbar',
@@ -83,7 +84,7 @@ export class ScheduleToolbarComponent {
     const point = this.todayScrollPoint;
     // The row the point sits in, so the line along its top edge comes into view too
     const target = point?.closest('tr') ?? point;
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   }
 
   public async onExportToIcal(): Promise<void> {

@@ -13,6 +13,7 @@
         [class.skeleton]="isLoading()"
         [style.animation-delay.s]="isLoading() ? $index * 0.08 : null"
         [attr.aria-hidden]="isLoading() || null"
+        [disabled]="isLoading()"
         [adminControls]="
           !isLoading() && isAdmin() ? getAdminControlsConfig(image.album) : null
         "

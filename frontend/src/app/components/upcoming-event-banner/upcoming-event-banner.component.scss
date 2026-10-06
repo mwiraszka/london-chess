@@ -69,6 +69,18 @@
   }
 }
 
+// Holds still while read or used
+.banner-message:is(:hover, :focus-within) .marquee-content.animate {
+  animation-play-state: paused;
+}
+
+// The message never scrolls by itself then, so it can be scrolled by hand
+@media (prefers-reduced-motion: reduce) {
+  .banner-message {
+    overflow-x: auto;
+  }
+}
+
 // Trimmed to its glyph so the button does not make the banner any taller
 .close-button {
   --ea-button-padding: 2px;

@@ -10,14 +10,20 @@
         #marqueeContent
         [class.animate]="shouldAnimate()"
         [style.animation-duration.s]="animationDuration()">
-        <ng-container *ngTemplateOutlet="bannerContent" />
+        <ng-container *ngTemplateOutlet="bannerContent; context: { isCopy: false }" />
         @if (shouldAnimate()) {
-          <ng-container *ngTemplateOutlet="bannerContent" />
+          <ng-container *ngTemplateOutlet="bannerContent; context: { isCopy: true }" />
         }
       </div>
 
-      <ng-template #bannerContent>
-        <span class="marquee-item">
+      <!-- The copy only closes the loop of the scroll, so it is neither read out nor focusable -->
+      <ng-template
+        #bannerContent
+        let-isCopy="isCopy">
+        <span
+          class="marquee-item"
+          [attr.aria-hidden]="isCopy || null"
+          [inert]="isCopy">
           <span>Next {{ nextEvents().length > 1 ? 'events' : 'event' }}:</span>
           @for (event of nextEvents(); track event.id) {
             @if (!$first) {

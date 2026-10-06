@@ -1,4 +1,4 @@
-import { kebabCase } from 'lodash';
+import { kebabCase } from 'lodash-es';
 import { MarkdownComponent } from 'ngx-markdown';
 
 import {
@@ -22,7 +22,8 @@ import { MarkdownTableComponent } from '@app/components/markdown-table/markdown-
 import { Image } from '@app/models';
 import { KebabCasePipe } from '@app/pipes';
 import { RoutingService } from '@app/services';
-import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils';
+import { MarkdownSegment, isCollectionId, scrollBehavior } from '@app/utils';
+import { splitMarkdownTables } from '@app/utils/markdown/split-markdown-tables.util';
 
 @Component({
   selector: 'lcc-markdown-renderer',
@@ -183,7 +184,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
 
     if (headingElement) {
       headingElement.scrollIntoView({
-        behavior: 'smooth',
+        behavior: scrollBehavior(),
         block: 'start',
         inline: 'nearest',
       });

@@ -74,22 +74,37 @@
   }
 }
 
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .dots-container {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 16px;
 
+  // The button keeps a comfortable target around the smaller dot it draws
   .dot-button {
-    width: 8px;
-    height: 8px;
-    padding: 0;
-    border: 1px solid var(--lcc-color--photoCarousel-dotBorder);
-    border-radius: var(--radius-full);
-    background-color: var(--lcc-color--photoCarousel-dot);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
 
-    &.active {
+    &::before {
+      width: 8px;
+      height: 8px;
+      border: 1px solid var(--lcc-color--photoCarousel-dotBorder);
+      border-radius: var(--radius-full);
+      background-color: var(--lcc-color--photoCarousel-dot);
+      content: '';
+    }
+
+    &.active::before {
       border: 1px solid var(--lcc-color--photoCarousel-activeDotBorder);
       background-color: var(--lcc-color--photoCarousel-activeDot);
       transition: background-color 1.6s ease;
@@ -99,9 +114,9 @@
 
 @include respond-to('lt-md') {
   .dots-container {
-    gap: 24px;
+    gap: 12px;
 
-    .dot-button {
+    .dot-button::before {
       width: 12px;
       height: 12px;
     }
