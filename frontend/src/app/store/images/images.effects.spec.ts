@@ -1,7 +1,6 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import moment from 'moment-timezone';
 import { Observable, ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 import { filter, take, toArray } from 'rxjs/operators';
 
@@ -32,6 +31,7 @@ import {
   IS_LCC_ERROR,
   PARSE_ERROR,
 } from '@app/tokens';
+import moment from '@app/utils/datetime/moment';
 
 import { ImagesActions, ImagesSelectors } from '.';
 import { ImagesEffects } from './images.effects';
@@ -1246,35 +1246,41 @@ describe('ImagesEffects', () => {
       ...overrides,
     });
 
+    const state = () => ({
+      articlesState: {
+        ...articlesInitialState,
+        ids: [article.id, otherArticle.id],
+        entities: Object.fromEntries(
+          [article, otherArticle].map(entry => [
+            entry.id,
+            {
+              article: entry,
+              formData: {
+                title: entry.title,
+                body: entry.body,
+                bannerImageId: entry.bannerImageId,
+              },
+            },
+          ]),
+        ),
+      },
+      imagesState: imagesStateWith([
+        image(bannerId, { mainUrl: undefined }),
+        image(freshId, {}),
+        image(expiringId, { urlExpirationDate: '2026-01-01T07:00:00Z' }),
+        image(undatedId, { urlExpirationDate: undefined }),
+      ]),
+      navState: { pathHistory: ['/news'] },
+    });
+
     beforeEach(() => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-01-01T06:00:00Z'));
-      store.setState({
-        articlesState: {
-          ...articlesInitialState,
-          ids: [article.id, otherArticle.id],
-          entities: Object.fromEntries(
-            [article, otherArticle].map(entry => [
-              entry.id,
-              {
-                article: entry,
-                formData: {
-                  title: entry.title,
-                  body: entry.body,
-                  bannerImageId: entry.bannerImageId,
-                },
-              },
-            ]),
-          ),
-        },
-        imagesState: imagesStateWith([
-          image(bannerId, { mainUrl: undefined }),
-          image(freshId, {}),
-          image(expiringId, { urlExpirationDate: '2026-01-01T07:00:00Z' }),
-          image(undatedId, { urlExpirationDate: undefined }),
-        ]),
-      });
+      store.setState(state());
     });
+
+    const openPage = (path: string) =>
+      store.setState({ ...state(), navState: { pathHistory: ['/news', path] } });
 
     const requested = (...imageIds: string[]) =>
       imageIds.map(imageId =>
@@ -1297,13 +1303,20 @@ describe('ImagesEffects', () => {
       expect(results).toEqual(requested(missingId));
     });
 
-    it('should check every stored article after a metadata refresh', () => {
+    it('should check the article open on screen after a metadata refresh', () => {
+      openPage(`/article/view/${article.id}`);
+
       actions$.next(ImagesActions.fetchAllImagesMetadataSucceeded({ images: [] }));
       const results = collect(effects.fetchArticleImages$);
 
-      expect(results).toEqual(
-        requested(bannerId, expiringId, undatedId, missingId, missingId),
-      );
+      expect(results).toEqual(requested(bannerId, expiringId, undatedId, missingId));
+    });
+
+    it('should leave the full images of listed articles unfetched', () => {
+      actions$.next(ImagesActions.fetchAllImagesMetadataSucceeded({ images: [] }));
+      const results = collect(effects.fetchArticleImages$);
+
+      expect(results).toEqual([]);
     });
   });
 

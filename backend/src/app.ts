@@ -43,6 +43,8 @@ const corsOptions: CorsOptions = {
    * since some legacy browsers (IE11, various SmartTVs) choke on 204.
    */
   optionsSuccessStatus: 200,
+  // Lets the browser reuse a preflight instead of sending one before every request
+  maxAge: 7200,
   origin: (origin, callback) => {
     // Allow same-origin/non-browser requests (no Origin header) and the club's sites.
     // Withholding the header rather than throwing keeps scanner probes out of the error log

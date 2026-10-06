@@ -1,7 +1,6 @@
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { Action, Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import {
   EMPTY,
   Observable,
@@ -45,6 +44,7 @@ import {
   PARSE_ERROR,
 } from '@app/tokens';
 import { creditEditor, isDefined } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 import * as ImagesActions from './images.actions';
 import * as ImagesSelectors from './images.selectors';
@@ -294,8 +294,11 @@ export class ImagesEffects {
         ArticlesActions.formDataChanged,
         ImagesActions.fetchAllImagesMetadataSucceeded,
       ),
-      concatLatestFrom(() => this.store.select(ArticlesSelectors.selectAllArticles)),
-      mergeMap(([action, allArticles]) => {
+      concatLatestFrom(() => [
+        this.store.select(ArticlesSelectors.selectAllArticles),
+        this.store.select(NavSelectors.selectCurrentPath),
+      ]),
+      mergeMap(([action, allArticles, currentPath]) => {
         let articlesToProcess: Article[];
 
         if (action.type === ArticlesActions.fetchArticleSucceeded.type) {
@@ -305,7 +308,14 @@ export class ImagesEffects {
             a => a?.id === action.articleId,
           ) as Article[];
         } else {
-          articlesToProcess = allArticles.filter(isDefined);
+          // Only the article open on screen shows its images at full size; lists of
+          // articles show thumbnails, so fetching every article's full images is wasted
+          const openArticleId = currentPath?.match(
+            /^\/article\/(?:view|edit)\/([^/?#]+)/,
+          )?.[1];
+          articlesToProcess = allArticles.filter(
+            article => isDefined(article) && article.id === openArticleId,
+          ) as Article[];
         }
 
         return from(articlesToProcess).pipe(
