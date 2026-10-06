@@ -20,6 +20,7 @@ describe('accessGuard', () => {
   let isLoggedIn: WritableSignal<boolean>;
   let record: WritableSignal<UserRecord | null>;
   let load: Mock;
+  let loadClerk: Mock;
 
   const admin: User = {
     id: 'user123',
@@ -44,12 +45,13 @@ describe('accessGuard', () => {
     isLoggedIn = signal(false);
     record = signal(null);
     load = vi.fn().mockResolvedValue(undefined);
+    loadClerk = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       providers: [
         provideMockStore({
           selectors: [{ selector: AuthSelectors.selectUser, value: null }],
         }),
-        { provide: ClerkService, useValue: { isLoggedIn } },
+        { provide: ClerkService, useValue: { isLoggedIn, load: loadClerk } },
         { provide: UserService, useValue: { user: record, load } },
       ],
     });
@@ -137,6 +139,27 @@ describe('accessGuard', () => {
 
     expect(load).toHaveBeenCalledOnce();
     expect(result).toBe(true);
+  });
+
+  it('should wait for Clerk before telling who is logged in', async () => {
+    loadClerk.mockImplementation(async () => isLoggedIn.set(true));
+    load.mockImplementation(async () => {
+      store.overrideSelector(AuthSelectors.selectUser, admin);
+      store.refreshState();
+    });
+
+    const result = await runGuard('admin');
+
+    expect(loadClerk).toHaveBeenCalledOnce();
+    expect(result).toBe(true);
+  });
+
+  it('should treat a visitor as logged out when Clerk fails to load', async () => {
+    loadClerk.mockRejectedValue(new Error('Clerk is unavailable'));
+
+    const result = await runGuard('admin');
+
+    expect(result).toEqual(TestBed.inject(Router).createUrlTree(['/']));
   });
 
   it('should not load a record that is already in place again', async () => {

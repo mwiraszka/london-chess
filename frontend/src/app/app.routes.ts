@@ -1,11 +1,14 @@
 import { Routes } from '@angular/router';
 
 import { accessGuard } from '@app/guards/auth.guard';
+import { HomePageComponent } from '@app/pages/home/home-page.component';
 
 export const APP_ROUTES: Routes = [
   {
     path: '',
-    loadChildren: () => import('./pages/home/home.routes').then(m => m.HOME_ROUTES),
+    // Loaded with the app rather than lazily, so the first page most visitors see
+    // renders without another round trip
+    component: HomePageComponent,
     pathMatch: 'full',
   },
   {

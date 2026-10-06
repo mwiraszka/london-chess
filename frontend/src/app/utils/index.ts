@@ -61,6 +61,7 @@ export { isValidIsoDate } from './datetime/is-valid-iso-date.util';
 
 export { isMac } from './device/is-mac.util';
 export { isTouchDevice } from './device/is-touch-device.util';
+export { scrollBehavior } from './device/scroll-behavior.util';
 
 export { isLccError } from './error/is-lcc-error.util';
 export { parseError } from './error/parse-error.util';
@@ -84,12 +85,12 @@ export { setPaginationParams } from './http/set-pagination-params.util';
 export { buildImagesFormData } from './image/build-images-form-data.util';
 export { isPresignedUrlExpired } from './image/is-presigned-url-expired.util';
 export { calculateAspectRatio } from './image/calculate-aspect-ratio.util';
-export {
-  type MarkdownSegment,
-  type MarkdownTable,
-  type MarkdownTableColumn,
-  type MarkdownTableRow,
-  splitMarkdownTables,
+// The splitter itself is imported from its file, since it pulls in the markdown parser
+export type {
+  MarkdownSegment,
+  MarkdownTable,
+  MarkdownTableColumn,
+  MarkdownTableRow,
 } from './markdown/split-markdown-tables.util';
 
 export { pageOf } from './pagination/page-of.util';

@@ -143,6 +143,10 @@ describe('ClerkService', () => {
     await service.load();
   });
 
+  afterEach(() => {
+    localStorage.removeItem('lcc.hasSession');
+  });
+
   describe('load', () => {
     it('should load Clerk and report the logged in user', () => {
       expect(Clerk).toHaveBeenCalledWith(environment.clerkPublishableKey);
@@ -162,12 +166,24 @@ describe('ClerkService', () => {
 
     it('should sign out a session left pending on a new password', async () => {
       fake.session = createSession({ status: 'pending' });
+      const freshService = TestBed.runInInjectionContext(() => new ClerkService());
 
-      await service.load();
+      await freshService.load();
 
       expect(fake.signOut).toHaveBeenCalled();
-      expect(service.isLoggedIn()).toBe(false);
-      expect(service.user()).toBeNull();
+      expect(freshService.isLoggedIn()).toBe(false);
+      expect(freshService.user()).toBeNull();
+    });
+
+    it('should load Clerk only once however often it is asked', async () => {
+      await service.load();
+
+      expect(Clerk).toHaveBeenCalledOnce();
+      expect(service.isLoaded()).toBe(true);
+    });
+
+    it('should remember that this browser has a session', () => {
+      expect(localStorage.getItem('lcc.hasSession')).toBe('true');
     });
   });
 
@@ -505,6 +521,38 @@ describe('ClerkService', () => {
       fake.session = null;
 
       await expect(service.getToken()).resolves.toBeNull();
+    });
+
+    describe('before Clerk has loaded', () => {
+      let freshService: ClerkService;
+
+      beforeEach(() => {
+        vi.mocked(Clerk).mockClear();
+        freshService = TestBed.runInInjectionContext(() => new ClerkService());
+      });
+
+      it('should not wait for Clerk for a browser that has never been logged in', async () => {
+        localStorage.removeItem('lcc.hasSession');
+
+        await expect(freshService.getToken()).resolves.toBeNull();
+
+        expect(Clerk).not.toHaveBeenCalled();
+      });
+
+      it('should wait for Clerk for a browser that has been logged in', async () => {
+        localStorage.setItem('lcc.hasSession', 'true');
+
+        await expect(freshService.getToken()).resolves.toBe('token-123');
+
+        expect(Clerk).toHaveBeenCalledOnce();
+      });
+
+      it('should send no token when Clerk fails to load', async () => {
+        localStorage.setItem('lcc.hasSession', 'true');
+        fake.load.mockRejectedValue(new Error('Clerk is unavailable'));
+
+        await expect(freshService.getToken()).resolves.toBeNull();
+      });
     });
   });
 

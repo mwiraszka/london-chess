@@ -1,3 +1,5 @@
+import { provideMarkdown } from 'ngx-markdown';
+
 import { Routes } from '@angular/router';
 
 import { articleGuard } from '@app/guards/article.guard';
@@ -10,26 +12,32 @@ import { ArticleViewerPageComponent } from './article-viewer-page.component';
 
 export const ARTICLE_ROUTES: Routes = [
   {
-    path: 'view/:article_id',
-    component: ArticleViewerPageComponent,
-    canActivate: [articleGuard('article_id')],
-  },
-  {
-    path: 'add',
-    component: ArticleEditorPageComponent,
-    canActivate: [accessGuard],
-    canDeactivate: [unsavedChangesGuard],
-    data: { access: 'admin' },
-  },
-  {
-    path: 'edit/:article_id',
-    component: ArticleEditorPageComponent,
-    canActivate: [collectionIdGuard('article_id'), accessGuard],
-    canDeactivate: [unsavedChangesGuard],
-    data: { access: 'admin' },
-  },
-  {
-    path: '**',
-    redirectTo: '/',
+    path: '',
+    providers: [provideMarkdown()],
+    children: [
+      {
+        path: 'view/:article_id',
+        component: ArticleViewerPageComponent,
+        canActivate: [articleGuard('article_id')],
+      },
+      {
+        path: 'add',
+        component: ArticleEditorPageComponent,
+        canActivate: [accessGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { access: 'admin' },
+      },
+      {
+        path: 'edit/:article_id',
+        component: ArticleEditorPageComponent,
+        canActivate: [collectionIdGuard('article_id'), accessGuard],
+        canDeactivate: [unsavedChangesGuard],
+        data: { access: 'admin' },
+      },
+      {
+        path: '**',
+        redirectTo: '/',
+      },
+    ],
   },
 ];

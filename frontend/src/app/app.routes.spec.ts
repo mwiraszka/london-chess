@@ -5,7 +5,11 @@ import { accessGuard } from './guards/auth.guard';
 import { unsavedChangesGuard } from './guards/unsaved-changes.guard';
 
 async function childRoutes(route: Route): Promise<Routes> {
-  return route.loadChildren ? ((await route.loadChildren()) as Routes) : [];
+  const children = route.loadChildren ? ((await route.loadChildren()) as Routes) : [];
+  // A pathless parent only lends its children providers, such as the article pages' markdown
+  return children.flatMap(child =>
+    child.path === '' && child.children ? child.children : [child],
+  );
 }
 
 // The sections with editors, loaded alone since other pages bring libraries jsdom cannot run

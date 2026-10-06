@@ -2,9 +2,7 @@ import { applyPalette, derivePalette, provideEagamiUi } from '@eagami/ui';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreRouterConnectingModule } from '@ngrx/router-store';
 import { Action, StoreModule } from '@ngrx/store';
-import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import * as Sentry from '@sentry/angular';
-import { MarkdownModule } from 'ngx-markdown';
 
 import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import {
@@ -24,7 +22,6 @@ import {
 import { APP_ROUTES } from '@app/app.routes';
 import {
   AuthInterceptorProvider,
-  CacheControlInterceptorProvider,
   LoggingInterceptorProvider,
   PendingRequestsInterceptorProvider,
   TimeoutInterceptorProvider,
@@ -39,6 +36,7 @@ import { ImagesStoreModule } from '@app/store/images';
 import { MembersStoreModule } from '@app/store/members';
 import { MetaState, metaReducers } from '@app/store/meta-reducers';
 import { NavStoreModule } from '@app/store/nav';
+import { STORE_DEVTOOLS_PROVIDERS } from '@app/store/store-devtools';
 import { TournamentsStoreModule } from '@app/store/tournaments';
 
 import { environment } from '@env';
@@ -81,7 +79,6 @@ bootstrapApplication(AppComponent, {
       EventsStoreModule,
       GamesStoreModule,
       ImagesStoreModule,
-      MarkdownModule.forRoot(),
       MembersStoreModule,
       NavStoreModule,
       StoreModule.forRoot<MetaState, Action<string>>(
@@ -94,14 +91,10 @@ bootstrapApplication(AppComponent, {
           },
         },
       ),
-      StoreDevtoolsModule.instrument({
-        name: 'London Chess Club - NgRx Store DevTools',
-        logOnly: environment.production,
-        maxAge: 100,
-      }),
       StoreRouterConnectingModule.forRoot(),
       TournamentsStoreModule,
     ),
+    ...STORE_DEVTOOLS_PROVIDERS,
     provideRouter(
       APP_ROUTES,
       withComponentInputBinding(),
@@ -109,23 +102,19 @@ bootstrapApplication(AppComponent, {
     ),
     provideHttpClient(withXhr(), withInterceptorsFromDi()),
     provideEagamiUi(),
-    provideAppInitializer(async () => {
-      const clerkService = inject(ClerkService);
+    provideAppInitializer(() => {
       // Instantiate UserService so its login effect starts and the user record
       // is available app-wide once Clerk reports the session.
       inject(UserService);
-
-      try {
-        await clerkService.load();
-      } catch (error) {
-        console.error(`[LCC] Unable to load Clerk: ${error}`);
-      }
+      // Not awaited, so the first page renders while Clerk loads behind it
+      inject(ClerkService)
+        .load()
+        .catch(error => console.error(`[LCC] Unable to load Clerk: ${error}`));
     }),
     // Listed first so they also cover the time other interceptors spend
     PendingRequestsInterceptorProvider,
     TimeoutInterceptorProvider,
     AuthInterceptorProvider,
-    CacheControlInterceptorProvider,
     LoggingInterceptorProvider,
   ],
 }).catch(error => console.error(`[LCC] Bootstrap error: ${error}`));

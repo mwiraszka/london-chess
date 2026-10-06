@@ -1,4 +1,4 @@
-import { Clerk } from '@clerk/clerk-js';
+import type { Clerk } from '@clerk/clerk-js';
 import { ToastService } from '@eagami/ui';
 
 import { Injectable, inject, signal } from '@angular/core';
@@ -8,6 +8,8 @@ import { LoginResult } from '@app/models';
 
 import { environment } from '@env';
 
+const SESSION_HINT_KEY = 'lcc.hasSession';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -16,33 +18,47 @@ export class ClerkService {
   private readonly toast = inject(ToastService);
 
   private clerk!: Clerk;
+  private loading: Promise<Clerk> | null = null;
 
+  readonly isLoaded = signal(false);
   readonly isLoggedIn = signal(false);
   readonly user = signal<Clerk['user']>(null, { equal: () => false });
 
   private sessionEndExpected = false;
 
-  async load(): Promise<void> {
-    this.clerk = new Clerk(environment.clerkPublishableKey);
+  // Started at boot without being awaited, so pages render while Clerk downloads; anything
+  // that needs it waits on the same load
+  load(): Promise<Clerk> {
+    this.loading ??= this.loadClerk();
+    return this.loading;
+  }
+
+  private async loadClerk(): Promise<Clerk> {
+    const { Clerk } = await import('@clerk/clerk-js');
+    const clerk = new Clerk(environment.clerkPublishableKey);
     // Angular router navigation so Clerk redirects (after sign-out) stay in the SPA
     // instead of forcing a full page load
-    await this.clerk.load({
+    await clerk.load({
       routerPush: (to: string) => void this.router.navigateByUrl(to),
       routerReplace: (to: string) =>
         void this.router.navigateByUrl(to, { replaceUrl: true }),
     });
+    this.clerk = clerk;
     // A session left waiting on a new password is dropped, so the next log in asks
     // for the new password in the drawer again
-    if (this.clerk.session?.status === 'pending') {
-      await this.clerk.signOut();
+    if (clerk.session?.status === 'pending') {
+      await clerk.signOut();
     }
     this.syncState();
 
-    this.clerk.addListener(() => this.syncState());
+    clerk.addListener(() => this.syncState());
+    this.isLoaded.set(true);
+    return clerk;
   }
 
   async logIn(identifier: string, password: string): Promise<LoginResult> {
-    const result = await this.clerk.client!.signIn.create({
+    const clerk = await this.load();
+    const result = await clerk.client!.signIn.create({
       strategy: 'password',
       identifier,
       password,
@@ -65,7 +81,8 @@ export class ClerkService {
   }
 
   async verifyLoginCode(code: string): Promise<{ needsNewPassword: boolean }> {
-    const result = await this.clerk.client!.signIn.attemptSecondFactor({
+    const clerk = await this.load();
+    const result = await clerk.client!.signIn.attemptSecondFactor({
       strategy: 'email_code',
       code,
     });
@@ -80,12 +97,13 @@ export class ClerkService {
   // Replaces a temporary or compromised password before the session becomes active,
   // whether Clerk asked for it during sign-in or left the session pending on it
   async completeNewPassword(password: string): Promise<void> {
+    const clerk = await this.load();
     if (this.hasResetPasswordTask()) {
       await this.resolveResetPasswordTask(password);
       return;
     }
 
-    const result = await this.clerk.client!.signIn.resetPassword({
+    const result = await clerk.client!.signIn.resetPassword({
       password,
       signOutOfOtherSessions: true,
     });
@@ -104,15 +122,17 @@ export class ClerkService {
   }
 
   async logOut(): Promise<void> {
+    const clerk = await this.load();
     this.sessionEndExpected = true;
-    await this.clerk.signOut();
+    await clerk.signOut();
   }
 
   // Resolves identically for unknown emails so the reset flow cannot be used to
   // probe which addresses have accounts.
   async sendPasswordResetCode(email: string): Promise<void> {
+    const clerk = await this.load();
     try {
-      await this.clerk.client!.signIn.create({
+      await clerk.client!.signIn.create({
         strategy: 'reset_password_email_code',
         identifier: email,
       });
@@ -129,7 +149,8 @@ export class ClerkService {
   // instead, and the same new password resolves that task, so it is only ever chosen
   // once. Resolves whether the member ends up logged in
   async resetPassword(code: string, password: string): Promise<boolean> {
-    const signIn = this.clerk.client!.signIn;
+    const clerk = await this.load();
+    const signIn = clerk.client!.signIn;
     let result = await signIn.attemptFirstFactor({
       strategy: 'reset_password_email_code',
       code,
@@ -146,28 +167,42 @@ export class ClerkService {
     if (this.hasResetPasswordTask()) {
       await this.resolveResetPasswordTask(password);
     }
-    return this.clerk.session?.status === 'active';
+    return clerk.session?.status === 'active';
   }
 
   async reloadUser(): Promise<void> {
-    await this.clerk.user?.reload();
+    const clerk = await this.load();
+    await clerk.user?.reload();
     this.syncState();
   }
 
+  // A visitor this browser has never seen logged in gets no token, so their requests go
+  // out without waiting for Clerk to load
   async getToken(): Promise<string | null> {
-    return this.clerk.session?.getToken() ?? null;
+    if (!this.isLoaded() && !localStorage.getItem(SESSION_HINT_KEY)) {
+      return null;
+    }
+
+    try {
+      const clerk = await this.load();
+      return (await clerk.session?.getToken()) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   // Adds the new address and sends a verification code to it. The change is only
   // committed once the code is verified in verifyAndSetPrimaryEmail.
   async createEmail(email: string): Promise<string> {
-    const emailObj = await this.clerk.user!.createEmailAddress({ email });
+    const clerk = await this.load();
+    const emailObj = await clerk.user!.createEmailAddress({ email });
     await emailObj.prepareVerification({ strategy: 'email_code' });
     return emailObj.id;
   }
 
   async verifyAndSetPrimaryEmail(emailId: string, code: string): Promise<void> {
-    const user = this.clerk.user!;
+    const clerk = await this.load();
+    const user = clerk.user!;
     const emailObj = user.emailAddresses.find(e => e.id === emailId);
     if (!emailObj) {
       throw new Error('Email not found');
@@ -251,6 +286,11 @@ export class ClerkService {
 
     this.isLoggedIn.set(!!clerkUser);
     this.user.set(clerkUser);
+    if (clerkUser) {
+      localStorage.setItem(SESSION_HINT_KEY, 'true');
+    } else {
+      localStorage.removeItem(SESSION_HINT_KEY);
+    }
 
     if (wasLoggedIn && !clerkUser) {
       const expected = this.sessionEndExpected;

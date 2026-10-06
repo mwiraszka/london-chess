@@ -1,5 +1,5 @@
 import { Store } from '@ngrx/store';
-import { startCase } from 'lodash';
+import { startCase } from 'lodash-es';
 
 import { inject } from '@angular/core';
 import { type CanActivateFn, Router } from '@angular/router';
@@ -16,7 +16,9 @@ export const accessGuard: CanActivateFn = async (route, state) => {
   const router = inject(Router);
   const userService = inject(UserService);
 
-  // Who someone is comes from their record, which may still be on its way at first load
+  // Who someone is comes from their record, which may still be on its way at first load.
+  // A Clerk that fails to load leaves the visitor logged out, which the checks below handle
+  await clerk.load().catch(() => undefined);
   if (clerk.isLoggedIn() && !userService.user()) {
     await userService.load();
   }
