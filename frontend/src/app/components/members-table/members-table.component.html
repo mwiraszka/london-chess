@@ -50,6 +50,7 @@
       " />
     @if (isCityChampion(row.member)) {
       <a
+        aria-label="2025 City Champion"
         class="members__champion-link"
         routerLink="/city-champion"
         eaTooltip="2025 City Champion">
@@ -82,6 +83,7 @@
       *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.lastName }" />
     @if (isCityChampion(row.member)) {
       <a
+        aria-label="2025 City Champion"
         class="members__champion-link"
         routerLink="/city-champion"
         eaTooltip="2025 City Champion">

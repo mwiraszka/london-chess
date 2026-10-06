@@ -7,8 +7,8 @@ import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core
   selector: 'lcc-document-viewer',
   template: `
     <ea-dialog
-      aria-label="Document"
-      width="2xl">
+      width="2xl"
+      [aria-label]="documentTitle()">
       @if (percentLoaded() < 100) {
         <ea-progress-bar
           class="loading-progress"
@@ -21,7 +21,7 @@ import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core
         [src]="documentPath()"
         [original-size]="false"
         [render-text]="true"
-        [render-text-mode]="0"
+        [render-text-mode]="1"
         (on-progress)="onProgress($event)">
       </pdf-viewer>
     </ea-dialog>
@@ -32,6 +32,7 @@ import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core
 })
 export class DocumentViewerComponent {
   public readonly documentPath = input<string>();
+  public readonly documentTitle = input('Document');
 
   public readonly percentLoaded = signal(0);
 

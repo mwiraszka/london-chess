@@ -130,7 +130,10 @@ describe('DocumentsPageComponent', () => {
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
       expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
-        inputs: { documentPath: 'assets/documents/lcc-bylaws.pdf' },
+        inputs: {
+          documentPath: 'assets/documents/lcc-bylaws.pdf',
+          documentTitle: 'Club Bylaws',
+        },
       });
       expect(removeFragmentSpy).toHaveBeenCalledTimes(1);
     });

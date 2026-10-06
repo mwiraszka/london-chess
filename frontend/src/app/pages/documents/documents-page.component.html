@@ -28,6 +28,7 @@
     </a>
 
     <a
+      [attr.aria-label]="'Download ' + row.title"
       [href]="'assets/documents/' + row.document.fileName"
       class="documents__download"
       [download]="row.title"

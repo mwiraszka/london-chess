@@ -18,12 +18,15 @@ import { environment } from '@env';
   selector: 'lcc-club-map',
   template: `
     <a
+      [attr.aria-label]="'Open ' + club().name + ' in Google Maps (opens in a new tab)'"
       [href]="club().mapUrl"
       rel="noopener noreferrer"
       target="_blank">
+      <!-- The whole map is the link, so the map's own controls are kept out of reach -->
       <div
         #mapContainer
         class="map"
+        inert
         [id]="club().id + '-location'">
       </div>
     </a>

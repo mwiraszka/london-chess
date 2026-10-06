@@ -7,7 +7,6 @@ import {
   TooltipDirective,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 
 import {
   ChangeDetectionStrategy,
@@ -35,6 +34,7 @@ import { ClubDocument } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 import { MetaAndTitleService, RoutingService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
+import moment from '@app/utils/datetime/moment';
 
 export interface DocumentRow {
   id: string;
@@ -181,13 +181,13 @@ export class DocumentsPageComponent implements OnInit {
     this.routingService.fragment$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(async fragment => {
-        if (
-          fragment &&
-          this.documents.find(document => document.fileName === fragment) &&
-          this.dialogService.dialogs().length === 0
-        ) {
+        const clubDocument = this.documents.find(({ fileName }) => fileName === fragment);
+        if (fragment && clubDocument && this.dialogService.dialogs().length === 0) {
           await this.dialogService.open(DocumentViewerComponent, {
-            inputs: { documentPath: `assets/documents/${fragment}` },
+            inputs: {
+              documentPath: `assets/documents/${fragment}`,
+              documentTitle: clubDocument.title,
+            },
           }).result;
 
           // Only remove fragment if it's still the same as when we opened
