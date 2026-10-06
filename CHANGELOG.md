@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refresh the look of the site with a new typeface, and even out text sizes, spacing and rounded corners across its pages and cards
+- Load the site much faster, especially on phones, so pages appear sooner and no longer jump around as they fill in
+- Make the site easier to read and to use with a keyboard or screen reader, with stronger colours on cards, tables and links, a pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
 
 ### Fixed
 
