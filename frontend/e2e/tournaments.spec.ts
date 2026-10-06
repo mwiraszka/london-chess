@@ -86,7 +86,7 @@ test.describe('tournaments', () => {
     await runnerUp.getByRole('link', { name: /^Drew with black against/ }).click();
 
     await expect(page).toHaveURL(/\/game-archives\/[0-9a-f]{24}$/);
-    await expect(page.getByRole('heading', { level: 2 })).toContainText(
+    await expect(page.locator('main').getByRole('heading', { level: 2 })).toContainText(
       PROFILE_MEMBER.lastName,
     );
   });
