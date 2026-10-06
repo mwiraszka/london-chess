@@ -127,9 +127,8 @@ describe('ImagesEffects', () => {
 
     const imageFileServiceMock = {
       getImage: vi.fn(),
-      getAllImages: vi.fn(),
-      deleteImage: vi.fn(),
-      clearAllImages: vi.fn(),
+      getImages: vi.fn(),
+      deleteImages: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -540,7 +539,7 @@ describe('ImagesEffects', () => {
 
   describe('addImages$', () => {
     const album = 'New Album';
-    const mockIndexedDbData = [
+    const mockNewImageFiles = [
       { id: 'new-1', filename: 'new1.jpg', dataUrl: 'data:image/jpeg;base64,abc' },
       { id: 'new-2', filename: 'new2.jpg', dataUrl: 'data:image/jpeg;base64,def' },
     ];
@@ -554,10 +553,7 @@ describe('ImagesEffects', () => {
         'new-2': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-2', album },
       });
       store.refreshState();
-      mockImageFileService.getAllImages.mockReturnValue(
-        Promise.resolve(mockIndexedDbData),
-      );
-      mockImageFileService.deleteImage.mockReturnValue(Promise.resolve('success'));
+      mockImageFileService.getImages.mockReturnValue(mockNewImageFiles);
     });
 
     it('should report progress before adding the uploaded images', async () => {
@@ -577,6 +573,14 @@ describe('ImagesEffects', () => {
         ImagesActions.imageUploadsProgressed({ uploaded: 2, total: 2 }),
         ImagesActions.addImagesSucceeded({ images: uploadedImages }),
       ]);
+      expect(mockImageFileService.getImages).toHaveBeenCalledExactlyOnceWith([
+        'new-1',
+        'new-2',
+      ]);
+      expect(mockImageFileService.deleteImages.mock.calls).toEqual([
+        [['new-1']],
+        [['new-2']],
+      ]);
     });
 
     it('should count failed uploads towards the progress', async () => {
@@ -593,6 +597,7 @@ describe('ImagesEffects', () => {
           error: { name: 'LCCError', message: '2 of 2 images failed to upload' },
         }),
       );
+      expect(mockImageFileService.deleteImages).not.toHaveBeenCalled();
     });
 
     it('should report uploads that fail before sending a request', async () => {
@@ -612,14 +617,14 @@ describe('ImagesEffects', () => {
     });
 
     it('should fail without uploading when no image files are stored', async () => {
-      mockImageFileService.getAllImages.mockReturnValue(Promise.resolve([]));
+      mockImageFileService.getImages.mockReturnValue([]);
 
       actions$.next(ImagesActions.addImagesRequested());
       const action = await firstValueFrom(effects.addImages$);
 
       expect(action).toEqual(
         ImagesActions.addImagesFailed({
-          error: { name: 'LCCError', message: 'No image data found in IndexedDB' },
+          error: { name: 'LCCError', message: 'No image files found' },
         }),
       );
     });
@@ -747,7 +752,7 @@ describe('ImagesEffects', () => {
 
   describe('updateAlbum$', () => {
     const album = 'Test Album';
-    const mockIndexedDbData = [
+    const mockNewImageFiles = [
       { id: 'new-1', filename: 'new1.jpg', dataUrl: 'data:image/jpeg;base64,abc' },
       { id: 'new-2', filename: 'new2.jpg', dataUrl: 'data:image/jpeg;base64,def' },
     ];
@@ -789,7 +794,6 @@ describe('ImagesEffects', () => {
       store.refreshState();
       mockIsLccError.mockReturnValue(false);
       mockDataUrlToFile.mockReturnValue(new File([''], 'test.jpg'));
-      mockImageFileService.deleteImage.mockReturnValue(Promise.resolve('success'));
     });
 
     it('should update album with new and existing images successfully', async () => {
@@ -809,9 +813,7 @@ describe('ImagesEffects', () => {
         },
       ];
 
-      mockImageFileService.getAllImages.mockReturnValue(
-        Promise.resolve(mockIndexedDbData),
-      );
+      mockImageFileService.getImages.mockReturnValue(mockNewImageFiles);
       // New images upload one per request; existing images update in one request.
       imagesApiService.addImages.mockReturnValueOnce(of({ data: [newImages[0]] }));
       imagesApiService.addImages.mockReturnValueOnce(of({ data: [newImages[1]] }));
@@ -832,9 +834,7 @@ describe('ImagesEffects', () => {
     });
 
     it('should handle update album failure from API', async () => {
-      mockImageFileService.getAllImages.mockReturnValue(
-        Promise.resolve(mockIndexedDbData),
-      );
+      mockImageFileService.getImages.mockReturnValue(mockNewImageFiles);
       imagesApiService.addImages.mockReturnValue(throwError(() => mockError));
       imagesApiService.updateImages.mockReturnValue(
         of({ data: { newImages: [], updatedImages: [] } }),
@@ -847,9 +847,7 @@ describe('ImagesEffects', () => {
     });
 
     it('should report progress as each new image finishes uploading', async () => {
-      mockImageFileService.getAllImages.mockReturnValue(
-        Promise.resolve(mockIndexedDbData),
-      );
+      mockImageFileService.getImages.mockReturnValue(mockNewImageFiles);
       imagesApiService.addImages.mockReturnValueOnce(of({ data: [MOCK_IMAGES[0]] }));
       imagesApiService.addImages.mockReturnValueOnce(throwError(() => mockError));
       imagesApiService.updateImages.mockReturnValue(
@@ -870,7 +868,7 @@ describe('ImagesEffects', () => {
     it('should not report upload progress when no new images are added', async () => {
       store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {});
       store.refreshState();
-      mockImageFileService.getAllImages.mockReturnValue(Promise.resolve([]));
+      mockImageFileService.getImages.mockReturnValue([]);
       imagesApiService.updateImages.mockReturnValue(
         of({
           data: {
@@ -887,25 +885,23 @@ describe('ImagesEffects', () => {
       expect(imagesApiService.addImages).not.toHaveBeenCalled();
     });
 
-    it('should fail when form data is missing for an image', async () => {
+    it('should upload only the files of the current drafts', async () => {
       store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {
         'new-1': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-1', album },
-        // Missing 'new-2' form data
       });
       store.refreshState();
-
-      mockImageFileService.getAllImages.mockReturnValue(
-        Promise.resolve(mockIndexedDbData),
+      mockImageFileService.getImages.mockReturnValue([mockNewImageFiles[0]]);
+      imagesApiService.addImages.mockReturnValue(of({ data: [MOCK_IMAGES[0]] }));
+      imagesApiService.updateImages.mockReturnValue(
+        of({ data: { newImages: [], updatedImages: [] } }),
       );
 
       actions$.next(ImagesActions.updateAlbumRequested({ album }));
-      const action = await firstValueFrom(effects.updateAlbum$);
+      const action = await firstValueFrom(effects.updateAlbum$.pipe(filter(isOutcome)));
 
-      expect(action.type).toBe(ImagesActions.updateAlbumFailed.type);
-      const payload = action as ReturnType<typeof ImagesActions.updateAlbumFailed>;
-      expect(payload.error.message).toBe(
-        'Mismatch between image file data and form data',
-      );
+      expect(action.type).toBe(ImagesActions.updateAlbumSucceeded.type);
+      expect(mockImageFileService.getImages).toHaveBeenCalledExactlyOnceWith(['new-1']);
+      expect(imagesApiService.addImages).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -1419,7 +1415,7 @@ describe('ImagesEffects', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
       mockImageFileService = TestBed.inject(ImageFileService) as Mocked<ImageFileService>;
-      mockImageFileService.getImage.mockResolvedValue({
+      mockImageFileService.getImage.mockReturnValue({
         id: 'new-1',
         filename: 'photo.jpg',
         dataUrl: 'data:image/jpeg;base64,abc',
@@ -1473,14 +1469,17 @@ describe('ImagesEffects', () => {
       expect(sentMetadata().albumCover).toBe(true);
     });
 
-    it('should fail when the staged image cannot be read', async () => {
-      mockImageFileService.getImage.mockResolvedValue(mockError);
-      mockIsLccError.mockImplementation(value => value === mockError);
+    it('should fail when the image has no file in this tab', async () => {
+      mockImageFileService.getImage.mockReturnValue(null);
 
       actions$.next(ImagesActions.addImageRequested({ imageId: 'new-1' }));
       const action = await firstValueFrom(effects.addImage$);
 
-      expect(action).toEqual(ImagesActions.addImageFailed({ error: mockError }));
+      expect(action).toEqual(
+        ImagesActions.addImageFailed({
+          error: { name: 'LCCError', message: 'No image file found for photo.jpg' },
+        }),
+      );
       expect(imagesApiService.addImages).not.toHaveBeenCalled();
     });
 
@@ -1502,39 +1501,6 @@ describe('ImagesEffects', () => {
 
       expect(action).toEqual(ImagesActions.addImageFailed({ error: mockError }));
       expect(mockParseError).toHaveBeenCalledWith(mockError);
-    });
-  });
-
-  describe('addImages$ before uploading', () => {
-    let mockImageFileService: Mocked<ImageFileService>;
-
-    beforeEach(() => {
-      mockImageFileService = TestBed.inject(ImageFileService) as Mocked<ImageFileService>;
-      store.overrideSelector(AuthSelectors.selectUser, mockUser);
-      store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {});
-      store.refreshState();
-    });
-
-    it('should fail when the staged images cannot be read', async () => {
-      mockImageFileService.getAllImages.mockResolvedValue(mockError);
-      mockIsLccError.mockImplementation(value => value === mockError);
-
-      actions$.next(ImagesActions.addImagesRequested());
-      const action = await firstValueFrom(effects.addImages$);
-
-      expect(action).toEqual(ImagesActions.addImagesFailed({ error: mockError }));
-    });
-
-    it('should fail when a staged image has no form data', async () => {
-      mockImageFileService.getAllImages.mockResolvedValue([
-        { id: 'new-1', filename: 'orphan.jpg', dataUrl: 'data:image/jpeg;base64,abc' },
-      ]);
-
-      actions$.next(ImagesActions.addImagesRequested());
-      const action = await firstValueFrom(effects.addImages$);
-
-      expect(action.type).toBe(ImagesActions.addImagesFailed.type);
-      expect(imagesApiService.addImages).not.toHaveBeenCalled();
     });
   });
 
@@ -1593,7 +1559,7 @@ describe('ImagesEffects', () => {
       const mockImageFileService = TestBed.inject(
         ImageFileService,
       ) as Mocked<ImageFileService>;
-      mockImageFileService.getAllImages.mockResolvedValue([]);
+      mockImageFileService.getImages.mockReturnValue([]);
       store.overrideSelector(AuthSelectors.selectUser, mockUser);
       store.overrideSelector(ImagesSelectors.selectNewImagesFormData, {});
       store.setState({
@@ -1623,19 +1589,40 @@ describe('ImagesEffects', () => {
     });
   });
 
-  describe('clearIndexedDbImageFileData$', () => {
-    it.each([
-      ImagesActions.imageFormDataRestored({ imageId: null }),
-      ImagesActions.albumFormDataRestored({ album: null }),
-    ])('should clear the staged image files on $type', action => {
-      const mockImageFileService = TestBed.inject(
-        ImageFileService,
-      ) as Mocked<ImageFileService>;
+  describe('deleteFilesOfDroppedDrafts$', () => {
+    let mockImageFileService: Mocked<ImageFileService>;
 
-      actions$.next(action);
-      collect(effects.clearIndexedDbImageFileData$);
+    const setDrafts = (...ids: string[]) =>
+      store.setState({
+        imagesState: {
+          ...mockImagesState,
+          newImagesFormData: Object.fromEntries(
+            ids.map(id => [id, { ...INITIAL_IMAGE_FORM_DATA, id }]),
+          ),
+        },
+      });
 
-      expect(mockImageFileService.clearAllImages).toHaveBeenCalledTimes(1);
+    beforeEach(() => {
+      mockImageFileService = TestBed.inject(ImageFileService) as Mocked<ImageFileService>;
+      setDrafts('new-1', 'new-2');
+    });
+
+    it('should delete only the files of the drafts that were dropped', () => {
+      effects.deleteFilesOfDroppedDrafts$.subscribe();
+
+      setDrafts('new-2', 'new-3');
+
+      expect(mockImageFileService.deleteImages).toHaveBeenCalledExactlyOnceWith([
+        'new-1',
+      ]);
+    });
+
+    it('should keep the files while the same drafts are edited', () => {
+      effects.deleteFilesOfDroppedDrafts$.subscribe();
+
+      setDrafts('new-1', 'new-2');
+
+      expect(mockImageFileService.deleteImages).not.toHaveBeenCalled();
     });
   });
 });

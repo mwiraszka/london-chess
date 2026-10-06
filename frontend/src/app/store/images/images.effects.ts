@@ -5,7 +5,6 @@ import moment from 'moment-timezone';
 import {
   EMPTY,
   Observable,
-  ReplaySubject,
   combineLatest,
   concat,
   forkJoin,
@@ -21,7 +20,8 @@ import {
   groupBy,
   map,
   mergeMap,
-  share,
+  pairwise,
+  shareReplay,
   switchMap,
   take,
   tap,
@@ -30,7 +30,7 @@ import {
 
 import { Injectable, inject } from '@angular/core';
 
-import { Article, BaseImage, Image, IndexedDbImageData, LccError } from '@app/models';
+import { Article, BaseImage, Image, LccError, NewImageFile } from '@app/models';
 import { ImageFileService, ImagesApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
@@ -66,31 +66,28 @@ export class ImagesEffects {
   // file per request with a small concurrency pool rather than one large batch.
   private readonly UPLOAD_CONCURRENCY = 5;
 
-  // Uploads a single new image (one file per request) and removes it from IndexedDB
-  // staging on success, so a partial failure leaves only failed images staged.
+  // Uploads a single new image (one file per request) and drops its file on success,
+  // so a partial failure leaves only failed images staged.
   private uploadSingleNewImage(
     metadata: Omit<BaseImage, 'fileSize'>,
-    indexedDbImageData: IndexedDbImageData[],
+    newImageFiles: NewImageFile[],
   ): Observable<{ success: boolean; images: Image[] }> {
-    const formData = this.buildImagesFormData([metadata], indexedDbImageData, []);
+    const formData = this.buildImagesFormData([metadata], newImageFiles, []);
 
     if (this.isLccError(formData)) {
       return of({ success: false, images: [] });
     }
 
     return this.imagesApiService.addImages(formData).pipe(
-      switchMap(response =>
-        from(this.imageFileService.deleteImage(metadata.id)).pipe(
-          map(() => ({ success: true, images: response.data })),
-        ),
-      ),
+      tap(() => this.imageFileService.deleteImages([metadata.id])),
+      map(response => ({ success: true, images: response.data })),
       catchError(() => of({ success: false, images: [] })),
     );
   }
 
   private uploadNewImages(
     newImagesMetadata: Omit<BaseImage, 'fileSize'>[],
-    indexedDbImageData: IndexedDbImageData[],
+    newImageFiles: NewImageFile[],
   ): {
     progress$: Observable<Action>;
     results$: Observable<{ success: boolean; images: Image[] }[]>;
@@ -98,11 +95,11 @@ export class ImagesEffects {
     const total = newImagesMetadata.length;
     const uploads$ = from(newImagesMetadata).pipe(
       mergeMap(
-        metadata => this.uploadSingleNewImage(metadata, indexedDbImageData),
+        metadata => this.uploadSingleNewImage(metadata, newImageFiles),
         this.UPLOAD_CONCURRENCY,
       ),
-      // Replayed, as uploads that fail without a request settle before a late subscriber
-      share({ connector: () => new ReplaySubject(), resetOnRefCountZero: false }),
+      // Run once and replayed, as every upload can settle before the results subscribe
+      shareReplay(),
     );
 
     return {
@@ -526,18 +523,22 @@ export class ImagesEffects {
   addImage$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(ImagesActions.addImageRequested),
-      mergeMap(({ imageId }) => from(this.imageFileService.getImage(imageId))),
+      map(({ imageId }) => this.imageFileService.getImage(imageId)),
       concatLatestFrom(() => [
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
         this.store.select(ImagesSelectors.selectNewImageFormData).pipe(filter(isDefined)),
         this.store.select(ImagesSelectors.selectAllExistingAlbums),
       ]),
-      mergeMap(([imageFileResult, user, formData, existingAlbums]) => {
-        if (this.isLccError(imageFileResult)) {
-          return of(ImagesActions.addImageFailed({ error: imageFileResult }));
+      mergeMap(([imageFile, user, formData, existingAlbums]) => {
+        if (!imageFile) {
+          const error: LccError = {
+            name: 'LCCError',
+            message: `No image file found for ${formData.filename}`,
+          };
+          return of(ImagesActions.addImageFailed({ error }));
         }
 
-        const file = this.dataUrlToFile(imageFileResult.dataUrl, formData.filename);
+        const file = this.dataUrlToFile(imageFile.dataUrl, formData.filename);
 
         if (!file) {
           const error: LccError = {
@@ -576,37 +577,27 @@ export class ImagesEffects {
   addImages$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(ImagesActions.addImagesRequested),
-      mergeMap(() => from(this.imageFileService.getAllImages())),
       concatLatestFrom(() => [
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
         this.store.select(ImagesSelectors.selectNewImagesFormData),
       ]),
-      mergeMap(([imageFilesResult, user, newImagesFormData]) => {
-        if (this.isLccError(imageFilesResult)) {
-          return of(ImagesActions.addImagesFailed({ error: imageFilesResult }));
-        }
+      mergeMap(([, user, newImagesFormData]) => {
+        const newImageFiles = this.imageFileService.getImages(
+          Object.keys(newImagesFormData),
+        );
 
-        if (!imageFilesResult.length) {
+        if (!newImageFiles.length) {
           const error: LccError = {
             name: 'LCCError',
-            message: 'No image data found in IndexedDB',
+            message: 'No image files found',
           };
           return of(ImagesActions.addImagesFailed({ error }));
         }
 
         const newImagesMetadata: Omit<BaseImage, 'fileSize'>[] = [];
 
-        for (const indexedDbImage of imageFilesResult) {
-          const { id, filename } = indexedDbImage;
+        for (const { id, filename } of newImageFiles) {
           const formData = newImagesFormData[id];
-
-          if (!formData) {
-            const error: LccError = {
-              name: 'LCCError',
-              message: `Unable to retrieve form data for ${filename}`,
-            };
-            return of(ImagesActions.addImagesFailed({ error }));
-          }
 
           newImagesMetadata.push({
             id,
@@ -621,7 +612,7 @@ export class ImagesEffects {
 
         const { progress$, results$ } = this.uploadNewImages(
           newImagesMetadata,
-          imageFilesResult,
+          newImageFiles,
         );
 
         const result$ = results$.pipe(
@@ -707,103 +698,82 @@ export class ImagesEffects {
   updateAlbum$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(ImagesActions.updateAlbumRequested),
-      mergeMap(({ album }) =>
-        from(this.imageFileService.getAllImages()).pipe(
-          map(indexedDbImageDataResult => ({ album, indexedDbImageDataResult })),
-        ),
-      ),
       concatLatestFrom(({ album }) => [
         this.store.select(ImagesSelectors.selectImageEntitiesByAlbum(album)),
         this.store.select(ImagesSelectors.selectNewImagesFormData),
         this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
       ]),
-      mergeMap(
-        ([{ album, indexedDbImageDataResult }, entities, newImagesFormData, user]) => {
-          const existingImages: BaseImage[] = entities.map(({ image, formData }) => ({
-            id: image.id,
-            filename: image.filename,
-            caption: formData.caption,
-            album: formData.album,
-            albumCover: formData.albumCover,
-            albumOrdinality: formData.albumOrdinality,
-            modificationInfo: creditEditor(user, image.modificationInfo),
-          }));
+      mergeMap(([{ album }, entities, newImagesFormData, user]) => {
+        const existingImages: BaseImage[] = entities.map(({ image, formData }) => ({
+          id: image.id,
+          filename: image.filename,
+          caption: formData.caption,
+          album: formData.album,
+          albumCover: formData.albumCover,
+          albumOrdinality: formData.albumOrdinality,
+          modificationInfo: creditEditor(user, image.modificationInfo),
+        }));
 
-          const newImagesMetadata: Omit<BaseImage, 'fileSize'>[] = [];
+        const newImageFiles = this.imageFileService.getImages(
+          Object.keys(newImagesFormData),
+        );
+        const newImagesMetadata: Omit<BaseImage, 'fileSize'>[] = newImageFiles.map(
+          ({ id, filename }) => {
+            const formData = newImagesFormData[id];
 
-          if (
-            !this.isLccError(indexedDbImageDataResult) &&
-            indexedDbImageDataResult.length > 0
-          ) {
-            for (const indexedDbImageData of indexedDbImageDataResult) {
-              const { id, filename } = indexedDbImageData;
-              const formData = newImagesFormData[id];
+            return {
+              id,
+              filename,
+              caption: formData.caption,
+              album: formData.album,
+              albumCover: formData.albumCover,
+              albumOrdinality: formData.albumOrdinality,
+              modificationInfo: creditEditor(user),
+            };
+          },
+        );
 
-              if (!formData) {
-                const error: LccError = {
-                  name: 'LCCError',
-                  message: 'Mismatch between image file data and form data',
-                };
-                return of(ImagesActions.updateAlbumFailed({ album, error }));
-              }
+        // New images upload one file per request (concurrency-bounded); existing
+        // image edits go in a single file-less request, well under the body limit.
+        const uploads = newImagesMetadata.length
+          ? this.uploadNewImages(newImagesMetadata, newImageFiles)
+          : null;
 
-              newImagesMetadata.push({
-                id,
-                filename,
-                caption: formData.caption,
-                album: formData.album,
-                albumCover: formData.albumCover,
-                albumOrdinality: formData.albumOrdinality,
-                modificationInfo: creditEditor(user),
-              });
+        const newImages$ = uploads
+          ? uploads.results$.pipe(
+              map(results => ({
+                newImages: results.flatMap(result => result.images),
+                failed: results.filter(result => !result.success).length,
+              })),
+            )
+          : of({ newImages: [] as Image[], failed: 0 });
+
+        const updatedImages$ = existingImages.length
+          ? this.updateExistingImages(existingImages)
+          : of({ updatedImages: [] as BaseImage[], failed: 0 });
+
+        const result$ = forkJoin([newImages$, updatedImages$]).pipe(
+          map(([newResult, updateResult]) => {
+            const failedCount = newResult.failed + updateResult.failed;
+
+            if (failedCount > 0) {
+              const error: LccError = {
+                name: 'LCCError',
+                message: `${failedCount} image operation${failedCount === 1 ? '' : 's'} failed`,
+              };
+              return ImagesActions.updateAlbumFailed({ album, error });
             }
-          }
 
-          // New images upload one file per request (concurrency-bounded); existing
-          // image edits go in a single file-less request, well under the body limit.
-          const uploads = newImagesMetadata.length
-            ? this.uploadNewImages(
-                newImagesMetadata,
-                indexedDbImageDataResult as IndexedDbImageData[],
-              )
-            : null;
+            return ImagesActions.updateAlbumSucceeded({
+              album,
+              newImages: newResult.newImages,
+              updatedImages: updateResult.updatedImages,
+            });
+          }),
+        );
 
-          const newImages$ = uploads
-            ? uploads.results$.pipe(
-                map(results => ({
-                  newImages: results.flatMap(result => result.images),
-                  failed: results.filter(result => !result.success).length,
-                })),
-              )
-            : of({ newImages: [] as Image[], failed: 0 });
-
-          const updatedImages$ = existingImages.length
-            ? this.updateExistingImages(existingImages)
-            : of({ updatedImages: [] as BaseImage[], failed: 0 });
-
-          const result$ = forkJoin([newImages$, updatedImages$]).pipe(
-            map(([newResult, updateResult]) => {
-              const failedCount = newResult.failed + updateResult.failed;
-
-              if (failedCount > 0) {
-                const error: LccError = {
-                  name: 'LCCError',
-                  message: `${failedCount} image operation${failedCount === 1 ? '' : 's'} failed`,
-                };
-                return ImagesActions.updateAlbumFailed({ album, error });
-              }
-
-              return ImagesActions.updateAlbumSucceeded({
-                album,
-                newImages: newResult.newImages,
-                updatedImages: updateResult.updatedImages,
-              });
-            }),
-          );
-
-          return merge(uploads?.progress$ ?? EMPTY, result$);
-        },
-      ),
+        return merge(uploads?.progress$ ?? EMPTY, result$);
+      }),
     );
   });
 
@@ -902,11 +872,15 @@ export class ImagesEffects {
     );
   });
 
-  clearIndexedDbImageFileData$ = createEffect(
+  // A new image's file goes when its draft does, whether saved, removed or discarded
+  deleteFilesOfDroppedDrafts$ = createEffect(
     () =>
-      this.actions$.pipe(
-        ofType(ImagesActions.imageFormDataRestored, ImagesActions.albumFormDataRestored),
-        tap(() => this.imageFileService.clearAllImages()),
+      this.store.select(ImagesSelectors.selectNewImagesFormData).pipe(
+        map(newImagesFormData => Object.keys(newImagesFormData)),
+        pairwise(),
+        map(([before, after]) => before.filter(id => !after.includes(id))),
+        filter(ids => ids.length > 0),
+        tap(ids => this.imageFileService.deleteImages(ids)),
       ),
     { dispatch: false },
   );

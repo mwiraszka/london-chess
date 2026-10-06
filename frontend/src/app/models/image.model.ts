@@ -32,7 +32,7 @@ export interface Image extends BaseImage {
 
 export type ImageDisplayMode = 'none' | 'thumbnail' | 'main' | 'fallback';
 
-export type IndexedDbImageData = Pick<BaseImage, 'id' | 'filename'> & { dataUrl: Url };
+export type NewImageFile = Pick<BaseImage, 'id' | 'filename'> & { dataUrl: Url };
 
 export type ImageFormData = Pick<BaseImage, (typeof IMAGE_FORM_DATA_PROPERTIES)[number]>;
 

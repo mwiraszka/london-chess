@@ -131,7 +131,7 @@ describe('ImageFormComponent', () => {
     storeImageFileSpy = vi.mocked(TestBed.inject(ImageFileService).storeImageFile);
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
-    getImageSpy.mockResolvedValue({
+    getImageSpy.mockReturnValue({
       id: newImageData.id,
       filename: newImageData.filename,
       dataUrl: 'data:image/png;base64,abc',
@@ -155,25 +155,19 @@ describe('ImageFormComponent', () => {
       expect(requestFetchMainImageSpy).not.toHaveBeenCalled();
     });
 
-    it('should pick up the draft of a new image with its stored preview', async () => {
+    it('should pick up the draft of a new image with its stored preview', () => {
       render(null, newImageData, true);
-
-      await getImageSpy.mock.results[0].value;
-      fixture.detectChanges();
 
       expect(component.form.getRawValue()).toEqual(newImageData);
       expect(getImageSpy).toHaveBeenCalledWith(newImageData.id);
       expect(previewSrc()).toBe('data:image/png;base64,abc');
     });
 
-    it('should report a stored preview that fails to load', async () => {
-      const error: LccError = { name: 'LCCError', message: 'Could not read the image.' };
-      getImageSpy.mockResolvedValue(error);
+    it('should show no preview for a draft whose file this tab does not hold', () => {
+      getImageSpy.mockReturnValue(null);
 
       render(null, newImageData, true);
-      await getImageSpy.mock.results[0].value;
 
-      expect(fileActionFailSpy).toHaveBeenCalledWith(error);
       expect(previewSrc()).toBe(IMAGE_FALLBACK_SRC);
     });
 
@@ -308,7 +302,7 @@ describe('ImageFormComponent', () => {
       pickFile(boardFile);
       await storedFile();
 
-      expect(storeImageFileSpy).toHaveBeenCalledWith('new-1234', boardFile, true);
+      expect(storeImageFileSpy).toHaveBeenCalledWith('new-1234', boardFile);
       expect(component.form.controls.filename.value).toBe('first.board.png');
       expect(component.form.controls.caption.value).toBe('first.board');
       expect(previewSrc()).toBe('data:image/png;base64,xyz');
@@ -377,7 +371,6 @@ describe('ImageFormComponent', () => {
 
     it('should empty a new image back to its starting values and drop its preview', async () => {
       render(null, newImageData, true);
-      await getImageSpy.mock.results[0].value;
 
       query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
       fixture.detectChanges();

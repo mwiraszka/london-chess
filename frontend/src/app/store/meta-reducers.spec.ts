@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 
-import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
+import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, User } from '@app/models';
@@ -221,12 +221,15 @@ describe('Meta Reducers', () => {
     describe('when saved image state is dropped', () => {
       let cacheKeys: Mock<Promise<string[]>>;
       let cacheDelete: Mock<Promise<boolean>, [string]>;
+      let deleteDatabase: Mock<(name: string) => void>;
 
       beforeEach(() => {
         localStorage.setItem('imagesState_v6.2.2', '{"entities": {}}');
         cacheKeys = vi.fn(() => Promise.resolve(['images-a', 'images-b']));
         cacheDelete = vi.fn(() => Promise.resolve(true));
+        deleteDatabase = vi.fn();
         vi.stubGlobal('caches', { keys: cacheKeys, delete: cacheDelete });
+        vi.stubGlobal('indexedDB', { deleteDatabase });
       });
 
       afterEach(() => {
@@ -249,6 +252,16 @@ describe('Meta Reducers', () => {
 
         expect(cacheDelete).toHaveBeenCalledWith('images-a');
         expect(cacheDelete).toHaveBeenCalledWith('images-b');
+      });
+
+      it('should delete the database picked images used to wait in', () => {
+        vi.spyOn(console, 'info').mockImplementation(() => undefined);
+        const updateStateMetaReducer =
+          updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+        updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+        expect(deleteDatabase).toHaveBeenCalledExactlyOnceWith('LccImagesDB');
       });
 
       it('should report a failure to clear the browser caches', async () => {
@@ -512,6 +525,24 @@ describe('Meta Reducers', () => {
       expect(savedArticles).toHaveProperty('options');
       expect(savedImages).not.toHaveProperty('failedLoads');
       expect(savedImages).not.toHaveProperty('uploadProgress');
+    });
+
+    it('should leave the drafts of new images out of local storage', () => {
+      const state: MetaState = {
+        imagesState: {
+          ...imagesInitialState,
+          newImagesFormData: {
+            'new-1': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-1', filename: 'board.png' },
+          },
+        },
+      };
+      mockReducer = vi.fn(() => state);
+      const wrappedReducer = hydrationMetaReducer(mockReducer);
+
+      wrappedReducer(state, { type: '[Test] State changed' });
+
+      const savedImages = JSON.parse(versionedStorage.getItem('imagesState') ?? '{}');
+      expect(savedImages).not.toHaveProperty('newImagesFormData');
     });
 
     it('should remember only how the archives were last queried', () => {

@@ -68,6 +68,8 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
   imagesState: pick(imagesInitialState, [
     'failedLoads',
     'isFetchingFiltered',
+    // Only the tab that picked a new image holds its file
+    'newImagesFormData',
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
@@ -182,6 +184,11 @@ export function updateStateVersionsInLocalStorageMetaReducer(
           .catch(error => {
             console.error('[LCC] Failed to clear browser caches:', error);
           });
+      }
+
+      // Picked images used to wait for upload in this database
+      if (imagesStateRemoved && 'indexedDB' in window) {
+        indexedDB.deleteDatabase('LccImagesDB');
       }
     }
 

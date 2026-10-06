@@ -210,12 +210,6 @@ export class AlbumFormComponent implements OnInit {
       return;
     }
 
-    const deleteResult = await this.imageFileService.deleteImage(image.id);
-    if (isLccError(deleteResult)) {
-      this.fileActionFail.emit(deleteResult);
-      return;
-    }
-
     this.form.controls.newImages.removeAt(index);
     this.newImageDataUrls.update(urls => omit(urls, image.id));
     this.removeNewImage.emit(image.id);
@@ -342,15 +336,13 @@ export class AlbumFormComponent implements OnInit {
         ]);
   }
 
-  private async fetchNewImageDataUrls(): Promise<void> {
-    const result = await this.imageFileService.getAllImages();
-    if (isLccError(result)) {
-      this.fileActionFail.emit(result);
-      return;
-    }
+  private fetchNewImageDataUrls(): void {
+    const imageFiles = this.imageFileService.getImages(
+      Object.keys(this.newImagesFormData()),
+    );
 
     this.newImageDataUrls.set(
-      Object.fromEntries(result.map(({ id, dataUrl }) => [id, dataUrl])),
+      Object.fromEntries(imageFiles.map(({ id, dataUrl }) => [id, dataUrl])),
     );
   }
 

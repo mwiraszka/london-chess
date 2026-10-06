@@ -1,4 +1,4 @@
-import { BaseImage, IndexedDbImageData } from '@app/models';
+import { BaseImage, NewImageFile } from '@app/models';
 
 import { buildImagesFormData } from './build-images-form-data.util';
 
@@ -22,7 +22,7 @@ const mockNewImageMetadata: Omit<BaseImage, 'fileSize'> = {
   },
 };
 
-const mockIndexedDbImageData: IndexedDbImageData = {
+const mockNewImageFile: NewImageFile = {
   id: 'new-image-1',
   filename: 'new-image.jpg',
   dataUrl: mockDataUrl,
@@ -56,11 +56,7 @@ describe('buildImagesFormData', () => {
   });
 
   it('should build FormData with new images', () => {
-    const result = buildImagesFormData(
-      [mockNewImageMetadata],
-      [mockIndexedDbImageData],
-      [],
-    );
+    const result = buildImagesFormData([mockNewImageMetadata], [mockNewImageFile], []);
 
     expect(result).toBeInstanceOf(FormData);
     const formData = result as FormData;
@@ -85,7 +81,7 @@ describe('buildImagesFormData', () => {
   it('should build FormData with both new and existing images', () => {
     const result = buildImagesFormData(
       [mockNewImageMetadata],
-      [mockIndexedDbImageData],
+      [mockNewImageFile],
       [mockExistingImage],
     );
 
@@ -104,15 +100,15 @@ describe('buildImagesFormData', () => {
       id: 'new-image-2',
       filename: 'new-image-2.jpg',
     };
-    const secondIndexedDbData: IndexedDbImageData = {
-      ...mockIndexedDbImageData,
+    const secondNewImageFile: NewImageFile = {
+      ...mockNewImageFile,
       id: 'new-image-2',
       filename: 'new-image-2.jpg',
     };
 
     const result = buildImagesFormData(
       [mockNewImageMetadata, secondMetadata],
-      [mockIndexedDbImageData, secondIndexedDbData],
+      [mockNewImageFile, secondNewImageFile],
       [],
     );
 
@@ -123,11 +119,7 @@ describe('buildImagesFormData', () => {
   });
 
   it('should serialize imageMetadata correctly', () => {
-    const result = buildImagesFormData(
-      [mockNewImageMetadata],
-      [mockIndexedDbImageData],
-      [],
-    );
+    const result = buildImagesFormData([mockNewImageMetadata], [mockNewImageFile], []);
 
     const formData = result as FormData;
     const metadataJson = formData.get('imageMetadata') as string;
@@ -135,26 +127,22 @@ describe('buildImagesFormData', () => {
     expect(metadata).toEqual(mockNewImageMetadata);
   });
 
-  it('should return error when IndexedDB data is missing for new image', () => {
+  it('should return error when the file is missing for a new image', () => {
     const result = buildImagesFormData([mockNewImageMetadata], [], []);
 
     expect(result).toEqual({
       name: 'LCCError',
-      message: 'No image data found in IndexedDB for image ID new-image-1',
+      message: 'No image file found for image ID new-image-1',
     });
   });
 
   it('should return error when file construction fails', () => {
-    const invalidIndexedDbData: IndexedDbImageData = {
-      ...mockIndexedDbImageData,
+    const invalidNewImageFile: NewImageFile = {
+      ...mockNewImageFile,
       dataUrl: '',
     };
 
-    const result = buildImagesFormData(
-      [mockNewImageMetadata],
-      [invalidIndexedDbData],
-      [],
-    );
+    const result = buildImagesFormData([mockNewImageMetadata], [invalidNewImageFile], []);
 
     expect(result).toEqual({
       name: 'LCCError',
@@ -162,21 +150,21 @@ describe('buildImagesFormData', () => {
     });
   });
 
-  it('should handle mismatched IDs between metadata and IndexedDB data', () => {
-    const mismatchedIndexedDbData: IndexedDbImageData = {
-      ...mockIndexedDbImageData,
+  it('should handle mismatched IDs between metadata and the picked files', () => {
+    const mismatchedNewImageFile: NewImageFile = {
+      ...mockNewImageFile,
       id: 'different-id',
     };
 
     const result = buildImagesFormData(
       [mockNewImageMetadata],
-      [mismatchedIndexedDbData],
+      [mismatchedNewImageFile],
       [],
     );
 
     expect(result).toEqual({
       name: 'LCCError',
-      message: 'No image data found in IndexedDB for image ID new-image-1',
+      message: 'No image file found for image ID new-image-1',
     });
   });
 
@@ -198,11 +186,7 @@ describe('buildImagesFormData', () => {
   });
 
   it('should not append existingImages field when array is empty', () => {
-    const result = buildImagesFormData(
-      [mockNewImageMetadata],
-      [mockIndexedDbImageData],
-      [],
-    );
+    const result = buildImagesFormData([mockNewImageMetadata], [mockNewImageFile], []);
 
     const formData = result as FormData;
     expect(formData.has('existingImages')).toBe(false);

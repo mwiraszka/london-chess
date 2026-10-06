@@ -52,7 +52,7 @@ export type {
   ImageDisplayMode,
   ImageFormData,
   ImageFormGroup,
-  IndexedDbImageData,
+  NewImageFile,
 } from './image.model';
 export type { ExternalLink, InternalLink, InternalPath } from './link.model';
 export type {

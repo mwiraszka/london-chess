@@ -152,7 +152,7 @@ export class ImageFormComponent implements OnInit {
 
   public async onChooseFile(file: File): Promise<void> {
     const id = this.form.controls.id.value;
-    const result = await this.imageFileService.storeImageFile(id, file, true);
+    const result = await this.imageFileService.storeImageFile(id, file);
 
     if (isLccError(result)) {
       this.fileActionFail.emit(result);
@@ -244,13 +244,11 @@ export class ImageFormComponent implements OnInit {
         ]);
   }
 
-  private async fetchNewImageDataUrl(id: Id): Promise<void> {
-    const result = await this.imageFileService.getImage(id);
+  private fetchNewImageDataUrl(id: Id): void {
+    const imageFile = this.imageFileService.getImage(id);
 
-    if (isLccError(result)) {
-      this.fileActionFail.emit(result);
-    } else if (result) {
-      this.newImageDataUrl.set(result.dataUrl);
+    if (imageFile) {
+      this.newImageDataUrl.set(imageFile.dataUrl);
     }
   }
 
