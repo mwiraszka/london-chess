@@ -69,12 +69,19 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'lcc-page--narrow' },
+  host: {
+    class: 'lcc-page--narrow',
+    '(window:beforeunload)': 'onBeforeUnload($event)',
+  },
 })
 export class AlbumEditorPageComponent implements EditorPage, OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
+
+  private readonly newImagesFormData = this.store.selectSignal(
+    ImagesSelectors.selectNewImagesFormData,
+  );
 
   protected readonly adminIcon = ShieldCheckIconComponent;
 
@@ -92,6 +99,13 @@ export class AlbumEditorPageComponent implements EditorPage, OnInit {
     pageHeading: string;
     status: LoadStatus;
   }>;
+
+  // Only this tab holds the files of new images, so a reload or close would lose them
+  public onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (Object.keys(this.newImagesFormData()).length) {
+      event.preventDefault();
+    }
+  }
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(

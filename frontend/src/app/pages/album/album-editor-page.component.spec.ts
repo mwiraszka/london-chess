@@ -6,7 +6,7 @@ import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } fro
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
+import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, ImageFormData, LccError } from '@app/models';
 import { ImageFileService, MetaAndTitleService } from '@app/services';
@@ -301,5 +301,32 @@ describe('AlbumEditorPageComponent', () => {
     expect(
       query(fixture.debugElement, 'lcc-album-form').componentInstance.hasUnsavedChanges(),
     ).toBe(true);
+  });
+
+  describe('when the page is about to unload', () => {
+    const unload = (): Event => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event;
+    };
+
+    it('should ask the browser to confirm while new images are unsaved', () => {
+      store.setState({
+        imagesState: {
+          ...imagesInitialState,
+          newImagesFormData: { 'new-1': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-1' } },
+        },
+      });
+
+      const event = unload();
+
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('should let the page go when no new images are unsaved', () => {
+      const event = unload();
+
+      expect(event.defaultPrevented).toBe(false);
+    });
   });
 });
