@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.5.0] - 2026-10-05
+## [v6.5.0] - 2026-10-06
 
 ### Changed
 
@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Keep the schedule, the members list and the photo gallery on screen while they refresh in the background, instead of flashing placeholders
 - Show every line break in an event's details
-- Stop pages and pop-ups from getting stuck when the site's server runs into a problem
+- Stop pages and pop-ups from getting stuck when the site's server runs into a problem, and keep long messages within the notices that pop up
 
 ## [v6.4.0] - 2026-10-04
 
