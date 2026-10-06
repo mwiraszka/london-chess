@@ -1,7 +1,7 @@
 import { createReducer, on } from '@ngrx/store';
-import moment from 'moment-timezone';
 
 import { IsoDate } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import * as AppActions from './app.actions';
 

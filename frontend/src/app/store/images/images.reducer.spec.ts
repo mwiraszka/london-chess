@@ -1,4 +1,4 @@
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { BASE_IMAGE_PROPERTIES, MOCK_IMAGES } from '@app/mocks/images.mock';

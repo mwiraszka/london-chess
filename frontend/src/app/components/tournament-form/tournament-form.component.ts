@@ -13,7 +13,6 @@ import {
   SwitchComponent,
   TimePickerComponent,
 } from '@eagami/ui';
-import moment from 'moment-timezone';
 import { Subject, firstValueFrom, merge } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -76,6 +75,7 @@ import {
   toDayString,
   tournamentFormData,
 } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 import {
   closesAfterOpensValidator,
   idValidator,

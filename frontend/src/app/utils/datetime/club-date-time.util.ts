@@ -1,7 +1,6 @@
-import moment from 'moment-timezone';
-
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import { ClubDateTime, IsoDate } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 const DAY_FORMAT = 'YYYY-MM-DD';
 

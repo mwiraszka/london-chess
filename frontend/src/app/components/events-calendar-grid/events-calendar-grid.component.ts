@@ -5,7 +5,6 @@ import {
   PaginatorState,
   TooltipDirective,
 } from '@eagami/ui';
-import moment from 'moment-timezone';
 
 import {
   ChangeDetectionStrategy,
@@ -33,6 +32,7 @@ import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
 import { DeletionService } from '@app/services';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
 import { customSort } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog.component';
 

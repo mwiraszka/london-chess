@@ -1,6 +1,6 @@
 import { ButtonComponent, DialogService, TooltipDirective } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';

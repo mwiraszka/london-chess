@@ -1,4 +1,4 @@
-import * as moment from 'moment-timezone';
+import type moment from '@app/utils/datetime/moment';
 
 import { Event } from './event.model';
 

@@ -1,4 +1,4 @@
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';

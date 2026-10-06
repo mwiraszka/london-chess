@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from '@app/utils/datetime/moment';
 
 import { isString } from '../type-guards/is-string.util';
 

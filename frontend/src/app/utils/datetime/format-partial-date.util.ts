@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { MonthStyle } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 // A date recorded as YYYY, YYYY-MM or YYYY-MM-DD, shown as far as it is known
 export function formatPartialDate(date: string, months: MonthStyle = 'long'): string {

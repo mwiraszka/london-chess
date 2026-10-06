@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { MonthStyle } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { formatPartialDate } from './format-partial-date.util';
 

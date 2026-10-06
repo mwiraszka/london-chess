@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { ModificationInfo, User } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 // Credits a save to its editor, keeping who created the record and when
 export function creditEditor(

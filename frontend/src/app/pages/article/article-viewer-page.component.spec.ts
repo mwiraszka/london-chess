@@ -1,6 +1,6 @@
 import { DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { provideMarkdown } from 'ngx-markdown';
 import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { take } from 'rxjs/operators';

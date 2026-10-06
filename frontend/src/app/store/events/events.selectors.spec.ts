@@ -1,8 +1,7 @@
-import moment from 'moment-timezone';
-
 import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event, EventFormData } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 import * as EventsSelectors from './events.selectors';

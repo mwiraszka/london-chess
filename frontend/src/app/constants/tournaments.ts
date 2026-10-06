@@ -1,5 +1,5 @@
 import { BadgeVariant, SelectOption } from '@eagami/ui';
-import { capitalize } from 'lodash';
+import { capitalize } from 'lodash-es';
 
 import {
   TournamentFormData,

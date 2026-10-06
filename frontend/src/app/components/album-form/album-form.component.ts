@@ -12,7 +12,7 @@ import {
   XCircleIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { omit, pick } from 'lodash';
+import { omit, pick } from 'lodash-es';
 import { debounceTime } from 'rxjs/operators';
 
 import {

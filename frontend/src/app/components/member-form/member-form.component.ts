@@ -7,7 +7,7 @@ import {
   InputComponent,
   TooltipDirective,
 } from '@eagami/ui';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { merge } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 

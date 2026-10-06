@@ -1,5 +1,4 @@
-import { pick } from 'lodash';
-import moment from 'moment-timezone';
+import { pick } from 'lodash-es';
 
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import {
@@ -13,6 +12,7 @@ import {
   TournamentSummary,
   TournamentTiming,
 } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 export function clubToday(): string {
   return moment.tz(CLUB_TIME_ZONE).format('YYYY-MM-DD');

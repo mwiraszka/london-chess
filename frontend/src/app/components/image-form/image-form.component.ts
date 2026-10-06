@@ -10,7 +10,7 @@ import {
   RadioGroupComponent,
   TooltipDirective,
 } from '@eagami/ui';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { debounceTime } from 'rxjs/operators';
 
 import {

@@ -2,7 +2,6 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
@@ -24,6 +23,7 @@ import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
 import { creditEditor, isDefined } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 import * as ArticlesActions from './articles.actions';
 import * as ArticlesSelectors from './articles.selectors';

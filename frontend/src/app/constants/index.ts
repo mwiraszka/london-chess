@@ -1,5 +1,3 @@
-import moment from 'moment-timezone';
-
 import {
   ArticleFormData,
   EventFormData,
@@ -7,6 +5,7 @@ import {
   ImageFormData,
   MemberFormData,
 } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { CLUB_TIME_ZONE } from './clubs';
 

@@ -15,7 +15,7 @@ import {
   TooltipDirective,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { Observable, interval } from 'rxjs';
 import { distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
 

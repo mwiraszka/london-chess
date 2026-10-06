@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { initialEventFormData } from '@app/constants';
 import { Id } from '@app/models';

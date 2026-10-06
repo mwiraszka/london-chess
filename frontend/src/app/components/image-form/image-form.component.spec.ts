@@ -1,6 +1,6 @@
 import { ButtonComponent, DialogService } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
-import { pick, uniq } from 'lodash';
+import { pick, uniq } from 'lodash-es';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 

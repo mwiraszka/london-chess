@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { DateFormat, IsoDate } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 /**
  * Convert ISO8601 date string (`YYYY-MM-DDTHH:mm:ss`) to one of the following formats:

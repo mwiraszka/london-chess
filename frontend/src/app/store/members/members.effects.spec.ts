@@ -1,7 +1,6 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import moment from 'moment-timezone';
 import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
@@ -26,6 +25,7 @@ import {
   IS_EXPIRED,
   PARSE_ERROR,
 } from '@app/tokens';
+import moment from '@app/utils/datetime/moment';
 
 import { MembersActions, MembersSelectors } from '.';
 import { MembersEffects } from './members.effects';

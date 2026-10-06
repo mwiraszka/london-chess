@@ -1,6 +1,6 @@
 import { NewspaperIconComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { Observable, combineLatest, of } from 'rxjs';
 import { distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 

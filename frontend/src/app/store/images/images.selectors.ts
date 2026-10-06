@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { omit, pick, uniq } from 'lodash';
+import { omit, pick, uniq } from 'lodash-es';
 
 import { INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { Article, Id } from '@app/models';

@@ -1,6 +1,6 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { provideMarkdown } from 'ngx-markdown';
 import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } from 'rxjs';
 

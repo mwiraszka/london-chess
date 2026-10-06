@@ -2,7 +2,6 @@ import { ToastService } from '@eagami/ui';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { filter, map, tap } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
@@ -17,6 +16,7 @@ import * as MembersActions from '@app/store/members/members.actions';
 import * as NavActions from '@app/store/nav/nav.actions';
 import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
 import { isDefined } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 import { environment } from '@env';
 

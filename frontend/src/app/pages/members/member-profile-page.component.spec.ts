@@ -1,6 +1,6 @@
 import { AvatarComponent, BadgeComponent, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { BehaviorSubject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';

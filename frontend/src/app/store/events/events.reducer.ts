@@ -1,6 +1,6 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
 import { DataPaginationOptions, Event, EventFormData, IsoDate } from '@app/models';

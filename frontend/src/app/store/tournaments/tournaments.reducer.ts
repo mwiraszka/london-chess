@@ -1,6 +1,6 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { omit } from 'lodash';
+import { omit } from 'lodash-es';
 
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import {

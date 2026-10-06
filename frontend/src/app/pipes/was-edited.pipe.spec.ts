@@ -1,8 +1,7 @@
-import moment from 'moment-timezone';
-
 import { TestBed } from '@angular/core/testing';
 
 import { ModificationInfo } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { WasEditedPipe } from './was-edited.pipe';
 

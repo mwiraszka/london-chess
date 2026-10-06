@@ -2,7 +2,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,

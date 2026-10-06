@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from '@app/utils/datetime/moment';
 
 import * as AppActions from './app.actions';
 import { AppState, appReducer, initialState } from './app.reducer';

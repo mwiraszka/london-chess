@@ -1,7 +1,6 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import moment from 'moment-timezone';
 import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
@@ -13,6 +12,7 @@ import { ArticlesApiService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
+import moment from '@app/utils/datetime/moment';
 
 import { ArticlesActions, ArticlesSelectors } from '.';
 import { ArticlesEffects } from './articles.effects';

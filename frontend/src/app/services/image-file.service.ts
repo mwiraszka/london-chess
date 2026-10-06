@@ -1,4 +1,4 @@
-import { compact } from 'lodash';
+import { compact } from 'lodash-es';
 
 import { Injectable } from '@angular/core';
 

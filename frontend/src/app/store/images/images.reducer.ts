@@ -1,6 +1,6 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { compact, pick } from 'lodash';
+import { compact, pick } from 'lodash-es';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { DataPaginationOptions, Id, Image, ImageFormData, IsoDate } from '@app/models';

@@ -1,9 +1,9 @@
-import { pick } from 'lodash';
-import moment from 'moment-timezone';
+import { pick } from 'lodash-es';
 
 import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DataPaginationOptions, Member, MemberFormData } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { MembersState, membersAdapter } from './members.reducer';
 import * as MembersSelectors from './members.selectors';
