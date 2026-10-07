@@ -2,6 +2,8 @@ import { Page, Route } from '@playwright/test';
 
 export interface HeldRequests {
   count: () => number;
+  // Lets the oldest held request through and waits for its answer
+  releaseNext: () => Promise<void>;
   release: () => Promise<void>;
 }
 
@@ -19,6 +21,13 @@ export async function holdRequests(page: Page, url: RegExp): Promise<HeldRequest
 
   return {
     count: () => held.length,
+    releaseNext: async () => {
+      const route = held.shift();
+      if (route) {
+        await route.fallback();
+        await route.request().response();
+      }
+    },
     release: async () => {
       isReleased = true;
       await Promise.all(held.splice(0).map(route => route.fallback()));

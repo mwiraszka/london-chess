@@ -110,6 +110,7 @@ export const IMAGES_BUCKET = 'images';
 const hexId = (group: number, index: number): string =>
   `e2e0${String(group).padStart(4, '0')}${String(index).padStart(16, '0')}`;
 
+// Numbers 1 and 2 stay free, since the site's own pages link them by the real members' names
 export const ADMIN: SeedMember = {
   key: 'admin',
   firstName: 'Avery',
@@ -118,7 +119,7 @@ export const ADMIN: SeedMember = {
   peakRating: '1804',
   city: 'London',
   isActive: true,
-  number: 1,
+  number: 5,
 };
 
 export const PROFILE_MEMBER: SeedMember = {
@@ -157,7 +158,7 @@ export const CHAMPION_MEMBER_DETAILS: Omit<SeedMember, 'firstName' | 'lastName'>
   city: 'London',
   isActive: true,
   dateJoined: '2016-02-11T23:00:00.000Z',
-  number: 2,
+  number: 6,
 };
 
 const OTHER_MEMBER_NAMES: [string, string, string, boolean][] = [
