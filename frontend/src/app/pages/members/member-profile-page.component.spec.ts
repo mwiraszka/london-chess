@@ -241,13 +241,6 @@ describe('MemberProfilePageComponent', () => {
       expect(statValues()).toEqual([member.peakRating, '2015', member.yearOfBirth]);
     });
 
-    it('should show the founding member as having joined in 105 B.C.', () => {
-      paramMap.next(convertToParamMap({ number: '2' }));
-      showMember({ number: 2, showYearOfBirth: false });
-
-      expect(statValues()).toEqual([member.peakRating, member.city, '105 B.C.']);
-    });
-
     it.each([true, false])(
       'should show the admin icon only for an admin (%s)',
       isAdmin => {

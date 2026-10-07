@@ -129,11 +129,6 @@ export class MemberProfilePageComponent implements OnInit {
     return `${member.firstName} ${member.lastName}`;
   }
 
-  // Member 2's join date is shown as 105 BC, a year the stored ISO join date cannot hold
-  protected yearJoined(member: Member): string | undefined {
-    return member.number === 2 ? '105 B.C.' : member.yearJoined;
-  }
-
   protected initials(member: Member): string {
     return `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`.toUpperCase();
   }

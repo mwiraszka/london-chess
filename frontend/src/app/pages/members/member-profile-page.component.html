@@ -86,10 +86,10 @@
                   }
                 </dl>
                 @if (
-                  yearJoined(member) || (member.showYearOfBirth && member.yearOfBirth)
+                  member.yearJoined || (member.showYearOfBirth && member.yearOfBirth)
                 ) {
                   <dl class="stats__pair">
-                    @if (yearJoined(member); as year) {
+                    @if (member.yearJoined; as year) {
                       <div class="stat">
                         <dt class="stat__label">Member since</dt>
                         <dd class="stat__value">{{ year }}</dd>
