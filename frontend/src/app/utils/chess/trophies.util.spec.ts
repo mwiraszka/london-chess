@@ -15,7 +15,9 @@ describe('trophies util', () => {
 
   const result = (
     rank: number,
-    overrides: Partial<Pick<Tournament, 'name' | 'format' | 'timeControl'>> = {},
+    overrides: Partial<
+      Pick<Tournament, 'name' | 'format' | 'timeControl' | 'date' | 'endDate'>
+    > = {},
   ): MemberTournamentResult => ({
     ...MOCK_MEMBER_TOURNAMENT_RESULTS[1],
     tournament: { ...MOCK_MEMBER_TOURNAMENT_RESULTS[1].tournament, ...overrides },
@@ -78,9 +80,28 @@ describe('trophies util', () => {
         label: 'Gold chalice trophy',
         shape: 'chalice',
         metal: 'gold',
+        width: 104,
+        height: 248,
       });
       expect(trophyForResult(result(2))?.file).toBe('trophy-cup-silver.svg');
       expect(trophyForResult(result(3))?.file).toBe('trophy-cup-bronze.svg');
+    });
+
+    it('should award nothing while the tournament is under way or still to come', () => {
+      const today = '2026-03-10';
+
+      expect(
+        trophyForResult(result(1, { date: '2026-03-03', endDate: '2026-03-17' }), today),
+      ).toBeNull();
+      expect(
+        trophyForResult(result(1, { date: '2026-03-10', endDate: null }), today),
+      ).toBeNull();
+      expect(
+        trophyForResult(result(1, { date: '2026-03-24', endDate: null }), today),
+      ).toBeNull();
+      expect(
+        trophyForResult(result(1, { date: '2026-02-03', endDate: '2026-03-09' }), today),
+      ).not.toBeNull();
     });
 
     it('should award nothing below third place', () => {
@@ -99,6 +120,8 @@ describe('trophies util', () => {
         label: 'Gold bowl trophy with blue and red tassels',
         shape: 'bowl',
         metal: 'gold',
+        width: 236,
+        height: 178,
       });
       expect(trophyForResult(result(2, championship))?.file).toBe(
         'trophy-cup-silver.svg',

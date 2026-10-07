@@ -7,6 +7,8 @@ import {
   TrophyShape,
 } from '@app/models';
 
+import { clubToday, tournamentTiming } from './tournament-status.util';
+
 const METALS_BY_RANK: TrophyMetal[] = ['gold', 'silver', 'bronze'];
 
 // A game of ten minutes or fewer per side, before any increment, is blitz
@@ -38,11 +40,14 @@ export function trophyShapeFor(
   return baseMinutes(tournament.timeControl) <= BLITZ_MAX_MINUTES ? 'chalice' : 'cup';
 }
 
-// Null for anything but a podium finish
-export function trophyForResult(result: MemberTournamentResult): Trophy | null {
+// Null for anything but a podium finish, and for any standing before the tournament is over
+export function trophyForResult(
+  result: MemberTournamentResult,
+  today: string = clubToday(),
+): Trophy | null {
   const metal = METALS_BY_RANK[result.rank - 1];
   const shape = trophyShapeFor(result.tournament);
-  if (!metal || !shape) {
+  if (!metal || !shape || tournamentTiming(result.tournament, today) !== null) {
     return null;
   }
   // Only the champion's bowl exists, so the runners-up take the cup
