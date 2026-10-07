@@ -22,6 +22,7 @@ import {
   MetaAndTitleService,
   StoreRequestService,
 } from '@app/services';
+import { initialState as appInitialState } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
 import { tournamentsAdapter } from '@app/store/tournaments/tournaments.reducer';
@@ -44,6 +45,7 @@ describe('TournamentPageComponent', () => {
   let paramMap: BehaviorSubject<ParamMap>;
 
   const stateWith = (tournaments: Tournament[], failed = false) => ({
+    appState: appInitialState,
     authState: { user: null },
     tournamentsState: tournamentsAdapter.setAll(tournaments, {
       ...initialState,

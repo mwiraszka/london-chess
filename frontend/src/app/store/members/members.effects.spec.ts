@@ -9,6 +9,7 @@ import { initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   ApiResponse,
+  ApiScope,
   LccError,
   Member,
   MemberRatingsUpdate,
@@ -164,38 +165,37 @@ describe('MembersEffects', () => {
     });
   });
 
-  describe('replacePublicRecordsForAdmin$', () => {
+  describe('replaceRecordsOnScopeChange$', () => {
+    const emittedFor = (scope: ApiScope, recordsScope: ApiScope | null): Action[] => {
+      store.overrideSelector(AuthSelectors.selectApiScope, scope);
+      store.overrideSelector(MembersSelectors.selectRecordsScope, recordsScope);
+      store.refreshState();
+      const emitted: Action[] = [];
+
+      effects.replaceRecordsOnScopeChange$.subscribe(action => emitted.push(action));
+
+      return emitted;
+    };
+
     it('should fetch every member for an admin while the stored records are public', () => {
-      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
-      store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
-      store.refreshState();
-      const emitted: Action[] = [];
-
-      effects.replacePublicRecordsForAdmin$.subscribe(action => emitted.push(action));
-
-      expect(emitted).toEqual([MembersActions.fetchAllMembersRequested()]);
+      expect(emittedFor('admin', 'public')).toEqual([
+        MembersActions.fetchAllMembersRequested(),
+      ]);
     });
 
-    it('should not fetch when the stored records already came from the admin API', () => {
-      store.overrideSelector(AuthSelectors.selectIsAdmin, true);
-      store.overrideSelector(MembersSelectors.selectRecordsScope, 'admin');
-      store.refreshState();
-      const emitted: Action[] = [];
-
-      effects.replacePublicRecordsForAdmin$.subscribe(action => emitted.push(action));
-
-      expect(emitted).toEqual([]);
+    it('should fetch the public records once an admin switches their controls off', () => {
+      expect(emittedFor('public', 'admin')).toEqual([
+        MembersActions.fetchAllMembersRequested(),
+      ]);
     });
 
-    it('should not fetch for a visitor who is not an admin', () => {
-      store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-      store.overrideSelector(MembersSelectors.selectRecordsScope, 'public');
-      store.refreshState();
-      const emitted: Action[] = [];
+    it('should not fetch when the stored records already match', () => {
+      expect(emittedFor('admin', 'admin')).toEqual([]);
+      expect(emittedFor('public', 'public')).toEqual([]);
+    });
 
-      effects.replacePublicRecordsForAdmin$.subscribe(action => emitted.push(action));
-
-      expect(emitted).toEqual([]);
+    it('should not fetch before any records are stored', () => {
+      expect(emittedFor('admin', null)).toEqual([]);
     });
   });
 

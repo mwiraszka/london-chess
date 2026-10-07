@@ -49,7 +49,10 @@ describe('accessGuard', () => {
     TestBed.configureTestingModule({
       providers: [
         provideMockStore({
-          selectors: [{ selector: AuthSelectors.selectUser, value: null }],
+          selectors: [
+            { selector: AuthSelectors.selectUser, value: null },
+            { selector: AuthSelectors.selectIsAdmin, value: false },
+          ],
         }),
         { provide: ClerkService, useValue: { isLoggedIn, load: loadClerk } },
         { provide: UserService, useValue: { user: record, load } },
@@ -62,6 +65,11 @@ describe('accessGuard', () => {
     dispatchSpy = vi.spyOn(store, 'dispatch');
     openLoginSpy = vi.spyOn(authDrawerService, 'openLogin');
   });
+
+  const logIn = (user: User, isAdmin = user.isAdmin): void => {
+    store.overrideSelector(AuthSelectors.selectUser, user);
+    store.overrideSelector(AuthSelectors.selectIsAdmin, isAdmin);
+  };
 
   afterEach(() => {
     store.resetSelectors();
@@ -85,7 +93,7 @@ describe('accessGuard', () => {
   });
 
   it('should allow a logged-in admin onto an admin route', async () => {
-    store.overrideSelector(AuthSelectors.selectUser, admin);
+    logIn(admin);
     store.refreshState();
 
     const result = await runGuard('admin');
@@ -94,8 +102,17 @@ describe('accessGuard', () => {
     expect(dispatchSpy).not.toHaveBeenCalled();
   });
 
+  it('should turn an admin with their controls switched off away from an admin route', async () => {
+    logIn(admin, false);
+    store.refreshState();
+
+    const result = await runGuard('admin');
+
+    expect(result).toBe(false);
+  });
+
   it('should allow any logged-in user onto a member route', async () => {
-    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+    logIn(nonAdmin);
     store.refreshState();
 
     const result = await runGuard('member', '/account/profile');
@@ -105,7 +122,7 @@ describe('accessGuard', () => {
   });
 
   it('should block a logged-in non-admin and dispatch pageAccessDenied', async () => {
-    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+    logIn(nonAdmin);
     store.refreshState();
 
     const result = await runGuard('admin');
@@ -117,7 +134,7 @@ describe('accessGuard', () => {
   });
 
   it('should deny a page without an add or edit heading', async () => {
-    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+    logIn(nonAdmin);
     store.refreshState();
 
     const result = await runGuard('admin', '/members');
@@ -131,7 +148,7 @@ describe('accessGuard', () => {
   it('should wait for the record of a session that has not loaded it yet', async () => {
     isLoggedIn.set(true);
     load.mockImplementation(async () => {
-      store.overrideSelector(AuthSelectors.selectUser, admin);
+      logIn(admin);
       store.refreshState();
     });
 
@@ -144,7 +161,7 @@ describe('accessGuard', () => {
   it('should wait for Clerk before telling who is logged in', async () => {
     loadClerk.mockImplementation(async () => isLoggedIn.set(true));
     load.mockImplementation(async () => {
-      store.overrideSelector(AuthSelectors.selectUser, admin);
+      logIn(admin);
       store.refreshState();
     });
 
@@ -174,7 +191,7 @@ describe('accessGuard', () => {
       hasTemporaryPassword: false,
       showYearOfBirth: false,
     });
-    store.overrideSelector(AuthSelectors.selectUser, admin);
+    logIn(admin);
     store.refreshState();
 
     await runGuard('admin');

@@ -5,6 +5,7 @@ describe('App Selectors', () => {
   const mockAppState: AppState = {
     isDarkMode: true,
     isSafeMode: false,
+    showAdminControls: true,
     isDesktopView: false,
     isWideView: false,
     bannerLastCleared: '2025-01-15T10:30:00.000Z',
@@ -53,6 +54,7 @@ describe('App Selectors', () => {
       const state: AppState = {
         ...mockAppState,
         isSafeMode: true,
+        showAdminControls: true,
       };
 
       const result = AppSelectors.selectIsSafeMode.projector(state);
@@ -96,6 +98,17 @@ describe('App Selectors', () => {
       const result = AppSelectors.selectBannerLastCleared.projector(state);
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('selectShowAdminControls', () => {
+    it('should select whether admin controls are shown', () => {
+      const result = AppSelectors.selectShowAdminControls.projector({
+        ...mockAppState,
+        showAdminControls: false,
+      });
+
+      expect(result).toBe(false);
     });
   });
 

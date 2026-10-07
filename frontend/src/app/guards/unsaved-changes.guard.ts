@@ -18,11 +18,13 @@ export const unsavedChangesGuard: CanDeactivateFn<EditorPage> = async (
   currentRoute,
 ) => {
   const dialogService = inject(DialogService);
-  const user = inject(Store).selectSignal(AuthSelectors.selectUser)();
+  const store = inject(Store);
+  const user = store.selectSignal(AuthSelectors.selectUser)();
+  const isAdmin = store.selectSignal(AuthSelectors.selectIsAdmin)();
 
   // Changes that can no longer be saved are not worth keeping anyone on a page
   // they are no longer allowed to see
-  if (!hasAccess(declaredAccess(currentRoute.data), user)) {
+  if (!hasAccess(declaredAccess(currentRoute.data), user, isAdmin)) {
     return true;
   }
 

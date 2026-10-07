@@ -23,8 +23,9 @@ export const accessGuard: CanActivateFn = async (route, state) => {
     await userService.load();
   }
   const user = store.selectSignal(AuthSelectors.selectUser)();
+  const isAdmin = store.selectSignal(AuthSelectors.selectIsAdmin)();
 
-  if (hasAccess(declaredAccess(route.data), user)) {
+  if (hasAccess(declaredAccess(route.data), user, isAdmin)) {
     return true;
   }
 

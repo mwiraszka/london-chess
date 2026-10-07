@@ -62,12 +62,12 @@ export class MembersEffects {
     { dispatch: false },
   );
 
-  // Records fetched before an admin logged in leave out the details admins work with
-  replacePublicRecordsForAdmin$ = createEffect(() => {
-    return this.store.select(AuthSelectors.selectIsAdmin).pipe(
-      filter(isAdmin => isAdmin),
+  // Records fetched before an admin logged in leave out the details admins work with, and
+  // an admin switching their controls off sees only what any other member would
+  replaceRecordsOnScopeChange$ = createEffect(() => {
+    return this.store.select(AuthSelectors.selectApiScope).pipe(
       concatLatestFrom(() => this.store.select(MembersSelectors.selectRecordsScope)),
-      filter(([, recordsScope]) => recordsScope === 'public'),
+      filter(([scope, recordsScope]) => recordsScope !== null && recordsScope !== scope),
       map(() => MembersActions.fetchAllMembersRequested()),
     );
   });

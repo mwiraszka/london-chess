@@ -60,7 +60,9 @@ describe('NavigationBarComponent', () => {
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
     store.overrideSelector(AppSelectors.selectIsSafeMode, false);
     store.overrideSelector(AppSelectors.selectIsWideView, false);
+    store.overrideSelector(AppSelectors.selectShowAdminControls, true);
     store.overrideSelector(AuthSelectors.selectUser, null);
+    store.overrideSelector(AuthSelectors.selectHasAdminRights, false);
 
     fixture.detectChanges();
   });

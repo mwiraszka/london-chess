@@ -74,4 +74,30 @@ test.describe('admin controls', () => {
       ).toBeVisible();
     }
   });
+
+  test('leave the app as any other member sees it while switched off', async ({
+    page,
+  }) => {
+    const toolbarLink = page
+      .locator('lcc-admin-toolbar')
+      .getByRole('link', { name: 'Add an event' });
+    const setAdminControls = async (on: boolean): Promise<void> => {
+      await page.getByRole('button', { name: 'Menu' }).click();
+      await setSwitch(page, 'Admin controls', on);
+      await page.keyboard.press('Escape');
+    };
+    await page.goto('/schedule');
+    await expect(toolbarLink).toBeVisible();
+
+    await setAdminControls(false);
+
+    await expect(toolbarLink).toHaveCount(0);
+    await page.goto('/event/add');
+    await expect(page).not.toHaveURL(/\/event\/add$/);
+
+    await setAdminControls(true);
+    await page.goto('/schedule');
+
+    await expect(toolbarLink).toBeVisible();
+  });
 });

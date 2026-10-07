@@ -8,6 +8,8 @@ import * as AppActions from './app.actions';
 export interface AppState {
   isDarkMode: boolean;
   isSafeMode: boolean;
+  // An admin can switch their controls off to see the app as any other member does
+  showAdminControls: boolean;
   isDesktopView: boolean;
   isWideView: boolean;
   bannerLastCleared: IsoDate | null;
@@ -17,6 +19,7 @@ export interface AppState {
 export const initialState: AppState = {
   isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
   isSafeMode: false,
+  showAdminControls: true,
   isDesktopView: false,
   isWideView: false,
   bannerLastCleared: null,
@@ -34,6 +37,11 @@ export const appReducer = createReducer(
   on(AppActions.safeModeToggled, (state): AppState => ({
     ...state,
     isSafeMode: !state.isSafeMode,
+  })),
+
+  on(AppActions.adminControlsToggled, (state): AppState => ({
+    ...state,
+    showAdminControls: !state.showAdminControls,
   })),
 
   on(AppActions.desktopViewToggled, (state): AppState => ({

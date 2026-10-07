@@ -88,6 +88,14 @@
         }
       </div>
     }
+    @if (vm.hasAdminRights) {
+      <ea-switch
+        class="menu-toggle admin-controls-toggle"
+        label="Admin controls"
+        size="sm"
+        [checked]="vm.showAdminControls"
+        (changed)="onToggleAdminControls()" />
+    }
   </div>
   <ea-divider class="menu-divider" />
 

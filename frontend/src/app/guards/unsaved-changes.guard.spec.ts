@@ -45,7 +45,10 @@ describe('unsavedChangesGuard', () => {
       providers: [
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         provideMockStore({
-          selectors: [{ selector: AuthSelectors.selectUser, value: admin }],
+          selectors: [
+            { selector: AuthSelectors.selectUser, value: admin },
+            { selector: AuthSelectors.selectIsAdmin, value: true },
+          ],
         }),
       ],
     });
@@ -83,7 +86,10 @@ describe('unsavedChangesGuard', () => {
       providers: [
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         provideMockStore({
-          selectors: [{ selector: AuthSelectors.selectUser, value: null }],
+          selectors: [
+            { selector: AuthSelectors.selectUser, value: null },
+            { selector: AuthSelectors.selectIsAdmin, value: false },
+          ],
         }),
       ],
     });

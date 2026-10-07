@@ -18,6 +18,7 @@ describe('App Reducer', () => {
       expect(initialState).toEqual({
         isDarkMode: expect.any(Boolean),
         isSafeMode: false,
+        showAdminControls: true,
         isDesktopView: false,
         isWideView: false,
         bannerLastCleared: null,
@@ -113,6 +114,18 @@ describe('App Reducer', () => {
 
       expect(state.isDarkMode).toBe(true);
       expect(state.isSafeMode).toBe(true);
+    });
+  });
+
+  describe('adminControlsToggled', () => {
+    it('should switch the admin controls off and back on', () => {
+      const action = AppActions.adminControlsToggled();
+
+      const off = appReducer(initialState, action);
+      const on = appReducer(off, action);
+
+      expect(off.showAdminControls).toBe(false);
+      expect(on.showAdminControls).toBe(true);
     });
   });
 
