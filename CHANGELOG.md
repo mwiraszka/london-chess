@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.5.0] - 2026-10-07
 
+### Added
+
+- Open any photo in the photo viewer as large as the screen allows with a click, and close it again with another
+
 ### Changed
 
 - Refresh the look of the site with a new typeface, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
 - Load the site much faster, especially on phones, so pages appear sooner, respond the moment a link is tapped, and no longer jump around as they fill in
 - Show a game's board above its details on phones and tablets
+- Page through the schedule's calendar by months, three, six or twelve at a time or all at once
 - Make the site easier to read and to use with a keyboard or screen reader, with stronger colours on cards, tables and links, a pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
 
 ### Fixed
@@ -19,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep the schedule, the members list and the photo gallery on screen while they refresh in the background, instead of flashing placeholders
 - Show every line break in an event's details
 - Show trophies on member profiles only once a tournament has finished
+- Move between photos in the photo viewer without the current one flashing back in first
 - Stop pages and pop-ups from getting stuck when the site's server runs into a problem, and keep long messages within the notices that pop up
 
 ## [v6.4.0] - 2026-10-04
