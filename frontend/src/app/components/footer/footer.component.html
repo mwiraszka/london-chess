@@ -27,7 +27,7 @@
           class="whatsapp"
           rel="noopener noreferrer"
           target="_blank"
-          eaTooltip="Club noticeboard on WhatsApp">
+          [eaTooltip]="whatsappTooltipContent">
           <div class="image-container">
             <img
               src="assets/club-link-icons/whatsapp.svg"
@@ -42,7 +42,7 @@
           class="instagram"
           rel="noopener noreferrer"
           target="_blank"
-          eaTooltip="Follow us on Instagram">
+          [eaTooltip]="instagramTooltipContent">
           <div class="image-container">
             <img
               src="assets/club-link-icons/instagram.svg"
@@ -72,7 +72,8 @@
           class="email"
           rel="noopener noreferrer"
           target="_blank"
-          [eaTooltip]="emailTooltipContent">
+          [eaTooltip]="emailTooltipContent"
+          [maxWidth]="undefined">
           <div class="image-container">
             <img
               src="assets/club-link-icons/email.svg"
@@ -220,12 +221,30 @@
   <span>All Rights Reserved.</span>
 </small>
 
+<ng-template #whatsappTooltipContent>
+  <span class="social-tooltip">
+    <span class="social-tooltip__lead">Club noticeboard on</span>
+    <span class="social-tooltip__destination">WhatsApp</span>
+  </span>
+</ng-template>
+
+<ng-template #instagramTooltipContent>
+  <span class="social-tooltip">
+    <span class="social-tooltip__lead">Follow us on</span>
+    <span class="social-tooltip__destination">Instagram</span>
+  </span>
+</ng-template>
+
 <ng-template #chesscomTooltipContent>
-  <div>Join our club page on</div>
-  <i class="tooltip-highlighted-text">chess.com</i>
+  <span class="social-tooltip">
+    <span class="social-tooltip__lead">Join our club page on</span>
+    <span class="social-tooltip__destination">chess.com</span>
+  </span>
 </ng-template>
 
 <ng-template #emailTooltipContent>
-  <div>Email us at</div>
-  <i class="tooltip-highlighted-text">welcome&#64;londonchess.ca</i>
+  <span class="social-tooltip">
+    <span class="social-tooltip__lead">Email us at</span>
+    <span class="social-tooltip__destination">welcome&#64;londonchess.ca</span>
+  </span>
 </ng-template>

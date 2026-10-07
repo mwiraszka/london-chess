@@ -1,5 +1,6 @@
 import { TooltipDirective } from '@eagami/ui';
 
+import { DebugElement, TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 
@@ -68,6 +69,18 @@ describe('FooterComponent', () => {
     });
 
     describe('social links', () => {
+      // The lead-in, then where the link goes
+      const tooltipParts = (link: DebugElement): string[] => {
+        const content = link.injector.get(TooltipDirective).eaTooltip();
+        if (!(content instanceof TemplateRef)) {
+          return [];
+        }
+        const view = content.createEmbeddedView(null);
+        view.detectChanges();
+        const [tooltip]: HTMLElement[] = view.rootNodes;
+        return [...tooltip.children].map(part => part.textContent?.trim() ?? '');
+      };
+
       it('should render all social media links', () => {
         const socialLinks = queryAll(fixture.debugElement, '.socials a');
         expect(socialLinks.length).toBe(4);
@@ -78,9 +91,7 @@ describe('FooterComponent', () => {
 
         expect(whatsappLink.nativeElement.href).toContain('bit.ly/LCC-NoticeBoard');
         expect(whatsappLink.nativeElement.target).toBe('_blank');
-        expect(whatsappLink.injector.get(TooltipDirective).eaTooltip()).toBe(
-          'Club noticeboard on WhatsApp',
-        );
+        expect(tooltipParts(whatsappLink)).toEqual(['Club noticeboard on', 'WhatsApp']);
       });
 
       it('should properly render Instagram link', () => {
@@ -90,9 +101,7 @@ describe('FooterComponent', () => {
           'instagram.com/londonchessclub_',
         );
         expect(instagramLink.nativeElement.target).toBe('_blank');
-        expect(instagramLink.injector.get(TooltipDirective).eaTooltip()).toBe(
-          'Follow us on Instagram',
-        );
+        expect(tooltipParts(instagramLink)).toEqual(['Follow us on', 'Instagram']);
       });
 
       it('should properly render Chess.com link', () => {
@@ -102,7 +111,10 @@ describe('FooterComponent', () => {
           'chess.com/club/london-chess-club-canada',
         );
         expect(chesscomLink.nativeElement.target).toBe('_blank');
-        expect(chesscomLink.injector.get(TooltipDirective).eaTooltip()).toBeTruthy();
+        expect(tooltipParts(chesscomLink)).toEqual([
+          'Join our club page on',
+          'chess.com',
+        ]);
       });
 
       it('should properly render email link', () => {
@@ -110,7 +122,11 @@ describe('FooterComponent', () => {
 
         expect(emailLink.nativeElement.href).toContain('mailto:welcome@londonchess.ca');
         expect(emailLink.nativeElement.target).toBe('_blank');
-        expect(emailLink.injector.get(TooltipDirective).eaTooltip()).toBeTruthy();
+        expect(tooltipParts(emailLink)).toEqual([
+          'Email us at',
+          'welcome@londonchess.ca',
+        ]);
+        expect(emailLink.injector.get(TooltipDirective).maxWidth()).toBeUndefined();
       });
     });
 
