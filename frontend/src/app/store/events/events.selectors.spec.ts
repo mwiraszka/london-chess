@@ -1,3 +1,5 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
+
 import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event, EventFormData } from '@app/models';
@@ -42,6 +44,8 @@ describe('Events Selectors', () => {
       filteredCount: 12,
       totalCount: 20,
       scheduleView: 'calendar',
+      calendarPage: 1,
+      calendarMonthsPerPage: 3,
     }),
     entities: {
       [MOCK_EVENTS[0].id]: {
@@ -333,6 +337,47 @@ describe('Events Selectors', () => {
       const result = EventsSelectors.selectConcurrentNextEvents({ eventsState: state });
 
       expect(result).toEqual([MOCK_EVENTS[0]]);
+    });
+  });
+
+  describe('selectCalendarView', () => {
+    // Events on the 15th of each month, in the club's evening
+    const monthly = (months: string[]): Event[] =>
+      months.map((month, index) => ({
+        ...MOCK_EVENTS[0],
+        id: `event-${index}`,
+        eventDate: moment(`${month}-15T19:00`).toISOString(),
+      }));
+    const events = monthly(['2050-01', '2050-02', '2050-04', '2050-07']);
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2050-01-05T17:00:00.000Z'));
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    it('should show a page of the months the events span, with their events', () => {
+      const view = EventsSelectors.selectCalendarView.projector(events, 2, 3);
+
+      expect(view.months).toEqual(['2050-04', '2050-05', '2050-06']);
+      expect(view.monthCount).toBe(7);
+      expect(view.page).toBe(2);
+      expect(view.events.map(event => event.id)).toEqual(['event-2']);
+    });
+
+    it('should show every month at once when asked for all', () => {
+      const view = EventsSelectors.selectCalendarView.projector(events, 1, PAGE_SIZE_ALL);
+
+      expect(view.months).toHaveLength(7);
+      expect(view.events).toEqual(events);
+    });
+
+    it('should fall back to the last page once fewer months remain', () => {
+      const view = EventsSelectors.selectCalendarView.projector(events, 5, 6);
+
+      expect(view.page).toBe(2);
+      expect(view.months).toEqual(['2050-07']);
     });
   });
 });

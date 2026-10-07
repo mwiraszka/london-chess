@@ -77,7 +77,7 @@ export class ScheduleToolbarComponent {
   }
 
   public get todayScrollPoint(): Element | null {
-    return document.querySelector('.schedule-view.active .today-scroll-point');
+    return document.querySelector('.today-scroll-point');
   }
 
   public onToday(): void {

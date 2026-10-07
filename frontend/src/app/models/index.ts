@@ -12,7 +12,7 @@ export type {
   LoginStep,
   NewPasswordFormGroup,
 } from './auth.model';
-export type { CalendarDay, CalendarMonth } from './calendar.model';
+export type { CalendarDay, CalendarMonth, CalendarPage } from './calendar.model';
 export type { ChangelogRelease, ChangelogTag } from './changelog.model';
 export type { ChampionshipTableRowData } from './championship-data.model';
 export type { Club, ClubDocument } from './club.model';

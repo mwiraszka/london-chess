@@ -5,6 +5,7 @@ import {
   EmptyStateComponent,
   FilterXIconComponent,
   InputComponent,
+  PaginatorState,
   PlusCircleIconComponent,
   SearchIconComponent,
   SwitchComponent,
@@ -31,6 +32,7 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/schedule-toolbar.component';
 import {
   AdminButton,
+  CalendarPage,
   DataPaginationOptions,
   Event,
   InternalLink,
@@ -80,7 +82,9 @@ import { bindSearchControl, widestRows } from '@app/utils';
       </div>
 
       <lcc-schedule-toolbar
-        [filteredEvents]="vm.filteredEvents"
+        [filteredEvents]="
+          vm.scheduleView === 'calendar' ? vm.calendar.events : vm.filteredEvents
+        "
         [scheduleView]="vm.scheduleView"
         [totalCount]="vm.totalCount"
         (toggleScheduleView)="onToggleScheduleView()">
@@ -90,10 +94,11 @@ import { bindSearchControl, widestRows } from '@app/utils';
         <lcc-load-failed
           title="Unable to load the schedule"
           (retry)="onRetry()" />
-      } @else if (vm.filteredCount || vm.status === 'loading' || vm.isFetching) {
+      } @else if (
+        (vm.filteredCount || vm.status === 'loading' || vm.isFetching) &&
+        vm.scheduleView === 'list'
+      ) {
         <lcc-events-table
-          class="schedule-view"
-          [class.active]="vm.scheduleView === 'list'"
           [events]="vm.filteredEvents"
           [filteredCount]="vm.filteredCount"
           [isAdmin]="vm.isAdmin"
@@ -104,16 +109,17 @@ import { bindSearchControl, widestRows } from '@app/utils';
           [widestEvents]="widestEvents()"
           (optionsChange)="onOptionsChange($event)">
         </lcc-events-table>
-
+      } @else if (vm.filteredCount || vm.status === 'loading' || vm.isFetching) {
         <lcc-events-calendar-grid
-          class="schedule-view"
-          [class.active]="vm.scheduleView === 'calendar'"
-          [events]="vm.filteredEvents"
-          [filteredCount]="vm.filteredCount"
+          [events]="vm.calendar.events"
           [isAdmin]="vm.isAdmin"
           [isLoading]="vm.status === 'loading' || vm.isFetching"
-          [options]="vm.options"
-          (optionsChange)="onOptionsChange($event)">
+          [monthCount]="vm.calendar.monthCount"
+          [months]="vm.calendar.months"
+          [monthsPerPage]="vm.calendar.monthsPerPage"
+          [page]="vm.calendar.page"
+          [search]="vm.options.search"
+          (pageChange)="onCalendarPageChange($event)">
         </lcc-events-calendar-grid>
       } @else {
         <ea-empty-state
@@ -169,6 +175,7 @@ export class SchedulePageComponent implements OnInit {
   };
 
   public viewModel$?: Observable<{
+    calendar: CalendarPage;
     filteredCount: number | null;
     filteredEvents: Event[];
     isAdmin: boolean;
@@ -193,6 +200,7 @@ export class SchedulePageComponent implements OnInit {
     );
 
     this.viewModel$ = combineLatest([
+      this.store.select(EventsSelectors.selectCalendarView),
       this.store.select(EventsSelectors.selectFilteredCount),
       this.store.select(EventsSelectors.selectFilteredEvents),
       this.store.select(AuthSelectors.selectIsAdmin),
@@ -204,6 +212,7 @@ export class SchedulePageComponent implements OnInit {
     ]).pipe(
       map(
         ([
+          calendar,
           filteredCount,
           filteredEvents,
           isAdmin,
@@ -213,6 +222,7 @@ export class SchedulePageComponent implements OnInit {
           totalCount,
           status,
         ]) => ({
+          calendar,
           filteredCount,
           filteredEvents,
           isAdmin,
@@ -228,6 +238,12 @@ export class SchedulePageComponent implements OnInit {
 
   public onOptionsChange(options: DataPaginationOptions<Event>): void {
     this.store.dispatch(EventsActions.paginationOptionsChanged({ options }));
+  }
+
+  public onCalendarPageChange({ page, pageSize }: PaginatorState): void {
+    this.store.dispatch(
+      EventsActions.calendarPageChanged({ page, monthsPerPage: pageSize }),
+    );
   }
 
   public onTogglePastEvents(

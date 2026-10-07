@@ -6,14 +6,3 @@
 .filters {
   margin-bottom: 0;
 }
-
-.schedule-view {
-  visibility: hidden;
-  display: none;
-
-  &.active {
-    visibility: visible;
-    position: relative;
-    display: block;
-  }
-}

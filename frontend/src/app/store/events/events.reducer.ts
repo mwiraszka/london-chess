@@ -1,8 +1,9 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { pick } from 'lodash-es';
+import { isEqual, pick } from 'lodash-es';
 
 import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
+import { CALENDAR_MONTHS_PER_PAGE } from '@app/constants/filters';
 import { DataPaginationOptions, Event, EventFormData, IsoDate } from '@app/models';
 import { refreshedFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
 
@@ -28,6 +29,8 @@ export interface EventsState extends EntityState<{
   filteredCount: number | null;
   totalCount: number;
   scheduleView: 'list' | 'calendar';
+  calendarPage: number;
+  calendarMonthsPerPage: number;
 }
 
 export const eventsAdapter = createEntityAdapter<{
@@ -61,6 +64,8 @@ export const initialState: EventsState = eventsAdapter.getInitialState({
   filteredCount: null,
   totalCount: 0,
   scheduleView: 'calendar',
+  calendarPage: 1,
+  calendarMonthsPerPage: CALENDAR_MONTHS_PER_PAGE[0],
 });
 
 export const eventsReducer = createReducer(
@@ -141,13 +146,27 @@ export const eventsReducer = createReducer(
       ),
   ),
 
-  // Only a page, filter or search the visitor asked for swaps the rows for placeholders, so
-  // a refresh in the background leaves the ones on screen in place
+  // Only a page, filter, search or view the visitor asked for swaps the rows for
+  // placeholders, so a refresh in the background leaves the ones on screen in place
   on(EventsActions.paginationOptionsChanged, (state, { options }): EventsState => ({
     ...state,
     options,
+    calendarPage:
+      options.search === state.options.search &&
+      isEqual(options.filters, state.options.filters)
+        ? state.calendarPage
+        : 1,
     isFetchingFiltered: true,
   })),
+
+  on(
+    EventsActions.calendarPageChanged,
+    (state, { page, monthsPerPage }): EventsState => ({
+      ...state,
+      calendarPage: page,
+      calendarMonthsPerPage: monthsPerPage,
+    }),
+  ),
 
   on(EventsActions.fetchEventSucceeded, (state, { event }): EventsState => {
     const existingEntity = state.entities[event.id];
@@ -242,5 +261,6 @@ export const eventsReducer = createReducer(
   on(EventsActions.toggleScheduleView, (state): EventsState => ({
     ...state,
     scheduleView: state.scheduleView === 'list' ? 'calendar' : 'list',
+    isFetchingFiltered: true,
   })),
 );

@@ -53,6 +53,8 @@ describe('Events Reducer', () => {
         filteredCount: null,
         totalCount: 0,
         scheduleView: 'calendar',
+        calendarPage: 1,
+        calendarMonthsPerPage: 3,
       });
     });
   });
@@ -404,6 +406,48 @@ describe('Events Reducer', () => {
       const state = eventsReducer(previousState, action);
 
       expect(state.scheduleView).toBe('calendar');
+    });
+
+    it('should hold placeholders until the other view has its events', () => {
+      const state = eventsReducer(initialState, EventsActions.toggleScheduleView());
+
+      expect(state.isFetchingFiltered).toBe(true);
+    });
+  });
+
+  describe('calendarPageChanged', () => {
+    it('should keep the calendar page and months per page', () => {
+      const state = eventsReducer(
+        initialState,
+        EventsActions.calendarPageChanged({ page: 3, monthsPerPage: 6 }),
+      );
+
+      expect(state.calendarPage).toBe(3);
+      expect(state.calendarMonthsPerPage).toBe(6);
+    });
+
+    it('should start the calendar over for a new search or filter, but not a list page', () => {
+      const onPage3: EventsState = { ...initialState, calendarPage: 3 };
+      const changed = (options: Partial<EventsState['options']>) =>
+        eventsReducer(
+          onPage3,
+          EventsActions.paginationOptionsChanged({
+            options: { ...initialState.options, ...options },
+          }),
+        ).calendarPage;
+
+      expect(changed({ page: 2 })).toBe(3);
+      expect(changed({ search: 'blitz' })).toBe(1);
+      expect(
+        changed({
+          filters: {
+            showPastEvents: {
+              ...initialState.options.filters.showPastEvents,
+              value: true,
+            },
+          },
+        }),
+      ).toBe(1);
     });
   });
 

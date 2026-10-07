@@ -1,3 +1,4 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -86,6 +87,8 @@ describe('EventsEffects', () => {
       filteredCount: null,
       totalCount: 0,
       scheduleView: 'list' as const,
+      calendarPage: 1,
+      calendarMonthsPerPage: 3,
     };
 
     TestBed.configureTestingModule({
@@ -193,6 +196,21 @@ describe('EventsEffects', () => {
       expect(eventsApiService.getFilteredEvents).toHaveBeenCalledWith(mockOptions);
     });
 
+    it('should fetch every matching event for the calendar, which pages through months', async () => {
+      store.overrideSelector(EventsSelectors.selectScheduleView, 'calendar');
+      store.refreshState();
+      eventsApiService.getFilteredEvents.mockReturnValue(of(mockApiResponse));
+
+      actions$.next(EventsActions.fetchFilteredEventsRequested());
+      await firstValueFrom(effects.fetchFilteredEvents$);
+
+      expect(eventsApiService.getFilteredEvents).toHaveBeenCalledWith({
+        ...mockOptions,
+        page: 1,
+        pageSize: PAGE_SIZE_ALL,
+      });
+    });
+
     it('should handle fetch filtered events failure', async () => {
       eventsApiService.getFilteredEvents.mockReturnValue(throwError(() => mockError));
       mockParseError.mockReturnValue(mockError);
@@ -290,6 +308,13 @@ describe('EventsEffects', () => {
   });
 
   describe('refetchFilteredEvents$', () => {
+    it('should trigger refetch when the schedule view is toggled', async () => {
+      actions$.next(EventsActions.toggleScheduleView());
+      const action = await firstValueFrom(effects.refetchFilteredEvents$);
+
+      expect(action).toEqual(EventsActions.fetchFilteredEventsRequested());
+    });
+
     it('should trigger refetch after addEventSucceeded', async () => {
       actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
       const action = await firstValueFrom(effects.refetchFilteredEvents$);

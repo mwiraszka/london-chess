@@ -151,7 +151,7 @@ test.describe('schedule', () => {
       await page.goto('/schedule');
       await setSwitch(page, 'Calendar view', calendarView);
       await flipSwitch(page, 'Show past events');
-      const today = page.locator('.schedule-view.active .today-scroll-point');
+      const today = page.locator('.today-scroll-point');
       await expect(today).not.toBeInViewport();
 
       await page.getByRole('button', { name: 'Today' }).click();

@@ -1,3 +1,4 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
@@ -76,22 +77,33 @@ export class EventsEffects {
   fetchFilteredEvents$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(EventsActions.fetchFilteredEventsRequested),
-      concatLatestFrom(() => this.store.select(EventsSelectors.selectOptions)),
-      switchMap(([, options]) =>
-        this.eventsApiService.getFilteredEvents(options).pipe(
-          map(response =>
-            EventsActions.fetchFilteredEventsSucceeded({
-              events: response.data.items,
-              filteredCount: response.data.filteredCount,
-              totalCount: response.data.totalCount,
-            }),
-          ),
-          catchError(error =>
-            of(
-              EventsActions.fetchFilteredEventsFailed({ error: this.parseError(error) }),
+      concatLatestFrom(() => [
+        this.store.select(EventsSelectors.selectOptions),
+        this.store.select(EventsSelectors.selectScheduleView),
+      ]),
+      switchMap(([, options, scheduleView]) =>
+        this.eventsApiService
+          .getFilteredEvents(
+            scheduleView === 'calendar'
+              ? { ...options, page: 1, pageSize: PAGE_SIZE_ALL }
+              : options,
+          )
+          .pipe(
+            map(response =>
+              EventsActions.fetchFilteredEventsSucceeded({
+                events: response.data.items,
+                filteredCount: response.data.filteredCount,
+                totalCount: response.data.totalCount,
+              }),
+            ),
+            catchError(error =>
+              of(
+                EventsActions.fetchFilteredEventsFailed({
+                  error: this.parseError(error),
+                }),
+              ),
             ),
           ),
-        ),
       ),
     );
   });
@@ -128,7 +140,9 @@ export class EventsEffects {
           EventsActions.deleteEventSucceeded,
         ),
       ),
-      this.actions$.pipe(ofType(EventsActions.paginationOptionsChanged)),
+      this.actions$.pipe(
+        ofType(EventsActions.paginationOptionsChanged, EventsActions.toggleScheduleView),
+      ),
     );
 
     const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(

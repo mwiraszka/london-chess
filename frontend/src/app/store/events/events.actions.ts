@@ -94,6 +94,11 @@ export const formDataRestored = createAction(
 
 export const toggleScheduleView = createAction('[Events] Toggle schedule view');
 
+export const calendarPageChanged = createAction(
+  '[Events] Calendar page changed',
+  props<{ page: number; monthsPerPage: number }>(),
+);
+
 export const exportEventsToCsvRequested = createAction(
   '[Events] Export events to CSV requested',
 );

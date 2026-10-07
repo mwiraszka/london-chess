@@ -11,7 +11,7 @@ import { provideRouter } from '@angular/router';
 
 import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { DataPaginationOptions, Event } from '@app/models';
+import { CalendarPage, DataPaginationOptions, Event } from '@app/models';
 import {
   CsvExportService,
   MetaAndTitleService,
@@ -52,6 +52,13 @@ describe('SchedulePageComponent', () => {
   };
   const mockScheduleView = 'list';
   const mockTotalCount = 200;
+  const mockCalendar: CalendarPage = {
+    months: ['2050-01', '2050-02', '2050-03'],
+    monthCount: 7,
+    page: 1,
+    monthsPerPage: 3,
+    events: MOCK_EVENTS.slice(0, 2),
+  };
 
   beforeEach(async () => {
     // The mock events fall in 2050, so the calendar spans only their months
@@ -97,6 +104,7 @@ describe('SchedulePageComponent', () => {
     store.overrideSelector(EventsSelectors.selectScheduleView, mockScheduleView);
     store.overrideSelector(EventsSelectors.selectTotalCount, mockTotalCount);
     store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'loaded');
+    store.overrideSelector(EventsSelectors.selectCalendarView, mockCalendar);
 
     store.refreshState();
   });
@@ -122,6 +130,7 @@ describe('SchedulePageComponent', () => {
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
       expect(vm).toStrictEqual({
+        calendar: mockCalendar,
         filteredCount: mockFilteredCount,
         filteredEvents: mockFilteredEvents,
         isAdmin: mockIsAdmin,
@@ -241,17 +250,35 @@ describe('SchedulePageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
       });
 
-      it('should render events table and hide events calendar grid by default', () => {
+      it('should render only the list in list view', () => {
         fixture.detectChanges();
 
         expect(query(fixture.debugElement, 'lcc-events-table')).toBeTruthy();
-        expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-events-calendar-grid')).toBeFalsy();
         expect(
-          query(fixture.debugElement, 'lcc-events-table').nativeElement.classList,
-        ).toContain('active');
+          query(
+            fixture.debugElement,
+            'lcc-schedule-toolbar',
+          ).componentInstance.filteredEvents(),
+        ).toEqual(mockFilteredEvents);
+      });
+
+      it('should render only the calendar in calendar view, with its page of months', () => {
+        store.overrideSelector(EventsSelectors.selectScheduleView, 'calendar');
+        store.refreshState();
+        fixture.detectChanges();
+
+        const calendar = query(fixture.debugElement, 'lcc-events-calendar-grid');
+        expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
+        expect(calendar.componentInstance.months()).toEqual(mockCalendar.months);
+        expect(calendar.componentInstance.events()).toEqual(mockCalendar.events);
+        expect(calendar.componentInstance.monthCount()).toBe(7);
         expect(
-          query(fixture.debugElement, 'lcc-events-calendar-grid').nativeElement.classList,
-        ).not.toContain('active');
+          query(
+            fixture.debugElement,
+            'lcc-schedule-toolbar',
+          ).componentInstance.filteredEvents(),
+        ).toEqual(mockCalendar.events);
       });
 
       it('should not render events table or events calendar grid when filteredCount is 0 and not loading', () => {
@@ -265,50 +292,51 @@ describe('SchedulePageComponent', () => {
         ).toContain('No events match these filters.');
       });
 
-      it('should render both schedule views as skeletons while the events load', () => {
-        store.overrideSelector(EventsSelectors.selectFilteredCount, 0);
-        store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'loading');
+      it.each(['list', 'calendar'] as const)(
+        'should render the %s view as skeletons while the events load',
+        scheduleView => {
+          store.overrideSelector(EventsSelectors.selectScheduleView, scheduleView);
+          store.overrideSelector(EventsSelectors.selectFilteredCount, 0);
+          store.overrideSelector(EventsSelectors.selectFilteredEventsStatus, 'loading');
+          store.refreshState();
+          fixture.detectChanges();
+
+          const view = query(
+            fixture.debugElement,
+            scheduleView === 'list' ? 'lcc-events-table' : 'lcc-events-calendar-grid',
+          );
+          expect(view.componentInstance.isLoading()).toBe(true);
+        },
+      );
+
+      it.each(['list', 'calendar'] as const)(
+        'should show the %s view as loading while other events are fetched',
+        scheduleView => {
+          store.overrideSelector(EventsSelectors.selectScheduleView, scheduleView);
+          store.overrideSelector(EventsSelectors.selectIsFetchingFiltered, true);
+          store.refreshState();
+          fixture.detectChanges();
+
+          const view = query(
+            fixture.debugElement,
+            scheduleView === 'list' ? 'lcc-events-table' : 'lcc-events-calendar-grid',
+          );
+          expect(view.componentInstance.isLoading()).toBe(true);
+        },
+      );
+
+      it('should page the calendar through its months', () => {
+        store.overrideSelector(EventsSelectors.selectScheduleView, 'calendar');
         store.refreshState();
         fixture.detectChanges();
-
-        expect(
-          query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading(),
-        ).toBe(true);
-        expect(
-          query(
-            fixture.debugElement,
-            'lcc-events-calendar-grid',
-          ).componentInstance.isLoading(),
-        ).toBe(true);
-      });
-
-      it('should show both schedule views as loading while another page is fetched', () => {
-        store.overrideSelector(EventsSelectors.selectIsFetchingFiltered, true);
-        store.refreshState();
-        fixture.detectChanges();
-
-        expect(
-          query(fixture.debugElement, 'lcc-events-table').componentInstance.isLoading(),
-        ).toBe(true);
-        expect(
-          query(
-            fixture.debugElement,
-            'lcc-events-calendar-grid',
-          ).componentInstance.isLoading(),
-        ).toBe(true);
-      });
-
-      it('should page both schedule views through the same options', () => {
-        fixture.detectChanges();
-        const options = { ...mockOptions, page: 2 };
 
         query(fixture.debugElement, 'lcc-events-calendar-grid').triggerEventHandler(
-          'optionsChange',
-          options,
+          'pageChange',
+          { page: 2, pageSize: 6 },
         );
 
         expect(dispatchSpy).toHaveBeenCalledWith(
-          EventsActions.paginationOptionsChanged({ options }),
+          EventsActions.calendarPageChanged({ page: 2, monthsPerPage: 6 }),
         );
       });
 

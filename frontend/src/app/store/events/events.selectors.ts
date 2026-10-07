@@ -1,9 +1,17 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { pick } from 'lodash-es';
 
 import { initialEventFormData } from '@app/constants';
-import { Id } from '@app/models';
-import { areSame, customSort, isUpcomingEvent, loadStatus } from '@app/utils';
+import { CalendarPage, Id } from '@app/models';
+import {
+  areSame,
+  calendarMonthKeys,
+  customSort,
+  isUpcomingEvent,
+  loadStatus,
+  monthKeyOf,
+} from '@app/utils';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 
@@ -51,6 +59,41 @@ export const selectTotalCount = createSelector(
 export const selectScheduleView = createSelector(
   selectEventsState,
   state => state.scheduleView,
+);
+
+export const selectCalendarPage = createSelector(
+  selectEventsState,
+  state => state.calendarPage,
+);
+
+export const selectCalendarMonthsPerPage = createSelector(
+  selectEventsState,
+  state => state.calendarMonthsPerPage,
+);
+
+// The calendar holds every matching event and shows a page of the months they span
+export const selectCalendarView = createSelector(
+  selectFilteredEvents,
+  selectCalendarPage,
+  selectCalendarMonthsPerPage,
+  (events, page, monthsPerPage): CalendarPage => {
+    const allMonths = calendarMonthKeys(events);
+    const showsAll = monthsPerPage === PAGE_SIZE_ALL;
+    const pageCount = showsAll ? 1 : Math.ceil(allMonths.length / monthsPerPage);
+    const shownPage = Math.min(page, Math.max(pageCount, 1));
+    const months = showsAll
+      ? allMonths
+      : allMonths.slice((shownPage - 1) * monthsPerPage, shownPage * monthsPerPage);
+    const shownMonths = new Set(months);
+
+    return {
+      months,
+      monthCount: allMonths.length,
+      page: shownPage,
+      monthsPerPage,
+      events: events.filter(event => shownMonths.has(monthKeyOf(event.eventDate))),
+    };
+  },
 );
 
 const { selectAll: selectAllEventEntities } =
