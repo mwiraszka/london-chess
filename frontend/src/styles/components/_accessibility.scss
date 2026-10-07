@@ -32,10 +32,17 @@
   }
 }
 
-// Screen readers announce what sighted visitors infer from the new-tab icon
+// Screen readers announce what sighted visitors infer from the new-tab icon. It stays in
+// the flow as a clipped pixel, since an absolutely placed box would escape the scroller's
+// clipping and give the whole document room to scroll
 a[target='_blank']:not([href^='mailto:'])::after {
-  @include visually-hidden;
-
+  overflow: hidden;
+  display: inline-block;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  white-space: nowrap;
+  clip-path: inset(50%);
   content: ' (opens in a new tab)';
 }
 

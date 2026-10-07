@@ -63,4 +63,28 @@ test.describe('news', () => {
 
     await expect(page).toHaveURL(/\/news$/);
   });
+
+  test('jumps to a heading from the article contents without moving the header', async ({
+    page,
+  }) => {
+    await page.goto(`/article/view/${LATEST.id}`);
+    const header = page.locator('lcc-header');
+    const headerTop = async () => (await header.boundingBox())?.y;
+    await expect(
+      page.locator('main').getByRole('heading', { name: 'A tense finish' }),
+    ).toBeVisible();
+    const topBefore = await headerTop();
+
+    await page
+      .locator('.table-of-contents')
+      .getByRole('link', { name: 'A tense finish' })
+      .click();
+
+    await expect(page).toHaveURL(/#a-tense-finish$/);
+    await expect
+      .poll(() => page.locator('.scroller').evaluate(element => element.scrollTop))
+      .toBeGreaterThan(0);
+    expect(await headerTop()).toBe(topBefore);
+    expect(await page.locator('app-root').evaluate(element => element.scrollTop)).toBe(0);
+  });
 });
