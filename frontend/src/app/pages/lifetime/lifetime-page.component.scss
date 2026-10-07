@@ -25,16 +25,18 @@
     text-align: center;
     border-radius: var(--radius-md);
 
+    // Takes the figure's width rather than its photo's, which is unknown until it loads
     .image-container {
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 100%;
 
+      // Fills the width, so its stated shape holds its height before it has loaded
       img {
         object-fit: contain;
-        width: auto;
-        max-width: 100%;
+        width: 100%;
         height: auto;
         border-top-left-radius: var(--radius-md);
         border-top-right-radius: var(--radius-md);

@@ -16,6 +16,13 @@ const TROPHY_DESCRIPTIONS: Record<TrophyShape, string> = {
   chalice: 'chalice trophy',
 };
 
+// Each drawing's view box, which gives its image a shape before the file has loaded
+const TROPHY_SIZES: Record<TrophyShape, { width: number; height: number }> = {
+  cup: { width: 180, height: 274 },
+  bowl: { width: 236, height: 178 },
+  chalice: { width: 104, height: 248 },
+};
+
 // The bowl is only ever gold, so it alone has no metal in its file name
 export function trophy(shape: TrophyShape, metal: TrophyMetal): Trophy {
   return {
@@ -23,6 +30,7 @@ export function trophy(shape: TrophyShape, metal: TrophyMetal): Trophy {
     label: `${capitalize(metal)} ${TROPHY_DESCRIPTIONS[shape]}`,
     shape,
     metal,
+    ...TROPHY_SIZES[shape],
   };
 }
 

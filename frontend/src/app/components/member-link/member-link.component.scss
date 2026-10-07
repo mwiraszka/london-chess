@@ -13,6 +13,12 @@ a.member-link:not(.lcc-link) {
   cursor: pointer;
 }
 
+// Set like the link it becomes once the profiles arrive, so the words around it stay put
+.member-link--awaiting-link {
+  font-weight: 200;
+  line-height: 1.4;
+}
+
 .member-link--with-avatar {
   display: inline-flex;
   vertical-align: middle;

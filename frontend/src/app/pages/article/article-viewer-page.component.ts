@@ -30,7 +30,9 @@ import { ImagesSelectors } from '@app/store/images';
   selector: 'lcc-article-viewer-page',
   template: `
     @if (viewModel$ | async; as vm) {
-      @if (vm.article; as article) {
+      <!-- Waits for the photos' details too, so they lay out at their own size from the start -->
+      @if (vm.article && vm.imagesStatus !== 'loading') {
+        @let article = vm.article;
         <lcc-article
           [adminControls]="vm.isAdmin ? getAdminControlsConfig(article) : null"
           [article]="article"
@@ -74,6 +76,7 @@ export class ArticleViewerPageComponent implements OnInit {
     articleId: Id;
     bannerImage: Image | null;
     bodyImages: Image[];
+    imagesStatus: LoadStatus;
     isAdmin: boolean;
     status: LoadStatus;
   }>;
@@ -89,6 +92,7 @@ export class ArticleViewerPageComponent implements OnInit {
           this.store.select(ImagesSelectors.selectBodyImagesByArticleId(articleId)),
           this.store.select(AuthSelectors.selectIsAdmin),
           this.store.select(ArticlesSelectors.selectArticleStatus(articleId)),
+          this.store.select(ImagesSelectors.selectMetadataStatus),
         ]),
       ),
       distinctUntilChanged(isEqual),
@@ -101,14 +105,25 @@ export class ArticleViewerPageComponent implements OnInit {
         this.metaAndTitleService.updateTitle(article.title);
         this.metaAndTitleService.updateDescription(articlePreview);
       }),
-      map(([article, articleId, bannerImage, bodyImages, isAdmin, status]) => ({
-        article: article ?? null,
-        articleId,
-        bannerImage,
-        bodyImages,
-        isAdmin,
-        status,
-      })),
+      map(
+        ([
+          article,
+          articleId,
+          bannerImage,
+          bodyImages,
+          isAdmin,
+          status,
+          imagesStatus,
+        ]) => ({
+          article: article ?? null,
+          articleId,
+          bannerImage,
+          bodyImages,
+          imagesStatus,
+          isAdmin,
+          status,
+        }),
+      ),
     );
   }
 

@@ -4,19 +4,25 @@
   width: 100%;
 }
 
+// A fixed shape, the 3:2 of most photos up to 300px tall, set before the photo or its
+// size is known, so nothing below moves as it arrives; the photo is fitted inside
 .banner-image-container {
   position: relative;
   display: flex;
   justify-content: center;
+  width: 100%;
+  max-height: 300px;
+  aspect-ratio: 3 / 2;
   background-color: var(--lcc-color--article-bannerImageBackground);
 
   lcc-image {
     width: 100%;
-    max-height: 300px;
+    height: 100%;
 
     ::ng-deep img {
       object-fit: contain;
-      max-height: 300px;
+      width: 100%;
+      height: 100%;
     }
   }
 

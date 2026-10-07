@@ -13,8 +13,10 @@
       (click)="onNextPhoto()">
       <img
         class="carousel-photo"
-        [src]="photo.mainUrl"
-        [alt]="photo.caption" />
+        [alt]="photo.caption"
+        [attr.height]="photo.mainHeight ?? null"
+        [attr.width]="photo.mainWidth ?? null"
+        [src]="photo.mainUrl" />
     </button>
   }
 </div>

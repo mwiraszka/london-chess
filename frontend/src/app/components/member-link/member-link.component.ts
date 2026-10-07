@@ -46,6 +46,9 @@ import { getInitials } from '@app/utils';
     } @else {
       <span
         class="member-link"
+        [class.member-link--awaiting-link]="
+          appearance() === 'link' && memberNumber() !== null
+        "
         [class.member-link--with-avatar]="showAvatar()">
         <ng-container [ngTemplateOutlet]="content" />
       </span>

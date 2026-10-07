@@ -331,16 +331,16 @@ describe('MemberProfilePageComponent', () => {
     });
   });
 
-  it('should cover each card with a skeleton while the member loads', () => {
+  it('should cover the profile card with a skeleton while the member loads, the rest waiting for it', () => {
     store.overrideSelector(MembersSelectors.selectAllMembers, []);
 
     createComponent();
 
     const cards = queryAll(fixture.debugElement, '.profile-card');
-    expect(cards).toHaveLength(2);
+    expect(cards).toHaveLength(1);
     expect(query(cards[0], 'ea-card')).toBeTruthy();
-    expect(query(cards[1], 'ea-accordion')).toBeTruthy();
-    cards.forEach(card => expect(query(card, 'ea-skeleton')).toBeTruthy());
+    expect(query(cards[0], 'ea-skeleton')).toBeTruthy();
+    expect(query(fixture.debugElement, 'ea-accordion')).toBeFalsy();
     expect(query(fixture.debugElement, '.profile--loading')).toBeTruthy();
     expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('true');
     expect(query(fixture.debugElement, 'lcc-member-tournaments')).toBeFalsy();

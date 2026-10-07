@@ -187,10 +187,13 @@
     </div>
   }
 
-  <lcc-link-list
-    class="links"
-    [links]="links()">
-  </lcc-link-list>
+  <!-- Below the standings, whose length only the tournament itself decides -->
+  @if (vm.tournament) {
+    <lcc-link-list
+      class="links"
+      [links]="links()">
+    </lcc-link-list>
+  }
 }
 
 <ng-template

@@ -13,6 +13,7 @@ import {
   PaginatorState,
   PlusCircleIconComponent,
   SelectOption,
+  SkeletonComponent,
   TooltipDirective,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
@@ -140,6 +141,7 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
     PageHeaderComponent,
     PaginatorComponent,
     RouterLink,
+    SkeletonComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -10,22 +10,41 @@
         #marqueeContent
         [class.animate]="shouldAnimate()"
         [style.animation-duration.s]="animationDuration()">
-        <ng-container *ngTemplateOutlet="bannerContent; context: { isCopy: false }" />
-        @if (shouldAnimate()) {
-          <ng-container *ngTemplateOutlet="bannerContent; context: { isCopy: true }" />
+        @if (nextEvents(); as events) {
+          @if (events.length) {
+            <ng-container
+              *ngTemplateOutlet="bannerContent; context: { isCopy: false, events }" />
+            @if (shouldAnimate()) {
+              <ng-container
+                *ngTemplateOutlet="bannerContent; context: { isCopy: true, events }" />
+            }
+          } @else {
+            <span class="marquee-item">
+              See the
+              <a
+                class="lcc-link"
+                routerLink="/schedule">
+                schedule
+              </a>
+              for upcoming events
+            </span>
+          }
+        } @else {
+          <lcc-text-skeleton width="16em" />
         }
       </div>
 
       <!-- The copy only closes the loop of the scroll, so it is neither read out nor focusable -->
       <ng-template
         #bannerContent
+        let-events="events"
         let-isCopy="isCopy">
         <span
           class="marquee-item"
           [attr.aria-hidden]="isCopy || null"
           [inert]="isCopy">
-          <span>Next {{ nextEvents().length > 1 ? 'events' : 'event' }}:</span>
-          @for (event of nextEvents(); track event.id) {
+          <span>Next {{ events.length > 1 ? 'events' : 'event' }}:</span>
+          @for (event of events; track event.id) {
             @if (!$first) {
               <span class="event-divider"></span>
             }
@@ -43,7 +62,7 @@
           }
           <span>on</span>
           <span>
-            <b>{{ nextEvents()[0].eventDate | formatDate }}</b>
+            <b>{{ events[0].eventDate | formatDate }}</b>
           </span>
         </span>
       </ng-template>

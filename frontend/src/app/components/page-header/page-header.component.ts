@@ -8,7 +8,7 @@ import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skelet
 @Component({
   selector: 'lcc-page-header',
   template: `
-    @if (icon()) {
+    @if (icon() && heading() !== null) {
       <span
         class="page-header-icon"
         [class.admin-page]="icon() === adminIcon">
@@ -30,7 +30,8 @@ import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skelet
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PageHeaderComponent {
-  // Null until the heading is known, meanwhile a placeholder holds its space
+  // Null until the heading is known, meanwhile a placeholder holds its space and the icon
+  // waits to appear beside it
   public readonly heading = input.required<string | null>();
 
   public readonly hasUnsavedChanges = input<boolean | null>(null);

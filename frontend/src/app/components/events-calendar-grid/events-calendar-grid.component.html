@@ -112,7 +112,8 @@
   </div>
 }
 
-@if (options(); as options) {
+<!-- Added once the months are in, rather than moved by however many there turn out to be -->
+@if (!isLoading() && options(); as options) {
   <div class="paginator">
     <ea-paginator
       align="center"
@@ -121,7 +122,6 @@
       [pageSize]="options.pageSize"
       [pageSizeOptions]="pageSizes"
       [showAllOption]="true"
-      [showRangeLabel]="filteredCount() !== null"
       [totalItems]="filteredCount() ?? 0"
       (changed)="onPageChanged($event)" />
   </div>

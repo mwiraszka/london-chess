@@ -81,19 +81,21 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
           [isLoading]="vm.status === 'loading' || vm.isFetching"
           [options]="vm.options">
         </lcc-article-grid>
-        <div class="paginator">
-          <ea-paginator
-            align="center"
-            pageSizeLabel="articles"
-            size="sm"
-            [page]="vm.options.page"
-            [pageSize]="vm.options.pageSize"
-            [pageSizeOptions]="pageSizes"
-            [showAllOption]="true"
-            [showRangeLabel]="vm.filteredCount !== null"
-            [totalItems]="vm.filteredCount ?? 0"
-            (changed)="onPageChanged($event, vm.options)" />
-        </div>
+        <!-- Added once the count is known, rather than filling in where it stands -->
+        @if (vm.filteredCount !== null) {
+          <div class="paginator">
+            <ea-paginator
+              align="center"
+              pageSizeLabel="articles"
+              size="sm"
+              [page]="vm.options.page"
+              [pageSize]="vm.options.pageSize"
+              [pageSizeOptions]="pageSizes"
+              [showAllOption]="true"
+              [totalItems]="vm.filteredCount"
+              (changed)="onPageChanged($event, vm.options)" />
+          </div>
+        }
       }
     }
   `,

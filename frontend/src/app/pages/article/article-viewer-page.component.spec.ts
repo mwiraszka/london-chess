@@ -83,6 +83,7 @@ describe('ArticleViewerPageComponent', () => {
 
     mockImagesState = {
       ...imagesInitialState,
+      lastMetadataFetch: '2024-01-15T15:00:00.000Z',
       ids: [mockBannerImage.id],
       entities: {
         [mockBannerImage.id]: {
@@ -151,6 +152,7 @@ describe('ArticleViewerPageComponent', () => {
         isAdmin: true,
         bannerImage: mockBannerImage,
         bodyImages: [],
+        imagesStatus: 'loaded',
         status: 'loaded',
       });
     });
@@ -267,6 +269,23 @@ describe('ArticleViewerPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-article-skeleton')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-article')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-load-failed')).toBeFalsy();
+      });
+    });
+
+    describe("while the photos' details load", () => {
+      beforeEach(() => {
+        store.setState({
+          appState: mockAppState,
+          articlesState: mockArticlesState,
+          authState: mockAuthState,
+          imagesState: { ...mockImagesState, lastMetadataFetch: null },
+        });
+        fixture.detectChanges();
+      });
+
+      it('should hold the stored article back behind its skeleton', () => {
+        expect(query(fixture.debugElement, 'lcc-article-skeleton')).toBeTruthy();
+        expect(query(fixture.debugElement, 'lcc-article')).toBeFalsy();
       });
     });
 

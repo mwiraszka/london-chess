@@ -275,6 +275,8 @@ export interface Trophy {
   label: string;
   shape: TrophyShape;
   metal: TrophyMetal;
+  width: number;
+  height: number;
 }
 
 // A row of the preview of imported standings, its rounds labelled as the crosstable shows them

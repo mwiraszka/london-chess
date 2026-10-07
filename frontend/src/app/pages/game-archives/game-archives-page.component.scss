@@ -71,11 +71,13 @@
   --ea-card-body-padding: 8px;
 }
 
+// Split down the middle rather than centred as a pair, so the label holds still as the
+// figure beside it changes width
 .figure__content {
-  display: flex;
+  display: grid;
   align-items: baseline;
-  justify-content: center;
   gap: 8px;
+  grid-template-columns: 1fr 1fr;
   white-space: nowrap;
 
   @include respond-to('lt-sm') {
@@ -84,6 +86,8 @@
 }
 
 .figure__value {
+  display: grid;
+  justify-self: end;
   font-size: 36px;
   font-weight: bold;
   color: var(--lcc-color--gameArchivesPage-figure);
@@ -91,6 +95,20 @@
   @include respond-to('lt-sm') {
     font-size: 20px;
   }
+}
+
+// Holds the width of the total it counts up to, so the count grows into it without moving
+.figure__count,
+.figure__total {
+  grid-area: 1 / 1;
+}
+
+.figure__count {
+  justify-self: start;
+}
+
+.figure__total {
+  visibility: hidden;
 }
 
 // Pulses like a skeleton until the figures arrive
@@ -114,6 +132,8 @@
 }
 
 .figure__label {
+  justify-self: start;
+
   @include respond-to('lt-sm') {
     font-size: 14px;
   }

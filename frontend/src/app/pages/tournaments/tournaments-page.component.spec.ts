@@ -360,15 +360,11 @@ describe('TournamentsPageComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should hold the table with skeleton rows', () => {
-      expect(bodyRows()).toHaveLength(10);
-      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(6);
-    });
-
-    it('should not open skeleton rows', () => {
-      bodyRows()[0].triggerEventHandler('click');
-
-      expect(navigateSpy).not.toHaveBeenCalled();
+    it('should hold the page below its heading under a single skeleton', () => {
+      expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
+      expect(query(fixture.debugElement, 'ea-skeleton')).toBeTruthy();
+      expect(query(fixture.debugElement, '.intro')).toBeFalsy();
+      expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
     });
   });
 

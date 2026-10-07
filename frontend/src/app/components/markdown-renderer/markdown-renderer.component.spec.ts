@@ -76,7 +76,6 @@ describe('MarkdownRendererComponent', () => {
       expect(links.map(link => link.nativeElement.getAttribute('href'))).toEqual([
         '/#first-section',
         '/#second-part',
-        '/#',
       ]);
     });
 

@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { Event, EventType } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 
@@ -22,7 +23,13 @@ import { FormatDatePipe } from '@app/pipes';
   selector: 'lcc-upcoming-event-banner',
   templateUrl: './upcoming-event-banner.component.html',
   styleUrl: './upcoming-event-banner.component.scss',
-  imports: [ButtonComponent, FormatDatePipe, NgTemplateOutlet, RouterLink],
+  imports: [
+    ButtonComponent,
+    FormatDatePipe,
+    NgTemplateOutlet,
+    RouterLink,
+    TextSkeletonComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
@@ -45,7 +52,9 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
     read: ElementRef,
   });
 
-  public readonly nextEvents = input.required<Event[]>();
+  // Null while the events are on their way; the banner holds its height in every state,
+  // so nothing below it moves as it fills in
+  public readonly nextEvents = input.required<Event[] | null>();
 
   public readonly clearBanner = output<void>();
 
@@ -54,9 +63,13 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
   protected readonly animationDuration = signal(20);
 
   protected readonly backgroundStyling = computed(() => {
-    const nextEvents = this.nextEvents();
+    const nextEvents = this.nextEvents() ?? [];
     const colorVar = (type: EventType) =>
       `var(--lcc-color--upcomingEventBanner-background-${this.TYPE_COLOR_VARS[type]})`;
+
+    if (!nextEvents.length) {
+      return colorVar('other');
+    }
 
     if (nextEvents.length === 1) {
       return colorVar(nextEvents[0].type);

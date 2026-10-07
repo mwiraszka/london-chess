@@ -7,20 +7,20 @@ $board-width: 432px;
   gap: 16px;
 }
 
-// Stacked, the details and board share the board's width; side by side, the
-// details take only the width this game needs and the board's height
+// The board stands in the same place whatever the game: stacked, it leads and the
+// details follow at its width; side by side, the details take its height and a set width
 .game {
   display: grid;
   justify-content: center;
   gap: 8px;
   grid-template-columns: minmax(0, $board-width);
   grid-template-areas:
-    'details'
-    'board';
+    'board'
+    'details';
 
   @include respond-to('gt-lg') {
     align-items: stretch;
-    grid-template-columns: auto auto;
+    grid-template-columns: minmax(0, 560px) $board-width;
     grid-template-areas: 'details board';
   }
 }
@@ -87,4 +87,9 @@ $board-width: 432px;
 
 .details__extra {
   color: var(--color-text-secondary);
+}
+
+// The game's own link keeps its place, unseen, until the game arrives
+.game__links--loading ::ng-deep li:first-child {
+  visibility: hidden;
 }

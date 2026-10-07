@@ -40,15 +40,24 @@
       </div>
     </div>
     <ul class="figures">
-      @for (figure of figures(); track figure.label) {
+      @for (figure of figures(); track figure.label; let index = $index) {
         <li class="figure">
           <ea-card [fullWidth]="true">
             <div class="figure__content">
-              <span
-                class="figure__value"
-                [class.figure__value--pending]="!summary()">
-                {{ figure.value | number }}
-              </span>
+              @if (archiveFigures(); as totals) {
+                <span class="figure__value">
+                  <span class="figure__count">{{ figure.value | number }}</span>
+                  <span
+                    class="figure__total"
+                    aria-hidden="true">
+                    {{ totals[index].value | number }}
+                  </span>
+                </span>
+              } @else {
+                <span class="figure__value figure__value--pending">
+                  {{ figure.value | number }}
+                </span>
+              }
               <span class="figure__label">{{ figure.label }}</span>
             </div>
           </ea-card>

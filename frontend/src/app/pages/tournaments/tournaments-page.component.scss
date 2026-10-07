@@ -47,11 +47,14 @@ $side-by-side-from: 800px;
   max-height: 240px;
   border-radius: var(--radius-md);
 
+  // Takes no size from the photo itself, so the row is the text's height whether or not
+  // the photo has loaded
   @media (min-width: $side-by-side-from) {
     flex: 1 1 0;
     min-width: 0;
     min-height: 0;
     max-height: none;
+    contain: size;
   }
 }
 

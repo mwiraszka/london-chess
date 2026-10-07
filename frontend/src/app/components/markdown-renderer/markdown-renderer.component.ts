@@ -13,7 +13,6 @@ import {
   effect,
   inject,
   input,
-  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -23,6 +22,7 @@ import { Image } from '@app/models';
 import { KebabCasePipe } from '@app/pipes';
 import { RoutingService } from '@app/services';
 import { MarkdownSegment, isCollectionId, scrollBehavior } from '@app/utils';
+import { markdownHeadings } from '@app/utils/markdown/markdown-headings.util';
 import { splitMarkdownTables } from '@app/utils/markdown/split-markdown-tables.util';
 
 @Component({
@@ -66,7 +66,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
   public readonly images = input<Image[]>([]);
 
   public readonly currentPath = this._document.location.pathname;
-  public readonly headings = signal<string[]>([]);
+  public readonly headings = computed(() => markdownHeadings(this.data() ?? ''));
   // The text between the tables, and the tables, in order
   public readonly segments = computed<MarkdownSegment[]>(() =>
     splitMarkdownTables(this.preprocessImages(this.data() || '')),
@@ -115,6 +115,11 @@ export class MarkdownRendererComponent implements AfterViewInit {
 
       const imageUrl =
         image?.mainUrl || (isCollectionId(src) ? 'assets/fallback-image.png' : src);
+      // Its stored size reserves its place before it loads
+      const dimensions =
+        image?.mainWidth && image.mainHeight
+          ? ` width="${image.mainWidth}" height="${image.mainHeight}"`
+          : '';
 
       const defaultWidth = image?.mainWidth || 300;
       const parsedWidth = width ? parseInt(width.trim(), 10) : defaultWidth;
@@ -125,7 +130,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
         ? `<div class="markdown-image-caption">${captionValue}</div>`
         : '';
 
-      return `\n\n<div class="markdown-image-container" style="max-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}" onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
+      return `\n\n<div class="markdown-image-container" style="max-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}"${dimensions} onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
     });
   }
 
@@ -158,8 +163,6 @@ export class MarkdownRendererComponent implements AfterViewInit {
   private addAnchorIdsToHeadings(): void {
     const headingElements = this.elementRef.nativeElement.querySelectorAll('markdown h2');
 
-    const newHeadings: string[] = [];
-
     if (headingElements) {
       headingElements.forEach((element: HTMLElement) => {
         const heading = (element.textContent || element.innerHTML).replace(
@@ -168,11 +171,8 @@ export class MarkdownRendererComponent implements AfterViewInit {
         );
 
         element.setAttribute('id', kebabCase(heading));
-        newHeadings.push(heading);
       });
     }
-
-    this.headings.set(newHeadings);
   }
 
   private scrollToAnchor(anchorId?: string | null): void {

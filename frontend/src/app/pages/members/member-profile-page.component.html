@@ -160,7 +160,9 @@
         }
       </div>
 
-      <div class="profile-card">
+      <!-- The identity card's height depends on the member, so the cards below it wait for
+           the member rather than be pushed down when it arrives -->
+      @if (vm.member) {
         <ea-accordion
           class="profile-section"
           [expandedValues]="['rating']">
@@ -170,15 +172,7 @@
             <lcc-rating-progression [memberNumber]="vm.memberNumber" />
           </ea-accordion-item>
         </ea-accordion>
-        @if (!vm.member) {
-          <ea-skeleton
-            variant="rect"
-            width="100%"
-            height="100%" />
-        }
-      </div>
 
-      @if (vm.member) {
         <ea-accordion
           class="profile-section"
           [expandedValues]="['tournaments']">
