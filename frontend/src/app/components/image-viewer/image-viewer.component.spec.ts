@@ -8,6 +8,7 @@ import { Image } from '@app/models';
 import {
   AdminControlsService,
   DeletionService,
+  LoadedImagesService,
   StoreRequestService,
 } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
@@ -270,6 +271,107 @@ describe('ImageViewerComponent', () => {
 
       expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
       expect(adminControlsCloseSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('moving between images', () => {
+    let preloaders: HTMLImageElement[];
+    let decodes: { resolve: () => void; reject: () => void }[];
+
+    beforeEach(() => {
+      preloaders = [];
+      decodes = [];
+      vi.spyOn(window, 'Image').mockImplementation(function () {
+        const preloader = document.createElement('img');
+        preloader.decode = () =>
+          new Promise<void>((resolve, reject) =>
+            decodes.push({
+              resolve,
+              reject: () => reject(new Error('Unable to decode')),
+            }),
+          );
+        preloaders.push(preloader);
+        return preloader;
+      });
+    });
+
+    const shownId = (): string | undefined =>
+      query(fixture.debugElement, 'figure lcc-image').componentInstance.image()?.id;
+
+    it('should keep the image on screen until the next one has loaded', async () => {
+      createViewer();
+
+      component.onNextImage();
+      fixture.detectChanges();
+      const whileLoading = shownId();
+      decodes[0].resolve();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(whileLoading).toBe(MOCK_IMAGES[0].id);
+      expect(preloaders[0].src).toBe(MOCK_IMAGES[1].mainUrl);
+      expect(shownId()).toBe(MOCK_IMAGES[1].id);
+      expect(TestBed.inject(LoadedImagesService).has(MOCK_IMAGES[1].mainUrl!)).toBe(true);
+    });
+
+    it('should still move on to an image that fails to load', async () => {
+      createViewer();
+
+      component.onNextImage();
+      decodes[0].reject();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(shownId()).toBe(MOCK_IMAGES[1].id);
+      expect(TestBed.inject(LoadedImagesService).has(MOCK_IMAGES[1].mainUrl!)).toBe(
+        false,
+      );
+    });
+
+    it('should load the images either side once the shown one has loaded', () => {
+      const last = MOCK_IMAGES.length - 1;
+      createViewer();
+      dispatchSpy.mockClear();
+
+      query(fixture.debugElement, 'figure lcc-image').triggerEventHandler('loaded');
+
+      expect(prefetched()).toContain(MOCK_IMAGES[last].id);
+      expect(preloaders.map(preloader => preloader.src)).toEqual([
+        MOCK_IMAGES[1].mainUrl,
+      ]);
+    });
+  });
+
+  describe('enlarging the image', () => {
+    const enlarged = (): HTMLDialogElement =>
+      query(fixture.debugElement, 'dialog.enlarged-image').nativeElement;
+
+    beforeEach(() => {
+      createViewer();
+      query(fixture.debugElement, '.enlarge-button').nativeElement.click();
+      fixture.detectChanges();
+    });
+
+    it('should show the image alone, outside the figure and its admin controls', () => {
+      expect(enlarged().open).toBe(true);
+      expect(enlarged().closest('figure')).toBeNull();
+      expect(query(fixture.debugElement, 'dialog.enlarged-image lcc-image')).toBeTruthy();
+      expect(enlarged().querySelector('button, figcaption')).toBeNull();
+    });
+
+    it('should shrink back to the viewer on a click anywhere', () => {
+      enlarged().click();
+      fixture.detectChanges();
+
+      expect(enlarged().open).toBe(false);
+      expect(query(fixture.debugElement, 'figure')).toBeTruthy();
+    });
+
+    it('should leave a right click to the browser', () => {
+      enlarged().dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      fixture.detectChanges();
+
+      expect(enlarged().open).toBe(true);
     });
   });
 

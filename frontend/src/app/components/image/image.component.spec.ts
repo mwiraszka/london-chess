@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { Image } from '@app/models';
+import { LoadedImagesService } from '@app/services/loaded-images.service';
 
 import { ImageComponent } from './image.component';
 
@@ -96,6 +97,27 @@ describe('ImageComponent', () => {
       expect(component.displayMode()).toBe('thumbnail');
       expect(component.currentSrc()).toBe(THUMBNAIL_URL);
       expect(component.blurred()).toBe(false);
+    });
+
+    it('should show a full image the page has already loaded at once, without the blur-up', () => {
+      TestBed.inject(LoadedImagesService).add(MAIN_URL);
+
+      host.image.set(makeImage({ mainUrl: MAIN_URL, thumbnailUrl: THUMBNAIL_URL }));
+      fixture.detectChanges();
+
+      expect(component.displayMode()).toBe('main');
+      expect(component.currentSrc()).toBe(MAIN_URL);
+      expect(component.blurred()).toBe(false);
+      expect(component.showShimmer()).toBe(false);
+    });
+
+    it('should remember a full image once it has loaded', () => {
+      host.image.set(makeImage({ mainUrl: MAIN_URL }));
+      fixture.detectChanges();
+
+      img().triggerEventHandler('load', {});
+
+      expect(TestBed.inject(LoadedImagesService).has(MAIN_URL)).toBe(true);
     });
 
     it('should show blurred thumbnail when both URLs are present', () => {

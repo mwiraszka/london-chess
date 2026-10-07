@@ -115,6 +115,7 @@ body[data-theme='dark'] {
   --lcc-color--imageExplorer-text: #{clr(grayscale, white-85)};
 
   --lcc-color--imageViewer-background: #{clr(grayscale, black-10)};
+  --lcc-color--imageViewer-enlargedBackdrop: #{clr(grayscale, black, 0.92)};
 
   --lcc-color--input-background: #{clr(grayscale, gray-25)};
   --lcc-color--input-borderOnHover: #{clr(grayscale, gray-50)};
