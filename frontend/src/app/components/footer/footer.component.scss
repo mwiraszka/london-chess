@@ -47,19 +47,17 @@
 
       .socials {
         display: grid;
-        grid-template-columns: auto auto auto auto;
-        margin-top: 32px;
+        justify-content: center;
+        gap: 8px;
+        grid-template-columns: repeat(2, 40px);
+        margin-top: 24px;
 
         a {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
+          height: 40px;
           filter: grayscale(0.4);
-
-          &.chesscom {
-            width: 22px;
-          }
         }
 
         a:hover {
@@ -127,6 +125,10 @@
           display: block;
           width: 100%;
           margin: 4px 0 8px;
+        }
+
+        .wordmark {
+          margin: 4px 0;
         }
 
         a {

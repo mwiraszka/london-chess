@@ -157,13 +157,19 @@ describe('FooterComponent', () => {
         const eventsLinks = queryAll(fixture.debugElement, '.club-events a');
         const archivesLinks = queryAll(fixture.debugElement, '.archives a');
         const documentsLinks = queryAll(fixture.debugElement, '.documents a');
-        const websiteLinks = queryAll(fixture.debugElement, '.website a');
+        const websiteLinks = queryAll(fixture.debugElement, '.website > a');
 
         expect(aboutLinks.length).toBe(4);
         expect(eventsLinks.length).toBe(3);
         expect(archivesLinks.length).toBe(3);
         expect(documentsLinks.length).toBe(3);
         expect(websiteLinks.length).toBe(4);
+      });
+
+      it('should end the website section with the Eagami wordmark', () => {
+        const website = query(fixture.debugElement, '.website').nativeElement;
+
+        expect(website.lastElementChild.tagName).toBe('EA-EAGAMI-WORDMARK');
       });
 
       it('should link to the tournaments', () => {
