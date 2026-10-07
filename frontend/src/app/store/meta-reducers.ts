@@ -7,7 +7,7 @@ import { isPresignedUrlExpired } from '@app/utils';
 import { environment } from '@env';
 
 import { version as currentVersion } from '../../../package.json';
-import { AppState } from './app/app.reducer';
+import { AppState, initialState as appInitialState } from './app/app.reducer';
 import {
   ArticlesState,
   initialState as articlesInitialState,
@@ -21,7 +21,7 @@ import {
   MembersState,
   initialState as membersInitialState,
 } from './members/members.reducer';
-import { NavState } from './nav/nav.reducer';
+import { NavState, initialState as navInitialState } from './nav/nav.reducer';
 import {
   TournamentsState,
   initialState as tournamentsInitialState,
@@ -57,6 +57,19 @@ const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   imagesState: [6, 2, 0],
   membersState: [6, 5, 0],
   tournamentsState: [6, 4, 0],
+};
+
+// A feature reducer only falls back on its initial state for a missing slice, so a field
+// added since the slice was saved starts from here
+const INITIAL_STATES: Partial<Record<string, object>> = {
+  appState: appInitialState,
+  articlesState: articlesInitialState,
+  eventsState: eventsInitialState,
+  gamesState: gamesInitialState,
+  imagesState: imagesInitialState,
+  membersState: membersInitialState,
+  navState: navInitialState,
+  tournamentsState: tournamentsInitialState,
 };
 
 // What only describes the current visit, so every visit starts from these
@@ -239,6 +252,7 @@ export function hydrationMetaReducer(
     keys: hydratedStates.map(stateKey => {
       const unpersistedFields = UNPERSISTED_FIELDS[stateKey] ?? {};
       const restore = <T extends object>(stateSlice: T): T => ({
+        ...INITIAL_STATES[stateKey],
         ...stateSlice,
         ...unpersistedFields,
       });

@@ -11,7 +11,10 @@ import { Image, User } from '@app/models';
 
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import * as AuthActions from './auth/auth.actions';
-import { initialState as eventsInitialState } from './events/events.reducer';
+import {
+  initialState as eventsInitialState,
+  eventsReducer,
+} from './events/events.reducer';
 import { initialState as gamesInitialState, gamesReducer } from './games/games.reducer';
 import * as ImagesActions from './images/images.actions';
 import {
@@ -580,10 +583,23 @@ describe('Meta Reducers', () => {
           'imagesState',
           JSON.stringify(omit(imagesInitialState, ['failedLoads', 'uploadProgress'])),
         );
+        // Saved before the calendar paged by months
+        versionedStorage.setItem(
+          'eventsState',
+          JSON.stringify(
+            omit({ ...eventsInitialState, totalCount: 12 }, [
+              'failedLoads',
+              'isFetchingFiltered',
+              'calendarPage',
+              'calendarMonthsPerPage',
+            ]),
+          ),
+        );
 
         TestBed.configureTestingModule({
           imports: [
             StoreModule.forRoot({}, { metaReducers: [hydrationMetaReducer] }),
+            StoreModule.forFeature('eventsState', eventsReducer),
             StoreModule.forFeature('gamesState', gamesReducer),
             StoreModule.forFeature('imagesState', imagesReducer),
             StoreModule.forFeature('membersState', membersReducer),
@@ -596,6 +612,16 @@ describe('Meta Reducers', () => {
         const state = await firstValueFrom(store);
 
         expect(state.membersState?.totalCount).toBe(56);
+      });
+
+      it('should start what the saved state predates from its initial value', async () => {
+        const state = await firstValueFrom(store);
+
+        expect(state.eventsState?.totalCount).toBe(12);
+        expect(state.eventsState?.calendarPage).toBe(eventsInitialState.calendarPage);
+        expect(state.eventsState?.calendarMonthsPerPage).toBe(
+          eventsInitialState.calendarMonthsPerPage,
+        );
       });
 
       it('should open the archives as they were last queried', async () => {
