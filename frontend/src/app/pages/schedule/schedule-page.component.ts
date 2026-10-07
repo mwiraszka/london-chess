@@ -20,7 +20,6 @@ import {
   DestroyRef,
   OnInit,
   inject,
-  input,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
@@ -37,10 +36,10 @@ import {
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { CsvExportService, MetaAndTitleService } from '@app/services';
+import { CsvExportService, EventsApiService, MetaAndTitleService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
-import { bindSearchControl } from '@app/utils';
+import { bindSearchControl, widestRows } from '@app/utils';
 
 @Component({
   selector: 'lcc-schedule-page',
@@ -142,8 +141,10 @@ import { bindSearchControl } from '@app/utils';
 })
 export class SchedulePageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
-  // The widest events, resolved with the route, size the table before its first page
-  public readonly widestEvents = input<Event[]>([]);
+  // The widest events size the table from its first skeleton on
+  protected readonly widestEvents = widestRows(
+    inject(EventsApiService).getWidestEvents(),
+  );
 
   private readonly csvExport = inject(CsvExportService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);

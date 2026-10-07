@@ -28,7 +28,6 @@ import {
   TemplateRef,
   computed,
   inject,
-  input,
   linkedSignal,
   signal,
   viewChild,
@@ -55,7 +54,7 @@ import {
   GamesQuery,
   GamesSortBy,
 } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import { GamesApiService, KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import {
   formatPartialDate,
@@ -63,6 +62,7 @@ import {
   pageRowCount,
   parseGamesQuery,
   playerName,
+  widestRows,
 } from '@app/utils';
 
 // The sort keys carry raw values so the table orders a page the way the server did
@@ -187,12 +187,12 @@ export class GameArchivesPageComponent implements OnInit {
   protected readonly tournaments = this.store.selectSignal(
     GamesSelectors.selectTournaments,
   );
-  protected readonly summary = this.store.selectSignal(GamesSelectors.selectSummary);
+  private readonly summary = this.store.selectSignal(GamesSelectors.selectSummary);
   protected readonly referenceStatus = this.store.selectSignal(
     GamesSelectors.selectReferenceStatus,
   );
 
-  private readonly archiveFigures = computed<Figure[] | null>(() => {
+  protected readonly archiveFigures = computed<Figure[] | null>(() => {
     const summary = this.summary();
     if (!summary) {
       return null;
@@ -230,9 +230,11 @@ export class GameArchivesPageComponent implements OnInit {
   protected readonly rows = computed<GameRow[]>(() => this.games().map(toGameRow));
 
   // The archive's widest games size the columns from the first skeleton on
-  public readonly widestGames = input<Game[]>([]);
+  private readonly widestGames = widestRows(inject(GamesApiService).getWidestGames());
 
-  protected readonly sizingRows = computed(() => this.widestGames().map(toGameRow));
+  protected readonly sizingRows = computed(
+    () => this.widestGames()?.map(toGameRow) ?? null,
+  );
 
   // Rows are real links to their games, so the browser shows and can open them
   protected readonly rowHref = ({ game }: GameRow): string => `/game-archives/${game.id}`;

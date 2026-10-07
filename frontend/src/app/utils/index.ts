@@ -95,6 +95,7 @@ export type {
 
 export { pageOf } from './pagination/page-of.util';
 export { pageRowCount } from './pagination/page-row-count.util';
+export { widestRows } from './table/widest-rows.util';
 
 export { gamesQueryParams, parseGamesQuery } from './route/games-query.util';
 export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';

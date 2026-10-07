@@ -1,10 +1,10 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
@@ -31,13 +31,7 @@ describe('articleGuard', () => {
       ),
     );
 
-  const outcomes = (articleId: string): (boolean | UrlTree)[] => {
-    const emitted: (boolean | UrlTree)[] = [];
-    (runGuard(articleId) as Observable<boolean | UrlTree>).subscribe(value =>
-      emitted.push(value),
-    );
-    return emitted;
-  };
+  const outcomes = (articleId: string) => [runGuard(articleId)];
 
   beforeEach(() => {
     actions$ = new ReplaySubject<Action>(1);
@@ -93,7 +87,8 @@ describe('articleGuard', () => {
   });
 
   it('should redirect home when the article does not exist', () => {
-    const emitted = outcomes(article.id);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    outcomes(article.id);
 
     actions$.next(
       ArticlesActions.fetchArticleFailed({
@@ -101,6 +96,6 @@ describe('articleGuard', () => {
       }),
     );
 
-    expect(emitted).toEqual([router.createUrlTree(['/'])]);
+    expect(navigateSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
   });
 });

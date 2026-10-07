@@ -89,7 +89,8 @@ export class EventsTableComponent {
   public readonly filteredCount = input<number | null>(null);
   public readonly showModificationInfo = input(false);
   public readonly markToday = input(false);
-  public readonly widestEvents = input<Event[]>([]);
+  // Null while they are still on their way
+  public readonly widestEvents = input<Event[] | null>([]);
 
   public readonly optionsChange = output<DataPaginationOptions<Event>>();
 
@@ -118,7 +119,10 @@ export class EventsTableComponent {
   );
 
   // Sized from the first skeleton on by the widest of every event, not just this page
-  protected readonly sizingRows = computed(() => toEventRows(this.widestEvents()));
+  protected readonly sizingRows = computed(() => {
+    const widestEvents = this.widestEvents();
+    return widestEvents && toEventRows(widestEvents);
+  });
 
   protected readonly columns = computed<DataTableColumn<EventRow>[]>(() => [
     {

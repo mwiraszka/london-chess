@@ -103,7 +103,8 @@ export class MembersTableComponent {
   public readonly filteredCount = input.required<number | null>();
   // Placeholders replace the members during every fetch, so a change of filters shows at once
   public readonly isLoading = input(false);
-  public readonly widestMembers = input<Member[]>([]);
+  // Null while they are still on their way
+  public readonly widestMembers = input<Member[] | null>([]);
 
   public readonly optionsChange = output<DataPaginationOptions<Member>>();
 
@@ -152,8 +153,10 @@ export class MembersTableComponent {
   });
 
   // Sized from the first skeleton on by the widest of every member, not just this page
-  protected readonly sizingRows = computed(() =>
-    this.widestMembers().map(member => toMemberRow(member, this.widestRowNumber())),
+  protected readonly sizingRows = computed(
+    () =>
+      this.widestMembers()?.map(member => toMemberRow(member, this.widestRowNumber())) ??
+      null,
   );
 
   protected readonly columns = computed<DataTableColumn<MemberRow>[]>(() => {

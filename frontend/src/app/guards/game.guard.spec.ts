@@ -1,10 +1,10 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { MOCK_GAMES } from '@app/mocks/games.mock';
 import { GamesActions, initialState } from '@app/store/games';
@@ -28,13 +28,7 @@ describe('gameGuard', () => {
       ),
     );
 
-  const outcomes = (gameId: string): (boolean | UrlTree)[] => {
-    const emitted: (boolean | UrlTree)[] = [];
-    (runGuard(gameId) as Observable<boolean | UrlTree>).subscribe(value =>
-      emitted.push(value),
-    );
-    return emitted;
-  };
+  const outcomes = (gameId: string) => [runGuard(gameId)];
 
   beforeEach(() => {
     actions$ = new ReplaySubject<Action>(1);
@@ -78,7 +72,8 @@ describe('gameGuard', () => {
   });
 
   it('should redirect home when the game does not exist', () => {
-    const emitted = outcomes(game.id);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    outcomes(game.id);
 
     actions$.next(
       GamesActions.fetchGameFailed({
@@ -86,6 +81,6 @@ describe('gameGuard', () => {
       }),
     );
 
-    expect(emitted).toEqual([router.createUrlTree(['/'])]);
+    expect(navigateSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
   });
 });

@@ -72,6 +72,7 @@ describe('AppComponent', () => {
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
     store.overrideSelector(AppSelectors.selectIsWideView, false);
     store.overrideSelector(EventsSelectors.selectConcurrentNextEvents, [MOCK_EVENTS[0]]);
+    store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loaded');
     store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, false);
     store.refreshState();
   });
@@ -302,13 +303,32 @@ describe('AppComponent', () => {
           expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
         });
 
-        it('should not render banner when nextEvents is empty', () => {
+        it('should still render banner when no events are coming up', () => {
           store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, true);
           store.overrideSelector(EventsSelectors.selectConcurrentNextEvents, []);
           store.refreshState();
           fixture.detectChanges();
 
-          expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
+          expect(
+            query(
+              fixture.debugElement,
+              'lcc-upcoming-event-banner',
+            ).componentInstance.nextEvents(),
+          ).toEqual([]);
+        });
+
+        it('should hand the banner no events while they load', () => {
+          store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, true);
+          store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loading');
+          store.refreshState();
+          fixture.detectChanges();
+
+          expect(
+            query(
+              fixture.debugElement,
+              'lcc-upcoming-event-banner',
+            ).componentInstance.nextEvents(),
+          ).toBeNull();
         });
 
         it('should handle clearBanner event from banner component', () => {

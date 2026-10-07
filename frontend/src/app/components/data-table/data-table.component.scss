@@ -3,6 +3,7 @@
 // Centred at its own width, and capped at its container so a wider table scrolls
 // sideways within itself
 :host {
+  position: relative;
   display: flex;
   justify-content: center;
   max-width: 100%;
@@ -14,6 +15,17 @@
 ea-data-table {
   max-width: 100%;
   @include data-table-colors;
+}
+
+// Laid out but unseen until its sizing rows arrive, with a skeleton over the space it
+// already takes up
+:host.data-table--sizing ea-data-table {
+  visibility: hidden;
+}
+
+.data-table__sizing-skeleton {
+  position: absolute;
+  inset: 0;
 }
 
 :host.data-table--full-width {

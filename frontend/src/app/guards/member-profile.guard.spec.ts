@@ -1,10 +1,10 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -53,28 +53,21 @@ describe('memberProfileGuard', () => {
     const member = { ...MOCK_MEMBERS[0], number: 7 };
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
     store.refreshState();
-    const emitted: (boolean | UrlTree)[] = [];
+    const result = runGuard('7');
 
-    (runGuard('7') as Observable<boolean | UrlTree>).subscribe(value =>
-      emitted.push(value),
-    );
-
-    expect(emitted).toEqual([true]);
+    expect(result).toBe(true);
     expect(dispatchSpy).toHaveBeenCalledWith(
       MembersActions.fetchMemberByNumberRequested({ memberNumber: 7 }),
     );
   });
 
-  it('should fetch a member who is not stored before showing them', () => {
+  it('should show a member who is not stored at once and fetch them', () => {
     store.overrideSelector(MembersSelectors.selectAllMembers, []);
     store.refreshState();
-    const emitted: (boolean | UrlTree)[] = [];
 
-    (runGuard('7') as Observable<boolean | UrlTree>).subscribe(value =>
-      emitted.push(value),
-    );
+    const result = runGuard('7');
 
-    expect(emitted).toEqual([]);
+    expect(result).toBe(true);
     expect(dispatchSpy).toHaveBeenCalledWith(
       MembersActions.fetchMemberByNumberRequested({ memberNumber: 7 }),
     );

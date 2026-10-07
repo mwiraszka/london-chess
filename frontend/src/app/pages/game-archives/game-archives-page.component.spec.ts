@@ -12,7 +12,8 @@ import {
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
 } from '@app/mocks/games.mock';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import { ApiResponse, Game } from '@app/models';
+import { GamesApiService, KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { query, queryAll, queryTextContent } from '@app/utils';
 
@@ -27,6 +28,7 @@ describe('GameArchivesPageComponent', () => {
   let dispatchSpy: MockInstance;
   let navigateSpy: MockInstance;
   let queryParams: BehaviorSubject<Params>;
+  let widestGames: BehaviorSubject<ApiResponse<Game[]>>;
 
   const trigger = (selector: string, eventName: string, event?: object | string): void =>
     query(fixture.debugElement, selector).triggerEventHandler(eventName, event);
@@ -38,6 +40,7 @@ describe('GameArchivesPageComponent', () => {
 
   beforeEach(async () => {
     queryParams = new BehaviorSubject<Params>({ year: '1994' });
+    widestGames = new BehaviorSubject<ApiResponse<Game[]>>({ data: [] });
 
     await TestBed.configureTestingModule({
       imports: [GameArchivesPageComponent],
@@ -51,6 +54,10 @@ describe('GameArchivesPageComponent', () => {
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
+        },
+        {
+          provide: GamesApiService,
+          useValue: { getWidestGames: () => widestGames.asObservable() },
         },
       ],
     }).compileComponents();
@@ -353,7 +360,7 @@ describe('GameArchivesPageComponent', () => {
     const figureTexts = () =>
       queryAll(fixture.debugElement, '.figures .figure').map(
         figure =>
-          `${queryTextContent(figure, '.figure__value')} ${queryTextContent(figure, '.figure__label')}`,
+          `${queryTextContent(figure, '.figure__count')} ${queryTextContent(figure, '.figure__label')}`,
       );
 
     // The count starts as the page initialises, so the timers are faked before that
@@ -368,6 +375,14 @@ describe('GameArchivesPageComponent', () => {
 
     it('should start every figure from nothing', () => {
       expect(figureTexts()).toEqual(['0 games', '0 players', '0 tournaments', '0 years']);
+    });
+
+    it('should hold room for each full amount while counting up to it', () => {
+      const totals = queryAll(fixture.debugElement, '.figure__total').map(total =>
+        total.nativeElement.textContent.trim(),
+      );
+
+      expect(totals).toEqual(['9,119', '989', '189', '53']);
     });
 
     it('should count the figures up to their amounts over three seconds', () => {
@@ -462,8 +477,8 @@ describe('GameArchivesPageComponent', () => {
       expect(queryTextContent(rows[2], '.games__event')).toBe('Unknown event');
     });
 
-    it('should size the columns by the widest games resolved with the route', () => {
-      fixture.componentRef.setInput('widestGames', [MOCK_GAMES[1]]);
+    it('should size the columns by the widest games', () => {
+      widestGames.next({ data: [MOCK_GAMES[1]] });
       fixture.detectChanges();
 
       const sizingRows: GameRow[] = query(

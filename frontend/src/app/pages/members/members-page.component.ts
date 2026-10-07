@@ -13,7 +13,7 @@ import {
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, firstValueFrom } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -22,7 +22,6 @@ import {
   DestroyRef,
   OnInit,
   inject,
-  input,
   signal,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -42,6 +41,7 @@ import {
 } from '@app/models';
 import {
   CsvExportService,
+  MembersApiService,
   MetaAndTitleService,
   StoreRequestService,
 } from '@app/services';
@@ -49,7 +49,7 @@ import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
-import { bindSearchControl, isLccError } from '@app/utils';
+import { bindSearchControl, isLccError, widestRows } from '@app/utils';
 
 @Component({
   selector: 'lcc-members-page',
@@ -138,13 +138,20 @@ import { bindSearchControl, isLccError } from '@app/utils';
 })
 export class MembersPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
-  // The widest members, resolved with the route, size the table before its first page
-  public readonly widestMembers = input<Member[]>([]);
 
   private readonly csvExport = inject(CsvExportService);
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
+  private readonly membersApi = inject(MembersApiService);
+
+  // The widest members size the table from its first skeleton on, in the columns the
+  // visitor's access shows
+  protected readonly widestMembers = widestRows(
+    this.store
+      .select(AuthSelectors.selectApiScope)
+      .pipe(switchMap(scope => this.membersApi.getWidestMembers(scope))),
+  );
 
   protected readonly pageIcon = UsersIconComponent;
   protected readonly searchIcon = SearchIconComponent;

@@ -23,11 +23,14 @@
     padding: 0 8px 0 calc(8px + var(--lcc-scrollbar-inset, 0px));
   }
 
+  // At least a screen tall, so the footer always starts below the fold and never moves in
+  // view as a page fills in, however much shorter or taller it turns out than its skeleton
   main {
     display: flex;
     flex: 1 0 auto;
     flex-direction: column;
     align-items: center;
+    min-height: 100%;
 
     // Only ever focused by the skip link, to move keyboard users past the header
     &:focus {
@@ -42,8 +45,18 @@
     margin: 0 -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
   }
 
-  // Shown once a page has rendered above it, so it never starts just under the header
-  .scroller:has(> main > router-outlet:last-child) > lcc-footer {
-    display: none;
+  // Over the top of the page, so it moves nothing as it comes and goes; quick page changes
+  // finish before it has faded in
+  .navigation-progress {
+    z-index: var(--z-index-toast);
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    transition: opacity 0.2s;
+
+    @starting-style {
+      opacity: 0;
+    }
   }
 }

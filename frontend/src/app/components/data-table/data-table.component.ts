@@ -3,6 +3,7 @@ import {
   DataTableRowContextMenuEvent,
   DataTableSortState,
   DataTableComponent as EaDataTableComponent,
+  SkeletonComponent,
 } from '@eagami/ui';
 
 import { NgTemplateOutlet } from '@angular/common';
@@ -55,9 +56,15 @@ export class DataTableCellDirective<T> {
   selector: 'lcc-data-table',
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
-  imports: [DataTableCellDirective, EaDataTableComponent, NgTemplateOutlet],
+  imports: [
+    DataTableCellDirective,
+    EaDataTableComponent,
+    NgTemplateOutlet,
+    SkeletonComponent,
+  ],
   host: {
     '[class.data-table--full-width]': 'fullWidth()',
+    '[class.data-table--sizing]': 'isSizing()',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -65,8 +72,10 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly ariaLabel = input.required<string>({ alias: 'aria-label' });
   public readonly columns = input.required<DataTableColumn<T>[]>();
   public readonly data = input.required<T[]>();
-  // Rows holding each column's widest content, which also shape the loading rows
-  public readonly sizingRows = input<T[]>([]);
+  // Rows holding each column's widest content, which also shape the loading rows. Null
+  // while they are on their way, and the table holds its place under a skeleton until
+  // they arrive, so its columns never visibly change width
+  public readonly sizingRows = input<T[] | null>([]);
   public readonly loading = input(false);
   public readonly loadingRowCount = input(10);
   public readonly noDataText = input<string>();
@@ -100,9 +109,11 @@ export class DataTableComponent<T extends { id: string }> {
     }));
   });
 
+  protected readonly isSizing = computed(() => this.sizingRows() === null);
+
   // The hidden copies keep their own ids, so nothing keyed on a row's id marks them
   protected readonly hiddenRows = computed<T[]>(() =>
-    this.sizingRows().map(row => ({ ...row, id: `sizing-${row.id}` })),
+    (this.sizingRows() ?? []).map(row => ({ ...row, id: `sizing-${row.id}` })),
   );
 
   // Rows are highlighted on hover only while they lead somewhere or act on a click

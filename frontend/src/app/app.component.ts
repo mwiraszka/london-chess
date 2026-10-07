@@ -1,4 +1,4 @@
-import { ToastComponent } from '@eagami/ui';
+import { ProgressBarComponent, ToastComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, fromEvent } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
@@ -16,8 +16,15 @@ import {
   inject,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 
 import { AuthDrawerComponent } from '@app/components/auth-drawer/auth-drawer.component';
 import { EnvironmentTagComponent } from '@app/components/environment-tag/environment-tag.component';
@@ -47,7 +54,7 @@ import { environment } from '@env';
         Skip to content
       </a>
 
-      @if (vm.showUpcomingEventBanner && vm.nextEvents.length) {
+      @if (vm.showUpcomingEventBanner) {
         <lcc-upcoming-event-banner
           [nextEvents]="vm.nextEvents"
           (clearBanner)="onClearBanner()">
@@ -59,6 +66,13 @@ import { environment } from '@env';
       <lcc-navigation-bar></lcc-navigation-bar>
 
       <lcc-pull-to-refresh-indicator />
+
+      @if (isNavigating()) {
+        <ea-progress-bar
+          class="navigation-progress"
+          size="xs"
+          [indeterminate]="true" />
+      }
 
       <div
         #scroller
@@ -93,6 +107,7 @@ import { environment } from '@env';
     FooterComponent,
     HeaderComponent,
     NavigationBarComponent,
+    ProgressBarComponent,
     PullToRefreshIndicatorComponent,
     RouterOutlet,
     ToastComponent,
@@ -111,12 +126,27 @@ export class AppComponent implements OnInit, AfterViewInit {
   protected readonly environment = environment;
   protected readonly gitBranchName = GIT_BRANCH_NAME;
 
+  // A link answers at once, even while the page it leads to is still on its way
+  protected readonly isNavigating = toSignal(
+    inject(Router).events.pipe(
+      filter(
+        event =>
+          event instanceof NavigationStart ||
+          event instanceof NavigationEnd ||
+          event instanceof NavigationCancel ||
+          event instanceof NavigationError,
+      ),
+      map(event => event instanceof NavigationStart),
+    ),
+    { initialValue: false },
+  );
+
   public readonly scroller = viewChild.required('scroller', { read: ElementRef });
   public readonly mainContent = viewChild.required('mainContent', { read: ElementRef });
 
   public viewModel$?: Observable<{
     isDarkMode: boolean;
-    nextEvents: Event[];
+    nextEvents: Event[] | null;
     showUpcomingEventBanner: boolean;
   }>;
 
@@ -130,11 +160,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.viewModel$ = combineLatest([
       this.store.select(AppSelectors.selectIsDarkMode),
       this.store.select(EventsSelectors.selectConcurrentNextEvents),
+      this.store.select(EventsSelectors.selectHomePageEventsStatus),
       this.store.select(AppSelectors.selectShowUpcomingEventBanner),
     ]).pipe(
-      map(([isDarkMode, nextEvents, showUpcomingEventBanner]) => ({
+      map(([isDarkMode, nextEvents, eventsStatus, showUpcomingEventBanner]) => ({
         isDarkMode,
-        nextEvents,
+        nextEvents: eventsStatus === 'loading' ? null : nextEvents,
         showUpcomingEventBanner,
       })),
       tap(({ isDarkMode }) => {

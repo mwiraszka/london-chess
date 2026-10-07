@@ -1,18 +1,17 @@
 import { Actions, ofType } from '@ngrx/effects';
 import { Action, ActionCreator, MemoizedSelector, Store } from '@ngrx/store';
-import { EMPTY, Observable, defer, merge, of } from 'rxjs';
-import { filter, map, switchMap, take } from 'rxjs/operators';
+import { filter, take, takeUntil } from 'rxjs/operators';
 
 import { inject } from '@angular/core';
 import {
   ActivatedRouteSnapshot,
   type CanActivateFn,
+  NavigationStart,
   Router,
   UrlTree,
 } from '@angular/router';
 
 import { LccError } from '@app/models';
-import { isDefined } from '@app/utils';
 
 type FailedAction = { error: LccError } & Action<string>;
 
@@ -26,10 +25,10 @@ export interface RecordGuardConfig<T> {
   refreshes: boolean;
 }
 
-// A stored record shows at once; a missing one is fetched first, and a 404 goes home
-// without the page showing
+// The page opens at once, showing its skeletons while a missing record is fetched, and a
+// record that turns out not to exist sends the visitor home
 export function recordGuard<T>(config: RecordGuardConfig<T>): CanActivateFn {
-  return (route: ActivatedRouteSnapshot): Observable<boolean | UrlTree> | UrlTree => {
+  return (route: ActivatedRouteSnapshot): boolean | UrlTree => {
     const value = route.paramMap.get(config.param);
     const router = inject(Router);
     if (!config.isWellFormed(value)) {
@@ -37,41 +36,27 @@ export function recordGuard<T>(config: RecordGuardConfig<T>): CanActivateFn {
     }
 
     const store = inject(Store);
-    const actions$ = inject(Actions);
-    const selector = config.select(value);
+    const isStored = store.selectSignal(config.select(value))() !== null;
+    if (isStored && !config.refreshes) {
+      return true;
+    }
 
-    return store.select(selector).pipe(
-      take(1),
-      switchMap(record => {
-        if (record !== null) {
-          if (config.refreshes) {
-            store.dispatch(config.request(value));
+    if (!isStored) {
+      inject(Actions)
+        .pipe(
+          ofType(config.failed),
+          take(1),
+          takeUntil(
+            router.events.pipe(filter(event => event instanceof NavigationStart)),
+          ),
+        )
+        .subscribe(({ error }) => {
+          if (error.status === 404) {
+            void router.navigateByUrl('/', { replaceUrl: true });
           }
-          return of(true);
-        }
-
-        const settled$ = merge(
-          store.select(selector).pipe(
-            filter(isDefined),
-            map(() => true),
-          ),
-          actions$.pipe(
-            ofType(config.failed),
-            map(({ error }) =>
-              error.status === 404 ? router.createUrlTree(['/']) : true,
-            ),
-          ),
-        ).pipe(take(1));
-
-        // Subscribed before the request, so a synchronous reply is not missed
-        return merge(
-          settled$,
-          defer(() => {
-            store.dispatch(config.request(value));
-            return EMPTY;
-          }),
-        );
-      }),
-    );
+        });
+    }
+    store.dispatch(config.request(value));
+    return true;
   };
 }
