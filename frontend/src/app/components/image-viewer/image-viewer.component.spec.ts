@@ -367,11 +367,32 @@ describe('ImageViewerComponent', () => {
       expect(query(fixture.debugElement, 'figure')).toBeTruthy();
     });
 
+    it('should hand focus back to the figure rather than the image once closed', () => {
+      enlarged().dispatchEvent(new Event('close'));
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(
+        query(fixture.debugElement, 'figure').nativeElement,
+      );
+      expect(query(fixture.debugElement, 'dialog.enlarged-image lcc-image')).toBeNull();
+    });
+
     it('should leave a right click to the browser', () => {
       enlarged().dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
       fixture.detectChanges();
 
       expect(enlarged().open).toBe(true);
+    });
+  });
+
+  describe('focus', () => {
+    it('should rest on the figure, outside the tab order, when the viewer opens', () => {
+      createViewer();
+
+      const figure: HTMLElement = query(fixture.debugElement, 'figure').nativeElement;
+
+      expect(figure.hasAttribute('autofocus')).toBe(true);
+      expect(figure.tabIndex).toBe(-1);
     });
   });
 

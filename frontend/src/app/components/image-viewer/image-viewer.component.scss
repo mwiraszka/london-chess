@@ -6,10 +6,16 @@
   --ea-dialog-header-padding: var(--space-5) var(--space-6) var(--space-3);
 }
 
+// Focus rests here while the arrow keys step through the images, without a ring, since
+// it is no stop of its own; the image itself still shows one when tabbed to
 figure {
   display: flex;
   flex-direction: column;
   height: 75vh;
+
+  &:focus {
+    outline: none;
+  }
 }
 
 .image-container {

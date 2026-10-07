@@ -9,7 +9,11 @@
   </h3>
 
   @if (shownImage(); as image) {
-    <figure [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
+    <figure
+      #figure
+      tabindex="-1"
+      autofocus
+      [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
       <div class="image-container">
         <button
           type="button"
@@ -51,7 +55,7 @@
       class="enlarged-image"
       [attr.aria-label]="image.caption || 'Enlarged image'"
       (click)="onShrink()"
-      (close)="isEnlarged.set(false)"
+      (close)="onEnlargedClosed()"
       (keydown)="$event.stopPropagation()">
       @if (isEnlarged()) {
         <lcc-image [image]="image" />

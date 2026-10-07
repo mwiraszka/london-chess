@@ -83,6 +83,7 @@ export class ImageViewerComponent implements OnInit {
   private readonly adminControls = inject(AdminControlsService);
   private readonly loadedImages = inject(LoadedImagesService);
   private readonly enlargedDialog = viewChild<ElementRef<HTMLDialogElement>>('enlarged');
+  private readonly figure = viewChild<ElementRef<HTMLElement>>('figure');
 
   private pendingImage: HTMLImageElement | null = null;
   private readonly loadedIndex$ = new Subject<number>();
@@ -112,6 +113,13 @@ export class ImageViewerComponent implements OnInit {
   protected onEnlarge(): void {
     this.isEnlarged.set(true);
     this.enlargedDialog()?.nativeElement.showModal();
+  }
+
+  // Back on the figure rather than the image that opened it, so stepping through with the
+  // arrow keys draws no focus ring around the image
+  protected onEnlargedClosed(): void {
+    this.isEnlarged.set(false);
+    this.figure()?.nativeElement.focus({ preventScroll: true });
   }
 
   protected onShrink(): void {
