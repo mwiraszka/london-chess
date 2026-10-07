@@ -73,13 +73,25 @@
 }
 
 .safe-mode-warning-tooltip {
-  header {
-    margin-bottom: 8px;
-    color: var(--lcc-color--userSettingsMenu-warning);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 
-    .warning-icon {
-      display: inline-flex;
-      @include icon-size(24px);
-    }
+  p {
+    margin: 0;
   }
+}
+
+.warning-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--lcc-color--userSettingsMenu-warning);
+}
+
+.warning-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  @include icon-size(16px);
 }
