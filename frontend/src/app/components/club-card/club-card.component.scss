@@ -63,6 +63,10 @@
     @include icon-size(16px);
   }
 
+  .email-link {
+    @include lcc-link-in-text;
+  }
+
   .external-link-icon {
     @include icon-size(16px);
     @include link-icon-lift;
