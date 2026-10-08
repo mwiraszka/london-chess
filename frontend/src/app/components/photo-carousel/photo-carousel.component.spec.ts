@@ -1,3 +1,5 @@
+import { TooltipDirective } from '@eagami/ui';
+
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -104,12 +106,15 @@ describe('PhotoCarouselComponent', () => {
 
     it('should name its button for what it will do', () => {
       const toggle = query(fixture.debugElement, '.controls ea-button');
-      expect(toggle.componentInstance.ariaLabel()).toBe('Pause the slideshow');
+      const tooltip = toggle.injector.get(TooltipDirective);
+      const before = [toggle.componentInstance.ariaLabel(), tooltip.eaTooltip()];
 
       toggle.triggerEventHandler('clicked');
       fixture.detectChanges();
 
+      expect(before).toEqual(['Pause the slideshow', 'Pause the slideshow']);
       expect(toggle.componentInstance.ariaLabel()).toBe('Play the slideshow');
+      expect(tooltip.eaTooltip()).toBe('Play the slideshow');
     });
   });
 

@@ -37,6 +37,7 @@
     size="xs"
     variant="ghost"
     [aria-label]="isPaused() ? 'Play the slideshow' : 'Pause the slideshow'"
+    [eaTooltip]="isPaused() ? 'Play the slideshow' : 'Pause the slideshow'"
     [icon]="isPaused() ? playIcon : pauseIcon"
     (clicked)="isPaused.set(!isPaused())" />
 

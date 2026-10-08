@@ -1,4 +1,9 @@
-import { ButtonComponent, PauseIconComponent, PlayIconComponent } from '@eagami/ui';
+import {
+  ButtonComponent,
+  PauseIconComponent,
+  PlayIconComponent,
+  TooltipDirective,
+} from '@eagami/ui';
 import { EMPTY, Subject, merge, timer } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 
@@ -21,7 +26,7 @@ import { Image } from '@app/models';
   selector: 'lcc-photo-carousel',
   templateUrl: './photo-carousel.component.html',
   styleUrl: './photo-carousel.component.scss',
-  imports: [ButtonComponent],
+  imports: [ButtonComponent, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown.arrowleft)': 'onPreviousPhoto()',
