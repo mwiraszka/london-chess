@@ -26,3 +26,19 @@
   background: var(--color-state-active);
   color: var(--color-text-primary);
 }
+
+// Holds the width its label takes in bold, so marking an item current moves nothing
+.lcc-side-nav__label {
+  display: inline-flex;
+  flex-direction: column;
+
+  &::after {
+    overflow: hidden;
+    visibility: hidden;
+    height: 0;
+    font-weight: 600;
+    pointer-events: none;
+    user-select: none;
+    content: attr(data-label);
+  }
+}

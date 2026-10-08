@@ -37,7 +37,11 @@
                 aria-hidden="true" />
             }
           }
-          {{ item.label }}
+          <span
+            class="lcc-side-nav__label"
+            [attr.data-label]="item.label">
+            {{ item.label }}
+          </span>
         </a>
       }
     </nav>
