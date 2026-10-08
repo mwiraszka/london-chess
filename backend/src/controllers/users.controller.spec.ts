@@ -459,6 +459,7 @@ describe('users routes', () => {
           avatarCropState: { zoom: 2, offsetX: 1, offsetY: -1, extra: true },
           clerkImageUrl: 'https://img.clerk.com/photo',
           showYearOfBirth: true,
+          brand: 'classic',
         });
 
       expect(response.status).toBe(200);
@@ -466,6 +467,7 @@ describe('users routes', () => {
         avatarCropState: { zoom: 2, offsetX: 1, offsetY: -1 },
         clerkImageUrl: 'https://img.clerk.com/photo',
         showYearOfBirth: true,
+        brand: 'classic',
       });
     });
 
@@ -510,9 +512,14 @@ describe('users routes', () => {
         .patch('/v1/users/me')
         .set('Authorization', bearer(USER))
         .send({ showYearOfBirth: 'yes' });
+      const badBrand = await request(app)
+        .patch('/v1/users/me')
+        .set('Authorization', bearer(USER))
+        .send({ brand: 'neon' });
 
       expect(badImage.status).toBe(400);
       expect(badPreference.status).toBe(400);
+      expect(badBrand.status).toBe(400);
     });
 
     it('should respond with not found without a member record', async () => {

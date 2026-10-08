@@ -46,8 +46,13 @@ export function newMemberAccount(
   };
 }
 
+// The looks a member can give the site, each its own colours and type
+export const BRANDS = ['modern', 'classic', 'sunset', 'newsprint', 'playground'] as const;
+export type Brand = (typeof BRANDS)[number];
+
 interface MemberPreferences {
   showYearOfBirth: boolean;
+  brand: Brand;
 }
 
 export interface Member {
@@ -109,7 +114,10 @@ const accountSchema = new Schema<MemberAccount>(
 );
 
 const preferencesSchema = new Schema<MemberPreferences>(
-  { showYearOfBirth: { type: Boolean, default: false } },
+  {
+    showYearOfBirth: { type: Boolean, default: false },
+    brand: { type: String, enum: BRANDS, default: 'modern' },
+  },
   { _id: false },
 );
 

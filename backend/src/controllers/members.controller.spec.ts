@@ -147,7 +147,7 @@ describe('members routes', () => {
       await createMember({
         number: 7,
         account: memberAccount(),
-        preferences: { showYearOfBirth: true },
+        preferences: { showYearOfBirth: true, brand: 'modern' },
       });
 
       const response = await request(app).get('/v1/public/members/7');

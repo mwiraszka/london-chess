@@ -3,7 +3,7 @@ import { randomInt } from 'node:crypto';
 
 import { AccountVerificationModel } from '../models/account-verification.model';
 import { ApiResponse } from '../models/api-response.model';
-import { AvatarCropState } from '../models/member.model';
+import { AvatarCropState, BRANDS, Brand } from '../models/member.model';
 import {
   avatarPublicUrlPrefix,
   deleteAvatar,
@@ -262,15 +262,18 @@ export async function getMe(
   }
 }
 
+const isBrand = (value: unknown): value is Brand => BRANDS.some(brand => brand === value);
+
 export async function updateMe(
   req: Request,
   res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
-    const { avatarCropState, clerkImageUrl, showYearOfBirth } = req.body as {
+    const { avatarCropState, clerkImageUrl, showYearOfBirth, brand } = req.body as {
       avatarCropState?: unknown;
       clerkImageUrl?: unknown;
       showYearOfBirth?: unknown;
+      brand?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
@@ -295,6 +298,13 @@ export async function updateMe(
         return;
       }
       updates['preferences.showYearOfBirth'] = showYearOfBirth;
+    }
+    if (brand !== undefined) {
+      if (!isBrand(brand)) {
+        res.status(400).json({ message: `Brand must be one of ${BRANDS.join(', ')}.` });
+        return;
+      }
+      updates['preferences.brand'] = brand;
     }
 
     const member = await updateLinkedMember(req.user.id, updates);
