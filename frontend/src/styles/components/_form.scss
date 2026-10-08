@@ -94,7 +94,7 @@
     max-width: 100px;
     font-size: 14px;
     text-align: right;
-    color: var(--lcc-color--form-labelText);
+    color: var(--color-text-primary);
     cursor: pointer;
   }
 
@@ -108,15 +108,15 @@
 .lcc-required-fields-legend {
   font-size: 14px;
   font-style: italic;
-  color: var(--lcc-color--form-requiredFieldText);
+  color: var(--color-text-secondary);
 
   &::after {
-    color: var(--lcc-color--form-requiredFieldAsterisk);
+    color: var(--color-error-text);
     content: ' *';
   }
 }
 
 .lcc-required-field::before {
-  color: var(--lcc-color--form-requiredFieldAsterisk);
+  color: var(--color-error-text);
   content: '* ';
 }

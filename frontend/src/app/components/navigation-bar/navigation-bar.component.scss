@@ -10,7 +10,7 @@ $nav-collapse-width: 800px;
   justify-content: center;
   height: 40px;
   padding-top: 2px;
-  background-color: var(--lcc-color--nav-background);
+  background-color: var(--lcc-surface);
 }
 
 .content-container {
@@ -37,29 +37,29 @@ $nav-collapse-width: 800px;
     font-weight: 400;
     white-space: nowrap;
     border-top: $border-thickness solid transparent;
-    border-bottom: $border-thickness solid var(--lcc-color--nav-border);
+    border-bottom: $border-thickness solid var(--color-border-default);
     border-top-left-radius: var(--radius-md);
     border-top-right-radius: var(--radius-md);
-    color: var(--lcc-color--nav-linkForeground);
+    color: var(--color-text-secondary);
 
     &:hover {
       text-decoration: none;
-      color: var(--lcc-color--nav-linkForegroundOnHover);
+      color: var(--color-text-link);
 
       .link-icon {
-        color: var(--lcc-color--nav-linkForegroundOnHover);
+        color: var(--color-text-link);
       }
     }
 
     &.link-active {
       padding: 4px 2px;
-      border-right: $border-thickness solid var(--lcc-color--nav-border);
-      border-left: $border-thickness solid var(--lcc-color--nav-border);
-      background-color: var(--lcc-color--app-mainBackground);
-      color: var(--lcc-color--nav-linkForegroundWhenActive);
+      border-right: $border-thickness solid var(--color-border-default);
+      border-left: $border-thickness solid var(--color-border-default);
+      background-color: var(--lcc-page);
+      color: var(--color-text-primary);
       cursor: default;
       pointer-events: none;
-      border-top-color: var(--lcc-color--nav-border);
+      border-top-color: var(--color-border-default);
       border-bottom-color: transparent;
     }
 
@@ -72,7 +72,7 @@ $nav-collapse-width: 800px;
       display: inline-flex;
       @include icon-size(24px);
 
-      color: var(--lcc-color--nav-linkForeground);
+      color: var(--color-text-secondary);
     }
 
     @include respond-to('gt-xs') {
@@ -102,7 +102,7 @@ $nav-collapse-width: 800px;
 .nav-controls {
   display: flex;
   align-items: center;
-  border-bottom: $border-thickness solid var(--lcc-color--nav-border);
+  border-bottom: $border-thickness solid var(--color-border-default);
 
   .avatar-button {
     // Full control-row height so the menu anchors to the nav bottom edge
@@ -113,11 +113,11 @@ $nav-collapse-width: 800px;
     margin: 0 4px;
     border: none;
     background: none;
-    color: var(--lcc-color--nav-linkForeground);
+    color: var(--color-text-secondary);
     cursor: pointer;
 
     &:hover {
-      color: var(--lcc-color--nav-linkForegroundOnHover);
+      color: var(--color-text-link);
     }
 
     .menu-icon {
@@ -130,7 +130,7 @@ $nav-collapse-width: 800px;
 .nav-right,
 .nav-mid {
   flex: 1;
-  border-bottom: $border-thickness solid var(--lcc-color--nav-border);
+  border-bottom: $border-thickness solid var(--color-border-default);
 }
 
 .nav-left,

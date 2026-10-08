@@ -25,7 +25,7 @@
       align-items: center;
       justify-content: center;
       border-radius: var(--radius-md);
-      background-color: var(--lcc-color--general-imageBackdrop);
+      background-color: var(--lcc-image-backdrop);
 
       lcc-image {
         width: 100%;
@@ -66,7 +66,7 @@
     h3 {
       align-self: flex-start;
       font-weight: 400;
-      color: var(--lcc-color--articleForm-previewHeaderText);
+      color: var(--color-text-secondary);
     }
 
     .preview-divider {
@@ -80,7 +80,7 @@
       width: 100%;
       padding: 8px;
       border-radius: var(--radius-md);
-      box-shadow: 1px 1px 8px 1px var(--lcc-color--articleForm-markdownPreviewBoxShadow);
+      box-shadow: 1px 1px 8px 1px var(--lcc-shadow-soft);
     }
   }
 }

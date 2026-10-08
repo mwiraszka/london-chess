@@ -22,7 +22,7 @@
   justify-content: center;
   max-height: 300px;
   border-radius: var(--radius-md);
-  background-color: var(--lcc-color--general-imageBackdrop);
+  background-color: var(--lcc-image-backdrop);
 
   &.full-span {
     grid-column: 1 / -1;

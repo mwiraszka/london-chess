@@ -83,11 +83,9 @@
   h3 {
     width: 100%;
     text-align: left;
-    color: var(--lcc-color--websiteChangelogPage-headerText);
+    color: var(--color-text-primary);
   }
 
-  // The LCC divider token is near-black in dark mode, so the library's own
-  // divider is what stays visible on the page background
   .section-title__rule {
     display: block;
     width: 100%;
@@ -202,7 +200,7 @@
     flex-shrink: 0;
     @include icon-size(18px);
 
-    color: var(--lcc-color--websiteChangelogPage-secondaryText);
+    color: var(--color-text-secondary);
     transition: transform 150ms ease;
   }
 
@@ -225,7 +223,7 @@
     .release-date {
       font-size: 13px;
       line-height: 16px;
-      color: var(--lcc-color--websiteChangelogPage-secondaryText);
+      color: var(--color-text-secondary);
     }
   }
 
@@ -293,7 +291,7 @@
       display: inline-flex;
       @include icon-size(18px);
 
-      color: var(--lcc-color--pageHeader-icon);
+      color: var(--lcc-accent);
     }
   }
 
@@ -347,7 +345,7 @@
     margin-top: 2px;
     @include icon-size(20px);
 
-    color: var(--lcc-color--pageHeader-icon);
+    color: var(--lcc-accent);
   }
 
   .page-link__text {

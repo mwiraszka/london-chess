@@ -133,18 +133,7 @@
 .warning-heading__icon {
   flex-shrink: 0;
   font-size: 16px;
-  color: var(--lcc-color--accountPage-danger);
-}
-
-// The library paints danger buttons with its own error red; the club's red
-// keeps them in step with the safe mode controls
-.danger-button {
-  --ea-button-background-color: var(--lcc-color--accountPage-danger);
-  --ea-button-border-color: var(--lcc-color--accountPage-danger);
-  --ea-button-background-color-hover: var(--lcc-color--accountPage-dangerHover);
-  --ea-button-border-color-hover: var(--lcc-color--accountPage-dangerHover);
-  --ea-button-background-color-active: var(--lcc-color--accountPage-dangerHover);
-  --ea-button-border-color-active: var(--lcc-color--accountPage-dangerHover);
+  color: var(--color-error-default);
 }
 
 .card-desc {
@@ -204,7 +193,7 @@
 .session__icon {
   flex-shrink: 0;
   font-size: 20px;
-  color: var(--lcc-color--general-accentIcon);
+  color: var(--lcc-accent);
 }
 
 .session__info {

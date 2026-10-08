@@ -14,7 +14,7 @@
   border: var(--border-width-thin) solid var(--color-info-muted);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  background-color: var(--lcc-color--environmentTag-background);
+  background-color: var(--lcc-page-translucent);
 }
 
 :host(.preview) {

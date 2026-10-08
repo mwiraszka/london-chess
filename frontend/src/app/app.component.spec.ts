@@ -29,6 +29,7 @@ describe('AppComponent', () => {
 
   let dispatchSpy: MockInstance;
   let setAttributeSpy: MockInstance;
+  let setThemeSpy: MockInstance;
 
   beforeEach(async () => {
     mockFragmentSubject = new Subject<string | null>();
@@ -65,6 +66,7 @@ describe('AppComponent', () => {
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
     setAttributeSpy = vi.spyOn(document.body, 'setAttribute');
+    setThemeSpy = vi.spyOn(document.documentElement, 'setAttribute');
 
     store.overrideSelector(AuthSelectors.selectUser, null);
     store.overrideSelector(AppSelectors.selectBannerLastCleared, null);
@@ -121,7 +123,7 @@ describe('AppComponent', () => {
     });
 
     it('should set data-theme attribute to light when isDarkMode is false', () => {
-      expect(setAttributeSpy).toHaveBeenCalledWith('data-theme', 'light');
+      expect(setThemeSpy).toHaveBeenCalledWith('data-theme', 'light');
     });
 
     it('should set data-theme attribute to dark when isDarkMode is true', () => {
@@ -131,7 +133,7 @@ describe('AppComponent', () => {
       component.ngOnInit();
       fixture.detectChanges();
 
-      expect(setAttributeSpy).toHaveBeenCalledWith('data-theme', 'dark');
+      expect(setThemeSpy).toHaveBeenCalledWith('data-theme', 'dark');
     });
 
     it('should set data-wide-view attribute to false by default', () => {

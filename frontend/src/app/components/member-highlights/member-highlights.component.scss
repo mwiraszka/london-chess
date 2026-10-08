@@ -49,7 +49,7 @@ $narrow-scale: 0.75;
   }
 
   &:focus-visible {
-    outline: 2px solid var(--lcc-color--memberTrophies-glow);
+    outline: 2px solid var(--lcc-accent-glow);
     outline-offset: 2px;
   }
 }
@@ -57,8 +57,8 @@ $narrow-scale: 0.75;
 // Lit and lifted while its details show below
 .trophy--selected,
 .trophy--selected:hover {
-  border-bottom-color: var(--lcc-color--memberTrophies-underline);
-  filter: brightness(1.1) drop-shadow(0 0 12px var(--lcc-color--memberTrophies-glow));
+  border-bottom-color: var(--lcc-accent);
+  filter: brightness(1.1) drop-shadow(0 0 12px var(--lcc-accent-glow));
   transform: scale(1.1);
 }
 
@@ -116,7 +116,7 @@ $narrow-scale: 0.75;
   grid-template-columns: repeat(4, auto);
   padding: 12px 24px;
   margin: 0;
-  border: 1px solid var(--lcc-color--general-dividerLine);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-sm);
 
   @container (width < 480px) {

@@ -19,7 +19,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     }
 
     // The saved logo is solid black; the app theme decides when to flip it
-    :host-context(body[data-theme='dark']) img {
+    :host-context(:root[data-theme='dark']) img {
       filter: invert(1);
     }
   `,

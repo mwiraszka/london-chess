@@ -10,8 +10,8 @@ section {
   flex-flow: row wrap;
   justify-content: center;
   padding: 16px;
-  border: 1px solid var(--lcc-color--championPage-cellBorder);
-  background-color: var(--lcc-color--championPage-cellBackground);
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--lcc-surface-sunken);
 
   &.history-and-photos-section {
     align-items: center;
@@ -27,7 +27,7 @@ section {
       p {
         opacity: 0;
         margin-bottom: 2em;
-        color: var(--lcc-color--championPage-primaryText);
+        color: var(--color-text-secondary);
         animation: fade-in-up 1s ease-out forwards;
 
         &:nth-child(2) {
@@ -43,7 +43,7 @@ section {
         }
 
         b {
-          color: var(--lcc-color--championPage-primaryTextBold);
+          color: var(--color-text-primary);
         }
       }
     }
@@ -80,7 +80,7 @@ section {
       h3 {
         width: 100%;
         text-align: left;
-        color: var(--lcc-color--championPage-headerText);
+        color: var(--color-text-primary);
       }
 
       ea-divider {

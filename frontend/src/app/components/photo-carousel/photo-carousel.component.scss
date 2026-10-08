@@ -17,7 +17,7 @@
   width: 100%;
   min-height: 450px;
   border-radius: var(--radius-lg);
-  background-color: var(--lcc-color--photoCarousel-photoBackground);
+  background-color: var(--lcc-viewer);
   cursor: pointer;
 }
 
@@ -65,7 +65,7 @@
   font-size: 16px;
   line-height: 24px;
   white-space: pre-line;
-  color: var(--lcc-color--photoCarousel-caption);
+  color: var(--color-text-primary);
   transition: opacity 0.8s ease-in-out;
 
   &.active {
@@ -97,15 +97,15 @@
     &::before {
       width: 8px;
       height: 8px;
-      border: 1px solid var(--lcc-color--photoCarousel-dotBorder);
+      border: 1px solid var(--color-border-strong);
       border-radius: var(--radius-full);
-      background-color: var(--lcc-color--photoCarousel-dot);
+      background-color: var(--color-text-secondary);
       content: '';
     }
 
     &.active::before {
-      border: 1px solid var(--lcc-color--photoCarousel-activeDotBorder);
-      background-color: var(--lcc-color--photoCarousel-activeDot);
+      border: 1px solid var(--color-primary-400);
+      background-color: var(--color-primary-400);
       transition: background-color 1.6s ease;
     }
   }

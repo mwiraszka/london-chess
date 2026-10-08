@@ -90,7 +90,7 @@
   justify-self: end;
   font-size: 36px;
   font-weight: bold;
-  color: var(--lcc-color--gameArchivesPage-figure);
+  color: var(--lcc-accent-text);
 
   @include respond-to('lt-sm') {
     font-size: 20px;

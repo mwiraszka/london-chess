@@ -34,9 +34,9 @@ import { FormatDatePipe } from '@app/pipes';
 })
 export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
   private readonly TYPE_COLOR_VARS: Record<EventType, string> = {
-    'blitz tournament (10 mins)': 'blitz10Tournament',
-    'rapid tournament (25 mins)': 'rapid25Tournament',
-    'rapid tournament (40 mins)': 'rapid40Tournament',
+    'blitz tournament (10 mins)': 'blitz-10-tournament',
+    'rapid tournament (25 mins)': 'rapid-25-tournament',
+    'rapid tournament (40 mins)': 'rapid-40-tournament',
     lecture: 'lecture',
     simul: 'simul',
     championship: 'championship',
@@ -65,7 +65,7 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
   protected readonly backgroundStyling = computed(() => {
     const nextEvents = this.nextEvents() ?? [];
     const colorVar = (type: EventType) =>
-      `var(--lcc-color--upcomingEventBanner-background-${this.TYPE_COLOR_VARS[type]})`;
+      `var(--lcc-event-${this.TYPE_COLOR_VARS[type]})`;
 
     if (!nextEvents.length) {
       return colorVar('other');

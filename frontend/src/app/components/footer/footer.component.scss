@@ -7,8 +7,8 @@
   font-size: 13px;
   text-align: center;
   white-space: nowrap;
-  background-color: var(--lcc-color--footer-background);
-  color: var(--lcc-color--footer-primaryText);
+  background-color: var(--lcc-surface);
+  color: var(--color-text-primary);
 }
 
 .main-section {
@@ -152,8 +152,8 @@
   width: 100%;
   padding: 4px 8px;
   font-size: 10px;
-  background-color: var(--lcc-color--footer-copyrightSectionBackground);
-  color: var(--lcc-color--footer-copyrightSectionText);
+  background-color: var(--lcc-band);
+  color: var(--lcc-on-band);
 
   @include respond-to('gt-xxs') {
     font-size: 11px;
@@ -166,7 +166,7 @@
 
 // The brand-coloured bar needs a more opaque rule than the library's translucent one
 .copyright-divider {
-  --color-divider: var(--lcc-color--footer-verticalSpacer);
+  --color-divider: var(--lcc-grid-line);
   --ea-divider-length: 1em;
 
   display: inline-flex;

@@ -14,7 +14,7 @@
   color: inherit;
 
   &:hover {
-    color: var(--lcc-color--documentsPage-documentLabelOnHover);
+    color: var(--color-text-link-hover);
   }
 }
 
@@ -26,7 +26,7 @@
   color: inherit;
 
   &:hover {
-    color: var(--lcc-color--documentsPage-downloadLinkOnHover);
+    color: var(--color-text-link-hover);
   }
 }
 
@@ -36,5 +36,5 @@
 
 .tooltip-item-name {
   display: block;
-  color: var(--lcc-color--tooltip-highlightedText) !important;
+  color: var(--color-primary-300) !important;
 }

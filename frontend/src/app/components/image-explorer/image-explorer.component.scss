@@ -80,12 +80,12 @@ $side-padding: 8px;
     padding: $card-padding;
     border: none;
     border-radius: var(--radius-md);
-    box-shadow: 1px 2px 4px var(--lcc-color--general-cardBoxShadow);
-    background-color: var(--lcc-color--imageExplorer-cardBackground);
+    box-shadow: 1px 2px 4px var(--lcc-shadow-soft);
+    background-color: var(--lcc-surface);
     transition: all 0.2s ease;
 
     &.selectable:hover {
-      box-shadow: 4px 4px 8px var(--lcc-color--general-cardBoxShadow);
+      box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       cursor: pointer;
       animation: raise 0.2s ease forwards;
     }
@@ -98,7 +98,7 @@ $side-padding: 8px;
       margin-bottom: 8px;
       aspect-ratio: 3 / 2;
       border-radius: var(--radius-md);
-      background-color: var(--lcc-color--general-imageBackdrop);
+      background-color: var(--lcc-image-backdrop);
 
       lcc-image {
         width: 100%;
@@ -120,7 +120,7 @@ $side-padding: 8px;
     .album,
     .article-appearances {
       font-size: 12px;
-      color: var(--lcc-color--imageExplorer-text);
+      color: var(--color-text-primary);
 
       label {
         display: inline;
@@ -140,12 +140,12 @@ $side-padding: 8px;
     }
 
     .article-appearances {
-      color: var(--lcc-color--imageExplorer-articleAppearancesText);
+      color: var(--color-text-link);
     }
 
     // Placeholders take a fill that reads on the card
     ::ng-deep ea-skeleton .ea-skeleton {
-      background-color: var(--lcc-color--imageExplorer-skeleton);
+      background-color: var(--lcc-skeleton);
     }
   }
 }

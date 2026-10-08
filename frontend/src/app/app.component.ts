@@ -171,11 +171,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         showUpcomingEventBanner,
       })),
       tap(({ isDarkMode }) => {
-        const theme = isDarkMode ? 'dark' : 'light';
-        // @eagami/ui keys its themed tokens off <html data-theme>, while the
-        // app's own styles key off <body data-theme>
-        this._document.documentElement.setAttribute('data-theme', theme);
-        this._document.body.setAttribute('data-theme', theme);
+        this._document.documentElement.setAttribute(
+          'data-theme',
+          isDarkMode ? 'dark' : 'light',
+        );
       }),
     );
 

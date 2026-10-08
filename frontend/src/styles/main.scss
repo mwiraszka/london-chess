@@ -4,9 +4,7 @@
 @forward 'base/reset';
 @forward 'base/typography';
 
-@forward 'themes/colour-palette';
-@forward 'themes/dark-theme';
-@forward 'themes/light-theme';
+@forward 'themes/tokens';
 
 @forward 'abstracts/mixins';
 @forward 'abstracts/variables';

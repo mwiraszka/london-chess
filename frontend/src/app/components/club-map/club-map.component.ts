@@ -36,10 +36,10 @@ import { environment } from '@env';
       width: 100%;
       min-width: 280px;
       border-radius: var(--radius-sm);
-      border: 3px solid var(--lcc-color--clubMap-border);
+      border: 3px solid var(--lcc-map-border);
 
       &:hover {
-        border-color: var(--lcc-color--link);
+        border-color: var(--color-text-link);
       }
     }
 

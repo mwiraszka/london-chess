@@ -9,28 +9,28 @@
   width: 100%;
   padding: 8px;
   border-radius: var(--radius-sm);
-  box-shadow: 1px 1px 8px 1px var(--lcc-color--pageHeader-boxShadow);
-  background-color: var(--lcc-color--pageHeader-background);
+  box-shadow: 1px 1px 8px 1px var(--lcc-shadow-soft);
+  background-color: var(--lcc-surface);
 
   .page-header-icon {
     display: inline-flex;
-    color: var(--lcc-color--pageHeader-icon);
+    color: var(--lcc-accent);
     @include icon-size(24px);
 
     &.admin-page {
-      color: var(--lcc-color--pageHeader-adminIcon);
+      color: var(--lcc-admin-strong);
     }
   }
 
   .page-heading {
     font-size: 18px !important;
-    color: var(--lcc-color--pageHeader-text);
+    color: var(--color-text-primary);
 
     &.end-with-asterisk {
       font-style: italic;
 
       &:after {
-        color: var(--lcc-color--pageHeader-asteriskText);
+        color: var(--color-text-secondary);
         content: ' *';
       }
     }

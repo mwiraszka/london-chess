@@ -25,7 +25,7 @@ figure {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  background-color: var(--lcc-color--imageViewer-background);
+  background-color: var(--lcc-viewer);
 
   lcc-image {
     width: 100%;
@@ -102,7 +102,7 @@ figcaption {
   cursor: zoom-out;
 
   &::backdrop {
-    background-color: var(--lcc-color--imageViewer-enlargedBackdrop);
+    background-color: var(--lcc-scrim);
   }
 
   lcc-image {

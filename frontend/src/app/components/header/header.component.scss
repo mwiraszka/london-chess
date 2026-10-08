@@ -7,7 +7,7 @@ $app-header-font-size: 42px;
   display: flex;
   justify-content: center;
   width: 100%;
-  background-color: var(--lcc-color--header-background);
+  background-color: var(--lcc-header);
 }
 
 .app-header-container {
@@ -48,10 +48,10 @@ $app-header-font-size: 42px;
       height: 100%;
       padding: 4px;
       border-radius: var(--radius-full);
-      background-color: var(--lcc-color--header-brandingBackground);
+      background-color: var(--color-neutral-300);
 
       &:hover {
-        background-color: var(--lcc-color--header-brandingBackgroundOnHover);
+        background-color: var(--color-neutral-100);
       }
     }
 
@@ -61,14 +61,14 @@ $app-header-font-size: 42px;
       justify-content: center;
 
       &:hover h1 {
-        color: var(--lcc-color--header-textOnHover);
+        color: var(--color-neutral-0);
       }
 
       h1 {
         font-size: calc(#{$app-header-font-size} - 6px);
         white-space: nowrap;
         font-family: 'Caveat', sans-serif;
-        color: var(--lcc-color--header-text);
+        color: var(--lcc-on-header);
 
         @include respond-to('gt-sm') {
           font-size: $app-header-font-size;

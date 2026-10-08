@@ -25,7 +25,7 @@
 .faq-page__heading-icon {
   @include icon-size(20px);
 
-  color: var(--lcc-color--general-accentIcon);
+  color: var(--lcc-accent);
 }
 
 .faq {
@@ -37,9 +37,9 @@
 // The answers sit on their own panel so they stand apart from the questions
 .faq__answer {
   padding: 16px;
-  border-left: 3px solid var(--lcc-color--general-accentIcon);
+  border-left: 3px solid var(--lcc-accent);
   border-radius: var(--radius-md);
-  background-color: var(--lcc-color--faqPage-answerBackground);
+  background-color: var(--lcc-surface);
   color: var(--color-text-secondary);
 }
 
@@ -64,7 +64,7 @@ ea-accordion-item p {
   align-items: center;
   min-width: 96px;
   padding: 8px 16px;
-  border: 1px solid var(--lcc-color--general-dividerLine);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-sm);
 
   dt {
@@ -80,5 +80,5 @@ ea-accordion-item p {
 }
 
 .faq__fee--current {
-  border-color: var(--lcc-color--general-accentIcon);
+  border-color: var(--lcc-accent);
 }

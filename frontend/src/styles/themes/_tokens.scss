@@ -1,0 +1,102 @@
+@use 'sass:map';
+
+// The app's own colour roles, for what the library's semantic tokens have no role for.
+// Each is written once: light-dark() picks its side from the colour scheme the library
+// sets with data-theme, and every brand colour comes from the library's scales, so a
+// brand's palette recolours the whole site.
+
+// Event types, each a soft colour for dots and banners and a fainter one for table rows
+$event-colours: (
+  blitz-10-tournament: hsl(0 50% 80%),
+  rapid-25-tournament: hsl(35 75% 70%),
+  rapid-40-tournament: hsl(107 45% 70%),
+  lecture: hsl(175 35% 50%),
+  simul: hsl(247 60% 80%),
+  championship: hsl(52 80% 70%),
+  other: hsl(240 10% 80%),
+  closed: hsl(0 0% 70%),
+);
+
+:root {
+  // Surfaces, from the page itself to the panels on it and the wells within those
+  --lcc-page: light-dark(var(--color-neutral-100), var(--color-neutral-700));
+  --lcc-page-translucent: color-mix(in srgb, var(--lcc-page) 75%, transparent);
+  --lcc-surface: light-dark(var(--color-neutral-50), var(--color-neutral-800));
+  --lcc-surface-sunken: light-dark(var(--color-neutral-200), var(--color-neutral-800));
+  --lcc-shadow: color-mix(in srgb, var(--color-neutral-800) 70%, transparent);
+  --lcc-shadow-soft: light-dark(
+    color-mix(in srgb, var(--color-neutral-300) 70%, transparent),
+    color-mix(in srgb, var(--color-neutral-900) 70%, transparent)
+  );
+  --lcc-grid-line: light-dark(var(--color-neutral-300), var(--color-neutral-600));
+  --lcc-indicator-border: light-dark(
+    color-mix(in srgb, var(--color-neutral-200) 50%, transparent),
+    color-mix(in srgb, var(--color-neutral-800) 50%, transparent)
+  );
+  --lcc-scrollbar: color-mix(in srgb, var(--color-neutral-500) 70%, transparent);
+  --lcc-input: light-dark(var(--color-neutral-50), var(--color-neutral-700));
+  --lcc-skeleton: light-dark(var(--color-neutral-300), var(--color-neutral-500));
+  --lcc-row: light-dark(var(--color-neutral-50), var(--color-neutral-700));
+  --lcc-row-alt: light-dark(
+    var(--color-neutral-100),
+    color-mix(in srgb, var(--color-neutral-700) 70%, var(--color-neutral-800))
+  );
+  --lcc-row-hover: light-dark(var(--color-neutral-200), var(--color-neutral-800));
+
+  // The brand's bands: the header, and the darker band of table heads and the footer
+  --lcc-header: light-dark(var(--color-primary-400), var(--color-primary-600));
+  --lcc-on-header: light-dark(var(--color-neutral-0), var(--color-neutral-200));
+  --lcc-band: light-dark(var(--color-primary-500), var(--color-primary-600));
+  --lcc-band-hover: light-dark(var(--color-primary-600), var(--color-primary-700));
+  --lcc-on-band: light-dark(var(--color-neutral-0), var(--color-neutral-200));
+  --lcc-on-band-faint: color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  --lcc-brand-glow: color-mix(in srgb, var(--color-primary-400) 55%, transparent);
+  --lcc-link-underline: color-mix(in srgb, var(--color-text-link) 60%, transparent);
+
+  // The brand's second colour, for icons and figures that stand out
+  --lcc-accent: light-dark(
+    color-mix(in srgb, var(--color-secondary-400), var(--color-secondary-500)),
+    var(--color-secondary-300)
+  );
+  --lcc-accent-hover: light-dark(var(--color-secondary-500), var(--color-secondary-200));
+  --lcc-accent-text: light-dark(var(--color-secondary-600), var(--color-secondary-200));
+  --lcc-accent-glow: color-mix(in srgb, var(--lcc-accent) 60%, transparent);
+
+  // What only admins see
+  --lcc-admin: light-dark(hsl(276 15% 70%), hsl(276 15% 80%));
+  --lcc-admin-strong: light-dark(hsl(276 15% 50%), hsl(276 15% 70%));
+  --lcc-admin-faint: color-mix(in srgb, var(--lcc-admin-strong) 15%, transparent);
+
+  // Photos and the frames around them
+  --lcc-image-backdrop: light-dark(var(--color-neutral-200), var(--color-neutral-400));
+  --lcc-viewer: light-dark(var(--color-neutral-400), var(--color-neutral-900));
+  --lcc-scrim: color-mix(in srgb, var(--color-neutral-950) 92%, transparent);
+  --lcc-veil: color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+  --lcc-map-border: color-mix(in srgb, var(--color-neutral-0) 13%, transparent);
+
+  // Cards, the article cards and the library's alike, which recess below the dark page
+  // like the footer and auth drawer rather than taking the library's lighter tier
+  --lcc-card: light-dark(var(--color-bg-elevated), var(--color-neutral-800));
+  --lcc-card-border: light-dark(var(--color-border-default), var(--color-neutral-600));
+  --lcc-card-hover: color-mix(in srgb, var(--lcc-card) 93%, var(--color-brand-default));
+  --lcc-card-inset: light-dark(
+    color-mix(in srgb, var(--color-neutral-950) 4%, transparent),
+    color-mix(in srgb, var(--color-neutral-0) 6%, transparent)
+  );
+
+  // The schedule and the things it marks
+  --lcc-today: light-dark(hsl(0 75% 65%), hsl(0 44% 47%));
+  --lcc-highlight: hsl(61 100% 77%);
+  --lcc-on-highlight: var(--color-neutral-900);
+  --lcc-on-event: var(--color-neutral-800);
+  --lcc-on-event-hover: var(--color-neutral-950);
+  --lcc-event-medal: hsl(52 80% 50%);
+
+  @each $type, $colour in $event-colours {
+    --lcc-event-#{$type}: #{$colour};
+    --lcc-event-#{$type}-faint: color-mix(in srgb, #{$colour} 30%, transparent);
+  }
+
+  // The chessboard
+  --lcc-board: hsl(34 44% 69%);
+}

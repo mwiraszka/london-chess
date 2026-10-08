@@ -44,8 +44,8 @@
     margin: 8px;
     border: none;
     border-radius: var(--radius-sm);
-    box-shadow: 3px 3px 5px var(--lcc-color--photoGrid-boxShadow);
-    background-color: var(--lcc-color--general-cardBackground);
+    box-shadow: 3px 3px 5px var(--lcc-shadow-soft);
+    background-color: var(--lcc-surface);
     break-inside: avoid;
     page-break-inside: avoid;
 
@@ -63,7 +63,7 @@
     }
 
     &:not(.skeleton):hover {
-      box-shadow: 4px 4px 8px var(--lcc-color--photoGrid-boxShadow);
+      box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       transition:
         transform 0.2s ease,
         box-shadow 0.2s ease;
@@ -101,7 +101,7 @@
           margin-bottom: 8px;
           font-size: 13px;
           line-height: 16px;
-          color: var(--lcc-color--photoGrid-albumNameText);
+          color: var(--color-text-primary);
 
           @container (min-width: 700px) {
             font-size: 15px;
@@ -111,7 +111,7 @@
 
         .photo-count {
           font-size: 10px;
-          color: var(--lcc-color--photoGrid-photoCountText);
+          color: var(--color-text-secondary);
 
           @container (min-width: 700px) {
             font-size: 12px;

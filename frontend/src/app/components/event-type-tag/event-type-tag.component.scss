@@ -3,5 +3,5 @@
 .championship-icon {
   @include icon-size(1em);
 
-  color: var(--lcc-color--schedule-championshipMedalIcon);
+  color: var(--lcc-event-medal);
 }

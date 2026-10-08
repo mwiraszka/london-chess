@@ -29,8 +29,8 @@ describe('EventTypeTagComponent', () => {
   it('should colour the tag for its event type, in the schedule ink', () => {
     render('lecture');
 
-    expect(tag().color()).toBe('var(--lcc-color--schedule-lectureBackground)');
-    expect(tag().ink()).toBe('var(--lcc-color--schedule-eventType)');
+    expect(tag().color()).toBe('var(--lcc-event-lecture-faint)');
+    expect(tag().ink()).toBe('var(--color-text-primary)');
     expect(fixture.nativeElement.textContent.trim()).toBe('lecture');
   });
 

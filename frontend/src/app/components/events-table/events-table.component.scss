@@ -21,13 +21,13 @@
   line-height: 1.2;
   text-align: center;
   border-radius: var(--radius-full);
-  background-color: var(--lcc-color--schedule-dateBackground);
+  background-color: var(--color-brand-muted);
 }
 
 // Starts where the date's own padding ends, so the date sits centred in its space
 // The line marking today, above the first day still to come
 :host ::ng-deep .ea-data-table__row:has(.events__today) {
-  border-top: 2px solid var(--lcc-color--schedule-today);
+  border-top: 2px solid var(--lcc-today);
 }
 
 .events__date-placeholder {
@@ -51,7 +51,7 @@
 
   & + .events__entry {
     padding-top: 8px;
-    border-top: 2px solid var(--lcc-color--general-dividerLine);
+    border-top: 2px solid var(--color-divider);
   }
 }
 
@@ -67,7 +67,7 @@
   margin-right: 8px;
   font-size: 15px !important;
   line-height: normal;
-  color: var(--lcc-color--schedule-titleText);
+  color: var(--color-text-primary);
 }
 
 .events__type {
@@ -85,7 +85,7 @@
 .events__details {
   font-size: 14px;
   font-weight: 200;
-  color: var(--lcc-color--schedule-eventDetailsText);
+  color: var(--color-text-secondary);
 }
 
 .events__edited {
@@ -98,5 +98,5 @@
   font-size: 11px;
   font-weight: 100;
   white-space: nowrap;
-  color: var(--lcc-color--schedule-createdAndEditedText);
+  color: var(--color-text-secondary);
 }

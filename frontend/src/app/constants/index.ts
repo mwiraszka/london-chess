@@ -56,14 +56,14 @@ export const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
 ];
 
 export const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  'blitz tournament (10 mins)': 'var(--lcc-color--schedule-blitz10TournamentBackground)',
-  'rapid tournament (25 mins)': 'var(--lcc-color--schedule-rapid25TournamentBackground)',
-  'rapid tournament (40 mins)': 'var(--lcc-color--schedule-rapid40TournamentBackground)',
-  lecture: 'var(--lcc-color--schedule-lectureBackground)',
-  simul: 'var(--lcc-color--schedule-simulBackground)',
-  championship: 'var(--lcc-color--schedule-championshipBackground)',
-  closed: 'var(--lcc-color--schedule-closedBackground)',
-  other: 'var(--lcc-color--schedule-otherBackground)',
+  'blitz tournament (10 mins)': 'var(--lcc-event-blitz-10-tournament-faint)',
+  'rapid tournament (25 mins)': 'var(--lcc-event-rapid-25-tournament-faint)',
+  'rapid tournament (40 mins)': 'var(--lcc-event-rapid-40-tournament-faint)',
+  lecture: 'var(--lcc-event-lecture-faint)',
+  simul: 'var(--lcc-event-simul-faint)',
+  championship: 'var(--lcc-event-championship-faint)',
+  closed: 'var(--lcc-event-closed-faint)',
+  other: 'var(--lcc-event-other-faint)',
 };
 
 export const IMAGE_FORM_DATA_PROPERTIES = [

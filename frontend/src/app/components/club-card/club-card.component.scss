@@ -11,7 +11,7 @@
   min-height: 250px;
   font-size: 16px;
   line-height: 20px;
-  color: var(--lcc-color--homePage-primaryText);
+  color: var(--color-text-primary);
 
   @include respond-to('lt-md') {
     flex-direction: column;
@@ -33,7 +33,7 @@
   flex-flow: row wrap;
   align-items: flex-start;
   gap: 16px 32px;
-  color: var(--lcc-color--homePage-secondaryText);
+  color: var(--color-text-secondary);
 }
 
 .address {

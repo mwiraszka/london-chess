@@ -88,7 +88,7 @@ describe('UpcomingEventBannerComponent', () => {
   describe('background', () => {
     it("should take a single event's colour", () => {
       expect(element('.container').style.background).toBe(
-        'var(--lcc-color--upcomingEventBanner-background-blitz10Tournament)',
+        'var(--lcc-event-blitz-10-tournament)',
       );
     });
 
@@ -98,7 +98,7 @@ describe('UpcomingEventBannerComponent', () => {
 
       const background = element('.container').style.background;
       expect(background).toContain('repeating-linear-gradient');
-      expect(background).toContain('blitz10Tournament');
+      expect(background).toContain('blitz-10-tournament');
       expect(background).toContain('championship');
     });
   });

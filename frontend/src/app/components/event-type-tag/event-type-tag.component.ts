@@ -28,7 +28,7 @@ import { HighlightPipe } from '@app/pipes';
 })
 export class EventTypeTagComponent {
   public readonly type = input.required<EventType>();
-  public readonly ink = input('var(--lcc-color--schedule-eventType)');
+  public readonly ink = input('var(--color-text-primary)');
   public readonly search = input('');
   public readonly size = input<TagSize>('sm');
 
