@@ -1,0 +1,64 @@
+// A set width, so the page around it keeps its shape whatever the list turns out to hold
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 400px;
+  max-width: 100%;
+}
+
+.registrations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  list-style: none;
+}
+
+.registration ea-card {
+  --ea-card-body-padding: 12px 16px;
+}
+
+.registration__card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.registration__details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: start;
+}
+
+.registration__name {
+  font-weight: 600;
+}
+
+.registration__when,
+.registration__status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.registration__action-skeleton {
+  width: 6em;
+  height: 2.25em;
+}
+
+// The club's orange, in the library's shades of it that keep white text readable
+.register-button {
+  --ea-button-background-color: var(--color-brand-secondary-default);
+  --ea-button-background-color-hover: var(--color-brand-secondary-hover);
+  --ea-button-background-color-active: var(--color-brand-secondary-active);
+  --ea-button-border-color: var(--color-brand-secondary-default);
+  --ea-button-border-color-hover: var(--color-brand-secondary-hover);
+  --ea-button-border-color-active: var(--color-brand-secondary-active);
+}
+
+.register-button--large {
+  --ea-button-padding: 16px 48px;
+}

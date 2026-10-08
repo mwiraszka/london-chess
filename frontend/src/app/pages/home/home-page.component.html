@@ -16,14 +16,9 @@
     </p>
 
     <div class="main-links">
-      <a
-        eaButtonLink
-        class="tournament-registration-link-button"
-        routerLink="/tournaments"
-        size="lg"
-        [uppercase]="true">
-        Register for a tournament
-      </a>
+      <lcc-tournament-registrations
+        [isLoading]="vm.tournamentsStatus === 'loading'"
+        [summaries]="vm.tournamentSummaries" />
       <lcc-link-list [links]="[aboutPageLink]"></lcc-link-list>
     </div>
 

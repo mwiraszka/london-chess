@@ -16,6 +16,7 @@ import { provideRouter } from '@angular/router';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
+import { MOCK_UPCOMING_SUMMARY } from '@app/mocks/tournaments.mock';
 import { Image } from '@app/models';
 import {
   CsvExportService,
@@ -26,6 +27,7 @@ import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
+import { TournamentsSelectors } from '@app/store/tournaments';
 import { closedDialogRef, query } from '@app/utils';
 
 import { HomePageComponent } from './home-page.component';
@@ -92,6 +94,8 @@ describe('HomePageComponent', () => {
     store.overrideSelector(ArticlesSelectors.selectHomePageArticlesStatus, 'loaded');
     store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loaded');
     store.overrideSelector(ImagesSelectors.selectMetadataStatus, 'loaded');
+    store.overrideSelector(TournamentsSelectors.selectSummaries, [MOCK_UPCOMING_SUMMARY]);
+    store.overrideSelector(TournamentsSelectors.selectSummariesStatus, 'loaded');
     store.refreshState();
   });
 
@@ -120,6 +124,8 @@ describe('HomePageComponent', () => {
         articlesStatus: 'loaded',
         eventsStatus: 'loaded',
         photosStatus: 'loaded',
+        tournamentSummaries: [MOCK_UPCOMING_SUMMARY],
+        tournamentsStatus: 'loaded',
       });
     });
   });

@@ -1,5 +1,4 @@
 import {
-  ButtonLinkComponent,
   CalendarDaysIconComponent,
   CameraIconComponent,
   DownloadIconComponent,
@@ -22,6 +21,7 @@ import { EventsTableComponent } from '@app/components/events-table/events-table.
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
+import { TournamentRegistrationsComponent } from '@app/components/tournament-registrations/tournament-registrations.component';
 import {
   AdminButton,
   Article,
@@ -29,12 +29,14 @@ import {
   Image,
   InternalLink,
   LoadStatus,
+  TournamentSummary,
 } from '@app/models';
 import { CsvExportService, MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
+import { TournamentsSelectors } from '@app/store/tournaments';
 import { combinedLoadStatus } from '@app/utils';
 
 @Component({
@@ -44,7 +46,6 @@ import { combinedLoadStatus } from '@app/utils';
   imports: [
     AdminToolbarComponent,
     ArticleGridComponent,
-    ButtonLinkComponent,
     ClubLinksComponent,
     CommonModule,
     EventsTableComponent,
@@ -52,6 +53,7 @@ import { combinedLoadStatus } from '@app/utils';
     LoadFailedComponent,
     PhotoGridComponent,
     RouterLink,
+    TournamentRegistrationsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -69,6 +71,8 @@ export class HomePageComponent implements OnInit {
     isAdmin: boolean;
     photoImages: Image[];
     photosStatus: LoadStatus;
+    tournamentSummaries: TournamentSummary[];
+    tournamentsStatus: LoadStatus;
   }>;
 
   public aboutPageLink: InternalLink = {
@@ -125,6 +129,8 @@ export class HomePageComponent implements OnInit {
       this.store.select(ArticlesSelectors.selectHomePageArticlesStatus),
       this.store.select(EventsSelectors.selectHomePageEventsStatus),
       this.store.select(ImagesSelectors.selectMetadataStatus),
+      this.store.select(TournamentsSelectors.selectSummaries),
+      this.store.select(TournamentsSelectors.selectSummariesStatus),
     ]).pipe(
       map(
         ([
@@ -135,6 +141,8 @@ export class HomePageComponent implements OnInit {
           homePageArticlesStatus,
           eventsStatus,
           photosStatus,
+          tournamentSummaries,
+          tournamentsStatus,
         ]) => ({
           homePageArticles,
           homePageEvents,
@@ -145,6 +153,8 @@ export class HomePageComponent implements OnInit {
           articlesStatus: combinedLoadStatus(homePageArticlesStatus, photosStatus),
           eventsStatus,
           photosStatus,
+          tournamentSummaries,
+          tournamentsStatus,
         }),
       ),
     );

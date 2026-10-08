@@ -117,6 +117,15 @@ describe('TournamentsEffects', () => {
       expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
     });
 
+    it('should fetch on arriving at the home page, which lists those taking registrations', async () => {
+      mockIsExpired.mockReturnValue(true);
+
+      actions$.next(navigatedTo('/'));
+      const action = await firstValueFrom(effects.refetchTournaments$);
+
+      expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
+    });
+
     it('should not fetch while the summaries are fresh', () => {
       mockIsExpired.mockReturnValue(false);
       const results: Action[] = [];

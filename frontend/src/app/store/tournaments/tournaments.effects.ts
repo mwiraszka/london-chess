@@ -56,7 +56,10 @@ export class TournamentsEffects {
   refetchTournaments$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(routerNavigatedAction),
-      filter(({ payload }) => payload.event.url.split(/[?#]/)[0] === '/tournaments'),
+      // The home page lists the tournaments taking registrations
+      filter(({ payload }) =>
+        ['/', '/tournaments'].includes(payload.event.url.split(/[?#]/)[0]),
+      ),
       switchMap(() =>
         this.store.select(TournamentsSelectors.selectLastSummariesFetch).pipe(take(1)),
       ),
