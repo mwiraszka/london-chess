@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DOCUMENT,
   DestroyRef,
@@ -82,7 +83,7 @@ import { environment } from '@env';
           #mainContent
           id="main-content"
           tabindex="-1">
-          <router-outlet></router-outlet>
+          <router-outlet (activate)="onPageActivated()"></router-outlet>
         </main>
         <lcc-footer></lcc-footer>
       </div>
@@ -116,6 +117,7 @@ import { environment } from '@env';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly _document = inject<Document>(DOCUMENT);
   private readonly refreshService = inject(RefreshService);
@@ -211,6 +213,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       '--lcc-scrollbar-inset',
       `${inset}px`,
     );
+  }
+
+  // A page is added before change detection fills in its bindings and @if blocks, so its
+  // first check runs at once rather than leaving a frame to paint it half built
+  public onPageActivated(): void {
+    this.changeDetectorRef.detectChanges();
   }
 
   // Handled here rather than by the browser, whose jump to the fragment the router would
