@@ -1,5 +1,6 @@
 export const ACCOUNT_SECTIONS = [
   { id: 'profile', label: 'Profile' },
+  { id: 'preferences', label: 'Preferences' },
   { id: 'security', label: 'Security' },
   { id: 'danger', label: 'Danger zone' },
 ] as const;

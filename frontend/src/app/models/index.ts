@@ -1,4 +1,5 @@
 export type { AccountSection, SessionInfo } from './account.model';
+export type { Brand, BrandDefinition } from './brand.model';
 export type {
   AdminControlsConfig,
   AdminControlsPlacement,

@@ -10,6 +10,7 @@ describe('App Selectors', () => {
     isWideView: false,
     bannerLastCleared: '2025-01-15T10:30:00.000Z',
     showUpcomingEventBanner: false,
+    brand: 'classic',
   };
 
   describe('selectAppState', () => {
@@ -146,6 +147,14 @@ describe('App Selectors', () => {
       const result = AppSelectors.selectIsWideView.projector(state);
 
       expect(result).toBe(true);
+    });
+  });
+
+  describe('selectBrand', () => {
+    it('should return the brand', () => {
+      const result = AppSelectors.selectBrand.projector(mockAppState);
+
+      expect(result).toBe('classic');
     });
   });
 });

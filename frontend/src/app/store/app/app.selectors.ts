@@ -8,6 +8,8 @@ export const selectIsDarkMode = createSelector(selectAppState, state => state.is
 
 export const selectIsSafeMode = createSelector(selectAppState, state => state.isSafeMode);
 
+export const selectBrand = createSelector(selectAppState, state => state.brand);
+
 export const selectShowAdminControls = createSelector(
   selectAppState,
   state => state.showAdminControls,

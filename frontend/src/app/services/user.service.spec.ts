@@ -44,6 +44,7 @@ describe('UserService', () => {
     avatarUpdatedAt: null,
     hasTemporaryPassword: false,
     showYearOfBirth: false,
+    brand: 'modern',
     ...overrides,
   });
 

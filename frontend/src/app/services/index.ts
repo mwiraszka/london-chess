@@ -2,6 +2,7 @@ export { AdminControlsService } from './admin-controls.service';
 export { ApiError, ApiService } from './api.service';
 export { ArticlesApiService } from './api/articles-api.service';
 export { AuthDrawerService } from './auth-drawer.service';
+export { BrandService } from './brand.service';
 export { ClerkService } from './clerk.service';
 export { CsvExportService } from './csv-export.service';
 export { DeletionService } from './deletion.service';

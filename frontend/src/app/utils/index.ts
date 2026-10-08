@@ -115,6 +115,7 @@ export { query, queryAll, queryTextContent } from './test/debug-element-queries.
 export { lastOpenedDialog } from './test/last-opened-dialog.util';
 
 export { isAccountSection } from './type-guards/is-account-section.util';
+export { isBrand } from './type-guards/is-brand.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';

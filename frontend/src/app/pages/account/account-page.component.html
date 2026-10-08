@@ -21,6 +21,11 @@
                 aria-hidden="true" />
             }
 
+            @case ('preferences') {
+              <ea-icon-sliders
+                class="settings-nav__icon"
+                aria-hidden="true" />
+            }
             @case ('security') {
               <ea-icon-shield
                 class="settings-nav__icon"
@@ -211,6 +216,19 @@
           </ea-card>
         }
 
+        @case ('preferences') {
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Appearance</h3>
+            <ea-segmented
+              label="Style"
+              hint="The colours and fonts of the whole site, on any device you log in on."
+              [disabled]="savingBrand()"
+              [options]="brandOptions"
+              [value]="brand()"
+              (changed)="onChangeBrand($event)" />
+          </ea-card>
+        }
+
         @case ('security') {
           <ea-card [fullWidth]="true">
             <h3 slot="header">Email address</h3>
@@ -358,7 +376,6 @@
             </p>
             <div class="actions">
               <ea-button
-                class="danger-button"
                 size="sm"
                 variant="danger"
                 (clicked)="onDeleteAccount()">

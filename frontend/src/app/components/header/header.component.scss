@@ -73,6 +73,47 @@ $app-header-font-size: 42px;
         @include respond-to('gt-sm') {
           font-size: $app-header-font-size;
         }
+
+        // The other brands set the club's name in a face of their own, sized to take the
+        // same width as the handwriting
+        :host-context(:root[data-brand='classic']) & {
+          font-size: 27px;
+          font-weight: 600;
+          font-family: 'Playfair Display', serif;
+          font-style: italic;
+
+          @include respond-to('gt-sm') {
+            font-size: 31px;
+          }
+        }
+
+        :host-context(:root[data-brand='sunset']) & {
+          font-size: 26px;
+          font-family: 'Righteous', sans-serif;
+
+          @include respond-to('gt-sm') {
+            font-size: 30px;
+          }
+        }
+
+        :host-context(:root[data-brand='newsprint']) & {
+          font-size: 30px;
+          font-family: 'UnifrakturMaguntia', serif;
+
+          @include respond-to('gt-sm') {
+            font-size: 34px;
+          }
+        }
+
+        :host-context(:root[data-brand='playground']) & {
+          font-size: 32px;
+          font-family: 'Chewy', sans-serif;
+          transform: rotate(-3deg);
+
+          @include respond-to('gt-sm') {
+            font-size: 37px;
+          }
+        }
       }
     }
   }

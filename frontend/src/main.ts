@@ -1,4 +1,4 @@
-import { applyPalette, derivePalette, provideEagamiUi } from '@eagami/ui';
+import { provideEagamiUi } from '@eagami/ui';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreRouterConnectingModule } from '@ngrx/router-store';
 import { Action, StoreModule } from '@ngrx/store';
@@ -26,7 +26,7 @@ import {
   PendingRequestsInterceptorProvider,
   TimeoutInterceptorProvider,
 } from '@app/interceptors';
-import { ClerkService, UserService } from '@app/services';
+import { BrandService, ClerkService, UserService } from '@app/services';
 import { AppStoreModule } from '@app/store/app';
 import { ArticlesStoreModule } from '@app/store/articles';
 import { AuthStoreModule } from '@app/store/auth';
@@ -60,13 +60,6 @@ Sentry.init({
     /^safari-(web-)?extension:\/\//,
   ],
 });
-
-applyPalette(
-  derivePalette({
-    primary: { base: '#608ea9' },
-    secondary: { base: '#dd7027' },
-  }),
-);
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -106,6 +99,8 @@ bootstrapApplication(AppComponent, {
       // Instantiate UserService so its login effect starts and the user record
       // is available app-wide once Clerk reports the session.
       inject(UserService);
+      // Before the first page renders, so it opens in the brand the visit was left in
+      inject(BrandService);
       // Not awaited, so the first page renders while Clerk loads behind it
       inject(ClerkService)
         .load()

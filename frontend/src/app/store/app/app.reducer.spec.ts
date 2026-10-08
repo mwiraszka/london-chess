@@ -23,6 +23,7 @@ describe('App Reducer', () => {
         isWideView: false,
         bannerLastCleared: null,
         showUpcomingEventBanner: true,
+        brand: 'modern',
       });
     });
 
@@ -297,6 +298,16 @@ describe('App Reducer', () => {
 
       expect(state.isDarkMode).toBe(true);
       expect(state.isSafeMode).toBe(true);
+    });
+  });
+
+  describe('brandChanged', () => {
+    it('should set the brand', () => {
+      const action = AppActions.brandChanged({ brand: 'sunset' });
+
+      const state = appReducer(initialState, action);
+
+      expect(state.brand).toBe('sunset');
     });
   });
 

@@ -11,10 +11,11 @@ import {
   provideRouter,
 } from '@angular/router';
 
-import { Member, UserRecord, UserSessionRecord } from '@app/models';
+import { Brand, Member, UserRecord, UserSessionRecord } from '@app/models';
 import {
   ApiError,
   ApiService,
+  BrandService,
   ClerkService,
   MemberProfilesService,
   MetaAndTitleService,
@@ -61,6 +62,7 @@ describe('AccountPageComponent', () => {
   };
   let toast: { show: Mock };
   let memberProfiles: { reload: Mock };
+  let brandService: { brand: WritableSignal<Brand>; change: Mock };
 
   const member: Pick<
     Member,
@@ -87,6 +89,7 @@ describe('AccountPageComponent', () => {
     avatarUpdatedAt: null,
     hasTemporaryPassword: false,
     showYearOfBirth: false,
+    brand: 'modern',
   };
 
   const sessions: UserSessionRecord[] = [
@@ -170,6 +173,7 @@ describe('AccountPageComponent', () => {
     };
     toast = { show: vi.fn() };
     memberProfiles = { reload: vi.fn() };
+    brandService = { brand: signal('modern'), change: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [AccountPageComponent],
@@ -192,6 +196,7 @@ describe('AccountPageComponent', () => {
         { provide: UserService, useValue: userService },
         { provide: ToastService, useValue: toast },
         { provide: MemberProfilesService, useValue: memberProfiles },
+        { provide: BrandService, useValue: brandService },
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
@@ -272,6 +277,33 @@ describe('AccountPageComponent', () => {
 
     expect(api.patch).toHaveBeenCalledWith('/users/me', { showYearOfBirth: true });
     expect(userService.setUser).toHaveBeenCalledWith(updated);
+  });
+
+  describe('choosing a style', () => {
+    it('should show the chosen style at once and save it on the account', async () => {
+      await render('preferences');
+      const updated: UserRecord = { ...record, brand: 'playground' };
+      api.patch.mockResolvedValue(updated);
+
+      await component['onChangeBrand']('playground');
+
+      expect(brandService.change).toHaveBeenCalledWith('playground');
+      expect(api.patch).toHaveBeenCalledWith('/users/me', { brand: 'playground' });
+      expect(userService.setUser).toHaveBeenCalledWith(updated);
+    });
+
+    it('should put the previous style back if the account cannot save it', async () => {
+      await render('preferences');
+      api.patch.mockRejectedValue(new Error('offline'));
+
+      await component['onChangeBrand']('playground');
+
+      expect(brandService.change).toHaveBeenLastCalledWith('modern');
+      expect(toast.show).toHaveBeenCalledWith(
+        'Unable to save your preference. Please try again.',
+        { title: 'Preference not saved', variant: 'error' },
+      );
+    });
   });
 
   describe('changing the email address', () => {

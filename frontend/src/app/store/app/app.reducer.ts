@@ -1,6 +1,7 @@
 import { createReducer, on } from '@ngrx/store';
 
-import { IsoDate } from '@app/models';
+import { DEFAULT_BRAND } from '@app/constants/brands';
+import { Brand, IsoDate } from '@app/models';
 import moment from '@app/utils/datetime/moment';
 
 import * as AppActions from './app.actions';
@@ -10,6 +11,8 @@ export interface AppState {
   isSafeMode: boolean;
   // An admin can switch their controls off to see the app as any other member does
   showAdminControls: boolean;
+  // The look the member chose on their account, kept here so a visit opens in it
+  brand: Brand;
   isDesktopView: boolean;
   isWideView: boolean;
   bannerLastCleared: IsoDate | null;
@@ -20,6 +23,7 @@ export const initialState: AppState = {
   isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
   isSafeMode: false,
   showAdminControls: true,
+  brand: DEFAULT_BRAND,
   isDesktopView: false,
   isWideView: false,
   bannerLastCleared: null,
@@ -43,6 +47,8 @@ export const appReducer = createReducer(
     ...state,
     showAdminControls: !state.showAdminControls,
   })),
+
+  on(AppActions.brandChanged, (state, { brand }): AppState => ({ ...state, brand })),
 
   on(AppActions.desktopViewToggled, (state): AppState => ({
     ...state,

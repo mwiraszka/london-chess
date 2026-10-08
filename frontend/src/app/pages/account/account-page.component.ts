@@ -9,9 +9,11 @@ import {
   InputComponent,
   LockIconComponent,
   MonitorIconComponent,
+  SegmentedComponent,
   SettingsIconComponent,
   ShieldIconComponent,
   SkeletonComponent,
+  SlidersIconComponent,
   SmartphoneIconComponent,
   SwitchComponent,
   ToastService,
@@ -46,6 +48,7 @@ import {
   MAX_AVATAR_SIZE,
   SESSION_REFRESH_INTERVAL_MS,
 } from '@app/constants/account';
+import { BRAND_OPTIONS } from '@app/constants/brands';
 import { UPLOAD_TIMEOUT_MS } from '@app/constants/http';
 import {
   AccountSection,
@@ -59,6 +62,7 @@ import {
 import {
   ApiError,
   ApiService,
+  BrandService,
   ClerkService,
   MemberProfilesService,
   MetaAndTitleService,
@@ -69,6 +73,7 @@ import {
   createMemberDetailsControls,
   createNewPasswordGroup,
   isAccountSection,
+  isBrand,
   normalizePhoneNumber,
 } from '@app/utils';
 import { asSentence } from '@app/utils/sentence.util';
@@ -92,8 +97,10 @@ import { asSentence } from '@app/utils/sentence.util';
     PhoneNumberFieldComponent,
     ReactiveFormsModule,
     RouterLink,
+    SegmentedComponent,
     ShieldIconComponent,
     SkeletonComponent,
+    SlidersIconComponent,
     SmartphoneIconComponent,
     SwitchComponent,
     UserIconComponent,
@@ -111,12 +118,16 @@ export class AccountPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly userService = inject(UserService);
+  private readonly brandService = inject(BrandService);
 
   private readonly avatarEditor = viewChild(AvatarEditorComponent);
 
   protected readonly avatarTypes = AVATAR_TYPES;
   protected readonly maxAvatarSize = MAX_AVATAR_SIZE;
   protected readonly navItems = ACCOUNT_SECTIONS;
+  protected readonly brandOptions = BRAND_OPTIONS;
+  protected readonly brand = this.brandService.brand;
+  protected readonly savingBrand = signal(false);
   protected readonly pageIcon = SettingsIconComponent;
   protected readonly privacyIcon = LockIconComponent;
 
@@ -439,6 +450,32 @@ export class AccountPageComponent implements OnInit {
       );
     } finally {
       this.savingYearOfBirth.set(false);
+    }
+  }
+
+  // Shown at once, and put back if the account cannot save it
+  protected async onChangeBrand(value: string): Promise<void> {
+    if (!isBrand(value)) {
+      return;
+    }
+    const previous = this.brand();
+    this.brandService.change(value);
+    this.savingBrand.set(true);
+
+    try {
+      this.userService.setUser(
+        await this.api.patch<UserRecord>('/users/me', { brand: value }),
+      );
+    } catch (e: unknown) {
+      this.brandService.change(previous);
+      this.toast.show(
+        e instanceof ApiError
+          ? asSentence(e.message)
+          : 'Unable to save your preference. Please try again.',
+        { title: 'Preference not saved', variant: 'error' },
+      );
+    } finally {
+      this.savingBrand.set(false);
     }
   }
 

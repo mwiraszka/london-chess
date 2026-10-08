@@ -190,6 +190,7 @@ describe('accessGuard', () => {
       avatarUpdatedAt: null,
       hasTemporaryPassword: false,
       showYearOfBirth: false,
+      brand: 'modern',
     });
     logIn(admin);
     store.refreshState();
