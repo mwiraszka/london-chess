@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.5.0] - 2026-10-08
+## [v6.5.0] - 2026-10-09
 
 ### Added
 
@@ -16,10 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refresh the look of the site with a new typeface and plainer news cards, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
-- Load the site much faster, especially on phones, so pages appear sooner, respond the moment a link is tapped, and no longer jump around as they fill in
+- Load pages much faster on phones, showing content in about 3.5 seconds instead of 5 and finishing in around 6 seconds instead of 10, with nothing shifting as each page fills in
 - Show a game's board above its details on phones and tablets
 - Page through the schedule's calendar by months, three, six or twelve at a time or all at once
-- Make the site easier to read and to use with a keyboard or screen reader, with stronger colours on text, cards, tables, links and the upcoming events banner, a labelled pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
+- Bring every page up to the WCAG AA accessibility standard, with stronger contrast in all five styles in both light and dark mode, easier use with a keyboard or screen reader, a labelled pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
 
 ### Fixed
 
