@@ -5,19 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.5.0] - 2026-10-07
+## [v6.5.0] - 2026-10-08
 
 ### Added
 
+- Choose how the site looks from your account's preferences, with five styles (Modern, Classic, Sunset, Newsprint and Playground), each with its own colours and fonts and kept on every device you log in on
+- List the tournaments taking online registration on the home page, each with a countdown to when registration opens or a button to register
 - Open any photo in the photo viewer as large as the screen allows with a click, and close it again with another
 
 ### Changed
 
-- Refresh the look of the site with a new typeface, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
+- Refresh the look of the site with a new typeface and plainer news cards, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
 - Load the site much faster, especially on phones, so pages appear sooner, respond the moment a link is tapped, and no longer jump around as they fill in
 - Show a game's board above its details on phones and tablets
 - Page through the schedule's calendar by months, three, six or twelve at a time or all at once
-- Make the site easier to read and to use with a keyboard or screen reader, with stronger colours on cards, tables and links, a pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
+- Make the site easier to read and to use with a keyboard or screen reader, with stronger colours on text, cards, tables, links and the upcoming events banner, a labelled pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
 
 ### Fixed
 
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show trophies on member profiles only once a tournament has finished
 - Move between photos in the photo viewer without the current one flashing back in first
 - Stop pages and pop-ups from getting stuck when the site's server runs into a problem, and keep long messages within the notices that pop up
+- Keep the account page's menu still when moving between its sections
 
 ## [v6.4.0] - 2026-10-04
 
