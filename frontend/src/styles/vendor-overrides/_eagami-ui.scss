@@ -110,6 +110,12 @@ ea-card .ea-card__body {
   }
 }
 
+// Each header cell carries the header's colour itself, since Chrome can leave a row
+// group's background out of a cell showing a focus ring when a row below it redraws
+.ea-data-table__cell--header {
+  background-color: var(--ea-data-table-header-background-color);
+}
+
 // Table rows alternate between two tones, so their placeholders take a fill that
 // stands out on both
 .ea-data-table ea-skeleton .ea-skeleton {
