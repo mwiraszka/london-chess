@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Choose how the site looks from your account's preferences, with five styles (Modern, Classic, Sunset, Newsprint and Playground), each with its own colours and fonts and kept on every device you log in on
 - List the tournaments taking online registration on the home page, each with a countdown to when registration opens or a button to register
 - Open any photo in the photo viewer as large as the screen allows with a click, and close it again with another
+- Get an email whenever your rating changes or an upcoming event is added, changed or removed, with either one turned off in your account's preferences, and open your own member profile from your account page
 
 ### Changed
 
-- Refresh the look of the site with a new typeface and plainer news cards, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
+- Refresh the look of the site with a new typeface and plainer article cards, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
 - Load pages much faster on phones, showing content in about 3.5 seconds instead of 5 and finishing in around 6 seconds instead of 10, with nothing shifting as each page fills in
 - Show a game's board above its details on phones and tablets
+- Rename News to Articles across the site, add Tournaments to the main menu and to the footer's club events, and list ten days of upcoming events on the home page instead of five
 - Page through the schedule's calendar by months, three, six or twelve at a time or all at once
 - Bring every page up to the WCAG AA accessibility standard, with stronger contrast in all five styles in both light and dark mode, easier use with a keyboard or screen reader, a labelled pause button for the City Champion slideshow, and less movement for visitors who ask their device for it
 
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move between photos in the photo viewer without the current one flashing back in first
 - Stop pages and pop-ups from getting stuck when the site's server runs into a problem, and keep long messages within the notices that pop up
 - Keep the account page's menu still when moving between its sections
+- Show the menu's tooltips whenever it is down to its icons, and keep a table's header coloured while you hover over its rows
 
 ## [v6.4.0] - 2026-10-04
 
