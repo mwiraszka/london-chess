@@ -1,6 +1,7 @@
 import {
   ArchiveIconComponent,
   AvatarComponent,
+  AwardIconComponent,
   CalendarDaysIconComponent,
   CameraIconComponent,
   HomeIconComponent,
@@ -72,6 +73,11 @@ export class NavigationBarComponent {
       text: 'Schedule',
       internalPath: 'schedule',
       icon: CalendarDaysIconComponent,
+    },
+    {
+      text: 'Tournaments',
+      internalPath: 'tournaments',
+      icon: AwardIconComponent,
     },
     {
       text: 'Articles',

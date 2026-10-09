@@ -160,8 +160,8 @@ describe('FooterComponent', () => {
         const websiteLinks = queryAll(fixture.debugElement, '.website > a');
 
         expect(aboutLinks.length).toBe(4);
-        expect(eventsLinks.length).toBe(3);
-        expect(archivesLinks.length).toBe(3);
+        expect(eventsLinks.length).toBe(4);
+        expect(archivesLinks.length).toBe(2);
         expect(documentsLinks.length).toBe(3);
         expect(websiteLinks.length).toBe(4);
       });
@@ -172,13 +172,18 @@ describe('FooterComponent', () => {
         expect(website.lastElementChild.tagName).toBe('EA-EAGAMI-WORDMARK');
       });
 
-      it('should link to the tournaments', () => {
-        expect(
-          queryTextContent(
-            fixture.debugElement,
-            '.archives a[routerLink="/tournaments"]',
-          ),
-        ).toBe('Tournaments');
+      it('should list the club events in order, the tournaments after the schedule', () => {
+        const events = queryAll(fixture.debugElement, '.club-events a').map(link => [
+          link.nativeElement.textContent.trim(),
+          link.attributes['routerLink'],
+        ]);
+
+        expect(events).toEqual([
+          ['Schedule', '/schedule'],
+          ['Tournaments', '/tournaments'],
+          ['Articles', '/articles'],
+          ['Regional Clubs', '/regional-clubs'],
+        ]);
       });
 
       it('should have correct router links for document links', () => {

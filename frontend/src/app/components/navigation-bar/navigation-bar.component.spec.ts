@@ -88,6 +88,14 @@ describe('NavigationBarComponent', () => {
       const renderedLinks = fixture.nativeElement.querySelectorAll('.nav-link');
       expect(renderedLinks.length).toBe(component.links.length);
     });
+
+    it('should list the tournaments between the schedule and the articles', () => {
+      const texts = component.links.map(({ text }) => text);
+
+      expect(
+        texts.slice(texts.indexOf('Schedule'), texts.indexOf('Schedule') + 3),
+      ).toEqual(['Schedule', 'Tournaments', 'Articles']);
+    });
   });
 
   describe('link tooltips', () => {
