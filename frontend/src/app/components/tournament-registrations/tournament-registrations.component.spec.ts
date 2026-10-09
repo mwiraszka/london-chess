@@ -28,7 +28,11 @@ describe('TournamentRegistrationsComponent', () => {
     fixture.detectChanges();
   };
 
-  const rows = () => queryAll(fixture.debugElement, '.registration');
+  const rows = () =>
+    queryAll(
+      fixture.debugElement,
+      '.registrations:not(.registrations--reserve) .registration',
+    );
   const textOf = (element: { nativeElement: HTMLElement }): string =>
     element.nativeElement.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
@@ -105,6 +109,9 @@ describe('TournamentRegistrationsComponent', () => {
     const button = query(fixture.debugElement, '.register-button--large');
 
     expect(rows()).toHaveLength(0);
+    expect(
+      query(fixture.debugElement, '.registrations--reserve').attributes['aria-hidden'],
+    ).toBe('true');
     expect(textOf(button)).toBe('Register for a tournament');
     expect(button.injector.get(RouterLink).urlTree?.toString()).toBe('/tournaments');
   });

@@ -1,4 +1,9 @@
-import { ButtonLinkComponent, CardComponent, SkeletonComponent } from '@eagami/ui';
+import {
+  ButtonLinkComponent,
+  CardComponent,
+  SkeletonComponent,
+  TooltipDirective,
+} from '@eagami/ui';
 import { map, timer } from 'rxjs';
 
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
@@ -37,6 +42,7 @@ interface Registration {
     RouterLink,
     SkeletonComponent,
     TextSkeletonComponent,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -67,7 +73,7 @@ export class TournamentRegistrationsComponent {
       .map(({ summary, status }) => ({
         summary,
         status,
-        dateLabel: formatDateRange(summary.date, summary.endDate),
+        dateLabel: formatDateRange(summary.date, summary.endDate, 'short'),
         opensIn:
           status === 'not-open' && summary.registrationOpens
             ? countdownLabel(Date.parse(summary.registrationOpens) - now.getTime())

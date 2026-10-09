@@ -7,6 +7,21 @@
   max-width: 100%;
 }
 
+// The list or button lies over a hidden card's worth of room, so the block keeps the
+// height of one card whether the list arrives empty or with one tournament in it
+.stack {
+  display: grid;
+  width: 100%;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+
+  > .register-button {
+    place-self: center;
+  }
+}
+
 .registrations {
   display: flex;
   flex-direction: column;
@@ -19,19 +34,33 @@
   --ea-card-body-padding: 12px 16px;
 }
 
+.registrations--reserve {
+  visibility: hidden;
+}
+
+// One row in every state, the name giving way to whatever sits beside it, so each card
+// is as tall as the one the block holds room for
 .registration__card {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: 16px;
 }
 
 .registration__details {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
   text-align: start;
+}
+
+.registration__name,
+.registration__when {
+  overflow: hidden;
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .registration__name {
@@ -42,6 +71,14 @@
 .registration__status {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.registration__status {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  text-align: end;
+  white-space: nowrap;
 }
 
 .registration__action-skeleton {

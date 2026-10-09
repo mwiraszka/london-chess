@@ -1,7 +1,10 @@
-@if (isLoading()) {
+<div class="stack">
+  <!-- Holds the room of one tournament's card whatever the list turns out to hold -->
   <ul
     class="registrations"
-    aria-busy="true">
+    [attr.aria-busy]="isLoading() || null"
+    [attr.aria-hidden]="!isLoading() || null"
+    [class.registrations--reserve]="!isLoading()">
     <li class="registration">
       <ea-card [fullWidth]="true">
         <div class="registration__card">
@@ -20,54 +23,66 @@
       </ea-card>
     </li>
   </ul>
-} @else if (registrations().length) {
-  <ul
-    class="registrations"
-    aria-label="Tournament registration">
-    @for (registration of registrations(); track registration.summary.number) {
-      <li class="registration">
-        <ea-card [fullWidth]="true">
-          <div class="registration__card">
-            <div class="registration__details">
-              <a
-                class="registration__name lcc-link"
-                [routerLink]="['/tournaments', registration.summary.number]">
-                {{ registration.summary.name }}
-              </a>
-              <span class="registration__when">{{ registration.dateLabel }}</span>
-            </div>
-            @switch (registration.status) {
-              @case ('open') {
-                <a
-                  eaButtonLink
-                  class="register-button"
-                  size="sm"
-                  [attr.aria-label]="'Register for ' + registration.summary.name"
-                  [routerLink]="['/tournaments', registration.summary.number]">
-                  Register
-                </a>
-              }
-              @case ('not-open') {
-                <span class="registration__status">
-                  Registration opens in {{ registration.opensIn }}
-                </span>
-              }
-              @default {
-                <span class="registration__status">Registration closed</span>
-              }
-            }
-          </div>
-        </ea-card>
-      </li>
+
+  @if (!isLoading()) {
+    @if (registrations().length) {
+      <ul
+        class="registrations"
+        aria-label="Tournament registration">
+        @for (registration of registrations(); track registration.summary.number) {
+          <li class="registration">
+            <ea-card [fullWidth]="true">
+              <div class="registration__card">
+                <div class="registration__details">
+                  <a
+                    class="registration__name lcc-link"
+                    [eaTooltip]="registration.summary.name"
+                    [routerLink]="['/tournaments', registration.summary.number]"
+                    [whenClipped]="true">
+                    {{ registration.summary.name }}
+                  </a>
+                  <span class="registration__when">{{ registration.dateLabel }}</span>
+                </div>
+                @switch (registration.status) {
+                  @case ('open') {
+                    <a
+                      eaButtonLink
+                      class="register-button"
+                      size="sm"
+                      [attr.aria-label]="'Register for ' + registration.summary.name"
+                      [routerLink]="['/tournaments', registration.summary.number]">
+                      Register
+                    </a>
+                  }
+                  @case ('not-open') {
+                    <span class="registration__status">
+                      <span>Registration opens in</span>
+                      {{ ' ' }}
+                      <span>{{ registration.opensIn }}</span>
+                    </span>
+                  }
+                  @default {
+                    <span class="registration__status">
+                      <span>Registration</span>
+                      {{ ' ' }}
+                      <span>closed</span>
+                    </span>
+                  }
+                }
+              </div>
+            </ea-card>
+          </li>
+        }
+      </ul>
+    } @else {
+      <a
+        eaButtonLink
+        class="register-button register-button--large"
+        routerLink="/tournaments"
+        size="lg"
+        [uppercase]="true">
+        Register for a tournament
+      </a>
     }
-  </ul>
-} @else {
-  <a
-    eaButtonLink
-    class="register-button register-button--large"
-    routerLink="/tournaments"
-    size="lg"
-    [uppercase]="true">
-    Register for a tournament
-  </a>
-}
+  }
+</div>
