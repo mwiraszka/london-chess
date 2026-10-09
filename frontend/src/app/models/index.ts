@@ -30,6 +30,7 @@ export type {
   EventFormData,
   EventFormGroup,
   EventFormValue,
+  EventSaveResult,
   EventType,
 } from './event.model';
 export type {

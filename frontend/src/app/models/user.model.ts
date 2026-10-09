@@ -28,6 +28,8 @@ export interface UserRecord {
   hasTemporaryPassword: boolean;
   showYearOfBirth: boolean;
   brand: Brand;
+  notifyRatingChanges: boolean;
+  notifyScheduleChanges: boolean;
 }
 
 export interface UserSessionRecord {

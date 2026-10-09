@@ -42,7 +42,7 @@ export const fetchEventFailed = createAction(
 export const addEventRequested = createAction('[Events] Add event requested');
 export const addEventSucceeded = createAction(
   '[Events] Add event succeeded',
-  props<{ event: Event }>(),
+  props<{ event: Event; unnotifiedMemberNames: string[] }>(),
 );
 export const addEventFailed = createAction(
   '[Events] Add event failed',
@@ -55,7 +55,7 @@ export const updateEventRequested = createAction(
 );
 export const updateEventSucceeded = createAction(
   '[Events] Update event succeeded',
-  props<{ event: Event; originalEventTitle: string }>(),
+  props<{ event: Event; originalEventTitle: string; unnotifiedMemberNames: string[] }>(),
 );
 export const updateEventFailed = createAction(
   '[Events] Update event failed',
@@ -68,7 +68,7 @@ export const deleteEventRequested = createAction(
 );
 export const deleteEventSucceeded = createAction(
   '[Events] Delete event succeeded',
-  props<{ eventId: Id; eventTitle: string }>(),
+  props<{ eventId: Id; eventTitle: string; unnotifiedMemberNames: string[] }>(),
 );
 export const deleteEventFailed = createAction(
   '[Events] Delete event failed',

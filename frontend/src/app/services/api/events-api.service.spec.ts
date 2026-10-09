@@ -10,7 +10,7 @@ import {
   ApiResponse,
   DataPaginationOptions,
   Event,
-  Id,
+  EventSaveResult,
   PaginatedItems,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
@@ -131,8 +131,8 @@ describe('EventsApiService', () => {
   describe('addEvent', () => {
     it('should add new event', () => {
       const newEvent: Event = { ...mockEvent, id: '' };
-      const mockResponse: ApiResponse<Id> = {
-        data: mockEvent.id,
+      const mockResponse: ApiResponse<EventSaveResult> = {
+        data: { id: mockEvent.id, unnotifiedMemberNames: [] },
       };
 
       service.addEvent(newEvent).subscribe(response => {
@@ -148,8 +148,8 @@ describe('EventsApiService', () => {
 
   describe('updateEvent', () => {
     it('should update existing event', () => {
-      const mockResponse: ApiResponse<Id> = {
-        data: mockEvent.id,
+      const mockResponse: ApiResponse<EventSaveResult> = {
+        data: { id: mockEvent.id, unnotifiedMemberNames: [] },
       };
 
       service.updateEvent(mockEvent).subscribe(response => {
@@ -165,8 +165,8 @@ describe('EventsApiService', () => {
 
   describe('deleteEvent', () => {
     it('should delete event by id', () => {
-      const mockResponse: ApiResponse<Id> = {
-        data: mockEvent.id,
+      const mockResponse: ApiResponse<EventSaveResult> = {
+        data: { id: mockEvent.id, unnotifiedMemberNames: [] },
       };
 
       service.deleteEvent(mockEvent.id).subscribe(response => {

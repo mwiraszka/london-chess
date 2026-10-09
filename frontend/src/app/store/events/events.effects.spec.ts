@@ -8,7 +8,14 @@ import { TestBed } from '@angular/core/testing';
 
 import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { ApiResponse, Event, LccError, PaginatedItems, User } from '@app/models';
+import {
+  ApiResponse,
+  Event,
+  EventSaveResult,
+  LccError,
+  PaginatedItems,
+  User,
+} from '@app/models';
 import { EventsApiService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
@@ -239,7 +246,12 @@ describe('EventsEffects', () => {
     });
 
     it('should trigger refetch after addEventSucceeded', async () => {
-      actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
+      actions$.next(
+        EventsActions.addEventSucceeded({
+          event: MOCK_EVENTS[0],
+          unnotifiedMemberNames: [],
+        }),
+      );
       const action = await firstValueFrom(effects.refetchHomePageEvents$);
 
       expect(action).toEqual(EventsActions.fetchHomePageEventsRequested());
@@ -250,6 +262,7 @@ describe('EventsEffects', () => {
         EventsActions.updateEventSucceeded({
           event: MOCK_EVENTS[0],
           originalEventTitle: 'Old Title',
+          unnotifiedMemberNames: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchHomePageEvents$);
@@ -262,6 +275,7 @@ describe('EventsEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: MOCK_EVENTS[0].id,
           eventTitle: MOCK_EVENTS[0].title,
+          unnotifiedMemberNames: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchHomePageEvents$);
@@ -316,7 +330,12 @@ describe('EventsEffects', () => {
     });
 
     it('should trigger refetch after addEventSucceeded', async () => {
-      actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
+      actions$.next(
+        EventsActions.addEventSucceeded({
+          event: MOCK_EVENTS[0],
+          unnotifiedMemberNames: [],
+        }),
+      );
       const action = await firstValueFrom(effects.refetchFilteredEvents$);
 
       expect(action).toEqual(EventsActions.fetchFilteredEventsRequested());
@@ -327,6 +346,7 @@ describe('EventsEffects', () => {
         EventsActions.updateEventSucceeded({
           event: MOCK_EVENTS[0],
           originalEventTitle: 'Old Title',
+          unnotifiedMemberNames: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchFilteredEvents$);
@@ -339,6 +359,7 @@ describe('EventsEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: MOCK_EVENTS[0].id,
           eventTitle: MOCK_EVENTS[0].title,
+          unnotifiedMemberNames: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchFilteredEvents$);
@@ -455,7 +476,9 @@ describe('EventsEffects', () => {
     });
 
     it('should add event successfully', async () => {
-      const mockAddResponse: ApiResponse<string> = { data: 'new-event-id' };
+      const mockAddResponse: ApiResponse<EventSaveResult> = {
+        data: { id: 'new-event-id', unnotifiedMemberNames: [] },
+      };
 
       eventsApiService.addEvent.mockReturnValue(of(mockAddResponse));
 
@@ -490,7 +513,9 @@ describe('EventsEffects', () => {
 
     it('should update event successfully', async () => {
       const eventId = MOCK_EVENTS[0].id;
-      const mockUpdateResponse: ApiResponse<string> = { data: eventId };
+      const mockUpdateResponse: ApiResponse<EventSaveResult> = {
+        data: { id: eventId, unnotifiedMemberNames: [] },
+      };
 
       eventsApiService.updateEvent.mockReturnValue(of(mockUpdateResponse));
 
@@ -520,7 +545,9 @@ describe('EventsEffects', () => {
 
   describe('deleteEvent$', () => {
     it('should delete event successfully', async () => {
-      const mockDeleteResponse: ApiResponse<string> = { data: MOCK_EVENTS[0].id };
+      const mockDeleteResponse: ApiResponse<EventSaveResult> = {
+        data: { id: MOCK_EVENTS[0].id, unnotifiedMemberNames: [] },
+      };
       eventsApiService.deleteEvent.mockReturnValue(of(mockDeleteResponse));
 
       actions$.next(EventsActions.deleteEventRequested({ event: MOCK_EVENTS[0] }));
@@ -530,6 +557,7 @@ describe('EventsEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: MOCK_EVENTS[0].id,
           eventTitle: MOCK_EVENTS[0].title,
+          unnotifiedMemberNames: [],
         }),
       );
       expect(eventsApiService.deleteEvent).toHaveBeenCalledWith(MOCK_EVENTS[0].id);

@@ -90,6 +90,8 @@ describe('AccountPageComponent', () => {
     hasTemporaryPassword: false,
     showYearOfBirth: false,
     brand: 'modern',
+    notifyRatingChanges: true,
+    notifyScheduleChanges: true,
   };
 
   const sessions: UserSessionRecord[] = [
@@ -299,6 +301,35 @@ describe('AccountPageComponent', () => {
       await component['onChangeBrand']('playground');
 
       expect(brandService.change).toHaveBeenLastCalledWith('modern', { chosen: true });
+      expect(toast.show).toHaveBeenCalledWith(
+        'Unable to save your preference. Please try again.',
+        { title: 'Preference not saved', variant: 'error' },
+      );
+    });
+  });
+
+  describe('choosing email notifications', () => {
+    it('should save a turned off notification on the account', async () => {
+      await render('preferences');
+      const updated: UserRecord = { ...record, notifyScheduleChanges: false };
+      api.patch.mockResolvedValue(updated);
+
+      await component['onChangeNotification']('notifyScheduleChanges', false);
+
+      expect(api.patch).toHaveBeenCalledWith('/users/me', {
+        notifyScheduleChanges: false,
+      });
+      expect(userService.setUser).toHaveBeenCalledWith(updated);
+      expect(component['notifyScheduleChanges']()).toBe(false);
+    });
+
+    it('should tick the box again if the account cannot save it', async () => {
+      await render('preferences');
+      api.patch.mockRejectedValue(new Error('offline'));
+
+      await component['onChangeNotification']('notifyRatingChanges', false);
+
+      expect(component['notifyRatingChanges']()).toBe(true);
       expect(toast.show).toHaveBeenCalledWith(
         'Unable to save your preference. Please try again.',
         { title: 'Preference not saved', variant: 'error' },

@@ -9,6 +9,7 @@ import {
   DataPaginationOptions,
   DbCollection,
   Event,
+  EventSaveResult,
   Id,
   PaginatedItems,
 } from '@app/models';
@@ -49,22 +50,22 @@ export class EventsApiService {
     );
   }
 
-  public addEvent(event: Event): Observable<ApiResponse<Id>> {
-    return this.http.post<ApiResponse<Id>>(
+  public addEvent(event: Event): Observable<ApiResponse<EventSaveResult>> {
+    return this.http.post<ApiResponse<EventSaveResult>>(
       `${this.API_BASE_URL}/${this.COLLECTION}`,
       event,
     );
   }
 
-  public updateEvent(event: Event): Observable<ApiResponse<Id>> {
-    return this.http.put<ApiResponse<Id>>(
+  public updateEvent(event: Event): Observable<ApiResponse<EventSaveResult>> {
+    return this.http.put<ApiResponse<EventSaveResult>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/${event.id}`,
       event,
     );
   }
 
-  public deleteEvent(id: Id): Observable<ApiResponse<Id>> {
-    return this.http.delete<ApiResponse<Id>>(
+  public deleteEvent(id: Id): Observable<ApiResponse<EventSaveResult>> {
+    return this.http.delete<ApiResponse<EventSaveResult>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/${id}`,
     );
   }

@@ -169,17 +169,38 @@ describe('AppEffects', () => {
         'success',
         'Old',
       ],
-      [EventsActions.addEventSucceeded({ event }), 'success', event.title],
       [
-        EventsActions.deleteEventSucceeded({ eventId: 'e1', eventTitle: 'Blitz' }),
+        EventsActions.addEventSucceeded({ event, unnotifiedMemberNames: [] }),
+        'success',
+        event.title,
+      ],
+      [
+        EventsActions.deleteEventSucceeded({
+          eventId: 'e1',
+          eventTitle: 'Blitz',
+          unnotifiedMemberNames: [],
+        }),
         'success',
         'Blitz',
       ],
       [EventsActions.exportEventsToCsvSucceeded({ exportedCount: 17 }), 'success', '17'],
       [
-        EventsActions.updateEventSucceeded({ event, originalEventTitle: 'Rapid' }),
+        EventsActions.updateEventSucceeded({
+          event,
+          originalEventTitle: 'Rapid',
+          unnotifiedMemberNames: [],
+        }),
         'success',
         'Rapid',
+      ],
+      [
+        EventsActions.updateEventSucceeded({
+          event,
+          originalEventTitle: 'Rapid',
+          unnotifiedMemberNames: ['Jane Doe'],
+        }),
+        'warning',
+        'Jane Doe',
       ],
       [ImagesActions.addImageSucceeded({ image }), 'success', image.filename],
       [ImagesActions.addImagesSucceeded({ images: [image] }), 'success', '1'],

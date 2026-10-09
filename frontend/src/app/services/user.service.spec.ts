@@ -45,6 +45,8 @@ describe('UserService', () => {
     hasTemporaryPassword: false,
     showYearOfBirth: false,
     brand: 'modern',
+    notifyRatingChanges: true,
+    notifyScheduleChanges: true,
     ...overrides,
   });
 

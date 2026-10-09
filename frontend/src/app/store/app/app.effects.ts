@@ -267,11 +267,17 @@ export class AppEffects {
           type: 'warning',
         };
       case EventsActions.addEventSucceeded.type:
-        return {
-          title: 'New event',
-          message: `Successfully added ${action.event.title}`,
-          type: 'success',
-        };
+        return action.unnotifiedMemberNames.length
+          ? {
+              title: 'New event',
+              message: `Added ${action.event.title}, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about it.`,
+              type: 'warning',
+            }
+          : {
+              title: 'New event',
+              message: `Successfully added ${action.event.title}`,
+              type: 'success',
+            };
       case EventsActions.deleteEventFailed.type:
         return {
           title: 'Event deletion',
@@ -279,11 +285,17 @@ export class AppEffects {
           type: 'warning',
         };
       case EventsActions.deleteEventSucceeded.type:
-        return {
-          title: 'Event deletion',
-          message: `Successfully deleted ${action.eventTitle}`,
-          type: 'success',
-        };
+        return action.unnotifiedMemberNames.length
+          ? {
+              title: 'Event deletion',
+              message: `Deleted ${action.eventTitle}, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about it.`,
+              type: 'warning',
+            }
+          : {
+              title: 'Event deletion',
+              message: `Successfully deleted ${action.eventTitle}`,
+              type: 'success',
+            };
       case EventsActions.exportEventsToCsvFailed.type:
         return {
           title: 'CSV export',
@@ -321,11 +333,17 @@ export class AppEffects {
           type: 'warning',
         };
       case EventsActions.updateEventSucceeded.type:
-        return {
-          title: 'Event update',
-          message: `Successfully updated ${action.originalEventTitle}`,
-          type: 'success',
-        };
+        return action.unnotifiedMemberNames.length
+          ? {
+              title: 'Event update',
+              message: `Updated ${action.originalEventTitle}, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about the change.`,
+              type: 'warning',
+            }
+          : {
+              title: 'Event update',
+              message: `Successfully updated ${action.originalEventTitle}`,
+              type: 'success',
+            };
 
       case ImagesActions.addImageFailed.type:
         return {

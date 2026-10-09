@@ -191,6 +191,8 @@ describe('accessGuard', () => {
       hasTemporaryPassword: false,
       showYearOfBirth: false,
       brand: 'modern',
+      notifyRatingChanges: true,
+      notifyScheduleChanges: true,
     });
     logIn(admin);
     store.refreshState();

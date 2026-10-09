@@ -5,6 +5,7 @@ import {
   type AvatarEditorCropState,
   ButtonComponent,
   CardComponent,
+  CheckboxComponent,
   DialogService,
   InputComponent,
   LockIconComponent,
@@ -29,6 +30,7 @@ import {
   computed,
   effect,
   inject,
+  linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
@@ -89,6 +91,7 @@ import { asSentence } from '@app/utils/sentence.util';
     AvatarEditorComponent,
     ButtonComponent,
     CardComponent,
+    CheckboxComponent,
     ChessUsernameFieldsComponent,
     InputComponent,
     MonitorIconComponent,
@@ -128,6 +131,14 @@ export class AccountPageComponent implements OnInit {
   protected readonly brandOptions = BRAND_OPTIONS;
   protected readonly brand = this.brandService.brand;
   protected readonly savingBrand = signal(false);
+  // Follow the account record, but a ticked box shows at once and is put back if the
+  // account cannot save it
+  protected readonly notifyRatingChanges = linkedSignal(
+    () => this.userService.user()?.notifyRatingChanges ?? true,
+  );
+  protected readonly notifyScheduleChanges = linkedSignal(
+    () => this.userService.user()?.notifyScheduleChanges ?? true,
+  );
   protected readonly pageIcon = SettingsIconComponent;
   protected readonly privacyIcon = LockIconComponent;
 
@@ -476,6 +487,28 @@ export class AccountPageComponent implements OnInit {
       );
     } finally {
       this.savingBrand.set(false);
+    }
+  }
+
+  protected async onChangeNotification(
+    preference: 'notifyRatingChanges' | 'notifyScheduleChanges',
+    enabled: boolean,
+  ): Promise<void> {
+    const setting = this[preference];
+    setting.set(enabled);
+
+    try {
+      this.userService.setUser(
+        await this.api.patch<UserRecord>('/users/me', { [preference]: enabled }),
+      );
+    } catch (e: unknown) {
+      setting.set(!enabled);
+      this.toast.show(
+        e instanceof ApiError
+          ? asSentence(e.message)
+          : 'Unable to save your preference. Please try again.',
+        { title: 'Preference not saved', variant: 'error' },
+      );
     }
   }
 

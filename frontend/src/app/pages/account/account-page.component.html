@@ -231,6 +231,22 @@
               [value]="brand()"
               (changed)="onChangeBrand($event)" />
           </ea-card>
+
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Email notifications</h3>
+            <div class="notification-options">
+              <ea-checkbox
+                label="Notify me of rating changes"
+                hint="An email whenever your rating is updated."
+                [checked]="notifyRatingChanges()"
+                (changed)="onChangeNotification('notifyRatingChanges', $event)" />
+              <ea-checkbox
+                label="Notify me of schedule changes"
+                hint="An email whenever an upcoming event is added, removed or updated."
+                [checked]="notifyScheduleChanges()"
+                (changed)="onChangeNotification('notifyScheduleChanges', $event)" />
+            </div>
+          </ea-card>
         }
 
         @case ('security') {

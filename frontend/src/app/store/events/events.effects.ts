@@ -207,9 +207,10 @@ export class EventsEffects {
         };
 
         return this.eventsApiService.addEvent(event).pipe(
-          map(response =>
+          map(({ data }) =>
             EventsActions.addEventSucceeded({
-              event: { ...event, id: response.data },
+              event: { ...event, id: data.id },
+              unnotifiedMemberNames: data.unnotifiedMemberNames,
             }),
           ),
           catchError(error =>
@@ -238,10 +239,11 @@ export class EventsEffects {
         };
 
         return this.eventsApiService.updateEvent(updatedEvent).pipe(
-          map(() =>
+          map(({ data }) =>
             EventsActions.updateEventSucceeded({
               event: updatedEvent,
               originalEventTitle: event.title,
+              unnotifiedMemberNames: data.unnotifiedMemberNames,
             }),
           ),
           catchError(error =>
@@ -257,10 +259,11 @@ export class EventsEffects {
       ofType(EventsActions.deleteEventRequested),
       mergeMap(({ event }) =>
         this.eventsApiService.deleteEvent(event.id).pipe(
-          map(() =>
+          map(({ data }) =>
             EventsActions.deleteEventSucceeded({
               eventId: event.id,
               eventTitle: event.title,
+              unnotifiedMemberNames: data.unnotifiedMemberNames,
             }),
           ),
           catchError(error =>

@@ -260,7 +260,10 @@ describe('Events Reducer', () => {
 
   describe('addEventSucceeded', () => {
     it('should add new event to state', () => {
-      const action = EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] });
+      const action = EventsActions.addEventSucceeded({
+        event: MOCK_EVENTS[0],
+        unnotifiedMemberNames: [],
+      });
       const state = eventsReducer(initialState, action);
 
       expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(MOCK_EVENTS[0]);
@@ -278,7 +281,10 @@ describe('Events Reducer', () => {
         },
       };
 
-      const action = EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] });
+      const action = EventsActions.addEventSucceeded({
+        event: MOCK_EVENTS[0],
+        unnotifiedMemberNames: [],
+      });
       const state = eventsReducer(previousState, action);
 
       expect(state.newEventFormData).toBeNull();
@@ -305,6 +311,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.updateEventSucceeded({
         event: updatedEvent,
         originalEventTitle: 'Summer Blitz Tournament',
+        unnotifiedMemberNames: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -330,6 +337,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.updateEventSucceeded({
         event: updatedEvent,
         originalEventTitle: 'Old Title',
+        unnotifiedMemberNames: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -356,6 +364,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.deleteEventSucceeded({
         eventId: MOCK_EVENTS[0].id,
         eventTitle: MOCK_EVENTS[0].title,
+        unnotifiedMemberNames: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -373,6 +382,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.deleteEventSucceeded({
         eventId: MOCK_EVENTS[0].id,
         eventTitle: MOCK_EVENTS[0].title,
+        unnotifiedMemberNames: [],
       });
 
       const state = eventsReducer(previousState, action);
