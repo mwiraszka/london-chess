@@ -73,10 +73,9 @@
     .site-links {
       display: grid;
       grid-template-areas:
-        'about-us'
-        'club-events'
+        'about'
+        'events'
         'archives'
-        'documents'
         'website';
       gap: 16px;
       font-size: 12px;
@@ -84,15 +83,14 @@
       @include respond-to('gt-md') {
         grid-template-columns: 1fr 1fr;
         grid-template-areas:
-          'about-us archives'
-          'about-us documents'
-          'club-events website';
+          'about events'
+          'archives website';
         font-size: 13px;
       }
 
       @include respond-to('gt-lg') {
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-        grid-template-areas: 'about-us club-events archives documents website';
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-areas: 'about events archives website';
       }
 
       section {
@@ -100,17 +98,14 @@
         flex-direction: column;
         align-items: start;
 
-        &.about-us {
-          grid-area: about-us;
+        &.about {
+          grid-area: about;
         }
-        &.club-events {
-          grid-area: club-events;
+        &.events {
+          grid-area: events;
         }
         &.archives {
           grid-area: archives;
-        }
-        &.documents {
-          grid-area: documents;
         }
         &.website {
           grid-area: website;
@@ -131,8 +126,10 @@
           margin: 4px 0;
         }
 
+        // The room after the longest link widens every column, since they share one width,
+        // so no link runs right up to the column beside it
         a {
-          margin: 4px 0;
+          margin: 4px 16px 4px 0;
           line-height: 18px;
 
           ea-icon-external-link {

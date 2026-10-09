@@ -131,19 +131,6 @@ describe('FooterComponent', () => {
     });
 
     describe('site links', () => {
-      it('should render correct number of sections and correct header in each one', () => {
-        const sections = queryAll(fixture.debugElement, '.site-links section');
-        expect(sections.length).toBe(5);
-
-        const sectionHeaders = sections.map(section => queryTextContent(section, 'h2'));
-
-        expect(sectionHeaders[0]).toBe('About us');
-        expect(sectionHeaders[1]).toBe('Club events');
-        expect(sectionHeaders[2]).toBe('Archives');
-        expect(sectionHeaders[3]).toBe('Documents');
-        expect(sectionHeaders[4]).toBe('Website');
-      });
-
       it('should rule off each section heading from its links', () => {
         const sections = queryAll(fixture.debugElement, '.site-links section');
 
@@ -152,55 +139,73 @@ describe('FooterComponent', () => {
         });
       });
 
-      it('should render correct number of links in each section', () => {
-        const aboutLinks = queryAll(fixture.debugElement, '.about-us a');
-        const eventsLinks = queryAll(fixture.debugElement, '.club-events a');
-        const archivesLinks = queryAll(fixture.debugElement, '.archives a');
-        const documentsLinks = queryAll(fixture.debugElement, '.documents a');
-        const websiteLinks = queryAll(fixture.debugElement, '.website > a');
+      it('should group the pages into their sections, in order', () => {
+        const sections = queryAll(fixture.debugElement, '.site-links > section').map(
+          section => ({
+            heading: queryTextContent(section, 'h2'),
+            links: queryAll(section, 'a[routerLink]').map(link => [
+              link.nativeElement.textContent.trim(),
+              link.attributes['routerLink'],
+            ]),
+          }),
+        );
 
-        expect(aboutLinks.length).toBe(4);
-        expect(eventsLinks.length).toBe(4);
-        expect(archivesLinks.length).toBe(2);
-        expect(documentsLinks.length).toBe(3);
-        expect(websiteLinks.length).toBe(4);
-      });
-
-      it('should end the website section with the Eagami wordmark', () => {
-        const website = query(fixture.debugElement, '.website').nativeElement;
-
-        expect(website.lastElementChild.tagName).toBe('EA-EAGAMI-WORDMARK');
-      });
-
-      it('should list the club events in order, the tournaments after the schedule', () => {
-        const events = queryAll(fixture.debugElement, '.club-events a').map(link => [
-          link.nativeElement.textContent.trim(),
-          link.attributes['routerLink'],
+        expect(sections).toEqual([
+          {
+            heading: 'About',
+            links: [
+              ['FAQ', '/faq'],
+              ['Members & Ratings', '/members'],
+              ['Code of Conduct', '/documents'],
+              ['Club Bylaws', '/documents'],
+              ['Membership Fees', '/documents'],
+              ['Regional Clubs', '/regional-clubs'],
+            ],
+          },
+          {
+            heading: 'Events',
+            links: [
+              ['Schedule', '/schedule'],
+              ['Tournaments', '/tournaments'],
+              ['City Championship', '/city-championship'],
+            ],
+          },
+          {
+            heading: 'News & history',
+            links: [
+              ['Articles', '/articles'],
+              ['Photo Gallery', '/photo-gallery'],
+              ['Game Archives', '/game-archives'],
+              ['Lifetime Achievement Awards', '/lifetime-achievement-awards'],
+            ],
+          },
+          {
+            heading: 'Website',
+            links: [['Website Changelog', '/website-changelog']],
+          },
         ]);
-
-        expect(events).toEqual([
-          ['Schedule', '/schedule'],
-          ['Tournaments', '/tournaments'],
-          ['Articles', '/articles'],
-          ['Regional Clubs', '/regional-clubs'],
-        ]);
+        expect(queryAll(fixture.debugElement, '.website > a')).toHaveLength(4);
       });
 
-      it('should have correct router links for document links', () => {
+      it('should open each document straight from its link', () => {
         expect(
           queryTextContent(fixture.debugElement, 'a[fragment="lcc-code-of-conduct.pdf"]'),
         ).toBe('Code of Conduct');
-
         expect(
           queryTextContent(fixture.debugElement, 'a[fragment="lcc-bylaws.pdf"]'),
         ).toBe('Club Bylaws');
-
         expect(
           queryTextContent(
             fixture.debugElement,
             'a[fragment="lcc-membership-fees-2025-to-2028.pdf"]',
           ),
         ).toBe('Membership Fees');
+      });
+
+      it('should end the website section with the Eagami wordmark', () => {
+        const website = query(fixture.debugElement, '.website').nativeElement;
+
+        expect(website.lastElementChild.tagName).toBe('EA-EAGAMI-WORDMARK');
       });
     });
 
