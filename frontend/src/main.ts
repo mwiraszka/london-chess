@@ -99,12 +99,12 @@ bootstrapApplication(AppComponent, {
       // Instantiate UserService so its login effect starts and the user record
       // is available app-wide once Clerk reports the session.
       inject(UserService);
-      // Before the first page renders, so it opens in the brand the visit was left in
-      inject(BrandService);
       // Not awaited, so the first page renders while Clerk loads behind it
       inject(ClerkService)
         .load()
         .catch(error => console.error(`[LCC] Unable to load Clerk: ${error}`));
+      // Awaited, so the first page opens in the brand the visit was left in, its fonts ready
+      return inject(BrandService).ready;
     }),
     // Listed first so they also cover the time other interceptors spend
     PendingRequestsInterceptorProvider,

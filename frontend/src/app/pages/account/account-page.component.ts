@@ -473,7 +473,7 @@ export class AccountPageComponent implements OnInit {
       return;
     }
     const previous = this.brand();
-    this.brandService.change(value, { chosen: true });
+    this.brandService.change(value);
     this.savingBrand.set(true);
 
     try {
@@ -481,7 +481,7 @@ export class AccountPageComponent implements OnInit {
         await this.api.patch<UserRecord>('/users/me', { brand: value }),
       );
     } catch (e: unknown) {
-      this.brandService.change(previous, { chosen: true });
+      this.brandService.change(previous);
       this.toast.show(
         e instanceof ApiError
           ? asSentence(e.message)

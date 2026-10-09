@@ -4,7 +4,7 @@ import { Store } from '@ngrx/store';
 import { DOCUMENT, Injectable, computed, effect, inject, untracked } from '@angular/core';
 
 import { BRANDS, DEFAULT_BRAND } from '@app/constants/brands';
-import { Brand, BrandDefinition } from '@app/models';
+import { Brand, BrandDefinition, Url } from '@app/models';
 import { ClerkService } from '@app/services/clerk.service';
 import { UserService } from '@app/services/user.service';
 import { AppActions, AppSelectors } from '@app/store/app';
@@ -32,15 +32,13 @@ export class BrandService {
     return isBrand(brand) ? brand : DEFAULT_BRAND;
   });
 
-  private appliedBrand: Brand | null = null;
-  // A brand applied as a page loads must not reflow it when its fonts arrive, so they
-  // show only if ready in time; one a member has just chosen shows its fonts as soon as
-  // they arrive
-  private fontDisplay: 'optional' | 'swap' = 'optional';
+  private requestedBrand: Brand | null = null;
+
+  // Settles once the brand the visit was left in shows, which the first page waits for
+  public readonly ready: Promise<void>;
 
   constructor() {
-    // At once rather than on the effect's first run, so the first page paints in it
-    this.apply(this.brand());
+    this.ready = this.apply(this.brand());
 
     // The account's choice wins once its record arrives, and visitors see the club's own
     // look; until the session is known, the brand last shown on this device stays
@@ -56,33 +54,64 @@ export class BrandService {
       }
     });
 
-    effect(() => this.apply(this.brand()));
+    effect(() => void this.apply(this.brand()));
   }
 
-  public change(brand: Brand, { chosen = false }: { chosen?: boolean } = {}): void {
+  public change(brand: Brand): void {
     if (brand !== this.brand()) {
-      this.fontDisplay = chosen ? 'swap' : 'optional';
       this.store.dispatch(AppActions.brandChanged({ brand }));
     }
   }
 
-  private apply(brand: Brand): void {
-    if (brand === this.appliedBrand) {
+  // A brand shows only once its fonts are ready, so its text is never drawn in a
+  // stand-in face first and moved when the real one arrives
+  private async apply(brand: Brand): Promise<void> {
+    if (brand === this.requestedBrand) {
       return;
     }
-    this.appliedBrand = brand;
+    this.requestedBrand = brand;
     const { palette, stylesheet }: BrandDefinition = BRANDS[brand];
 
-    applyPalette(derivePalette(palette));
-    this.document.documentElement.setAttribute('data-brand', brand);
+    const fonts = stylesheet ? await this.loadFonts(stylesheet) : null;
+    if (brand !== this.requestedBrand) {
+      fonts?.remove();
+      return;
+    }
 
     this.document.getElementById(STYLESHEET_ID)?.remove();
-    if (stylesheet) {
-      const link = this.document.createElement('link');
-      link.id = STYLESHEET_ID;
-      link.rel = 'stylesheet';
-      link.href = `${stylesheet}&display=${this.fontDisplay}`;
-      this.document.head.append(link);
+    if (fonts) {
+      fonts.id = STYLESHEET_ID;
     }
+    applyPalette(derivePalette(palette));
+    this.document.documentElement.setAttribute('data-brand', brand);
+  }
+
+  // Settles once the stylesheet's faces for Latin text have loaded, or failed to
+  private async loadFonts(stylesheet: Url): Promise<HTMLLinkElement> {
+    const link = this.document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = stylesheet;
+    const settled = new Promise<void>(resolve => {
+      link.addEventListener('load', () => resolve(), { once: true });
+      link.addEventListener('error', () => resolve(), { once: true });
+    });
+    this.document.head.append(link);
+    await settled;
+
+    const families = new Set(
+      new URL(stylesheet).searchParams
+        .getAll('family')
+        .map(family => family.split(':')[0]),
+    );
+    const fonts = new Set(
+      [...this.document.fonts].flatMap(face => {
+        const family = face.family.replace(/^["']|["']$/g, '');
+        return families.has(family)
+          ? [`${face.style} ${face.weight.split(' ')[0]} 1em "${family}"`]
+          : [];
+      }),
+    );
+    await Promise.allSettled([...fonts].map(font => this.document.fonts.load(font, 'a')));
+    return link;
   }
 }
