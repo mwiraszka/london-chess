@@ -24,9 +24,10 @@
 }
 
 // Local faces with metric overrides matching each web font, named right after it in the
-// stacks above, so text laid out before the web font arrives already takes its final size
-// and the swap moves nothing. Changing a brand's fonts means regenerating these (Capsize,
-// fontaine or fallback-font-generator).
+// stacks above and in the header's, so text laid out before the web font arrives already
+// takes its final size and the swap moves nothing. Changing a brand's fonts means
+// regenerating these (Capsize, fontaine or fallback-font-generator); the header's faces
+// are matched on the width of the club's name, the only text they set.
 
 @font-face {
   font-family: 'Lora Fallback';
@@ -80,4 +81,31 @@
   descent-override: 23.08%;
   line-gap-override: 0%;
   size-adjust: 102.27%;
+}
+
+@font-face {
+  font-family: 'Righteous Fallback';
+  src: local('Arial');
+  ascent-override: 98.06%;
+  descent-override: 25.57%;
+  line-gap-override: 0%;
+  size-adjust: 100.43%;
+}
+
+@font-face {
+  font-family: 'UnifrakturMaguntia Fallback';
+  src: local('Times New Roman');
+  ascent-override: 81.15%;
+  descent-override: 25.91%;
+  line-gap-override: 0%;
+  size-adjust: 96.69%;
+}
+
+@font-face {
+  font-family: 'Chewy Fallback';
+  src: local('Arial');
+  ascent-override: 121.3%;
+  descent-override: 37.49%;
+  line-gap-override: 3.02%;
+  size-adjust: 80.75%;
 }

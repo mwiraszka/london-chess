@@ -78,7 +78,7 @@ $app-header-font-size: 42px;
         :host-context(:root[data-brand='classic']) & {
           font-size: 27px;
           font-weight: 600;
-          font-family: 'Playfair Display', serif;
+          font-family: 'Playfair Display', 'Playfair Display Fallback', serif;
           font-style: italic;
 
           @include respond-to('gt-sm') {
@@ -88,7 +88,7 @@ $app-header-font-size: 42px;
 
         :host-context(:root[data-brand='sunset']) & {
           font-size: 26px;
-          font-family: 'Righteous', sans-serif;
+          font-family: 'Righteous', 'Righteous Fallback', sans-serif;
 
           @include respond-to('gt-sm') {
             font-size: 30px;
@@ -97,7 +97,7 @@ $app-header-font-size: 42px;
 
         :host-context(:root[data-brand='newsprint']) & {
           font-size: 30px;
-          font-family: 'UnifrakturMaguntia', serif;
+          font-family: 'UnifrakturMaguntia', 'UnifrakturMaguntia Fallback', serif;
 
           @include respond-to('gt-sm') {
             font-size: 34px;
@@ -106,7 +106,7 @@ $app-header-font-size: 42px;
 
         :host-context(:root[data-brand='playground']) & {
           font-size: 32px;
-          font-family: 'Chewy', sans-serif;
+          font-family: 'Chewy', 'Chewy Fallback', sans-serif;
           transform: rotate(-3deg);
 
           @include respond-to('gt-sm') {
