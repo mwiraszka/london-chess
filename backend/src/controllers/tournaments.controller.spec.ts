@@ -203,11 +203,58 @@ describe('tournaments routes', () => {
       expect(response.status).toBe(200);
       const summaries: TournamentSummary[] = response.body.data;
       expect(summaries.map(summary => summary.number)).toEqual([2, 1]);
-      expect(summaries[1]).toMatchObject({
-        sectionCount: 2,
-        roundCount: 5,
-        playerCount: 3,
+      expect(summaries[1]).toMatchObject({ articleId: null, playerCount: 3 });
+    });
+
+    it("should describe each section's shape, counting its archived games", async () => {
+      const ann = await createPlayer('Ann');
+      const bob = await createPlayer('Bob');
+      await createGame(ann, bob, 'A1', '1');
+      await createGame(bob, ann, 'A1 Playoff', '2');
+      await createGame(ann, bob, 'B1', '1');
+      await createTournament({
+        gameArchiveTournament: 'Club Championship',
+        sections: [
+          {
+            name: 'A1',
+            ratingBand: 'U1800',
+            roundCount: 1,
+            isDoubleRound: false,
+            gameArchiveSections: ['A1', 'A1 Playoff'],
+            entries: [entry(1, ann, [played(1, 2, 1)]), entry(2, bob, [played(1, 1, 0)])],
+          },
+          {
+            name: 'B1',
+            ratingBand: '',
+            roundCount: 3,
+            isDoubleRound: false,
+            gameArchiveSections: [],
+            entries: [entry(1, ann)],
+          },
+        ],
       });
+
+      const response = await request(app).get('/v1/tournaments');
+
+      const [summary]: TournamentSummary[] = response.body.data;
+      expect(summary.sections).toEqual([
+        {
+          name: 'A1',
+          ratingBand: 'U1800',
+          roundCount: 1,
+          entryCount: 2,
+          hasRounds: true,
+          gameCount: 2,
+        },
+        {
+          name: 'B1',
+          ratingBand: '',
+          roundCount: 3,
+          entryCount: 1,
+          hasRounds: false,
+          gameCount: 0,
+        },
+      ]);
     });
 
     it('should respond with a server error when the database fails', async () => {
@@ -370,7 +417,12 @@ describe('tournaments routes', () => {
   });
 
   describe('registration details', () => {
-    it('should summarise the registration window and count', async () => {
+    it('should summarise the registration window and name the registrants', async () => {
+      const member = await createMember({
+        number: 5,
+        firstName: 'Early',
+        rating: '1700',
+      });
       await createTournament({ number: 1 });
       await TournamentModel.create({
         number: 2,
@@ -380,8 +432,8 @@ describe('tournaments routes', () => {
         registrationOpens: '2026-10-01T12:00:00.000Z',
         registrationCloses: '2026-10-15T21:00:00.000Z',
         registrations: [
-          { memberId: 'a', registeredAt: '2026-10-02T12:00:00.000Z' },
-          { memberId: 'b', registeredAt: '2026-10-03T12:00:00.000Z' },
+          { memberId: 'removed-member', registeredAt: '2026-10-02T12:00:00.000Z' },
+          { memberId: member._id.toString(), registeredAt: '2026-10-03T12:00:00.000Z' },
         ],
       });
 
@@ -391,12 +443,20 @@ describe('tournaments routes', () => {
       expect(summaries.find(({ number }) => number === 2)).toMatchObject({
         registrationOpens: '2026-10-01T12:00:00.000Z',
         registrationCloses: '2026-10-15T21:00:00.000Z',
-        registrationCount: 2,
+        registrants: [
+          {
+            memberNumber: 5,
+            firstName: 'Early',
+            lastName: member.lastName,
+            rating: '1700',
+            registeredAt: '2026-10-03T12:00:00.000Z',
+          },
+        ],
       });
       expect(summaries.find(({ number }) => number === 1)).toMatchObject({
         registrationOpens: null,
         registrationCloses: null,
-        registrationCount: 0,
+        registrants: [],
       });
     });
 

@@ -30,6 +30,7 @@ import {
 } from '../services/tournament-players.service';
 import {
   TOURNAMENT_SUMMARY_PIPELINE,
+  TournamentSummaryRecord,
   compareSections,
   toMemberTournamentResults,
   toRegistrants,
@@ -101,8 +102,14 @@ export async function getTournaments(
   res: Response<ApiResponse<TournamentSummary[]>>,
 ): Promise<void> {
   try {
-    const summaries = await TournamentModel.aggregate<TournamentSummary>(
+    const records = await TournamentModel.aggregate<TournamentSummaryRecord>(
       TOURNAMENT_SUMMARY_PIPELINE,
+    );
+    const summaries = await Promise.all(
+      records.map(async ({ registrations, ...summary }): Promise<TournamentSummary> => ({
+        ...summary,
+        registrants: await toRegistrants(registrations),
+      })),
     );
 
     res.status(200).json({ data: summaries });
