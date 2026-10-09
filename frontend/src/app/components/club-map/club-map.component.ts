@@ -33,6 +33,7 @@ import { environment } from '@env';
   `,
   styles: `
     :host {
+      position: relative;
       width: 100%;
       min-width: 280px;
       border-radius: var(--radius-sm);
@@ -41,6 +42,13 @@ import { environment } from '@env';
       &:hover {
         border-color: var(--color-text-link);
       }
+    }
+
+    // Out of the flow, filling the frame the card gives it, so nothing the map draws
+    // inside, even for a moment while it sets up, can change the card's height
+    a {
+      position: absolute;
+      inset: 0;
     }
 
     .map {
