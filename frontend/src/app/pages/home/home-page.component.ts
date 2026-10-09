@@ -90,9 +90,9 @@ export class HomePageComponent implements OnInit {
     internalPath: ['article', 'add'],
     icon: PlusCircleIconComponent,
   };
-  public newsPageLink: InternalLink = {
-    text: 'More news',
-    internalPath: 'news',
+  public articlesPageLink: InternalLink = {
+    text: 'More articles',
+    internalPath: 'articles',
     icon: NewspaperIconComponent,
   };
   public photoGalleryPageLink: InternalLink = {

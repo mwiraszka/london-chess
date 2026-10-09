@@ -77,7 +77,7 @@ describe('accessGuard', () => {
   });
 
   it('should allow navigation to a route that requires no access', async () => {
-    const result = await runGuard(undefined, '/news');
+    const result = await runGuard(undefined, '/articles');
 
     expect(result).toBe(true);
     expect(openLoginSpy).not.toHaveBeenCalled();

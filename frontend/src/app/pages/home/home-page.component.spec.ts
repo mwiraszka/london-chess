@@ -220,9 +220,9 @@ describe('HomePageComponent', () => {
         icon: PlusCircleIconComponent,
       });
 
-      expect(component.newsPageLink).toStrictEqual({
-        text: 'More news',
-        internalPath: 'news',
+      expect(component.articlesPageLink).toStrictEqual({
+        text: 'More articles',
+        internalPath: 'articles',
         icon: NewspaperIconComponent,
       });
 

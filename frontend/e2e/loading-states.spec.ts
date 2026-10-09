@@ -66,7 +66,7 @@ test.describe('loading states', () => {
   test('pages stay usable while their data loads', async ({ page }) => {
     await holdRequests(page, ARTICLES);
 
-    await page.goto('/news');
+    await page.goto('/articles');
     await expect(page.locator('a.article.skeleton').first()).toBeVisible();
     await page
       .locator('lcc-navigation-bar')
@@ -80,7 +80,7 @@ test.describe('loading states', () => {
   test('content already on screen stays in place while it refreshes', async ({
     page,
   }) => {
-    await page.goto('/news');
+    await page.goto('/articles');
     const articleCards = page.locator('a.article:not(.skeleton)');
     await expect(articleCards.first()).toBeVisible();
     const articles = await holdRequests(page, ARTICLES);
@@ -123,7 +123,7 @@ test.describe('loading states', () => {
     const photosFailure = page.locator('.photos-section lcc-load-failed');
     await expect(photosFailure).toContainText('Unable to load photos');
     await expect(page.locator('.articles-section lcc-load-failed')).toContainText(
-      'Unable to load the latest news',
+      'Unable to load the latest articles',
     );
     await expect(page.locator('.schedule-section lcc-load-failed')).toHaveCount(0);
 

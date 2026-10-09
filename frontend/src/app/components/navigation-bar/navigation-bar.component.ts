@@ -74,8 +74,8 @@ export class NavigationBarComponent {
       icon: CalendarDaysIconComponent,
     },
     {
-      text: 'News',
-      internalPath: 'news',
+      text: 'Articles',
+      internalPath: 'articles',
       icon: NewspaperIconComponent,
     },
     {

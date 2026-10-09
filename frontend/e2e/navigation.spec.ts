@@ -4,7 +4,7 @@ const NAV_LINKS: [name: string, path: string, heading: string][] = [
   ['FAQ', '/faq', 'FAQ'],
   ['Members', '/members', 'Members'],
   ['Schedule', '/schedule', 'Schedule'],
-  ['News', '/news', 'News'],
+  ['Articles', '/articles', 'Articles'],
   ['City Champion', '/city-champion', 'City Champion'],
   ['Photo Gallery', '/photo-gallery', 'Photo Gallery'],
   ['Game Archives', '/game-archives', 'Game Archives'],

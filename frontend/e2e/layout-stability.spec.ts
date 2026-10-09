@@ -64,7 +64,7 @@ const nextFrames = (page: Page): Promise<void> =>
 
 const PAGES: [name: string, path: () => Promise<string> | string][] = [
   ['home', () => '/'],
-  ['news', () => '/news'],
+  ['articles', () => '/articles'],
   ['an article', () => `/article/view/${ARTICLES[0].id}`],
   ['the schedule', () => '/schedule'],
   ['the members', () => '/members'],

@@ -496,7 +496,9 @@ export class ImagesEffects {
       switchMap(() => this.store.select(NavSelectors.selectCurrentPath).pipe(take(1))),
       filter(
         currentPath =>
-          currentPath === '' || currentPath === '/' || !!currentPath?.includes('/news'),
+          currentPath === '' ||
+          currentPath === '/' ||
+          !!currentPath?.includes('/articles'),
       ),
       switchMap(() =>
         combineLatest([

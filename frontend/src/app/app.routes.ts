@@ -36,6 +36,11 @@ export const APP_ROUTES: Routes = [
     data: { access: 'admin' },
   },
   {
+    path: 'articles',
+    loadChildren: () =>
+      import('./pages/articles/articles.routes').then(m => m.ARTICLES_ROUTES),
+  },
+  {
     path: 'article',
     loadChildren: () =>
       import('./pages/article/article.routes').then(m => m.ARTICLE_ROUTES),
@@ -87,9 +92,11 @@ export const APP_ROUTES: Routes = [
     loadChildren: () =>
       import('./pages/members/members.routes').then(m => m.MEMBERS_ROUTES),
   },
+  // Articles were the News page, which articles and bookmarks still link to
   {
     path: 'news',
-    loadChildren: () => import('./pages/news/news.routes').then(m => m.NEWS_ROUTES),
+    pathMatch: 'full',
+    redirectTo: 'articles',
   },
   {
     path: 'photo-gallery',

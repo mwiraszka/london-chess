@@ -15,11 +15,11 @@ import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { query } from '@app/utils';
 
-import { NewsPageComponent } from './news-page.component';
+import { ArticlesPageComponent } from './articles-page.component';
 
-describe('NewsPageComponent', () => {
-  let fixture: ComponentFixture<NewsPageComponent>;
-  let component: NewsPageComponent;
+describe('ArticlesPageComponent', () => {
+  let fixture: ComponentFixture<ArticlesPageComponent>;
+  let component: ArticlesPageComponent;
 
   let metaAndTitleService: MetaAndTitleService;
   let store: MockStore;
@@ -43,7 +43,7 @@ describe('NewsPageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NewsPageComponent],
+      imports: [ArticlesPageComponent],
       providers: [
         {
           provide: MetaAndTitleService,
@@ -58,7 +58,7 @@ describe('NewsPageComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(NewsPageComponent);
+    fixture = TestBed.createComponent(ArticlesPageComponent);
     component = fixture.componentInstance;
 
     metaAndTitleService = TestBed.inject(MetaAndTitleService);
@@ -88,7 +88,7 @@ describe('NewsPageComponent', () => {
 
     it('should set meta title and description', () => {
       expect(updateTitleSpy).toHaveBeenCalledTimes(1);
-      expect(updateTitleSpy).toHaveBeenCalledWith('News');
+      expect(updateTitleSpy).toHaveBeenCalledWith('Articles');
       expect(updateDescriptionSpy).toHaveBeenCalledTimes(1);
     });
 

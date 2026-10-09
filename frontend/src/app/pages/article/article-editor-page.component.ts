@@ -59,7 +59,7 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
         }
       }
 
-      <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+      <lcc-link-list [links]="[articlesPageLink]"></lcc-link-list>
     }
   `,
   imports: [
@@ -81,9 +81,9 @@ export class ArticleEditorPageComponent implements EditorPage, OnInit {
   protected readonly adminIcon = ShieldCheckIconComponent;
 
   public readonly entity = 'article';
-  public readonly newsPageLink: InternalLink = {
+  public readonly articlesPageLink: InternalLink = {
     text: 'See all articles',
-    internalPath: 'news',
+    internalPath: 'articles',
     icon: NewspaperIconComponent,
   };
   public viewModel$?: Observable<{

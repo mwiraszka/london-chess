@@ -101,9 +101,9 @@ describe('NavEffects', () => {
     });
 
     it('should ignore fragment differences when comparing paths', () => {
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
-      actions$.next(mockNavigatedAction('/news#section'));
+      actions$.next(mockNavigatedAction('/articles#section'));
 
       const results = collect(effects.appendPathToHistory$);
 
@@ -113,11 +113,11 @@ describe('NavEffects', () => {
     it('should append path when current path is null', () => {
       store.overrideSelector(NavSelectors.selectCurrentPath, null);
       store.refreshState();
-      actions$.next(mockNavigatedAction('/news'));
+      actions$.next(mockNavigatedAction('/articles'));
 
       const results = collect(effects.appendPathToHistory$);
 
-      expect(results).toEqual([NavActions.appendPathToHistory({ path: '/news' })]);
+      expect(results).toEqual([NavActions.appendPathToHistory({ path: '/articles' })]);
     });
   });
 
@@ -263,7 +263,12 @@ describe('NavEffects', () => {
     });
 
     it('should navigate to schedule on addEventSucceeded', async () => {
-      actions$.next(EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] }));
+      actions$.next(
+        EventsActions.addEventSucceeded({
+          event: MOCK_EVENTS[0],
+          unnotifiedMemberNames: [],
+        }),
+      );
       const action = await firstValueFrom(effects.navigateToSchedule$);
 
       expect(action).toEqual(NavActions.navigationRequested({ path: 'schedule' }));
@@ -274,6 +279,7 @@ describe('NavEffects', () => {
         EventsActions.updateEventSucceeded({
           event: MOCK_EVENTS[0],
           originalEventTitle: 'Old Test',
+          unnotifiedMemberNames: [],
         }),
       );
       const action = await firstValueFrom(effects.navigateToSchedule$);
@@ -282,40 +288,40 @@ describe('NavEffects', () => {
     });
   });
 
-  describe('navigateToNews$', () => {
-    it('should navigate to news on cancelSelected', async () => {
+  describe('navigateToArticles$', () => {
+    it('should navigate to articles on cancelSelected', async () => {
       actions$.next(ArticlesActions.cancelSelected());
-      const action = await firstValueFrom(effects.navigateToNews$);
+      const action = await firstValueFrom(effects.navigateToArticles$);
 
-      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'articles' }));
     });
 
-    it('should navigate to news on publishArticleSucceeded', async () => {
+    it('should navigate to articles on publishArticleSucceeded', async () => {
       actions$.next(
         ArticlesActions.publishArticleSucceeded({
           article: MOCK_ARTICLES[0],
         }),
       );
-      const action = await firstValueFrom(effects.navigateToNews$);
+      const action = await firstValueFrom(effects.navigateToArticles$);
 
-      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'articles' }));
     });
 
-    it('should navigate to news on updateArticleSucceeded', async () => {
+    it('should navigate to articles on updateArticleSucceeded', async () => {
       actions$.next(
         ArticlesActions.updateArticleSucceeded({
           article: MOCK_ARTICLES[0],
           originalArticleTitle: 'Old Title',
         }),
       );
-      const action = await firstValueFrom(effects.navigateToNews$);
+      const action = await firstValueFrom(effects.navigateToArticles$);
 
-      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'articles' }));
     });
   });
 
-  describe('navigateToNewsAfterArticleDeletion$', () => {
-    it('should navigate to news when viewing deleted article', async () => {
+  describe('navigateToArticlesAfterArticleDeletion$', () => {
+    it('should navigate to articles when viewing deleted article', async () => {
       const articleId = 'article123';
       store.overrideSelector(
         NavSelectors.selectCurrentPath,
@@ -326,13 +332,15 @@ describe('NavEffects', () => {
       actions$.next(
         ArticlesActions.deleteArticleSucceeded({ articleId, articleTitle: 'Test' }),
       );
-      const action = await firstValueFrom(effects.navigateToNewsAfterArticleDeletion$);
+      const action = await firstValueFrom(
+        effects.navigateToArticlesAfterArticleDeletion$,
+      );
 
-      expect(action).toEqual(NavActions.navigationRequested({ path: 'news' }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: 'articles' }));
     });
 
     it('should not navigate when not viewing the deleted article', () => {
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
       actions$.next(
         ArticlesActions.deleteArticleSucceeded({
@@ -341,7 +349,7 @@ describe('NavEffects', () => {
         }),
       );
 
-      const results = collect(effects.navigateToNewsAfterArticleDeletion$);
+      const results = collect(effects.navigateToArticlesAfterArticleDeletion$);
 
       expect(results).toEqual([]);
     });
@@ -396,7 +404,7 @@ describe('NavEffects', () => {
 
   describe('handleEntityRouteNavigationRequest$', () => {
     it('should leave an article view to the guard on its route', () => {
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
       const emitted: Action[] = [];
       effects.handleEntityRouteNavigationRequest$.subscribe(action =>
@@ -409,7 +417,7 @@ describe('NavEffects', () => {
     });
 
     it('should fetch article when navigating to article edit', async () => {
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
 
       actions$.next(mockNavigatedAction('/article/edit/a7b8c9d0e1f2a3b4c5d6e7f8'));
@@ -496,8 +504,8 @@ describe('NavEffects', () => {
     );
 
     it.each([
-      ['/article/edit/not-an-id', 'news'],
-      ['/article/unknown', 'news'],
+      ['/article/edit/not-an-id', 'articles'],
+      ['/article/unknown', 'articles'],
       ['/event/edit/not-an-id', 'schedule'],
       ['/image/edit/not-an-id', 'photo-gallery'],
       ['/member/view/a7b8c9d0e1f2a3b4c5d6e7f8', 'members'],
@@ -539,7 +547,7 @@ describe('NavEffects', () => {
       );
       store.refreshState();
 
-      actions$.next(mockNavigatedAction('/news'));
+      actions$.next(mockNavigatedAction('/articles'));
       const action = await firstValueFrom(
         effects.restoreFormDataOnNavigationAwayFromEntityRoute$,
       );
@@ -625,7 +633,7 @@ describe('NavEffects', () => {
     });
 
     it('should not restore form data when leaving a page that is not a record', () => {
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
       actions$.next(mockNavigatedAction('/members'));
 

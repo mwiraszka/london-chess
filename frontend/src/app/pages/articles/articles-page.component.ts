@@ -41,11 +41,11 @@ import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { bindSearchControl, combinedLoadStatus } from '@app/utils';
 
 @Component({
-  selector: 'lcc-news-page',
+  selector: 'lcc-articles-page',
   template: `
     @if (viewModel$ | async; as vm) {
       <lcc-page-header
-        heading="News"
+        heading="Articles"
         [icon]="pageIcon">
       </lcc-page-header>
 
@@ -99,7 +99,7 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
       }
     }
   `,
-  styleUrl: './news-page.component.scss',
+  styleUrl: './articles-page.component.scss',
   imports: [
     AdminToolbarComponent,
     ArticleGridComponent,
@@ -113,7 +113,7 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewsPageComponent implements OnInit {
+export class ArticlesPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
@@ -141,7 +141,7 @@ export class NewsPageComponent implements OnInit {
   }>;
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle('News');
+    this.metaAndTitleService.updateTitle('Articles');
     this.metaAndTitleService.updateDescription(
       'Read about a variety of topics related to the London Chess Club.',
     );

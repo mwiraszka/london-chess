@@ -4,7 +4,7 @@
 
 # London Chess Club
 
-The website and API for the London Chess Club: club news, event schedules, member ratings,
+The website and API for the London Chess Club: club articles, event schedules, member ratings,
 photo galleries, and game archives, live at **[londonchess.ca](https://londonchess.ca)**.
 
 For feature requests or to report a bug, open an

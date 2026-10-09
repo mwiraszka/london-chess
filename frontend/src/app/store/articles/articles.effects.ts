@@ -136,8 +136,7 @@ export class ArticlesEffects {
       ),
       filter(
         ([lastFetch, currentPath]) =>
-          this.isExpired(lastFetch) &&
-          !!(currentPath?.includes('/news') || currentPath?.includes('/article')),
+          this.isExpired(lastFetch) && !!currentPath?.includes('/article'),
       ),
     );
 
@@ -145,7 +144,7 @@ export class ArticlesEffects {
       ofType(routerNavigatedAction),
       filter(({ payload }) => {
         const url = payload.event.url;
-        return url.includes('/news') || url.includes('/article');
+        return url.includes('/article');
       }),
       switchMap(() =>
         this.store.select(ArticlesSelectors.selectLastFilteredFetch).pipe(take(1)),

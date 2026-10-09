@@ -39,7 +39,7 @@ import { ImagesSelectors } from '@app/store/images';
           [bannerImage]="vm.bannerImage"
           [bodyImages]="vm.bodyImages">
         </lcc-article>
-        <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+        <lcc-link-list [links]="[articlesPageLink]"></lcc-link-list>
       } @else if (vm.status === 'failed') {
         <lcc-load-failed
           title="Unable to load this article"
@@ -66,9 +66,9 @@ export class ArticleViewerPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
 
-  public readonly newsPageLink: InternalLink = {
+  public readonly articlesPageLink: InternalLink = {
     text: 'More articles',
-    internalPath: 'news',
+    internalPath: 'articles',
     icon: NewspaperIconComponent,
   };
   public viewModel$?: Observable<{

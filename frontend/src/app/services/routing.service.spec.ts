@@ -100,7 +100,7 @@ describe('RoutingService', () => {
     it('should emit the fragment of a navigation to another page', () => {
       parseUrlSpy.mockReturnValue({ fragment: 'top' });
 
-      routerEvents$.next(new NavigationEnd(1, '/news#top', '/news#top'));
+      routerEvents$.next(new NavigationEnd(1, '/articles#top', '/articles#top'));
 
       expect(emissions).toEqual(['top']);
     });
@@ -133,7 +133,7 @@ describe('RoutingService', () => {
     });
 
     it('should emit when the query goes along with a move to another page', () => {
-      routerEvents$.next(new NavigationEnd(1, '/news?page=2', '/news?page=2'));
+      routerEvents$.next(new NavigationEnd(1, '/articles?page=2', '/articles?page=2'));
 
       expect(emissions).toEqual([null]);
     });

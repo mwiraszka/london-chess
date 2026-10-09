@@ -336,7 +336,7 @@ export const ARCHIVE_ONLY_TOURNAMENT = 'Fall Open';
 export const ALBUMS = {
   championship: 'Championship Finals',
   picnic: 'Summer Picnic',
-  banners: 'News Banners',
+  banners: 'Article Banners',
   unavailable: 'Storage Outage',
 } as const;
 

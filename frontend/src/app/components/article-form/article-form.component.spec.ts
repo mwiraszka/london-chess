@@ -459,7 +459,7 @@ describe('ArticleFormComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, expect.anything());
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual(
         expect.objectContaining({
-          body: `Publish ${formData.title} to News page?`,
+          body: `Publish ${formData.title} to the Articles page?`,
           confirmButtonText: 'Publish',
         }),
       );

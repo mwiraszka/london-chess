@@ -60,6 +60,19 @@ describe('app routes', () => {
     expect(account?.data).toEqual({ access: 'member' });
   });
 
+  it('should send the old pages on to their new names', () => {
+    const redirects = APP_ROUTES.filter(({ redirectTo }) => redirectTo).map(
+      ({ path, redirectTo }) => [path, redirectTo],
+    );
+
+    expect(redirects).toEqual(
+      expect.arrayContaining([
+        ['about', 'faq'],
+        ['news', 'articles'],
+      ]),
+    );
+  });
+
   it('should send any unknown path home', () => {
     const fallback = APP_ROUTES[APP_ROUTES.length - 1];
 

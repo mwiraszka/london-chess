@@ -114,14 +114,14 @@ export class NavEffects {
     ),
   );
 
-  navigateToNews$ = createEffect(() =>
+  navigateToArticles$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
         ArticlesActions.cancelSelected,
         ArticlesActions.publishArticleSucceeded,
         ArticlesActions.updateArticleSucceeded,
       ),
-      map(() => NavActions.navigationRequested({ path: 'news' })),
+      map(() => NavActions.navigationRequested({ path: 'articles' })),
     ),
   );
 
@@ -169,14 +169,14 @@ export class NavEffects {
     ),
   );
 
-  navigateToNewsAfterArticleDeletion$ = createEffect(() =>
+  navigateToArticlesAfterArticleDeletion$ = createEffect(() =>
     this.actions$.pipe(
       ofType(ArticlesActions.deleteArticleSucceeded),
       concatLatestFrom(() => this.store.select(NavSelectors.selectCurrentPath)),
       filter(
         ([{ articleId }, currentPath]) => currentPath === `/article/view/${articleId}`,
       ),
-      map(() => NavActions.navigationRequested({ path: 'news' })),
+      map(() => NavActions.navigationRequested({ path: 'articles' })),
     ),
   );
 
@@ -222,7 +222,7 @@ export class NavEffects {
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return ArticlesActions.fetchArticleRequested({ articleId: id });
             }
-            return NavActions.navigationRequested({ path: 'news' });
+            return NavActions.navigationRequested({ path: 'articles' });
 
           case 'event':
             if (controlMode === 'add' && !isDefined(id)) {

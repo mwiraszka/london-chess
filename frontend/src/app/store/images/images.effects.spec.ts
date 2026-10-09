@@ -1270,7 +1270,7 @@ describe('ImagesEffects', () => {
         image(expiringId, { urlExpirationDate: '2026-01-01T07:00:00Z' }),
         image(undatedId, { urlExpirationDate: undefined }),
       ]),
-      navState: { pathHistory: ['/news'] },
+      navState: { pathHistory: ['/articles'] },
     });
 
     beforeEach(() => {
@@ -1280,7 +1280,7 @@ describe('ImagesEffects', () => {
     });
 
     const openPage = (path: string) =>
-      store.setState({ ...state(), navState: { pathHistory: ['/news', path] } });
+      store.setState({ ...state(), navState: { pathHistory: ['/articles', path] } });
 
     const requested = (...imageIds: string[]) =>
       imageIds.map(imageId =>
@@ -1339,7 +1339,7 @@ describe('ImagesEffects', () => {
     );
 
     it.each([
-      ['on a page without thumbnails', '/news', true],
+      ['on a page without thumbnails', '/articles', true],
       ['without a current page', null, true],
       ['while the thumbnails are fresh', '/photo-gallery', false],
     ])('should not refetch %s', (_label, path, expired) => {
@@ -1373,7 +1373,7 @@ describe('ImagesEffects', () => {
       ]);
     });
 
-    it.each(['', '/', '/news'])(
+    it.each(['', '/', '/articles'])(
       'should retry missing banner thumbnails five minutes after starting on "%s"',
       path => {
         store.overrideSelector(NavSelectors.selectCurrentPath, path);

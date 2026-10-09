@@ -329,7 +329,7 @@ describe('ArticlesEffects', () => {
     it('should check for stale articles as soon as it starts', () => {
       vi.useFakeTimers();
       store.overrideSelector(ArticlesSelectors.selectLastFilteredFetch, null);
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
       mockIsExpired.mockReturnValue(true);
       const results: Action[] = [];
@@ -344,7 +344,7 @@ describe('ArticlesEffects', () => {
       vi.useFakeTimers();
       const expiredTimestamp = moment().subtract(20, 'minutes').toISOString();
       store.overrideSelector(ArticlesSelectors.selectLastFilteredFetch, expiredTimestamp);
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
       mockIsExpired.mockReturnValue(true);
 
@@ -364,7 +364,7 @@ describe('ArticlesEffects', () => {
       vi.useFakeTimers();
       const recentTimestamp = moment().subtract(5, 'minutes').toISOString();
       store.overrideSelector(ArticlesSelectors.selectLastFilteredFetch, recentTimestamp);
-      store.overrideSelector(NavSelectors.selectCurrentPath, '/news');
+      store.overrideSelector(NavSelectors.selectCurrentPath, '/articles');
       store.refreshState();
       mockIsExpired.mockReturnValue(false);
 

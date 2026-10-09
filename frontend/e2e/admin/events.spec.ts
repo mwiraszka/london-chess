@@ -91,11 +91,11 @@ test.describe('managing events', () => {
     await page.getByLabel(fieldLabel('Title')).fill(title);
     // The form reports edits a moment after typing stops, which enables Revert
     await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
-    const news = page
+    const articles = page
       .locator('lcc-navigation-bar')
-      .getByRole('link', { name: 'News', exact: true });
+      .getByRole('link', { name: 'Articles', exact: true });
 
-    await news.click();
+    await articles.click();
     await expect(page.locator('lcc-basic-dialog')).toContainText(
       'Any unsaved changes to the event will be lost.',
     );
@@ -104,10 +104,10 @@ test.describe('managing events', () => {
     await expect(page).toHaveURL(/\/event\/add$/);
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(title);
 
-    await news.click();
+    await articles.click();
     await confirm(page, 'Leave');
 
-    await expect(page).toHaveURL(/\/news$/);
+    await expect(page).toHaveURL(/\/articles$/);
   });
 
   test('exports every event to a CSV file', async ({ page }) => {

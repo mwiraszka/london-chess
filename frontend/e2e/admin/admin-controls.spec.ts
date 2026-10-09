@@ -13,7 +13,7 @@ test.describe('admin controls', () => {
   });
 
   test('offer editing and deleting an article from its card', async ({ page }) => {
-    await page.goto('/news');
+    await page.goto('/articles');
 
     const controls = await openAdminControls(
       page.getByRole('link', { name: new RegExp(ARTICLES[1].title) }),
@@ -61,7 +61,7 @@ test.describe('admin controls', () => {
 
   test('show the admin toolbar on each managed page', async ({ page }) => {
     for (const [path, link] of [
-      ['/news', 'Create an article'],
+      ['/articles', 'Create an article'],
       ['/schedule', 'Add an event'],
       ['/members', 'Add a member'],
       ['/photo-gallery', 'Create an album'],

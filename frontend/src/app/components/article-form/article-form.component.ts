@@ -224,7 +224,7 @@ export class ArticleFormComponent implements OnInit {
       title: 'Confirm',
       body: originalArticle
         ? `Update ${originalArticle.title} article?`
-        : `Publish ${this.form.controls.title.value} to News page?`,
+        : `Publish ${this.form.controls.title.value} to the Articles page?`,
       confirmButtonText: originalArticle ? 'Update' : 'Publish',
       confirmAction: () => this.save(),
     };

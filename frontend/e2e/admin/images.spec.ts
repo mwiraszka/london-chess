@@ -120,10 +120,10 @@ test.describe('managing images', () => {
     ).toBeEnabled();
     await editor
       .locator('lcc-navigation-bar')
-      .getByRole('link', { name: 'News', exact: true })
+      .getByRole('link', { name: 'Articles', exact: true })
       .click();
     await confirm(editor, 'Leave');
-    await expect(editor).toHaveURL(/\/news$/);
+    await expect(editor).toHaveURL(/\/articles$/);
     await editor.goBack();
 
     await expect(album).toHaveValue(ALBUMS.picnic);

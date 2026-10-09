@@ -51,13 +51,12 @@
   </section>
 
   <section class="articles-section">
-    <h2 class="section-heading">Latest news</h2>
     @if (vm.isAdmin) {
       <lcc-admin-toolbar [adminLinks]="[createArticleLink]"></lcc-admin-toolbar>
     }
     @if (vm.articlesStatus === 'failed') {
       <lcc-load-failed
-        title="Unable to load the latest news"
+        title="Unable to load the latest articles"
         (retry)="onRetryArticles()" />
     } @else {
       <lcc-article-grid
@@ -68,7 +67,7 @@
         [isLoading]="vm.articlesStatus === 'loading'">
       </lcc-article-grid>
     }
-    <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+    <lcc-link-list [links]="[articlesPageLink]"></lcc-link-list>
   </section>
 
   <section class="photos-section">

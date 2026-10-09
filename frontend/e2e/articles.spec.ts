@@ -3,9 +3,9 @@ import { ADMIN, ARTICLES } from './seed';
 
 const [LATEST, BLITZ_RESULTS, , BOOKMARKED] = ARTICLES;
 
-test.describe('news', () => {
+test.describe('articles', () => {
   test('lists every article with the bookmarked one first', async ({ page }) => {
-    await page.goto('/news');
+    await page.goto('/articles');
 
     const cards = page
       .locator('main')
@@ -22,7 +22,7 @@ test.describe('news', () => {
   });
 
   test('narrows the list to the articles matching a search', async ({ page }) => {
-    await page.goto('/news');
+    await page.goto('/articles');
     await expect(
       page.getByRole('heading', { name: LATEST.title, level: 3 }),
     ).toBeVisible();
@@ -61,7 +61,7 @@ test.describe('news', () => {
 
     await main.getByRole('link', { name: 'More articles' }).click();
 
-    await expect(page).toHaveURL(/\/news$/);
+    await expect(page).toHaveURL(/\/articles$/);
   });
 
   test('jumps to a heading from the article contents without moving the header', async ({
