@@ -107,7 +107,14 @@ describe('toPublicProfile', () => {
 
   it('should add the year of birth for a member who opted in', () => {
     const profile = toPublicProfile(
-      buildRecord({ preferences: { showYearOfBirth: true, brand: 'modern' } }),
+      buildRecord({
+        preferences: {
+          showYearOfBirth: true,
+          brand: 'modern',
+          notifyRatingChanges: true,
+          notifyScheduleChanges: true,
+        },
+      }),
     );
 
     expect(profile.yearOfBirth).toBe('1990');
@@ -210,7 +217,14 @@ describe('toAdminMember', () => {
   it('should keep the year of birth and report whether the member shows it on their profile', () => {
     const hidden = toAdminMember(buildRecord());
     const shown = toAdminMember(
-      buildRecord({ preferences: { showYearOfBirth: true, brand: 'modern' } }),
+      buildRecord({
+        preferences: {
+          showYearOfBirth: true,
+          brand: 'modern',
+          notifyRatingChanges: true,
+          notifyScheduleChanges: true,
+        },
+      }),
     );
 
     expect(hidden.yearOfBirth).toBe('1990');
@@ -256,7 +270,12 @@ describe('toAccountRecord', () => {
 
   it('should report the brand the member chose', () => {
     const record = buildRecord({
-      preferences: { showYearOfBirth: false, brand: 'modern' },
+      preferences: {
+        showYearOfBirth: false,
+        brand: 'modern',
+        notifyRatingChanges: true,
+        notifyScheduleChanges: true,
+      },
     });
 
     const account = toAccountRecord({ ...record, account: ACCOUNT });
@@ -266,7 +285,12 @@ describe('toAccountRecord', () => {
 
   it('should report the year of birth preference once it is set', () => {
     const record = buildRecord({
-      preferences: { showYearOfBirth: true, brand: 'modern' },
+      preferences: {
+        showYearOfBirth: true,
+        brand: 'modern',
+        notifyRatingChanges: true,
+        notifyScheduleChanges: true,
+      },
     });
 
     const account = toAccountRecord({ ...record, account: ACCOUNT });

@@ -269,11 +269,20 @@ export async function updateMe(
   res: Response<ApiResponse<AccountRecord>>,
 ): Promise<void> {
   try {
-    const { avatarCropState, clerkImageUrl, showYearOfBirth, brand } = req.body as {
+    const {
+      avatarCropState,
+      clerkImageUrl,
+      showYearOfBirth,
+      brand,
+      notifyRatingChanges,
+      notifyScheduleChanges,
+    } = req.body as {
       avatarCropState?: unknown;
       clerkImageUrl?: unknown;
       showYearOfBirth?: unknown;
       brand?: unknown;
+      notifyRatingChanges?: unknown;
+      notifyScheduleChanges?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
@@ -305,6 +314,24 @@ export async function updateMe(
         return;
       }
       updates['preferences.brand'] = brand;
+    }
+    if (notifyRatingChanges !== undefined) {
+      if (typeof notifyRatingChanges !== 'boolean') {
+        res
+          .status(400)
+          .json({ message: 'Notify of rating changes must be true or false.' });
+        return;
+      }
+      updates['preferences.notifyRatingChanges'] = notifyRatingChanges;
+    }
+    if (notifyScheduleChanges !== undefined) {
+      if (typeof notifyScheduleChanges !== 'boolean') {
+        res
+          .status(400)
+          .json({ message: 'Notify of schedule changes must be true or false.' });
+        return;
+      }
+      updates['preferences.notifyScheduleChanges'] = notifyScheduleChanges;
     }
 
     const member = await updateLinkedMember(req.user.id, updates);

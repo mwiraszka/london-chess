@@ -482,6 +482,42 @@ describe('users routes', () => {
       expect(response.body.data.avatarCropState).toBeNull();
     });
 
+    it('should save the email notification preferences, both on until turned off', async () => {
+      await createAccountHolder();
+      const before = await request(app)
+        .get('/v1/users/me')
+        .set('Authorization', bearer(USER));
+
+      const response = await request(app)
+        .patch('/v1/users/me')
+        .set('Authorization', bearer(USER))
+        .send({ notifyRatingChanges: false, notifyScheduleChanges: false });
+
+      expect(before.body.data).toMatchObject({
+        notifyRatingChanges: true,
+        notifyScheduleChanges: true,
+      });
+      expect(response.status).toBe(200);
+      expect(response.body.data).toMatchObject({
+        notifyRatingChanges: false,
+        notifyScheduleChanges: false,
+      });
+    });
+
+    it('should reject an email notification preference that is not true or false', async () => {
+      await createAccountHolder();
+
+      const response = await request(app)
+        .patch('/v1/users/me')
+        .set('Authorization', bearer(USER))
+        .send({ notifyScheduleChanges: 'yes' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe(
+        'Notify of schedule changes must be true or false.',
+      );
+    });
+
     it('should reject a malformed crop state, keeping the saved one', async () => {
       await createAccountHolder({ avatarCropState: { zoom: 2, offsetX: 0, offsetY: 0 } });
 

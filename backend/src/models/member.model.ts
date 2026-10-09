@@ -53,6 +53,8 @@ export type Brand = (typeof BRANDS)[number];
 interface MemberPreferences {
   showYearOfBirth: boolean;
   brand: Brand;
+  notifyRatingChanges: boolean;
+  notifyScheduleChanges: boolean;
 }
 
 export interface Member {
@@ -117,6 +119,8 @@ const preferencesSchema = new Schema<MemberPreferences>(
   {
     showYearOfBirth: { type: Boolean, default: false },
     brand: { type: String, enum: BRANDS, default: 'modern' },
+    notifyRatingChanges: { type: Boolean, default: true },
+    notifyScheduleChanges: { type: Boolean, default: true },
   },
   { _id: false },
 );

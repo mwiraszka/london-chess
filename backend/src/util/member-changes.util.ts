@@ -28,6 +28,10 @@ const FIELD_LABELS: Record<ChangeableField, string> = {
 
 export const RATING_FIELDS: readonly ChangeableField[] = ['rating', 'peakRating'];
 
+export const NON_RATING_FIELDS: readonly ChangeableField[] = (
+  Object.keys(FIELD_LABELS) as ChangeableField[]
+).filter(field => !RATING_FIELDS.includes(field));
+
 export function describeMemberChanges(
   before: Partial<Pick<EditableMemberFields, ChangeableField>>,
   after: Pick<EditableMemberFields, ChangeableField>,

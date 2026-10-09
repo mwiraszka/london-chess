@@ -55,6 +55,8 @@ export interface AccountRecord {
   hasTemporaryPassword: boolean;
   showYearOfBirth: boolean;
   brand: Brand;
+  notifyRatingChanges: boolean;
+  notifyScheduleChanges: boolean;
 }
 
 export interface MemberProfile {
@@ -203,5 +205,7 @@ export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
     hasTemporaryPassword: !!record.account.temporaryPasswordHash,
     showYearOfBirth: showsYearOfBirth(record),
     brand: record.preferences?.brand ?? 'modern',
+    notifyRatingChanges: record.preferences?.notifyRatingChanges ?? true,
+    notifyScheduleChanges: record.preferences?.notifyScheduleChanges ?? true,
   };
 }

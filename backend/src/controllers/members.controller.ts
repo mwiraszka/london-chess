@@ -20,13 +20,13 @@ import { sendEmail } from '../services/email.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
 import { widestMemberIds } from '../services/widest.service';
-import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
 import { hashSecret } from '../util/hash-secret.util';
 import { isCollectionId } from '../util/is-collection-id.util';
 import {
   MemberChange,
+  NON_RATING_FIELDS,
   RATING_FIELDS,
   describeMemberChanges,
 } from '../util/member-changes.util';
@@ -48,6 +48,7 @@ import {
 import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
+import { EMAILS_FROM_SITE_ONLY, siteUrlFor } from '../util/site-url.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -74,9 +75,6 @@ interface RatingsUpdateResult {
   updatedIds: Id[];
   unnotifiedMemberNames: string[];
 }
-
-const EMAILS_FROM_SITE_ONLY =
-  'Member emails can only be sent from the London Chess website.';
 
 function toResponse(scope: Scope): (record: MemberRecord) => PublicMember | AdminMember {
   return scope === 'public' ? toPublicMember : toAdminMember;
@@ -423,9 +421,11 @@ export async function updateMembers(
     }
 
     const updates = new Map(members.map(member => [member.id, member]));
+    // A record saved before the preference existed has no value for it, which is a yes
     const accountHolders = await MemberModel.find({
       _id: { $in: [...updates.keys()] },
       'account.clerkUserId': { $ne: null },
+      'preferences.notifyRatingChanges': { $ne: false },
     }).lean<MemberRecord[]>();
     const notices: RatingNotice[] = accountHolders.flatMap(record => {
       const update = updates.get(record._id.toString());
@@ -661,13 +661,18 @@ async function saveForAccountHolder(
     ]);
     const record = await readMember(existing._id);
 
-    const changes = describeMemberChanges(existing, member);
+    const changes = describeMemberChanges(
+      existing,
+      member,
+      existing.preferences?.notifyRatingChanges === false ? NON_RATING_FIELDS : undefined,
+    );
     if (siteUrl && changes.length) {
       failedStep = 'email the member about the changes';
       const email = buildMemberChangesEmail(
         record,
         changes,
         profileUrlFor(siteUrl, record),
+        `${siteUrl}/account/preferences`,
       );
       await sendEmail(record.email, email);
     }
@@ -688,6 +693,7 @@ async function notifyRatingChanges(
         record,
         changes,
         profileUrlFor(siteUrl, record),
+        `${siteUrl}/account/preferences`,
       );
       await sendEmail(record.email, email);
     }),
@@ -739,12 +745,6 @@ async function readMember(id: Types.ObjectId): Promise<MemberRecord> {
     throw new Error('The saved member could not be read back.');
   }
   return record;
-}
-
-// Links in member emails lead back to the site the admin saved from
-function siteUrlFor(req: Pick<Request, 'header'>): string | null {
-  const origin = req.header('origin');
-  return origin && isAllowedOrigin(origin) ? origin : null;
 }
 
 function profileUrlFor(siteUrl: string, record: MemberRecord): string {

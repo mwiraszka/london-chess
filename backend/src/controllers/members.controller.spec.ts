@@ -147,7 +147,12 @@ describe('members routes', () => {
       await createMember({
         number: 7,
         account: memberAccount(),
-        preferences: { showYearOfBirth: true, brand: 'modern' },
+        preferences: {
+          showYearOfBirth: true,
+          brand: 'modern',
+          notifyRatingChanges: true,
+          notifyScheduleChanges: true,
+        },
       });
 
       const response = await request(app).get('/v1/public/members/7');
@@ -497,6 +502,40 @@ describe('members routes', () => {
       );
     });
 
+    it('should leave rating changes out of the email to a member who turned them off', async () => {
+      await createAdmin(ADMIN);
+      const member = await createMember({
+        number: 5,
+        account: memberAccount(),
+        preferences: {
+          showYearOfBirth: false,
+          brand: 'modern',
+          notifyRatingChanges: false,
+          notifyScheduleChanges: true,
+        },
+      });
+
+      const ratingOnly = await request(app)
+        .put(`/v1/admin/members/${member._id}?notify=true`)
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(memberFields({ rating: '1550' }));
+      const emailsAfterRating = vi.mocked(sendEmail).mock.calls.length;
+      const withCity = await request(app)
+        .put(`/v1/admin/members/${member._id}?notify=true`)
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(memberFields({ rating: '1575', city: 'Woodstock' }));
+
+      expect(ratingOnly.status).toBe(200);
+      expect(withCity.status).toBe(200);
+      expect(emailsAfterRating).toBe(0);
+      expect(sendEmail).toHaveBeenCalledOnce();
+      const [, email] = vi.mocked(sendEmail).mock.calls[0];
+      expect(email.text).toContain('Woodstock');
+      expect(email.text).not.toContain('1575');
+    });
+
     it('should save an account holder quietly without notify', async () => {
       await createAdmin(ADMIN);
       const member = await createMember({ number: 5, account: memberAccount() });
@@ -660,6 +699,30 @@ describe('members routes', () => {
         'jane@example.com',
         expect.objectContaining({ subject: 'Your London Chess rating has been updated' }),
       );
+    });
+
+    it('should not email account holders who turned off rating emails', async () => {
+      await createAdmin(ADMIN);
+      const holder = await createMember({
+        number: 5,
+        account: memberAccount(),
+        preferences: {
+          showYearOfBirth: false,
+          brand: 'modern',
+          notifyRatingChanges: false,
+          notifyScheduleChanges: true,
+        },
+      });
+
+      const response = await request(app)
+        .put('/v1/admin/members')
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send([{ ...memberFields({ rating: '1550' }), id: holder._id.toString() }]);
+
+      expect(response.status).toBe(200);
+      expect((await readMember(holder._id)).rating).toBe('1550');
+      expect(sendEmail).not.toHaveBeenCalled();
     });
 
     it('should report account holders who could not be emailed', async () => {
