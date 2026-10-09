@@ -6,11 +6,11 @@ import { provideRouter } from '@angular/router';
 import { MetaAndTitleService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
-import { ChampionPageComponent } from './champion-page.component';
+import { CityChampionshipPageComponent } from './city-championship-page.component';
 
-describe('ChampionPageComponent', () => {
-  let fixture: ComponentFixture<ChampionPageComponent>;
-  let component: ChampionPageComponent;
+describe('CityChampionshipPageComponent', () => {
+  let fixture: ComponentFixture<CityChampionshipPageComponent>;
+  let component: CityChampionshipPageComponent;
 
   let metaAndTitleService: MetaAndTitleService;
   let updateDescriptionSpy: MockInstance;
@@ -18,7 +18,7 @@ describe('ChampionPageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ChampionPageComponent],
+      imports: [CityChampionshipPageComponent],
       providers: [
         provideMockStore(),
         provideRouter([]),
@@ -32,7 +32,7 @@ describe('ChampionPageComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ChampionPageComponent);
+    fixture = TestBed.createComponent(CityChampionshipPageComponent);
     component = fixture.componentInstance;
 
     metaAndTitleService = TestBed.inject(MetaAndTitleService);
@@ -45,7 +45,7 @@ describe('ChampionPageComponent', () => {
       component.ngOnInit();
 
       expect(updateTitleSpy).toHaveBeenCalledTimes(1);
-      expect(updateTitleSpy).toHaveBeenCalledWith('City Champion');
+      expect(updateTitleSpy).toHaveBeenCalledWith('City Championship');
       expect(updateDescriptionSpy).toHaveBeenCalledTimes(1);
     });
   });

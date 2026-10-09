@@ -85,8 +85,8 @@ export class NavigationBarComponent {
       icon: NewspaperIconComponent,
     },
     {
-      text: 'City Champion',
-      internalPath: 'city-champion',
+      text: 'City Championship',
+      internalPath: 'city-championship',
       icon: TrophyIconComponent,
     },
     {

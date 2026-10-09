@@ -70,7 +70,7 @@ const PAGES: [name: string, path: () => Promise<string> | string][] = [
   ['the members', () => '/members'],
   ['a member profile', () => `/members/${PROFILE_MEMBER.number}`],
   ['the photo gallery', () => '/photo-gallery'],
-  ['the city champion', () => '/city-champion'],
+  ['the city championship', () => '/city-championship'],
   ['the game archives', () => '/game-archives'],
   ['the tournaments', () => '/tournaments'],
   ['a tournament', () => `/tournaments/${CHAMPIONSHIP.number}`],

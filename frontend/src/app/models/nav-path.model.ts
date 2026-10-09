@@ -3,7 +3,7 @@ export type NavPath =
   | 'album'
   | 'article'
   | 'articles'
-  | 'city-champion'
+  | 'city-championship'
   | 'documents'
   | 'event'
   | 'faq'

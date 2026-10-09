@@ -250,13 +250,13 @@ describe('MemberProfilePageComponent', () => {
       },
     );
 
-    it('should link the city champion to the city champion page', () => {
+    it('should link the city champion to the City Championship page', () => {
       expect(query(fixture.debugElement, '.champion-link')).toBeFalsy();
 
       showMember(CITY_CHAMPION);
 
       expect(query(fixture.debugElement, '.champion-link').attributes['href']).toBe(
-        '/city-champion',
+        '/city-championship',
       );
     });
 

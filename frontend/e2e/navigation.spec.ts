@@ -6,7 +6,7 @@ const NAV_LINKS: [name: string, path: string, heading: string][] = [
   ['Schedule', '/schedule', 'Schedule'],
   ['Tournaments', '/tournaments', 'Tournaments'],
   ['Articles', '/articles', 'Articles'],
-  ['City Champion', '/city-champion', 'City Champion'],
+  ['City Championship', '/city-championship', 'City Championship'],
   ['Photo Gallery', '/photo-gallery', 'Photo Gallery'],
   ['Game Archives', '/game-archives', 'Game Archives'],
 ];

@@ -15,9 +15,9 @@ import { ChampionshipTableRowData, Image } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
 
 @Component({
-  selector: 'lcc-champion-page',
-  templateUrl: './champion-page.component.html',
-  styleUrl: './champion-page.component.scss',
+  selector: 'lcc-city-championship-page',
+  templateUrl: './city-championship-page.component.html',
+  styleUrl: './city-championship-page.component.scss',
   imports: [
     AccordionComponent,
     AccordionItemComponent,
@@ -29,7 +29,7 @@ import { MetaAndTitleService } from '@app/services';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChampionPageComponent implements OnInit {
+export class CityChampionshipPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
 
   protected readonly pageIcon = TrophyIconComponent;
@@ -285,7 +285,7 @@ export class ChampionPageComponent implements OnInit {
   ];
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle('City Champion');
+    this.metaAndTitleService.updateTitle('City Championship');
     this.metaAndTitleService.updateDescription(
       'All about the London Chess Championship and past winners.',
     );

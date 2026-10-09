@@ -45,10 +45,19 @@ export const APP_ROUTES: Routes = [
     loadChildren: () =>
       import('./pages/article/article.routes').then(m => m.ARTICLE_ROUTES),
   },
+  // The City Championship page was the City Champion page, which articles and bookmarks
+  // still link to
   {
     path: 'city-champion',
+    pathMatch: 'full',
+    redirectTo: 'city-championship',
+  },
+  {
+    path: 'city-championship',
     loadChildren: () =>
-      import('./pages/champion/champion.routes').then(m => m.CHAMPION_ROUTES),
+      import('./pages/city-championship/city-championship.routes').then(
+        m => m.CITY_CHAMPIONSHIP_ROUTES,
+      ),
   },
   {
     path: 'documents',

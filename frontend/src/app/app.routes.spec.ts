@@ -68,6 +68,7 @@ describe('app routes', () => {
     expect(redirects).toEqual(
       expect.arrayContaining([
         ['about', 'faq'],
+        ['city-champion', 'city-championship'],
         ['news', 'articles'],
       ]),
     );

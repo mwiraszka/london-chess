@@ -115,7 +115,9 @@ test('marks the reigning city champion on their profile', async ({ page }) => {
       name: `${CITY_CHAMPION.firstName} ${CITY_CHAMPION.lastName}`,
     }),
   ).toBeVisible();
-  await expect(page.locator('main a.champion-link[href="/city-champion"]')).toBeVisible();
+  await expect(
+    page.locator('main a.champion-link[href="/city-championship"]'),
+  ).toBeVisible();
 });
 
 test.describe('member rating progression', () => {
