@@ -103,8 +103,12 @@
   grid-area: 1 / 1;
 }
 
+// Digits differ in width, so a count on its way up can be wider than its total; it takes
+// no width of its own, spilling into the gap beside it rather than widening the figure
 .figure__count {
   justify-self: start;
+  width: 0;
+  min-width: 100%;
 }
 
 .figure__total {
