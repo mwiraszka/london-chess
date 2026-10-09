@@ -1,7 +1,7 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  z-index: 1000;
+  z-index: var(--z-index-sticky);
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom));
   left: 16px;
