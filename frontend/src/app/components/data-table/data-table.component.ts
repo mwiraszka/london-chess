@@ -1,5 +1,6 @@
 import {
   DataTableColumn,
+  DataTableLayout,
   DataTableRowContextMenuEvent,
   DataTableSortState,
   DataTableComponent as EaDataTableComponent,
@@ -84,6 +85,7 @@ export class DataTableComponent<T extends { id: string }> {
   public readonly clickable = input(false);
   // Fills its container rather than sitting centred at its content's width
   public readonly fullWidth = input(false);
+  public readonly layout = input<DataTableLayout>('auto');
   // Keeps the header in view for as long as any row is
   // The admin controls of a row, opened by a right click on it
   public readonly rowControls = input<(row: T) => AdminControlsConfig | null>();
