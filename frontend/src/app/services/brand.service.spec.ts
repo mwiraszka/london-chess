@@ -36,6 +36,8 @@ describe('BrandService', () => {
     hasTemporaryPassword: false,
     showYearOfBirth: false,
     brand: 'classic',
+    notifyRatingChanges: true,
+    notifyScheduleChanges: true,
   };
 
   const root = () => document.documentElement;
@@ -84,7 +86,16 @@ describe('BrandService', () => {
     const { palette, stylesheet } = BRANDS.playground;
     expect(paletteCss()).toContain(derivePalette(palette).light['--color-brand-default']);
     expect(root().getAttribute('data-brand')).toBe('playground');
-    expect(fontsLink()?.href).toBe(stylesheet);
+    expect(fontsLink()?.href).toBe(`${stylesheet}&display=optional`);
+  });
+
+  it('should show the fonts of a brand a member has just chosen as soon as they arrive', () => {
+    const service = createService();
+
+    service.change('classic', { chosen: true });
+    TestBed.tick();
+
+    expect(fontsLink()?.href).toBe(`${BRANDS.classic.stylesheet}&display=swap`);
   });
 
   it("should drop the other brands' fonts for the default look", () => {

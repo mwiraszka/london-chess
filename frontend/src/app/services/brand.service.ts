@@ -33,6 +33,10 @@ export class BrandService {
   });
 
   private appliedBrand: Brand | null = null;
+  // A brand applied as a page loads must not reflow it when its fonts arrive, so they
+  // show only if ready in time; one a member has just chosen shows its fonts as soon as
+  // they arrive
+  private fontDisplay: 'optional' | 'swap' = 'optional';
 
   constructor() {
     // At once rather than on the effect's first run, so the first page paints in it
@@ -55,8 +59,9 @@ export class BrandService {
     effect(() => this.apply(this.brand()));
   }
 
-  public change(brand: Brand): void {
+  public change(brand: Brand, { chosen = false }: { chosen?: boolean } = {}): void {
     if (brand !== this.brand()) {
+      this.fontDisplay = chosen ? 'swap' : 'optional';
       this.store.dispatch(AppActions.brandChanged({ brand }));
     }
   }
@@ -76,7 +81,7 @@ export class BrandService {
       const link = this.document.createElement('link');
       link.id = STYLESHEET_ID;
       link.rel = 'stylesheet';
-      link.href = stylesheet;
+      link.href = `${stylesheet}&display=${this.fontDisplay}`;
       this.document.head.append(link);
     }
   }

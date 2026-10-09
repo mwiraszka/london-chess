@@ -287,7 +287,7 @@ describe('AccountPageComponent', () => {
 
       await component['onChangeBrand']('playground');
 
-      expect(brandService.change).toHaveBeenCalledWith('playground');
+      expect(brandService.change).toHaveBeenCalledWith('playground', { chosen: true });
       expect(api.patch).toHaveBeenCalledWith('/users/me', { brand: 'playground' });
       expect(userService.setUser).toHaveBeenCalledWith(updated);
     });
@@ -298,7 +298,7 @@ describe('AccountPageComponent', () => {
 
       await component['onChangeBrand']('playground');
 
-      expect(brandService.change).toHaveBeenLastCalledWith('modern');
+      expect(brandService.change).toHaveBeenLastCalledWith('modern', { chosen: true });
       expect(toast.show).toHaveBeenCalledWith(
         'Unable to save your preference. Please try again.',
         { title: 'Preference not saved', variant: 'error' },
