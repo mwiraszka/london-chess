@@ -4,6 +4,7 @@ import {
   AvatarEditorComponent,
   type AvatarEditorCropState,
   ButtonComponent,
+  ButtonLinkComponent,
   CardComponent,
   CheckboxComponent,
   DialogService,
@@ -90,6 +91,7 @@ import { asSentence } from '@app/utils/sentence.util';
     AlertTriangleIconComponent,
     AvatarEditorComponent,
     ButtonComponent,
+    ButtonLinkComponent,
     CardComponent,
     CheckboxComponent,
     ChessUsernameFieldsComponent,
@@ -130,6 +132,7 @@ export class AccountPageComponent implements OnInit {
   protected readonly navItems = ACCOUNT_SECTIONS;
   protected readonly brandOptions = BRAND_OPTIONS;
   protected readonly brand = this.brandService.brand;
+  protected readonly memberNumber = computed(() => this.userService.user()?.memberNumber);
   protected readonly savingBrand = signal(false);
   // Follow the account record, but a ticked box shows at once and is put back if the
   // account cannot save it

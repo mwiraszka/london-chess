@@ -281,6 +281,25 @@ describe('AccountPageComponent', () => {
     expect(userService.setUser).toHaveBeenCalledWith(updated);
   });
 
+  it("should link to the member's profile", async () => {
+    await render();
+
+    const link = fixture.nativeElement.querySelector('a[href="/members/7"]');
+
+    expect(link?.textContent.trim()).toBe('View profile');
+  });
+
+  it('should leave out the profile link for an account with no member number', async () => {
+    userService.user.set({ ...record, memberNumber: null });
+
+    await render();
+
+    const links = [...fixture.nativeElement.querySelectorAll('a')].filter(
+      (link: HTMLAnchorElement) => link.textContent?.trim() === 'View profile',
+    );
+    expect(links).toHaveLength(0);
+  });
+
   describe('choosing a style', () => {
     it('should show the chosen style at once and save it on the account', async () => {
       await render('preferences');
