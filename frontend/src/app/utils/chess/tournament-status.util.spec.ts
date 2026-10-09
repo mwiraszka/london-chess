@@ -1,10 +1,12 @@
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
+import { MOCK_MODIFICATION_INFOS } from '@app/mocks/modification-info.mock';
 import {
   MOCK_TOURNAMENTS,
   MOCK_TOURNAMENT_SUMMARIES,
   MOCK_UPCOMING_SUMMARY,
   MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
+import { TournamentFormData } from '@app/models';
 
 import {
   canWithdraw,
@@ -13,6 +15,7 @@ import {
   registrationStatus,
   summarizeTournament,
   tournamentFormData,
+  tournamentInput,
   tournamentTiming,
 } from './tournament-status.util';
 
@@ -48,6 +51,23 @@ describe('tournament status', () => {
 
     it('should start a new tournament blank', () => {
       expect(tournamentFormData(null)).toBe(INITIAL_TOURNAMENT_FORM_DATA);
+    });
+  });
+
+  describe('tournamentInput', () => {
+    it("should send only the form's own fields, leaving out any an older draft kept", () => {
+      const olderFields = { articleUrl: null };
+      const draft: TournamentFormData = {
+        ...INITIAL_TOURNAMENT_FORM_DATA,
+        ...olderFields,
+        name: 'Winter Blitz',
+      };
+
+      expect(tournamentInput(draft, MOCK_MODIFICATION_INFOS[0])).toEqual({
+        ...INITIAL_TOURNAMENT_FORM_DATA,
+        name: 'Winter Blitz',
+        modificationInfo: MOCK_MODIFICATION_INFOS[0],
+      });
     });
   });
 

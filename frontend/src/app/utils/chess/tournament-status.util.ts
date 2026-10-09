@@ -6,9 +6,11 @@ import {
   TOURNAMENT_FORM_DATA_PROPERTIES,
 } from '@app/constants/tournaments';
 import {
+  ModificationInfo,
   RegistrationStatus,
   Tournament,
   TournamentFormData,
+  TournamentInput,
   TournamentSummary,
   TournamentTiming,
 } from '@app/models';
@@ -27,6 +29,20 @@ export function tournamentFormData(tournament: Tournament | null): TournamentFor
         games: null,
       }
     : INITIAL_TOURNAMENT_FORM_DATA;
+}
+
+// Drafts are kept between visits, so one an older version of the form saved can hold
+// fields the API no longer takes; only the form's own go out
+export function tournamentInput(
+  formData: TournamentFormData,
+  modificationInfo: ModificationInfo,
+): TournamentInput {
+  return {
+    ...pick(formData, TOURNAMENT_FORM_DATA_PROPERTIES),
+    sections: formData.sections,
+    games: formData.games,
+    modificationInfo,
+  };
 }
 
 export function registrationStatus(

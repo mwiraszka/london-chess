@@ -20,7 +20,7 @@ import { TournamentsApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { creditEditor, isDefined } from '@app/utils';
+import { creditEditor, isDefined, tournamentInput } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 import * as TournamentsSelectors from './tournaments.selectors';
@@ -133,10 +133,7 @@ export class TournamentsEffects {
       ]),
       concatMap(([, formData, user]) =>
         this.tournamentsApiService
-          .addTournament({
-            ...formData,
-            modificationInfo: creditEditor(user),
-          })
+          .addTournament(tournamentInput(formData, creditEditor(user)))
           .pipe(
             map(response =>
               TournamentsActions.addTournamentSucceeded({
@@ -168,10 +165,10 @@ export class TournamentsEffects {
       ]),
       concatMap(([{ tournamentNumber }, tournament, formData, user]) =>
         this.tournamentsApiService
-          .updateTournament(tournamentNumber, {
-            ...formData,
-            modificationInfo: creditEditor(user, tournament.modificationInfo),
-          })
+          .updateTournament(
+            tournamentNumber,
+            tournamentInput(formData, creditEditor(user, tournament.modificationInfo)),
+          )
           .pipe(
             map(() =>
               TournamentsActions.updateTournamentSucceeded({

@@ -35,6 +35,7 @@ export {
   registrationStatus,
   summarizeTournament,
   tournamentFormData,
+  tournamentInput,
   tournamentTiming,
 } from './chess/tournament-status.util';
 export { trophyForResult, trophyShapeFor } from './chess/trophies.util';
