@@ -3,7 +3,7 @@
     <lcc-load-failed
       title="Unable to load this tournament"
       (retry)="onRetry(vm.tournamentNumber)" />
-  } @else if (vm.tournament; as tournament) {
+  } @else if (summary(); as tournament) {
     <lcc-page-header
       [heading]="tournament.name"
       [icon]="pageIcon">
@@ -23,7 +23,8 @@
         <span class="details__item">{{ tournament.timeControl }}</span>
       }
       <span class="details__item">
-        {{ playerCount() }} {{ playerCount() === 1 ? 'player' : 'players' }}
+        {{ tournament.playerCount }}
+        {{ tournament.playerCount === 1 ? 'player' : 'players' }}
       </span>
     </p>
 
@@ -122,7 +123,9 @@
       </p>
     }
 
-    <div class="sections">
+    <div
+      class="sections"
+      [attr.aria-busy]="vm.tournament ? null : true">
       @for (section of sections(); track section.key) {
         <section class="section">
           @if (section.heading; as heading) {
@@ -139,28 +142,39 @@
 
           <lcc-data-table
             class="crosstable"
+            layout="fixed"
             [aria-label]="
               section.heading ? 'Standings, ' + section.heading.text : 'Standings'
             "
             [columns]="sectionColumns().get(section.key) ?? []"
             [data]="section.rows"
-            [fullWidth]="true" />
+            [fullWidth]="true"
+            [loading]="!vm.tournament"
+            [loadingRowCount]="section.entryCount" />
 
-          @if (section.games.length) {
+          @if (section.gameCount) {
             <h4 class="section__games-heading">Games in the archive</h4>
             <lcc-data-table
               class="games"
+              layout="fixed"
               [aria-label]="section.heading ? 'Games, ' + section.heading.text : 'Games'"
               [clickable]="true"
               [columns]="gameColumns()"
               [data]="section.games"
               [fullWidth]="true"
+              [loading]="!vm.tournament"
+              [loadingRowCount]="section.gameCount"
               [rowHref]="gameHref"
               (rowActivate)="onOpenGame($event)" />
           }
         </section>
       }
     </div>
+
+    <lcc-link-list
+      class="links"
+      [links]="links()">
+    </lcc-link-list>
   } @else {
     <lcc-page-header
       [heading]="null"
@@ -172,27 +186,6 @@
       aria-busy="true">
       <lcc-text-skeleton width="320px" />
     </p>
-
-    <div class="sections">
-      <section class="section">
-        <lcc-data-table
-          class="crosstable"
-          aria-label="Standings"
-          [columns]="loadingColumns()"
-          [data]="[]"
-          [fullWidth]="true"
-          [loading]="true"
-          [loadingRowCount]="loadingRowCount" />
-      </section>
-    </div>
-  }
-
-  <!-- Below the standings, whose length only the tournament itself decides -->
-  @if (vm.tournament) {
-    <lcc-link-list
-      class="links"
-      [links]="links()">
-    </lcc-link-list>
   }
 }
 
@@ -206,9 +199,12 @@
   #playerCell
   let-row>
   <lcc-member-link
+    class="crosstable__player"
     nameOrder="last-first"
+    [eaTooltip]="row.player"
     [memberNumber]="row.entry.player.memberNumber"
-    [name]="row.player" />
+    [name]="row.player"
+    [whenClipped]="true" />
 </ng-template>
 
 <ng-template
@@ -260,16 +256,22 @@
   #whiteCell
   let-row>
   <lcc-member-link
+    class="games__player"
+    [eaTooltip]="row.white"
     [memberNumber]="row.game.white.memberNumber"
-    [name]="row.white" />
+    [name]="row.white"
+    [whenClipped]="true" />
 </ng-template>
 
 <ng-template
   #blackCell
   let-row>
   <lcc-member-link
+    class="games__player"
+    [eaTooltip]="row.black"
     [memberNumber]="row.game.black.memberNumber"
-    [name]="row.black" />
+    [name]="row.black"
+    [whenClipped]="true" />
 </ng-template>
 
 <ng-template

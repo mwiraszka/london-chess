@@ -1,4 +1,4 @@
-import { pick } from 'lodash-es';
+import { omit, pick } from 'lodash-es';
 
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import {
@@ -71,8 +71,31 @@ export function tournamentTiming(
 
 // Members can withdraw up to the day the tournament starts, while no results are in
 export function canWithdraw(
-  { date, sections }: Pick<Tournament, 'date' | 'sections'>,
+  { date, playerCount }: Pick<TournamentSummary, 'date' | 'playerCount'>,
   today: string = clubToday(),
 ): boolean {
-  return date >= today && sections.every(({ entries }) => !entries.length);
+  return date >= today && playerCount === 0;
+}
+
+// The tournament as the list of tournaments summarises it
+export function summarizeTournament(tournament: Tournament): TournamentSummary {
+  return {
+    ...omit(tournament, ['sections', 'modificationInfo']),
+    sections: tournament.sections.map(
+      ({ name, ratingBand, roundCount, entries, games }) => ({
+        name,
+        ratingBand,
+        roundCount,
+        entryCount: entries.length,
+        hasRounds: entries.some(({ rounds }) => rounds.length),
+        gameCount: games.length,
+      }),
+    ),
+    // A player entered in two sections is still one player
+    playerCount: new Set(
+      tournament.sections.flatMap(({ entries }) =>
+        entries.map(({ player }) => player.id),
+      ),
+    ).size,
+  };
 }

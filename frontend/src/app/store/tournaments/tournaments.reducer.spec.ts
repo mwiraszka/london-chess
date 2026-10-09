@@ -289,10 +289,10 @@ describe('Tournaments Reducer', () => {
       expect(state.entities[MOCK_UPCOMING_TOURNAMENT.number]?.registrants).toEqual([
         first,
       ]);
-      expect(state.summaries[0].registrationCount).toBe(1);
+      expect(state.summaries[0].registrants).toEqual([first]);
     });
 
-    it('should count a registration even when the tournament itself is not loaded', () => {
+    it('should record a registration even when the tournament itself is not loaded', () => {
       const state = tournamentsReducer(
         { ...loaded, ids: [], entities: {} },
         TournamentsActions.registrationSucceeded({
@@ -302,7 +302,7 @@ describe('Tournaments Reducer', () => {
         }),
       );
 
-      expect(state.summaries[0].registrationCount).toBe(0);
+      expect(state.summaries[0].registrants).toEqual([]);
       expect(state.entities).toEqual({});
     });
   });

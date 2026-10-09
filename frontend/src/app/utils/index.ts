@@ -33,6 +33,7 @@ export {
   clubToday,
   isUpcomingTournament,
   registrationStatus,
+  summarizeTournament,
   tournamentFormData,
   tournamentTiming,
 } from './chess/tournament-status.util';

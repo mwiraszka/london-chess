@@ -49,9 +49,7 @@ function withRegistrants(
   const withSummary: TournamentsState = {
     ...state,
     summaries: state.summaries.map(summary =>
-      summary.number === tournamentNumber
-        ? { ...summary, registrationCount: registrants.length }
-        : summary,
+      summary.number === tournamentNumber ? { ...summary, registrants } : summary,
     ),
   };
   return state.entities[tournamentNumber]

@@ -70,9 +70,6 @@ export const TOURNAMENTS_PAGE_SIZES = [25, 50, 100];
 
 export const MEMBER_TOURNAMENTS_PAGE_SIZES = [10, 25, 50];
 
-export const LOADING_ENTRY_COUNT = 10;
-export const LOADING_ROUND_COUNT = 6;
-
 export const LOADING_RESULT_COUNT = 3;
 
 export const TOURNAMENT_FORMAT_OPTIONS: SelectOption[] = (

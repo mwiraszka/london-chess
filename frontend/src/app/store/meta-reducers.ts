@@ -56,7 +56,7 @@ const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   eventsState: [6, 5, 0],
   imagesState: [6, 2, 0],
   membersState: [6, 5, 0],
-  tournamentsState: [6, 4, 0],
+  tournamentsState: [6, 5, 0],
 };
 
 // A feature reducer only falls back on its initial state for a missing slice, so a field

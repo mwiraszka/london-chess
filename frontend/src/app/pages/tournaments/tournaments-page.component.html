@@ -49,8 +49,8 @@
                       {{ registration.label }}
                     </ea-badge>
                     <span>
-                      {{ item.summary.registrationCount }}
-                      {{ item.summary.registrationCount === 1 ? 'player' : 'players' }}
+                      {{ item.summary.registrants.length }}
+                      {{ item.summary.registrants.length === 1 ? 'player' : 'players' }}
                       registered
                     </span>
                   </p>

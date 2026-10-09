@@ -38,8 +38,6 @@ import { MemberLinkComponent } from '@app/components/member-link/member-link.com
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import {
-  LOADING_ENTRY_COUNT,
-  LOADING_ROUND_COUNT,
   TOURNAMENT_FORMAT_LABELS,
   TOURNAMENT_SUBTITLE_LABELS,
 } from '@app/constants/tournaments';
@@ -51,8 +49,11 @@ import {
   RoundResult,
   Tournament,
   TournamentEntry,
+  TournamentFormat,
   TournamentGame,
   TournamentSection,
+  TournamentSectionSummary,
+  TournamentSummary,
 } from '@app/models';
 import {
   AuthDrawerService,
@@ -73,6 +74,7 @@ import {
   registrationStatus,
   roundResultDescription,
   roundResultLabel,
+  summarizeTournament,
 } from '@app/utils';
 
 export interface RoundCell {
@@ -113,13 +115,18 @@ export interface SectionView {
   heading: SectionHeading | null;
   kind: 'crosstable' | 'standings' | 'simul';
   roundCount: number;
+  // Empty while the tournament loads, its counts holding their places
   rows: CrosstableRow[];
   games: GameRow[];
+  entryCount: number;
+  gameCount: number;
 }
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
 
-function sectionHeading(section: TournamentSection): SectionHeading | null {
+function sectionHeading(
+  section: Pick<TournamentSection, 'name' | 'ratingBand'>,
+): SectionHeading | null {
   if (section.ratingBand) {
     return { text: section.ratingBand, extra: '' };
   }
@@ -143,14 +150,11 @@ function sectionHeading(section: TournamentSection): SectionHeading | null {
   return { text: giver.name, extra: giver.rating === null ? '' : String(giver.rating) };
 }
 
-function sectionKind(
-  tournament: Tournament,
-  section: TournamentSection,
-): SectionView['kind'] {
-  if (tournament.format === 'tandem-simul') {
+function sectionKind(format: TournamentFormat, hasRounds: boolean): SectionView['kind'] {
+  if (format === 'tandem-simul') {
     return 'simul';
   }
-  return section.entries.some(({ rounds }) => rounds.length) ? 'crosstable' : 'standings';
+  return hasRounds ? 'crosstable' : 'standings';
 }
 
 function toSectionView(
@@ -167,8 +171,13 @@ function toSectionView(
   return {
     key: `${index}-${section.name}`,
     heading: sectionHeading(section),
-    kind: sectionKind(tournament, section),
+    kind: sectionKind(
+      tournament.format,
+      section.entries.some(({ rounds }) => rounds.length),
+    ),
     roundCount,
+    entryCount: section.entries.length,
+    gameCount: section.games.length,
     rows: section.entries.map((entry, entryIndex) => {
       const row: CrosstableRow = {
         id: `${entryIndex}-${entry.player.id}`,
@@ -202,6 +211,23 @@ function toSectionView(
       result: game.result,
       black: playerName(game.black),
     })),
+  };
+}
+
+function toLoadingSectionView(
+  summary: TournamentSummary,
+  section: TournamentSectionSummary,
+  index: number,
+): SectionView {
+  return {
+    key: `${index}-${section.name}`,
+    heading: sectionHeading(section),
+    kind: sectionKind(summary.format, section.hasRounds),
+    roundCount: section.roundCount,
+    entryCount: section.entryCount,
+    gameCount: section.gameCount,
+    rows: [],
+    games: [],
   };
 }
 
@@ -259,8 +285,6 @@ export class TournamentPageComponent implements OnInit {
     icon: AwardIconComponent,
   };
 
-  protected readonly loadingRowCount = LOADING_ENTRY_COUNT;
-
   protected readonly isAdmin = this.store.selectSignal(AuthSelectors.selectIsAdmin);
   protected readonly user = this.store.selectSignal(AuthSelectors.selectUser);
   protected readonly registering = signal(false);
@@ -281,6 +305,20 @@ export class TournamentPageComponent implements OnInit {
     map(params => Number(params.get('number'))),
   );
 
+  private readonly loadingSummary = toSignal(
+    this.tournamentNumber$.pipe(
+      switchMap(tournamentNumber =>
+        this.store
+          .select(TournamentsSelectors.selectSummaries)
+          .pipe(
+            map(summaries =>
+              summaries?.find(({ number }) => number === tournamentNumber),
+            ),
+          ),
+      ),
+    ),
+  );
+
   protected readonly viewModel = toSignal(
     this.tournamentNumber$.pipe(
       switchMap(tournamentNumber =>
@@ -298,23 +336,26 @@ export class TournamentPageComponent implements OnInit {
     ),
   );
 
+  // Its summary from the list of tournaments lays the page out until the tournament arrives
+  protected readonly summary = computed<TournamentSummary | null>(() => {
+    const tournament = this.viewModel()?.tournament;
+    return tournament ? summarizeTournament(tournament) : (this.loadingSummary() ?? null);
+  });
+
   protected readonly sections = computed<SectionView[]>(() => {
     const tournament = this.viewModel()?.tournament;
-    return tournament
-      ? tournament.sections.map((section, index) =>
-          toSectionView(tournament, section, index),
+    if (tournament) {
+      return tournament.sections.map((section, index) =>
+        toSectionView(tournament, section, index),
+      );
+    }
+    const summary = this.loadingSummary();
+    return summary
+      ? summary.sections.map((section, index) =>
+          toLoadingSectionView(summary, section, index),
         )
       : [];
   });
-
-  protected readonly playerCount = computed(
-    () =>
-      new Set(
-        this.viewModel()?.tournament?.sections.flatMap(({ entries }) =>
-          entries.map(({ player }) => player.id),
-        ),
-      ).size,
-  );
 
   protected readonly editLink = computed<InternalLink>(() => ({
     text: 'Edit this tournament',
@@ -326,13 +367,11 @@ export class TournamentPageComponent implements OnInit {
     icon: EditIconComponent,
   }));
 
-  protected readonly hasResults = computed(() =>
-    (this.viewModel()?.tournament?.sections ?? []).some(({ entries }) => entries.length),
-  );
+  protected readonly hasResults = computed(() => !!this.summary()?.playerCount);
 
   // Worked out as the tournament loads, the server having the final word on the window
   protected readonly registration = computed(() => {
-    const tournament = this.viewModel()?.tournament;
+    const tournament = this.summary();
     if (!tournament || this.hasResults()) {
       return null;
     }
@@ -355,11 +394,11 @@ export class TournamentPageComponent implements OnInit {
   });
 
   protected readonly subtitlePeople = computed(() =>
-    parseSubtitlePeople(this.viewModel()?.tournament?.subtitle ?? ''),
+    parseSubtitlePeople(this.summary()?.subtitle ?? ''),
   );
 
   protected readonly links = computed<InternalLink[]>(() => {
-    const articleId = this.viewModel()?.tournament?.articleId;
+    const articleId = this.summary()?.articleId;
     if (!articleId) {
       return [this.archiveLink];
     }
@@ -381,10 +420,6 @@ export class TournamentPageComponent implements OnInit {
       ),
   );
 
-  protected readonly loadingColumns = computed(() =>
-    this.crosstableColumns('crosstable', LOADING_ROUND_COUNT),
-  );
-
   protected readonly gameColumns = computed<DataTableColumn<GameRow>[]>(() => {
     const white = this.whiteCell();
     const black = this.blackCell();
@@ -393,10 +428,16 @@ export class TournamentPageComponent implements OnInit {
       return [];
     }
     return [
-      { key: 'round', label: 'Round', align: 'right' },
-      { key: 'white', label: 'White player', cellTemplate: white },
-      { key: 'result', label: 'Result', align: 'center', cellTemplate: result },
-      { key: 'black', label: 'Black player', cellTemplate: black },
+      { key: 'round', label: 'Round', align: 'right', width: '16%' },
+      { key: 'white', label: 'White player', width: '34%', cellTemplate: white },
+      {
+        key: 'result',
+        label: 'Result',
+        align: 'center',
+        width: '16%',
+        cellTemplate: result,
+      },
+      { key: 'black', label: 'Black player', width: '34%', cellTemplate: black },
     ];
   });
 
@@ -436,7 +477,7 @@ export class TournamentPageComponent implements OnInit {
     this.authDrawer.openLogin();
   }
 
-  public async onRegister(tournament: Tournament): Promise<void> {
+  public async onRegister(tournament: TournamentSummary): Promise<void> {
     this.registering.set(true);
     try {
       await this.storeRequests.dispatch(
@@ -451,7 +492,7 @@ export class TournamentPageComponent implements OnInit {
     }
   }
 
-  public async onWithdraw(tournament: Tournament): Promise<void> {
+  public async onWithdraw(tournament: TournamentSummary): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
       body: `Withdraw from ${tournament.name}? You can register again while registration is open.`,
@@ -478,7 +519,7 @@ export class TournamentPageComponent implements OnInit {
 
   private registrationSummary(
     status: RegistrationStatus,
-    { registrationOpens, registrationCloses }: Tournament,
+    { registrationOpens, registrationCloses }: TournamentSummary,
   ): string {
     switch (status) {
       case 'open':
@@ -512,14 +553,22 @@ export class TournamentPageComponent implements OnInit {
         label: kind === 'simul' ? 'Board' : '#',
         sortable: true,
         align: 'right',
+        width: kind === 'simul' ? '6rem' : '4rem',
         cellTemplate: rank,
       },
-      { key: 'player', label: 'Player', sortable: true, cellTemplate: player },
+      {
+        key: 'player',
+        label: 'Player',
+        sortable: true,
+        width: '15rem',
+        cellTemplate: player,
+      },
       {
         key: 'rating',
         label: 'Rating',
         sortable: true,
         align: 'right',
+        width: '6rem',
         cellTemplate: rating,
       },
     ];
@@ -529,18 +578,28 @@ export class TournamentPageComponent implements OnInit {
         key: roundKey(index + 1),
         label: `Rd ${index + 1}`,
         align: 'center',
+        width: '3.75rem',
         cellTemplate: round,
       }),
     );
     const trailing: DataTableColumn<CrosstableRow>[] =
       kind === 'simul'
-        ? [{ key: 'resultNote', label: 'Result', sortable: true, cellTemplate: note }]
+        ? [
+            {
+              key: 'resultNote',
+              label: 'Result',
+              sortable: true,
+              width: '6rem',
+              cellTemplate: note,
+            },
+          ]
         : [
             {
               key: 'score',
               label: 'Total',
               sortable: true,
               align: 'right',
+              width: '5.25rem',
               cellTemplate: score,
             },
           ];

@@ -56,10 +56,14 @@ export class TournamentsEffects {
   refetchTournaments$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(routerNavigatedAction),
-      // The home page lists the tournaments taking registrations
-      filter(({ payload }) =>
-        ['/', '/tournaments'].includes(payload.event.url.split(/[?#]/)[0]),
-      ),
+      // The home page lists the tournaments taking registrations, and a tournament's page
+      // is laid out from its summary while the tournament loads
+      filter(({ payload }) => {
+        const path = payload.event.url.split(/[?#]/)[0];
+        return (
+          path === '/' || path === '/tournaments' || path.startsWith('/tournaments/')
+        );
+      }),
       switchMap(() =>
         this.store.select(TournamentsSelectors.selectLastSummariesFetch).pipe(take(1)),
       ),

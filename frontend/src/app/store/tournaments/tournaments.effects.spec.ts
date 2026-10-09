@@ -126,6 +126,15 @@ describe('TournamentsEffects', () => {
       expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
     });
 
+    it("should fetch on arriving at a tournament's page, which its summary lays out", async () => {
+      mockIsExpired.mockReturnValue(true);
+
+      actions$.next(navigatedTo('/tournaments/90'));
+      const action = await firstValueFrom(effects.refetchTournaments$);
+
+      expect(action).toEqual(TournamentsActions.fetchTournamentsRequested());
+    });
+
     it('should not fetch while the summaries are fresh', () => {
       mockIsExpired.mockReturnValue(false);
       const results: Action[] = [];
@@ -141,7 +150,7 @@ describe('TournamentsEffects', () => {
       const results: Action[] = [];
       effects.refetchTournaments$.subscribe(action => results.push(action));
 
-      actions$.next(navigatedTo('/tournaments/90'));
+      actions$.next(navigatedTo('/tournament/edit/90'));
       actions$.next(navigatedTo('/game-archives'));
 
       expect(results).toEqual([]);

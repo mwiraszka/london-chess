@@ -89,6 +89,17 @@ $details-gap: 24px;
   color: var(--color-text-secondary);
 }
 
+// The tables hold each column at its set width whatever the players are called, so a
+// placeholder takes the same shape; a name too long for its column is cut short, in
+// full in a tooltip
+.crosstable__player,
+.games__player {
+  overflow: hidden;
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .crosstable__unrated {
   font-size: 12px;
   color: var(--color-text-secondary);

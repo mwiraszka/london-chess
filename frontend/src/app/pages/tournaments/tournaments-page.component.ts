@@ -98,7 +98,7 @@ function toTournamentRow(summary: TournamentSummary, today: string): TournamentR
     format: TOURNAMENT_FORMAT_LABELS[summary.format],
     timeControl: summary.timeControl,
     thinkingTime: timeControlMinutes(summary.timeControl),
-    rounds: summary.roundCount,
+    rounds: Math.max(0, ...summary.sections.map(({ roundCount }) => roundCount)),
     players: summary.playerCount,
   };
 }

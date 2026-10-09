@@ -14,8 +14,13 @@ import {
 } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournaments.mock';
-import { BasicDialogResult, Tournament, User } from '@app/models';
+import {
+  MOCK_TOURNAMENTS,
+  MOCK_TOURNAMENT_SUMMARIES,
+  MOCK_UPCOMING_SUMMARY,
+  MOCK_UPCOMING_TOURNAMENT,
+} from '@app/mocks/tournaments.mock';
+import { BasicDialogResult, Tournament, TournamentSummary, User } from '@app/models';
 import {
   AuthDrawerService,
   DeletionService,
@@ -44,14 +49,22 @@ describe('TournamentPageComponent', () => {
   let dispatchSpy: MockInstance;
   let paramMap: BehaviorSubject<ParamMap>;
 
-  const stateWith = (tournaments: Tournament[], failed = false) => ({
+  const stateWith = (
+    tournaments: Tournament[],
+    failed = false,
+    summaries: TournamentSummary[] = [],
+  ) => ({
     appState: appInitialState,
     authState: { user: null },
     tournamentsState: tournamentsAdapter.setAll(tournaments, {
       ...initialState,
+      summaries,
       failedLoads: failed ? ['tournament' as const] : [],
     }),
   });
+
+  const bodyRows = (table: DebugElement) =>
+    queryAll(table, '.ea-data-table__body .ea-data-table__row');
 
   const textOf = (element: DebugElement): string =>
     element.nativeElement.textContent.replace(/\s+/g, ' ').trim();
@@ -329,7 +342,7 @@ describe('TournamentPageComponent', () => {
     });
   });
 
-  describe('when the tournament is not in the store', () => {
+  describe('when neither the tournament nor its summary is in the store', () => {
     beforeEach(() => {
       store.setState(stateWith([]));
       open(90);
@@ -339,18 +352,48 @@ describe('TournamentPageComponent', () => {
       expect(dispatchSpy).not.toHaveBeenCalled();
     });
 
-    it('should hold the page with a skeleton crosstable until it arrives', () => {
-      const rows = queryAll(
-        fixture.debugElement,
-        '.crosstable .ea-data-table__body .ea-data-table__row',
-      );
-
+    it('should hold the heading and details with skeletons until it arrives', () => {
       expect(query(fixture.debugElement, '.page-heading lcc-text-skeleton')).toBeTruthy();
       expect(
         query(fixture.debugElement, '.details--loading lcc-text-skeleton'),
       ).toBeTruthy();
-      expect(rows).toHaveLength(10);
-      expect(queryAll(rows[0], '.ea-data-table__placeholder')).toHaveLength(10);
+      expect(query(fixture.debugElement, '.sections')).toBeFalsy();
+    });
+  });
+
+  describe('when only its summary is in the store', () => {
+    beforeEach(() => {
+      store.setState(stateWith([], false, MOCK_TOURNAMENT_SUMMARIES));
+      open(118);
+    });
+
+    it('should show all the summary tells of it', () => {
+      expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe(
+        'Championship',
+      );
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toEqual([
+        'September 12 – November 14, 2024',
+        'Round robin (rated)',
+        'G80',
+        '3 players',
+      ]);
+      expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
+        'A1',
+        'U1500',
+      ]);
+      expect(links()).toEqual([{ text: 'Back to tournaments', path: '/tournaments' }]);
+    });
+
+    it('should hold a place for every player and archived game', () => {
+      const tables = queryAll(fixture.debugElement, '.crosstable');
+      const games = queryAll(fixture.debugElement, '.games');
+
+      expect(query(fixture.debugElement, '.sections').attributes['aria-busy']).toBe(
+        'true',
+      );
+      expect(headers(tables[0])).toEqual(['#', 'Player', 'Rating', 'Total']);
+      expect(tables.map(table => bodyRows(table).length)).toEqual([2, 1]);
+      expect(games.map(table => bodyRows(table).length)).toEqual([1]);
     });
   });
 
@@ -495,6 +538,18 @@ describe('TournamentPageComponent', () => {
       expect(textOf(query(fixture.debugElement, '.details__pending'))).toBe(
         'Standings will appear here once the tournament is under way.',
       );
+    });
+
+    it('should offer registration from its summary before it arrives', () => {
+      store.setState(stateWith([], false, [MOCK_UPCOMING_SUMMARY]));
+      open(MOCK_UPCOMING_TOURNAMENT.number);
+
+      expect(
+        queryAll(fixture.debugElement, '.registration__registrant lcc-member-link').map(
+          textOf,
+        ),
+      ).toEqual(['John Doe', 'Joe Bloggs']);
+      expect(query(fixture.debugElement, '.log-in-button')).toBeTruthy();
     });
 
     it('should ask a visitor to log in to register', () => {

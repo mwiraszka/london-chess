@@ -108,6 +108,7 @@ export type {
   TournamentInput,
   TournamentRegistrant,
   TournamentSection,
+  TournamentSectionSummary,
   TournamentSummary,
   TournamentTiming,
   Trophy,

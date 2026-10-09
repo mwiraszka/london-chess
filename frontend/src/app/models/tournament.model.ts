@@ -99,13 +99,24 @@ export type TournamentSummary = Pick<
   | 'format'
   | 'timeControl'
   | 'isRated'
+  | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
+  | 'registrants'
 > & {
-  sectionCount: number;
-  roundCount: number;
+  sections: TournamentSectionSummary[];
   playerCount: number;
-  registrationCount: number;
+};
+
+// Enough of a section to lay out its tables before they load
+export type TournamentSectionSummary = Pick<
+  TournamentSection,
+  'name' | 'ratingBand' | 'roundCount'
+> & {
+  entryCount: number;
+  // Whether rounds were recorded, or only the standings
+  hasRounds: boolean;
+  gameCount: number;
 };
 
 export type RoundResultInput = Omit<RoundResult, 'gameId'>;

@@ -1,6 +1,7 @@
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import {
   MOCK_TOURNAMENTS,
+  MOCK_TOURNAMENT_SUMMARIES,
   MOCK_UPCOMING_SUMMARY,
   MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
@@ -10,6 +11,7 @@ import {
   clubToday,
   isUpcomingTournament,
   registrationStatus,
+  summarizeTournament,
   tournamentFormData,
   tournamentTiming,
 } from './tournament-status.util';
@@ -117,12 +119,26 @@ describe('tournament status', () => {
     });
   });
 
+  describe('summarizeTournament', () => {
+    it('should summarise a tournament as the list of tournaments does', () => {
+      expect(MOCK_TOURNAMENTS.map(summarizeTournament)).toEqual(
+        [...MOCK_TOURNAMENT_SUMMARIES].reverse(),
+      );
+      expect(summarizeTournament(MOCK_UPCOMING_TOURNAMENT)).toEqual(
+        MOCK_UPCOMING_SUMMARY,
+      );
+    });
+  });
+
   describe('canWithdraw', () => {
     it('should allow withdrawing up to the first day while no results are in', () => {
-      expect(canWithdraw(MOCK_UPCOMING_TOURNAMENT, '2050-10-15')).toBe(true);
-      expect(canWithdraw(MOCK_UPCOMING_TOURNAMENT, '2050-10-16')).toBe(false);
+      expect(canWithdraw(MOCK_UPCOMING_SUMMARY, '2050-10-15')).toBe(true);
+      expect(canWithdraw(MOCK_UPCOMING_SUMMARY, '2050-10-16')).toBe(false);
       expect(
-        canWithdraw({ ...MOCK_TOURNAMENTS[0], date: '2050-01-01' }, '2026-01-01'),
+        canWithdraw(
+          { ...MOCK_TOURNAMENT_SUMMARIES[2], date: '2050-01-01' },
+          '2026-01-01',
+        ),
       ).toBe(false);
     });
   });
