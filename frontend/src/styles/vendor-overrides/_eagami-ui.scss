@@ -31,6 +31,11 @@
   --ea-avatar-size: 28px;
 }
 
+// The alert pads its inner box directly, with no token to set it through
+ea-alert.privacy-note .ea-alert {
+  padding: 0.75em 0.5em;
+}
+
 // Compact author avatars beside small byline text
 lcc-modification-info ea-avatar .ea-avatar {
   --ea-avatar-size: 18px;
