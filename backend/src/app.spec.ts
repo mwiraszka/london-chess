@@ -2,6 +2,7 @@ import request from 'supertest';
 
 import pkg from '../package.json';
 import { app } from './app';
+import { CURRENT_DATASET_ID, DatasetModel } from './models/dataset.model';
 import { connectToDatabase } from './services/mongo-db.service';
 import { useTestDatabase } from './testing/database';
 
@@ -19,6 +20,23 @@ describe('app', () => {
     const response = await request(app).get('/v1/version');
 
     expect(response.body.data).toBe(pkg.version);
+  });
+
+  it('should report no replacement for a database that was never replaced', async () => {
+    const response = await request(app).get('/v1/dataset');
+
+    expect(response.body).toEqual({ data: { replacedAt: null } });
+  });
+
+  it('should report when the database was last replaced', async () => {
+    await DatasetModel.create({
+      _id: CURRENT_DATASET_ID,
+      replacedAt: '2026-10-11T08:00:00.000Z',
+    });
+
+    const response = await request(app).get('/v1/dataset');
+
+    expect(response.body).toEqual({ data: { replacedAt: '2026-10-11T08:00:00.000Z' } });
   });
 
   it('should allow requests only from the club sites', async () => {
