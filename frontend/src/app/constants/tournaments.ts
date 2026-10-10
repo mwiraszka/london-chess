@@ -59,13 +59,6 @@ export const TOURNAMENT_TIMING_BADGES: Record<
   'in-progress': { label: 'In progress', variant: 'success' },
 };
 
-export const TOURNAMENT_SUBTITLE_LABELS: Record<TournamentFormat, string> = {
-  swiss: 'Theme',
-  'round-robin': 'Theme',
-  match: 'Match',
-  'tandem-simul': 'Simul givers',
-};
-
 export const TOURNAMENTS_PAGE_SIZES = [25, 50, 100];
 
 export const MEMBER_TOURNAMENTS_PAGE_SIZES = [10, 25, 50];

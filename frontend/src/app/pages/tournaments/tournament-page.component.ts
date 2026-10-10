@@ -37,10 +37,7 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import {
-  TOURNAMENT_FORMAT_LABELS,
-  TOURNAMENT_SUBTITLE_LABELS,
-} from '@app/constants/tournaments';
+import { TOURNAMENT_FORMAT_LABELS } from '@app/constants/tournaments';
 import {
   AdminButton,
   Dialog,
@@ -276,7 +273,6 @@ export class TournamentPageComponent implements OnInit {
 
   protected readonly pageIcon = AwardIconComponent;
   protected readonly formatLabels = TOURNAMENT_FORMAT_LABELS;
-  protected readonly subtitleLabels = TOURNAMENT_SUBTITLE_LABELS;
   protected readonly formatDateRange = formatDateRange;
   protected readonly formatScore = formatScore;
   protected readonly archiveLink: InternalLink = {

@@ -34,11 +34,11 @@ $details-gap: 24px;
   content: '·';
 }
 
-.details__subtitle {
-  gap: 0 4px;
+// Free text that can run long, so it alone may break across lines
+.details__item--subtitle {
+  white-space: normal;
 }
 
-.details__label,
 .details__extra,
 .details__separator {
   color: var(--color-text-secondary);

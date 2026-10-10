@@ -141,7 +141,7 @@ describe('TournamentPageComponent', () => {
         'G25',
         '3 players',
       ]);
-      expect(query(fixture.debugElement, '.details__subtitle')).toBeFalsy();
+      expect(query(fixture.debugElement, '.details__item--subtitle')).toBeFalsy();
     });
 
     it('should lay out the crosstable round by round', () => {
@@ -242,9 +242,9 @@ describe('TournamentPageComponent', () => {
     beforeEach(() => open(111));
 
     it('should name the simul givers with their ratings set apart', () => {
-      const givers = query(fixture.debugElement, '.details__subtitle');
+      const givers = query(fixture.debugElement, '.details__item--subtitle');
 
-      expect(textOf(givers)).toBe('Simul givers: Doe, John (2302) / Smith, Jane (2189)');
+      expect(textOf(givers)).toBe('Doe, John (2302) / Smith, Jane (2189)');
       expect(queryAll(givers, '.details__extra').map(textOf)).toEqual([
         '(2302)',
         '(2189)',
@@ -438,11 +438,17 @@ describe('TournamentPageComponent', () => {
       ]);
     });
 
-    it('should show a subtitle that names no one as it is', () => {
-      show({ ...simul, subtitle: 'Club members' });
+    it('should show a subtitle as it is, right after the date', () => {
+      show({ ...swiss, subtitle: 'Halloween special' });
 
-      const subtitle = query(fixture.debugElement, '.details__subtitle');
-      expect(textOf(subtitle)).toContain('Club members');
+      const subtitle = query(fixture.debugElement, '.details__item--subtitle');
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toEqual([
+        'October 19, 2023',
+        'Halloween special',
+        'Swiss (rated)',
+        'G25',
+        '3 players',
+      ]);
       expect(query(subtitle, '.details__person')).toBeFalsy();
     });
 
@@ -462,14 +468,16 @@ describe('TournamentPageComponent', () => {
       });
 
       expect(
-        queryAll(fixture.debugElement, '.details__subtitle .details__person').map(textOf),
+        queryAll(fixture.debugElement, '.details__item--subtitle .details__person').map(
+          textOf,
+        ),
       ).toEqual(['Doe, John', 'Smith, Jane']);
       expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
         'Doe, John',
         'Smith, Jane / Bloggs, Joe',
       ]);
       expect(
-        query(fixture.debugElement, '.details__subtitle .details__extra'),
+        query(fixture.debugElement, '.details__item--subtitle .details__extra'),
       ).toBeFalsy();
     });
 

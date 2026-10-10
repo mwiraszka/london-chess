@@ -13,6 +13,25 @@
       <span class="details__item">
         {{ formatDateRange(tournament.date, tournament.endDate) }}
       </span>
+      @if (tournament.subtitle) {
+        <span class="details__item details__item--subtitle">
+          @if (subtitlePeople(); as subtitle) {
+            @for (person of subtitle.people; track person.name; let last = $last) {
+              <span class="details__person">
+                {{ person.name }}
+                @if (person.rating !== null) {
+                  <span class="details__extra">({{ person.rating }})</span>
+                }
+              </span>
+              @if (!last) {
+                <span class="details__separator">{{ subtitle.separator }}</span>
+              }
+            }
+          } @else {
+            {{ tournament.subtitle }}
+          }
+        </span>
+      }
       <span class="details__item">
         {{ formatLabels[tournament.format] }}
         <span class="details__extra">
@@ -27,27 +46,6 @@
         {{ tournament.playerCount === 1 ? 'player' : 'players' }}
       </span>
     </p>
-
-    @if (tournament.subtitle) {
-      <p class="details details__subtitle">
-        <span class="details__label">{{ subtitleLabels[tournament.format] }}:</span>
-        @if (subtitlePeople(); as subtitle) {
-          @for (person of subtitle.people; track person.name; let last = $last) {
-            <span class="details__person">
-              {{ person.name }}
-              @if (person.rating !== null) {
-                <span class="details__extra">({{ person.rating }})</span>
-              }
-            </span>
-            @if (!last) {
-              <span class="details__separator">{{ subtitle.separator }}</span>
-            }
-          }
-        } @else {
-          {{ tournament.subtitle }}
-        }
-      </p>
-    }
 
     @if (isAdmin()) {
       <lcc-admin-toolbar
