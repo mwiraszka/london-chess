@@ -195,25 +195,29 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       : candidates.filter(entrant => isSamePlayerName(entrant.name, name, true));
   };
 
-  for (const game of games) {
+  // A double round's second games wait until every first game is in, so each one finds
+  // the result it joins whatever order the file lists them in
+  const laterGames: PgnGame[] = [];
+
+  const mergeGame = (game: PgnGame, isLaterPass: boolean): void => {
     const label = describe(game);
     const { White: white, Black: black, Result: result, Round: roundTag } = game.tags;
     if (!white || !black) {
       problems.push(`${label} does not name both players.`);
-      continue;
+      return;
     }
     if (!game.plyCount) {
       problems.push(`${label} has no moves.`);
-      continue;
+      return;
     }
     if (!GAME_RESULTS.includes(result as GameResult) || result === '*') {
       problems.push(`${label} has no result.`);
-      continue;
+      return;
     }
     const round = Number(roundTag?.match(/^\d+/)?.[0]);
     if (!Number.isInteger(round) || round < 1) {
       problems.push(`${label} has no round number.`);
-      continue;
+      return;
     }
 
     const archiveSection =
@@ -223,7 +227,7 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       problems.push(
         `${label} is from ${game.tags['Event'] || 'an unnamed event'}, which matches no section of this tournament.`,
       );
-      continue;
+      return;
     }
     const sectionIndexes =
       sections.length === 1
@@ -241,13 +245,13 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
           ? `${label}: ${unmatched.name} could be more than one of the section's players.`
           : `${label}: ${unmatched.name} is not one of the players in ${archiveSection ? `section ${archiveSection}` : 'the tournament'}.`,
       );
-      continue;
+      return;
     }
 
     const [whiteEntrant, blackEntrant] = players.map(({ matches }) => matches[0]);
     const sameSection = whiteEntrant.sectionIndex === blackEntrant.sectionIndex;
     const whiteScore = result === '1-0' ? 1 : result === '0-1' ? 0 : 0.5;
-    const sides = [
+    const pairing = [
       {
         entrant: whiteEntrant,
         opponent: blackEntrant,
@@ -262,41 +266,76 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       },
     ] as const;
 
-    if (sides.some(({ entrant }) => round > sections[entrant.sectionIndex].roundCount)) {
+    const sectionOf = ({ sectionIndex }: Entrant) => sections[sectionIndex];
+    if (
+      pairing.some(({ entrant }) => {
+        const { roundCount, isDoubleRound } = sectionOf(entrant);
+        return round > roundCount * (isDoubleRound ? 2 : 1);
+      })
+    ) {
       problems.push(`${label} is from a round past the section's last.`);
-      continue;
+      return;
     }
+    if (
+      !isLaterPass &&
+      pairing.some(({ entrant }) => round > sectionOf(entrant).roundCount)
+    ) {
+      laterGames.push(game);
+      return;
+    }
+
+    // A double round's second game is numbered a whole round count on from its first
+    const sides = pairing.map(side => {
+      const { roundCount } = sectionOf(side.entrant);
+      return {
+        ...side,
+        round: ((round - 1) % roundCount) + 1,
+        gameIndex: Math.floor((round - 1) / roundCount),
+      };
+    });
 
     const entryOf = ({ sectionIndex, rank }: Entrant) =>
       sections[sectionIndex].entries.find(entry => entry.rank === rank)!;
+    const recordedRound = (side: (typeof sides)[number]) =>
+      entryOf(side.entrant).rounds.find(played => played.round === side.round);
     // A recorded round can take the game's result only when it pairs the same two players
-    const contradicted = sides.some(({ entrant, opponent }) => {
-      const recorded = entryOf(entrant).rounds.find(played => played.round === round);
+    const contradicted = sides.some(side => {
+      const recorded = recordedRound(side);
       return (
         !!recorded &&
         (recorded.outcome !== 'game' ||
-          recorded.opponentRank !== (sameSection ? opponent.rank : null))
+          recorded.opponentRank !== (sameSection ? side.opponent.rank : null))
       );
     });
     if (contradicted) {
       problems.push(
-        `${label} does not match the pairing already recorded for round ${round}.`,
+        `${label} does not match the pairing already recorded for round ${sides[0].round}.`,
       );
-      continue;
+      return;
+    }
+    if (sides.some(side => side.gameIndex > (recordedRound(side)?.scores.length ?? 0))) {
+      problems.push(
+        `${label} is the second game of round ${sides[0].round}, whose first game is not recorded.`,
+      );
+      return;
     }
 
     for (const side of sides) {
       const entry = entryOf(side.entrant);
+      const recorded = recordedRound(side);
+      const scores = recorded ? [...recorded.scores] : [];
+      scores[side.gameIndex] = side.score;
       const played: RoundResultInput = {
-        round,
+        round: side.round,
         outcome: 'game',
-        scores: [side.score],
-        points: side.score,
+        scores,
+        points: scores.reduce((total, score) => total + score, 0),
         opponentRank: sameSection ? side.opponent.rank : null,
-        color: side.color,
+        // A round keeps the colour of its first game
+        color: side.gameIndex === 0 ? side.color : (recorded?.color ?? null),
       };
       entry.rounds = [
-        ...entry.rounds.filter(other => other.round !== round),
+        ...entry.rounds.filter(other => other.round !== side.round),
         played,
       ].sort((a, b) => a.round - b.round);
       entry.score = entry.rounds.reduce((total, { points }) => total + points, 0);
@@ -307,7 +346,7 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
     const key = `${archiveSection}|${round}|${whitePlayerId}|${blackPlayerId}`;
     if (merged.has(key)) {
       problems.push(`${label} appears more than once.`);
-      continue;
+      return;
     }
     const eco = game.tags['ECO'] ?? '';
     merged.set(key, {
@@ -323,7 +362,10 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       plyCount: game.plyCount,
       moves: game.moves,
     });
-  }
+  };
+
+  games.forEach(game => mergeGame(game, false));
+  laterGames.forEach(game => mergeGame(game, true));
 
   if (problems.length) {
     return { ...nothing, problems };

@@ -440,6 +440,85 @@ describe('mergePgnGames', () => {
     expect(result.sections).toEqual([]);
   });
 
+  describe('with a section that plays two games a round', () => {
+    // Each pairing of the three-round section meets again in rounds 4 to 6
+    const doubleRound = (): Tournament => {
+      const championship = tournament();
+      return {
+        ...championship,
+        sections: [{ ...championship.sections[0], isDoubleRound: true }],
+      };
+    };
+
+    it("should add a pairing's second game to its round", () => {
+      const result = mergePgnGames(doubleRound(), [
+        pgnGame({
+          Round: '4',
+          White: 'White, Boris',
+          Black: 'Black, Anna',
+          Result: '1/2-1/2',
+        }),
+      ]);
+
+      expect(result.problems).toEqual([]);
+      const [anna, boris] = result.sections[0].entries;
+      expect(anna.rounds).toEqual([
+        {
+          round: 1,
+          outcome: 'game',
+          scores: [1, 0.5],
+          points: 1.5,
+          opponentRank: 2,
+          color: 'white',
+        },
+      ]);
+      expect(boris.rounds).toEqual([
+        expect.objectContaining({
+          round: 1,
+          scores: [0, 0.5],
+          points: 0.5,
+          color: 'black',
+        }),
+      ]);
+      expect(anna.score).toBe(1.5);
+      expect(result.games).toEqual([expect.objectContaining({ round: '4' })]);
+    });
+
+    it('should take a second game listed before its first', () => {
+      const result = mergePgnGames(doubleRound(), [
+        pgnGame({
+          Round: '5',
+          White: 'Bell, Jeffrey',
+          Black: 'Black, Anna',
+          Result: '0-1',
+        }),
+        pgnGame({ Round: '2' }),
+      ]);
+
+      expect(result.problems).toEqual([]);
+      const [anna] = result.sections[0].entries;
+      expect(anna.rounds[1]).toEqual(
+        expect.objectContaining({ round: 2, scores: [1, 1], points: 2, color: 'white' }),
+      );
+    });
+
+    it('should refuse a second game whose first game is not recorded', () => {
+      const result = mergePgnGames(doubleRound(), [pgnGame({ Round: '6' })]);
+
+      expect(result.problems).toEqual([
+        'The round 6 game between Black, Anna and Bell, Jeffrey is the second game of round 3, whose first game is not recorded.',
+      ]);
+    });
+
+    it("should refuse a game past the section's second round of games", () => {
+      const result = mergePgnGames(doubleRound(), [pgnGame({ Round: '7' })]);
+
+      expect(result.problems).toEqual([
+        "The round 7 game between Black, Anna and Bell, Jeffrey is from a round past the section's last.",
+      ]);
+    });
+  });
+
   it('should name a game that appears more than once', () => {
     const result = mergePgnGames(tournament(), [pgnGame({}), pgnGame({})]);
 
