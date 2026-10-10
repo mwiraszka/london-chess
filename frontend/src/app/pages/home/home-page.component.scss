@@ -71,6 +71,14 @@
         @include respond-to('lt-md') {
           max-height: 250px;
         }
+
+        // Beside the welcome card the row takes that card's height, and the table fills
+        // whatever the section has left of it, scrolling the rest, adding none of its own
+        @include respond-to('gt-xl') {
+          flex-grow: 1;
+          height: 0;
+          max-height: none;
+        }
       }
     }
 
