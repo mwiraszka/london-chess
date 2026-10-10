@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { RouterLink, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
 import { MOCK_UPCOMING_SUMMARY } from '@app/mocks/tournaments.mock';
 import { TournamentSummary } from '@app/models';
@@ -29,10 +29,7 @@ describe('TournamentRegistrationsComponent', () => {
   };
 
   const cards = () =>
-    queryAll(
-      fixture.debugElement,
-      '.registrations:not(.registrations--reserve) lcc-tournament-card',
-    );
+    queryAll(fixture.debugElement, '.registrations lcc-tournament-card');
   const namesOnCards = () =>
     cards().map(card => card.componentInstance.summary()?.name ?? null);
 
@@ -77,17 +74,11 @@ describe('TournamentRegistrationsComponent', () => {
     expect(namesOnCards()).toEqual(['Under Way']);
   });
 
-  it('should fall back to one large way into the tournaments when none take registrations', () => {
+  it('should hide itself when none take registrations', () => {
     render([summary({ registrationOpens: null, registrationCloses: null })]);
 
-    const button = query(fixture.debugElement, '.stack > .register-button');
-
     expect(cards()).toHaveLength(0);
-    expect(
-      query(fixture.debugElement, '.registrations--reserve').attributes['aria-hidden'],
-    ).toBe('true');
-    expect(button.nativeElement.textContent.trim()).toBe('Register for a tournament');
-    expect(button.injector.get(RouterLink).urlTree?.toString()).toBe('/tournaments');
+    expect(fixture.nativeElement.hidden).toBe(true);
   });
 
   it('should hold the place of a tournament card while they load', () => {
@@ -97,6 +88,6 @@ describe('TournamentRegistrationsComponent', () => {
 
     expect(reserve.attributes['aria-busy']).toBe('true');
     expect(query(reserve, 'lcc-tournament-card').componentInstance.summary()).toBeNull();
-    expect(query(fixture.debugElement, '.stack > .register-button')).toBeNull();
+    expect(fixture.nativeElement.hidden).toBe(false);
   });
 });

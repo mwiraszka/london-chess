@@ -1,6 +1,8 @@
 // The default look's fonts, served from the site so the first page can preload them
 // (see index.html). Optional display keeps a page from reflowing when a font arrives
 // after it has been drawn: the metric-matched fallback stays for that visit instead.
+// They are cached for a year without revalidating (see vercel.json), so a changed font
+// needs a new file name.
 
 @font-face {
   font-family: 'DM Sans';
