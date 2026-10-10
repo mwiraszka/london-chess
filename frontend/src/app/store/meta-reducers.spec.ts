@@ -9,6 +9,8 @@ import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, User } from '@app/models';
 
+import * as AppActions from './app/app.actions';
+import { initialState as appInitialState } from './app/app.reducer';
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import * as AuthActions from './auth/auth.actions';
 import {
@@ -31,6 +33,7 @@ import {
   MetaState,
   actionLogMetaReducer,
   clearRecordsOnAccessLossMetaReducer,
+  clearRecordsOnDatasetReplacedMetaReducer,
   hydrationMetaReducer,
   metaReducers,
   persistStateMetaReducer,
@@ -799,6 +802,38 @@ describe('Meta Reducers', () => {
 
     it('should keep cached records while the user is still an admin', () => {
       const result = run(stateHolding(admin), admin);
+
+      expect(result.articlesState?.lastHomePageFetch).toBe('2026-01-01');
+      expect(result.membersState?.totalCount).toBe(56);
+    });
+  });
+
+  describe('clearRecordsOnDatasetReplacedMetaReducer', () => {
+    const run = (action: Action): MetaState => {
+      const reducer = vi.fn(
+        (nextState: MetaState | undefined) => nextState ?? {},
+      ) as ActionReducer<MetaState, Action<string>>;
+
+      return clearRecordsOnDatasetReplacedMetaReducer(reducer)(
+        {
+          appState: { ...appInitialState, isDarkMode: true },
+          articlesState: { ...articlesInitialState, lastHomePageFetch: '2026-01-01' },
+          membersState: { ...membersInitialState, totalCount: 56 },
+        },
+        action,
+      );
+    };
+
+    it('should drop every cached record once the database is replaced', () => {
+      const result = run(AppActions.datasetReplaced());
+
+      expect(result.articlesState).toEqual(articlesInitialState);
+      expect(result.membersState).toEqual(membersInitialState);
+      expect(result.appState?.isDarkMode).toBe(true);
+    });
+
+    it('should keep cached records otherwise', () => {
+      const result = run(AppActions.datasetCheckRequested());
 
       expect(result.articlesState?.lastHomePageFetch).toBe('2026-01-01');
       expect(result.membersState?.totalCount).toBe(56);

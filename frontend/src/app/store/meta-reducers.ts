@@ -7,6 +7,7 @@ import { isPresignedUrlExpired } from '@app/utils';
 import { environment } from '@env';
 
 import { version as currentVersion } from '../../../package.json';
+import * as AppActions from './app/app.actions';
 import { AppState, initialState as appInitialState } from './app/app.reducer';
 import {
   ArticlesState,
@@ -321,6 +322,17 @@ export function persistStateMetaReducer(
   };
 }
 
+function withoutRecords(state: MetaState): MetaState {
+  return {
+    ...state,
+    articlesState: articlesInitialState,
+    eventsState: eventsInitialState,
+    imagesState: imagesInitialState,
+    membersState: membersInitialState,
+    tournamentsState: tournamentsInitialState,
+  };
+}
+
 /**
  * Drops every cached record and draft when a session ends or loses its admin
  * rights, so member details and unsaved edits do not outlive the session in
@@ -335,22 +347,28 @@ export function clearRecordsOnAccessLossMetaReducer(
       const previous = state.authState?.user ?? null;
 
       if (previous && (!user || (previous.isAdmin && !user.isAdmin))) {
-        return reducer(
-          {
-            ...state,
-            articlesState: articlesInitialState,
-            eventsState: eventsInitialState,
-            imagesState: imagesInitialState,
-            membersState: membersInitialState,
-            tournamentsState: tournamentsInitialState,
-          },
-          action,
-        );
+        return reducer(withoutRecords(state), action);
       }
     }
 
     return reducer(state, action);
   };
+}
+
+/**
+ * Drops every cached record when the database it came from has since been replaced,
+ * so a record the replacement removed never shows from a saved copy.
+ */
+export function clearRecordsOnDatasetReplacedMetaReducer(
+  reducer: ActionReducer<MetaState>,
+): ActionReducer<MetaState> {
+  return (state, action) =>
+    reducer(
+      state && action.type === AppActions.datasetReplaced.type
+        ? withoutRecords(state)
+        : state,
+      action,
+    );
 }
 
 /**
@@ -405,4 +423,5 @@ export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compa
   persistStateMetaReducer,
   hydrationMetaReducer,
   clearRecordsOnAccessLossMetaReducer,
+  clearRecordsOnDatasetReplacedMetaReducer,
 ]);

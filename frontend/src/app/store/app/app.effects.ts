@@ -1,12 +1,14 @@
 import { ToastService } from '@eagami/ui';
-import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { Actions, OnInitEffects, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
-import { Store } from '@ngrx/store';
-import { filter, map, tap } from 'rxjs/operators';
+import { Action, Store } from '@ngrx/store';
+import { filter, map, switchMap, tap } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 
+import { DATASET_STORAGE_KEY } from '@app/constants/storage';
 import { LccError, MemberEmail, Toast } from '@app/models';
+import { DatasetApiService } from '@app/services/api/dataset-api.service';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as EventsActions from '@app/store/events/events.actions';
@@ -15,6 +17,7 @@ import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import * as NavActions from '@app/store/nav/nav.actions';
 import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
+import { RELOAD_PAGE } from '@app/tokens';
 import { isDefined } from '@app/utils';
 import moment from '@app/utils/datetime/moment';
 
@@ -102,8 +105,10 @@ const ACTIONS_TO_NOTIFY = [
 type NotifyAction = ReturnType<(typeof ACTIONS_TO_NOTIFY)[number]>;
 
 @Injectable()
-export class AppEffects {
+export class AppEffects implements OnInitEffects {
   private readonly actions$ = inject(Actions);
+  private readonly datasetApi = inject(DatasetApiService);
+  private readonly reloadPage = inject(RELOAD_PAGE);
   private readonly store = inject(Store);
   private readonly toastService = inject(ToastService);
 
@@ -136,6 +141,37 @@ export class AppEffects {
     GamesActions.fetchGameFailed,
     MembersActions.fetchMemberFailed,
   ] as const;
+
+  // A sync replaces the development database wholesale, so the records a development or
+  // preview browser saved before it are dropped, and the page starts over to fetch them
+  dropRecordsFromReplacedDataset$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AppActions.datasetCheckRequested),
+      filter(() => environment.watchesDataset),
+      switchMap(() => this.datasetApi.getDataset()),
+      map(({ data }) => data.replacedAt),
+      filter(replacedAt => replacedAt !== localStorage.getItem(DATASET_STORAGE_KEY)),
+      tap(replacedAt => {
+        if (replacedAt === null) {
+          localStorage.removeItem(DATASET_STORAGE_KEY);
+        } else {
+          localStorage.setItem(DATASET_STORAGE_KEY, replacedAt);
+        }
+      }),
+      map(() => AppActions.datasetReplaced()),
+    ),
+  );
+
+  reloadOnDatasetReplaced$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AppActions.datasetReplaced),
+        // Queued behind persistStateMetaReducer's save of the emptied slices, so the
+        // reloaded page cannot hydrate the dropped records
+        tap(() => queueMicrotask(this.reloadPage)),
+      ),
+    { dispatch: false },
+  );
 
   notify$ = createEffect(
     () => {
@@ -177,6 +213,10 @@ export class AppEffects {
       map(() => AppActions.upcomingEventBannerReinstated()),
     ),
   );
+
+  public ngrxOnInitEffects(): Action {
+    return AppActions.datasetCheckRequested();
+  }
 
   // A 404 on a single record is handled by sending the visitor home, not by a toast
   private isMissingRecord(action: NotifyAction): boolean {

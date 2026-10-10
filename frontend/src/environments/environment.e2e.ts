@@ -7,4 +7,5 @@ export const environment = {
   lccApiBaseUrl: 'http://localhost:4300/v1',
   sentryDsn: '',
   isPreview: false,
+  watchesDataset: false,
 };

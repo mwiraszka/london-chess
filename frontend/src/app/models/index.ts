@@ -20,6 +20,7 @@ export type { Club, ClubDocument } from './club.model';
 export type { Id, IsoDate, Pixels, Url } from './core.model';
 export type { ClubDateTime, DateFormat, MonthStyle } from './date-format.model';
 export type { BasicDialogResult, Dialog } from './dialog.model';
+export type { Dataset } from './dataset.model';
 export type { DbCollection } from './db-collection.model';
 export type { EditorPage } from './editor-page.model';
 export type { Entity, EntityType } from './entity.model';

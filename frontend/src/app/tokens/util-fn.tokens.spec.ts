@@ -14,6 +14,7 @@ import {
   isTouchDevice,
   parseCsv,
   parseError,
+  reloadPage,
   setPaginationParams,
 } from '@app/utils';
 
@@ -30,6 +31,7 @@ import {
   IS_TOUCH_DEVICE,
   PARSE_CSV,
   PARSE_ERROR,
+  RELOAD_PAGE,
   SET_PAGINATION_PARAMS,
 } from './util-fn.tokens';
 
@@ -48,6 +50,7 @@ describe('util function tokens', () => {
     ['BUILD_IMAGES_FORM_DATA', BUILD_IMAGES_FORM_DATA, buildImagesFormData],
     ['DATA_URL_TO_FILE', DATA_URL_TO_FILE, dataUrlToFile],
     ['IS_LCC_ERROR', IS_LCC_ERROR, isLccError],
+    ['RELOAD_PAGE', RELOAD_PAGE, reloadPage],
   ])('%s provides the matching utility by default', (_name, token, utilFn) => {
     const provided = TestBed.inject(token);
 

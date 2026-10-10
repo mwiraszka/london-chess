@@ -26,3 +26,7 @@ export const desktopViewToggled = createAction('[App] Desktop view toggled');
 export const wideViewToggled = createAction('[App] Wide view toggled');
 
 export const refreshAppRequested = createAction('[App] Refresh app requested');
+
+export const datasetCheckRequested = createAction('[App] Dataset check requested');
+
+export const datasetReplaced = createAction('[App] Dataset replaced');

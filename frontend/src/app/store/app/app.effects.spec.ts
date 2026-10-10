@@ -2,15 +2,17 @@ import { ToastService } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject, of } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 
+import { DATASET_STORAGE_KEY } from '@app/constants/storage';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { LccError, MemberEmail, Toast } from '@app/models';
+import { DatasetApiService } from '@app/services/api/dataset-api.service';
 import { ArticlesActions } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions } from '@app/store/events';
@@ -19,6 +21,7 @@ import { ImagesActions } from '@app/store/images';
 import { MembersActions } from '@app/store/members';
 import { NavActions } from '@app/store/nav';
 import { TournamentsActions } from '@app/store/tournaments';
+import { RELOAD_PAGE } from '@app/tokens';
 
 import { environment } from '@env';
 
@@ -32,6 +35,8 @@ describe('AppEffects', () => {
   let actions$: ReplaySubject<Action>;
   let store: MockStore;
   let toastService: Mocked<ToastService>;
+  let datasetApi: Mocked<DatasetApiService>;
+  let reloadPage: Mock<() => void>;
 
   const mockError: LccError = {
     name: 'LCCError',
@@ -75,12 +80,16 @@ describe('AppEffects', () => {
         AppEffects,
         provideMockActions(() => actions$),
         { provide: ToastService, useValue: { show: vi.fn() } },
+        { provide: DatasetApiService, useValue: { getDataset: vi.fn() } },
+        { provide: RELOAD_PAGE, useValue: vi.fn() },
         provideMockStore(),
       ],
     });
 
     effects = TestBed.inject(AppEffects);
     toastService = TestBed.inject(ToastService) as Mocked<ToastService>;
+    datasetApi = TestBed.inject(DatasetApiService) as Mocked<DatasetApiService>;
+    reloadPage = TestBed.inject(RELOAD_PAGE) as Mock<() => void>;
     store = TestBed.inject(MockStore);
     actions$ = new ReplaySubject<Action>(1);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -89,6 +98,65 @@ describe('AppEffects', () => {
   afterEach(() => {
     store.resetSelectors();
     vi.useRealTimers();
+  });
+
+  describe('dataset check', () => {
+    const replacedAt = '2026-10-11T08:00:00.000Z';
+
+    beforeEach(() => {
+      localStorage.clear();
+      datasetApi.getDataset.mockReturnValue(of({ data: { replacedAt } }));
+    });
+
+    it('should check the dataset as the effects start', () => {
+      expect(effects.ngrxOnInitEffects()).toEqual(AppActions.datasetCheckRequested());
+    });
+
+    it('should drop saved records from a database since replaced', () => {
+      localStorage.setItem(DATASET_STORAGE_KEY, '2026-09-01T08:00:00.000Z');
+      actions$.next(AppActions.datasetCheckRequested());
+
+      const results = collect(effects.dropRecordsFromReplacedDataset$);
+
+      expect(results).toEqual([AppActions.datasetReplaced()]);
+      expect(localStorage.getItem(DATASET_STORAGE_KEY)).toBe(replacedAt);
+    });
+
+    it('should drop records saved before the database was first replaced', () => {
+      actions$.next(AppActions.datasetCheckRequested());
+
+      const results = collect(effects.dropRecordsFromReplacedDataset$);
+
+      expect(results).toEqual([AppActions.datasetReplaced()]);
+    });
+
+    it('should keep saved records from the current database', () => {
+      localStorage.setItem(DATASET_STORAGE_KEY, replacedAt);
+      actions$.next(AppActions.datasetCheckRequested());
+
+      const results = collect(effects.dropRecordsFromReplacedDataset$);
+
+      expect(results).toEqual([]);
+    });
+
+    it('should keep saved records from a database never replaced', () => {
+      datasetApi.getDataset.mockReturnValue(of({ data: { replacedAt: null } }));
+      actions$.next(AppActions.datasetCheckRequested());
+
+      const results = collect(effects.dropRecordsFromReplacedDataset$);
+
+      expect(results).toEqual([]);
+    });
+
+    it('should reload the page once the dropped records are saved', async () => {
+      actions$.next(AppActions.datasetReplaced());
+
+      collect(effects.reloadOnDatasetReplaced$);
+      expect(reloadPage).not.toHaveBeenCalled();
+      await Promise.resolve();
+
+      expect(reloadPage).toHaveBeenCalledOnce();
+    });
   });
 
   describe('notify$', () => {
