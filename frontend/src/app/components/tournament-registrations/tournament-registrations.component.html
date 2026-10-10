@@ -1,35 +1,19 @@
-<div class="stack">
-  <!-- Holds the room of one tournament's card whatever the list turns out to hold -->
+@if (isLoading()) {
   <ul
     class="registrations"
-    [attr.aria-busy]="isLoading() || null"
-    [attr.aria-hidden]="!isLoading() || null"
-    [class.registrations--reserve]="!isLoading()">
+    aria-busy="true">
     <li>
       <lcc-tournament-card [summary]="null" />
     </li>
   </ul>
-
-  @if (!isLoading()) {
-    @if (registrations().length) {
-      <ul
-        class="registrations"
-        aria-label="Tournament registration">
-        @for (summary of registrations(); track summary.number) {
-          <li>
-            <lcc-tournament-card [summary]="summary" />
-          </li>
-        }
-      </ul>
-    } @else {
-      <a
-        eaButtonLink
-        class="register-button"
-        routerLink="/tournaments"
-        size="lg"
-        [uppercase]="true">
-        Register for a tournament
-      </a>
+} @else if (registrations().length) {
+  <ul
+    class="registrations"
+    aria-label="Tournament registration">
+    @for (summary of registrations(); track summary.number) {
+      <li>
+        <lcc-tournament-card [summary]="summary" />
+      </li>
     }
-  }
-</div>
+  </ul>
+}

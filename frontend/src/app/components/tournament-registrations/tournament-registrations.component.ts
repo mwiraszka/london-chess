@@ -1,7 +1,4 @@
-import { ButtonLinkComponent } from '@eagami/ui';
-
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import { TournamentCardComponent } from '@app/components/tournament-card/tournament-card.component';
 import { TournamentSummary } from '@app/models';
@@ -9,14 +6,17 @@ import { clubToday, registrationStatus, tournamentTiming } from '@app/utils';
 
 /**
  * The tournaments still to come or under way that take registrations online, soonest
- * first, and otherwise one way into the tournaments.
+ * first, and nothing at all when none do.
  */
 @Component({
   selector: 'lcc-tournament-registrations',
   templateUrl: './tournament-registrations.component.html',
   styleUrl: './tournament-registrations.component.scss',
-  imports: [ButtonLinkComponent, RouterLink, TournamentCardComponent],
+  imports: [TournamentCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[hidden]': '!isLoading() && !registrations().length',
+  },
 })
 export class TournamentRegistrationsComponent {
   public readonly summaries = input.required<TournamentSummary[]>();
