@@ -88,6 +88,15 @@ describe('formatDate', () => {
     );
   });
 
+  it('transforms valid date strings correctly when `format` is set to "short at-time"', () => {
+    expect(formatDate('2000-01-01', 'short at-time')).toBe(
+      'Sat, Jan 1, 2000 at 12:00 AM',
+    );
+    expect(formatDate('January 15, 1991', 'short at-time')).toBe(
+      'Tue, Jan 15, 1991 at 12:00 AM',
+    );
+  });
+
   it('transforms valid date strings correctly when `format` is set to "short no-time"', () => {
     expect(formatDate('1', 'short no-time')).toBe('Mon, Jan 1, 2001');
     expect(formatDate('1999', 'short no-time')).toBe('Fri, Jan 1, 1999');

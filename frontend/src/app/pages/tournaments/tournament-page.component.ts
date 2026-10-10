@@ -523,9 +523,9 @@ export class TournamentPageComponent implements OnInit {
   ): string {
     switch (status) {
       case 'open':
-        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short')}.`;
+        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short at-time')}.`;
       case 'not-open':
-        return `Registration opens ${formatDate(registrationOpens ?? undefined, 'short')}.`;
+        return `Registration opens on ${formatDate(registrationOpens ?? undefined, 'short at-time')}.`;
       case 'closed':
         return 'Registration has closed.';
       default:

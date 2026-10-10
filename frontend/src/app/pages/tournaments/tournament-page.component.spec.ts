@@ -558,7 +558,7 @@ describe('TournamentPageComponent', () => {
       query(fixture.debugElement, '.log-in-button').triggerEventHandler('clicked');
 
       expect(queryTextContent(fixture.debugElement, '.registration__status')).toMatch(
-        /^Registration is open until /,
+        /^Registration is open until \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M\.$/,
       );
       expect(TestBed.inject(AuthDrawerService).openLogin).toHaveBeenCalled();
     });
@@ -618,7 +618,9 @@ describe('TournamentPageComponent', () => {
 
       openUpcoming({ registrationCloses: '2026-01-02T12:00:00.000Z' });
 
-      expect(beforeOpening).toMatch(/^Registration opens /);
+      expect(beforeOpening).toMatch(
+        /^Registration opens on \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M\.$/,
+      );
       expect(registerBeforeOpening).toBeFalsy();
       expect(queryTextContent(fixture.debugElement, '.registration__status')).toBe(
         'Registration has closed.',
