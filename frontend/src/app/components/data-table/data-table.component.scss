@@ -36,8 +36,10 @@ ea-data-table {
   }
 }
 
-// The header is moved over the rows as the page scrolls, so it paints above them
-:host ::ng-deep .ea-data-table__head {
+// The header is moved over the rows as the page scrolls, so it paints above them. Its
+// cells carry it, since WebKit leaves a table's header group unpositioned, where no
+// z-index can lift it over the rows
+:host ::ng-deep .ea-data-table__cell--header {
   z-index: 1;
   position: relative;
 }
@@ -59,7 +61,7 @@ ea-data-table {
 // device pixel is drawn blended with the rows beneath, which reads as a hairline gap,
 // and tucking the edge out of view keeps that pixel inside the header's own colour
 @supports (animation-timeline: view()) {
-  :host ::ng-deep .ea-data-table__head {
+  :host ::ng-deep .ea-data-table__cell--header {
     animation: lcc-data-table-head-follow linear both;
     animation-timeline: --lcc-data-table;
     animation-range: exit-crossing calc(var(--border-width-thin, 1px) + 1px) exit-crossing
