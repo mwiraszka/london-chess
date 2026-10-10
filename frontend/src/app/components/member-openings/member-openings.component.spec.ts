@@ -92,7 +92,7 @@ describe('MemberOpeningsComponent', () => {
 
     expect(charts()).toHaveLength(1);
     expect(queryTextContent(fixture.debugElement, '.openings__empty')).toBe(
-      'No games as Black in the archives yet.',
+      'Openings as Black will show once this member has games as Black in the archives.',
     );
   });
 
@@ -101,7 +101,7 @@ describe('MemberOpeningsComponent', () => {
 
     expect(query(fixture.debugElement, '.openings')).toBeFalsy();
     expect(queryTextContent(fixture.debugElement, '.openings__empty')).toBe(
-      'Openings show once a member has games in the archives.',
+      'This member has no games in the archives.',
     );
   });
 
