@@ -30,7 +30,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
@@ -141,7 +141,6 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
     MemberLinkComponent,
     PageHeaderComponent,
     PaginatorComponent,
-    RouterLink,
     SkeletonComponent,
     TooltipDirective,
     TournamentCardComponent,
