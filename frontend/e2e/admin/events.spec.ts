@@ -15,13 +15,15 @@ import {
   uniqueName,
 } from './session';
 
+// The search refreshes the list after a pause in typing, so the event is only taken once
+// the list holds it alone, rather than from the list as it stood before the search
 async function findInList(page: Page, title: string) {
   await page.goto('/schedule');
   await setSwitch(page, 'Calendar view', false);
   await page.getByRole('textbox', { name: 'Search' }).fill(title);
-  return page
-    .locator('lcc-events-table')
-    .getByRole('heading', { name: title, exact: true });
+  const table = page.locator('lcc-events-table');
+  await expect(table.getByRole('heading', { level: 3 })).toHaveCount(1);
+  return table.getByRole('heading', { name: title, exact: true });
 }
 
 test.describe('managing events', () => {
