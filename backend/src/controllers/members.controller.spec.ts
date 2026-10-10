@@ -3,11 +3,13 @@ import { Types } from 'mongoose';
 import request from 'supertest';
 
 import { app } from '../app';
+import { CounterModel } from '../models/counter.model';
 import { MemberModel } from '../models/member.model';
 import { sendEmail } from '../services/email.service';
 import { bearer, clerkClient } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import {
+  MODIFICATION_INFO,
   createAdmin,
   createMember,
   memberAccount,
@@ -145,7 +147,12 @@ describe('members routes', () => {
       await createMember({
         number: 7,
         account: memberAccount(),
-        preferences: { showYearOfBirth: true },
+        preferences: {
+          showYearOfBirth: true,
+          brand: 'modern',
+          notifyRatingChanges: true,
+          notifyScheduleChanges: true,
+        },
       });
 
       const response = await request(app).get('/v1/public/members/7');
@@ -270,22 +277,16 @@ describe('members routes', () => {
       expect(clerkClient.users.createUser).not.toHaveBeenCalled();
     });
 
-    it('should reject invalid members and modification info', async () => {
+    it('should reject an invalid member', async () => {
       await createAdmin(ADMIN);
 
-      const invalidMember = await request(app)
+      const response = await request(app)
         .post('/v1/admin/members')
         .set('Authorization', bearer(ADMIN))
         .send({ ...memberFields(), isActive: 'yes' });
-      const invalidInfo = await request(app)
-        .post('/v1/admin/members')
-        .set('Authorization', bearer(ADMIN))
-        .send({ ...memberFields(), modificationInfo: {} });
 
-      expect(invalidMember.status).toBe(400);
-      expect(invalidMember.body.message).toMatch(/^Invalid member:/);
-      expect(invalidInfo.status).toBe(400);
-      expect(invalidInfo.body.message).toMatch(/^Invalid member modification info:/);
+      expect(response.status).toBe(400);
+      expect(response.body.message).toMatch(/^Invalid member:/);
     });
 
     it('should only send a welcome email from the site', async () => {
@@ -303,7 +304,7 @@ describe('members routes', () => {
 
     it('should create an account, number the member and email their login details', async () => {
       await createAdmin(ADMIN);
-      await startMemberNumbers(12);
+      await startMemberNumbers(120);
 
       const response = await request(app)
         .post('/v1/admin/members?notify=true')
@@ -312,7 +313,7 @@ describe('members routes', () => {
         .send(memberFields());
 
       expect(response.status).toBe(201);
-      expect(response.body.data).toMatchObject({ number: 12, hasAccount: true });
+      expect(response.body.data).toMatchObject({ number: 120, hasAccount: true });
       const saved = await readMember(response.body.data.id);
       expect(saved.account?.clerkUserId).toBe('user_new');
       expect(saved.account?.temporaryPasswordHash).toMatch(/^[a-f\d]{64}$/);
@@ -325,7 +326,9 @@ describe('members routes', () => {
       expect(sendEmail).toHaveBeenCalledWith(
         'jane@example.com',
         expect.objectContaining({
-          text: expect.stringContaining(`${SITE}/members/12`),
+          text: expect.stringMatching(
+            new RegExp(`${SITE}/account[\\s\\S]*${SITE}/members/12`),
+          ),
         }),
       );
     });
@@ -395,6 +398,7 @@ describe('members routes', () => {
 
     it('should name what could not be undone when a number cannot be assigned', async () => {
       await createAdmin(ADMIN);
+      vi.spyOn(CounterModel, 'findOneAndUpdate').mockRejectedValue(new Error('down'));
       clerkClient.users.deleteUser.mockRejectedValue(new Error('Clerk is down'));
 
       const response = await request(app)
@@ -423,6 +427,10 @@ describe('members routes', () => {
 
       expect(response.status).toBe(200);
       expect((await readMember(member._id)).city).toBe('Toronto');
+      expect((await readMember(member._id)).modificationInfo).toMatchObject({
+        createdBy: MODIFICATION_INFO.createdBy,
+        lastEditedBy: 'Ada Admin',
+      });
       expect(sendEmail).not.toHaveBeenCalled();
     });
 
@@ -494,6 +502,40 @@ describe('members routes', () => {
       );
     });
 
+    it('should leave rating changes out of the email to a member who turned them off', async () => {
+      await createAdmin(ADMIN);
+      const member = await createMember({
+        number: 5,
+        account: memberAccount(),
+        preferences: {
+          showYearOfBirth: false,
+          brand: 'modern',
+          notifyRatingChanges: false,
+          notifyScheduleChanges: true,
+        },
+      });
+
+      const ratingOnly = await request(app)
+        .put(`/v1/admin/members/${member._id}?notify=true`)
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(memberFields({ rating: '1550' }));
+      const emailsAfterRating = vi.mocked(sendEmail).mock.calls.length;
+      const withCity = await request(app)
+        .put(`/v1/admin/members/${member._id}?notify=true`)
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(memberFields({ rating: '1575', city: 'Woodstock' }));
+
+      expect(ratingOnly.status).toBe(200);
+      expect(withCity.status).toBe(200);
+      expect(emailsAfterRating).toBe(0);
+      expect(sendEmail).toHaveBeenCalledOnce();
+      const [, email] = vi.mocked(sendEmail).mock.calls[0];
+      expect(email.text).toContain('Woodstock');
+      expect(email.text).not.toContain('1575');
+    });
+
     it('should save an account holder quietly without notify', async () => {
       await createAdmin(ADMIN);
       const member = await createMember({ number: 5, account: memberAccount() });
@@ -532,7 +574,7 @@ describe('members routes', () => {
 
     it('should give a member without an account one when notified', async () => {
       await createAdmin(ADMIN);
-      await startMemberNumbers(20);
+      await startMemberNumbers(120);
       const member = await createMember();
 
       const response = await request(app)
@@ -543,7 +585,7 @@ describe('members routes', () => {
 
       expect(response.status).toBe(200);
       const saved = await readMember(member._id);
-      expect(saved).toMatchObject({ city: 'Toronto', number: 20 });
+      expect(saved).toMatchObject({ city: 'Toronto', number: 120 });
       expect(saved.account?.clerkUserId).toBe('user_new');
       expect(sendEmail).toHaveBeenCalledOnce();
     });
@@ -575,6 +617,7 @@ describe('members routes', () => {
     it('should restore the record when a new account cannot be numbered', async () => {
       await createAdmin(ADMIN);
       const member = await createMember();
+      vi.spyOn(CounterModel, 'findOneAndUpdate').mockRejectedValue(new Error('down'));
 
       const response = await request(app)
         .put(`/v1/admin/members/${member._id}?notify=true`)
@@ -647,11 +690,39 @@ describe('members routes', () => {
         unnotifiedMemberNames: [],
       });
       expect((await readMember(other._id)).rating).toBe('1300');
+      expect((await readMember(other._id)).modificationInfo).toMatchObject({
+        createdBy: MODIFICATION_INFO.createdBy,
+        lastEditedBy: 'Ada Admin',
+      });
       expect(sendEmail).toHaveBeenCalledOnce();
       expect(sendEmail).toHaveBeenCalledWith(
         'jane@example.com',
         expect.objectContaining({ subject: 'Your London Chess rating has been updated' }),
       );
+    });
+
+    it('should not email account holders who turned off rating emails', async () => {
+      await createAdmin(ADMIN);
+      const holder = await createMember({
+        number: 5,
+        account: memberAccount(),
+        preferences: {
+          showYearOfBirth: false,
+          brand: 'modern',
+          notifyRatingChanges: false,
+          notifyScheduleChanges: true,
+        },
+      });
+
+      const response = await request(app)
+        .put('/v1/admin/members')
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send([{ ...memberFields({ rating: '1550' }), id: holder._id.toString() }]);
+
+      expect(response.status).toBe(200);
+      expect((await readMember(holder._id)).rating).toBe('1550');
+      expect(sendEmail).not.toHaveBeenCalled();
     });
 
     it('should report account holders who could not be emailed', async () => {

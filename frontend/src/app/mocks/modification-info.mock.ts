@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { ModificationInfo } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 export const MOCK_MODIFICATION_INFOS: ModificationInfo[] = [
   {

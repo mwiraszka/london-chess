@@ -1,5 +1,4 @@
-import { pick } from 'lodash';
-import moment from 'moment-timezone';
+import { omit, pick } from 'lodash-es';
 
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import {
@@ -7,12 +6,15 @@ import {
   TOURNAMENT_FORM_DATA_PROPERTIES,
 } from '@app/constants/tournaments';
 import {
+  ModificationInfo,
   RegistrationStatus,
   Tournament,
   TournamentFormData,
+  TournamentInput,
   TournamentSummary,
   TournamentTiming,
 } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 export function clubToday(): string {
   return moment.tz(CLUB_TIME_ZONE).format('YYYY-MM-DD');
@@ -27,6 +29,20 @@ export function tournamentFormData(tournament: Tournament | null): TournamentFor
         games: null,
       }
     : INITIAL_TOURNAMENT_FORM_DATA;
+}
+
+// Drafts are kept between visits, so one an older version of the form saved can hold
+// fields the API no longer takes; only the form's own go out
+export function tournamentInput(
+  formData: TournamentFormData,
+  modificationInfo: ModificationInfo,
+): TournamentInput {
+  return {
+    ...pick(formData, TOURNAMENT_FORM_DATA_PROPERTIES),
+    sections: formData.sections,
+    games: formData.games,
+    modificationInfo,
+  };
 }
 
 export function registrationStatus(
@@ -71,8 +87,31 @@ export function tournamentTiming(
 
 // Members can withdraw up to the day the tournament starts, while no results are in
 export function canWithdraw(
-  { date, sections }: Pick<Tournament, 'date' | 'sections'>,
+  { date, playerCount }: Pick<TournamentSummary, 'date' | 'playerCount'>,
   today: string = clubToday(),
 ): boolean {
-  return date >= today && sections.every(({ entries }) => !entries.length);
+  return date >= today && playerCount === 0;
+}
+
+// The tournament as the list of tournaments summarises it
+export function summarizeTournament(tournament: Tournament): TournamentSummary {
+  return {
+    ...omit(tournament, ['sections', 'modificationInfo']),
+    sections: tournament.sections.map(
+      ({ name, ratingBand, roundCount, entries, games }) => ({
+        name,
+        ratingBand,
+        roundCount,
+        entryCount: entries.length,
+        hasRounds: entries.some(({ rounds }) => rounds.length),
+        gameCount: games.length,
+      }),
+    ),
+    // A player entered in two sections is still one player
+    playerCount: new Set(
+      tournament.sections.flatMap(({ entries }) =>
+        entries.map(({ player }) => player.id),
+      ),
+    ).size,
+  };
 }

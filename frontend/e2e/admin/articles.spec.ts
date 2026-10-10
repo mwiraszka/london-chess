@@ -14,7 +14,7 @@ import {
 } from './session';
 
 async function openNewArticleForm(page: Page): Promise<void> {
-  await page.goto('/news');
+  await page.goto('/articles');
   await page.getByRole('link', { name: 'Create an article' }).click();
   await expect(page).toHaveURL(/\/article\/add$/);
 }
@@ -50,7 +50,7 @@ test.describe('managing articles', () => {
     await confirm(page, 'Publish');
 
     expect((await published).status()).toBe(201);
-    await page.goto('/news');
+    await page.goto('/articles');
     await page.getByRole('textbox', { name: 'Search' }).fill(title);
     const card = page.getByRole('link', { name: new RegExp(title) });
     await expect(card).toBeVisible();
@@ -77,7 +77,7 @@ test.describe('managing articles', () => {
     await page.goto(`/article/view/${articleId}`);
     await expect(page.getByRole('heading', { name: `${title} (updated)` })).toBeVisible();
 
-    await page.goto('/news');
+    await page.goto('/articles');
     await page.getByRole('textbox', { name: 'Search' }).fill(title);
     const updatedCard = page.getByRole('link', {
       name: new RegExp(`${title} \\(updated\\)`),

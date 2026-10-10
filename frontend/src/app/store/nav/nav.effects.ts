@@ -8,7 +8,7 @@ import { distinctUntilChanged, filter, map, tap } from 'rxjs/operators';
 import { Injectable, inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 
-import * as AppActions from '@app/store/app/app.actions';
+import { Entity } from '@app/models';
 import * as ArticlesActions from '@app/store/articles/articles.actions';
 import * as EventsActions from '@app/store/events/events.actions';
 import * as GamesActions from '@app/store/games/games.actions';
@@ -114,14 +114,14 @@ export class NavEffects {
     ),
   );
 
-  navigateToNews$ = createEffect(() =>
+  navigateToArticles$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
         ArticlesActions.cancelSelected,
         ArticlesActions.publishArticleSucceeded,
         ArticlesActions.updateArticleSucceeded,
       ),
-      map(() => NavActions.navigationRequested({ path: 'news' })),
+      map(() => NavActions.navigationRequested({ path: 'articles' })),
     ),
   );
 
@@ -169,14 +169,14 @@ export class NavEffects {
     ),
   );
 
-  navigateToNewsAfterArticleDeletion$ = createEffect(() =>
+  navigateToArticlesAfterArticleDeletion$ = createEffect(() =>
     this.actions$.pipe(
       ofType(ArticlesActions.deleteArticleSucceeded),
       concatLatestFrom(() => this.store.select(NavSelectors.selectCurrentPath)),
       filter(
         ([{ articleId }, currentPath]) => currentPath === `/article/view/${articleId}`,
       ),
-      map(() => NavActions.navigationRequested({ path: 'news' })),
+      map(() => NavActions.navigationRequested({ path: 'articles' })),
     ),
   );
 
@@ -199,15 +199,15 @@ export class NavEffects {
       // A fragment moves within a record rather than choosing a different one
       map(({ payload }) => payload.event.url.split('#')[0]),
       distinctUntilChanged(),
-      filter(requestedPath => isEntity(requestedPath.split('/').slice(1)[0])),
-      map((requestedPath): Action | null => {
-        const [entity, controlMode, encodedId] = requestedPath.split('/').slice(1);
+      map(requestedPath => requestedPath.split('/').slice(1)),
+      filter((segments): segments is [Entity, ...string[]] => isEntity(segments[0])),
+      map(([entity, controlMode, encodedId]): Action | null => {
         const id = encodedId ? decodeURIComponent(encodedId) : null;
 
         switch (entity) {
           case 'album':
             if (controlMode === 'add' && !isDefined(id)) {
-              return ImagesActions.createAnAlbumSelected();
+              return null;
             } else if (['edit', 'view'].includes(controlMode) && isString(id)) {
               return ImagesActions.fetchAlbumThumbnailsRequested({ album: id });
             }
@@ -215,18 +215,18 @@ export class NavEffects {
 
           case 'article':
             if (controlMode === 'add' && !isDefined(id)) {
-              return ArticlesActions.createAnArticleSelected();
+              return null;
             } else if (controlMode === 'view' && isCollectionId(id)) {
               // The route's guard fetches the article
               return null;
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return ArticlesActions.fetchArticleRequested({ articleId: id });
             }
-            return NavActions.navigationRequested({ path: 'news' });
+            return NavActions.navigationRequested({ path: 'articles' });
 
           case 'event':
             if (controlMode === 'add' && !isDefined(id)) {
-              return EventsActions.addAnEventSelected();
+              return null;
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return EventsActions.fetchEventRequested({ eventId: id });
             }
@@ -234,7 +234,7 @@ export class NavEffects {
 
           case 'image':
             if (controlMode === 'add' && !isDefined(id)) {
-              return ImagesActions.addAnImageSelected();
+              return null;
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return ImagesActions.fetchMainImageRequested({ imageId: id });
             }
@@ -242,7 +242,7 @@ export class NavEffects {
 
           case 'member':
             if (controlMode === 'add' && !isDefined(id)) {
-              return MembersActions.addAMemberSelected();
+              return null;
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return MembersActions.fetchMemberRequested({ memberId: id });
             }
@@ -257,14 +257,6 @@ export class NavEffects {
               return null;
             }
             return NavActions.navigationRequested({ path: 'tournaments' });
-
-          default:
-            return AppActions.unexpectedErrorOccurred({
-              error: {
-                name: 'LCCError',
-                message: `Unknown entity provided for entity route navigation: ${entity}`,
-              },
-            });
         }
       }),
       filter(isDefined),
@@ -276,13 +268,15 @@ export class NavEffects {
       ofType(routerNavigatedAction),
       map(({ payload }) => payload.event.url),
       concatLatestFrom(() => this.store.select(NavSelectors.selectCurrentPath)),
-      filter(([requestedPath, currentPath]) => {
-        const currentPathPage = currentPath ? currentPath.split('/').slice(1)[0] : null;
-        const requestedPathPage = requestedPath.split('/').slice(1)[0];
-        return isEntity(currentPathPage) && requestedPathPage !== currentPathPage;
-      }),
-      map(([, currentPath]) => {
-        const [entity, , idWithFragment] = currentPath!.split('/').slice(1);
+      map(([requestedPath, currentPath]) => ({
+        requestedPage: requestedPath.split('/').slice(1)[0],
+        current: currentPath ? currentPath.split('/').slice(1) : [],
+      })),
+      filter(
+        (paths): paths is { requestedPage: string; current: [Entity, ...string[]] } =>
+          isEntity(paths.current[0]) && paths.requestedPage !== paths.current[0],
+      ),
+      map(({ current: [entity, , idWithFragment] }) => {
         const id = idWithFragment
           ? decodeURIComponent(idWithFragment.split('#')[0])
           : null;
@@ -302,13 +296,6 @@ export class NavEffects {
           case 'tournament':
             return TournamentsActions.formDataRestored({
               tournamentNumber: isRecordNumber(id) ? Number(id) : null,
-            });
-          default:
-            return AppActions.unexpectedErrorOccurred({
-              error: {
-                name: 'LCCError',
-                message: `Unknown entity provided for form data restoration: ${entity}`,
-              },
             });
         }
       }),

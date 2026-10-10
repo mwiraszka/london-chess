@@ -1,5 +1,4 @@
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { kebabCase } from 'lodash';
+import { kebabCase } from 'lodash-es';
 import { MarkdownComponent } from 'ngx-markdown';
 
 import {
@@ -7,23 +6,25 @@ import {
   ChangeDetectionStrategy,
   Component,
   DOCUMENT,
+  DestroyRef,
   ElementRef,
   Renderer2,
   computed,
   effect,
   inject,
   input,
-  signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { MarkdownTableComponent } from '@app/components/markdown-table/markdown-table.component';
 import { Image } from '@app/models';
 import { KebabCasePipe } from '@app/pipes';
 import { RoutingService } from '@app/services';
-import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils';
+import { MarkdownSegment, isCollectionId, scrollBehavior } from '@app/utils';
+import { markdownHeadings } from '@app/utils/markdown/markdown-headings.util';
+import { splitMarkdownTables } from '@app/utils/markdown/split-markdown-tables.util';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-markdown-renderer',
   template: `
@@ -55,6 +56,7 @@ import { MarkdownSegment, isCollectionId, splitMarkdownTables } from '@app/utils
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MarkdownRendererComponent implements AfterViewInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly _document = inject<Document>(DOCUMENT);
   private readonly elementRef = inject(ElementRef);
   private readonly renderer = inject(Renderer2);
@@ -64,7 +66,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
   public readonly images = input<Image[]>([]);
 
   public readonly currentPath = this._document.location.pathname;
-  public readonly headings = signal<string[]>([]);
+  public readonly headings = computed(() => markdownHeadings(this.data() ?? ''));
   // The text between the tables, and the tables, in order
   public readonly segments = computed<MarkdownSegment[]>(() =>
     splitMarkdownTables(this.preprocessImages(this.data() || '')),
@@ -81,7 +83,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
     setTimeout(() => {
       // Scroll to anchor when heading link is clicked
       this.routingService.fragment$
-        .pipe(untilDestroyed(this))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(fragment => this.scrollToAnchor(fragment));
     });
   }
@@ -113,6 +115,11 @@ export class MarkdownRendererComponent implements AfterViewInit {
 
       const imageUrl =
         image?.mainUrl || (isCollectionId(src) ? 'assets/fallback-image.png' : src);
+      // Its stored size reserves its place before it loads
+      const dimensions =
+        image?.mainWidth && image.mainHeight
+          ? ` width="${image.mainWidth}" height="${image.mainHeight}"`
+          : '';
 
       const defaultWidth = image?.mainWidth || 300;
       const parsedWidth = width ? parseInt(width.trim(), 10) : defaultWidth;
@@ -123,7 +130,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
         ? `<div class="markdown-image-caption">${captionValue}</div>`
         : '';
 
-      return `\n\n<div class="markdown-image-container" style="max-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}" onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
+      return `\n\n<div class="markdown-image-container" style="max-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}"${dimensions} onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
     });
   }
 
@@ -148,8 +155,6 @@ export class MarkdownRendererComponent implements AfterViewInit {
           } else {
             blockquoteElement.appendChild(quoteIconElement);
           }
-
-          blockquoteElement.style.position = 'relative';
         }
       });
     }
@@ -157,8 +162,6 @@ export class MarkdownRendererComponent implements AfterViewInit {
 
   private addAnchorIdsToHeadings(): void {
     const headingElements = this.elementRef.nativeElement.querySelectorAll('markdown h2');
-
-    const newHeadings: string[] = [];
 
     if (headingElements) {
       headingElements.forEach((element: HTMLElement) => {
@@ -168,11 +171,8 @@ export class MarkdownRendererComponent implements AfterViewInit {
         );
 
         element.setAttribute('id', kebabCase(heading));
-        newHeadings.push(heading);
       });
     }
-
-    this.headings.set(newHeadings);
   }
 
   private scrollToAnchor(anchorId?: string | null): void {
@@ -184,7 +184,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
 
     if (headingElement) {
       headingElement.scrollIntoView({
-        behavior: 'smooth',
+        behavior: scrollBehavior(),
         block: 'start',
         inline: 'nearest',
       });

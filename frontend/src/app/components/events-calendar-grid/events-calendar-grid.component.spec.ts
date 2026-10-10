@@ -1,19 +1,17 @@
-import { DialogService, TooltipDirective } from '@eagami/ui';
+import { DialogService, PAGE_SIZE_ALL, TooltipDirective } from '@eagami/ui';
 
 import { TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EventInfoDialogComponent } from '@app/components/event-info-dialog/event-info-dialog.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { CalendarMonth, DataPaginationOptions, Event } from '@app/models';
+import { CalendarMonth, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
-import { EventsActions } from '@app/store/events';
+import { DeletionService, StoreRequestService } from '@app/services';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
-import { closedDialogRef, lastOpenedDialog, query, queryAll } from '@app/utils';
+import { closedDialogRef, query, queryAll } from '@app/utils';
 
 import { EventsCalendarGridComponent } from './events-calendar-grid.component';
 
@@ -24,22 +22,18 @@ describe('EventsCalendarGridComponent', () => {
   let dialogService: DialogService;
 
   let dialogOpenSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   const mockEvents = MOCK_EVENTS.slice(0, 2);
   const mockIsAdmin = true;
-  const mockOptions: DataPaginationOptions<Event> = {
-    page: 1,
-    pageSize: 10,
-    sortBy: 'eventDate',
-    sortOrder: 'asc',
-    filters: {
-      showPastEvents: {
-        label: 'Show past events',
-        value: false,
-      },
-    },
-    search: '',
+  const mockMonths = ['2050-01', '2050-02', '2050-03'];
+
+  const setPage = (target: ComponentFixture<EventsCalendarGridComponent>): void => {
+    target.componentRef.setInput('events', mockEvents);
+    target.componentRef.setInput('months', mockMonths);
+    target.componentRef.setInput('monthCount', 7);
+    target.componentRef.setInput('page', 1);
+    target.componentRef.setInput('monthsPerPage', 3);
+    target.componentRef.setInput('isAdmin', mockIsAdmin);
   };
 
   const tooltip = (): HTMLElement | null => document.body.querySelector('.ea-tooltip');
@@ -76,11 +70,8 @@ describe('EventsCalendarGridComponent', () => {
     dialogService = TestBed.inject(DialogService);
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
-    fixture.componentRef.setInput('events', mockEvents);
-    fixture.componentRef.setInput('isAdmin', mockIsAdmin);
-    fixture.componentRef.setInput('options', mockOptions);
+    setPage(fixture);
 
     fixture.detectChanges();
   });
@@ -96,124 +87,65 @@ describe('EventsCalendarGridComponent', () => {
       expect(config.itemName).toBe(mockEvents[0].title);
     });
 
-    it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+    it('should delete an event from its admin controls', () => {
+      const deleteEvent = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteEvent')
+        .mockResolvedValue(false);
 
-      await component.getAdminControlsConfig(mockEvents[0]).deleteCb();
+      component.getAdminControlsConfig(mockEvents[0]).deleteCb();
 
-      expect(lastOpenedDialog(dialogOpenSpy).confirmButtonText).toBe('Delete');
+      expect(deleteEvent).toHaveBeenCalledExactlyOnceWith(mockEvents[0]);
     });
   });
 
-  describe('onDeleteEvent', () => {
-    it('should open confirmation dialog with correct parameters', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteEvent(mockEvents[0]);
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${mockEvents[0].title}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-    });
-
-    it('should delete the event from the confirmation dialog', async () => {
-      await component.onDeleteEvent(mockEvents[0]);
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        EventsActions.deleteEventRequested({ event: mockEvents[0] }),
-        [EventsActions.deleteEventSucceeded, EventsActions.deleteEventFailed],
-      );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteEvent(mockEvents[0]);
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('monthYears getter', () => {
-    it('should return empty array when no events', () => {
-      fixture.componentRef.setInput('events', []);
-
-      expect(component.monthYears()).toEqual([]);
-    });
-
-    it('should return correct month years for events', () => {
-      expect(component.monthYears()).toEqual([
+  describe('months', () => {
+    it('should lay out the months it is given, those without events included', () => {
+      expect(component.calendarMonths().map(month => month.monthYear)).toEqual([
         'January 2050',
         'February 2050',
         'March 2050',
       ]);
+      expect(component.calendarMonths().map(month => month.hasEvents)).toEqual([
+        true,
+        false,
+        true,
+      ]);
     });
 
-    it('should reach back to the month of today on the first page', () => {
+    it('should mark today and its month', () => {
       vi.setSystemTime(new Date('2049-12-20T17:00:00.000Z'));
 
-      fixture.componentRef.setInput('events', [...mockEvents]);
+      fixture.componentRef.setInput('months', ['2049-12', ...mockMonths]);
       fixture.detectChanges();
 
-      expect(component.monthYears()).toEqual([
-        'December 2049',
-        'January 2050',
-        'February 2050',
-        'March 2050',
-      ]);
       expect(
         query(fixture.debugElement, '.calendar-day.today').nativeElement.textContent,
       ).toContain('20');
       expect(query(fixture.debugElement, '.month').classes['no-events']).toBeFalsy();
-    });
-
-    it('should start from the first event on any later page', () => {
-      vi.setSystemTime(new Date('2049-12-20T17:00:00.000Z'));
-
-      fixture.componentRef.setInput('options', { ...mockOptions, page: 2 });
-
-      expect(component.monthYears()[0]).toBe('January 2050');
+      expect(component.calendarMonths()[0].isCurrentMonth).toBe(true);
     });
   });
 
   describe('paging', () => {
+    it('should page through months, three, six or twelve at a time or all at once', () => {
+      const paginator = query(fixture.debugElement, 'ea-paginator').componentInstance;
+
+      expect(paginator.pageSizeLabel()).toBe('months');
+      expect(paginator.pageSizeOptions()).toEqual([3, 6, 12]);
+      expect(paginator.showAllOption()).toBe(true);
+      expect(paginator.pageSize()).toBe(3);
+      expect(paginator.totalItems()).toBe(7);
+    });
+
     it('should pass on the page chosen', () => {
-      const optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
+      const pageChangeSpy = vi.spyOn(component.pageChange, 'emit');
 
       query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
-        page: 3,
-        pageSize: 20,
+        page: 2,
+        pageSize: 6,
       });
 
-      expect(optionsChangeSpy).toHaveBeenCalledWith({
-        ...mockOptions,
-        page: 3,
-        pageSize: 20,
-      });
-    });
-
-    it('should count the events that match', () => {
-      fixture.componentRef.setInput('filteredCount', 42);
-      fixture.detectChanges();
-
-      expect(
-        query(fixture.debugElement, 'ea-paginator').componentInstance.totalItems(),
-      ).toBe(42);
-    });
-  });
-
-  describe('trackWeekByIndex', () => {
-    it('should return the index', () => {
-      expect(component.trackWeekByIndex(0)).toBe(0);
-      expect(component.trackWeekByIndex(5)).toBe(5);
+      expect(pageChangeSpy).toHaveBeenCalledWith({ page: 2, pageSize: 6 });
     });
   });
 
@@ -263,12 +195,10 @@ describe('EventsCalendarGridComponent', () => {
       expect(component.calendarMonths()).toBe(initialCalendarMonths);
     });
 
-    it('should regenerate calendar months if events change', () => {
+    it('should regenerate calendar months if the months change', () => {
       const initialCalendarMonths = component.calendarMonths();
 
-      const modifiedEvents = MOCK_EVENTS.slice(0, 5);
-
-      fixture.componentRef.setInput('events', modifiedEvents);
+      fixture.componentRef.setInput('months', [...mockMonths, '2050-04', '2050-05']);
 
       expect(component.calendarMonths().length).toBeGreaterThan(
         initialCalendarMonths.length,
@@ -332,7 +262,7 @@ describe('EventsCalendarGridComponent', () => {
     });
 
     it('should show the event in a tooltip, highlighting the search', () => {
-      fixture.componentRef.setInput('options', { ...mockOptions, search: 'champ' });
+      fixture.componentRef.setInput('search', 'champ');
       fixture.detectChanges();
       const [blitz, championship] = queryAll(fixture.debugElement, '.event-indicator');
 
@@ -386,9 +316,7 @@ describe('EventsCalendarGridComponent', () => {
 
           localFixture = TestBed.createComponent(EventsCalendarGridComponent);
 
-          localFixture.componentRef.setInput('events', mockEvents);
-          localFixture.componentRef.setInput('isAdmin', mockIsAdmin);
-          localFixture.componentRef.setInput('options', mockOptions);
+          setPage(localFixture);
 
           localFixture.detectChanges();
         });
@@ -409,9 +337,7 @@ describe('EventsCalendarGridComponent', () => {
 
           localFixture = TestBed.createComponent(EventsCalendarGridComponent);
 
-          localFixture.componentRef.setInput('events', mockEvents);
-          localFixture.componentRef.setInput('isAdmin', mockIsAdmin);
-          localFixture.componentRef.setInput('options', mockOptions);
+          setPage(localFixture);
 
           localFixture.detectChanges();
         });
@@ -431,13 +357,22 @@ describe('EventsCalendarGridComponent', () => {
         fixture.detectChanges();
       });
 
-      it('should render enough skeleton months to fill a row on any screen', () => {
+      it('should render a skeleton month for each month the page holds', () => {
         const monthsGrid = query(fixture.debugElement, '.months-grid--loading');
 
-        expect(queryAll(monthsGrid, '.month')).toHaveLength(12);
-        expect(queryAll(monthsGrid, '.month-title lcc-text-skeleton')).toHaveLength(12);
-        expect(monthsGrid.attributes['month-count']).toBe('12');
+        expect(queryAll(monthsGrid, '.month')).toHaveLength(3);
+        expect(queryAll(monthsGrid, '.month-title lcc-text-skeleton')).toHaveLength(3);
+        expect(monthsGrid.attributes['month-count']).toBe('3');
         expect(monthsGrid.attributes['aria-busy']).toBe('true');
+      });
+
+      it('should render enough skeleton months to fill a row on any screen for all months', () => {
+        fixture.componentRef.setInput('monthsPerPage', PAGE_SIZE_ALL);
+        fixture.detectChanges();
+
+        expect(
+          queryAll(fixture.debugElement, '.months-grid--loading .month'),
+        ).toHaveLength(12);
       });
 
       it('should lay each skeleton month out like a calendar month', () => {

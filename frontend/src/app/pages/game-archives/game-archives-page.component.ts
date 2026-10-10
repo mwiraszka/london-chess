@@ -14,9 +14,8 @@ import {
   SelectOption,
   TooltipDirective,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { Observable, interval } from 'rxjs';
 import { distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
 
@@ -24,15 +23,16 @@ import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   TemplateRef,
   computed,
   inject,
-  input,
   linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationExtras, Params, Router } from '@angular/router';
 
@@ -54,7 +54,7 @@ import {
   GamesQuery,
   GamesSortBy,
 } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import { GamesApiService, KEEP_SCROLL, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import {
   formatPartialDate,
@@ -62,6 +62,7 @@ import {
   pageRowCount,
   parseGamesQuery,
   playerName,
+  widestRows,
 } from '@app/utils';
 
 // The sort keys carry raw values so the table orders a page the way the server did
@@ -128,7 +129,6 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
   moves: 'moves',
 };
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-game-archives-page',
   templateUrl: './game-archives-page.component.html',
@@ -151,6 +151,7 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameArchivesPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -186,12 +187,12 @@ export class GameArchivesPageComponent implements OnInit {
   protected readonly tournaments = this.store.selectSignal(
     GamesSelectors.selectTournaments,
   );
-  protected readonly summary = this.store.selectSignal(GamesSelectors.selectSummary);
+  private readonly summary = this.store.selectSignal(GamesSelectors.selectSummary);
   protected readonly referenceStatus = this.store.selectSignal(
     GamesSelectors.selectReferenceStatus,
   );
 
-  private readonly archiveFigures = computed<Figure[] | null>(() => {
+  protected readonly archiveFigures = computed<Figure[] | null>(() => {
     const summary = this.summary();
     if (!summary) {
       return null;
@@ -229,9 +230,11 @@ export class GameArchivesPageComponent implements OnInit {
   protected readonly rows = computed<GameRow[]>(() => this.games().map(toGameRow));
 
   // The archive's widest games size the columns from the first skeleton on
-  public readonly widestGames = input<Game[]>([]);
+  private readonly widestGames = widestRows(inject(GamesApiService).getWidestGames());
 
-  protected readonly sizingRows = computed(() => this.widestGames().map(toGameRow));
+  protected readonly sizingRows = computed(
+    () => this.widestGames()?.map(toGameRow) ?? null,
+  );
 
   // Rows are real links to their games, so the browser shows and can open them
   protected readonly rowHref = ({ game }: GameRow): string => `/game-archives/${game.id}`;
@@ -328,7 +331,7 @@ export class GameArchivesPageComponent implements OnInit {
           index ? parseGamesQuery(params) : this.arrivalQuery(params),
         ),
         distinctUntilChanged(isEqual),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(query => this.store.dispatch(GamesActions.queryChanged({ query })));
 
@@ -337,7 +340,7 @@ export class GameArchivesPageComponent implements OnInit {
         filter((figures): figures is Figure[] => figures !== null),
         take(1),
         switchMap(countUp),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(figures => this.figures.set(figures));
   }

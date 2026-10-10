@@ -2,8 +2,8 @@
   <div
     class="months-grid months-grid--loading"
     aria-busy="true"
-    [attr.month-count]="skeletonMonths.length">
-    @for (month of skeletonMonths; track month) {
+    [attr.month-count]="skeletonMonths().length">
+    @for (month of skeletonMonths(); track month) {
       <div class="month">
         <h3 class="month-title">
           <lcc-text-skeleton width="8em" />
@@ -87,13 +87,13 @@
                           <div class="event-title-and-type">
                             <div
                               class="event-title"
-                              [innerHTML]="event.title | highlight: options()?.search">
+                              [innerHTML]="event.title | highlight: search()">
                             </div>
 
                             <lcc-event-type-tag
-                              ink="var(--lcc-color--eventsCalendar-eventTypeText)"
+                              ink="var(--color-neutral-100)"
                               size="xs"
-                              [search]="options()?.search ?? ''"
+                              [search]="search()"
                               [type]="event.type" />
                           </div>
 
@@ -112,17 +112,18 @@
   </div>
 }
 
-@if (options(); as options) {
+<!-- Added once the months are in, rather than moved by however many there turn out to be -->
+@if (!isLoading()) {
   <div class="paginator">
     <ea-paginator
       align="center"
       size="sm"
-      [page]="options.page"
-      [pageSize]="options.pageSize"
-      [pageSizeOptions]="pageSizes"
+      pageSizeLabel="months"
+      [page]="page()"
+      [pageSize]="monthsPerPage()"
+      [pageSizeOptions]="monthsPerPageOptions"
       [showAllOption]="true"
-      [showRangeLabel]="filteredCount() !== null"
-      [totalItems]="filteredCount() ?? 0"
-      (changed)="onPageChanged($event)" />
+      [totalItems]="monthCount()"
+      (changed)="pageChange.emit($event)" />
   </div>
 }

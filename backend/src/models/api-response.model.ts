@@ -1,9 +1,9 @@
-export interface ApiFullSuccessResponse<T> {
+interface ApiFullSuccessResponse<T> {
   data: T;
   message?: string;
 }
 
-export interface ApiPaginatedSuccessResponse<T> {
+interface ApiPaginatedSuccessResponse<T> {
   data: {
     items: T[];
     filteredCount: number;

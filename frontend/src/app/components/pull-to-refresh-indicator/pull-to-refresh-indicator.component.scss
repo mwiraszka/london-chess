@@ -17,7 +17,7 @@ $pull-rotation: 270deg;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   box-shadow: var(--shadow-md);
   background-color: var(--color-bg-elevated);
   color: var(--color-text-secondary);

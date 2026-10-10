@@ -39,12 +39,10 @@ export const fetchEventFailed = createAction(
   props<{ error: LccError }>(),
 );
 
-export const addAnEventSelected = createAction('[Events] Add an event selected');
-
 export const addEventRequested = createAction('[Events] Add event requested');
 export const addEventSucceeded = createAction(
   '[Events] Add event succeeded',
-  props<{ event: Event }>(),
+  props<{ event: Event; unnotifiedMemberNames: string[] }>(),
 );
 export const addEventFailed = createAction(
   '[Events] Add event failed',
@@ -57,7 +55,7 @@ export const updateEventRequested = createAction(
 );
 export const updateEventSucceeded = createAction(
   '[Events] Update event succeeded',
-  props<{ event: Event; originalEventTitle: string }>(),
+  props<{ event: Event; originalEventTitle: string; unnotifiedMemberNames: string[] }>(),
 );
 export const updateEventFailed = createAction(
   '[Events] Update event failed',
@@ -70,7 +68,7 @@ export const deleteEventRequested = createAction(
 );
 export const deleteEventSucceeded = createAction(
   '[Events] Delete event succeeded',
-  props<{ eventId: Id; eventTitle: string }>(),
+  props<{ eventId: Id; eventTitle: string; unnotifiedMemberNames: string[] }>(),
 );
 export const deleteEventFailed = createAction(
   '[Events] Delete event failed',
@@ -79,7 +77,7 @@ export const deleteEventFailed = createAction(
 
 export const paginationOptionsChanged = createAction(
   '[Events] Pagination options changed',
-  props<{ options: DataPaginationOptions<Event>; fetch: boolean }>(),
+  props<{ options: DataPaginationOptions<Event> }>(),
 );
 
 export const cancelSelected = createAction('[Events] Cancel selected');
@@ -95,6 +93,11 @@ export const formDataRestored = createAction(
 );
 
 export const toggleScheduleView = createAction('[Events] Toggle schedule view');
+
+export const calendarPageChanged = createAction(
+  '[Events] Calendar page changed',
+  props<{ page: number; monthsPerPage: number }>(),
+);
 
 export const exportEventsToCsvRequested = createAction(
   '[Events] Export events to CSV requested',

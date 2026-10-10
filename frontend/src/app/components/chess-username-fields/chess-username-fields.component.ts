@@ -10,7 +10,7 @@ import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
 @Component({
   selector: 'lcc-chess-username-fields',
   templateUrl: './chess-username-fields.component.html',
-  styleUrl: './chess-username-fields.component.scss',
+  host: { class: 'lcc-form-row' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [InputComponent, ReactiveFormsModule],
 })

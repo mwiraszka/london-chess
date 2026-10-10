@@ -34,7 +34,7 @@ import {
   RouterLinkPipe,
   SummarizeArticlePipe,
 } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
+import { DeletionService, StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
 import { isDefined, pageOf, pageRowCount } from '@app/utils';
 
@@ -63,6 +63,7 @@ interface ArticleRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleGridComponent {
+  private readonly deletion = inject(DeletionService);
   private readonly dialogService = inject(DialogService);
   private readonly storeRequests = inject(StoreRequestService);
 
@@ -72,7 +73,7 @@ export class ArticleGridComponent {
 
   readonly filteredCount = input<number | null>(null);
   readonly isHomePage = input<boolean>();
-  readonly isLoading = input<boolean>();
+  readonly isLoading = input(false);
   readonly options = input<DataPaginationOptions<Article>>();
 
   // Whether the first load has come in, after which the cards no longer fade in
@@ -83,9 +84,7 @@ export class ArticleGridComponent {
     bannerImage: null,
   };
 
-  public readonly showSkeleton = computed(() => !!this.isLoading());
-
-  public readonly entering = computed(() => this.showSkeleton() && !this.settled());
+  public readonly entering = computed(() => this.isLoading() && !this.settled());
 
   // As many placeholders as the page will hold, as far as is known before it loads
   private readonly skeletonCount = computed(() => {
@@ -115,7 +114,7 @@ export class ArticleGridComponent {
   });
 
   public readonly displayItems = computed<ArticleRow[]>(() =>
-    this.showSkeleton()
+    this.isLoading()
       ? Array.from({ length: this.skeletonCount() }, () => this.skeletonRow)
       : this.visibleRows(),
   );
@@ -123,7 +122,7 @@ export class ArticleGridComponent {
   constructor() {
     let wasLoading = false;
     effect(() => {
-      const isLoading = this.showSkeleton();
+      const isLoading = this.isLoading();
       if (wasLoading && !isLoading) {
         this.settled.set(true);
       }
@@ -136,26 +135,10 @@ export class ArticleGridComponent {
       bookmarkCb: () => this.onBookmarkArticle(article),
       bookmarked: isDefined(article.bookmarkDate),
       buttonSize: 34,
-      deleteCb: () => this.onDeleteArticle(article),
+      deleteCb: () => this.deletion.deleteArticle(article),
       editPath: ['article', 'edit', article.id],
       itemName: article.title,
     };
-  }
-
-  public async onDeleteArticle(article: Article): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${article.title}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(ArticlesActions.deleteArticleRequested({ article }), [
-          ArticlesActions.deleteArticleSucceeded,
-          ArticlesActions.deleteArticleFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public async onBookmarkArticle(article: Article): Promise<void> {

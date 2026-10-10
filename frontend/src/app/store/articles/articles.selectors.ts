@@ -1,5 +1,5 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { INITIAL_ARTICLE_FORM_DATA } from '@app/constants';
 import { Id } from '@app/models';
@@ -36,11 +36,6 @@ export const selectOptions = createSelector(selectArticlesState, state => state.
 export const selectFilteredCount = createSelector(
   selectArticlesState,
   state => state.filteredCount,
-);
-
-export const selectTotalCount = createSelector(
-  selectArticlesState,
-  state => state.totalCount,
 );
 
 const { selectAll: selectAllArticleEntities } =

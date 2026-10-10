@@ -1,6 +1,5 @@
-import { RouterState } from '@ngrx/router-store';
-import { Action, ActionReducer, MetaReducer } from '@ngrx/store';
-import { compact, omit, pick } from 'lodash';
+import { Action, ActionReducer, INIT, MetaReducer, UPDATE } from '@ngrx/store';
+import { compact, omit, pick } from 'lodash-es';
 import { localStorageSync } from 'ngrx-store-localstorage';
 
 import { isPresignedUrlExpired } from '@app/utils';
@@ -8,7 +7,7 @@ import { isPresignedUrlExpired } from '@app/utils';
 import { environment } from '@env';
 
 import { version as currentVersion } from '../../../package.json';
-import { AppState } from './app/app.reducer';
+import { AppState, initialState as appInitialState } from './app/app.reducer';
 import {
   ArticlesState,
   initialState as articlesInitialState,
@@ -22,7 +21,7 @@ import {
   MembersState,
   initialState as membersInitialState,
 } from './members/members.reducer';
-import { NavState } from './nav/nav.reducer';
+import { NavState, initialState as navInitialState } from './nav/nav.reducer';
 import {
   TournamentsState,
   initialState as tournamentsInitialState,
@@ -37,11 +36,10 @@ export interface MetaState {
   imagesState?: ImagesState;
   membersState?: MembersState;
   navState?: NavState;
-  routerState?: RouterState;
   tournamentsState?: TournamentsState;
 }
 
-const hydratedStates = [
+const hydratedStates: (keyof MetaState)[] = [
   'appState',
   'articlesState',
   'eventsState',
@@ -50,15 +48,28 @@ const hydratedStates = [
   'membersState',
   'navState',
   'tournamentsState',
-] as Array<keyof Exclude<MetaState, RouterState>>;
+];
 
 // State saved by an app version older than these no longer fits its reducer
 const FIRST_COMPATIBLE_VERSIONS: Partial<Record<string, number[]>> = {
   articlesState: [6, 2, 0],
-  eventsState: [6, 2, 0],
+  eventsState: [6, 5, 0],
   imagesState: [6, 2, 0],
-  membersState: [6, 2, 0],
-  tournamentsState: [6, 4, 0],
+  membersState: [6, 5, 0],
+  tournamentsState: [6, 5, 0],
+};
+
+// A feature reducer only falls back on its initial state for a missing slice, so a field
+// added since the slice was saved starts from here
+const INITIAL_STATES: Partial<Record<string, object>> = {
+  appState: appInitialState,
+  articlesState: articlesInitialState,
+  eventsState: eventsInitialState,
+  gamesState: gamesInitialState,
+  imagesState: imagesInitialState,
+  membersState: membersInitialState,
+  navState: navInitialState,
+  tournamentsState: tournamentsInitialState,
 };
 
 // What only describes the current visit, so every visit starts from these
@@ -70,6 +81,8 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
   imagesState: pick(imagesInitialState, [
     'failedLoads',
     'isFetchingFiltered',
+    // Only the tab that picked a new image holds its file
+    'newImagesFormData',
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
@@ -185,6 +198,11 @@ export function updateStateVersionsInLocalStorageMetaReducer(
             console.error('[LCC] Failed to clear browser caches:', error);
           });
       }
+
+      // Picked images used to wait for upload in this database
+      if (imagesStateRemoved && 'indexedDB' in window) {
+        indexedDB.deleteDatabase('LccImagesDB');
+      }
     }
 
     return reducer(state, action);
@@ -224,7 +242,8 @@ export const versionedStorage = {
 };
 
 /**
- * Re-hydrates state from local storage
+ * Re-hydrates state from local storage. Writing it back is left to
+ * persistStateMetaReducer.
  */
 export function hydrationMetaReducer(
   reducer: ActionReducer<MetaState>,
@@ -233,14 +252,13 @@ export function hydrationMetaReducer(
     keys: hydratedStates.map(stateKey => {
       const unpersistedFields = UNPERSISTED_FIELDS[stateKey] ?? {};
       const restore = <T extends object>(stateSlice: T): T => ({
+        ...INITIAL_STATES[stateKey],
         ...stateSlice,
         ...unpersistedFields,
       });
 
       return {
         [stateKey]: {
-          serialize: (stateSlice: object) =>
-            omit(stateSlice, Object.keys(unpersistedFields)),
           deserialize:
             stateKey === 'imagesState'
               ? (stateSlice: ImagesState) => stripExpiredImageUrls(restore(stateSlice))
@@ -251,7 +269,56 @@ export function hydrationMetaReducer(
     rehydrate: true,
     restoreDates: false,
     storage: versionedStorage,
+    syncCondition: () => false,
   })(reducer);
+}
+
+/**
+ * Saves the hydrated slices to local storage once per task, and only the slices that
+ * changed, so a burst of actions costs a single write rather than a full one after each.
+ */
+export function persistStateMetaReducer(
+  reducer: ActionReducer<MetaState>,
+): ActionReducer<MetaState> {
+  const lastSaved = new Map<keyof MetaState, unknown>();
+  let latestState: MetaState | undefined;
+  let isSaveQueued = false;
+
+  const save = () => {
+    isSaveQueued = false;
+    for (const stateKey of hydratedStates) {
+      const stateSlice = latestState?.[stateKey];
+      if (!stateSlice || lastSaved.get(stateKey) === stateSlice) {
+        continue;
+      }
+      lastSaved.set(stateKey, stateSlice);
+      const unpersistedFields = Object.keys(UNPERSISTED_FIELDS[stateKey] ?? {});
+      versionedStorage.setItem(
+        stateKey,
+        JSON.stringify(omit(stateSlice, unpersistedFields)),
+      );
+    }
+  };
+
+  return (state, action) => {
+    const nextState = reducer(state, action);
+
+    // A slice's first state is the one rehydrated from local storage, so it needs no saving
+    if (action.type === INIT || action.type === UPDATE) {
+      for (const stateKey of hydratedStates) {
+        if (!lastSaved.has(stateKey) && nextState[stateKey]) {
+          lastSaved.set(stateKey, nextState[stateKey]);
+        }
+      }
+    }
+
+    latestState = nextState;
+    if (!isSaveQueued) {
+      isSaveQueued = true;
+      queueMicrotask(save);
+    }
+    return nextState;
+  };
 }
 
 /**
@@ -286,18 +353,9 @@ export function clearRecordsOnAccessLossMetaReducer(
   };
 }
 
-// Image storage moved off AWS S3, so any persisted URL still pointing there is
-// dead regardless of its recorded expiration (older app versions could stamp a
-// fresh expiration onto an entity while keeping its old URL)
-const RETIRED_STORAGE_HOST = 'amazonaws.com';
-
-function pointsAtRetiredStorage(url: string | undefined): boolean {
-  return !!url && url.includes(RETIRED_STORAGE_HOST);
-}
-
 /**
  * Drops persisted presigned URLs that are already expired (or inside the
- * refresh buffer), or that point at retired storage, while rehydrating, so
+ * refresh buffer) while rehydrating, so
  * components render placeholders and wait for fresh URLs instead of loading
  * doomed ones. Dropping any also forgets when the images were last fetched,
  * since those fetches no longer stand behind the URLs, so fresh ones are
@@ -313,9 +371,7 @@ export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
     const image = entity?.image;
     const stale =
       !!(image?.mainUrl || image?.thumbnailUrl) &&
-      (isPresignedUrlExpired(image?.urlExpirationDate) ||
-        pointsAtRetiredStorage(image?.mainUrl) ||
-        pointsAtRetiredStorage(image?.thumbnailUrl));
+      isPresignedUrlExpired(image?.urlExpirationDate);
 
     stripped ||= !!entity && stale;
     updatedEntities[id] =
@@ -346,6 +402,7 @@ export function stripExpiredImageUrls(imagesState: ImagesState): ImagesState {
 export const metaReducers: Array<MetaReducer<MetaState, Action<string>>> = compact([
   environment.production ? undefined : actionLogMetaReducer,
   updateStateVersionsInLocalStorageMetaReducer,
+  persistStateMetaReducer,
   hydrationMetaReducer,
   clearRecordsOnAccessLossMetaReducer,
 ]);

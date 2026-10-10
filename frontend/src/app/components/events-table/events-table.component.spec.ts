@@ -4,13 +4,11 @@ import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
+import { PAGE_SIZES } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event } from '@app/models';
-import { StoreRequestService } from '@app/services';
-import { EventsActions } from '@app/store/events';
-import { closedDialogRef, lastOpenedDialog, query, queryAll } from '@app/utils';
+import { DeletionService, StoreRequestService } from '@app/services';
+import { closedDialogRef, query, queryAll } from '@app/utils';
 
 import { EventRow, EventsTableComponent } from './events-table.component';
 
@@ -18,9 +16,7 @@ describe('EventsTableComponent', () => {
   let fixture: ComponentFixture<EventsTableComponent>;
   let component: EventsTableComponent;
 
-  let dialogOpenSpy: MockInstance;
   let optionsChangeSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   const events = MOCK_EVENTS.slice(0, 4);
   const past: Event = { ...MOCK_EVENTS[4], eventDate: '2000-01-01T23:00:00.000Z' };
@@ -77,9 +73,7 @@ describe('EventsTableComponent', () => {
     fixture = TestBed.createComponent(EventsTableComponent);
     component = fixture.componentInstance;
 
-    dialogOpenSpy = vi.spyOn(TestBed.inject(DialogService), 'open');
     optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
   });
 
   describe('for the public', () => {
@@ -164,36 +158,14 @@ describe('EventsTableComponent', () => {
       expect(config.itemName).toBe(events[0].title);
     });
 
-    it('should delete an event from the confirmation dialog', async () => {
-      const event = events[0];
+    it('should delete an event from its admin controls', () => {
+      const deleteEvent = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteEvent')
+        .mockResolvedValue(false);
 
-      component.getAdminControlsConfig(event).deleteCb?.();
-      await fixture.whenStable();
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
+      component.getAdminControlsConfig(events[0]).deleteCb();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${event.title}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        EventsActions.deleteEventRequested({ event }),
-        [EventsActions.deleteEventSucceeded, EventsActions.deleteEventFailed],
-      );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      component.getAdminControlsConfig(events[0]).deleteCb?.();
-      await fixture.whenStable();
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
+      expect(deleteEvent).toHaveBeenCalledExactlyOnceWith(events[0]);
     });
   });
 
@@ -205,7 +177,7 @@ describe('EventsTableComponent', () => {
 
       paginator.triggerEventHandler('changed', { page: 3, pageSize: 50 });
 
-      expect(paginator.componentInstance.pageSizeOptions()).toEqual(EVENTS_PAGE_SIZES);
+      expect(paginator.componentInstance.pageSizeOptions()).toEqual(PAGE_SIZES);
       expect(paginator.componentInstance.totalItems()).toBe(50);
       expect(optionsChangeSpy).toHaveBeenCalledWith({
         ...options,

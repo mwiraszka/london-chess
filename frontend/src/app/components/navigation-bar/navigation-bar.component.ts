@@ -1,6 +1,7 @@
 import {
   ArchiveIconComponent,
   AvatarComponent,
+  AwardIconComponent,
   CalendarDaysIconComponent,
   CameraIconComponent,
   HomeIconComponent,
@@ -46,7 +47,7 @@ import { AuthSelectors } from '@app/store/auth';
     UserSettingsMenuComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(window:resize)': 'onResize()' },
+  host: { 'aria-label': 'Main', role: 'navigation', '(window:resize)': 'onResize()' },
 })
 export class NavigationBarComponent {
   private readonly clerkService = inject(ClerkService);
@@ -74,13 +75,18 @@ export class NavigationBarComponent {
       icon: CalendarDaysIconComponent,
     },
     {
-      text: 'News',
-      internalPath: 'news',
+      text: 'Tournaments',
+      internalPath: 'tournaments',
+      icon: AwardIconComponent,
+    },
+    {
+      text: 'Articles',
+      internalPath: 'articles',
       icon: NewspaperIconComponent,
     },
     {
-      text: 'City Champion',
-      internalPath: 'city-champion',
+      text: 'City Championship',
+      internalPath: 'city-championship',
       icon: TrophyIconComponent,
     },
     {

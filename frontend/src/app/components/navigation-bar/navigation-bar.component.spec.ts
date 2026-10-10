@@ -26,6 +26,7 @@ describe('NavigationBarComponent', () => {
     lastName: 'Doe',
     email: 'john.doe@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   beforeEach(async () => {
@@ -59,12 +60,15 @@ describe('NavigationBarComponent', () => {
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
     store.overrideSelector(AppSelectors.selectIsSafeMode, false);
     store.overrideSelector(AppSelectors.selectIsWideView, false);
+    store.overrideSelector(AppSelectors.selectShowAdminControls, true);
     store.overrideSelector(AuthSelectors.selectUser, null);
+    store.overrideSelector(AuthSelectors.selectHasAdminRights, false);
 
     fixture.detectChanges();
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 
@@ -83,6 +87,14 @@ describe('NavigationBarComponent', () => {
 
       const renderedLinks = fixture.nativeElement.querySelectorAll('.nav-link');
       expect(renderedLinks.length).toBe(component.links.length);
+    });
+
+    it('should list the tournaments between the schedule and the articles', () => {
+      const texts = component.links.map(({ text }) => text);
+
+      expect(
+        texts.slice(texts.indexOf('Schedule'), texts.indexOf('Schedule') + 3),
+      ).toEqual(['Schedule', 'Tournaments', 'Articles']);
     });
   });
 

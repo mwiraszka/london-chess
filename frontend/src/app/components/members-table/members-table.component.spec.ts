@@ -5,19 +5,16 @@ import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { MEMBERS_PAGE_SIZES } from '@app/constants/members-table';
+import { PAGE_SIZES } from '@app/constants/filters';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
-import { AdminControlsService, StoreRequestService } from '@app/services';
-import { MembersActions, initialState as membersInitialState } from '@app/store/members';
 import {
-  CITY_CHAMPION,
-  closedDialogRef,
-  lastOpenedDialog,
-  query,
-  queryAll,
-} from '@app/utils';
+  AdminControlsService,
+  DeletionService,
+  StoreRequestService,
+} from '@app/services';
+import { initialState as membersInitialState } from '@app/store/members';
+import { CITY_CHAMPION, closedDialogRef, query, queryAll } from '@app/utils';
 
 import { MemberRow, MembersTableComponent } from './members-table.component';
 
@@ -26,10 +23,8 @@ describe('MembersTableComponent', () => {
   let component: MembersTableComponent;
   let router: Router;
 
-  let dialogOpenSpy: MockInstance;
   let openSpy: Mock;
   let optionsChangeSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   // In the order the server sends them for these options
   const members = [...MOCK_MEMBERS].sort((a, b) => a.lastName.localeCompare(b.lastName));
@@ -103,10 +98,8 @@ describe('MembersTableComponent', () => {
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
 
-    dialogOpenSpy = vi.spyOn(TestBed.inject(DialogService), 'open');
     openSpy = vi.mocked(TestBed.inject(AdminControlsService).open);
     optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     TestBed.inject(MockStore);
   });
 
@@ -273,47 +266,22 @@ describe('MembersTableComponent', () => {
       );
     });
 
-    it('should delete a member from the confirmation dialog', async () => {
-      const member = members[0];
+    it('should delete a member from its admin controls', () => {
+      const deleteMember = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteMember')
+        .mockResolvedValue(false);
 
       controlsOf(bodyRows()[0]).deleteCb();
-      await fixture.whenStable();
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${member.firstName} ${member.lastName}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        MembersActions.deleteMemberRequested({ member }),
-        [MembersActions.deleteMemberSucceeded, MembersActions.deleteMemberFailed],
-      );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      controlsOf(bodyRows()[0]).deleteCb();
-      await fixture.whenStable();
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
+      expect(deleteMember).toHaveBeenCalledExactlyOnceWith(members[0]);
     });
 
     it('should show the public columns in safe mode, with a notice', () => {
       render({ isAdmin: true, isSafeMode: true });
 
-      const notice = query(fixture.debugElement, 'ea-alert');
+      const notice = query(fixture.debugElement, 'lcc-safe-mode-notice');
       expect(headers()).toHaveLength(7);
-      expect(notice.componentInstance.variant()).toBe('success');
-      expect(notice.nativeElement.textContent).toContain(
-        "Members' personal details have been hidden from view.",
-      );
+      expect(notice).toBeTruthy();
     });
   });
 
@@ -367,7 +335,7 @@ describe('MembersTableComponent', () => {
 
       paginator.triggerEventHandler('changed', { page: 3, pageSize: 50 });
 
-      expect(paginator.componentInstance.pageSizeOptions()).toEqual(MEMBERS_PAGE_SIZES);
+      expect(paginator.componentInstance.pageSizeOptions()).toEqual(PAGE_SIZES);
       expect(paginator.componentInstance.totalItems()).toBe(50);
       expect(optionsChangeSpy).toHaveBeenCalledWith({
         ...options,

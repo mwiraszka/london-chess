@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+// With its cropped copy, a photo this size stays within Vercel's 4.5 MB request limit
+const MAX_AVATAR_SIZE = 3 * 1024 * 1024;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -15,7 +16,7 @@ const upload = multer({
 export function avatarUpload(req: Request, res: Response, next: NextFunction): void {
   upload(req, res, error => {
     if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
-      res.status(400).json({ message: 'File must be under 5 MB.' });
+      res.status(400).json({ message: 'File must be under 3 MB.' });
       return;
     }
     next(error);

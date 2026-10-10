@@ -1,7 +1,8 @@
 import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { query, queryAll, splitMarkdownTables } from '@app/utils';
+import { query, queryAll } from '@app/utils';
+import { splitMarkdownTables } from '@app/utils/markdown/split-markdown-tables.util';
 
 import { MarkdownTableComponent } from './markdown-table.component';
 

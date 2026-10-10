@@ -1,5 +1,3 @@
-@use '../../../styles/abstracts/mixins' as *;
-
 :host {
   display: block;
 }
@@ -17,7 +15,7 @@
 .results__tournament-placeholder {
   position: relative;
   display: inline-block;
-  padding-right: 86px;
+  padding-right: 64px;
   font-size: calc(var(--ea-data-table-font-size) * 0.75);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);

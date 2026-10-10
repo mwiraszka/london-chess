@@ -1,39 +1,80 @@
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { Subject, timer } from 'rxjs';
-import { startWith, switchMap } from 'rxjs/operators';
+import {
+  ButtonComponent,
+  PauseIconComponent,
+  PlayIconComponent,
+  TooltipDirective,
+} from '@eagami/ui';
+import { EMPTY, Subject, merge, timer } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
-import { ChangeDetectionStrategy, Component, OnInit, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  OnInit,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 import { Image } from '@app/models';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-photo-carousel',
   templateUrl: './photo-carousel.component.html',
   styleUrl: './photo-carousel.component.scss',
+  imports: [ButtonComponent, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    tabindex: '0',
     '(keydown.arrowleft)': 'onPreviousPhoto()',
     '(keydown.arrowright)': 'onNextPhoto()',
-    '(keydown.enter)': 'onNextPhoto()',
+    '(mouseenter)': 'isHovered.set(true)',
+    '(mouseleave)': 'isHovered.set(false)',
+    '(focusin)': 'hasFocus.set(true)',
+    '(focusout)': 'onFocusOut($event)',
   },
 })
 export class PhotoCarouselComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   public readonly photos = input.required<Partial<Image>[]>();
 
   public readonly currentIndex = signal(0);
 
+  protected readonly pauseIcon = PauseIconComponent;
+  protected readonly playIcon = PlayIconComponent;
+
+  // Starts paused for visitors who ask for less motion
+  protected readonly isPaused = signal(
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  protected readonly isHovered = signal(false);
+  protected readonly hasFocus = signal(false);
+
+  // Holds still while someone is looking at or using it
+  private readonly isCycling = computed(
+    () => !this.isPaused() && !this.isHovered() && !this.hasFocus(),
+  );
+  private readonly isCycling$ = toObservable(this.isCycling);
+
   private readonly autoCycleSubject$ = new Subject<void>();
 
   public ngOnInit(): void {
-    this.autoCycleSubject$
+    merge(this.isCycling$, this.autoCycleSubject$.pipe(map(() => this.isCycling())))
       .pipe(
-        startWith(null),
-        switchMap(() => timer(4000, 4000)),
-        untilDestroyed(this),
+        switchMap(isCycling => (isCycling ? timer(4000, 4000) : EMPTY)),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.showNextPhoto());
+  }
+
+  public onFocusOut(event: FocusEvent): void {
+    this.hasFocus.set(
+      this.elementRef.nativeElement.contains(event.relatedTarget as Node),
+    );
   }
 
   public onPreviousPhoto(): void {

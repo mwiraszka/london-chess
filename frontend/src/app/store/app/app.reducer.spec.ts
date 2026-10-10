@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from '@app/utils/datetime/moment';
 
 import * as AppActions from './app.actions';
 import { AppState, appReducer, initialState } from './app.reducer';
@@ -18,10 +18,12 @@ describe('App Reducer', () => {
       expect(initialState).toEqual({
         isDarkMode: expect.any(Boolean),
         isSafeMode: false,
+        showAdminControls: true,
         isDesktopView: false,
         isWideView: false,
         bannerLastCleared: null,
         showUpcomingEventBanner: true,
+        brand: 'modern',
       });
     });
 
@@ -113,6 +115,18 @@ describe('App Reducer', () => {
 
       expect(state.isDarkMode).toBe(true);
       expect(state.isSafeMode).toBe(true);
+    });
+  });
+
+  describe('adminControlsToggled', () => {
+    it('should switch the admin controls off and back on', () => {
+      const action = AppActions.adminControlsToggled();
+
+      const off = appReducer(initialState, action);
+      const on = appReducer(off, action);
+
+      expect(off.showAdminControls).toBe(false);
+      expect(on.showAdminControls).toBe(true);
     });
   });
 
@@ -284,6 +298,16 @@ describe('App Reducer', () => {
 
       expect(state.isDarkMode).toBe(true);
       expect(state.isSafeMode).toBe(true);
+    });
+  });
+
+  describe('brandChanged', () => {
+    it('should set the brand', () => {
+      const action = AppActions.brandChanged({ brand: 'sunset' });
+
+      const state = appReducer(initialState, action);
+
+      expect(state.brand).toBe('sunset');
     });
   });
 

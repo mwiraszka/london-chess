@@ -13,7 +13,7 @@ test.describe('admin controls', () => {
   });
 
   test('offer editing and deleting an article from its card', async ({ page }) => {
-    await page.goto('/news');
+    await page.goto('/articles');
 
     const controls = await openAdminControls(
       page.getByRole('link', { name: new RegExp(ARTICLES[1].title) }),
@@ -61,7 +61,7 @@ test.describe('admin controls', () => {
 
   test('show the admin toolbar on each managed page', async ({ page }) => {
     for (const [path, link] of [
-      ['/news', 'Create an article'],
+      ['/articles', 'Create an article'],
       ['/schedule', 'Add an event'],
       ['/members', 'Add a member'],
       ['/photo-gallery', 'Create an album'],
@@ -73,5 +73,31 @@ test.describe('admin controls', () => {
         page.locator('lcc-admin-toolbar').getByRole('link', { name: link }),
       ).toBeVisible();
     }
+  });
+
+  test('leave the app as any other member sees it while switched off', async ({
+    page,
+  }) => {
+    const toolbarLink = page
+      .locator('lcc-admin-toolbar')
+      .getByRole('link', { name: 'Add an event' });
+    const setAdminControls = async (on: boolean): Promise<void> => {
+      await page.getByRole('button', { name: 'Menu' }).click();
+      await setSwitch(page, 'Admin controls', on);
+      await page.keyboard.press('Escape');
+    };
+    await page.goto('/schedule');
+    await expect(toolbarLink).toBeVisible();
+
+    await setAdminControls(false);
+
+    await expect(toolbarLink).toHaveCount(0);
+    await page.goto('/event/add');
+    await expect(page).not.toHaveURL(/\/event\/add$/);
+
+    await setAdminControls(true);
+    await page.goto('/schedule');
+
+    await expect(toolbarLink).toBeVisible();
   });
 });

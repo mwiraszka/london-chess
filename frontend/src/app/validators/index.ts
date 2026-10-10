@@ -5,6 +5,7 @@ export { ordinalityValidator } from './ordinality.validator';
 export { passwordValidator } from './password.validator';
 export { passwordsMatchValidator } from './passwords-match.validator';
 export { ratingValidator } from './rating.validator';
+export { roundCountValidator } from './round-count.validator';
 export { textValidator } from './text.validator';
 export { timeControlValidator } from './time-control.validator';
 export { yearOfBirthValidator } from './year-of-birth.validator';

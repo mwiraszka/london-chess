@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-export interface AccountVerification {
+interface AccountVerification {
   email: string;
   codeHash: string;
   expiresAt: Date;

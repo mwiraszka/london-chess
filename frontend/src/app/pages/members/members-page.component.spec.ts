@@ -17,12 +17,16 @@ import {
   Member,
   MemberWithNewRatings,
 } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  CsvExportService,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
-import { closedDialogRef, lastOpenedDialog, query } from '@app/utils';
+import { closedDialogRef, query } from '@app/utils';
 
 import { MembersPageComponent } from './members-page.component';
 
@@ -36,7 +40,6 @@ describe('MembersPageComponent', () => {
   let store: MockStore;
 
   let dispatchSpy: MockInstance;
-  let onExportToCsvSpy: MockInstance;
   let storeRequestSpy: Mock;
   let updateDescriptionSpy: MockInstance;
   let updateTitleSpy: MockInstance;
@@ -64,6 +67,7 @@ describe('MembersPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [MembersPageComponent],
       providers: [
+        { provide: CsvExportService, useValue: { exportMembers: vi.fn() } },
         { provide: PARSE_CSV, useValue: vi.fn() },
         {
           provide: DialogService,
@@ -94,7 +98,6 @@ describe('MembersPageComponent', () => {
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    onExportToCsvSpy = vi.spyOn(component, 'onExportToCsv');
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     updateDescriptionSpy = vi.spyOn(metaAndTitleService, 'updateDescription');
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
@@ -110,6 +113,8 @@ describe('MembersPageComponent', () => {
     store.overrideSelector(MembersSelectors.selectRecordsScope, 'admin');
     store.refreshState();
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('ngOnInit', () => {
     beforeEach(() => {
@@ -139,7 +144,7 @@ describe('MembersPageComponent', () => {
   });
 
   describe('onOptionsChange', () => {
-    it('should dispatch paginationOptionsChanged action with fetch true by default', () => {
+    it('should dispatch paginationOptionsChanged with the options', () => {
       const options: DataPaginationOptions<Member> = {
         ...mockOptions,
         page: 1,
@@ -148,20 +153,7 @@ describe('MembersPageComponent', () => {
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.paginationOptionsChanged({ options, fetch: true }),
-      );
-    });
-
-    it('should dispatch paginationOptionsChanged action with fetch false when specified', () => {
-      const options: DataPaginationOptions<Member> = {
-        ...mockOptions,
-        search: 'test',
-      };
-      component.onOptionsChange(options, false);
-
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.paginationOptionsChanged({ options, fetch: false }),
+        MembersActions.paginationOptionsChanged({ options }),
       );
     });
   });
@@ -385,70 +377,6 @@ describe('MembersPageComponent', () => {
     });
   });
 
-  describe('onExportToCsv', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
-
-    it('should return early if viewModel$ is undefined', async () => {
-      component.viewModel$ = undefined;
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).not.toHaveBeenCalled();
-    });
-
-    it('should return early if member count is zero', async () => {
-      store.overrideSelector(MembersSelectors.selectTotalCount, 0);
-      store.refreshState();
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).not.toHaveBeenCalled();
-    });
-
-    it('should open confirmation dialog with correct member count', async () => {
-      const dialogOpenSpy = vi
-        .spyOn(dialogService, 'open')
-        .mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onExportToCsv();
-
-      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Export all ${mockTotalCount} members to a CSV file?`,
-            confirmButtonText: 'Export',
-            confirmButtonType: 'primary',
-          }),
-        },
-      });
-    });
-
-    it('should export the members from the confirmation dialog', async () => {
-      await component.onExportToCsv();
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        MembersActions.exportMembersToCsvRequested(),
-        [
-          MembersActions.exportMembersToCsvSucceeded,
-          MembersActions.exportMembersToCsvFailed,
-        ],
-      );
-    });
-
-    it('should not export anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onExportToCsv();
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
-    });
-  });
-
   describe('component properties', () => {
     it('should have correct addMemberLink configuration', () => {
       expect(component.addMemberLink).toStrictEqual({
@@ -467,10 +395,10 @@ describe('MembersPageComponent', () => {
       });
     });
 
-    it('should call onExportToCsv when exportToCsvButton action is called', () => {
+    it('should export the members from the export button', () => {
       component.exportToCsvButton.action();
 
-      expect(onExportToCsvSpy).toHaveBeenCalledTimes(1);
+      expect(TestBed.inject(CsvExportService).exportMembers).toHaveBeenCalledOnce();
     });
   });
 
@@ -577,7 +505,6 @@ describe('MembersPageComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         MembersActions.paginationOptionsChanged({
           options: { ...mockOptions, search: 'car', page: 1 },
-          fetch: true,
         }),
       );
     });
@@ -613,7 +540,6 @@ describe('MembersPageComponent', () => {
               },
             },
           },
-          fetch: true,
         }),
       );
     });
@@ -641,7 +567,6 @@ describe('MembersPageComponent', () => {
               },
             },
           },
-          fetch: true,
         }),
       );
     });

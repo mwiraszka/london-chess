@@ -1,10 +1,11 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { pick } from 'lodash';
+import { isEqual, pick } from 'lodash-es';
 
-import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
+import { CALENDAR_MONTHS_PER_PAGE } from '@app/constants/filters';
 import { DataPaginationOptions, Event, EventFormData, IsoDate } from '@app/models';
-import { areSame } from '@app/utils';
+import { refreshedFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as EventsActions from './events.actions';
 
@@ -14,7 +15,8 @@ export interface EventsState extends EntityState<{
   event: Event;
   formData: EventFormData;
 }> {
-  newEventFormData: EventFormData;
+  // Null until an admin starts a new event
+  newEventFormData: EventFormData | null;
   // Loads whose latest attempt failed, which are never persisted
   failedLoads: EventsLoad[];
   // Whether a page of filtered events is on its way, never persisted
@@ -27,6 +29,8 @@ export interface EventsState extends EntityState<{
   filteredCount: number | null;
   totalCount: number;
   scheduleView: 'list' | 'calendar';
+  calendarPage: number;
+  calendarMonthsPerPage: number;
 }
 
 export const eventsAdapter = createEntityAdapter<{
@@ -37,7 +41,7 @@ export const eventsAdapter = createEntityAdapter<{
 });
 
 export const initialState: EventsState = eventsAdapter.getInitialState({
-  newEventFormData: INITIAL_EVENT_FORM_DATA,
+  newEventFormData: null,
   failedLoads: [],
   isFetchingFiltered: false,
   lastHomePageFetch: null,
@@ -60,15 +64,9 @@ export const initialState: EventsState = eventsAdapter.getInitialState({
   filteredCount: null,
   totalCount: 0,
   scheduleView: 'calendar',
+  calendarPage: 1,
+  calendarMonthsPerPage: CALENDAR_MONTHS_PER_PAGE[0],
 });
-
-function withLoadAttempt(state: EventsState, load: EventsLoad): EventsState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: EventsState, load: EventsLoad): EventsState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
 
 export const eventsReducer = createReducer(
   initialState,
@@ -80,10 +78,9 @@ export const eventsReducer = createReducer(
     withFailedLoad(state, 'homePage'),
   ),
 
-  on(EventsActions.fetchFilteredEventsRequested, (state): EventsState => ({
-    ...withLoadAttempt(state, 'filtered'),
-    isFetchingFiltered: true,
-  })),
+  on(EventsActions.fetchFilteredEventsRequested, (state): EventsState =>
+    withLoadAttempt(state, 'filtered'),
+  ),
   on(EventsActions.fetchFilteredEventsFailed, (state): EventsState => ({
     ...withFailedLoad(state, 'filtered'),
     isFetchingFiltered: false,
@@ -102,16 +99,14 @@ export const eventsReducer = createReducer(
       return eventsAdapter.upsertMany(
         events.map(event => {
           const existingEntity = state.entities[event.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(existingEntity.formData, pick(event, EVENT_FORM_DATA_PROPERTIES));
 
           return {
             event,
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(event, EVENT_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              existingEntity?.formData,
+              existingEntity && pick(existingEntity.event, EVENT_FORM_DATA_PROPERTIES),
+              pick(event, EVENT_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -130,16 +125,14 @@ export const eventsReducer = createReducer(
       eventsAdapter.upsertMany(
         events.map(event => {
           const existingEntity = state.entities[event.id];
-          const hasUnsavedChanges =
-            existingEntity?.formData &&
-            !areSame(existingEntity.formData, pick(event, EVENT_FORM_DATA_PROPERTIES));
 
           return {
             event,
-            // Preserve existing formData if there are unsaved changes
-            formData: hasUnsavedChanges
-              ? existingEntity.formData
-              : pick(event, EVENT_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              existingEntity?.formData,
+              existingEntity && pick(existingEntity.event, EVENT_FORM_DATA_PROPERTIES),
+              pick(event, EVENT_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -153,17 +146,38 @@ export const eventsReducer = createReducer(
       ),
   ),
 
+  // Only a page, filter, search or view the visitor asked for swaps the rows for
+  // placeholders, so a refresh in the background leaves the ones on screen in place
   on(EventsActions.paginationOptionsChanged, (state, { options }): EventsState => ({
     ...state,
     options,
+    calendarPage:
+      options.search === state.options.search &&
+      isEqual(options.filters, state.options.filters)
+        ? state.calendarPage
+        : 1,
+    isFetchingFiltered: true,
   })),
 
+  on(
+    EventsActions.calendarPageChanged,
+    (state, { page, monthsPerPage }): EventsState => ({
+      ...state,
+      calendarPage: page,
+      calendarMonthsPerPage: monthsPerPage,
+    }),
+  ),
+
   on(EventsActions.fetchEventSucceeded, (state, { event }): EventsState => {
-    const previousFormData = state.entities[event.id]?.formData;
+    const existingEntity = state.entities[event.id];
     return eventsAdapter.upsertOne(
       {
         event,
-        formData: previousFormData ?? pick(event, EVENT_FORM_DATA_PROPERTIES),
+        formData: refreshedFormData(
+          existingEntity?.formData,
+          existingEntity && pick(existingEntity.event, EVENT_FORM_DATA_PROPERTIES),
+          pick(event, EVENT_FORM_DATA_PROPERTIES),
+        ),
       },
       state,
     );
@@ -177,7 +191,7 @@ export const eventsReducer = createReducer(
       },
       {
         ...state,
-        newEventFormData: INITIAL_EVENT_FORM_DATA,
+        newEventFormData: null,
       },
     ),
   ),
@@ -207,7 +221,7 @@ export const eventsReducer = createReducer(
       return {
         ...state,
         newEventFormData: {
-          ...state.newEventFormData,
+          ...(state.newEventFormData ?? initialEventFormData()),
           ...formData,
         },
       };
@@ -217,7 +231,7 @@ export const eventsReducer = createReducer(
       {
         ...originalEvent,
         formData: {
-          ...(originalEvent?.formData ?? INITIAL_EVENT_FORM_DATA),
+          ...originalEvent.formData,
           ...formData,
         },
       },
@@ -231,7 +245,7 @@ export const eventsReducer = createReducer(
     if (!originalEvent) {
       return {
         ...state,
-        newEventFormData: INITIAL_EVENT_FORM_DATA,
+        newEventFormData: null,
       };
     }
 
@@ -247,5 +261,6 @@ export const eventsReducer = createReducer(
   on(EventsActions.toggleScheduleView, (state): EventsState => ({
     ...state,
     scheduleView: state.scheduleView === 'list' ? 'calendar' : 'list',
+    isFetchingFiltered: true,
   })),
 );

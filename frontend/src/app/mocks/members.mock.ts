@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { Member } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';
 

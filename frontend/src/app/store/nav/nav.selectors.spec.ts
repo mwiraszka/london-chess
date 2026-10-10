@@ -61,46 +61,4 @@ describe('Nav Selectors', () => {
       expect(result).toBe('/home');
     });
   });
-
-  describe('router selectors', () => {
-    it('should export selectCurrentRoute', () => {
-      expect(NavSelectors.selectCurrentRoute).toBeDefined();
-    });
-
-    it('should export selectFragment', () => {
-      expect(NavSelectors.selectFragment).toBeDefined();
-    });
-
-    it('should export selectQueryParams', () => {
-      expect(NavSelectors.selectQueryParams).toBeDefined();
-    });
-
-    it('should export selectQueryParam', () => {
-      expect(NavSelectors.selectQueryParam).toBeDefined();
-    });
-
-    it('should export selectRouteParams', () => {
-      expect(NavSelectors.selectRouteParams).toBeDefined();
-    });
-
-    it('should export selectRouteParam', () => {
-      expect(NavSelectors.selectRouteParam).toBeDefined();
-    });
-
-    it('should export selectRouteData', () => {
-      expect(NavSelectors.selectRouteData).toBeDefined();
-    });
-
-    it('should export selectRouteDataParam', () => {
-      expect(NavSelectors.selectRouteDataParam).toBeDefined();
-    });
-
-    it('should export selectUrl', () => {
-      expect(NavSelectors.selectUrl).toBeDefined();
-    });
-
-    it('should export selectTitle', () => {
-      expect(NavSelectors.selectTitle).toBeDefined();
-    });
-  });
 });

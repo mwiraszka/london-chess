@@ -1,11 +1,7 @@
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
-import {
-  BASE_IMAGE_PROPERTIES,
-  IMAGE_FORM_DATA_PROPERTIES,
-  INITIAL_IMAGE_FORM_DATA,
-} from '@app/constants';
-import { MOCK_IMAGES } from '@app/mocks/images.mock';
+import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
+import { BASE_IMAGE_PROPERTIES, MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, LccError } from '@app/models';
 import { BaseImage } from '@app/models/image.model';
 
@@ -132,6 +128,52 @@ describe('Images Reducer', () => {
     });
   });
 
+  describe('refreshing an image with a draft', () => {
+    const image = MOCK_IMAGES[0];
+    const saved = pick(image, IMAGE_FORM_DATA_PROPERTIES);
+    const withDraft = (caption: string): ImagesState =>
+      imagesAdapter.upsertOne({ image, formData: { ...saved, caption } }, initialState);
+    const refreshed = { ...image, album: 'Renamed elsewhere' };
+
+    it.each([
+      [
+        'all metadata',
+        ImagesActions.fetchAllImagesMetadataSucceeded({ images: [refreshed] }),
+      ],
+      [
+        'a page of thumbnails',
+        ImagesActions.fetchFilteredThumbnailsSucceeded({
+          images: [refreshed],
+          filteredCount: 1,
+        }),
+      ],
+      [
+        'a batch of thumbnails',
+        ImagesActions.fetchBatchThumbnailsSucceeded({
+          images: [refreshed],
+          context: 'photos-in-album',
+        }),
+      ],
+      ['the main image', ImagesActions.fetchMainImageSucceeded({ image: refreshed })],
+    ])('should keep unsaved edits through %s', (_, action) => {
+      const state = imagesReducer(withDraft('My caption'), action);
+
+      expect(state.entities[image.id]?.formData).toEqual({
+        ...saved,
+        caption: 'My caption',
+      });
+    });
+
+    it('should take on the refreshed copy when nothing was edited', () => {
+      const state = imagesReducer(
+        withDraft(image.caption),
+        ImagesActions.fetchMainImageSucceeded({ image: refreshed }),
+      );
+
+      expect(state.entities[image.id]?.formData.album).toBe('Renamed elsewhere');
+    });
+  });
+
   describe('fetchAllImagesMetadataSucceeded', () => {
     it('should upsert base images with metadata only', () => {
       const images = [mockBaseImage];
@@ -179,14 +221,12 @@ describe('Images Reducer', () => {
       const action = ImagesActions.fetchFilteredThumbnailsSucceeded({
         images,
         filteredCount: 1,
-        totalCount: 10,
       });
       const state = imagesReducer(initialState, action);
 
       expect(state.entities['mock-id-1']?.image).toEqual(MOCK_IMAGES[0]);
       expect(state.filteredImages).toEqual(images);
       expect(state.filteredCount).toBe(1);
-      expect(state.totalCount).toBe(10);
       expect(state.lastFilteredThumbnailsFetch).toBe(now);
     });
   });
@@ -242,7 +282,6 @@ describe('Images Reducer', () => {
 
       const action = ImagesActions.paginationOptionsChanged({
         options: newOptions,
-        fetch: false,
       });
       const state = imagesReducer(initialState, action);
 
@@ -258,7 +297,6 @@ describe('Images Reducer', () => {
 
       const action = ImagesActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: true,
       });
       const state = imagesReducer(previousState, action);
 
@@ -391,8 +429,11 @@ describe('Images Reducer', () => {
     });
   });
 
-  describe('updateImageSucceeded', () => {
-    it('should update existing image', () => {
+  describe('updateImageSucceeded and automaticAlbumCoverSwitchSucceeded', () => {
+    it.each([
+      ImagesActions.updateImageSucceeded,
+      ImagesActions.automaticAlbumCoverSwitchSucceeded,
+    ])('should update the existing image on %s', updated => {
       const previousState: ImagesState = imagesAdapter.upsertOne(
         {
           image: MOCK_IMAGES[0],
@@ -412,8 +453,10 @@ describe('Images Reducer', () => {
         ...mockBaseImage,
         caption: 'Updated Caption',
       };
-      const action = ImagesActions.updateImageSucceeded({ baseImage: updatedBaseImage });
-      const state = imagesReducer(previousState, action);
+      const state = imagesReducer(
+        previousState,
+        updated({ baseImage: updatedBaseImage }),
+      );
 
       expect(state.entities['mock-id-1']?.image.caption).toBe('Updated Caption');
     });
@@ -772,23 +815,6 @@ describe('Images Reducer', () => {
     });
   });
 
-  describe('allNewImagesRemoved', () => {
-    it('should clear all new images formData', () => {
-      const previousState: ImagesState = {
-        ...initialState,
-        newImagesFormData: {
-          'new-1': INITIAL_IMAGE_FORM_DATA,
-          'new-2': INITIAL_IMAGE_FORM_DATA,
-        },
-      };
-
-      const action = ImagesActions.allNewImagesRemoved();
-      const state = imagesReducer(previousState, action);
-
-      expect(state.newImagesFormData).toEqual({});
-    });
-  });
-
   describe('state immutability', () => {
     it('should not mutate the previous state', () => {
       const previousState: ImagesState = { ...initialState };
@@ -802,10 +828,19 @@ describe('Images Reducer', () => {
     });
   });
   describe('a fetch of filtered thumbnails', () => {
-    it('should be marked as under way until it succeeds or fails', () => {
-      const fetching = imagesReducer(
+    it('should leave the thumbnails on screen while they refresh in the background', () => {
+      const refreshing = imagesReducer(
         initialState,
         ImagesActions.fetchFilteredThumbnailsRequested(),
+      );
+
+      expect(refreshing.isFetchingFiltered).toBe(false);
+    });
+
+    it('should hold placeholders from a new page, filter or search until it succeeds or fails', () => {
+      const fetching = imagesReducer(
+        initialState,
+        ImagesActions.paginationOptionsChanged({ options: initialState.options }),
       );
 
       expect(fetching.isFetchingFiltered).toBe(true);
@@ -851,7 +886,6 @@ describe('Images Reducer', () => {
           ImagesActions.fetchFilteredThumbnailsSucceeded({
             images: [thumbnail],
             filteredCount: 1,
-            totalCount: 1,
           }),
         );
         const batchState = imagesReducer(

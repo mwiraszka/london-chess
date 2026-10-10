@@ -8,7 +8,7 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
-import { StoreRequestService } from '@app/services';
+import { DeletionService, StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
 import {
   closedDialogRef,
@@ -68,24 +68,6 @@ describe('ArticleGridComponent', () => {
     fixture.componentRef.setInput('options', mockOptions);
 
     fixture.detectChanges();
-  });
-
-  describe('showSkeleton', () => {
-    it('should return true when isLoading is true', () => {
-      fixture.componentRef.setInput('isLoading', true);
-
-      expect(component.showSkeleton()).toBe(true);
-    });
-
-    it('should return false when isLoading is false', () => {
-      fixture.componentRef.setInput('isLoading', false);
-
-      expect(component.showSkeleton()).toBe(false);
-    });
-
-    it('should return false when isLoading is undefined', () => {
-      expect(component.showSkeleton()).toBe(false);
-    });
   });
 
   describe('displayItems', () => {
@@ -163,42 +145,15 @@ describe('ArticleGridComponent', () => {
     });
   });
 
-  describe('onDeleteArticle', () => {
-    const mockArticle = MOCK_ARTICLES[0];
+  describe('deleting an article', () => {
+    it('should delete an article from its admin controls', () => {
+      const deleteArticle = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteArticle')
+        .mockResolvedValue(false);
 
-    it('should open confirmation dialog with correct parameters', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+      component.getAdminControlsConfig(MOCK_ARTICLES[0]).deleteCb();
 
-      await component.onDeleteArticle(mockArticle);
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${mockArticle.title}?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-    });
-
-    it('should delete the article from the confirmation dialog', async () => {
-      await component.onDeleteArticle(mockArticle);
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
-
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        ArticlesActions.deleteArticleRequested({ article: mockArticle }),
-        [ArticlesActions.deleteArticleSucceeded, ArticlesActions.deleteArticleFailed],
-      );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteArticle(mockArticle);
-
-      expect(storeRequestSpy).not.toHaveBeenCalled();
+      expect(deleteArticle).toHaveBeenCalledExactlyOnceWith(MOCK_ARTICLES[0]);
     });
   });
 

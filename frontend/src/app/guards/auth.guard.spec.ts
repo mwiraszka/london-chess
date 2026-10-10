@@ -1,10 +1,11 @@
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
+import { WritableSignal, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 
-import { RouteAccess, User } from '@app/models';
-import { AuthDrawerService } from '@app/services';
+import { RouteAccess, User, UserRecord } from '@app/models';
+import { AuthDrawerService, ClerkService, UserService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { NavActions } from '@app/store/nav';
 
@@ -16,6 +17,10 @@ describe('accessGuard', () => {
 
   let dispatchSpy: MockInstance;
   let openLoginSpy: MockInstance;
+  let isLoggedIn: WritableSignal<boolean>;
+  let record: WritableSignal<UserRecord | null>;
+  let load: Mock;
+  let loadClerk: Mock;
 
   const admin: User = {
     id: 'user123',
@@ -23,6 +28,7 @@ describe('accessGuard', () => {
     lastName: 'Byron',
     email: 'ada@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
   const nonAdmin: User = { ...admin, isAdmin: false };
 
@@ -36,11 +42,20 @@ describe('accessGuard', () => {
     TestBed.runInInjectionContext(() => accessGuard(mockRoute(access), mockState(url)));
 
   beforeEach(() => {
+    isLoggedIn = signal(false);
+    record = signal(null);
+    load = vi.fn().mockResolvedValue(undefined);
+    loadClerk = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       providers: [
         provideMockStore({
-          selectors: [{ selector: AuthSelectors.selectUser, value: null }],
+          selectors: [
+            { selector: AuthSelectors.selectUser, value: null },
+            { selector: AuthSelectors.selectIsAdmin, value: false },
+          ],
         }),
+        { provide: ClerkService, useValue: { isLoggedIn, load: loadClerk } },
+        { provide: UserService, useValue: { user: record, load } },
       ],
     });
 
@@ -51,51 +66,66 @@ describe('accessGuard', () => {
     openLoginSpy = vi.spyOn(authDrawerService, 'openLogin');
   });
 
+  const logIn = (user: User, isAdmin = user.isAdmin): void => {
+    store.overrideSelector(AuthSelectors.selectUser, user);
+    store.overrideSelector(AuthSelectors.selectIsAdmin, isAdmin);
+  };
+
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 
-  it('should allow navigation to a route that requires no access', () => {
-    const result = runGuard(undefined, '/news');
+  it('should allow navigation to a route that requires no access', async () => {
+    const result = await runGuard(undefined, '/articles');
 
     expect(result).toBe(true);
     expect(openLoginSpy).not.toHaveBeenCalled();
   });
 
-  it('should open the login drawer and redirect home when logged out', () => {
+  it('should open the login drawer and redirect home when logged out', async () => {
     const router = TestBed.inject(Router);
 
-    const result = runGuard('admin');
+    const result = await runGuard('admin');
 
     expect(openLoginSpy).toHaveBeenCalled();
     expect(result).toEqual(router.createUrlTree(['/']));
   });
 
-  it('should allow a logged-in admin onto an admin route', () => {
-    store.overrideSelector(AuthSelectors.selectUser, admin);
+  it('should allow a logged-in admin onto an admin route', async () => {
+    logIn(admin);
     store.refreshState();
 
-    const result = runGuard('admin');
+    const result = await runGuard('admin');
 
     expect(result).toBe(true);
     expect(dispatchSpy).not.toHaveBeenCalled();
   });
 
-  it('should allow any logged-in user onto a member route', () => {
-    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+  it('should turn an admin with their controls switched off away from an admin route', async () => {
+    logIn(admin, false);
     store.refreshState();
 
-    const result = runGuard('member', '/account/profile');
+    const result = await runGuard('admin');
+
+    expect(result).toBe(false);
+  });
+
+  it('should allow any logged-in user onto a member route', async () => {
+    logIn(nonAdmin);
+    store.refreshState();
+
+    const result = await runGuard('member', '/account/profile');
 
     expect(result).toBe(true);
     expect(dispatchSpy).not.toHaveBeenCalled();
   });
 
-  it('should block a logged-in non-admin and dispatch pageAccessDenied', () => {
-    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+  it('should block a logged-in non-admin and dispatch pageAccessDenied', async () => {
+    logIn(nonAdmin);
     store.refreshState();
 
-    const result = runGuard('admin');
+    const result = await runGuard('admin');
 
     expect(result).toBe(false);
     expect(dispatchSpy).toHaveBeenCalledWith(
@@ -103,15 +133,72 @@ describe('accessGuard', () => {
     );
   });
 
-  it('should deny a page without an add or edit heading', () => {
-    store.overrideSelector(AuthSelectors.selectUser, nonAdmin);
+  it('should deny a page without an add or edit heading', async () => {
+    logIn(nonAdmin);
     store.refreshState();
 
-    const result = runGuard('admin', '/members');
+    const result = await runGuard('admin', '/members');
 
     expect(result).toBe(false);
     expect(dispatchSpy).toHaveBeenCalledWith(
       NavActions.pageAccessDenied({ pageHeading: '' }),
     );
+  });
+
+  it('should wait for the record of a session that has not loaded it yet', async () => {
+    isLoggedIn.set(true);
+    load.mockImplementation(async () => {
+      logIn(admin);
+      store.refreshState();
+    });
+
+    const result = await runGuard('admin');
+
+    expect(load).toHaveBeenCalledOnce();
+    expect(result).toBe(true);
+  });
+
+  it('should wait for Clerk before telling who is logged in', async () => {
+    loadClerk.mockImplementation(async () => isLoggedIn.set(true));
+    load.mockImplementation(async () => {
+      logIn(admin);
+      store.refreshState();
+    });
+
+    const result = await runGuard('admin');
+
+    expect(loadClerk).toHaveBeenCalledOnce();
+    expect(result).toBe(true);
+  });
+
+  it('should treat a visitor as logged out when Clerk fails to load', async () => {
+    loadClerk.mockRejectedValue(new Error('Clerk is unavailable'));
+
+    const result = await runGuard('admin');
+
+    expect(result).toEqual(TestBed.inject(Router).createUrlTree(['/']));
+  });
+
+  it('should not load a record that is already in place again', async () => {
+    isLoggedIn.set(true);
+    record.set({
+      ...admin,
+      clerkImageUrl: null,
+      avatarUrl: null,
+      avatarOriginalUrl: null,
+      avatarCropState: null,
+      avatarUpdatedAt: null,
+      hasTemporaryPassword: false,
+      showYearOfBirth: false,
+      brand: 'modern',
+      notifyRatingChanges: true,
+      notifyScheduleChanges: true,
+    });
+    logIn(admin);
+    store.refreshState();
+
+    await runGuard('admin');
+
+    expect(load).not.toHaveBeenCalled();
   });
 });

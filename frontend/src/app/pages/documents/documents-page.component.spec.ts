@@ -87,6 +87,8 @@ describe('DocumentsPageComponent', () => {
     updateTitleSpy = vi.spyOn(metaAndTitleService, 'updateTitle');
   });
 
+  afterEach(() => TestBed.inject(MockStore).resetSelectors());
+
   describe('initialization', () => {
     beforeEach(() => {
       component.ngOnInit();
@@ -128,7 +130,10 @@ describe('DocumentsPageComponent', () => {
 
       expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
       expect(dialogOpenSpy).toHaveBeenCalledWith(expect.any(Function), {
-        inputs: { documentPath: 'assets/documents/lcc-bylaws.pdf' },
+        inputs: {
+          documentPath: 'assets/documents/lcc-bylaws.pdf',
+          documentTitle: 'Club Bylaws',
+        },
       });
       expect(removeFragmentSpy).toHaveBeenCalledTimes(1);
     });

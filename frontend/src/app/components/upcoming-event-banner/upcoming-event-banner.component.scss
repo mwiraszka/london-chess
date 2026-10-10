@@ -1,12 +1,8 @@
-:host {
-  z-index: 1000;
-}
-
 .container {
   display: flex;
   justify-content: center;
   padding: 4px 8px;
-  border-bottom: 1px solid var(--lcc-color--upcomingEventBanner-borderBottom);
+  border-bottom: 1px solid var(--color-neutral-500);
 }
 
 .banner-message-container {
@@ -21,7 +17,6 @@
 
 .banner-message {
   overflow: hidden;
-  overflow: hidden;
   display: flex;
   flex: 1;
   align-items: center;
@@ -29,22 +24,30 @@
   min-width: 0;
   font-size: 14px;
   white-space: nowrap;
-  color: var(--lcc-color--upcomingEventBanner-text);
+  color: var(--lcc-on-event);
+
+  // The brand's link colours are unreadable on the event colours, so links take the
+  // banner's own ink
+  .lcc-link {
+    color: inherit;
+
+    &:hover {
+      color: var(--lcc-on-event-hover);
+    }
+  }
 
   b {
     font-weight: bold;
-    color: var(--lcc-color--upcomingEventBanner-boldText);
   }
 }
 
-.event-title-link {
-  &:hover {
-    text-decoration-color: transparent;
+// In the same ink as the words around it, so its underline is what marks it as a link
+.schedule-link {
+  text-decoration-color: currentColor;
+}
 
-    b {
-      color: var(--lcc-color--upcomingEventBanner-boldTextOnHover);
-    }
-  }
+.event-title-link:hover {
+  text-decoration-color: transparent;
 }
 
 .marquee-content {
@@ -55,14 +58,14 @@
     display: inline-block;
     align-self: stretch;
     width: 2px;
-    background-color: var(--lcc-color--upcomingEventBanner-eventDivider);
+    background-color: var(--color-neutral-400);
   }
 
   .marquee-item {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding-right: 50px;
+    padding-right: 48px;
   }
 
   &.animate {
@@ -70,12 +73,24 @@
   }
 }
 
+// Holds still while read or used
+.banner-message:is(:hover, :focus-within) .marquee-content.animate {
+  animation-play-state: paused;
+}
+
+// The message never scrolls by itself then, so it can be scrolled by hand
+@media (prefers-reduced-motion: reduce) {
+  .banner-message {
+    overflow-x: auto;
+  }
+}
+
 // Trimmed to its glyph so the button does not make the banner any taller
 .close-button {
   --ea-button-padding: 2px;
   --ea-button-min-height: 0;
-  --ea-button-color: var(--lcc-color--upcomingEventBanner-closeIcon);
-  --ea-button-color-hover: var(--lcc-color--upcomingEventBanner-closeIconOnHover);
+  --ea-button-color: var(--color-neutral-700);
+  --ea-button-color-hover: var(--color-neutral-950);
 }
 
 @keyframes marquee-scroll {

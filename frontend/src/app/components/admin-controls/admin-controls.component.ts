@@ -7,26 +7,24 @@ import {
   TooltipDirective,
   TrashIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
-  OnInit,
   computed,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { AdminControlsConfig, AdminControlsPlacement } from '@app/models';
 import { IsDefinedPipe, RouterLinkPipe } from '@app/pipes';
 import { KeyStateService } from '@app/services';
-import { isTouchDevice } from '@app/utils';
+import { IS_TOUCH_DEVICE } from '@app/tokens';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-admin-controls',
   templateUrl: './admin-controls.component.html',
@@ -42,8 +40,7 @@ import { isTouchDevice } from '@app/utils';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminControlsComponent implements OnInit {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+export class AdminControlsComponent {
   private readonly keyStateService = inject(KeyStateService);
 
   public readonly anchor = input.required<HTMLElement>();
@@ -59,21 +56,8 @@ export class AdminControlsComponent implements OnInit {
   protected readonly bookmarkIcon = BookmarkIconComponent;
   protected readonly deleteIcon = TrashIconComponent;
 
-  public isTouchDevice = isTouchDevice();
-  public showDeleteButton!: boolean;
-
-  public ngOnInit(): void {
-    if (this.isTouchDevice) {
-      this.showDeleteButton = true;
-    } else {
-      this.keyStateService.ctrlMetaKeyPressed$
-        .pipe(untilDestroyed(this))
-        .subscribe(isPressed => {
-          this.showDeleteButton = isPressed;
-          // Renderer-based global listeners run outside Angular change detection;
-          // explicitly mark for check so OnPush view updates when key pressed AFTER opening.
-          this.changeDetectorRef.markForCheck();
-        });
-    }
-  }
+  // A touch screen has no key to hold down, so deleting is always offered there
+  protected readonly showDeleteButton = inject(IS_TOUCH_DEVICE)()
+    ? signal(true).asReadonly()
+    : toSignal(this.keyStateService.ctrlMetaKeyPressed$, { requireSync: true });
 }

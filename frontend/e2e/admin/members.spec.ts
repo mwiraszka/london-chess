@@ -1,4 +1,7 @@
+import { readFile } from 'node:fs/promises';
+
 import { Page, expect, test } from '../fixtures';
+import { PROFILE_MEMBER } from '../seed';
 import { bodyRows } from '../tables';
 import { fieldError, fieldLabel, watchWrites } from './fields';
 import {
@@ -141,5 +144,26 @@ test.describe('managing members', () => {
     await expect(
       page.getByRole('button', { name: 'Revert', exact: true }),
     ).toBeDisabled();
+  });
+
+  test('exports every member to a CSV file', async ({ page }) => {
+    await logIn(page);
+    await page.goto('/members');
+    await page
+      .locator('lcc-admin-toolbar')
+      .getByRole('button', { name: 'Export to CSV' })
+      .click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      /Export all \d+ members to a CSV file\?/,
+    );
+
+    const download = page.waitForEvent('download');
+    await confirm(page, 'Export');
+    const file = await download;
+
+    expect(file.suggestedFilename()).toMatch(/^members_export_\d{4}-\d{2}-\d{2}\.csv$/);
+    const csv = await readFile(await file.path(), 'utf8');
+    expect(csv.split('\n')[0]).toContain('Last name');
+    expect(csv).toContain(PROFILE_MEMBER.lastName);
   });
 });

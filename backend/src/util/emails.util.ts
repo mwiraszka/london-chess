@@ -9,6 +9,7 @@ import {
   table,
 } from './email-template.util';
 import { MemberChange, isRatingChangeOnly } from './member-changes.util';
+import { ScheduleChange } from './schedule-changes.util';
 
 export type ChangeRow = Pick<MemberChange, 'label' | 'before' | 'after'>;
 
@@ -38,8 +39,10 @@ export function buildMemberChangesEmail(
   member: { firstName: string },
   changes: MemberChange[],
   profileUrl: string,
+  preferencesUrl: string,
 ): EmailContent {
-  const subject = isRatingChangeOnly(changes)
+  const isRatingOnly = isRatingChangeOnly(changes);
+  const subject = isRatingOnly
     ? 'Your London Chess rating has been updated'
     : 'Your London Chess member details have been updated';
 
@@ -49,6 +52,54 @@ export function buildMemberChangesEmail(
     changesTable(changes, ['Detail', 'Previous', 'New']),
     paragraph('See your member profile: ', link(profileUrl)),
     paragraph('If anything looks wrong, email us at ', mailtoLink(CLUB_EMAIL), '.'),
+    ...(isRatingOnly
+      ? [
+          paragraph(
+            'To stop these emails, turn off rating change notifications in your account preferences: ',
+            link(preferencesUrl),
+          ),
+        ]
+      : []),
+  ]);
+}
+
+export function buildScheduleChangeEmail(
+  member: { firstName: string },
+  change: ScheduleChange,
+  scheduleUrl: string,
+  preferencesUrl: string,
+): EmailContent {
+  const { kind, title, when, type, rows } = change;
+  const subject = {
+    added: `New on the London Chess schedule: ${title}`,
+    changed: `London Chess schedule change: ${title}`,
+    removed: `Removed from the London Chess schedule: ${title}`,
+  }[kind];
+  const summary = {
+    added: [
+      paragraph(`${title} has been added to the London Chess schedule.`),
+      table([
+        ['Date and time', when],
+        ['Type', type],
+      ]),
+    ],
+    changed: [
+      paragraph(`${title} has changed on the London Chess schedule.`),
+      changesTable(rows, ['Detail', 'Previous', 'New']),
+    ],
+    removed: [
+      paragraph(`${title} on ${when} has been removed from the London Chess schedule.`),
+    ],
+  }[kind];
+
+  return buildEmail(subject, CLUB_NAME, [
+    paragraph(`Hi ${member.firstName},`),
+    ...summary,
+    paragraph('See the schedule: ', link(scheduleUrl)),
+    paragraph(
+      'To stop these emails, turn off schedule change notifications in your account preferences: ',
+      link(preferencesUrl),
+    ),
   ]);
 }
 

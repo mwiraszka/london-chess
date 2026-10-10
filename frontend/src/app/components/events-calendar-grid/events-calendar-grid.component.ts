@@ -1,11 +1,11 @@
 import {
   CalendarDaysIconComponent,
   DialogService,
+  PAGE_SIZE_ALL,
   PaginatorComponent,
   PaginatorState,
   TooltipDirective,
 } from '@eagami/ui';
-import moment from 'moment-timezone';
 
 import {
   ChangeDetectionStrategy,
@@ -17,24 +17,16 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { EVENTS_PAGE_SIZES } from '@app/constants/events-table';
+import { CALENDAR_MONTHS_PER_PAGE } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import {
-  AdminControlsConfig,
-  CalendarDay,
-  CalendarMonth,
-  DataPaginationOptions,
-  Dialog,
-  Event,
-} from '@app/models';
+import { AdminControlsConfig, CalendarDay, CalendarMonth, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
-import { EventsActions } from '@app/store/events';
+import { DeletionService } from '@app/services';
 import { IS_TOUCH_DEVICE } from '@app/tokens';
-import { customSort } from '@app/utils';
+import { clubToday, customSort, dayKeyOf } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog.component';
 
@@ -56,94 +48,59 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventsCalendarGridComponent {
+  private readonly deletion = inject(DeletionService);
   private readonly dialogService = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly storeRequests = inject(StoreRequestService);
 
+  // The events in the months shown, each month as 'YYYY-MM'
   public readonly events = input.required<Event[]>();
+  public readonly months = input.required<string[]>();
+  public readonly monthCount = input.required<number>();
+  public readonly page = input.required<number>();
+  public readonly monthsPerPage = input.required<number>();
   public readonly isAdmin = input.required<boolean>();
 
   public readonly isLoading = input(false);
-  // With the options the calendar pages its events, through their change
-  public readonly options = input<DataPaginationOptions<Event>>();
-  public readonly filteredCount = input<number | null>(null);
+  public readonly search = input('');
 
-  public readonly optionsChange = output<DataPaginationOptions<Event>>();
+  public readonly pageChange = output<PaginatorState>();
 
-  protected readonly pageSizes = EVENTS_PAGE_SIZES;
+  protected readonly monthsPerPageOptions = CALENDAR_MONTHS_PER_PAGE;
   protected readonly daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  // Enough to fill a row on any screen; the stylesheet shows only those that fit in it
-  protected readonly skeletonMonths = Array.from({ length: 12 }, (_, index) => index);
+  // As many as the page holds, up to a row on any screen; the stylesheet shows only
+  // those that fit in it
+  protected readonly skeletonMonths = computed(() => {
+    const monthsPerPage = this.monthsPerPage();
+    const count = monthsPerPage === PAGE_SIZE_ALL ? 12 : Math.min(monthsPerPage, 12);
+    return Array.from({ length: count }, (_, index) => index);
+  });
   // Six weeks, the most a month can span
   protected readonly skeletonDays = Array.from({ length: 42 }, (_, index) => index);
   protected readonly isTouchDevice = inject(IS_TOUCH_DEVICE)();
 
-  public readonly monthYears = computed<string[]>(() => {
-    const events = this.events();
-    if (!events.length) {
-      return [];
+  private readonly eventsByDay = computed(() => {
+    const eventsByDay = new Map<string, Event[]>();
+    for (const event of this.events()) {
+      const dayKey = dayKeyOf(event.eventDate);
+      eventsByDay.set(dayKey, [...(eventsByDay.get(dayKey) ?? []), event]);
     }
-
-    const sortedEvents = events
-      .map(event => moment(event.eventDate))
-      .sort((a, b) => a.valueOf() - b.valueOf());
-
-    const firstEventDate = sortedEvents[0];
-    const lastEventDate = sortedEvents[sortedEvents.length - 1];
-    const today = moment.tz('America/Toronto');
-
-    // The first page reaches back to today, so the calendar always shows where it is
-    const isFirstPage = (this.options()?.page ?? 1) === 1;
-    const start = isFirstPage && today.isBefore(firstEventDate) ? today : firstEventDate;
-
-    // Today is the club's while the events are local, so each is reduced to its calendar
-    // month before the two are compared
-    const monthYears: string[] = [];
-    const current = moment(start.format('YYYY-MM'), 'YYYY-MM');
-    const end = moment(lastEventDate.format('YYYY-MM'), 'YYYY-MM');
-
-    while (current.isSameOrBefore(end, 'month')) {
-      monthYears.push(current.format('MMMM YYYY'));
-      current.add(1, 'month');
+    for (const dayEvents of eventsByDay.values()) {
+      dayEvents.sort((a, b) => customSort(a, b, 'modificationInfo.dateLastEdited', true));
     }
-
-    return monthYears;
+    return eventsByDay;
   });
 
   public readonly calendarMonths = computed<CalendarMonth[]>(() =>
-    this.monthYears().map(monthYear => this.generateCalendarMonth(monthYear)),
+    this.months().map(month => this.generateCalendarMonth(month)),
   );
 
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDeleteEvent(event),
+      deleteCb: () => this.deletion.deleteEvent(event),
       editPath: ['event', 'edit', event.id],
       itemName: event.title,
     };
-  }
-
-  public onPageChanged({ page, pageSize }: PaginatorState): void {
-    const options = this.options();
-    if (options) {
-      this.optionsChange.emit({ ...options, page, pageSize });
-    }
-  }
-
-  public async onDeleteEvent(event: Event): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${event.title}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(EventsActions.deleteEventRequested({ event }), [
-          EventsActions.deleteEventSucceeded,
-          EventsActions.deleteEventFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public async onEventIndicator(event: Event): Promise<void> {
@@ -156,67 +113,36 @@ export class EventsCalendarGridComponent {
     }
   }
 
-  public trackWeekByIndex(index: number): number {
-    return index;
-  }
+  // Six weeks from the Sunday on or before the 1st, enough for any month's layout
+  private generateCalendarMonth(month: string): CalendarMonth {
+    const eventsByDay = this.eventsByDay();
+    const today = clubToday();
+    const startOfMonth = moment(month, 'YYYY-MM');
+    const date = startOfMonth.clone().startOf('week');
 
-  private generateCalendarMonth(monthYear: string): CalendarMonth {
-    const events = this.events();
-    const startOfMonth = moment(monthYear, 'MMMM YYYY').startOf('month');
-    const endOfMonth = moment(monthYear, 'MMMM YYYY').endOf('month');
-    const today = moment.tz('America/Toronto');
-
-    // Check if this month has any events
-    const monthHasEvents = events.some(event =>
-      moment(event.eventDate).isBetween(startOfMonth, endOfMonth, 'day', '[]'),
-    );
-
-    // Check if today falls within this month
-    const isCurrentMonth = today.isBetween(startOfMonth, endOfMonth, 'day', '[]');
-
-    // Start from Sunday of the week containing the first day of the month
-    const startOfCalendar = startOfMonth.clone().startOf('week');
-
-    // Generate 6 weeks (42 days) to ensure all possible month layouts are covered
     const weeks: CalendarDay[][] = [];
-    const currentDate = startOfCalendar.clone();
-
     for (let week = 0; week < 6; week++) {
       const weekDays: CalendarDay[] = [];
-
       for (let day = 0; day < 7; day++) {
-        const isCurrentMonth = currentDate.isBetween(
-          startOfMonth,
-          endOfMonth,
-          'day',
-          '[]',
-        );
-        const isToday = currentDate.isSame(today, 'day');
-        const dayEvents = events
-          .filter(event => moment(event.eventDate).isSame(currentDate, 'day'))
-          .sort((a, b) => customSort(a, b, 'modificationInfo.dateLastEdited', true));
-
-        const dateKey = currentDate.format('YYYY-MM-DD');
-
+        const dateKey = date.format('YYYY-MM-DD');
         weekDays.push({
-          day: currentDate.date(),
-          isCurrentMonth,
-          isToday,
-          date: currentDate.clone(),
+          day: date.date(),
+          isCurrentMonth: dateKey.startsWith(month),
+          isToday: dateKey === today,
           dateKey,
-          events: dayEvents,
+          events: eventsByDay.get(dateKey) ?? [],
         });
-
-        currentDate.add(1, 'day');
+        date.add(1, 'day');
       }
-
       weeks.push(weekDays);
     }
 
     return {
-      monthYear,
-      hasEvents: monthHasEvents,
-      isCurrentMonth,
+      monthYear: startOfMonth.format('MMMM YYYY'),
+      hasEvents: weeks.some(weekDays =>
+        weekDays.some(day => day.isCurrentMonth && day.events.length > 0),
+      ),
+      isCurrentMonth: today.startsWith(month),
       weeks,
     };
   }

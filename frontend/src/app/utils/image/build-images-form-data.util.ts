@@ -1,13 +1,13 @@
-import { BaseImage, IndexedDbImageData, LccError } from '@app/models';
+import { BaseImage, LccError, NewImageFile } from '@app/models';
 import { dataUrlToFile } from '@app/utils';
 
 /**
  * Build FormData for uploading images to the backend API.
- * Converts new image metadata and IndexedDB data into FormData format,
+ * Converts new image metadata and the picked files into FormData format,
  * and optionally includes existing images for update operations.
  *
  * @param newImagesMetadata - Array of metadata for new images to be added
- * @param indexedDbImagesData - Array of image data URLs from IndexedDB
+ * @param newImageFiles - Array of the picked files as data URLs
  * @param existingImages - Optional array of existing images to be updated
  * @returns FormData object ready for API submission, or LccError if operation fails
  *
@@ -20,29 +20,29 @@ import { dataUrlToFile } from '@app/utils';
  */
 export function buildImagesFormData(
   newImagesMetadata: Omit<BaseImage, 'fileSize'>[],
-  indexedDbImagesData: IndexedDbImageData[],
+  newImageFiles: NewImageFile[],
   existingImages: BaseImage[] = [],
 ): FormData | LccError {
   const imagesFormData = new FormData();
 
   for (const newImageMetadata of newImagesMetadata) {
-    const indexedDbImageData = indexedDbImagesData.find(
-      imageData => imageData.id === newImageMetadata.id,
+    const newImageFile = newImageFiles.find(
+      imageFile => imageFile.id === newImageMetadata.id,
     );
 
-    if (!indexedDbImageData) {
+    if (!newImageFile) {
       return {
         name: 'LCCError',
-        message: `No image data found in IndexedDB for image ID ${newImageMetadata.id}`,
+        message: `No image file found for image ID ${newImageMetadata.id}`,
       };
     }
 
-    const file = dataUrlToFile(indexedDbImageData.dataUrl, indexedDbImageData.filename);
+    const file = dataUrlToFile(newImageFile.dataUrl, newImageFile.filename);
 
     if (!file) {
       return {
         name: 'LCCError',
-        message: `Unable to construct file object from image data URL for ${indexedDbImageData.filename}`,
+        message: `Unable to construct file object from image data URL for ${newImageFile.filename}`,
       };
     }
 

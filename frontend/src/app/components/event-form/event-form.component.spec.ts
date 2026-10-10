@@ -1,11 +1,11 @@
 import { ButtonComponent, DialogService } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
 import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { Event, EventFormData } from '@app/models';
@@ -96,7 +96,7 @@ describe('EventFormComponent', () => {
     });
 
     it('should start a fresh form without any errors showing', async () => {
-      render({ ...INITIAL_EVENT_FORM_DATA });
+      render({ ...initialEventFormData() });
 
       await settle();
 
@@ -114,11 +114,12 @@ describe('EventFormComponent', () => {
       expect(errorTexts()).toHaveLength(1);
     });
 
-    it('should pass the draft to the store as soon as the form opens', () => {
+    it('should leave the store alone until the form is edited', () => {
       render();
 
-      expect(changeSpy).toHaveBeenCalledTimes(1);
-      expect(lastDraft()).toEqual(formData);
+      query(fixture.debugElement, 'form').triggerEventHandler('focusout');
+
+      expect(changeSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -126,7 +127,8 @@ describe('EventFormComponent', () => {
     beforeEach(() => {
       vi.useFakeTimers();
       render();
-      changeSpy.mockClear();
+      // As once someone has typed in it
+      component.form.markAsDirty();
     });
 
     afterEach(() => vi.useRealTimers());
@@ -241,40 +243,22 @@ describe('EventFormComponent', () => {
       component.form.markAllAsTouched();
     });
 
-    it('should put the original event back once confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+    it('should put the original event back', () => {
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
-      await component.onRestore();
-
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original event data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(originalEvent.id);
       expect(component.form.controls.title.value).toBe(originalEvent.title);
       expect(component.form.touched).toBe(false);
     });
 
-    it('should empty a new event back to its starting values', async () => {
+    it('should empty a new event back to its starting values', () => {
       fixture.destroy();
       render({ ...formData, title: 'Changed title' }, true, null);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
       expect(restoreSpy).toHaveBeenCalledWith(null);
-      expect(component.form.controls.title.value).toBe(INITIAL_EVENT_FORM_DATA.title);
-    });
-
-    it('should change nothing when cancelled', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.title.value).toBe('Changed title');
+      expect(component.form.controls.title.value).toBe(initialEventFormData().title);
     });
   });
 

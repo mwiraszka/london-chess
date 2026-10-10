@@ -1,17 +1,20 @@
 import { Action, ActionReducer, Store, StoreModule } from '@ngrx/store';
-import { omit, pick } from 'lodash';
+import { omit, pick } from 'lodash-es';
 import { firstValueFrom } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 
-import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
+import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { INITIAL_GAMES_QUERY } from '@app/constants/games';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image, User } from '@app/models';
 
 import { initialState as articlesInitialState } from './articles/articles.reducer';
 import * as AuthActions from './auth/auth.actions';
-import { initialState as eventsInitialState } from './events/events.reducer';
+import {
+  initialState as eventsInitialState,
+  eventsReducer,
+} from './events/events.reducer';
 import { initialState as gamesInitialState, gamesReducer } from './games/games.reducer';
 import * as ImagesActions from './images/images.actions';
 import {
@@ -30,6 +33,7 @@ import {
   clearRecordsOnAccessLossMetaReducer,
   hydrationMetaReducer,
   metaReducers,
+  persistStateMetaReducer,
   stateStorageKey,
   stripExpiredImageUrls,
   updateStateVersionsInLocalStorageMetaReducer,
@@ -99,7 +103,7 @@ describe('Meta Reducers', () => {
 
     it('should leave no key behind that a version before 6.3.0 could load', () => {
       localStorage.setItem('appState_v6.2.2', '{"theme": "dark"}');
-      localStorage.setItem('eventsState_v6.2.2', '{"entities": {}}');
+      localStorage.setItem('articlesState_v6.2.2', '{"entities": {}}');
       localStorage.setItem('imagesState_v6.2.2', '{"entities": {}}');
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
@@ -108,7 +112,7 @@ describe('Meta Reducers', () => {
 
       expect(Object.keys(localStorage).filter(key => key.includes('_v'))).toEqual([]);
       expect(localStorage.getItem(stateStorageKey('appState'))).toBe('{"theme": "dark"}');
-      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBe(
+      expect(localStorage.getItem(stateStorageKey('articlesState'))).toBe(
         '{"entities": {}}',
       );
     });
@@ -127,15 +131,29 @@ describe('Meta Reducers', () => {
       });
     });
 
-    it('should keep event state saved in a compatible shape', () => {
-      const oldEventsState = JSON.stringify({ entities: {} });
-      localStorage.setItem('eventsState_v6.2.0', oldEventsState);
+    it('should keep article state saved in a compatible shape', () => {
+      const oldArticlesState = JSON.stringify({ entities: {} });
+      localStorage.setItem('articlesState_v6.2.0', oldArticlesState);
       const updateStateMetaReducer =
         updateStateVersionsInLocalStorageMetaReducer(mockReducer);
 
       updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
 
-      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBe(oldEventsState);
+      expect(localStorage.getItem(stateStorageKey('articlesState'))).toBe(
+        oldArticlesState,
+      );
+    });
+
+    it('should drop event and member state saved before new drafts started empty', () => {
+      localStorage.setItem(stateStorageKey('eventsState', '6.4.0'), '{"entities": {}}');
+      localStorage.setItem(stateStorageKey('membersState', '6.4.0'), '{"entities": {}}');
+      const updateStateMetaReducer =
+        updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+      updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+      expect(localStorage.getItem(stateStorageKey('eventsState'))).toBeNull();
+      expect(localStorage.getItem(stateStorageKey('membersState'))).toBeNull();
     });
 
     it('should drop state saved by a newer version of the app', () => {
@@ -207,12 +225,15 @@ describe('Meta Reducers', () => {
     describe('when saved image state is dropped', () => {
       let cacheKeys: Mock<Promise<string[]>>;
       let cacheDelete: Mock<Promise<boolean>, [string]>;
+      let deleteDatabase: Mock<(name: string) => void>;
 
       beforeEach(() => {
         localStorage.setItem('imagesState_v6.2.2', '{"entities": {}}');
         cacheKeys = vi.fn(() => Promise.resolve(['images-a', 'images-b']));
         cacheDelete = vi.fn(() => Promise.resolve(true));
+        deleteDatabase = vi.fn();
         vi.stubGlobal('caches', { keys: cacheKeys, delete: cacheDelete });
+        vi.stubGlobal('indexedDB', { deleteDatabase });
       });
 
       afterEach(() => {
@@ -235,6 +256,16 @@ describe('Meta Reducers', () => {
 
         expect(cacheDelete).toHaveBeenCalledWith('images-a');
         expect(cacheDelete).toHaveBeenCalledWith('images-b');
+      });
+
+      it('should delete the database picked images used to wait in', () => {
+        vi.spyOn(console, 'info').mockImplementation(() => undefined);
+        const updateStateMetaReducer =
+          updateStateVersionsInLocalStorageMetaReducer(mockReducer);
+
+        updateStateMetaReducer(mockState, { type: '@ngrx/store/init' });
+
+        expect(deleteDatabase).toHaveBeenCalledExactlyOnceWith('LccImagesDB');
       });
 
       it('should report a failure to clear the browser caches', async () => {
@@ -400,22 +431,6 @@ describe('Meta Reducers', () => {
       expect(result.entities[undatedImage.id]?.image.mainUrl).toBeUndefined();
     });
 
-    it('should strip retired-storage URLs even when the recorded expiration is fresh', () => {
-      const corruptedImage: Image = {
-        ...MOCK_IMAGES[0],
-        mainUrl: 'https://old-bucket.s3.us-east-2.amazonaws.com/stale',
-        thumbnailUrl: 'https://example.com/fresh-thumb.jpg',
-        urlExpirationDate: new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(),
-      };
-
-      const result = stripExpiredImageUrls(stateWith(corruptedImage));
-
-      const image = result.entities[corruptedImage.id]?.image;
-      expect(image?.mainUrl).toBeUndefined();
-      expect(image?.thumbnailUrl).toBeUndefined();
-      expect(image?.urlExpirationDate).toBeUndefined();
-    });
-
     it('should keep URLs that are still fresh', () => {
       const freshImage: Image = {
         ...MOCK_IMAGES[0],
@@ -494,7 +509,7 @@ describe('Meta Reducers', () => {
       filters: { ...INITIAL_GAMES_QUERY.filters, year: 1994 },
     };
 
-    it('should leave request outcomes out of local storage', () => {
+    it('should leave request outcomes out of local storage', async () => {
       const state: MetaState = {
         articlesState: { ...articlesInitialState, failedLoads: ['homePage'] },
         imagesState: {
@@ -504,9 +519,10 @@ describe('Meta Reducers', () => {
         },
       };
       mockReducer = vi.fn(() => state);
-      const wrappedReducer = hydrationMetaReducer(mockReducer);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
 
       wrappedReducer(state, { type: '[Test] State changed' });
+      await Promise.resolve();
 
       const savedArticles = JSON.parse(versionedStorage.getItem('articlesState') ?? '{}');
       const savedImages = JSON.parse(versionedStorage.getItem('imagesState') ?? '{}');
@@ -516,14 +532,35 @@ describe('Meta Reducers', () => {
       expect(savedImages).not.toHaveProperty('uploadProgress');
     });
 
-    it('should remember only how the archives were last queried', () => {
+    it('should leave the drafts of new images out of local storage', async () => {
+      const state: MetaState = {
+        imagesState: {
+          ...imagesInitialState,
+          newImagesFormData: {
+            'new-1': { ...INITIAL_IMAGE_FORM_DATA, id: 'new-1', filename: 'board.png' },
+          },
+        },
+      };
+      mockReducer = vi.fn(() => state);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+
+      wrappedReducer(state, { type: '[Test] State changed' });
+      await Promise.resolve();
+
+      const savedImages = JSON.parse(versionedStorage.getItem('imagesState') ?? '{}');
+      expect(savedImages).toHaveProperty('ids');
+      expect(savedImages).not.toHaveProperty('newImagesFormData');
+    });
+
+    it('should remember only how the archives were last queried', async () => {
       const state: MetaState = {
         gamesState: { ...gamesInitialState, filteredCount: 12, query: rememberedQuery },
       };
       mockReducer = vi.fn(() => state);
-      const wrappedReducer = hydrationMetaReducer(mockReducer);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
 
       wrappedReducer(state, { type: '[Test] State changed' });
+      await Promise.resolve();
 
       expect(JSON.parse(versionedStorage.getItem('gamesState') ?? '{}')).toEqual({
         query: rememberedQuery,
@@ -546,10 +583,23 @@ describe('Meta Reducers', () => {
           'imagesState',
           JSON.stringify(omit(imagesInitialState, ['failedLoads', 'uploadProgress'])),
         );
+        // Saved before the calendar paged by months
+        versionedStorage.setItem(
+          'eventsState',
+          JSON.stringify(
+            omit({ ...eventsInitialState, totalCount: 12 }, [
+              'failedLoads',
+              'isFetchingFiltered',
+              'calendarPage',
+              'calendarMonthsPerPage',
+            ]),
+          ),
+        );
 
         TestBed.configureTestingModule({
           imports: [
             StoreModule.forRoot({}, { metaReducers: [hydrationMetaReducer] }),
+            StoreModule.forFeature('eventsState', eventsReducer),
             StoreModule.forFeature('gamesState', gamesReducer),
             StoreModule.forFeature('imagesState', imagesReducer),
             StoreModule.forFeature('membersState', membersReducer),
@@ -562,6 +612,16 @@ describe('Meta Reducers', () => {
         const state = await firstValueFrom(store);
 
         expect(state.membersState?.totalCount).toBe(56);
+      });
+
+      it('should start what the saved state predates from its initial value', async () => {
+        const state = await firstValueFrom(store);
+
+        expect(state.eventsState?.totalCount).toBe(12);
+        expect(state.eventsState?.calendarPage).toBe(eventsInitialState.calendarPage);
+        expect(state.eventsState?.calendarMonthsPerPage).toBe(
+          eventsInitialState.calendarMonthsPerPage,
+        );
       });
 
       it('should open the archives as they were last queried', async () => {
@@ -594,6 +654,87 @@ describe('Meta Reducers', () => {
     });
   });
 
+  describe('persistStateMetaReducer', () => {
+    const changed = (members: number): MetaState => ({
+      membersState: { ...membersInitialState, totalCount: members },
+      gamesState: { ...gamesInitialState, query: INITIAL_GAMES_QUERY },
+    });
+    let setItemSpy: MockInstance;
+
+    beforeEach(() => {
+      setItemSpy = vi.spyOn(versionedStorage, 'setItem');
+    });
+
+    it('should save a burst of actions once, when the task ends', async () => {
+      let state = changed(1);
+      mockReducer = vi.fn(() => state);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+
+      [2, 3, 4].forEach(members => {
+        state = changed(members);
+        wrappedReducer(state, { type: '[Test] State changed' });
+      });
+      expect(setItemSpy).not.toHaveBeenCalled();
+      await Promise.resolve();
+
+      const savedKeys = setItemSpy.mock.calls.map(([key]) => key);
+      expect(savedKeys.filter(key => key === 'membersState')).toHaveLength(1);
+      expect(
+        JSON.parse(versionedStorage.getItem('membersState') ?? '{}').totalCount,
+      ).toBe(4);
+    });
+
+    it('should only save the slices an action changed', async () => {
+      const first = changed(1);
+      const second = {
+        ...first,
+        membersState: { ...first.membersState!, totalCount: 2 },
+      };
+      mockReducer = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+      wrappedReducer(undefined, { type: '[Test] First' });
+      await Promise.resolve();
+      setItemSpy.mockClear();
+
+      wrappedReducer(first, { type: '[Test] Second' });
+      await Promise.resolve();
+
+      expect(setItemSpy.mock.calls.map(([key]) => key)).toEqual(['membersState']);
+    });
+
+    it('should not save the state the store starts with', async () => {
+      mockReducer = vi.fn(() => changed(1));
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+
+      wrappedReducer(undefined, { type: '@ngrx/store/init' });
+      await Promise.resolve();
+
+      expect(setItemSpy).not.toHaveBeenCalled();
+    });
+
+    it('should save what changed before a slice is added, but not the added slice', async () => {
+      const before = changed(1);
+      const edited = {
+        ...before,
+        membersState: { ...before.membersState!, totalCount: 2 },
+      };
+      const added = { ...edited, eventsState: eventsInitialState };
+      mockReducer = vi
+        .fn()
+        .mockReturnValueOnce(before)
+        .mockReturnValueOnce(edited)
+        .mockReturnValueOnce(added);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+      wrappedReducer(undefined, { type: '@ngrx/store/init' });
+
+      wrappedReducer(before, { type: '[Test] State changed' });
+      wrappedReducer(edited, { type: '@ngrx/store/update-reducers' });
+      await Promise.resolve();
+
+      expect(setItemSpy.mock.calls.map(([key]) => key)).toEqual(['membersState']);
+    });
+  });
+
   describe('clearRecordsOnAccessLossMetaReducer', () => {
     const admin: User = {
       id: 'user123',
@@ -601,6 +742,7 @@ describe('Meta Reducers', () => {
       lastName: 'Byron',
       email: 'ada@example.com',
       isAdmin: true,
+      memberNumber: null,
     };
     const nonAdmin: User = { ...admin, isAdmin: false };
 
@@ -608,7 +750,7 @@ describe('Meta Reducers', () => {
       authState: { user },
       articlesState: { ...articlesInitialState, lastHomePageFetch: '2026-01-01' },
       eventsState: { ...eventsInitialState, totalCount: 12 },
-      imagesState: { ...imagesInitialState, totalCount: 34 },
+      imagesState: { ...imagesInitialState },
       membersState: { ...membersInitialState, totalCount: 56 },
       tournamentsState: {
         ...tournamentsInitialState,

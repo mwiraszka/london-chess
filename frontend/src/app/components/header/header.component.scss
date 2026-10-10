@@ -3,11 +3,10 @@
 $app-header-font-size: 42px;
 
 :host {
-  z-index: 1000;
   display: flex;
   justify-content: center;
   width: 100%;
-  background-color: var(--lcc-color--header-background);
+  background-color: var(--lcc-header);
 }
 
 .app-header-container {
@@ -46,13 +45,12 @@ $app-header-font-size: 42px;
       object-fit: contain;
       width: 100%;
       height: 100%;
-      padding: 3px;
-      border-radius: 50%;
-      background-color: var(--lcc-color--header-brandingBackground) !important;
+      padding: 4px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-neutral-300);
 
       &:hover {
-        background-color: var(--lcc-color--header-brandingBackgroundOnHover);
-        cursor: pointer;
+        background-color: var(--color-neutral-100);
       }
     }
 
@@ -62,17 +60,58 @@ $app-header-font-size: 42px;
       justify-content: center;
 
       &:hover h1 {
-        color: var(--lcc-color--header-textOnHover);
+        color: var(--color-neutral-0);
       }
 
       h1 {
         font-size: calc(#{$app-header-font-size} - 6px);
         white-space: nowrap;
         font-family: 'Caveat', sans-serif;
-        color: var(--lcc-color--header-text);
+        color: var(--lcc-on-header);
 
         @include respond-to('gt-sm') {
           font-size: $app-header-font-size;
+        }
+
+        // The other brands set the club's name in a face of their own, sized to take the
+        // same width as the handwriting
+        :host-context(:root[data-brand='classic']) & {
+          font-size: 27px;
+          font-weight: 600;
+          font-family: 'Playfair Display', 'Playfair Display Fallback', serif;
+          font-style: italic;
+
+          @include respond-to('gt-sm') {
+            font-size: 31px;
+          }
+        }
+
+        :host-context(:root[data-brand='sunset']) & {
+          font-size: 26px;
+          font-family: 'Righteous', 'Righteous Fallback', sans-serif;
+
+          @include respond-to('gt-sm') {
+            font-size: 30px;
+          }
+        }
+
+        :host-context(:root[data-brand='newsprint']) & {
+          font-size: 30px;
+          font-family: 'UnifrakturMaguntia', 'UnifrakturMaguntia Fallback', serif;
+
+          @include respond-to('gt-sm') {
+            font-size: 34px;
+          }
+        }
+
+        :host-context(:root[data-brand='playground']) & {
+          font-size: 32px;
+          font-family: 'Chewy', 'Chewy Fallback', sans-serif;
+          transform: rotate(-3deg);
+
+          @include respond-to('gt-sm') {
+            font-size: 37px;
+          }
         }
       }
     }

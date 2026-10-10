@@ -1,7 +1,6 @@
 import {
   DialogComponent,
   DialogRef,
-  DialogService,
   EmptyStateComponent,
   FilterXIconComponent,
   InputComponent,
@@ -11,39 +10,42 @@ import {
   SearchIconComponent,
   SkeletonComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 import { CdkScrollableModule } from '@angular/cdk/scrolling';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  input,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import { PAGE_SIZES, SEARCH_DEBOUNCE } from '@app/constants/filters';
+import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   DataPaginationOptions,
-  Dialog,
   Id,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
 import { FormatBytesPipe, FormatDatePipe, HighlightPipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
+import { DeletionService } from '@app/services';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as ImagesSelectors from '@app/store/images/images.selectors';
-import { pageRowCount } from '@app/utils';
+import { bindSearchControl, pageRowCount } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-image-explorer',
   templateUrl: './image-explorer.component.html',
@@ -69,8 +71,9 @@ import { pageRowCount } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageExplorerComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly dialogRef = inject<DialogRef<Id>>(DialogRef);
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly store = inject(Store);
 
   public readonly selectable = input<boolean>(true);
@@ -82,7 +85,6 @@ export class ImageExplorerComponent implements OnInit {
     options: DataPaginationOptions<Image>;
     skeletonCards: number[];
     status: LoadStatus;
-    totalCount: number;
   }>;
 
   public readonly addImageLink: InternalLink = {
@@ -90,8 +92,6 @@ export class ImageExplorerComponent implements OnInit {
     text: 'Add an image',
     icon: PlusCircleIconComponent,
   };
-
-  private readonly storeRequests = inject(StoreRequestService);
 
   protected readonly searchIcon = SearchIconComponent;
   protected readonly emptyIcon = FilterXIconComponent;
@@ -101,36 +101,21 @@ export class ImageExplorerComponent implements OnInit {
   public ngOnInit(): void {
     this.store.dispatch(ImagesActions.fetchFilteredThumbnailsRequested());
 
-    // The box shows the search in force, wherever it was set, and sends new text on a pause
-    this.store
-      .select(ImagesSelectors.selectOptions)
-      .pipe(untilDestroyed(this))
-      .subscribe(({ search }) => {
-        if (this.searchControl.value !== search) {
-          this.searchControl.setValue(search, { emitEvent: false });
-        }
-      });
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(SEARCH_DEBOUNCE),
-        distinctUntilChanged(),
-        withLatestFrom(this.store.select(ImagesSelectors.selectOptions)),
-        untilDestroyed(this),
-      )
-      .subscribe(([search, options]) =>
-        this.onOptionsChange({ ...options, search, page: 1 }),
-      );
+    bindSearchControl(
+      this.searchControl,
+      this.store.select(ImagesSelectors.selectOptions),
+      options => this.onOptionsChange(options),
+      this.destroyRef,
+    );
 
     this.viewModel$ = combineLatest([
       this.store.select(ImagesSelectors.selectFilteredImages),
       this.store.select(ImagesSelectors.selectFilteredCount),
       this.store.select(ImagesSelectors.selectOptions),
-      this.store.select(ImagesSelectors.selectTotalCount),
       this.store.select(ImagesSelectors.selectFilteredThumbnailsStatus),
       this.store.select(ImagesSelectors.selectIsFetchingFiltered),
     ]).pipe(
-      untilDestroyed(this),
-      map(([images, filteredCount, options, totalCount, status, isFetching]) => ({
+      map(([images, filteredCount, options, status, isFetching]) => ({
         images,
         filteredCount,
         isLoading: status === 'loading' || isFetching,
@@ -140,7 +125,6 @@ export class ImageExplorerComponent implements OnInit {
           (_, index) => index,
         ),
         status,
-        totalCount,
       })),
     );
   }
@@ -148,7 +132,7 @@ export class ImageExplorerComponent implements OnInit {
   public getAdminControlsConfig(image: Image): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDeleteImage(image),
+      deleteCb: () => this.deletion.deleteImage(image),
       editPath: ['image', 'edit', image.id.split('-')[0]],
       editInNewTab: true,
       isDeleteDisabled: !!image?.articleAppearances,
@@ -157,28 +141,12 @@ export class ImageExplorerComponent implements OnInit {
     };
   }
 
-  public async onDeleteImage(image: Image): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${image.filename}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(ImagesActions.deleteImageRequested({ image }), [
-          ImagesActions.deleteImageSucceeded,
-          ImagesActions.deleteImageFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-  }
-
   public onRetry(): void {
     this.store.dispatch(ImagesActions.fetchFilteredThumbnailsRequested());
   }
 
-  public onOptionsChange(options: DataPaginationOptions<Image>, fetch = true): void {
-    this.store.dispatch(ImagesActions.paginationOptionsChanged({ options, fetch }));
+  public onOptionsChange(options: DataPaginationOptions<Image>): void {
+    this.store.dispatch(ImagesActions.paginationOptionsChanged({ options }));
   }
 
   public onPageChanged(

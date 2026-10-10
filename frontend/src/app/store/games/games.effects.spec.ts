@@ -2,7 +2,7 @@ import { provideMockActions } from '@ngrx/effects/testing';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { ReplaySubject, of, throwError } from 'rxjs';
+import { ReplaySubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd } from '@angular/router';
@@ -74,71 +74,58 @@ describe('GamesEffects', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.clearAllMocks();
   });
 
   describe('fetchFilteredGames$', () => {
-    it('should fetch the games for the current query', () =>
-      withDone(done => {
-        gamesApiService.getGames.mockReturnValue(
-          of({ data: { items: MOCK_GAMES, filteredCount: 3, totalCount: 9119 } }),
-        );
+    it('should fetch the games for the current query', async () => {
+      gamesApiService.getGames.mockReturnValue(
+        of({ data: { items: MOCK_GAMES, filteredCount: 3, totalCount: 9119 } }),
+      );
 
-        actions$.next(GamesActions.fetchFilteredGamesRequested());
+      actions$.next(GamesActions.fetchFilteredGamesRequested());
+      const action = await firstValueFrom(effects.fetchFilteredGames$);
 
-        effects.fetchFilteredGames$.subscribe(action => {
-          expect(gamesApiService.getGames).toHaveBeenCalledWith(INITIAL_GAMES_QUERY);
-          expect(action).toEqual(
-            GamesActions.fetchFilteredGamesSucceeded({
-              games: MOCK_GAMES,
-              filteredCount: 3,
-            }),
-          );
-          done();
-        });
-      }));
+      expect(gamesApiService.getGames).toHaveBeenCalledWith(INITIAL_GAMES_QUERY);
+      expect(action).toEqual(
+        GamesActions.fetchFilteredGamesSucceeded({
+          games: MOCK_GAMES,
+          filteredCount: 3,
+        }),
+      );
+    });
 
-    it('should report a failed fetch', () =>
-      withDone(done => {
-        gamesApiService.getGames.mockReturnValue(throwError(() => mockError));
+    it('should report a failed fetch', async () => {
+      gamesApiService.getGames.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(GamesActions.fetchFilteredGamesRequested());
+      actions$.next(GamesActions.fetchFilteredGamesRequested());
+      const action = await firstValueFrom(effects.fetchFilteredGames$);
 
-        effects.fetchFilteredGames$.subscribe(action => {
-          expect(action).toEqual(
-            GamesActions.fetchFilteredGamesFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(GamesActions.fetchFilteredGamesFailed({ error: mockError }));
+    });
   });
 
   describe('refetchFilteredGames$', () => {
-    it('should fetch whenever the query changes', () =>
-      withDone(done => {
-        actions$.next(GamesActions.queryChanged({ query: INITIAL_GAMES_QUERY }));
+    it('should fetch whenever the query changes', async () => {
+      actions$.next(GamesActions.queryChanged({ query: INITIAL_GAMES_QUERY }));
+      const action = await firstValueFrom(effects.refetchFilteredGames$);
 
-        effects.refetchFilteredGames$.subscribe(action => {
-          expect(action).toEqual(GamesActions.fetchFilteredGamesRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(GamesActions.fetchFilteredGamesRequested());
+    });
 
-    it('should fetch again on refresh once results have been shown', () =>
-      withDone(done => {
-        store.overrideSelector(
-          GamesSelectors.selectLastFilteredFetch,
-          '2026-01-15T10:00:00.000Z',
-        );
-        store.refreshState();
+    it('should fetch again on refresh once results have been shown', async () => {
+      store.overrideSelector(
+        GamesSelectors.selectLastFilteredFetch,
+        '2026-01-15T10:00:00.000Z',
+      );
+      store.refreshState();
 
-        actions$.next(AppActions.refreshAppRequested());
+      actions$.next(AppActions.refreshAppRequested());
+      const action = await firstValueFrom(effects.refetchFilteredGames$);
 
-        effects.refetchFilteredGames$.subscribe(action => {
-          expect(action).toEqual(GamesActions.fetchFilteredGamesRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(GamesActions.fetchFilteredGamesRequested());
+    });
 
     it('should not fetch on refresh before any results have been shown', () => {
       const results: Action[] = [];
@@ -151,32 +138,24 @@ describe('GamesEffects', () => {
   });
 
   describe('fetchGame$', () => {
-    it('should fetch the game', () =>
-      withDone(done => {
-        gamesApiService.getGame.mockReturnValue(of({ data: MOCK_GAMES[1] }));
+    it('should fetch the game', async () => {
+      gamesApiService.getGame.mockReturnValue(of({ data: MOCK_GAMES[1] }));
 
-        actions$.next(GamesActions.fetchGameRequested({ gameId: MOCK_GAMES[1].id }));
+      actions$.next(GamesActions.fetchGameRequested({ gameId: MOCK_GAMES[1].id }));
+      const action = await firstValueFrom(effects.fetchGame$);
 
-        effects.fetchGame$.subscribe(action => {
-          expect(gamesApiService.getGame).toHaveBeenCalledWith(MOCK_GAMES[1].id);
-          expect(action).toEqual(
-            GamesActions.fetchGameSucceeded({ game: MOCK_GAMES[1] }),
-          );
-          done();
-        });
-      }));
+      expect(gamesApiService.getGame).toHaveBeenCalledWith(MOCK_GAMES[1].id);
+      expect(action).toEqual(GamesActions.fetchGameSucceeded({ game: MOCK_GAMES[1] }));
+    });
 
-    it('should report a failed fetch', () =>
-      withDone(done => {
-        gamesApiService.getGame.mockReturnValue(throwError(() => mockError));
+    it('should report a failed fetch', async () => {
+      gamesApiService.getGame.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(GamesActions.fetchGameRequested({ gameId: 'unknown' }));
+      actions$.next(GamesActions.fetchGameRequested({ gameId: 'unknown' }));
+      const action = await firstValueFrom(effects.fetchGame$);
 
-        effects.fetchGame$.subscribe(action => {
-          expect(action).toEqual(GamesActions.fetchGameFailed({ error: mockError }));
-          done();
-        });
-      }));
+      expect(action).toEqual(GamesActions.fetchGameFailed({ error: mockError }));
+    });
   });
 
   describe('fetchMemberOpenings$', () => {
@@ -185,88 +164,73 @@ describe('GamesEffects', () => {
       black: [{ opening: 'Sicilian Defence', gameCount: 2 }],
     };
 
-    it("should fetch the member's openings", () =>
-      withDone(done => {
-        gamesApiService.getMemberOpenings.mockReturnValue(of({ data: openings }));
+    it("should fetch the member's openings", async () => {
+      gamesApiService.getMemberOpenings.mockReturnValue(of({ data: openings }));
 
-        actions$.next(GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }));
+      actions$.next(GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }));
+      const action = await firstValueFrom(effects.fetchMemberOpenings$);
 
-        effects.fetchMemberOpenings$.subscribe(action => {
-          expect(gamesApiService.getMemberOpenings).toHaveBeenCalledWith(7);
-          expect(action).toEqual(
-            GamesActions.fetchMemberOpeningsSucceeded({ memberNumber: 7, openings }),
-          );
-          done();
-        });
-      }));
+      expect(gamesApiService.getMemberOpenings).toHaveBeenCalledWith(7);
+      expect(action).toEqual(
+        GamesActions.fetchMemberOpeningsSucceeded({ memberNumber: 7, openings }),
+      );
+    });
 
-    it('should report a failed fetch', () =>
-      withDone(done => {
-        gamesApiService.getMemberOpenings.mockReturnValue(throwError(() => mockError));
+    it('should report a failed fetch', async () => {
+      gamesApiService.getMemberOpenings.mockReturnValue(throwError(() => mockError));
 
-        actions$.next(GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }));
+      actions$.next(GamesActions.fetchMemberOpeningsRequested({ memberNumber: 7 }));
+      const action = await firstValueFrom(effects.fetchMemberOpenings$);
 
-        effects.fetchMemberOpenings$.subscribe(action => {
-          expect(action).toEqual(
-            GamesActions.fetchMemberOpeningsFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        GamesActions.fetchMemberOpeningsFailed({ error: mockError }),
+      );
+    });
   });
 
   describe('fetchArchiveReference$', () => {
-    it('should fetch the players, tournaments and summary together', () =>
-      withDone(done => {
-        gamesApiService.getPlayers.mockReturnValue(of({ data: MOCK_ARCHIVE_PLAYERS }));
-        gamesApiService.getTournaments.mockReturnValue(
-          of({ data: MOCK_ARCHIVE_TOURNAMENTS }),
-        );
-        gamesApiService.getSummary.mockReturnValue(of({ data: MOCK_GAMES_SUMMARY }));
+    it('should fetch the players, tournaments and summary together', async () => {
+      gamesApiService.getPlayers.mockReturnValue(of({ data: MOCK_ARCHIVE_PLAYERS }));
+      gamesApiService.getTournaments.mockReturnValue(
+        of({ data: MOCK_ARCHIVE_TOURNAMENTS }),
+      );
+      gamesApiService.getSummary.mockReturnValue(of({ data: MOCK_GAMES_SUMMARY }));
 
-        actions$.next(GamesActions.fetchArchiveReferenceRequested());
+      actions$.next(GamesActions.fetchArchiveReferenceRequested());
+      const action = await firstValueFrom(effects.fetchArchiveReference$);
 
-        effects.fetchArchiveReference$.subscribe(action => {
-          expect(action).toEqual(
-            GamesActions.fetchArchiveReferenceSucceeded({
-              players: MOCK_ARCHIVE_PLAYERS,
-              tournaments: MOCK_ARCHIVE_TOURNAMENTS,
-              summary: MOCK_GAMES_SUMMARY,
-            }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        GamesActions.fetchArchiveReferenceSucceeded({
+          players: MOCK_ARCHIVE_PLAYERS,
+          tournaments: MOCK_ARCHIVE_TOURNAMENTS,
+          summary: MOCK_GAMES_SUMMARY,
+        }),
+      );
+    });
 
-    it('should report the failure when any part fails', () =>
-      withDone(done => {
-        gamesApiService.getPlayers.mockReturnValue(of({ data: MOCK_ARCHIVE_PLAYERS }));
-        gamesApiService.getTournaments.mockReturnValue(throwError(() => mockError));
-        gamesApiService.getSummary.mockReturnValue(of({ data: MOCK_GAMES_SUMMARY }));
+    it('should report the failure when any part fails', async () => {
+      gamesApiService.getPlayers.mockReturnValue(of({ data: MOCK_ARCHIVE_PLAYERS }));
+      gamesApiService.getTournaments.mockReturnValue(throwError(() => mockError));
+      gamesApiService.getSummary.mockReturnValue(of({ data: MOCK_GAMES_SUMMARY }));
 
-        actions$.next(GamesActions.fetchArchiveReferenceRequested());
+      actions$.next(GamesActions.fetchArchiveReferenceRequested());
+      const action = await firstValueFrom(effects.fetchArchiveReference$);
 
-        effects.fetchArchiveReference$.subscribe(action => {
-          expect(action).toEqual(
-            GamesActions.fetchArchiveReferenceFailed({ error: mockError }),
-          );
-          done();
-        });
-      }));
+      expect(action).toEqual(
+        GamesActions.fetchArchiveReferenceFailed({ error: mockError }),
+      );
+    });
   });
 
   describe('refetchArchiveReference$', () => {
-    it('should fetch the reference data when the archives open without it', () =>
-      withDone(done => {
-        mockIsExpired.mockReturnValue(true);
+    it('should fetch the reference data when the archives open without it', async () => {
+      mockIsExpired.mockReturnValue(true);
 
-        actions$.next(navigatedTo('/game-archives?year=1994'));
+      actions$.next(navigatedTo('/game-archives?year=1994'));
+      const action = await firstValueFrom(effects.refetchArchiveReference$);
 
-        effects.refetchArchiveReference$.subscribe(action => {
-          expect(action).toEqual(GamesActions.fetchArchiveReferenceRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(GamesActions.fetchArchiveReferenceRequested());
+    });
 
     it('should leave fresh reference data alone', () => {
       mockIsExpired.mockReturnValue(false);
@@ -290,21 +254,18 @@ describe('GamesEffects', () => {
   });
 
   describe('refetchArchiveReferenceOnRefresh$', () => {
-    it('should fetch the reference data again on refresh once it has been shown', () =>
-      withDone(done => {
-        store.overrideSelector(
-          GamesSelectors.selectLastReferenceFetch,
-          '2026-01-15T10:00:00.000Z',
-        );
-        store.refreshState();
+    it('should fetch the reference data again on refresh once it has been shown', async () => {
+      store.overrideSelector(
+        GamesSelectors.selectLastReferenceFetch,
+        '2026-01-15T10:00:00.000Z',
+      );
+      store.refreshState();
 
-        actions$.next(AppActions.refreshAppRequested());
+      actions$.next(AppActions.refreshAppRequested());
+      const action = await firstValueFrom(effects.refetchArchiveReferenceOnRefresh$);
 
-        effects.refetchArchiveReferenceOnRefresh$.subscribe(action => {
-          expect(action).toEqual(GamesActions.fetchArchiveReferenceRequested());
-          done();
-        });
-      }));
+      expect(action).toEqual(GamesActions.fetchArchiveReferenceRequested());
+    });
 
     it('should not fetch on refresh before the archives have been opened', () => {
       const results: Action[] = [];

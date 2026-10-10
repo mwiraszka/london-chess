@@ -61,17 +61,11 @@ describe('MemberAccountFieldsComponent', () => {
     expect(inputWithLabel('First name').autofocus()).toBe(false);
   });
 
-  it('should pass on autofocus and an optional year of birth', () => {
+  it('should pass on autofocus', () => {
     fixture.componentRef.setInput('autofocus', true);
-    fixture.componentRef.setInput('yearOfBirthRequired', false);
 
     fixture.detectChanges();
 
-    const yearOfBirth: NumberInputComponent = query(
-      fixture.debugElement,
-      'ea-number-input',
-    ).componentInstance;
-    expect(yearOfBirth.required()).toBe(false);
     expect(inputWithLabel('First name').autofocus()).toBe(true);
   });
 });

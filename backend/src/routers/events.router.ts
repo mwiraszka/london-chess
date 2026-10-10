@@ -8,7 +8,7 @@ import {
   getWidestEvents,
   updateEvent,
 } from '../controllers/events.controller';
-import { adminAuth } from '../middlewares/auth.index';
+import { adminAuth } from '../middlewares/auth.middleware';
 
 export const eventsRouter = Router()
   .get('/', getEvents)

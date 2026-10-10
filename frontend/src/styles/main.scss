@@ -1,24 +1,25 @@
 @charset 'utf-8';
 
+@forward 'base/animations';
+@forward 'base/fonts';
 @forward 'base/reset';
 @forward 'base/typography';
 
-@forward 'themes/colour-palette';
-@forward 'themes/dark-theme';
-@forward 'themes/light-theme';
+@forward 'themes/brands';
+@forward 'themes/tokens';
 
 @forward 'abstracts/mixins';
 @forward 'abstracts/variables';
 
-@forward 'layout/overlay';
 @forward 'layout/page';
 @forward 'layout/truncate';
 
+@forward 'components/accessibility';
 @forward 'components/form';
 @forward 'components/link';
 @forward 'components/scrollbar';
 @forward 'components/search-highlight';
-@forward 'components/table';
+@forward 'components/side-nav';
 
 @forward 'vendors/lichess-pgn-viewer/lichess-pgn-viewer';
 

@@ -37,6 +37,14 @@ describe('PageHeaderComponent', () => {
       expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe('');
     });
 
+    it('should hold the icon back until the heading is known', () => {
+      fixture.componentRef.setInput('icon', HomeIconComponent);
+      fixture.componentRef.setInput('heading', null);
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.page-header-icon')).toBeFalsy();
+    });
+
     it('should display icon when provided', () => {
       fixture.componentRef.setInput('icon', HomeIconComponent);
       fixture.detectChanges();

@@ -1,16 +1,14 @@
 import { createClerkClient } from '@clerk/backend';
 import mongoose from 'mongoose';
 
-import { MemberAccount, MemberModel, MemberRecord } from '../src/models/member.model';
+import { MemberModel, MemberRecord, newMemberAccount } from '../src/models/member.model';
 import { sendEmail } from '../src/services/email.service';
 import { assignMemberNumber } from '../src/services/member-numbers.service';
 import { clerkErrorMessage } from '../src/util/clerk-error.util';
 import { buildWelcomeEmail } from '../src/util/emails.util';
+import { hashSecret } from '../src/util/hash-secret.util';
 import { EMAIL_PATTERN, validateDetailField } from '../src/util/member-details.util';
-import {
-  generateTemporaryPassword,
-  hashTemporaryPassword,
-} from '../src/util/temporary-password.util';
+import { generateTemporaryPassword } from '../src/util/temporary-password.util';
 
 const SITE_URL = 'https://londonchess.ca';
 
@@ -68,18 +66,9 @@ async function invite(member: MemberRecord): Promise<void> {
 
   let step = 'save the member';
   try {
-    const account: MemberAccount = {
-      clerkUserId: clerkUser.id,
-      isAdmin: false,
-      clerkImageUrl: null,
-      avatarUrl: null,
-      avatarOriginalUrl: null,
-      avatarManagedByApp: false,
-      clerkImagePending: false,
-      avatarCropState: null,
-      avatarUpdatedAt: null,
-      temporaryPasswordHash: hashTemporaryPassword(temporaryPassword),
-    };
+    const account = newMemberAccount(clerkUser.id, {
+      temporaryPasswordHash: hashSecret(temporaryPassword),
+    });
     const result = await MemberModel.updateOne(
       {
         _id: member._id,

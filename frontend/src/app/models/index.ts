@@ -1,4 +1,5 @@
 export type { AccountSection, SessionInfo } from './account.model';
+export type { Brand, BrandDefinition } from './brand.model';
 export type {
   AdminControlsConfig,
   AdminControlsPlacement,
@@ -12,7 +13,7 @@ export type {
   LoginStep,
   NewPasswordFormGroup,
 } from './auth.model';
-export type { CalendarDay, CalendarMonth } from './calendar.model';
+export type { CalendarDay, CalendarMonth, CalendarPage } from './calendar.model';
 export type { ChangelogRelease, ChangelogTag } from './changelog.model';
 export type { ChampionshipTableRowData } from './championship-data.model';
 export type { Club, ClubDocument } from './club.model';
@@ -29,11 +30,11 @@ export type {
   EventFormData,
   EventFormGroup,
   EventFormValue,
+  EventSaveResult,
   EventType,
 } from './event.model';
 export type {
   ArchivePlayer,
-  ArchiveSizing,
   Game,
   GameFilters,
   GamePlayer,
@@ -47,14 +48,13 @@ export type {
 } from './game.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {
-  AlbumFormData,
   AlbumFormGroup,
   BaseImage,
   Image,
   ImageDisplayMode,
   ImageFormData,
   ImageFormGroup,
-  IndexedDbImageData,
+  NewImageFile,
 } from './image.model';
 export type { ExternalLink, InternalLink, InternalPath } from './link.model';
 export type {
@@ -108,6 +108,7 @@ export type {
   TournamentInput,
   TournamentRegistrant,
   TournamentSection,
+  TournamentSectionSummary,
   TournamentSummary,
   TournamentTiming,
   Trophy,

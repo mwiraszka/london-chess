@@ -42,7 +42,7 @@
 }
 
 .tech--active {
-  filter: drop-shadow(0 0 8px var(--lcc-color--techRing-iconGlow));
+  filter: drop-shadow(0 0 8px var(--lcc-brand-glow));
   transform: scale(1.3);
 }
 
@@ -91,10 +91,10 @@
 .tech-info__name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--lcc-color--techRing-primaryText);
+  color: var(--color-text-primary);
 }
 
 .tech-info__purpose {
   font-size: 14px;
-  color: var(--lcc-color--techRing-secondaryText);
+  color: var(--color-text-secondary);
 }

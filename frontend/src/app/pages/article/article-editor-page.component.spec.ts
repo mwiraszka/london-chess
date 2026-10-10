@@ -1,6 +1,7 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
+import { provideMarkdown } from 'ngx-markdown';
 import { BehaviorSubject, EMPTY, Observable, Subject, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -51,12 +52,12 @@ describe('ArticleEditorPageComponent', () => {
         },
         {} as Record<Id, { article: Article; formData: ArticleFormData }>,
       ),
-      totalCount: MOCK_ARTICLES.length,
     };
 
     await TestBed.configureTestingModule({
       imports: [ArticleEditorPageComponent],
       providers: [
+        provideMarkdown(),
         provideMockActions(() => EMPTY),
         { provide: ActivatedRoute, useValue: activatedRoute },
         {
@@ -272,5 +273,38 @@ describe('ArticleEditorPageComponent', () => {
         );
       });
     });
+  });
+
+  it('should flag edits to an article that are not yet saved', async () => {
+    const [article] = MOCK_ARTICLES;
+    store.setState({
+      articlesState: {
+        ...articlesInitialState,
+        ids: [article.id],
+        entities: {
+          [article.id]: {
+            article,
+            formData: {
+              ...pick(article, ARTICLE_FORM_DATA_PROPERTIES),
+              title: 'Renamed',
+            },
+          },
+        },
+      },
+      imagesState: imagesInitialState,
+    });
+    mockParamsSubject.next({ article_id: article.id });
+    fixture.detectChanges();
+
+    const vm = await firstValueFrom(component.viewModel$!);
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+    expect(query(fixture.debugElement, '.end-with-asterisk')).toBeTruthy();
+    expect(
+      query(
+        fixture.debugElement,
+        'lcc-article-form',
+      ).componentInstance.hasUnsavedChanges(),
+    ).toBe(true);
   });
 });

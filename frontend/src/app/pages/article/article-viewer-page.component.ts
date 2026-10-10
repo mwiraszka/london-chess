@@ -1,7 +1,6 @@
-import { DialogService, NewspaperIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { NewspaperIconComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { Observable, combineLatest, of } from 'rxjs';
 import { distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
@@ -11,38 +10,36 @@ import { ActivatedRoute } from '@angular/router';
 
 import { ArticleSkeletonComponent } from '@app/components/article-skeleton/article-skeleton.component';
 import { ArticleComponent } from '@app/components/article/article.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   Article,
-  Dialog,
   Id,
   Image,
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
-import { AppSelectors } from '@app/store/app';
+import { DeletionService, MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesSelectors } from '@app/store/images';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-article-viewer-page',
   template: `
     @if (viewModel$ | async; as vm) {
-      @if (vm.article; as article) {
+      <!-- Waits for the photos' details too, so they lay out at their own size from the start -->
+      @if (vm.article && vm.imagesStatus !== 'loading') {
+        @let article = vm.article;
         <lcc-article
           [adminControls]="vm.isAdmin ? getAdminControlsConfig(article) : null"
           [article]="article"
           [bannerImage]="vm.bannerImage"
           [bodyImages]="vm.bodyImages">
         </lcc-article>
-        <lcc-link-list [links]="[newsPageLink]"></lcc-link-list>
+        <lcc-link-list [links]="[articlesPageLink]"></lcc-link-list>
       } @else if (vm.status === 'failed') {
         <lcc-load-failed
           title="Unable to load this article"
@@ -65,13 +62,13 @@ import { ImagesSelectors } from '@app/store/images';
 })
 export class ArticleViewerPageComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
 
-  public readonly newsPageLink: InternalLink = {
+  public readonly articlesPageLink: InternalLink = {
     text: 'More articles',
-    internalPath: 'news',
+    internalPath: 'articles',
     icon: NewspaperIconComponent,
   };
   public viewModel$?: Observable<{
@@ -79,16 +76,13 @@ export class ArticleViewerPageComponent implements OnInit {
     articleId: Id;
     bannerImage: Image | null;
     bodyImages: Image[];
+    imagesStatus: LoadStatus;
     isAdmin: boolean;
-    isWideView: boolean;
     status: LoadStatus;
   }>;
 
-  private readonly storeRequests = inject(StoreRequestService);
-
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => params['article_id'] as Id),
       switchMap(articleId =>
         combineLatest([
@@ -97,8 +91,8 @@ export class ArticleViewerPageComponent implements OnInit {
           this.store.select(ImagesSelectors.selectBannerImageByArticleId(articleId)),
           this.store.select(ImagesSelectors.selectBodyImagesByArticleId(articleId)),
           this.store.select(AuthSelectors.selectIsAdmin),
-          this.store.select(AppSelectors.selectIsWideView),
           this.store.select(ArticlesSelectors.selectArticleStatus(articleId)),
+          this.store.select(ImagesSelectors.selectMetadataStatus),
         ]),
       ),
       distinctUntilChanged(isEqual),
@@ -112,13 +106,21 @@ export class ArticleViewerPageComponent implements OnInit {
         this.metaAndTitleService.updateDescription(articlePreview);
       }),
       map(
-        ([article, articleId, bannerImage, bodyImages, isAdmin, isWideView, status]) => ({
-          article: article ?? null,
+        ([
+          article,
           articleId,
           bannerImage,
           bodyImages,
           isAdmin,
-          isWideView,
+          status,
+          imagesStatus,
+        ]) => ({
+          article: article ?? null,
+          articleId,
+          bannerImage,
+          bodyImages,
+          imagesStatus,
+          isAdmin,
           status,
         }),
       ),
@@ -128,26 +130,10 @@ export class ArticleViewerPageComponent implements OnInit {
   public getAdminControlsConfig(article: Article): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDelete(article),
+      deleteCb: () => this.deletion.deleteArticle(article),
       editPath: ['article', 'edit', article.id!],
       itemName: article.title,
     };
-  }
-
-  private async onDelete(article: Article): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${article.title}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(ArticlesActions.deleteArticleRequested({ article }), [
-          ArticlesActions.deleteArticleSucceeded,
-          ArticlesActions.deleteArticleFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public onRetry(articleId: Id): void {

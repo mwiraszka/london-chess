@@ -1,5 +1,5 @@
 import { BadgeVariant, SelectOption } from '@eagami/ui';
-import { capitalize } from 'lodash';
+import { capitalize } from 'lodash-es';
 
 import {
   TournamentFormData,
@@ -16,6 +16,13 @@ const TROPHY_DESCRIPTIONS: Record<TrophyShape, string> = {
   chalice: 'chalice trophy',
 };
 
+// Each drawing's view box, which gives its image a shape before the file has loaded
+const TROPHY_SIZES: Record<TrophyShape, { width: number; height: number }> = {
+  cup: { width: 180, height: 274 },
+  bowl: { width: 236, height: 178 },
+  chalice: { width: 104, height: 248 },
+};
+
 // The bowl is only ever gold, so it alone has no metal in its file name
 export function trophy(shape: TrophyShape, metal: TrophyMetal): Trophy {
   return {
@@ -23,6 +30,7 @@ export function trophy(shape: TrophyShape, metal: TrophyMetal): Trophy {
     label: `${capitalize(metal)} ${TROPHY_DESCRIPTIONS[shape]}`,
     shape,
     metal,
+    ...TROPHY_SIZES[shape],
   };
 }
 
@@ -51,21 +59,14 @@ export const TOURNAMENT_TIMING_BADGES: Record<
   'in-progress': { label: 'In progress', variant: 'success' },
 };
 
-export const TOURNAMENT_SUBTITLE_LABELS: Record<TournamentFormat, string> = {
-  swiss: 'Theme',
-  'round-robin': 'Theme',
-  match: 'Match',
-  'tandem-simul': 'Simul givers',
-};
-
 export const TOURNAMENTS_PAGE_SIZES = [25, 50, 100];
 
 export const MEMBER_TOURNAMENTS_PAGE_SIZES = [10, 25, 50];
 
-export const LOADING_ENTRY_COUNT = 10;
-export const LOADING_ROUND_COUNT = 6;
-
 export const LOADING_RESULT_COUNT = 3;
+
+// As many rounds as the server stores for a tournament
+export const MAX_ROUND_COUNT = 30;
 
 export const TOURNAMENT_FORMAT_OPTIONS: SelectOption[] = (
   Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[]
@@ -79,6 +80,7 @@ export const TOURNAMENT_FORM_DATA_PROPERTIES = [
   'endDate',
   'format',
   'timeControl',
+  'roundCount',
   'isRated',
   'articleId',
   'registrationOpens',
@@ -92,6 +94,7 @@ export const INITIAL_TOURNAMENT_FORM_DATA: TournamentFormData = {
   endDate: null,
   format: 'swiss',
   timeControl: '',
+  roundCount: null,
   isRated: true,
   articleId: null,
   registrationOpens: null,

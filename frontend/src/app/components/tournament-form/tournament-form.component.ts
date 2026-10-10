@@ -1,7 +1,6 @@
 import {
   AlertComponent,
   BadgeComponent,
-  ButtonComponent,
   CardComponent,
   CheckboxComponent,
   DataTableColumn,
@@ -10,12 +9,11 @@ import {
   DividerComponent,
   DropdownComponent,
   FileUploaderComponent,
-  HistoryIconComponent,
   InputComponent,
+  NumberInputComponent,
   SwitchComponent,
   TimePickerComponent,
 } from '@eagami/ui';
-import moment from 'moment-timezone';
 import { Subject, firstValueFrom, merge } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -37,6 +35,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import {
@@ -46,10 +45,10 @@ import {
 } from '@app/constants/forms';
 import {
   MAX_LISTED_IMPORT_PROBLEMS,
+  MAX_ROUND_COUNT,
   TOURNAMENT_FORMAT_OPTIONS,
 } from '@app/constants/tournaments';
 import {
-  BasicDialogResult,
   Dialog,
   GameInput,
   ImportChanges,
@@ -78,10 +77,12 @@ import {
   toDayString,
   tournamentFormData,
 } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 import {
   closesAfterOpensValidator,
   idValidator,
   notBeforeDayValidator,
+  roundCountValidator,
   textValidator,
   timeControlValidator,
 } from '@app/validators';
@@ -93,7 +94,6 @@ import {
   imports: [
     AlertComponent,
     BadgeComponent,
-    ButtonComponent,
     CardComponent,
     CheckboxComponent,
     DataTableComponent,
@@ -101,8 +101,10 @@ import {
     DividerComponent,
     DropdownComponent,
     FileUploaderComponent,
+    FormActionsComponent,
     InputComponent,
     ModificationInfoComponent,
+    NumberInputComponent,
     ReactiveFormsModule,
     SwitchComponent,
     TimePickerComponent,
@@ -132,7 +134,7 @@ export class TournamentFormComponent implements OnInit {
 
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
   protected readonly formatOptions = TOURNAMENT_FORMAT_OPTIONS;
-  protected readonly restoreIcon = HistoryIconComponent;
+  protected readonly maxRoundCount = MAX_ROUND_COUNT;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
   // Results read from a file but not yet saved; null keeps the recorded ones
@@ -304,7 +306,7 @@ export class TournamentFormComponent implements OnInit {
 
     this.form.controls.hasRegistration.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(hasRegistration => this.onRegistrationToggled(hasRegistration));
+      .subscribe(hasRegistration => this.syncRegistrationControls(hasRegistration));
     this.form.controls.date.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -403,23 +405,7 @@ export class TournamentFormComponent implements OnInit {
     this.emitChange();
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original tournament data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originalTournament = this.originalTournament();
     this.restore.emit(originalTournament?.number ?? null);
     this.clearImport();
@@ -559,10 +545,6 @@ export class TournamentFormComponent implements OnInit {
     }
   }
 
-  private onRegistrationToggled(hasRegistration: boolean): void {
-    this.syncRegistrationControls(hasRegistration);
-  }
-
   // While registration is off its fields show the window it would start with, so turning
   // it on only enables them. Opening straight away and closing as the first day starts
   // suits most tournaments, and a first day already past or not yet set gives a week
@@ -613,6 +595,7 @@ export class TournamentFormComponent implements OnInit {
       endDate: data.endDate ? fromDayString(data.endDate) : null,
       format: data.format,
       timeControl: data.timeControl,
+      roundCount: data.roundCount,
       isRated: data.isRated,
       articleId: data.articleId ?? '',
       hasRegistration: !!opens || !!closes,
@@ -642,8 +625,9 @@ export class TournamentFormComponent implements OnInit {
       }),
       timeControl: new FormControl(value.timeControl, {
         nonNullable: true,
-        validators: timeControlValidator,
+        validators: [Validators.required, timeControlValidator],
       }),
+      roundCount: new FormControl<number | null>(value.roundCount, roundCountValidator),
       isRated: new FormControl(value.isRated, { nonNullable: true }),
       articleId: new FormControl(value.articleId, {
         nonNullable: true,
@@ -688,6 +672,7 @@ export class TournamentFormComponent implements OnInit {
         endDate: value.endDate ? toDayString(value.endDate) : null,
         format: value.format,
         timeControl: value.timeControl,
+        roundCount: value.roundCount,
         isRated: value.isRated,
         articleId: value.articleId || null,
         registrationOpens: register

@@ -1,8 +1,8 @@
-import { DataTableColumn, DialogRef, DialogService } from '@eagami/ui';
+import { ButtonComponent, DataTableColumn, DialogRef, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
-import { DebugElement, signal } from '@angular/core';
+import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ActivatedRoute,
@@ -14,14 +14,20 @@ import {
 } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournaments.mock';
-import { BasicDialogResult, Tournament, User } from '@app/models';
+import {
+  MOCK_TOURNAMENTS,
+  MOCK_TOURNAMENT_SUMMARIES,
+  MOCK_UPCOMING_SUMMARY,
+  MOCK_UPCOMING_TOURNAMENT,
+} from '@app/mocks/tournaments.mock';
+import { BasicDialogResult, Tournament, TournamentSummary, User } from '@app/models';
 import {
   AuthDrawerService,
+  DeletionService,
   MetaAndTitleService,
   StoreRequestService,
-  UserService,
 } from '@app/services';
+import { initialState as appInitialState } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
 import { tournamentsAdapter } from '@app/store/tournaments/tournaments.reducer';
@@ -43,15 +49,22 @@ describe('TournamentPageComponent', () => {
   let dispatchSpy: MockInstance;
   let paramMap: BehaviorSubject<ParamMap>;
 
-  const memberNumber = signal<number | null>(null);
-
-  const stateWith = (tournaments: Tournament[], failed = false) => ({
+  const stateWith = (
+    tournaments: Tournament[],
+    failed = false,
+    summaries: TournamentSummary[] = [],
+  ) => ({
+    appState: appInitialState,
     authState: { user: null },
     tournamentsState: tournamentsAdapter.setAll(tournaments, {
       ...initialState,
+      summaries,
       failedLoads: failed ? ['tournament' as const] : [],
     }),
   });
+
+  const bodyRows = (table: DebugElement) =>
+    queryAll(table, '.ea-data-table__body .ea-data-table__row');
 
   const textOf = (element: DebugElement): string =>
     element.nativeElement.textContent.replace(/\s+/g, ' ').trim();
@@ -94,11 +107,8 @@ describe('TournamentPageComponent', () => {
           provide: StoreRequestService,
           useValue: { dispatch: vi.fn().mockResolvedValue(null) },
         },
-        { provide: UserService, useValue: { memberNumber } },
       ],
     }).compileComponents();
-
-    memberNumber.set(null);
 
     fixture = TestBed.createComponent(TournamentPageComponent);
     router = TestBed.inject(Router);
@@ -107,6 +117,8 @@ describe('TournamentPageComponent', () => {
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('a Swiss tournament with its rounds', () => {
     beforeEach(() => open(90));
@@ -129,7 +141,7 @@ describe('TournamentPageComponent', () => {
         'G25',
         '3 players',
       ]);
-      expect(query(fixture.debugElement, '.details__subtitle')).toBeFalsy();
+      expect(query(fixture.debugElement, '.details__item--subtitle')).toBeFalsy();
     });
 
     it('should lay out the crosstable round by round', () => {
@@ -230,9 +242,9 @@ describe('TournamentPageComponent', () => {
     beforeEach(() => open(111));
 
     it('should name the simul givers with their ratings set apart', () => {
-      const givers = query(fixture.debugElement, '.details__subtitle');
+      const givers = query(fixture.debugElement, '.details__item--subtitle');
 
-      expect(textOf(givers)).toBe('Simul givers: Doe, John (2302) / Smith, Jane (2189)');
+      expect(textOf(givers)).toBe('Doe, John (2302) / Smith, Jane (2189)');
       expect(queryAll(givers, '.details__extra').map(textOf)).toEqual([
         '(2302)',
         '(2189)',
@@ -330,7 +342,7 @@ describe('TournamentPageComponent', () => {
     });
   });
 
-  describe('when the tournament is not in the store', () => {
+  describe('when neither the tournament nor its summary is in the store', () => {
     beforeEach(() => {
       store.setState(stateWith([]));
       open(90);
@@ -340,18 +352,48 @@ describe('TournamentPageComponent', () => {
       expect(dispatchSpy).not.toHaveBeenCalled();
     });
 
-    it('should hold the page with a skeleton crosstable until it arrives', () => {
-      const rows = queryAll(
-        fixture.debugElement,
-        '.crosstable .ea-data-table__body .ea-data-table__row',
-      );
-
+    it('should hold the heading and details with skeletons until it arrives', () => {
       expect(query(fixture.debugElement, '.page-heading lcc-text-skeleton')).toBeTruthy();
       expect(
         query(fixture.debugElement, '.details--loading lcc-text-skeleton'),
       ).toBeTruthy();
-      expect(rows).toHaveLength(10);
-      expect(queryAll(rows[0], '.ea-data-table__placeholder')).toHaveLength(10);
+      expect(query(fixture.debugElement, '.sections')).toBeFalsy();
+    });
+  });
+
+  describe('when only its summary is in the store', () => {
+    beforeEach(() => {
+      store.setState(stateWith([], false, MOCK_TOURNAMENT_SUMMARIES));
+      open(118);
+    });
+
+    it('should show all the summary tells of it', () => {
+      expect(queryTextContent(fixture.debugElement, '.page-heading')).toBe(
+        'Championship',
+      );
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toEqual([
+        'September 12 – November 14, 2024',
+        'Round robin (rated)',
+        'G80',
+        '3 players',
+      ]);
+      expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
+        'A1',
+        'U1500',
+      ]);
+      expect(links()).toEqual([{ text: 'Back to tournaments', path: '/tournaments' }]);
+    });
+
+    it('should hold a place for every player and archived game', () => {
+      const tables = queryAll(fixture.debugElement, '.crosstable');
+      const games = queryAll(fixture.debugElement, '.games');
+
+      expect(query(fixture.debugElement, '.sections').attributes['aria-busy']).toBe(
+        'true',
+      );
+      expect(headers(tables[0])).toEqual(['#', 'Player', 'Rating', 'Total']);
+      expect(tables.map(table => bodyRows(table).length)).toEqual([2, 1]);
+      expect(games.map(table => bodyRows(table).length)).toEqual([1]);
     });
   });
 
@@ -396,11 +438,17 @@ describe('TournamentPageComponent', () => {
       ]);
     });
 
-    it('should show a subtitle that names no one as it is', () => {
-      show({ ...simul, subtitle: 'Club members' });
+    it('should show a subtitle as it is, right after the date', () => {
+      show({ ...swiss, subtitle: 'Halloween special' });
 
-      const subtitle = query(fixture.debugElement, '.details__subtitle');
-      expect(textOf(subtitle)).toContain('Club members');
+      const subtitle = query(fixture.debugElement, '.details__item--subtitle');
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toEqual([
+        'October 19, 2023',
+        'Halloween special',
+        'Swiss (rated)',
+        'G25',
+        '3 players',
+      ]);
       expect(query(subtitle, '.details__person')).toBeFalsy();
     });
 
@@ -420,14 +468,16 @@ describe('TournamentPageComponent', () => {
       });
 
       expect(
-        queryAll(fixture.debugElement, '.details__subtitle .details__person').map(textOf),
+        queryAll(fixture.debugElement, '.details__item--subtitle .details__person').map(
+          textOf,
+        ),
       ).toEqual(['Doe, John', 'Smith, Jane']);
       expect(queryAll(fixture.debugElement, '.section__heading').map(textOf)).toEqual([
         'Doe, John',
         'Smith, Jane / Bloggs, Joe',
       ]);
       expect(
-        query(fixture.debugElement, '.details__subtitle .details__extra'),
+        query(fixture.debugElement, '.details__item--subtitle .details__extra'),
       ).toBeFalsy();
     });
 
@@ -462,13 +512,16 @@ describe('TournamentPageComponent', () => {
       lastName: 'Bloggs',
       email: 'joe@example.com',
       isAdmin: false,
+      memberNumber: null,
     };
 
     const signIn = (user: User | null, number: number | null = null) => {
-      store.overrideSelector(AuthSelectors.selectUser, user);
+      store.overrideSelector(
+        AuthSelectors.selectUser,
+        user && { ...user, memberNumber: number },
+      );
       store.overrideSelector(AuthSelectors.selectIsAdmin, !!user?.isAdmin);
       store.refreshState();
-      memberNumber.set(number);
     };
 
     const openUpcoming = (changes: Partial<Tournament> = {}) => {
@@ -495,13 +548,25 @@ describe('TournamentPageComponent', () => {
       );
     });
 
+    it('should offer registration from its summary before it arrives', () => {
+      store.setState(stateWith([], false, [MOCK_UPCOMING_SUMMARY]));
+      open(MOCK_UPCOMING_TOURNAMENT.number);
+
+      expect(
+        queryAll(fixture.debugElement, '.registration__registrant lcc-member-link').map(
+          textOf,
+        ),
+      ).toEqual(['John Doe', 'Joe Bloggs']);
+      expect(query(fixture.debugElement, '.log-in-button')).toBeTruthy();
+    });
+
     it('should ask a visitor to log in to register', () => {
       openUpcoming();
 
       query(fixture.debugElement, '.log-in-button').triggerEventHandler('clicked');
 
       expect(queryTextContent(fixture.debugElement, '.registration__status')).toMatch(
-        /^Registration is open until /,
+        /^Registration is open until \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M\.$/,
       );
       expect(TestBed.inject(AuthDrawerService).openLogin).toHaveBeenCalled();
     });
@@ -561,7 +626,9 @@ describe('TournamentPageComponent', () => {
 
       openUpcoming({ registrationCloses: '2026-01-02T12:00:00.000Z' });
 
-      expect(beforeOpening).toMatch(/^Registration opens /);
+      expect(beforeOpening).toMatch(
+        /^Registration opens on \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M\.$/,
+      );
       expect(registerBeforeOpening).toBeFalsy();
       expect(queryTextContent(fixture.debugElement, '.registration__status')).toBe(
         'Registration has closed.',
@@ -579,26 +646,71 @@ describe('TournamentPageComponent', () => {
       expect(registration()).toBeFalsy();
     });
 
-    it('should give admins links to edit and delete the tournament', async () => {
+    it('should keep the register button busy only until the request is answered', async () => {
+      signIn(member, 44);
+      openUpcoming();
+      let answer!: () => void;
+      vi.mocked(TestBed.inject(StoreRequestService).dispatch).mockReturnValue(
+        new Promise(
+          resolve =>
+            (answer = () =>
+              resolve(
+                TournamentsActions.registrationFailed({
+                  error: { name: 'LCCError', message: 'Registration has closed.' },
+                }),
+              )),
+        ),
+      );
+      const registerButton = (): ButtonComponent =>
+        query(fixture.debugElement, '.register-button').componentInstance;
+
+      query(fixture.debugElement, '.register-button').triggerEventHandler('clicked');
+      fixture.detectChanges();
+      const busy = registerButton().loading();
+      answer();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(busy).toBe(true);
+      expect(registerButton().loading()).toBe(false);
+    });
+
+    it('should not offer to withdraw once the tournament is under way', () => {
+      signIn(member, 7);
+
+      openUpcoming({ date: '2026-01-01' });
+
+      expect(textOf(query(fixture.debugElement, '.registration__registered'))).toBe(
+        'You are registered.',
+      );
+      expect(query(fixture.debugElement, '.withdraw-button')).toBeFalsy();
+    });
+
+    it('should let an admin delete the tournament', () => {
       signIn({ ...member, isAdmin: true });
       openUpcoming();
-      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+      const deleteTournament = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteTournament')
+        .mockResolvedValue(false);
 
       query(
         fixture.debugElement,
         'lcc-admin-toolbar #delete-tournament',
       ).triggerEventHandler('clicked');
-      await fixture.whenStable();
+
+      expect(deleteTournament).toHaveBeenCalledExactlyOnceWith(MOCK_UPCOMING_TOURNAMENT);
+    });
+
+    it('should give admins a link to edit the tournament', () => {
+      signIn({ ...member, isAdmin: true });
+
+      openUpcoming();
 
       expect(
         queryAll(fixture.debugElement, 'lcc-admin-toolbar lcc-link-list a').map(link =>
           link.injector.get(RouterLink).urlTree?.toString(),
         ),
       ).toEqual([`/tournament/edit/${MOCK_UPCOMING_TOURNAMENT.number}`]);
-      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
-        'Delete Fall Rapid (October 15–29, 2050)? Its results and registrations will be lost.',
-      );
     });
   });
 });

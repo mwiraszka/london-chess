@@ -16,7 +16,6 @@ export interface MemberAccount {
   clerkImageUrl: string | null;
   avatarUrl: string | null;
   avatarOriginalUrl: string | null;
-  avatarManagedByApp: boolean;
   // Set while the app changes the Clerk photo itself, so the webhook it raises is not
   // taken for a change made in Clerk
   clerkImagePending: boolean;
@@ -26,8 +25,36 @@ export interface MemberAccount {
   temporaryPasswordHash: string | null;
 }
 
-export interface MemberPreferences {
+// An account just made, with no photo yet
+export function newMemberAccount(
+  clerkUserId: string,
+  details: Partial<
+    Pick<MemberAccount, 'isAdmin' | 'clerkImageUrl' | 'temporaryPasswordHash'>
+  > = {},
+): MemberAccount {
+  return {
+    clerkUserId,
+    isAdmin: false,
+    clerkImageUrl: null,
+    avatarUrl: null,
+    avatarOriginalUrl: null,
+    clerkImagePending: false,
+    avatarCropState: null,
+    avatarUpdatedAt: null,
+    temporaryPasswordHash: null,
+    ...details,
+  };
+}
+
+// The looks a member can give the site, each its own colours and type
+export const BRANDS = ['modern', 'classic', 'sunset', 'newsprint', 'playground'] as const;
+export type Brand = (typeof BRANDS)[number];
+
+interface MemberPreferences {
   showYearOfBirth: boolean;
+  brand: Brand;
+  notifyRatingChanges: boolean;
+  notifyScheduleChanges: boolean;
 }
 
 export interface Member {
@@ -54,6 +81,15 @@ export interface Member {
 
 export type MemberRecord = Omit<Member, 'id'> & { _id: Types.ObjectId };
 
+// Only a member with an account has a profile to show
+export const profileMemberFilter = (number: number) => ({
+  number,
+  'account.clerkUserId': { $ne: null },
+});
+
+// Enough of a member to name them and link to their profile
+export type MemberName = Pick<MemberRecord, '_id' | 'firstName' | 'lastName' | 'number'>;
+
 // The number, account and preferences belong to the member, so admins never write them
 export type EditableMemberFields = Omit<
   Member,
@@ -67,7 +103,6 @@ const accountSchema = new Schema<MemberAccount>(
     clerkImageUrl: { type: String, default: null },
     avatarUrl: { type: String, default: null },
     avatarOriginalUrl: { type: String, default: null },
-    avatarManagedByApp: { type: Boolean, default: false },
     clerkImagePending: { type: Boolean, default: false },
     avatarCropState: {
       type: { zoom: Number, offsetX: Number, offsetY: Number },
@@ -81,7 +116,12 @@ const accountSchema = new Schema<MemberAccount>(
 );
 
 const preferencesSchema = new Schema<MemberPreferences>(
-  { showYearOfBirth: { type: Boolean, default: false } },
+  {
+    showYearOfBirth: { type: Boolean, default: false },
+    brand: { type: String, enum: BRANDS, default: 'modern' },
+    notifyRatingChanges: { type: Boolean, default: true },
+    notifyScheduleChanges: { type: Boolean, default: true },
+  },
   { _id: false },
 );
 

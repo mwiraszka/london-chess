@@ -16,6 +16,7 @@ import {
   TournamentRegistration,
   TournamentResponse,
   TournamentSection,
+  TournamentSummary,
 } from '../models/tournament.model';
 import { isCollectionId } from '../util/is-collection-id.util';
 import { performanceRatings } from '../util/performance-rating.util';
@@ -27,7 +28,34 @@ export type ArchiveGame = Pick<
   '_id' | 'section' | 'round' | 'date' | 'whitePlayerId' | 'blackPlayerId' | 'result'
 >;
 
+export type TournamentSummaryRecord = Omit<TournamentSummary, 'registrants'> & {
+  registrations: TournamentRegistration[];
+};
+
 export const TOURNAMENT_SUMMARY_PIPELINE: PipelineStage[] = [
+  {
+    $lookup: {
+      from: GameModel.collection.name,
+      let: {
+        tournament: '$gameArchiveTournament',
+        year: { $toInt: { $substrCP: ['$date', 0, 4] } },
+      },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ['$tournament', '$$tournament'] },
+                { $eq: ['$year', '$$year'] },
+              ],
+            },
+          },
+        },
+        { $project: { _id: 0, section: 1 } },
+      ],
+      as: 'archiveGames',
+    },
+  },
   {
     $project: {
       _id: 0,
@@ -38,13 +66,46 @@ export const TOURNAMENT_SUMMARY_PIPELINE: PipelineStage[] = [
       endDate: 1,
       format: 1,
       timeControl: 1,
+      // Tournaments recorded before rounds could be set ahead have none
+      roundCount: { $ifNull: ['$roundCount', null] },
       isRated: 1,
+      articleId: { $ifNull: ['$articleId', null] },
       // Tournaments recorded before online registration have neither field
       registrationOpens: { $ifNull: ['$registrationOpens', null] },
       registrationCloses: { $ifNull: ['$registrationCloses', null] },
-      registrationCount: { $size: { $ifNull: ['$registrations', []] } },
-      sectionCount: { $size: '$sections' },
-      roundCount: { $max: '$sections.roundCount' },
+      registrations: { $ifNull: ['$registrations', []] },
+      sections: {
+        $map: {
+          input: '$sections',
+          as: 'section',
+          in: {
+            name: '$$section.name',
+            ratingBand: '$$section.ratingBand',
+            roundCount: '$$section.roundCount',
+            entryCount: { $size: '$$section.entries' },
+            hasRounds: {
+              $anyElementTrue: [
+                {
+                  $map: {
+                    input: '$$section.entries',
+                    as: 'entry',
+                    in: { $gt: [{ $size: '$$entry.rounds' }, 0] },
+                  },
+                },
+              ],
+            },
+            gameCount: {
+              $size: {
+                $filter: {
+                  input: '$archiveGames',
+                  as: 'game',
+                  cond: { $in: ['$$game.section', '$$section.gameArchiveSections'] },
+                },
+              },
+            },
+          },
+        },
+      },
       // A player entered in two sections is still one player
       playerCount: {
         $size: {
@@ -72,7 +133,7 @@ function roundNumber(round: string): number | null {
 
 const pairKey = (a: Id, b: Id): string => [a, b].sort().join('|');
 
-export const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
+const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
 
 // A pairing met more than once is told apart by round
 export function matchRoundGames(

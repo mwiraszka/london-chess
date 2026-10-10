@@ -10,6 +10,7 @@ describe('Auth Selectors', () => {
     lastName: 'Doe',
     email: 'admin@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const mockAuthState: AuthState = {
@@ -28,9 +29,9 @@ describe('Auth Selectors', () => {
     });
   });
 
-  describe('selectIsAdmin', () => {
+  describe('selectHasAdminRights', () => {
     it('should return true when user is admin', () => {
-      const result = AuthSelectors.selectIsAdmin.projector(mockAuthState);
+      const result = AuthSelectors.selectHasAdminRights.projector(mockAuthState);
 
       expect(result).toBe(true);
     });
@@ -40,13 +41,33 @@ describe('Auth Selectors', () => {
         user: { ...mockUser, isAdmin: false },
       };
 
-      const result = AuthSelectors.selectIsAdmin.projector(state);
+      const result = AuthSelectors.selectHasAdminRights.projector(state);
 
       expect(result).toBe(false);
     });
 
     it('should return false when user is null', () => {
-      const result = AuthSelectors.selectIsAdmin.projector({ user: null });
+      const result = AuthSelectors.selectHasAdminRights.projector({ user: null });
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('selectIsAdmin', () => {
+    it('should treat an admin as one while their controls are shown', () => {
+      const result = AuthSelectors.selectIsAdmin.projector(true, true);
+
+      expect(result).toBe(true);
+    });
+
+    it('should treat an admin with their controls switched off as any other member', () => {
+      const result = AuthSelectors.selectIsAdmin.projector(true, false);
+
+      expect(result).toBe(false);
+    });
+
+    it('should never treat anyone else as an admin', () => {
+      const result = AuthSelectors.selectIsAdmin.projector(false, true);
 
       expect(result).toBe(false);
     });
@@ -77,20 +98,6 @@ describe('Auth Selectors', () => {
       const result = AuthSelectors.selectUser.projector({ user: null });
 
       expect(result).toBeNull();
-    });
-  });
-
-  describe('selectUserId', () => {
-    it('should select the user id', () => {
-      const result = AuthSelectors.selectUserId.projector(mockUser);
-
-      expect(result).toBe('user-123');
-    });
-
-    it('should return undefined when user is null', () => {
-      const result = AuthSelectors.selectUserId.projector(null);
-
-      expect(result).toBeUndefined();
     });
   });
 });

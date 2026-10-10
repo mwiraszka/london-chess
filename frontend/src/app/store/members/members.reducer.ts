@@ -1,8 +1,8 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import {
   ApiScope,
   DataPaginationOptions,
@@ -11,7 +11,7 @@ import {
   Member,
   MemberFormData,
 } from '@app/models';
-import { areSame } from '@app/utils';
+import { areSame, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as MembersActions from './members.actions';
 
@@ -24,7 +24,8 @@ export interface MemberEntity {
 export type MembersLoad = 'filtered' | 'member';
 
 export interface MembersState extends EntityState<MemberEntity> {
-  newMemberFormData: MemberFormData;
+  // Null until an admin starts a new member
+  newMemberFormData: MemberFormData | null;
   // Loads whose latest attempt failed, which are never persisted
   failedLoads: MembersLoad[];
   // Whether a page of filtered members is on its way, never persisted
@@ -44,7 +45,7 @@ export const membersAdapter = createEntityAdapter<MemberEntity>({
 });
 
 export const initialState: MembersState = membersAdapter.getInitialState({
-  newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+  newMemberFormData: null,
   failedLoads: [],
   isFetchingFiltered: false,
   recordsScope: null,
@@ -77,7 +78,7 @@ export function memberFormDataOf({ member, formData }: MemberEntity): MemberForm
 
 export function hasFormChanges(member: Member | null, formData: MemberFormData): boolean {
   const formPropertiesOfOriginalMember = pick(
-    member ?? INITIAL_MEMBER_FORM_DATA,
+    member ?? initialMemberFormData(),
     Object.getOwnPropertyNames(formData),
   );
 
@@ -121,14 +122,6 @@ function withRecordsScope(state: MembersState, scope: ApiScope): MembersState {
   });
 }
 
-function withLoadAttempt(state: MembersState, load: MembersLoad): MembersState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: MembersState, load: MembersLoad): MembersState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
-
 function withUpdatedMembers(members: Member[], updates: Member[]): Member[] {
   const updatesById = new Map<Id, Member>(updates.map(member => [member.id, member]));
   return members.map(member => updatesById.get(member.id) ?? member);
@@ -137,10 +130,9 @@ function withUpdatedMembers(members: Member[], updates: Member[]): Member[] {
 export const membersReducer = createReducer(
   initialState,
 
-  on(MembersActions.fetchFilteredMembersRequested, (state): MembersState => ({
-    ...withLoadAttempt(state, 'filtered'),
-    isFetchingFiltered: true,
-  })),
+  on(MembersActions.fetchFilteredMembersRequested, (state): MembersState =>
+    withLoadAttempt(state, 'filtered'),
+  ),
   on(MembersActions.fetchFilteredMembersFailed, (state): MembersState => ({
     ...withFailedLoad(state, 'filtered'),
     isFetchingFiltered: false,
@@ -200,9 +192,12 @@ export const membersReducer = createReducer(
     },
   ),
 
+  // Only a page, filter or search the visitor asked for swaps the rows for placeholders, so
+  // a refresh in the background leaves the ones on screen in place
   on(MembersActions.paginationOptionsChanged, (state, { options }): MembersState => ({
     ...state,
     options,
+    isFetchingFiltered: true,
   })),
 
   on(MembersActions.fetchMemberSucceeded, (state, { member, scope }): MembersState => {
@@ -219,7 +214,7 @@ export const membersReducer = createReducer(
       { member, formData: null },
       {
         ...state,
-        newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+        newMemberFormData: null,
       },
     ),
   ),
@@ -258,7 +253,7 @@ export const membersReducer = createReducer(
       return {
         ...state,
         newMemberFormData: {
-          ...state.newMemberFormData,
+          ...(state.newMemberFormData ?? initialMemberFormData()),
           ...formData,
         },
       };
@@ -282,7 +277,7 @@ export const membersReducer = createReducer(
     if (!originalMember) {
       return {
         ...state,
-        newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+        newMemberFormData: null,
       };
     }
 

@@ -2,16 +2,20 @@
 
 :host {
   --ea-dialog-body-padding: 0;
+  --ea-dialog-header-font-size: var(--font-size-lg);
+  --ea-dialog-header-padding: var(--space-5) var(--space-6) var(--space-3);
 }
 
-.album-name {
-  font: inherit;
-}
-
+// Focus rests here while the arrow keys step through the images, without a ring, since
+// it is no stop of its own; the image itself still shows one when tabbed to
 figure {
   display: flex;
   flex-direction: column;
   height: 75vh;
+
+  &:focus {
+    outline: none;
+  }
 }
 
 .image-container {
@@ -21,7 +25,7 @@ figure {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  background-color: var(--lcc-color--imageViewer-background);
+  background-color: var(--lcc-viewer);
 
   lcc-image {
     width: 100%;
@@ -31,6 +35,23 @@ figure {
       width: 100%;
       height: 100%;
       object-fit: contain;
+    }
+  }
+
+  .enlarge-button {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    appearance: none;
+
+    // Drawn inside, since the button fills the frame that would clip a ring around it
+    &:focus-visible {
+      outline: 2px solid var(--color-border-focus);
+      outline-offset: -4px;
     }
   }
 
@@ -65,5 +86,33 @@ figcaption {
 
   @include respond-to('gt-lg') {
     font-size: 15px;
+  }
+}
+
+// As large as the screen allows, on a dark backdrop, with nothing else around it
+.enlarged-image {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-out;
+
+  &::backdrop {
+    background-color: var(--lcc-scrim);
+  }
+
+  lcc-image {
+    width: 100%;
+    height: 100%;
+
+    ::ng-deep img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
   }
 }

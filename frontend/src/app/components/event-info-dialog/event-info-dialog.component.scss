@@ -1,9 +1,5 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-.dialog-title {
-  font: inherit;
-}
-
 .dialog-body {
   display: flex;
   flex-direction: column;

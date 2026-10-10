@@ -1,16 +1,21 @@
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
+import { MOCK_MODIFICATION_INFOS } from '@app/mocks/modification-info.mock';
 import {
   MOCK_TOURNAMENTS,
+  MOCK_TOURNAMENT_SUMMARIES,
   MOCK_UPCOMING_SUMMARY,
   MOCK_UPCOMING_TOURNAMENT,
 } from '@app/mocks/tournaments.mock';
+import { TournamentFormData } from '@app/models';
 
 import {
   canWithdraw,
   clubToday,
   isUpcomingTournament,
   registrationStatus,
+  summarizeTournament,
   tournamentFormData,
+  tournamentInput,
   tournamentTiming,
 } from './tournament-status.util';
 
@@ -35,6 +40,7 @@ describe('tournament status', () => {
         endDate: '2050-10-29',
         format: 'swiss',
         timeControl: 'G25+5',
+        roundCount: null,
         isRated: true,
         articleId: null,
         registrationOpens: MOCK_UPCOMING_TOURNAMENT.registrationOpens,
@@ -46,6 +52,23 @@ describe('tournament status', () => {
 
     it('should start a new tournament blank', () => {
       expect(tournamentFormData(null)).toBe(INITIAL_TOURNAMENT_FORM_DATA);
+    });
+  });
+
+  describe('tournamentInput', () => {
+    it("should send only the form's own fields, leaving out any an older draft kept", () => {
+      const olderFields = { articleUrl: null };
+      const draft: TournamentFormData = {
+        ...INITIAL_TOURNAMENT_FORM_DATA,
+        ...olderFields,
+        name: 'Winter Blitz',
+      };
+
+      expect(tournamentInput(draft, MOCK_MODIFICATION_INFOS[0])).toEqual({
+        ...INITIAL_TOURNAMENT_FORM_DATA,
+        name: 'Winter Blitz',
+        modificationInfo: MOCK_MODIFICATION_INFOS[0],
+      });
     });
   });
 
@@ -117,12 +140,26 @@ describe('tournament status', () => {
     });
   });
 
+  describe('summarizeTournament', () => {
+    it('should summarise a tournament as the list of tournaments does', () => {
+      expect(MOCK_TOURNAMENTS.map(summarizeTournament)).toEqual(
+        [...MOCK_TOURNAMENT_SUMMARIES].reverse(),
+      );
+      expect(summarizeTournament(MOCK_UPCOMING_TOURNAMENT)).toEqual(
+        MOCK_UPCOMING_SUMMARY,
+      );
+    });
+  });
+
   describe('canWithdraw', () => {
     it('should allow withdrawing up to the first day while no results are in', () => {
-      expect(canWithdraw(MOCK_UPCOMING_TOURNAMENT, '2050-10-15')).toBe(true);
-      expect(canWithdraw(MOCK_UPCOMING_TOURNAMENT, '2050-10-16')).toBe(false);
+      expect(canWithdraw(MOCK_UPCOMING_SUMMARY, '2050-10-15')).toBe(true);
+      expect(canWithdraw(MOCK_UPCOMING_SUMMARY, '2050-10-16')).toBe(false);
       expect(
-        canWithdraw({ ...MOCK_TOURNAMENTS[0], date: '2050-01-01' }, '2026-01-01'),
+        canWithdraw(
+          { ...MOCK_TOURNAMENT_SUMMARIES[2], date: '2050-01-01' },
+          '2026-01-01',
+        ),
       ).toBe(false);
     });
   });

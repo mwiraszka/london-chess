@@ -1,7 +1,10 @@
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
+
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { UserRecord } from '@app/models';
+import { AuthActions } from '@app/store/auth';
 
 import { environment } from '@env';
 
@@ -22,6 +25,7 @@ describe('UserService', () => {
   let getSpy: Mock;
   let patchSpy: Mock;
   let logOutSpy: Mock;
+  let dispatchSpy: MockInstance;
 
   const isLoggedIn = signal(false);
   const clerkUser = signal<FakeClerkUser | null>(null);
@@ -40,6 +44,9 @@ describe('UserService', () => {
     avatarUpdatedAt: null,
     hasTemporaryPassword: false,
     showYearOfBirth: false,
+    brand: 'modern',
+    notifyRatingChanges: true,
+    notifyScheduleChanges: true,
     ...overrides,
   });
 
@@ -58,6 +65,7 @@ describe('UserService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideMockStore(),
         { provide: ApiService, useValue: { get: getSpy, patch: patchSpy } },
         {
           provide: ClerkService,
@@ -66,6 +74,7 @@ describe('UserService', () => {
       ],
     });
 
+    dispatchSpy = vi.spyOn(TestBed.inject(MockStore), 'dispatch');
     service = TestBed.inject(UserService);
     authDrawer = TestBed.inject(AuthDrawerService);
     TestBed.tick();
@@ -77,7 +86,41 @@ describe('UserService', () => {
 
       expect(getSpy).toHaveBeenCalledExactlyOnceWith('/users/me');
       expect(service.user()).toEqual(record());
-      expect(service.memberNumber()).toBe(42);
+      expect(dispatchSpy).toHaveBeenLastCalledWith(
+        AuthActions.userChanged({
+          user: {
+            id: 'user_1',
+            firstName: 'Ann',
+            lastName: 'Lee',
+            email: 'ann@example.com',
+            isAdmin: false,
+            memberNumber: 42,
+          },
+        }),
+      );
+    });
+
+    it('should take admin rights from the record, as the API does', async () => {
+      getSpy.mockResolvedValue(record({ isAdmin: true }));
+
+      await logIn();
+
+      expect(dispatchSpy).toHaveBeenLastCalledWith(
+        AuthActions.userChanged({ user: expect.objectContaining({ isAdmin: true }) }),
+      );
+    });
+
+    it('should carry on as logged out when the record cannot be loaded', async () => {
+      getSpy.mockRejectedValue(new Error('offline'));
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      await logIn();
+
+      expect(service.user()).toBeNull();
+      expect(dispatchSpy).not.toHaveBeenCalledWith(
+        AuthActions.userChanged({ user: expect.anything() }),
+      );
+      expect(consoleError).toHaveBeenCalledOnce();
     });
 
     it('should clear the user record on log out', async () => {
@@ -87,7 +130,9 @@ describe('UserService', () => {
       TestBed.tick();
 
       expect(service.user()).toBeNull();
-      expect(service.memberNumber()).toBeNull();
+      expect(dispatchSpy).toHaveBeenLastCalledWith(
+        AuthActions.userChanged({ user: null }),
+      );
     });
 
     it('should not fetch while logged out', async () => {

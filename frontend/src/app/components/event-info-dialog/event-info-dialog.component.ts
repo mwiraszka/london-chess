@@ -23,11 +23,7 @@ import { FormatDatePipe } from '@app/pipes';
     <ea-dialog
       width="sm"
       (keydown.enter)="onEnter($event)">
-      <h3
-        slot="header"
-        class="dialog-title">
-        {{ event().title }}
-      </h3>
+      <h3 slot="header">{{ event().title }}</h3>
 
       <div class="dialog-body">
         <div class="event-date">
@@ -73,7 +69,7 @@ export class EventInfoDialogComponent {
   readonly event = input.required<Event>();
 
   protected readonly details = computed(() =>
-    this.event().details.replace('\\n', '\n\n'),
+    this.event().details.replaceAll('\\n', '\n\n'),
   );
 
   // A focused button answers Enter itself, so only Enter from elsewhere opens the article

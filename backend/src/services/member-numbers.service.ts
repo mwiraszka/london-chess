@@ -1,5 +1,6 @@
-import { CounterModel, MEMBER_NUMBER_COUNTER_ID } from '../models/counter.model';
+import { MEMBER_NUMBER_COUNTER_ID } from '../models/counter.model';
 import { MemberModel, MemberRecord } from '../models/member.model';
+import { takeNextNumber } from './counters.service';
 
 // A returning member keeps the number they had, so their profile link never changes
 export async function assignMemberNumber(memberId: string): Promise<void> {
@@ -14,16 +15,11 @@ export async function assignMemberNumber(memberId: string): Promise<void> {
   );
 }
 
-// Numbers are handed out once and never reused, so an old profile link can
-// never lead to a different person after a member is deleted
-export async function takeNextMemberNumber(): Promise<number> {
-  const counter = await CounterModel.findOneAndUpdate(
-    { _id: MEMBER_NUMBER_COUNTER_ID },
-    { $inc: { next: 1 } },
-  ).lean();
-
-  if (!counter) {
-    throw new Error('The member number counter has not been initialized.');
-  }
-  return counter.next;
+async function takeNextMemberNumber(): Promise<number> {
+  // Members without a number sort last
+  const [latest] = await MemberModel.find({}, { number: 1 })
+    .sort({ number: -1 })
+    .limit(1)
+    .lean<{ number?: number }[]>();
+  return takeNextNumber(MEMBER_NUMBER_COUNTER_ID, latest?.number ?? 0);
 }

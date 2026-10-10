@@ -2,7 +2,6 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { of } from 'rxjs';
 import {
   catchError,
@@ -17,12 +16,11 @@ import {
 
 import { Injectable, inject } from '@angular/core';
 
-import { ModificationInfo, User } from '@app/models';
-import { TournamentsApiService, UserService } from '@app/services';
+import { TournamentsApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined, tournamentInput } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 import * as TournamentsSelectors from './tournaments.selectors';
@@ -34,7 +32,6 @@ export class TournamentsEffects {
   private readonly parseError = inject(PARSE_ERROR);
   private readonly store = inject(Store);
   private readonly tournamentsApiService = inject(TournamentsApiService);
-  private readonly userService = inject(UserService);
 
   fetchTournaments$ = createEffect(() => {
     return this.actions$.pipe(
@@ -59,7 +56,14 @@ export class TournamentsEffects {
   refetchTournaments$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(routerNavigatedAction),
-      filter(({ payload }) => payload.event.url.split(/[?#]/)[0] === '/tournaments'),
+      // The home page lists the tournaments taking registrations, and a tournament's page
+      // is laid out from its summary while the tournament loads
+      filter(({ payload }) => {
+        const path = payload.event.url.split(/[?#]/)[0];
+        return (
+          path === '/' || path === '/tournaments' || path.startsWith('/tournaments/')
+        );
+      }),
       switchMap(() =>
         this.store.select(TournamentsSelectors.selectLastSummariesFetch).pipe(take(1)),
       ),
@@ -129,7 +133,7 @@ export class TournamentsEffects {
       ]),
       concatMap(([, formData, user]) =>
         this.tournamentsApiService
-          .addTournament({ ...formData, modificationInfo: this.credit(user, null) })
+          .addTournament(tournamentInput(formData, creditEditor(user)))
           .pipe(
             map(response =>
               TournamentsActions.addTournamentSucceeded({
@@ -161,10 +165,10 @@ export class TournamentsEffects {
       ]),
       concatMap(([{ tournamentNumber }, tournament, formData, user]) =>
         this.tournamentsApiService
-          .updateTournament(tournamentNumber, {
-            ...formData,
-            modificationInfo: this.credit(user, tournament.modificationInfo),
-          })
+          .updateTournament(
+            tournamentNumber,
+            tournamentInput(formData, creditEditor(user, tournament.modificationInfo)),
+          )
           .pipe(
             map(() =>
               TournamentsActions.updateTournamentSucceeded({
@@ -246,18 +250,4 @@ export class TournamentsEffects {
       ),
     );
   });
-
-  private credit(user: User, original: ModificationInfo | null): ModificationInfo {
-    const name = `${user.firstName} ${user.lastName}`;
-    const number = this.userService.memberNumber();
-    const now = moment().toISOString();
-    return {
-      createdBy: original?.createdBy ?? name,
-      createdByNumber: original ? original.createdByNumber : number,
-      dateCreated: original?.dateCreated ?? now,
-      lastEditedBy: name,
-      lastEditedByNumber: number,
-      dateLastEdited: now,
-    };
-  }
 }

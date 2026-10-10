@@ -1,7 +1,7 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  z-index: 1000;
+  z-index: var(--z-index-sticky);
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom));
   left: 16px;
@@ -14,7 +14,7 @@
   border: var(--border-width-thin) solid var(--color-info-muted);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  background-color: var(--lcc-color--environmentTag-background);
+  background-color: var(--lcc-page-translucent);
 }
 
 :host(.preview) {
@@ -50,7 +50,7 @@
 .branch-detail {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 ea-icon-git-branch,

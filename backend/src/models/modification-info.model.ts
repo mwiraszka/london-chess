@@ -9,12 +9,3 @@ export interface ModificationInfo {
   lastEditedBy: string;
   lastEditedByNumber: number | null;
 }
-
-export const modificationInfoTypes: Record<keyof ModificationInfo, string | string[]> = {
-  dateCreated: 'string',
-  createdBy: 'string',
-  createdByNumber: ['number', 'null'],
-  dateLastEdited: 'string',
-  lastEditedBy: 'string',
-  lastEditedByNumber: ['number', 'null'],
-};

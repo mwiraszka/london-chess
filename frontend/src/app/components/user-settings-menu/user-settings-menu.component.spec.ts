@@ -38,6 +38,7 @@ describe('UserSettingsMenuComponent', () => {
     lastName: 'Doe',
     email: 'john.doe@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const create = (): void => {
@@ -77,12 +78,16 @@ describe('UserSettingsMenuComponent', () => {
 
     store = TestBed.inject(MockStore);
     store.overrideSelector(AuthSelectors.selectUser, mockUser);
+    store.overrideSelector(AuthSelectors.selectHasAdminRights, false);
     store.overrideSelector(AppSelectors.selectIsSafeMode, true);
+    store.overrideSelector(AppSelectors.selectShowAdminControls, true);
     store.overrideSelector(AppSelectors.selectIsDarkMode, false);
     store.overrideSelector(AppSelectors.selectIsWideView, false);
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
     dispatchSpy = vi.spyOn(store, 'dispatch');
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('logged in', () => {
     beforeEach(() => {
@@ -126,6 +131,26 @@ describe('UserSettingsMenuComponent', () => {
       toggle(selector);
 
       expect(dispatchSpy).toHaveBeenCalledWith(action);
+    });
+
+    it('should offer admin controls only to an admin', () => {
+      expect(query(fixture.debugElement, '.admin-controls-toggle')).toBeNull();
+
+      store.overrideSelector(AuthSelectors.selectHasAdminRights, true);
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, '.admin-controls-toggle')).toBeTruthy();
+    });
+
+    it('should switch the admin controls from their toggle', () => {
+      store.overrideSelector(AuthSelectors.selectHasAdminRights, true);
+      store.refreshState();
+      fixture.detectChanges();
+
+      toggle('.admin-controls-toggle');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(AppActions.adminControlsToggled());
     });
 
     it('should close the menu, log out via Clerk and confirm it', async () => {

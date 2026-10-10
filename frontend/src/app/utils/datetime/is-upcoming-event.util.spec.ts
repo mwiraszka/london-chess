@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from '@app/utils/datetime/moment';
 
 import { isUpcomingEvent } from './is-upcoming-event.util';
 

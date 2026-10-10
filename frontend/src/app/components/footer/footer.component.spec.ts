@@ -1,5 +1,6 @@
 import { TooltipDirective } from '@eagami/ui';
 
+import { DebugElement, TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 
@@ -68,6 +69,18 @@ describe('FooterComponent', () => {
     });
 
     describe('social links', () => {
+      // The lead-in, then where the link goes
+      const tooltipParts = (link: DebugElement): string[] => {
+        const content = link.injector.get(TooltipDirective).eaTooltip();
+        if (!(content instanceof TemplateRef)) {
+          return [];
+        }
+        const view = content.createEmbeddedView(null);
+        view.detectChanges();
+        const [tooltip]: HTMLElement[] = view.rootNodes;
+        return [...tooltip.children].map(part => part.textContent?.trim() ?? '');
+      };
+
       it('should render all social media links', () => {
         const socialLinks = queryAll(fixture.debugElement, '.socials a');
         expect(socialLinks.length).toBe(4);
@@ -78,9 +91,7 @@ describe('FooterComponent', () => {
 
         expect(whatsappLink.nativeElement.href).toContain('bit.ly/LCC-NoticeBoard');
         expect(whatsappLink.nativeElement.target).toBe('_blank');
-        expect(whatsappLink.injector.get(TooltipDirective).eaTooltip()).toBe(
-          'Club noticeboard on WhatsApp',
-        );
+        expect(tooltipParts(whatsappLink)).toEqual(['Club noticeboard on', 'WhatsApp']);
       });
 
       it('should properly render Instagram link', () => {
@@ -90,9 +101,7 @@ describe('FooterComponent', () => {
           'instagram.com/londonchessclub_',
         );
         expect(instagramLink.nativeElement.target).toBe('_blank');
-        expect(instagramLink.injector.get(TooltipDirective).eaTooltip()).toBe(
-          'Follow us on Instagram',
-        );
+        expect(tooltipParts(instagramLink)).toEqual(['Follow us on', 'Instagram']);
       });
 
       it('should properly render Chess.com link', () => {
@@ -102,7 +111,10 @@ describe('FooterComponent', () => {
           'chess.com/club/london-chess-club-canada',
         );
         expect(chesscomLink.nativeElement.target).toBe('_blank');
-        expect(chesscomLink.injector.get(TooltipDirective).eaTooltip()).toBeTruthy();
+        expect(tooltipParts(chesscomLink)).toEqual([
+          'Join our club page on',
+          'chess.com',
+        ]);
       });
 
       it('should properly render email link', () => {
@@ -110,72 +122,90 @@ describe('FooterComponent', () => {
 
         expect(emailLink.nativeElement.href).toContain('mailto:welcome@londonchess.ca');
         expect(emailLink.nativeElement.target).toBe('_blank');
-        expect(emailLink.injector.get(TooltipDirective).eaTooltip()).toBeTruthy();
+        expect(tooltipParts(emailLink)).toEqual([
+          'Email us at',
+          'welcome@londonchess.ca',
+        ]);
+        expect(emailLink.injector.get(TooltipDirective).maxWidth()).toBeUndefined();
       });
     });
 
     describe('site links', () => {
-      it('should render correct number of sections and correct header in each one', () => {
-        const sections = queryAll(fixture.debugElement, '.site-links section');
-        expect(sections.length).toBe(5);
-
-        const sectionHeaders = sections.map(section =>
-          queryTextContent(section, 'header'),
-        );
-
-        expect(sectionHeaders[0]).toBe('ABOUT US');
-        expect(sectionHeaders[1]).toBe('CLUB EVENTS');
-        expect(sectionHeaders[2]).toBe('ARCHIVES');
-        expect(sectionHeaders[3]).toBe('DOCUMENTS');
-        expect(sectionHeaders[4]).toBe('WEBSITE');
-      });
-
       it('should rule off each section heading from its links', () => {
         const sections = queryAll(fixture.debugElement, '.site-links section');
 
         sections.forEach(section => {
-          expect(query(section, 'header + ea-divider')).toBeTruthy();
+          expect(query(section, 'h2 + ea-divider')).toBeTruthy();
         });
       });
 
-      it('should render correct number of links in each section', () => {
-        const aboutLinks = queryAll(fixture.debugElement, '.about-us a');
-        const eventsLinks = queryAll(fixture.debugElement, '.club-events a');
-        const archivesLinks = queryAll(fixture.debugElement, '.archives a');
-        const documentsLinks = queryAll(fixture.debugElement, '.documents a');
-        const websiteLinks = queryAll(fixture.debugElement, '.website a');
+      it('should group the pages into their sections, in order', () => {
+        const sections = queryAll(fixture.debugElement, '.site-links > section').map(
+          section => ({
+            heading: queryTextContent(section, 'h2'),
+            links: queryAll(section, 'a[routerLink]').map(link => [
+              link.nativeElement.textContent.trim(),
+              link.attributes['routerLink'],
+            ]),
+          }),
+        );
 
-        expect(aboutLinks.length).toBe(4);
-        expect(eventsLinks.length).toBe(3);
-        expect(archivesLinks.length).toBe(3);
-        expect(documentsLinks.length).toBe(3);
-        expect(websiteLinks.length).toBe(4);
+        expect(sections).toEqual([
+          {
+            heading: 'About',
+            links: [
+              ['FAQ', '/faq'],
+              ['Members & Ratings', '/members'],
+              ['Code of Conduct', '/documents'],
+              ['Club Bylaws', '/documents'],
+              ['Membership Fees', '/documents'],
+              ['Regional Clubs', '/regional-clubs'],
+            ],
+          },
+          {
+            heading: 'Events',
+            links: [
+              ['Schedule', '/schedule'],
+              ['Tournaments', '/tournaments'],
+              ['City Championship', '/city-championship'],
+            ],
+          },
+          {
+            heading: 'News & history',
+            links: [
+              ['Articles', '/articles'],
+              ['Photo Gallery', '/photo-gallery'],
+              ['Game Archives', '/game-archives'],
+              ['Lifetime Achievement Awards', '/lifetime-achievement-awards'],
+            ],
+          },
+          {
+            heading: 'Website',
+            links: [['Website Changelog', '/website-changelog']],
+          },
+        ]);
+        expect(queryAll(fixture.debugElement, '.website > a')).toHaveLength(4);
       });
 
-      it('should link to the tournaments', () => {
-        expect(
-          queryTextContent(
-            fixture.debugElement,
-            '.archives a[routerLink="/tournaments"]',
-          ),
-        ).toBe('Tournaments');
-      });
-
-      it('should have correct router links for document links', () => {
+      it('should open each document straight from its link', () => {
         expect(
           queryTextContent(fixture.debugElement, 'a[fragment="lcc-code-of-conduct.pdf"]'),
         ).toBe('Code of Conduct');
-
         expect(
           queryTextContent(fixture.debugElement, 'a[fragment="lcc-bylaws.pdf"]'),
         ).toBe('Club Bylaws');
-
         expect(
           queryTextContent(
             fixture.debugElement,
             'a[fragment="lcc-membership-fees-2025-to-2028.pdf"]',
           ),
         ).toBe('Membership Fees');
+      });
+
+      it('should end the website section with the Eagami wordmark', () => {
+        const website = query(fixture.debugElement, '.website').nativeElement;
+
+        expect(website.lastElementChild.tagName).toBe('EA-EAGAMI-WORDMARK');
       });
     });
 

@@ -1,5 +1,5 @@
 import { DialogService } from '@eagami/ui';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -56,29 +56,23 @@ describe('RoutingService', () => {
   });
 
   describe('fragment$', () => {
-    it('should emit null initially when no fragment', () =>
-      withDone(done => {
-        service.fragment$.subscribe(fragment => {
-          expect(fragment).toBeNull();
-          done();
-        });
-      }));
+    it('should emit null initially when no fragment', async () => {
+      const fragment = await firstValueFrom(service.fragment$);
 
-    it('should emit fragment when navigation ends with fragment', () =>
-      withDone(done => {
-        parseUrlSpy.mockReturnValue({ fragment: 'test-fragment' });
+      expect(fragment).toBeNull();
+    });
 
-        service.fragment$.subscribe(fragment => {
-          if (fragment === 'test-fragment') {
-            expect(fragment).toBe('test-fragment');
-            done();
-          }
-        });
+    it('should emit fragment when navigation ends with fragment', () => {
+      parseUrlSpy.mockReturnValue({ fragment: 'test-fragment' });
+      const fragments: (string | null)[] = [];
+      service.fragment$.subscribe(fragment => fragments.push(fragment));
 
-        routerEvents$.next(
-          new NavigationEnd(1, '/test#test-fragment', '/test#test-fragment'),
-        );
-      }));
+      routerEvents$.next(
+        new NavigationEnd(1, '/test#test-fragment', '/test#test-fragment'),
+      );
+
+      expect(fragments).toEqual([null, 'test-fragment']);
+    });
 
     it('should emit null when navigation ends with no fragment', () => {
       parseUrlSpy.mockReturnValue({ fragment: null });
@@ -106,7 +100,7 @@ describe('RoutingService', () => {
     it('should emit the fragment of a navigation to another page', () => {
       parseUrlSpy.mockReturnValue({ fragment: 'top' });
 
-      routerEvents$.next(new NavigationEnd(1, '/news#top', '/news#top'));
+      routerEvents$.next(new NavigationEnd(1, '/articles#top', '/articles#top'));
 
       expect(emissions).toEqual(['top']);
     });
@@ -139,7 +133,7 @@ describe('RoutingService', () => {
     });
 
     it('should emit when the query goes along with a move to another page', () => {
-      routerEvents$.next(new NavigationEnd(1, '/news?page=2', '/news?page=2'));
+      routerEvents$.next(new NavigationEnd(1, '/articles?page=2', '/articles?page=2'));
 
       expect(emissions).toEqual([null]);
     });
@@ -150,19 +144,14 @@ describe('RoutingService', () => {
       expect(service.currentFragment).toBeNull();
     });
 
-    it('should return current fragment value', () =>
-      withDone(done => {
-        parseUrlSpy.mockReturnValue({ fragment: 'my-fragment' });
+    it('should return current fragment value', async () => {
+      parseUrlSpy.mockReturnValue({ fragment: 'my-fragment' });
 
-        routerEvents$.next(
-          new NavigationEnd(1, '/test#my-fragment', '/test#my-fragment'),
-        );
+      routerEvents$.next(new NavigationEnd(1, '/test#my-fragment', '/test#my-fragment'));
+      await firstValueFrom(service.fragment$);
 
-        service.fragment$.subscribe(() => {
-          expect(service.currentFragment).toBe('my-fragment');
-          done();
-        });
-      }));
+      expect(service.currentFragment).toBe('my-fragment');
+    });
   });
 
   describe('removeFragment', () => {
@@ -188,26 +177,18 @@ describe('RoutingService', () => {
       expect(navigateSpy).not.toHaveBeenCalled();
     });
 
-    it('should update fragment$ to null', () =>
-      withDone(done => {
-        parseUrlSpy.mockReturnValue({ fragment: 'test-fragment' });
-        routerEvents$.next(
-          new NavigationEnd(1, '/test#test-fragment', '/test#test-fragment'),
-        );
+    it('should update fragment$ to null', () => {
+      parseUrlSpy.mockReturnValue({ fragment: 'test-fragment' });
+      routerEvents$.next(
+        new NavigationEnd(1, '/test#test-fragment', '/test#test-fragment'),
+      );
+      const fragments: (string | null)[] = [];
+      service.fragment$.subscribe(fragment => fragments.push(fragment));
 
-        navigateSpy.mockImplementation(() => {
-          service['_fragmentSubject'].next(null);
-          return Promise.resolve(true);
-        });
+      service.removeFragment();
 
-        service.removeFragment();
-
-        service.fragment$.subscribe(fragment => {
-          if (fragment === null) {
-            done();
-          }
-        });
-      }));
+      expect(fragments).toEqual(['test-fragment', null]);
+    });
   });
 
   describe('dialog closing on navigation', () => {

@@ -1,5 +1,5 @@
 import { DialogRef, DialogService } from '@eagami/ui';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
@@ -23,6 +23,7 @@ describe('unsavedChangesGuard', () => {
     lastName: 'Byron',
     email: 'ada@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   const adminRoute = Object.assign(new ActivatedRouteSnapshot(), {
@@ -44,7 +45,10 @@ describe('unsavedChangesGuard', () => {
       providers: [
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         provideMockStore({
-          selectors: [{ selector: AuthSelectors.selectUser, value: admin }],
+          selectors: [
+            { selector: AuthSelectors.selectUser, value: admin },
+            { selector: AuthSelectors.selectIsAdmin, value: true },
+          ],
         }),
       ],
     });
@@ -55,6 +59,7 @@ describe('unsavedChangesGuard', () => {
   });
 
   afterEach(() => {
+    TestBed.inject(MockStore).resetSelectors();
     vi.clearAllMocks();
   });
 
@@ -81,7 +86,10 @@ describe('unsavedChangesGuard', () => {
       providers: [
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         provideMockStore({
-          selectors: [{ selector: AuthSelectors.selectUser, value: null }],
+          selectors: [
+            { selector: AuthSelectors.selectUser, value: null },
+            { selector: AuthSelectors.selectIsAdmin, value: false },
+          ],
         }),
       ],
     });

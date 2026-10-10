@@ -54,21 +54,6 @@ Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
   value: () => new DOMRect(),
 });
 
-globalThis.fail = (reason?: string | Error): never => {
-  throw reason instanceof Error ? reason : new Error(reason ?? 'fail() called');
-};
-
-globalThis.withDone = (body: (done: DoneFn) => void): Promise<void> =>
-  new Promise<void>((resolve, reject) => {
-    const done = Object.assign(() => resolve(), {
-      fail: (reason?: string | Error) =>
-        reject(
-          reason instanceof Error ? reason : new Error(reason ?? 'done.fail() called'),
-        ),
-    }) as DoneFn;
-    body(done);
-  });
-
 // Silence expected console errors/warnings/logs/infos during tests to reduce noise
 const ORIGINAL_CONSOLE_ERROR = console.error;
 const ORIGINAL_CONSOLE_WARN = console.warn;

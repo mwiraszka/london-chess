@@ -1,16 +1,13 @@
 import {
-  AlertComponent,
-  ButtonComponent,
   CardComponent,
   CheckboxComponent,
   DatePickerComponent,
   DialogService,
   DividerComponent,
-  HistoryIconComponent,
   InputComponent,
   TooltipDirective,
 } from '@eagami/ui';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { merge } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -27,8 +24,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import {
   FORM_CHANGE_DEBOUNCE,
   FORM_ERROR_MESSAGES,
@@ -36,7 +35,6 @@ import {
 } from '@app/constants/forms';
 import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
 import {
-  BasicDialogResult,
   Dialog,
   Id,
   IsoDate,
@@ -65,15 +63,15 @@ import {
   templateUrl: './member-form.component.html',
   styleUrl: './member-form.component.scss',
   imports: [
-    AlertComponent,
-    ButtonComponent,
     CardComponent,
     CheckboxComponent,
     DatePickerComponent,
     DividerComponent,
+    FormActionsComponent,
     InputComponent,
     ModificationInfoComponent,
     ReactiveFormsModule,
+    SafeModeNoticeComponent,
     TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -105,7 +103,6 @@ export class MemberFormComponent implements OnInit {
   protected readonly phoneNumberErrorMessages = {
     pattern: MEMBER_DETAIL_RULES.phoneNumber.message,
   };
-  protected readonly restoreIcon = HistoryIconComponent;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
   public form!: FormGroup<MemberFormGroup>;
@@ -135,7 +132,6 @@ export class MemberFormComponent implements OnInit {
     this.form.valueChanges
       .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
-    this.emitChange();
 
     merge(
       this.form.controls.email.valueChanges,
@@ -149,30 +145,14 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original member data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originalMember = this.originalMember();
     this.restore.emit(originalMember?.id ?? null);
     this.form.reset(
       this.toFormValue(
         originalMember
           ? pick(originalMember, MEMBER_FORM_DATA_PROPERTIES)
-          : INITIAL_MEMBER_FORM_DATA,
+          : initialMemberFormData(),
       ),
     );
   }
@@ -336,7 +316,11 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
+  // Only an edit makes a draft, so opening a form changes nothing in the store
   private emitChange(): void {
+    if (!this.form.dirty) {
+      return;
+    }
     const { dateJoined: day, ...fields } = this.form.getRawValue();
     const dateJoined = this.toDateJoined(day);
     this.change.emit({

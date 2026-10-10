@@ -1,8 +1,8 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
@@ -17,12 +17,12 @@ import {
 import { Injectable, inject } from '@angular/core';
 
 import { DataPaginationOptions, Event } from '@app/models';
-import { EventsApiService, UserService } from '@app/services';
+import { EventsApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as EventsActions from './events.actions';
 import * as EventsSelectors from './events.selectors';
@@ -36,7 +36,6 @@ export class EventsEffects {
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
-  private readonly userService = inject(UserService);
 
   fetchHomePageEvents$ = createEffect(() => {
     return this.actions$.pipe(
@@ -78,22 +77,33 @@ export class EventsEffects {
   fetchFilteredEvents$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(EventsActions.fetchFilteredEventsRequested),
-      concatLatestFrom(() => this.store.select(EventsSelectors.selectOptions)),
-      switchMap(([, options]) =>
-        this.eventsApiService.getFilteredEvents(options).pipe(
-          map(response =>
-            EventsActions.fetchFilteredEventsSucceeded({
-              events: response.data.items,
-              filteredCount: response.data.filteredCount,
-              totalCount: response.data.totalCount,
-            }),
-          ),
-          catchError(error =>
-            of(
-              EventsActions.fetchFilteredEventsFailed({ error: this.parseError(error) }),
+      concatLatestFrom(() => [
+        this.store.select(EventsSelectors.selectOptions),
+        this.store.select(EventsSelectors.selectScheduleView),
+      ]),
+      switchMap(([, options, scheduleView]) =>
+        this.eventsApiService
+          .getFilteredEvents(
+            scheduleView === 'calendar'
+              ? { ...options, page: 1, pageSize: PAGE_SIZE_ALL }
+              : options,
+          )
+          .pipe(
+            map(response =>
+              EventsActions.fetchFilteredEventsSucceeded({
+                events: response.data.items,
+                filteredCount: response.data.filteredCount,
+                totalCount: response.data.totalCount,
+              }),
+            ),
+            catchError(error =>
+              of(
+                EventsActions.fetchFilteredEventsFailed({
+                  error: this.parseError(error),
+                }),
+              ),
             ),
           ),
-        ),
       ),
     );
   });
@@ -131,8 +141,7 @@ export class EventsEffects {
         ),
       ),
       this.actions$.pipe(
-        ofType(EventsActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
+        ofType(EventsActions.paginationOptionsChanged, EventsActions.toggleScheduleView),
       ),
     );
 
@@ -194,20 +203,14 @@ export class EventsEffects {
         const event: Event = {
           ...formData,
           id: '',
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user),
         };
 
         return this.eventsApiService.addEvent(event).pipe(
-          map(response =>
+          map(({ data }) =>
             EventsActions.addEventSucceeded({
-              event: { ...event, id: response.data },
+              event: { ...event, id: data.id },
+              unnotifiedMemberNames: data.unnotifiedMemberNames,
             }),
           ),
           catchError(error =>
@@ -232,19 +235,15 @@ export class EventsEffects {
         const updatedEvent = {
           ...event,
           ...formData,
-          modificationInfo: {
-            ...event.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, event.modificationInfo),
         };
 
         return this.eventsApiService.updateEvent(updatedEvent).pipe(
-          map(() =>
+          map(({ data }) =>
             EventsActions.updateEventSucceeded({
               event: updatedEvent,
               originalEventTitle: event.title,
+              unnotifiedMemberNames: data.unnotifiedMemberNames,
             }),
           ),
           catchError(error =>
@@ -260,10 +259,11 @@ export class EventsEffects {
       ofType(EventsActions.deleteEventRequested),
       mergeMap(({ event }) =>
         this.eventsApiService.deleteEvent(event.id).pipe(
-          map(() =>
+          map(({ data }) =>
             EventsActions.deleteEventSucceeded({
               eventId: event.id,
               eventTitle: event.title,
+              unnotifiedMemberNames: data.unnotifiedMemberNames,
             }),
           ),
           catchError(error =>

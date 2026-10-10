@@ -1,0 +1,111 @@
+// Each brand's type, selected by the data-brand attribute the brand service sets: the body
+// face the library's components take, and the face the app's headings take
+
+:root {
+  --lcc-font-heading: var(--font-family-sans);
+}
+
+:root[data-brand='classic'] {
+  --font-family-sans: 'Lora', 'Lora Fallback', Georgia, serif;
+  --lcc-font-heading: 'Playfair Display', 'Playfair Display Fallback', Georgia, serif;
+}
+
+:root[data-brand='sunset'] {
+  --font-family-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --lcc-font-heading: 'Sora', 'Sora Fallback', system-ui, sans-serif;
+}
+
+:root[data-brand='newsprint'] {
+  --font-family-sans: 'Newsreader', 'Newsreader Fallback', Georgia, serif;
+}
+
+:root[data-brand='playground'] {
+  --font-family-sans: 'Fredoka', 'Fredoka Fallback', system-ui, sans-serif;
+}
+
+// Local faces with metric overrides matching each web font, named right after it in the
+// stacks above and in the header's, so text laid out before the web font arrives already
+// takes its final size and the swap moves nothing. Changing a brand's fonts means
+// regenerating these (Capsize, fontaine or fallback-font-generator); the header's faces
+// are matched on the width of the club's name, the only text they set.
+
+@font-face {
+  font-family: 'Lora Fallback';
+  src: local('Times New Roman');
+  ascent-override: 86.34%;
+  descent-override: 23.52%;
+  line-gap-override: 0%;
+  size-adjust: 116.51%;
+}
+
+@font-face {
+  font-family: 'Playfair Display Fallback';
+  src: local('Times New Roman');
+  ascent-override: 96.3%;
+  descent-override: 22.34%;
+  line-gap-override: 0%;
+  size-adjust: 112.36%;
+}
+
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial');
+  ascent-override: 90.25%;
+  descent-override: 22.47%;
+  line-gap-override: 0%;
+  size-adjust: 107.34%;
+}
+
+@font-face {
+  font-family: 'Sora Fallback';
+  src: local('Arial');
+  ascent-override: 85.21%;
+  descent-override: 25.48%;
+  line-gap-override: 0%;
+  size-adjust: 113.84%;
+}
+
+@font-face {
+  font-family: 'Newsreader Fallback';
+  src: local('Times New Roman');
+  ascent-override: 69.73%;
+  descent-override: 25.14%;
+  line-gap-override: 0%;
+  size-adjust: 105.41%;
+}
+
+@font-face {
+  font-family: 'Fredoka Fallback';
+  src: local('Arial');
+  ascent-override: 95.24%;
+  descent-override: 23.08%;
+  line-gap-override: 0%;
+  size-adjust: 102.27%;
+}
+
+@font-face {
+  font-family: 'Righteous Fallback';
+  src: local('Arial');
+  ascent-override: 98.06%;
+  descent-override: 25.57%;
+  line-gap-override: 0%;
+  size-adjust: 100.43%;
+}
+
+@font-face {
+  font-family: 'UnifrakturMaguntia Fallback';
+  src: local('Times New Roman');
+  ascent-override: 81.15%;
+  descent-override: 25.91%;
+  line-gap-override: 0%;
+  size-adjust: 96.69%;
+}
+
+@font-face {
+  font-family: 'Chewy Fallback';
+  src: local('Arial');
+  ascent-override: 121.3%;
+  descent-override: 37.49%;
+  line-gap-override: 3.02%;
+  size-adjust: 80.75%;
+}

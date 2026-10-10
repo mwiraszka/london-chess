@@ -1,4 +1,4 @@
-@use '../../../styles/components/link';
+@use '../../../styles/abstracts/mixins' as *;
 
 :host {
   display: block;
@@ -20,5 +20,5 @@
 
 // Cells are rendered markdown, so their links are styled like the article's
 :host ::ng-deep a {
-  @include link.lcc-link;
+  @include lcc-link;
 }

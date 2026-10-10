@@ -184,7 +184,7 @@ describe('CreateAccountFormComponent', () => {
         firstName: 'Ann',
         lastName: 'Lee',
         email: 'ann@example.com',
-        yearOfBirth: 1990,
+        yearOfBirth: '1990',
         city: 'London',
         phoneNumber: '416-555-0100',
         lichessUsername: 'ann_lichess',

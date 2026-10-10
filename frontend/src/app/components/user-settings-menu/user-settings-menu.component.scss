@@ -4,11 +4,11 @@
   display: flex;
   flex-direction: column;
   width: 200px;
-  border-bottom-left-radius: var(--lcc-borderRadius--small);
-  border-bottom-right-radius: var(--lcc-borderRadius--small);
-  box-shadow: 2px 2px 4px 0 var(--lcc-color--userSettingsMenu-boxShadow);
-  background-color: var(--lcc-color--userSettingsMenu-background);
-  color: var(--lcc-color--userSettingsMenu-itemForeground);
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 2px 2px 4px 0 var(--lcc-shadow-soft);
+  background-color: var(--lcc-surface);
+  color: var(--color-text-primary);
 }
 
 .user-info {
@@ -25,12 +25,12 @@
 
   .user-name {
     font-size: 16px;
-    color: var(--lcc-color--userSettingsMenu-itemForeground);
+    color: var(--color-text-primary);
   }
 
   .user-email {
     font-size: 12px;
-    color: var(--lcc-color--userSettingsMenu-emailText);
+    color: var(--color-text-secondary);
   }
 }
 
@@ -52,7 +52,7 @@
 }
 
 .admin-logout {
-  --ea-button-color: var(--lcc-color--userSettingsMenu-warning);
+  --ea-button-color: var(--color-error-500);
 }
 
 .menu-toggle {
@@ -69,17 +69,29 @@
   display: inline-flex;
   @include icon-size(20px);
 
-  color: var(--lcc-color--userSettingsMenu-warning);
+  color: var(--color-error-500);
 }
 
 .safe-mode-warning-tooltip {
-  header {
-    margin-bottom: 8px;
-    color: var(--lcc-color--userSettingsMenu-warning);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 
-    .warning-icon {
-      display: inline-flex;
-      @include icon-size(24px);
-    }
+  p {
+    margin: 0;
   }
+}
+
+.warning-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--color-error-500);
+}
+
+.warning-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  @include icon-size(16px);
 }

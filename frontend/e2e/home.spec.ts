@@ -33,7 +33,7 @@ test.describe('home page', () => {
     await expect(page).toHaveURL(/\/schedule$/);
   });
 
-  test('shows the latest news, opening an article from its card', async ({ page }) => {
+  test('shows the latest articles, opening one from its card', async ({ page }) => {
     await page.goto('/');
 
     for (const article of ARTICLES) {

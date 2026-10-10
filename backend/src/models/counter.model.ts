@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-export interface Counter {
+interface Counter {
   _id: string;
   next: number;
 }

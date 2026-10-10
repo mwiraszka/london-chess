@@ -17,8 +17,10 @@ export function r2Client(): S3Client {
       accessKeyId: R2_ACCESS_KEY_ID,
       secretAccessKey: R2_SECRET_ACCESS_KEY,
     },
+    // Inside Vercel's 30 s function limit, so a stalled upload answers with an error
+    // before the platform cuts the request off
     requestHandler: {
-      requestTimeout: 60000,
+      requestTimeout: 20000,
     },
   });
   return client;

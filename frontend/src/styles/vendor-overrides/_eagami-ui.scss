@@ -17,6 +17,12 @@
   --color-neutral-950: #0a0a0a;
 }
 
+// This app's pages sit mid-scale in both themes, leaving no grey lighter than the
+// secondary tone that stays readable on them
+:root {
+  --color-text-tertiary: var(--color-text-secondary);
+}
+
 // The avatar's size classes define --ea-avatar-size on an internal element,
 // so the override must target that element (only reachable from global styles).
 // 28px sits between the library's xs (24px) and sm (32px) sizes.
@@ -25,24 +31,26 @@
   --ea-avatar-size: 28px;
 }
 
+// The alert pads its inner box directly, with no token to set it through
+ea-alert.privacy-note .ea-alert {
+  padding: 0.75em 0.5em;
+}
+
 // Compact author avatars beside small byline text
-lcc-modification-info ea-avatar .ea-avatar,
-lcc-article ea-avatar.editor-avatar .ea-avatar {
+lcc-modification-info ea-avatar .ea-avatar {
   --ea-avatar-size: 18px;
 }
 
 ea-drawer.lcc-auth-drawer {
-  --ea-drawer-panel-background-color: var(--lcc-color--authDrawer-background);
+  --ea-drawer-panel-background-color: var(--lcc-surface);
 }
 
-// This app's dark surfaces recess below the page tone (footer, auth drawer), so
-// cards, accordions and dialogs follow suit instead of using the library's
-// lighter elevated tier, with the border stepped down to stay subtle.
-body[data-theme='dark'] ea-accordion,
-body[data-theme='dark'] ea-card,
-body[data-theme='dark'] ea-dialog {
-  --color-bg-elevated: var(--color-neutral-800);
-  --color-border-default: var(--color-neutral-600);
+// Cards, accordions and dialogs take the app's card surface and edge
+:root[data-theme='dark'] ea-accordion,
+:root[data-theme='dark'] ea-card,
+:root[data-theme='dark'] ea-dialog {
+  --color-bg-elevated: var(--lcc-card);
+  --color-border-default: var(--lcc-card-border);
 }
 
 // A dialog takes a card's edge too, since a recessed panel alone would sink into
@@ -51,26 +59,38 @@ ea-dialog .ea-dialog__panel {
   border: var(--border-width-thin) solid var(--color-border-default);
 }
 
+// Card bodies carry the page's type, not the library's smaller secondary text
+ea-card .ea-card__body {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+}
+
+// A heading in a card's, dialog's or drawer's header takes the header's type, not the
+// app's heading sizes
+:is(ea-card, ea-dialog, ea-drawer) :is(h1, h2, h3, h4, h5, h6)[slot='header'] {
+  font: inherit;
+}
+
 // The app's own inputs sit a tone above the dark page, so the library's fields and
 // the paginator's page-size select take that same background
-body[data-theme='dark'] ea-autocomplete,
-body[data-theme='dark'] ea-dropdown,
-body[data-theme='dark'] ea-paginator {
-  --color-bg-base: var(--lcc-color--input-background);
+:root[data-theme='dark'] ea-autocomplete,
+:root[data-theme='dark'] ea-dropdown,
+:root[data-theme='dark'] ea-paginator {
+  --color-bg-base: var(--lcc-input);
 }
 
 // The segmented control shares that background inside and out, so its chosen
 // option shows through its border alone
-body[data-theme='dark'] ea-segmented {
-  --color-bg-base: var(--lcc-color--input-background);
-  --color-bg-muted: var(--lcc-color--input-background);
-  --color-border-default: var(--lcc-color--input-borderOnHover);
+:root[data-theme='dark'] ea-segmented {
+  --color-bg-base: var(--lcc-input);
+  --color-bg-muted: var(--lcc-input);
+  --color-border-default: var(--color-border-strong);
 }
 
 // The library's dark skeleton fill (bg-muted, neutral-700) matches this app's
 // page tone; lift it one tier so loading placeholders read on both the page
 // and the recessed card surfaces.
-body[data-theme='dark'] ea-skeleton .ea-skeleton {
+:root[data-theme='dark'] ea-skeleton .ea-skeleton {
   background-color: var(--color-bg-emphasis);
 }
 
@@ -90,10 +110,16 @@ body[data-theme='dark'] ea-skeleton .ea-skeleton {
   }
 }
 
+// Each header cell carries the header's colour itself, since Chrome can leave a row
+// group's background out of a cell showing a focus ring when a row below it redraws
+.ea-data-table__cell--header {
+  background-color: var(--ea-data-table-header-background-color);
+}
+
 // Table rows alternate between two tones, so their placeholders take a fill that
 // stands out on both
 .ea-data-table ea-skeleton .ea-skeleton {
-  background-color: var(--lcc-color--table-skeleton);
+  background-color: var(--lcc-skeleton);
 }
 
 // The skeleton host is inline by default, which collapses to nothing inside
@@ -106,7 +132,7 @@ ea-skeleton {
 
 // A paginator closing a page ends on its buttons, so the space above the footer is the
 // page's own, as on every other page
-lcc-news-page > .paginator .ea-paginator,
+lcc-articles-page > .paginator .ea-paginator,
 lcc-events-calendar-grid > .paginator .ea-paginator {
   padding-bottom: 0;
 }

@@ -5,7 +5,8 @@
   [columns]="shownColumns()"
   [data]="data()"
   [hoverable]="hoverable()"
-  [loading]="loading()"
+  [layout]="layout()"
+  [loading]="loading() || isSizing()"
   [loadingRowCount]="loadingRowCount()"
   [noDataText]="noDataText()"
   [nowrap]="true"
@@ -21,6 +22,14 @@
     select="ea-paginator"
     ngProjectAs="ea-paginator" />
 </ea-data-table>
+
+@if (isSizing()) {
+  <ea-skeleton
+    class="data-table__sizing-skeleton"
+    height="100%"
+    variant="rect"
+    width="100%" />
+}
 
 @for (column of columns(); track column.key) {
   <ng-template

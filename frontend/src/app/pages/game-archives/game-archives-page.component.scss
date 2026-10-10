@@ -1,11 +1,8 @@
 @use '../../../styles/abstracts/mixins' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
   align-items: stretch;
   gap: 16px;
-  width: 100%;
 }
 
 .intro__body {
@@ -33,7 +30,7 @@
   object-fit: cover;
   width: 100%;
   height: auto;
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
 
   // Beside the text it shares the row and stretches to the text's height, cropping
   // rather than distorting
@@ -51,8 +48,6 @@
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
-  font-size: 16px;
-  color: var(--color-text-primary);
 }
 
 // Two rows of two until the card is wide enough for four cards to keep their room
@@ -76,26 +71,48 @@
   --ea-card-body-padding: 8px;
 }
 
+// Split down the middle rather than centred as a pair, so the label holds still as the
+// figure beside it changes width
 .figure__content {
-  display: flex;
+  display: grid;
   align-items: baseline;
-  justify-content: center;
   gap: 8px;
+  grid-template-columns: 1fr 1fr;
   white-space: nowrap;
 
   @include respond-to('lt-sm') {
-    gap: 6px;
+    gap: 4px;
   }
 }
 
 .figure__value {
+  display: grid;
+  justify-self: end;
   font-size: 36px;
   font-weight: bold;
-  color: var(--lcc-color--gameArchivesPage-figure);
+  color: var(--lcc-accent-text);
 
   @include respond-to('lt-sm') {
     font-size: 20px;
   }
+}
+
+// Holds the width of the total it counts up to, so the count grows into it without moving
+.figure__count,
+.figure__total {
+  grid-area: 1 / 1;
+}
+
+// Digits differ in width, so a count on its way up can be wider than its total; it takes
+// no width of its own, spilling into the gap beside it rather than widening the figure
+.figure__count {
+  justify-self: start;
+  width: 0;
+  min-width: 100%;
+}
+
+.figure__total {
+  visibility: hidden;
 }
 
 // Pulses like a skeleton until the figures arrive
@@ -119,8 +136,7 @@
 }
 
 .figure__label {
-  font-size: 16px;
-  color: var(--color-text-primary);
+  justify-self: start;
 
   @include respond-to('lt-sm') {
     font-size: 14px;
@@ -180,12 +196,7 @@
 }
 
 .games__eco {
-  margin-right: 6px;
+  margin-right: 4px;
   font-size: 12px;
   color: var(--color-text-secondary);
-}
-
-.games__eco {
-  margin-right: 4px;
-  margin-left: 0;
 }

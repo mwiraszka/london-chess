@@ -1,9 +1,9 @@
-import { pick } from 'lodash';
-import moment from 'moment-timezone';
+import { pick } from 'lodash-es';
 
-import { INITIAL_MEMBER_FORM_DATA, MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { DataPaginationOptions, Member, MemberFormData } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { MembersState, membersAdapter } from './members.reducer';
 import * as MembersSelectors from './members.selectors';
@@ -42,7 +42,7 @@ describe('Members Selectors', () => {
     ...membersAdapter.getInitialState({
       failedLoads: [],
       isFetchingFiltered: false,
-      newMemberFormData: INITIAL_MEMBER_FORM_DATA,
+      newMemberFormData: initialMemberFormData(),
       recordsScope: 'admin',
       lastFullFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
@@ -218,6 +218,19 @@ describe('Members Selectors', () => {
     });
   });
 
+  describe('selectMemberByNumber', () => {
+    it('should select the member with the number, or none', () => {
+      const numbered = { ...MOCK_MEMBERS[1], number: 7 };
+      const allMembers = [MOCK_MEMBERS[0], numbered];
+
+      const found = MembersSelectors.selectMemberByNumber(7).projector(allMembers);
+      const missing = MembersSelectors.selectMemberByNumber(9999).projector(allMembers);
+
+      expect(found).toEqual(numbered);
+      expect(missing).toBeNull();
+    });
+  });
+
   describe('selectMemberFormDataById', () => {
     it('should select form data for existing member', () => {
       const allMemberEntities = [
@@ -255,7 +268,20 @@ describe('Members Selectors', () => {
       ];
       const selector = MembersSelectors.selectMemberFormDataById(null);
       const result = selector.projector(mockMembersState, allMemberEntities);
-      expect(result).toEqual(INITIAL_MEMBER_FORM_DATA);
+      expect(result).toBe(mockMembersState.newMemberFormData);
+    });
+
+    it("should start a new member from today's defaults before any draft", () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T16:00:00.000Z'));
+      const selector = MembersSelectors.selectMemberFormDataById(null);
+
+      const result = selector.projector(
+        { ...mockMembersState, newMemberFormData: null },
+        [],
+      );
+
+      expect(result).toEqual(initialMemberFormData());
     });
   });
 

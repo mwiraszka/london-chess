@@ -52,8 +52,7 @@ describe('connectToDatabase', () => {
     expect(connect).toHaveBeenCalledTimes(2);
   });
 
-  it('should use shorter timeouts and hint at a local server in offline development', async () => {
-    vi.stubEnv('NODE_ENVIRONMENT', 'dev-offline');
+  it('should log connection events, giving up within the function time limit', async () => {
     const connect = vi.spyOn(mongoose, 'connect').mockResolvedValue(mongoose);
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -66,26 +65,13 @@ describe('connectToDatabase', () => {
 
     expect(connect).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ serverSelectionTimeoutMS: 5000, socketTimeoutMS: 30000 }),
+      expect.objectContaining({
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 20000,
+      }),
     );
-    expect(log).toHaveBeenCalledWith(
-      expect.stringMatching(/^Connected to local MongoDB/),
-    );
-    expect(log).toHaveBeenCalledWith('Disconnected from MongoDB.');
-    expect(error).toHaveBeenCalledWith(expect.stringMatching(/^Hint: Make sure MongoDB/));
-  });
-
-  it('should log connection events without the offline hint otherwise', async () => {
-    vi.spyOn(mongoose, 'connect').mockResolvedValue(mongoose);
-    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { connectToDatabase } = await loadService();
-
-    await connectToDatabase();
-    mongoose.connection.emit('connected');
-    mongoose.connection.emit('error', new Error('refused'));
-
     expect(log).toHaveBeenCalledWith(expect.stringMatching(/^Connected to MongoDB/));
+    expect(log).toHaveBeenCalledWith('Disconnected from MongoDB.');
     expect(error).toHaveBeenCalledOnce();
     expect(error).toHaveBeenCalledWith('MongoDB connection error: Error: refused');
   });

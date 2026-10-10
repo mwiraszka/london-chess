@@ -2,7 +2,7 @@ import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import { r2Client } from './storage.service';
 
-export type AvatarVariant = 'original' | 'cropped';
+type AvatarVariant = 'original' | 'cropped';
 
 export function avatarPublicUrlPrefix(): string {
   const { R2_AVATARS_PUBLIC_URL } = process.env;
@@ -16,7 +16,7 @@ function avatarKey(userId: string, variant: AvatarVariant): string {
   return `avatars/${userId}/${variant}`;
 }
 
-export function avatarPublicUrl(userId: string, variant: AvatarVariant): string {
+function avatarPublicUrl(userId: string, variant: AvatarVariant): string {
   return `${avatarPublicUrlPrefix()}/${avatarKey(userId, variant)}`;
 }
 

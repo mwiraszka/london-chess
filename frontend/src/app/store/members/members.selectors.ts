@@ -1,5 +1,6 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 
+import { initialMemberFormData } from '@app/constants';
 import { Id } from '@app/models';
 import { loadStatus } from '@app/utils';
 
@@ -94,7 +95,9 @@ export const selectMemberFormDataById = (id: Id | null) =>
     selectAllMemberEntities,
     (state, allMemberEntities) => {
       const entity = allMemberEntities.find(entity => entity.member.id === id);
-      return entity ? memberFormDataOf(entity) : state.newMemberFormData;
+      return entity
+        ? memberFormDataOf(entity)
+        : (state.newMemberFormData ?? initialMemberFormData());
     },
   );
 

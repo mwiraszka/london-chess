@@ -33,6 +33,6 @@ test.describe('documents', () => {
     await page.locator('lcc-footer').getByRole('link', { name: 'Club Bylaws' }).click();
 
     await expect(page).toHaveURL(/\/documents#lcc-bylaws\.pdf$/);
-    await expect(page.getByRole('dialog', { name: 'Document' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Club Bylaws' })).toBeVisible();
   });
 });

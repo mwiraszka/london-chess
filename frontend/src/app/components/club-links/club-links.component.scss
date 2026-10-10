@@ -16,19 +16,16 @@ ea-card {
   height: 100%;
 }
 
-// The card body's smaller secondary text would otherwise replace the home page's type
 .club-link__text {
   margin-right: 8px;
-  font-size: var(--font-size-md);
-  color: var(--lcc-color--homePage-primaryText);
+  color: var(--color-text-primary);
 }
 
 a {
   display: inline-flex;
   vertical-align: middle;
   align-items: center;
-  gap: 6px;
-  font-size: var(--font-size-md);
+  gap: 8px;
 
   .image-container {
     @include link-icon-lift;

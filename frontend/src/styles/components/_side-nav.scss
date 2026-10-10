@@ -1,0 +1,44 @@
+// The column of sections or releases a page lists beside its body, the current one marked
+.lcc-side-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    // The plain hover token is invisible against the light page background
+    background: var(--color-state-active);
+    color: var(--color-text-primary);
+  }
+}
+
+.lcc-side-nav__item--active {
+  font-weight: 600;
+  background: var(--color-state-active);
+  color: var(--color-text-primary);
+}
+
+// Holds the width its label takes in bold, so marking an item current moves nothing
+.lcc-side-nav__label {
+  display: inline-flex;
+  flex-direction: column;
+
+  &::after {
+    overflow: hidden;
+    visibility: hidden;
+    height: 0;
+    font-weight: 600;
+    pointer-events: none;
+    user-select: none;
+    content: attr(data-label);
+  }
+}

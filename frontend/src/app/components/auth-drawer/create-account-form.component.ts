@@ -98,7 +98,7 @@ export class CreateAccountFormComponent {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
-        yearOfBirth,
+        yearOfBirth: String(yearOfBirth),
         city: city.trim(),
         phoneNumber: normalizePhoneNumber(phoneNumber),
         lichessUsername: lichessUsername.trim(),

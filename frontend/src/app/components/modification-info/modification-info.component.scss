@@ -6,9 +6,9 @@
   width: fit-content;
   max-width: 100%;
   padding: 4px 16px;
-  border: 1px solid var(--lcc-color--modificationInfo-border);
-  border-radius: var(--lcc-borderRadius--large);
-  background-color: var(--lcc-color--modificationInfo-background);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-brand-subtle);
 
   @include respond-to('lt-sm') {
     width: 100%;
@@ -24,7 +24,7 @@
   align-items: flex-start;
   gap: 8px;
   font-size: 13px;
-  color: var(--lcc-color--modificationInfo-secondaryText);
+  color: var(--color-text-secondary);
 
   // On a phone the card spans the form while the credits stay a centred block
   @include respond-to('lt-sm') {
@@ -45,7 +45,7 @@
     ea-icon-edit {
       @include icon-size(15px);
 
-      color: var(--lcc-color--modificationInfo-icons);
+      color: var(--color-text-primary);
     }
 
     // A date that wraps onto its own line leaves its separator beyond the clipped edge
@@ -78,8 +78,8 @@
     }
 
     .name {
-      padding-left: 0.5em;
-      color: var(--lcc-color--modificationInfo-primaryText);
+      padding-left: 8px;
+      color: var(--color-text-primary);
     }
 
     .when {
@@ -100,7 +100,7 @@
     }
 
     .date {
-      color: var(--lcc-color--modificationInfo-primaryText);
+      color: var(--color-text-primary);
     }
   }
 }

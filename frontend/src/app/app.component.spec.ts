@@ -29,6 +29,7 @@ describe('AppComponent', () => {
 
   let dispatchSpy: MockInstance;
   let setAttributeSpy: MockInstance;
+  let setThemeSpy: MockInstance;
 
   beforeEach(async () => {
     mockFragmentSubject = new Subject<string | null>();
@@ -65,6 +66,7 @@ describe('AppComponent', () => {
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
     setAttributeSpy = vi.spyOn(document.body, 'setAttribute');
+    setThemeSpy = vi.spyOn(document.documentElement, 'setAttribute');
 
     store.overrideSelector(AuthSelectors.selectUser, null);
     store.overrideSelector(AppSelectors.selectBannerLastCleared, null);
@@ -72,9 +74,12 @@ describe('AppComponent', () => {
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
     store.overrideSelector(AppSelectors.selectIsWideView, false);
     store.overrideSelector(EventsSelectors.selectConcurrentNextEvents, [MOCK_EVENTS[0]]);
+    store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loaded');
     store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, false);
     store.refreshState();
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe('initialization', () => {
     beforeEach(() => {
@@ -83,7 +88,7 @@ describe('AppComponent', () => {
 
     it('should scroll to top when navigation occurs without fragment', () => {
       const scrollToSpy = vi.fn();
-      component.mainElement().nativeElement.scrollTo = scrollToSpy;
+      component.scroller().nativeElement.scrollTo = scrollToSpy;
 
       component.ngOnInit();
       mockFragmentSubject.next(null);
@@ -94,7 +99,7 @@ describe('AppComponent', () => {
 
     it('should not scroll to top when navigation occurs with fragment', () => {
       const scrollToSpy = vi.fn();
-      component.mainElement().nativeElement.scrollTo = scrollToSpy;
+      component.scroller().nativeElement.scrollTo = scrollToSpy;
 
       component.ngOnInit();
       mockFragmentSubject.next('some-fragment');
@@ -111,17 +116,14 @@ describe('AppComponent', () => {
       const vm = await firstValueFrom(component.viewModel$!.pipe(take(1)));
 
       expect(vm).toStrictEqual({
-        bannerLastCleared: null,
         isDarkMode: false,
-        isDesktopView: false,
-        isWideView: false,
         nextEvents: [MOCK_EVENTS[0]],
         showUpcomingEventBanner: false,
       });
     });
 
     it('should set data-theme attribute to light when isDarkMode is false', () => {
-      expect(setAttributeSpy).toHaveBeenCalledWith('data-theme', 'light');
+      expect(setThemeSpy).toHaveBeenCalledWith('data-theme', 'light');
     });
 
     it('should set data-theme attribute to dark when isDarkMode is true', () => {
@@ -131,7 +133,7 @@ describe('AppComponent', () => {
       component.ngOnInit();
       fixture.detectChanges();
 
-      expect(setAttributeSpy).toHaveBeenCalledWith('data-theme', 'dark');
+      expect(setThemeSpy).toHaveBeenCalledWith('data-theme', 'dark');
     });
 
     it('should set data-wide-view attribute to false by default', () => {
@@ -176,7 +178,7 @@ describe('AppComponent', () => {
 
       const scale = window.innerWidth / 1200;
       expect(viewport.content).toBe(
-        `width=1200, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=3.0, user-scalable=yes`,
+        `width=1200, initial-scale=${scale}, minimum-scale=${scale}, user-scalable=yes`,
       );
     });
   });
@@ -186,16 +188,16 @@ describe('AppComponent', () => {
       document.documentElement.style.removeProperty('--lcc-scrollbar-inset');
     });
 
-    it('should publish the width of the main scrollbar, again on every resize', () => {
+    it('should publish the width of the page scrollbar, again on every resize', () => {
       fixture.detectChanges();
-      const main: HTMLElement = component.mainElement().nativeElement;
+      const scroller: HTMLElement = component.scroller().nativeElement;
 
       expect(
         document.documentElement.style.getPropertyValue('--lcc-scrollbar-inset'),
       ).toBe('0px');
 
-      Object.defineProperty(main, 'offsetWidth', { configurable: true, value: 815 });
-      Object.defineProperty(main, 'clientWidth', { configurable: true, value: 800 });
+      Object.defineProperty(scroller, 'offsetWidth', { configurable: true, value: 815 });
+      Object.defineProperty(scroller, 'clientWidth', { configurable: true, value: 800 });
       window.dispatchEvent(new Event('resize'));
 
       expect(
@@ -205,11 +207,11 @@ describe('AppComponent', () => {
 
     it('should stop measuring on resize once the app is torn down', () => {
       fixture.detectChanges();
-      const main: HTMLElement = component.mainElement().nativeElement;
+      const scroller: HTMLElement = component.scroller().nativeElement;
       fixture.destroy();
 
-      Object.defineProperty(main, 'offsetWidth', { configurable: true, value: 815 });
-      Object.defineProperty(main, 'clientWidth', { configurable: true, value: 800 });
+      Object.defineProperty(scroller, 'offsetWidth', { configurable: true, value: 815 });
+      Object.defineProperty(scroller, 'clientWidth', { configurable: true, value: 800 });
       window.dispatchEvent(new Event('resize'));
 
       expect(
@@ -247,18 +249,32 @@ describe('AppComponent', () => {
       it('should render all main page components', () => {
         expect(query(fixture.debugElement, 'lcc-header')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-navigation-bar')).toBeTruthy();
-        expect(query(fixture.debugElement, 'main[cdkScrollable]')).toBeTruthy();
+        expect(
+          query(fixture.debugElement, '.scroller[cdkScrollable] > main'),
+        ).toBeTruthy();
         expect(query(fixture.debugElement, 'router-outlet')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-footer')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
       });
 
+      it('should take keyboard users past the header to the page from the skip link', () => {
+        const skipLink = query(fixture.debugElement, '.lcc-skip-link');
+        const click = new MouseEvent('click', { cancelable: true });
+
+        skipLink.nativeElement.dispatchEvent(click);
+
+        expect(click.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(
+          query(fixture.debugElement, 'main').nativeElement,
+        );
+      });
+
       it('should render the pull to refresh indicator over the top of the scroller, outside its content', () => {
         const indicator = query(fixture.debugElement, 'lcc-pull-to-refresh-indicator');
-        const main = query(fixture.debugElement, 'main[cdkScrollable]');
+        const scroller = query(fixture.debugElement, '.scroller[cdkScrollable]');
 
-        expect(indicator.nativeElement.nextElementSibling).toBe(main.nativeElement);
-        expect(query(main, 'lcc-pull-to-refresh-indicator')).toBeFalsy();
+        expect(indicator.nativeElement.nextElementSibling).toBe(scroller.nativeElement);
+        expect(query(scroller, 'lcc-pull-to-refresh-indicator')).toBeFalsy();
       });
 
       describe('upcoming event banner', () => {
@@ -289,13 +305,32 @@ describe('AppComponent', () => {
           expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
         });
 
-        it('should not render banner when nextEvents is empty', () => {
+        it('should still render banner when no events are coming up', () => {
           store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, true);
           store.overrideSelector(EventsSelectors.selectConcurrentNextEvents, []);
           store.refreshState();
           fixture.detectChanges();
 
-          expect(query(fixture.debugElement, 'lcc-upcoming-event-banner')).toBeFalsy();
+          expect(
+            query(
+              fixture.debugElement,
+              'lcc-upcoming-event-banner',
+            ).componentInstance.nextEvents(),
+          ).toEqual([]);
+        });
+
+        it('should hand the banner no events while they load', () => {
+          store.overrideSelector(AppSelectors.selectShowUpcomingEventBanner, true);
+          store.overrideSelector(EventsSelectors.selectHomePageEventsStatus, 'loading');
+          store.refreshState();
+          fixture.detectChanges();
+
+          expect(
+            query(
+              fixture.debugElement,
+              'lcc-upcoming-event-banner',
+            ).componentInstance.nextEvents(),
+          ).toBeNull();
         });
 
         it('should handle clearBanner event from banner component', () => {

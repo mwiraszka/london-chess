@@ -84,9 +84,18 @@
         @if (!vm.isSafeMode) {
           <ea-icon-alert-triangle
             class="safe-mode-warning"
-            [eaTooltip]="safeModeWarningTooltipContent" />
+            [eaTooltip]="safeModeWarningTooltipContent"
+            [maxWidth]="160" />
         }
       </div>
+    }
+    @if (vm.hasAdminRights) {
+      <ea-switch
+        class="menu-toggle admin-controls-toggle"
+        label="Admin controls"
+        size="sm"
+        [checked]="vm.showAdminControls"
+        (changed)="onToggleAdminControls()" />
     }
   </div>
   <ea-divider class="menu-divider" />
@@ -120,13 +129,12 @@
 
 <ng-template #safeModeWarningTooltipContent>
   <div class="safe-mode-warning-tooltip">
-    <header>
+    <p class="warning-title">
       <ea-icon-alert-triangle class="warning-icon" />
-      <div>Safe mode is currently disabled</div>
-    </header>
-
-    <div class="warning-message">
+      Safe mode is currently disabled
+    </p>
+    <p class="warning-message">
       Users' personal information such as emails and phone numbers are visible on screen
-    </div>
+    </p>
   </div>
 </ng-template>

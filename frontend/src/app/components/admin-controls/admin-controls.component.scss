@@ -12,22 +12,20 @@ ea-button.admin-control-button {
   --ea-button-font-size: calc((var(--button-size) - 10px) / 1.5);
   --ea-button-padding: 0 4px;
   --ea-button-min-height: var(--button-size);
-  --ea-button-radius: var(--lcc-borderRadius--large);
-  --ea-button-background-color: var(--lcc-color--adminControls-buttonBackground);
-  --ea-button-background-color-hover: var(
-    --lcc-color--adminControls-buttonBackgroundOnHover
-  );
-  --ea-button-border-color: var(--lcc-color--adminControls-buttonBorder);
+  --ea-button-radius: var(--radius-md);
+  --ea-button-background-color: var(--color-bg-base);
+  --ea-button-background-color-hover: var(--color-bg-muted);
+  --ea-button-border-color: var(--color-border-default);
 }
 
 .bookmark-button {
-  --ea-button-color: var(--lcc-color--adminControls-bookmarkIcon);
-  --ea-button-color-hover: var(--lcc-color--adminControls-bookmarkIconOnHover);
+  --ea-button-color: var(--lcc-accent);
+  --ea-button-color-hover: var(--lcc-accent-hover);
 }
 
 .delete-button {
-  --ea-button-color: var(--lcc-color--adminControls-deleteIcon);
-  --ea-button-color-hover: var(--lcc-color--adminControls-deleteIconOnHover);
+  --ea-button-color: var(--color-error-default);
+  --ea-button-color-hover: var(--color-error-text);
 }
 
 .edit-button {
@@ -37,20 +35,20 @@ ea-button.admin-control-button {
   width: var(--button-size);
   height: var(--button-size);
   padding: 0;
-  border: 2px solid var(--lcc-color--adminControls-buttonBorder);
-  border-radius: var(--lcc-borderRadius--large);
-  background-color: var(--lcc-color--adminControls-buttonBackground);
-  color: var(--lcc-color--adminControls-editIcon);
+  border: 2px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-base);
+  color: var(--color-brand-default);
 
   .edit-icon {
     @include icon-size(calc(var(--button-size) - 8px));
   }
 
   &.disabled {
-    background-color: var(--lcc-color--adminControls-disabledButtonBackground) !important;
-    color: var(--lcc-color--adminControls-disabledButtonIcon) !important;
+    background-color: var(--color-bg-muted) !important;
+    color: var(--color-text-disabled) !important;
     cursor: default !important;
-    border-color: var(--lcc-color--adminControls-disabledButtonBorder) !important;
+    border-color: var(--color-border-subtle) !important;
 
     & > * {
       cursor: default !important;
@@ -59,13 +57,13 @@ ea-button.admin-control-button {
 
   &:focus,
   &:hover {
-    background-color: var(--lcc-color--adminControls-buttonBackgroundOnHover);
-    color: var(--lcc-color--adminControls-editIconOnHover);
+    background-color: var(--color-bg-muted);
+    color: var(--color-brand-hover);
     cursor: pointer;
   }
 }
 
 .tooltip-item-name {
   display: block;
-  color: var(--lcc-color--tooltip-highlightedText) !important;
+  color: var(--color-primary-300) !important;
 }

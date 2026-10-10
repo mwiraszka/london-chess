@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { Types } from 'mongoose';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import {
@@ -9,11 +8,15 @@ import {
   articleTypes,
 } from '../models/article.model';
 import { Id } from '../models/core.model';
-import { modificationInfoTypes } from '../models/modification-info.model';
+import { ModificationInfo } from '../models/modification-info.model';
 import { findEditor } from '../services/member-accounts.service';
 import { isCollectionId } from '../util/is-collection-id.util';
-import { Editor, creditEditor } from '../util/modification-info.util';
-import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
+import { creditEditor } from '../util/modification-info.util';
+import {
+  buildPaginationQuery,
+  findPage,
+  parsePaginationParams,
+} from '../util/pagination.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 export async function getArticles(
@@ -26,29 +29,11 @@ export async function getArticles(
       articleSortingConfig,
     );
 
-    const [queryResults, countResults] = await Promise.all([
-      query.limit !== undefined
-        ? ArticleModel.find(query.filter)
-            .sort(query.sort)
-            .skip(query.skip)
-            .limit(query.limit)
-            .lean()
-        : ArticleModel.find(query.filter).sort(query.sort).skip(query.skip).lean(),
-      ArticleModel.countDocuments(query.filter),
-    ]);
-
-    const findResults = queryResults;
-    const filteredCount = countResults;
-
-    const totalCount = await ArticleModel.countDocuments({});
-
-    const articles: Article[] = findResults.map(result => {
-      const { _id, ...baseArticle } = result;
-      return {
-        ...baseArticle,
-        id: result._id.toString(),
-      };
-    });
+    const { records, filteredCount, totalCount } = await findPage(ArticleModel, query);
+    const articles: Article[] = records.map(({ _id, ...article }) => ({
+      ...article,
+      id: _id.toString(),
+    }));
 
     res.status(200).json({
       data: {
@@ -97,21 +82,9 @@ export async function addArticle(
       return;
     }
 
-    const modInfoValidationResult = validateObjectByTypes(
-      (req.body as Article).modificationInfo,
-      modificationInfoTypes,
-    );
-    if (modInfoValidationResult !== 'valid') {
-      res.status(400).json({
-        message: `Invalid article modification info: ${modInfoValidationResult.message}`,
-      });
-      return;
-    }
-
     const preparedArticle = prepareArticleForDB(
       req.body,
-      await findEditor(req.user.id),
-      true,
+      creditEditor(await findEditor(req.user.id), null),
     );
     const result = await ArticleModel.create(preparedArticle);
 
@@ -136,28 +109,22 @@ export async function updateArticle(
       return;
     }
 
-    const modInfoValidationResult = validateObjectByTypes(
-      (req.body as Article).modificationInfo,
-      modificationInfoTypes,
-    );
-    if (modInfoValidationResult !== 'valid') {
-      res.status(400).json({
-        message: `Invalid article modification info: ${modInfoValidationResult.message}`,
-      });
-      return;
-    }
+    const stored = isCollectionId(id)
+      ? await ArticleModel.findById(id, { modificationInfo: 1 }).lean()
+      : null;
+    const result = stored
+      ? await ArticleModel.updateOne(
+          { _id: id },
+          {
+            $set: prepareArticleForDB(
+              req.body,
+              creditEditor(await findEditor(req.user.id), stored.modificationInfo),
+            ),
+          },
+        )
+      : null;
 
-    const preparedArticle = prepareArticleForDB(
-      req.body,
-      await findEditor(req.user.id),
-      false,
-    );
-    const result = await ArticleModel.updateOne(
-      { _id: new Types.ObjectId(id) },
-      { $set: preparedArticle },
-    );
-
-    if (result.matchedCount === 0) {
+    if (!result?.matchedCount) {
       res.status(404).json({
         message: `Unable to update article [${id}] because it could not be found.`,
       });
@@ -177,11 +144,9 @@ export async function deleteArticle(
   try {
     const { id } = req.params;
 
-    const result = await ArticleModel.deleteOne({
-      _id: new Types.ObjectId(id),
-    });
+    const result = isCollectionId(id) ? await ArticleModel.deleteOne({ _id: id }) : null;
 
-    if (result.deletedCount === 0) {
+    if (!result?.deletedCount) {
       res.status(404).json({
         message: `Unable to delete article [${id}] because it could not be found.`,
       });
@@ -197,14 +162,13 @@ export async function deleteArticle(
 // Remove id property and order remaining properties alphabetically
 function prepareArticleForDB(
   article: Article,
-  editor: Editor,
-  isNew: boolean,
+  modificationInfo: ModificationInfo,
 ): Omit<Article, 'id'> {
   return {
     bannerImageId: article.bannerImageId,
     body: article.body,
     bookmarkDate: article.bookmarkDate,
-    modificationInfo: creditEditor(article.modificationInfo, editor, isNew),
+    modificationInfo,
     title: article.title,
   };
 }

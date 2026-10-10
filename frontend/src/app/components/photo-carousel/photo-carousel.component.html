@@ -3,39 +3,54 @@
   role="region"
   aria-label="Photo carousel">
   @for (photo of photos(); track photo.id; let i = $index) {
-    <div
+    <button
       class="image-wrapper"
+      type="button"
+      [attr.aria-hidden]="i === currentIndex() ? null : true"
+      [attr.aria-label]="'View next photo, currently showing ' + photo.caption"
       [class.active]="i === currentIndex()"
-      (click)="onNextPhoto()"
-      [tabindex]="i === currentIndex() ? 0 : -1"
-      role="button"
-      [attr.aria-label]="'View next photo, currently showing ' + photo.caption">
+      [inert]="i !== currentIndex()"
+      (click)="onNextPhoto()">
       <img
         class="carousel-photo"
-        [src]="photo.mainUrl"
-        [alt]="photo.caption" />
-    </div>
+        [alt]="photo.caption"
+        [attr.height]="photo.mainHeight ?? null"
+        [attr.width]="photo.mainWidth ?? null"
+        [src]="photo.mainUrl" />
+    </button>
   }
 </div>
 
 <div class="caption-container">
   @for (photo of photos(); track photo.id; let i = $index) {
-    <label
+    <p
       class="caption"
+      [attr.aria-hidden]="i === currentIndex() ? null : true"
       [class.active]="i === currentIndex()">
       {{ photo.caption?.replace(': ', ': \n') }}
-    </label>
+    </p>
   }
 </div>
 
-<div class="dots-container">
-  @for (photo of photos(); track photo.id; let i = $index) {
-    <div
-      class="dot-button"
-      role="button"
-      [class.active]="i === currentIndex()"
-      [attr.aria-label]="'View photo ' + (i + 1)"
-      (click)="onSelectPhoto(i)">
-    </div>
-  }
+<div class="controls">
+  <ea-button
+    size="xs"
+    variant="ghost"
+    [aria-label]="isPaused() ? 'Play the slideshow' : 'Pause the slideshow'"
+    [eaTooltip]="isPaused() ? 'Play the slideshow' : 'Pause the slideshow'"
+    [icon]="isPaused() ? playIcon : pauseIcon"
+    (clicked)="isPaused.set(!isPaused())" />
+
+  <div class="dots-container">
+    @for (photo of photos(); track photo.id; let i = $index) {
+      <button
+        class="dot-button"
+        type="button"
+        [attr.aria-current]="i === currentIndex() || null"
+        [attr.aria-label]="'View photo ' + (i + 1)"
+        [class.active]="i === currentIndex()"
+        (click)="onSelectPhoto(i)">
+      </button>
+    }
+  </div>
 </div>

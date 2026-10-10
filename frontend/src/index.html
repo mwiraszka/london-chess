@@ -86,19 +86,28 @@
     <link
       rel="manifest"
       href="manifest.webmanifest" />
-    <!-- header font -->
+    <!-- the API answers the first page's requests -->
     <link
       rel="preconnect"
-      href="https://fonts.googleapis.com" />
+      href="https://api.londonchess.ca"
+      crossorigin />
+    <!-- the first page's text and the header's title, fetched alongside the page so they
+         are ready by the time it is drawn -->
     <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
+      rel="preload"
+      href="assets/fonts/dm-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
       crossorigin />
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" />
+      rel="preload"
+      href="assets/fonts/caveat-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin />
+    <!-- async, as a deferred script would hold back the app's own until it arrives -->
     <script
-      defer
+      async
       data-domain="londonchess.ca"
       src="https://plausible.io/js/script.file-downloads.hash.outbound-links.tagged-events.js"></script>
     <!-- structured data -->

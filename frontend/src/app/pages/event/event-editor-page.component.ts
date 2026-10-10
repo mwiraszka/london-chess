@@ -1,5 +1,4 @@
 import { CalendarIconComponent, ShieldCheckIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
@@ -24,7 +23,6 @@ import {
 import { MetaAndTitleService } from '@app/services';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-event-editor-page',
   template: `
@@ -94,7 +92,6 @@ export class EventEditorPageComponent implements EditorPage, OnInit {
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => (params['event_id'] ?? null) as string | null),
       switchMap(eventId =>
         combineLatest([

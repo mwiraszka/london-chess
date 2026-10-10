@@ -12,18 +12,18 @@ pdf-viewer {
     overflow-x: hidden;
 
     &::-webkit-scrollbar {
-      background-color: var(--lcc-color--documentViewer-scrollbarBackground) !important;
+      background-color: var(--lcc-surface-sunken) !important;
     }
 
     &::-webkit-scrollbar-thumb {
-      background-color: var(--lcc-color--documentViewer-scrollbar) !important;
+      background-color: var(--lcc-scrollbar) !important;
     }
 
     .page {
       margin: 0;
 
       .textLayer {
-        background-color: var(--lcc-color--documentViewer-pageBackground) !important;
+        background-color: var(--color-neutral-300) !important;
       }
     }
   }

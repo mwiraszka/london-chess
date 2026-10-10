@@ -55,6 +55,19 @@ describe('parseError', () => {
       });
     });
 
+    it('when the response has no body', () => {
+      const response = new HttpErrorResponse({
+        status: 502,
+        url: 'https://api.test/v1/x',
+      });
+
+      expect(parseError(response)).toStrictEqual({
+        name: 'LCCError',
+        status: 502,
+        message: 'Http failure response for https://api.test/v1/x: 502 undefined',
+      });
+    });
+
     it('omits the status when the request never reached the server', () => {
       const response = new HttpErrorResponse({
         status: 0,

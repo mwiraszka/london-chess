@@ -10,6 +10,7 @@ describe('Auth Reducer', () => {
     lastName: 'Doe',
     email: 'john.doe@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
 
   describe('unknown action', () => {

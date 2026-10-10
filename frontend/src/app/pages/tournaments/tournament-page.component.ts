@@ -10,7 +10,6 @@ import {
   TooltipDirective,
   TrashIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -18,6 +17,7 @@ import { map, switchMap } from 'rxjs/operators';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   TemplateRef,
   computed,
@@ -25,6 +25,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -36,12 +37,7 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
-import {
-  LOADING_ENTRY_COUNT,
-  LOADING_ROUND_COUNT,
-  TOURNAMENT_FORMAT_LABELS,
-  TOURNAMENT_SUBTITLE_LABELS,
-} from '@app/constants/tournaments';
+import { TOURNAMENT_FORMAT_LABELS } from '@app/constants/tournaments';
 import {
   AdminButton,
   Dialog,
@@ -50,14 +46,17 @@ import {
   RoundResult,
   Tournament,
   TournamentEntry,
+  TournamentFormat,
   TournamentGame,
   TournamentSection,
+  TournamentSectionSummary,
+  TournamentSummary,
 } from '@app/models';
 import {
   AuthDrawerService,
+  DeletionService,
   MetaAndTitleService,
   StoreRequestService,
-  UserService,
 } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
@@ -72,6 +71,7 @@ import {
   registrationStatus,
   roundResultDescription,
   roundResultLabel,
+  summarizeTournament,
 } from '@app/utils';
 
 export interface RoundCell {
@@ -112,13 +112,18 @@ export interface SectionView {
   heading: SectionHeading | null;
   kind: 'crosstable' | 'standings' | 'simul';
   roundCount: number;
+  // Empty while the tournament loads, its counts holding their places
   rows: CrosstableRow[];
   games: GameRow[];
+  entryCount: number;
+  gameCount: number;
 }
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
 
-function sectionHeading(section: TournamentSection): SectionHeading | null {
+function sectionHeading(
+  section: Pick<TournamentSection, 'name' | 'ratingBand'>,
+): SectionHeading | null {
   if (section.ratingBand) {
     return { text: section.ratingBand, extra: '' };
   }
@@ -142,14 +147,11 @@ function sectionHeading(section: TournamentSection): SectionHeading | null {
   return { text: giver.name, extra: giver.rating === null ? '' : String(giver.rating) };
 }
 
-function sectionKind(
-  tournament: Tournament,
-  section: TournamentSection,
-): SectionView['kind'] {
-  if (tournament.format === 'tandem-simul') {
+function sectionKind(format: TournamentFormat, hasRounds: boolean): SectionView['kind'] {
+  if (format === 'tandem-simul') {
     return 'simul';
   }
-  return section.entries.some(({ rounds }) => rounds.length) ? 'crosstable' : 'standings';
+  return hasRounds ? 'crosstable' : 'standings';
 }
 
 function toSectionView(
@@ -166,8 +168,13 @@ function toSectionView(
   return {
     key: `${index}-${section.name}`,
     heading: sectionHeading(section),
-    kind: sectionKind(tournament, section),
+    kind: sectionKind(
+      tournament.format,
+      section.entries.some(({ rounds }) => rounds.length),
+    ),
     roundCount,
+    entryCount: section.entries.length,
+    gameCount: section.games.length,
     rows: section.entries.map((entry, entryIndex) => {
       const row: CrosstableRow = {
         id: `${entryIndex}-${entry.player.id}`,
@@ -204,9 +211,25 @@ function toSectionView(
   };
 }
 
+function toLoadingSectionView(
+  summary: TournamentSummary,
+  section: TournamentSectionSummary,
+  index: number,
+): SectionView {
+  return {
+    key: `${index}-${section.name}`,
+    heading: sectionHeading(section),
+    kind: sectionKind(summary.format, section.hasRounds),
+    roundCount: section.roundCount,
+    entryCount: section.entryCount,
+    gameCount: section.gameCount,
+    rows: [],
+    games: [],
+  };
+}
+
 type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-tournament-page',
   templateUrl: './tournament-page.component.html',
@@ -228,14 +251,15 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly authDrawer = inject(AuthDrawerService);
+  private readonly deletion = inject(DeletionService);
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
   private readonly storeRequests = inject(StoreRequestService);
-  private readonly userService = inject(UserService);
 
   private readonly rankCell = viewChild<CellTemplate<CrosstableRow>>('rankCell');
   private readonly playerCell = viewChild<CellTemplate<CrosstableRow>>('playerCell');
@@ -249,7 +273,6 @@ export class TournamentPageComponent implements OnInit {
 
   protected readonly pageIcon = AwardIconComponent;
   protected readonly formatLabels = TOURNAMENT_FORMAT_LABELS;
-  protected readonly subtitleLabels = TOURNAMENT_SUBTITLE_LABELS;
   protected readonly formatDateRange = formatDateRange;
   protected readonly formatScore = formatScore;
   protected readonly archiveLink: InternalLink = {
@@ -257,8 +280,6 @@ export class TournamentPageComponent implements OnInit {
     internalPath: 'tournaments',
     icon: AwardIconComponent,
   };
-
-  protected readonly loadingRowCount = LOADING_ENTRY_COUNT;
 
   protected readonly isAdmin = this.store.selectSignal(AuthSelectors.selectIsAdmin);
   protected readonly user = this.store.selectSignal(AuthSelectors.selectUser);
@@ -271,13 +292,27 @@ export class TournamentPageComponent implements OnInit {
     action: () => {
       const tournament = this.viewModel()?.tournament;
       if (tournament) {
-        void this.onDelete(tournament);
+        void this.deletion.deleteTournament(tournament);
       }
     },
   };
 
   private readonly tournamentNumber$ = this.route.paramMap.pipe(
     map(params => Number(params.get('number'))),
+  );
+
+  private readonly loadingSummary = toSignal(
+    this.tournamentNumber$.pipe(
+      switchMap(tournamentNumber =>
+        this.store
+          .select(TournamentsSelectors.selectSummaries)
+          .pipe(
+            map(summaries =>
+              summaries?.find(({ number }) => number === tournamentNumber),
+            ),
+          ),
+      ),
+    ),
   );
 
   protected readonly viewModel = toSignal(
@@ -297,23 +332,26 @@ export class TournamentPageComponent implements OnInit {
     ),
   );
 
+  // Its summary from the list of tournaments lays the page out until the tournament arrives
+  protected readonly summary = computed<TournamentSummary | null>(() => {
+    const tournament = this.viewModel()?.tournament;
+    return tournament ? summarizeTournament(tournament) : (this.loadingSummary() ?? null);
+  });
+
   protected readonly sections = computed<SectionView[]>(() => {
     const tournament = this.viewModel()?.tournament;
-    return tournament
-      ? tournament.sections.map((section, index) =>
-          toSectionView(tournament, section, index),
+    if (tournament) {
+      return tournament.sections.map((section, index) =>
+        toSectionView(tournament, section, index),
+      );
+    }
+    const summary = this.loadingSummary();
+    return summary
+      ? summary.sections.map((section, index) =>
+          toLoadingSectionView(summary, section, index),
         )
       : [];
   });
-
-  protected readonly playerCount = computed(
-    () =>
-      new Set(
-        this.viewModel()?.tournament?.sections.flatMap(({ entries }) =>
-          entries.map(({ player }) => player.id),
-        ),
-      ).size,
-  );
 
   protected readonly editLink = computed<InternalLink>(() => ({
     text: 'Edit this tournament',
@@ -325,13 +363,11 @@ export class TournamentPageComponent implements OnInit {
     icon: EditIconComponent,
   }));
 
-  protected readonly hasResults = computed(() =>
-    (this.viewModel()?.tournament?.sections ?? []).some(({ entries }) => entries.length),
-  );
+  protected readonly hasResults = computed(() => !!this.summary()?.playerCount);
 
   // Worked out as the tournament loads, the server having the final word on the window
   protected readonly registration = computed(() => {
-    const tournament = this.viewModel()?.tournament;
+    const tournament = this.summary();
     if (!tournament || this.hasResults()) {
       return null;
     }
@@ -339,7 +375,7 @@ export class TournamentPageComponent implements OnInit {
     if (status === 'none' && !tournament.registrants.length) {
       return null;
     }
-    const memberNumber = this.userService.memberNumber();
+    const memberNumber = this.user()?.memberNumber ?? null;
     return {
       status,
       summary: this.registrationSummary(status, tournament),
@@ -354,11 +390,11 @@ export class TournamentPageComponent implements OnInit {
   });
 
   protected readonly subtitlePeople = computed(() =>
-    parseSubtitlePeople(this.viewModel()?.tournament?.subtitle ?? ''),
+    parseSubtitlePeople(this.summary()?.subtitle ?? ''),
   );
 
   protected readonly links = computed<InternalLink[]>(() => {
-    const articleId = this.viewModel()?.tournament?.articleId;
+    const articleId = this.summary()?.articleId;
     if (!articleId) {
       return [this.archiveLink];
     }
@@ -380,10 +416,6 @@ export class TournamentPageComponent implements OnInit {
       ),
   );
 
-  protected readonly loadingColumns = computed(() =>
-    this.crosstableColumns('crosstable', LOADING_ROUND_COUNT),
-  );
-
   protected readonly gameColumns = computed<DataTableColumn<GameRow>[]>(() => {
     const white = this.whiteCell();
     const black = this.blackCell();
@@ -392,10 +424,16 @@ export class TournamentPageComponent implements OnInit {
       return [];
     }
     return [
-      { key: 'round', label: 'Round', align: 'right' },
-      { key: 'white', label: 'White player', cellTemplate: white },
-      { key: 'result', label: 'Result', align: 'center', cellTemplate: result },
-      { key: 'black', label: 'Black player', cellTemplate: black },
+      { key: 'round', label: 'Round', align: 'right', width: '16%' },
+      { key: 'white', label: 'White player', width: '34%', cellTemplate: white },
+      {
+        key: 'result',
+        label: 'Result',
+        align: 'center',
+        width: '16%',
+        cellTemplate: result,
+      },
+      { key: 'black', label: 'Black player', width: '34%', cellTemplate: black },
     ];
   });
 
@@ -410,7 +448,7 @@ export class TournamentPageComponent implements OnInit {
             TournamentsSelectors.selectTournamentByNumber(tournamentNumber),
           ),
         ),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(tournament => {
         const days = tournament
@@ -435,7 +473,7 @@ export class TournamentPageComponent implements OnInit {
     this.authDrawer.openLogin();
   }
 
-  public async onRegister(tournament: Tournament): Promise<void> {
+  public async onRegister(tournament: TournamentSummary): Promise<void> {
     this.registering.set(true);
     try {
       await this.storeRequests.dispatch(
@@ -450,7 +488,7 @@ export class TournamentPageComponent implements OnInit {
     }
   }
 
-  public async onWithdraw(tournament: Tournament): Promise<void> {
+  public async onWithdraw(tournament: TournamentSummary): Promise<void> {
     const dialog: Dialog = {
       title: 'Confirm',
       body: `Withdraw from ${tournament.name}? You can register again while registration is open.`,
@@ -469,28 +507,6 @@ export class TournamentPageComponent implements OnInit {
     await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
-  public async onDelete(tournament: Tournament): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${tournament.name} (${formatDateRange(tournament.date, tournament.endDate)})? Its results and registrations will be lost.`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(
-          TournamentsActions.deleteTournamentRequested({
-            tournamentNumber: tournament.number,
-            tournamentName: tournament.name,
-          }),
-          [
-            TournamentsActions.deleteTournamentSucceeded,
-            TournamentsActions.deleteTournamentFailed,
-          ],
-        ),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-  }
-
   public onRetry(tournamentNumber: number): void {
     this.store.dispatch(
       TournamentsActions.fetchTournamentRequested({ tournamentNumber }),
@@ -499,13 +515,13 @@ export class TournamentPageComponent implements OnInit {
 
   private registrationSummary(
     status: RegistrationStatus,
-    { registrationOpens, registrationCloses }: Tournament,
+    { registrationOpens, registrationCloses }: TournamentSummary,
   ): string {
     switch (status) {
       case 'open':
-        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short')}.`;
+        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short at-time')}.`;
       case 'not-open':
-        return `Registration opens ${formatDate(registrationOpens ?? undefined, 'short')}.`;
+        return `Registration opens on ${formatDate(registrationOpens ?? undefined, 'short at-time')}.`;
       case 'closed':
         return 'Registration has closed.';
       default:
@@ -533,14 +549,22 @@ export class TournamentPageComponent implements OnInit {
         label: kind === 'simul' ? 'Board' : '#',
         sortable: true,
         align: 'right',
+        width: kind === 'simul' ? '6rem' : '4rem',
         cellTemplate: rank,
       },
-      { key: 'player', label: 'Player', sortable: true, cellTemplate: player },
+      {
+        key: 'player',
+        label: 'Player',
+        sortable: true,
+        width: '15rem',
+        cellTemplate: player,
+      },
       {
         key: 'rating',
         label: 'Rating',
         sortable: true,
         align: 'right',
+        width: '6rem',
         cellTemplate: rating,
       },
     ];
@@ -550,18 +574,28 @@ export class TournamentPageComponent implements OnInit {
         key: roundKey(index + 1),
         label: `Rd ${index + 1}`,
         align: 'center',
+        width: '3.75rem',
         cellTemplate: round,
       }),
     );
     const trailing: DataTableColumn<CrosstableRow>[] =
       kind === 'simul'
-        ? [{ key: 'resultNote', label: 'Result', sortable: true, cellTemplate: note }]
+        ? [
+            {
+              key: 'resultNote',
+              label: 'Result',
+              sortable: true,
+              width: '6rem',
+              cellTemplate: note,
+            },
+          ]
         : [
             {
               key: 'score',
               label: 'Total',
               sortable: true,
               align: 'right',
+              width: '5.25rem',
               cellTemplate: score,
             },
           ];

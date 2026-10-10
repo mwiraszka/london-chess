@@ -1,6 +1,6 @@
 import { ButtonComponent, DialogService } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
-import { pick, uniq } from 'lodash';
+import { pick, uniq } from 'lodash-es';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -131,7 +131,7 @@ describe('ImageFormComponent', () => {
     storeImageFileSpy = vi.mocked(TestBed.inject(ImageFileService).storeImageFile);
     storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
-    getImageSpy.mockResolvedValue({
+    getImageSpy.mockReturnValue({
       id: newImageData.id,
       filename: newImageData.filename,
       dataUrl: 'data:image/png;base64,abc',
@@ -155,25 +155,19 @@ describe('ImageFormComponent', () => {
       expect(requestFetchMainImageSpy).not.toHaveBeenCalled();
     });
 
-    it('should pick up the draft of a new image with its stored preview', async () => {
+    it('should pick up the draft of a new image with its stored preview', () => {
       render(null, newImageData, true);
-
-      await getImageSpy.mock.results[0].value;
-      fixture.detectChanges();
 
       expect(component.form.getRawValue()).toEqual(newImageData);
       expect(getImageSpy).toHaveBeenCalledWith(newImageData.id);
       expect(previewSrc()).toBe('data:image/png;base64,abc');
     });
 
-    it('should report a stored preview that fails to load', async () => {
-      const error: LccError = { name: 'LCCError', message: 'Could not read the image.' };
-      getImageSpy.mockResolvedValue(error);
+    it('should show no preview for a draft whose file this tab does not hold', () => {
+      getImageSpy.mockReturnValue(null);
 
       render(null, newImageData, true);
-      await getImageSpy.mock.results[0].value;
 
-      expect(fileActionFailSpy).toHaveBeenCalledWith(error);
       expect(previewSrc()).toBe(IMAGE_FALLBACK_SRC);
     });
 
@@ -308,7 +302,7 @@ describe('ImageFormComponent', () => {
       pickFile(boardFile);
       await storedFile();
 
-      expect(storeImageFileSpy).toHaveBeenCalledWith('new-1234', boardFile, true);
+      expect(storeImageFileSpy).toHaveBeenCalledWith('new-1234', boardFile);
       expect(component.form.controls.filename.value).toBe('first.board.png');
       expect(component.form.controls.caption.value).toBe('first.board');
       expect(previewSrc()).toBe('data:image/png;base64,xyz');
@@ -361,22 +355,15 @@ describe('ImageFormComponent', () => {
   });
 
   describe('restoring', () => {
-    it('should put the original image back once confirmed', async () => {
+    it('should put the original image back', () => {
       render(
         { ...entity, formData: { ...entity.formData, caption: 'Changed' } },
         null,
         true,
       );
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
 
-      expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
-        title: 'Confirm',
-        body: 'Revert to the original image data? All changes will be lost.',
-        confirmButtonText: 'Revert',
-        confirmButtonType: 'warning',
-      });
       expect(restoreSpy).toHaveBeenCalledWith(entity.image.id);
       expect(component.form.getRawValue()).toEqual(entity.formData);
       expect(component.form.touched).toBe(false);
@@ -384,10 +371,8 @@ describe('ImageFormComponent', () => {
 
     it('should empty a new image back to its starting values and drop its preview', async () => {
       render(null, newImageData, true);
-      await getImageSpy.mock.results[0].value;
-      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
-      await component.onRestore();
+      query(fixture.debugElement, 'lcc-form-actions').triggerEventHandler('restore');
       fixture.detectChanges();
 
       expect(restoreSpy).toHaveBeenCalledWith(newImageData.id);
@@ -396,20 +381,6 @@ describe('ImageFormComponent', () => {
         id: newImageData.id,
       });
       expect(previewSrc()).toBe(IMAGE_FALLBACK_SRC);
-    });
-
-    it('should change nothing when cancelled', async () => {
-      render(
-        { ...entity, formData: { ...entity.formData, caption: 'Changed' } },
-        null,
-        true,
-      );
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onRestore();
-
-      expect(restoreSpy).not.toHaveBeenCalled();
-      expect(component.form.controls.caption.value).toBe('Changed');
     });
   });
 

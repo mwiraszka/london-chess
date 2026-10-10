@@ -1,15 +1,17 @@
-import { MemberModel, MemberRecord } from '../models/member.model';
+import { MemberModel, MemberRecord, profileMemberFilter } from '../models/member.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
+import { parseRecordNumber } from '../util/parse-record-number.util';
 
 // The archive players linked to a member with a public profile, or null when no such
 // member exists
 export async function findProfilePlayerIds(number: string): Promise<string[] | null> {
-  const member = /^\d+$/.test(number)
-    ? await MemberModel.findOne(
-        { number: Number(number), 'account.clerkUserId': { $ne: null } },
-        { _id: 1 },
-      ).lean<Pick<MemberRecord, '_id'>>()
-    : null;
+  const memberNumber = parseRecordNumber(number);
+  const member =
+    memberNumber === null
+      ? null
+      : await MemberModel.findOne(profileMemberFilter(memberNumber), { _id: 1 }).lean<
+          Pick<MemberRecord, '_id'>
+        >();
 
   if (!member) {
     return null;

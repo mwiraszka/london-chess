@@ -23,10 +23,6 @@ $side-padding: 8px;
   --ea-dialog-body-padding: 0;
 }
 
-.dialog-title {
-  font: inherit;
-}
-
 .image-explorer {
   display: flex;
   flex-direction: column;
@@ -83,13 +79,13 @@ $side-padding: 8px;
     max-height: 500px;
     padding: $card-padding;
     border: none;
-    border-radius: var(--lcc-borderRadius--large);
-    box-shadow: 1px 2px 4px var(--lcc-color--general-cardBoxShadow);
-    background-color: var(--lcc-color--imageExplorer-cardBackground);
+    border-radius: var(--radius-md);
+    box-shadow: 1px 2px 4px var(--lcc-shadow-soft);
+    background-color: var(--lcc-surface);
     transition: all 0.2s ease;
 
     &.selectable:hover {
-      box-shadow: 4px 4px 8px var(--lcc-color--general-cardBoxShadow);
+      box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       cursor: pointer;
       animation: raise 0.2s ease forwards;
     }
@@ -101,8 +97,8 @@ $side-padding: 8px;
       justify-content: center;
       margin-bottom: 8px;
       aspect-ratio: 3 / 2;
-      border-radius: var(--lcc-borderRadius--large);
-      background-color: var(--lcc-color--general-imageBackdrop);
+      border-radius: var(--radius-md);
+      background-color: var(--lcc-image-backdrop);
 
       lcc-image {
         width: 100%;
@@ -124,16 +120,16 @@ $side-padding: 8px;
     .album,
     .article-appearances {
       font-size: 12px;
-      color: var(--lcc-color--imageExplorer-text);
+      color: var(--color-text-primary);
 
       label {
         display: inline;
-        margin-right: 0.5em;
+        margin-right: 8px;
         font-weight: bold;
       }
 
       b {
-        margin: 0.3em;
+        margin: 4px;
       }
 
       // Stands in for the value, which sits on its own line below the label
@@ -144,12 +140,12 @@ $side-padding: 8px;
     }
 
     .article-appearances {
-      color: var(--lcc-color--imageExplorer-articleAppearancesText);
+      color: var(--color-text-link);
     }
 
     // Placeholders take a fill that reads on the card
     ::ng-deep ea-skeleton .ea-skeleton {
-      background-color: var(--lcc-color--imageExplorer-skeleton);
+      background-color: var(--lcc-skeleton);
     }
   }
 }

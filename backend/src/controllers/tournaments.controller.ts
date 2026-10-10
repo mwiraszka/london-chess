@@ -2,16 +2,12 @@ import { Request, Response } from 'express';
 
 import { ApiResponse } from '../models/api-response.model';
 import {
-  ModificationInfo,
-  modificationInfoTypes,
-} from '../models/modification-info.model';
-import {
   GameInput,
   ImportChanges,
   MemberTournamentResult,
   PlayerNameMatch,
   SectionInput,
-  Tournament,
+  TournamentDetails,
   TournamentInput,
   TournamentModel,
   TournamentRecord,
@@ -34,6 +30,7 @@ import {
 } from '../services/tournament-players.service';
 import {
   TOURNAMENT_SUMMARY_PIPELINE,
+  TournamentSummaryRecord,
   compareSections,
   toMemberTournamentResults,
   toRegistrants,
@@ -42,31 +39,14 @@ import {
 } from '../services/tournaments.service';
 import { clubToday } from '../util/club-date.util';
 import { creditEditor } from '../util/modification-info.util';
+import { parseRecordNumber } from '../util/parse-record-number.util';
 import {
   gamesError,
   sectionsError,
   validateTournamentInput,
 } from '../util/tournament-input.util';
-import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 const MAX_MATCHED_NAMES = 2000;
-
-type TournamentDetails = Pick<
-  Tournament,
-  | 'name'
-  | 'subtitle'
-  | 'date'
-  | 'endDate'
-  | 'format'
-  | 'timeControl'
-  | 'isRated'
-  | 'articleId'
-  | 'registrationOpens'
-  | 'registrationCloses'
->;
-
-const parseNumber = (value: string): number | null =>
-  /^\d+$/.test(value) ? Number(value) : null;
 
 const withoutFullStop = (message: string): string => message.replace(/\.$/, '');
 
@@ -78,6 +58,7 @@ function toDetails(input: TournamentInput): TournamentDetails {
     endDate: input.endDate,
     format: input.format,
     timeControl: input.timeControl.trim(),
+    roundCount: input.roundCount,
     isRated: input.isRated,
     articleId: input.articleId || null,
     registrationOpens: input.registrationOpens,
@@ -90,13 +71,6 @@ function invalidInput(body: unknown): string | null {
   const inputResult = validateTournamentInput(body);
   if (inputResult !== 'valid') {
     return `Unable to save the tournament because ${withoutFullStop(inputResult.message)}.`;
-  }
-  const infoResult = validateObjectByTypes(
-    (body as TournamentInput).modificationInfo,
-    modificationInfoTypes,
-  );
-  if (infoResult !== 'valid') {
-    return `Unable to save the tournament because its modification info is invalid: ${withoutFullStop(infoResult.message)}.`;
   }
   return null;
 }
@@ -129,8 +103,14 @@ export async function getTournaments(
   res: Response<ApiResponse<TournamentSummary[]>>,
 ): Promise<void> {
   try {
-    const summaries = await TournamentModel.aggregate<TournamentSummary>(
+    const records = await TournamentModel.aggregate<TournamentSummaryRecord>(
       TOURNAMENT_SUMMARY_PIPELINE,
+    );
+    const summaries = await Promise.all(
+      records.map(async ({ registrations, ...summary }): Promise<TournamentSummary> => ({
+        ...summary,
+        registrants: await toRegistrants(registrations),
+      })),
     );
 
     res.status(200).json({ data: summaries });
@@ -145,9 +125,13 @@ export async function getTournament(
 ): Promise<void> {
   try {
     const { number } = req.params;
-    const record = /^\d+$/.test(number)
-      ? await TournamentModel.findOne({ number: Number(number) }).lean<TournamentRecord>()
-      : null;
+    const tournamentNumber = parseRecordNumber(number);
+    const record =
+      tournamentNumber === null
+        ? null
+        : await TournamentModel.findOne({
+            number: tournamentNumber,
+          }).lean<TournamentRecord>();
 
     if (!record) {
       res.status(404).json({ message: `Unable to find tournament [${number}]` });
@@ -222,7 +206,7 @@ export async function addTournament(
         ? await toStoredSections(input.sections, [], input.format)
         : [],
       registrations: [],
-      modificationInfo: creditEditor(input.modificationInfo, editor, true),
+      modificationInfo: creditEditor(editor, null),
     });
 
     res.status(201).json({ data: number });
@@ -236,7 +220,7 @@ export async function updateTournament(
   res: Response<ApiResponse<number>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null
@@ -270,17 +254,8 @@ export async function updateTournament(
     // A tournament first given games through the site files them under its own name
     const gameArchiveTournament = record.gameArchiveTournament ?? input.name.trim();
     if (games.length) {
-      const now = new Date().toISOString();
-      const gamesInfo: ModificationInfo = {
-        createdBy: editor.name,
-        createdByNumber: editor.number,
-        dateCreated: now,
-        lastEditedBy: editor.name,
-        lastEditedByNumber: editor.number,
-        dateLastEdited: now,
-      };
       // Games go in first, so saving again after a failure adds none of them twice
-      await archiveGames(gameArchiveTournament, games, gamesInfo);
+      await archiveGames(gameArchiveTournament, games, creditEditor(editor, null));
     }
     await TournamentModel.updateOne(
       { number },
@@ -289,11 +264,7 @@ export async function updateTournament(
           ...toDetails(input),
           ...(sections ? { sections } : {}),
           ...(games.length ? { gameArchiveTournament } : {}),
-          modificationInfo: creditEditor(
-            input.modificationInfo,
-            editor,
-            !record.modificationInfo,
-          ),
+          modificationInfo: creditEditor(editor, record.modificationInfo ?? null),
         },
       },
     );
@@ -312,7 +283,7 @@ export async function deleteTournament(
   res: Response<ApiResponse<number>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null
@@ -358,7 +329,7 @@ export async function checkTournamentImport(
   res: Response<ApiResponse<ImportChanges>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null
@@ -414,7 +385,7 @@ export async function registerForTournament(
   res: Response<ApiResponse<TournamentRegistrant[]>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const exists = number !== null && (await TournamentModel.exists({ number }));
     if (number === null || !exists) {
       res.status(404).json({ message: 'Unable to find this tournament.' });
@@ -468,7 +439,7 @@ export async function withdrawFromTournament(
   res: Response<ApiResponse<TournamentRegistrant[]>>,
 ): Promise<void> {
   try {
-    const number = parseNumber(req.params.number);
+    const number = parseRecordNumber(req.params.number);
     const record =
       number === null
         ? null

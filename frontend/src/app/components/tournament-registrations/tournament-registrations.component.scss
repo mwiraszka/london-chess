@@ -1,0 +1,41 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+// A set width, so the page around it keeps its shape whatever the list turns out to hold,
+// and every card in it is as wide as the others
+:host {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+}
+
+// The list or button lies over a hidden card's worth of room, so the block keeps the
+// height of one card whether the list arrives empty or with one tournament in it
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+
+  > * {
+    grid-area: 1 / 1;
+  }
+
+  > .register-button {
+    place-self: center;
+  }
+}
+
+.registrations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.registrations--reserve {
+  visibility: hidden;
+}
+
+.register-button {
+  @include secondary-button-colors;
+
+  --ea-button-padding: 16px 48px;
+}

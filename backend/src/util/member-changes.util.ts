@@ -1,4 +1,5 @@
 import { EditableMemberFields } from '../models/member.model';
+import { CLUB_TIME_ZONE } from './club-date.util';
 
 type ChangeableField = Exclude<keyof EditableMemberFields, 'modificationInfo'>;
 
@@ -26,6 +27,10 @@ const FIELD_LABELS: Record<ChangeableField, string> = {
 };
 
 export const RATING_FIELDS: readonly ChangeableField[] = ['rating', 'peakRating'];
+
+export const NON_RATING_FIELDS: readonly ChangeableField[] = (
+  Object.keys(FIELD_LABELS) as ChangeableField[]
+).filter(field => !RATING_FIELDS.includes(field));
 
 export function describeMemberChanges(
   before: Partial<Pick<EditableMemberFields, ChangeableField>>,
@@ -61,7 +66,7 @@ function formatValue(
 // Join dates are stored as instants, so two on the same club day read as one date
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('en-CA', {
-    timeZone: 'America/Toronto',
+    timeZone: CLUB_TIME_ZONE,
     year: 'numeric',
     month: 'long',
     day: 'numeric',

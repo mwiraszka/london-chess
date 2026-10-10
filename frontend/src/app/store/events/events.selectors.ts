@@ -1,9 +1,17 @@
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
-import { Id } from '@app/models';
-import { areSame, customSort, isUpcomingEvent, loadStatus } from '@app/utils';
+import { initialEventFormData } from '@app/constants';
+import { CalendarPage, Id } from '@app/models';
+import {
+  areSame,
+  calendarMonthKeys,
+  customSort,
+  isUpcomingEvent,
+  loadStatus,
+  monthKeyOf,
+} from '@app/utils';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 
@@ -53,12 +61,43 @@ export const selectScheduleView = createSelector(
   state => state.scheduleView,
 );
 
+export const selectCalendarPage = createSelector(
+  selectEventsState,
+  state => state.calendarPage,
+);
+
+export const selectCalendarMonthsPerPage = createSelector(
+  selectEventsState,
+  state => state.calendarMonthsPerPage,
+);
+
+// The calendar holds every matching event and shows a page of the months they span
+export const selectCalendarView = createSelector(
+  selectFilteredEvents,
+  selectCalendarPage,
+  selectCalendarMonthsPerPage,
+  (events, page, monthsPerPage): CalendarPage => {
+    const allMonths = calendarMonthKeys(events);
+    const showsAll = monthsPerPage === PAGE_SIZE_ALL;
+    const pageCount = showsAll ? 1 : Math.ceil(allMonths.length / monthsPerPage);
+    const shownPage = Math.min(page, Math.max(pageCount, 1));
+    const months = showsAll
+      ? allMonths
+      : allMonths.slice((shownPage - 1) * monthsPerPage, shownPage * monthsPerPage);
+    const shownMonths = new Set(months);
+
+    return {
+      months,
+      monthCount: allMonths.length,
+      page: shownPage,
+      monthsPerPage,
+      events: events.filter(event => shownMonths.has(monthKeyOf(event.eventDate))),
+    };
+  },
+);
+
 const { selectAll: selectAllEventEntities } =
   eventsAdapter.getSelectors(selectEventsState);
-
-export const selectAllEvents = createSelector(selectAllEventEntities, allEventEntities =>
-  allEventEntities?.map(entity => entity.event),
-);
 
 export const selectEventById = (id: Id | null) =>
   createSelector(
@@ -92,7 +131,8 @@ export const selectEventFormDataById = (id: Id | null) =>
     selectAllEventEntities,
     (state, allEventEntities) =>
       allEventEntities?.find(entity => entity.event.id === id)?.formData ??
-      state.newEventFormData,
+      state.newEventFormData ??
+      initialEventFormData(),
   );
 
 export const selectHasUnsavedChanges = (id: Id | null) =>
@@ -101,23 +141,13 @@ export const selectHasUnsavedChanges = (id: Id | null) =>
     selectEventFormDataById(id),
     (event, eventFormData) => {
       const formPropertiesOfOriginalEvent = pick(
-        event ?? INITIAL_EVENT_FORM_DATA,
+        event ?? initialEventFormData(),
         Object.getOwnPropertyNames(eventFormData),
       );
 
       return !areSame(formPropertiesOfOriginalEvent, eventFormData);
     },
   );
-
-export const selectNextEvent = createSelector(selectHomePageEvents, homePageEvents => {
-  return (
-    [...homePageEvents]
-      .sort((a, b) =>
-        customSort(a, b, 'eventDate', false, 'modificationInfo.dateLastEdited', true),
-      )
-      .find(isUpcomingEvent) ?? null
-  );
-});
 
 export const selectConcurrentNextEvents = createSelector(
   selectHomePageEvents,

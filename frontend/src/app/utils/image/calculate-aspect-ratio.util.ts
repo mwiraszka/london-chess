@@ -24,22 +24,3 @@ export function calculateAspectRatio(width: number, height: number): string {
 
   return `${simplifiedWidth} / ${simplifiedHeight}`;
 }
-
-/**
- * Calculate the decimal aspect ratio for an image.
- *
- * @param width - The width of the image in pixels
- * @param height - The height of the image in pixels
- * @returns The decimal aspect ratio (width / height)
- *
- * @example
- * calculateDecimalAspectRatio(1920, 1080) // returns 1.777...
- * calculateDecimalAspectRatio(800, 600) // returns 1.333...
- */
-export function calculateDecimalAspectRatio(width: number, height: number): number {
-  if (width <= 0 || height <= 0) {
-    throw new Error('Width and height must be greater than 0');
-  }
-
-  return width / height;
-}

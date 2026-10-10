@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { Event } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { MOCK_ARTICLES } from './articles.mock';
 import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';

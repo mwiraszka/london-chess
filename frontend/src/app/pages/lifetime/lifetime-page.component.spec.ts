@@ -68,13 +68,13 @@ describe('LifetimePageComponent', () => {
     });
 
     it('should list recipients under each year, newest first', () => {
-      const years = [...component.RECIPIENTS_MAP.keys()];
+      const years = component.RECIPIENTS.map(({ year }) => year);
 
       expect(years).toEqual([...years].sort((a, b) => b - a));
       expect(years.length).toBeGreaterThan(0);
-      component.RECIPIENTS_MAP.forEach(recipients => {
-        expect(recipients.length).toBeGreaterThan(0);
-        recipients.forEach(recipient => expect(recipient).toMatch(/^\S+ \S+/));
+      component.RECIPIENTS.forEach(({ names }) => {
+        expect(names.length).toBeGreaterThan(0);
+        names.forEach(name => expect(name).toMatch(/^\S+ \S+/));
       });
     });
   });
@@ -101,10 +101,10 @@ describe('LifetimePageComponent', () => {
 
     it('should render recipients for each year', () => {
       const recipients = queryAll(fixture.debugElement, '.recipient');
-      const expectedTotal =
-        component.RECIPIENTS_MAP.get(2025)!.length +
-        component.RECIPIENTS_MAP.get(2024)!.length +
-        component.RECIPIENTS_MAP.get(2023)!.length;
+      const expectedTotal = component.RECIPIENTS.reduce(
+        (total, { names }) => total + names.length,
+        0,
+      );
 
       expect(recipients).toHaveLength(expectedTotal);
     });

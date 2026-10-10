@@ -10,7 +10,7 @@ import {
   getThumbnailImages,
   updateImages,
 } from '../controllers/images.controller';
-import { adminAuth } from '../middlewares/auth.index';
+import { adminAuth } from '../middlewares/auth.middleware';
 import { imageUpload } from '../middlewares/image-upload.middleware';
 
 export const imagesRouter = Router()

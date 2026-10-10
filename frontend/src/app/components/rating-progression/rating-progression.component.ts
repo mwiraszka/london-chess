@@ -5,7 +5,6 @@ import {
   SkeletonComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { combineLatest } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 
@@ -21,6 +20,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
+import moment from '@app/utils/datetime/moment';
 
 // A line needs two points before it shows any change
 const MIN_RATED_TOURNAMENTS = 2;

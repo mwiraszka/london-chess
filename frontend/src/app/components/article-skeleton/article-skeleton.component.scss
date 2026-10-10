@@ -14,7 +14,7 @@
   margin: 0 auto;
   padding: 16px;
 
-  body[data-wide-view='true'] & {
+  :host-context(body[data-wide-view='true']) & {
     max-width: none;
   }
 }

@@ -14,8 +14,6 @@ import {
   ToolIconComponent,
   TrendingUpIconComponent,
 } from '@eagami/ui';
-import { Store } from '@ngrx/store';
-import { take } from 'rxjs/operators';
 
 import { NgComponentOutlet } from '@angular/common';
 import {
@@ -37,11 +35,11 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { TechRingComponent } from '@app/components/tech-ring/tech-ring.component';
 import { ChangelogRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
-import { ChangelogService, MetaAndTitleService, RoutingService } from '@app/services';
-import { MembersActions, MembersSelectors } from '@app/store/members';
-import { isExpired } from '@app/utils';
+import { MetaAndTitleService, RoutingService } from '@app/services';
+import { scrollBehavior } from '@app/utils';
 
 import packageJson from '../../../../package.json';
+import { CHANGELOG_RELEASES } from './changelog.generated';
 
 interface ReleaseSection {
   label: string;
@@ -78,15 +76,13 @@ export class WebsiteChangelogPageComponent implements OnInit {
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly router = inject(Router);
   private readonly routingService = inject(RoutingService);
-  private readonly store = inject(Store);
-  private readonly changelogService = inject(ChangelogService);
 
   // The badge follows the version the site is actually running, so a version
   // bump moves it to that release's card on its own
   private readonly currentVersion = `v${packageJson.version}`;
 
   protected readonly pageIcon = LaptopIconComponent;
-  protected readonly releases = this.changelogService.releases;
+  protected readonly releases = CHANGELOG_RELEASES;
 
   private readonly selectedVersion = signal<string | null>(null);
 
@@ -95,7 +91,6 @@ export class WebsiteChangelogPageComponent implements OnInit {
     this.metaAndTitleService.updateDescription(
       'How the London Chess Club website is built, and what has changed in each release.',
     );
-    this.changelogService.markLatestReleaseSeen();
 
     this.routingService.fragment$
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -103,17 +98,6 @@ export class WebsiteChangelogPageComponent implements OnInit {
         const release = this.releases.find(({ version }) => version === fragment);
         if (release && !this.isExpanded(release)) {
           this.showRelease(release);
-        }
-      });
-
-    // The maintainer's name links to their member profile, which needs the
-    // members loaded
-    this.store
-      .select(MembersSelectors.selectLastFullFetch)
-      .pipe(take(1))
-      .subscribe(lastFullFetch => {
-        if (isExpired(lastFullFetch)) {
-          this.store.dispatch(MembersActions.fetchAllMembersRequested());
         }
       });
   }
@@ -167,7 +151,7 @@ export class WebsiteChangelogPageComponent implements OnInit {
       () =>
         document
           .getElementById(this.releaseId(release))
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+          ?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }),
       { injector: this.injector },
     );
   }

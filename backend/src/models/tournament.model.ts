@@ -4,7 +4,7 @@ import { Id, IsoDate } from './core.model';
 import { Game, GamePlayer, GameResponse } from './game.model';
 import { ModificationInfo } from './modification-info.model';
 
-export type TournamentFormat = 'swiss' | 'round-robin' | 'match' | 'tandem-simul';
+type TournamentFormat = 'swiss' | 'round-robin' | 'match' | 'tandem-simul';
 
 export const TOURNAMENT_FORMATS: TournamentFormat[] = [
   'swiss',
@@ -13,8 +13,7 @@ export const TOURNAMENT_FORMATS: TournamentFormat[] = [
   'tandem-simul',
 ];
 
-export type RoundOutcome =
-  'game' | 'forfeit' | 'full-point-bye' | 'half-point-bye' | 'unplayed';
+type RoundOutcome = 'game' | 'forfeit' | 'full-point-bye' | 'half-point-bye' | 'unplayed';
 
 export const ROUND_OUTCOMES: RoundOutcome[] = [
   'game',
@@ -24,7 +23,7 @@ export const ROUND_OUTCOMES: RoundOutcome[] = [
   'unplayed',
 ];
 
-export type PieceColor = 'white' | 'black';
+type PieceColor = 'white' | 'black';
 
 export interface RoundResult {
   round: number;
@@ -82,6 +81,8 @@ export interface Tournament {
   endDate: string | null;
   format: TournamentFormat;
   timeControl: string;
+  // The rounds it is set to run, or null while undecided; its results record their own
+  roundCount: number | null;
   isRated: boolean;
   articleId: Id | null;
   // The archive's name for the tournament, when its games are archived
@@ -106,14 +107,26 @@ export type TournamentSummary = Pick<
   | 'endDate'
   | 'format'
   | 'timeControl'
+  | 'roundCount'
   | 'isRated'
+  | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
 > & {
-  sectionCount: number;
-  roundCount: number;
+  sections: TournamentSectionSummary[];
   playerCount: number;
-  registrationCount: number;
+  registrants: TournamentRegistrant[];
+};
+
+// Enough of a section to lay out its tables before they load
+export type TournamentSectionSummary = Pick<
+  TournamentSection,
+  'name' | 'ratingBand' | 'roundCount'
+> & {
+  entryCount: number;
+  // Whether rounds were recorded, or only the standings
+  hasRounds: boolean;
+  gameCount: number;
 };
 
 export type TournamentGame = Pick<
@@ -121,17 +134,17 @@ export type TournamentGame = Pick<
   'id' | 'section' | 'round' | 'date' | 'white' | 'black' | 'result'
 >;
 
-export type RoundResultResponse = RoundResult & {
+type RoundResultResponse = RoundResult & {
   // Null when the game was not archived
   gameId: Id | null;
 };
 
-export type TournamentEntryResponse = Omit<TournamentEntry, 'playerId' | 'rounds'> & {
+type TournamentEntryResponse = Omit<TournamentEntry, 'playerId' | 'rounds'> & {
   player: GamePlayer;
   rounds: RoundResultResponse[];
 };
 
-export type TournamentSectionResponse = Omit<
+type TournamentSectionResponse = Omit<
   TournamentSection,
   'gameArchiveSections' | 'entries'
 > & {
@@ -201,7 +214,7 @@ export type SectionInput = Pick<
   entries: EntryInput[];
 };
 
-export type TournamentInput = Pick<
+export type TournamentDetails = Pick<
   Tournament,
   | 'name'
   | 'subtitle'
@@ -209,11 +222,14 @@ export type TournamentInput = Pick<
   | 'endDate'
   | 'format'
   | 'timeControl'
+  | 'roundCount'
   | 'isRated'
   | 'articleId'
   | 'registrationOpens'
   | 'registrationCloses'
-> & {
+>;
+
+export type TournamentInput = TournamentDetails & {
   // Null keeps the results already recorded
   sections: SectionInput[] | null;
   // Null when no games came with the results
@@ -307,6 +323,7 @@ const tournamentSchema = new Schema<Tournament>(
     endDate: { type: String, default: null },
     format: { type: String, required: true },
     timeControl: { type: String, default: '' },
+    roundCount: { type: Number, default: null },
     isRated: { type: Boolean, default: false },
     articleId: { type: String, default: null },
     gameArchiveTournament: { type: String, default: null },

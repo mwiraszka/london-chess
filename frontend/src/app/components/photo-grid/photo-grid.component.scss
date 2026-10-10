@@ -1,5 +1,3 @@
-@use '../../../styles/abstracts/mixins' as *;
-
 :host {
   display: flex;
   flex-direction: column;
@@ -42,12 +40,12 @@
   .album-cover {
     display: block;
     width: calc(100% - 16px);
-    padding: 6px;
+    padding: 8px;
     margin: 8px;
     border: none;
-    border-radius: var(--lcc-borderRadius--small);
-    box-shadow: 3px 3px 5px var(--lcc-color--photoGrid-boxShadow);
-    background-color: var(--lcc-color--general-cardBackground);
+    border-radius: var(--radius-sm);
+    box-shadow: 3px 3px 5px var(--lcc-shadow-soft);
+    background-color: var(--lcc-surface);
     break-inside: avoid;
     page-break-inside: avoid;
 
@@ -65,7 +63,7 @@
     }
 
     &:not(.skeleton):hover {
-      box-shadow: 4px 4px 8px var(--lcc-color--photoGrid-boxShadow);
+      box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       transition:
         transform 0.2s ease,
         box-shadow 0.2s ease;
@@ -80,7 +78,7 @@
       .album-image-container {
         width: 100%;
         margin-bottom: 2px;
-        border-radius: var(--lcc-borderRadius--small);
+        border-radius: var(--radius-sm);
 
         &.skeleton-image {
           aspect-ratio: 1;
@@ -92,7 +90,7 @@
         width: 100%;
         height: auto;
         margin-bottom: 2px;
-        border-radius: var(--lcc-borderRadius--small);
+        border-radius: var(--radius-sm);
       }
 
       figcaption {
@@ -103,7 +101,7 @@
           margin-bottom: 8px;
           font-size: 13px;
           line-height: 16px;
-          color: var(--lcc-color--photoGrid-albumNameText);
+          color: var(--color-text-primary);
 
           @container (min-width: 700px) {
             font-size: 15px;
@@ -113,7 +111,7 @@
 
         .photo-count {
           font-size: 10px;
-          color: var(--lcc-color--photoGrid-photoCountText);
+          color: var(--color-text-secondary);
 
           @container (min-width: 700px) {
             font-size: 12px;
@@ -133,16 +131,5 @@
         }
       }
     }
-  }
-}
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

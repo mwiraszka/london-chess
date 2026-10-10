@@ -1,18 +1,16 @@
 import {
-  ButtonComponent,
   CardComponent,
   DialogService,
   DividerComponent,
   FileUploaderComponent,
   FormFieldComponent,
-  HistoryIconComponent,
   ImagePlusIconComponent,
   InputComponent,
   RadioComponent,
   RadioGroupComponent,
   TooltipDirective,
 } from '@eagami/ui';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { debounceTime } from 'rxjs/operators';
 
 import {
@@ -29,13 +27,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { IMAGE_FALLBACK_SRC } from '@app/constants/images';
 import {
-  BasicDialogResult,
   Dialog,
   Id,
   Image,
@@ -55,10 +53,10 @@ import { textValidator } from '@app/validators';
   templateUrl: './image-form.component.html',
   styleUrl: './image-form.component.scss',
   imports: [
-    ButtonComponent,
     CardComponent,
     DividerComponent,
     FileUploaderComponent,
+    FormActionsComponent,
     FormFieldComponent,
     ImageComponent,
     InputComponent,
@@ -104,7 +102,6 @@ export class ImageFormComponent implements OnInit {
   protected readonly imagePlusIcon = ImagePlusIconComponent;
   protected readonly newAlbumName = new FormControl('', { nonNullable: true });
   protected readonly newImageDataUrl = signal<Url | null>(null);
-  protected readonly restoreIcon = HistoryIconComponent;
 
   public form!: FormGroup<ImageFormGroup>;
 
@@ -155,7 +152,7 @@ export class ImageFormComponent implements OnInit {
 
   public async onChooseFile(file: File): Promise<void> {
     const id = this.form.controls.id.value;
-    const result = await this.imageFileService.storeImageFile(id, file, true);
+    const result = await this.imageFileService.storeImageFile(id, file);
 
     if (isLccError(result)) {
       this.fileActionFail.emit(result);
@@ -189,23 +186,7 @@ export class ImageFormComponent implements OnInit {
     });
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original image data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const id = this.form.controls.id.value;
     const imageEntity = this.imageEntity();
 
@@ -263,13 +244,11 @@ export class ImageFormComponent implements OnInit {
         ]);
   }
 
-  private async fetchNewImageDataUrl(id: Id): Promise<void> {
-    const result = await this.imageFileService.getImage(id);
+  private fetchNewImageDataUrl(id: Id): void {
+    const imageFile = this.imageFileService.getImage(id);
 
-    if (isLccError(result)) {
-      this.fileActionFail.emit(result);
-    } else if (result) {
-      this.newImageDataUrl.set(result.dataUrl);
+    if (imageFile) {
+      this.newImageDataUrl.set(imageFile.dataUrl);
     }
   }
 

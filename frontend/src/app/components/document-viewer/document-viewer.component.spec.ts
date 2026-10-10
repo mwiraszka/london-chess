@@ -29,6 +29,17 @@ describe('DocumentViewerComponent', () => {
     fixture.detectChanges();
   });
 
+  describe('naming', () => {
+    it('should name the dialog after the document it shows', () => {
+      fixture.componentRef.setInput('documentTitle', 'Club Bylaws');
+      fixture.detectChanges();
+
+      expect(query(fixture.debugElement, 'ea-dialog').componentInstance.ariaLabel()).toBe(
+        'Club Bylaws',
+      );
+    });
+  });
+
   describe('onProgress', () => {
     it('should calculate percentLoaded correctly when onProgress is called', () => {
       component.onProgress({ loaded: 75, total: 100 });

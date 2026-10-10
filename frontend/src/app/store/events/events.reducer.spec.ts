@@ -1,4 +1,4 @@
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { LccError } from '@app/models';
 
@@ -30,7 +30,7 @@ describe('Events Reducer', () => {
       expect(initialState).toEqual({
         ids: [],
         entities: {},
-        newEventFormData: INITIAL_EVENT_FORM_DATA,
+        newEventFormData: null,
         failedLoads: [],
         isFetchingFiltered: false,
         lastHomePageFetch: null,
@@ -53,6 +53,8 @@ describe('Events Reducer', () => {
         filteredCount: null,
         totalCount: 0,
         scheduleView: 'calendar',
+        calendarPage: 1,
+        calendarMonthsPerPage: 3,
       });
     });
   });
@@ -139,10 +141,19 @@ describe('Events Reducer', () => {
   });
 
   describe('a fetch of filtered events', () => {
-    it('should be marked as under way until it succeeds or fails', () => {
-      const fetching = eventsReducer(
+    it('should leave the rows on screen while they refresh in the background', () => {
+      const refreshing = eventsReducer(
         initialState,
         EventsActions.fetchFilteredEventsRequested(),
+      );
+
+      expect(refreshing.isFetchingFiltered).toBe(false);
+    });
+
+    it('should hold placeholders from a new page, filter or search until it succeeds or fails', () => {
+      const fetching = eventsReducer(
+        initialState,
+        EventsActions.paginationOptionsChanged({ options: initialState.options }),
       );
 
       expect(fetching.isFetchingFiltered).toBe(true);
@@ -193,7 +204,6 @@ describe('Events Reducer', () => {
 
       const action = EventsActions.paginationOptionsChanged({
         options: newOptions,
-        fetch: false,
       });
       const state = eventsReducer(initialState, action);
 
@@ -209,7 +219,6 @@ describe('Events Reducer', () => {
 
       const action = EventsActions.paginationOptionsChanged({
         options: { ...initialState.options, page: 2 },
-        fetch: true,
       });
       const state = eventsReducer(previousState, action);
 
@@ -251,7 +260,10 @@ describe('Events Reducer', () => {
 
   describe('addEventSucceeded', () => {
     it('should add new event to state', () => {
-      const action = EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] });
+      const action = EventsActions.addEventSucceeded({
+        event: MOCK_EVENTS[0],
+        unnotifiedMemberNames: [],
+      });
       const state = eventsReducer(initialState, action);
 
       expect(state.entities['f6a7b8c9d0e1f2a3']?.event).toEqual(MOCK_EVENTS[0]);
@@ -269,10 +281,13 @@ describe('Events Reducer', () => {
         },
       };
 
-      const action = EventsActions.addEventSucceeded({ event: MOCK_EVENTS[0] });
+      const action = EventsActions.addEventSucceeded({
+        event: MOCK_EVENTS[0],
+        unnotifiedMemberNames: [],
+      });
       const state = eventsReducer(previousState, action);
 
-      expect(state.newEventFormData).toEqual(INITIAL_EVENT_FORM_DATA);
+      expect(state.newEventFormData).toBeNull();
     });
   });
 
@@ -296,6 +311,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.updateEventSucceeded({
         event: updatedEvent,
         originalEventTitle: 'Summer Blitz Tournament',
+        unnotifiedMemberNames: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -321,6 +337,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.updateEventSucceeded({
         event: updatedEvent,
         originalEventTitle: 'Old Title',
+        unnotifiedMemberNames: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -347,6 +364,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.deleteEventSucceeded({
         eventId: MOCK_EVENTS[0].id,
         eventTitle: MOCK_EVENTS[0].title,
+        unnotifiedMemberNames: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -364,6 +382,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.deleteEventSucceeded({
         eventId: MOCK_EVENTS[0].id,
         eventTitle: MOCK_EVENTS[0].title,
+        unnotifiedMemberNames: [],
       });
 
       const state = eventsReducer(previousState, action);
@@ -398,15 +417,61 @@ describe('Events Reducer', () => {
 
       expect(state.scheduleView).toBe('calendar');
     });
+
+    it('should hold placeholders until the other view has its events', () => {
+      const state = eventsReducer(initialState, EventsActions.toggleScheduleView());
+
+      expect(state.isFetchingFiltered).toBe(true);
+    });
+  });
+
+  describe('calendarPageChanged', () => {
+    it('should keep the calendar page and months per page', () => {
+      const state = eventsReducer(
+        initialState,
+        EventsActions.calendarPageChanged({ page: 3, monthsPerPage: 6 }),
+      );
+
+      expect(state.calendarPage).toBe(3);
+      expect(state.calendarMonthsPerPage).toBe(6);
+    });
+
+    it('should start the calendar over for a new search or filter, but not a list page', () => {
+      const onPage3: EventsState = { ...initialState, calendarPage: 3 };
+      const changed = (options: Partial<EventsState['options']>) =>
+        eventsReducer(
+          onPage3,
+          EventsActions.paginationOptionsChanged({
+            options: { ...initialState.options, ...options },
+          }),
+        ).calendarPage;
+
+      expect(changed({ page: 2 })).toBe(3);
+      expect(changed({ search: 'blitz' })).toBe(1);
+      expect(
+        changed({
+          filters: {
+            showPastEvents: {
+              ...initialState.options.filters.showPastEvents,
+              value: true,
+            },
+          },
+        }),
+      ).toBe(1);
+    });
   });
 
   describe('formDataChanged', () => {
-    it('should update newEventFormData when eventId is null', () => {
+    it('should start a new event from the defaults for today when eventId is null', () => {
       const formData = { title: 'New Title' };
       const action = EventsActions.formDataChanged({ eventId: null, formData });
       const state = eventsReducer(initialState, action);
 
-      expect(state.newEventFormData.title).toBe('New Title');
+      expect(initialState.newEventFormData).toBeNull();
+      expect(state.newEventFormData).toEqual({
+        ...initialEventFormData(),
+        title: 'New Title',
+      });
     });
 
     it('should update existing event formData', () => {
@@ -454,7 +519,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.formDataRestored({ eventId: null });
       const state = eventsReducer(previousState, action);
 
-      expect(state.newEventFormData).toEqual(INITIAL_EVENT_FORM_DATA);
+      expect(state.newEventFormData).toBeNull();
     });
 
     it('should restore event formData from original event', () => {

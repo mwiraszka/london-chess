@@ -55,7 +55,7 @@ import { getPasswordChecks } from '@app/utils/password.util';
 
     .requirement--met .requirement__icon {
       opacity: 1;
-      color: var(--color-success-default);
+      color: var(--color-success-text);
     }
   `,
   imports: [CheckIconComponent],

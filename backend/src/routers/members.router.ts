@@ -11,7 +11,7 @@ import {
   updateMember,
   updateMembers,
 } from '../controllers/members.controller';
-import { adminAuth } from '../middlewares/auth.index';
+import { adminAuth } from '../middlewares/auth.middleware';
 
 export const publicMembersRouter = Router()
   .get('/', getMembers('public'))

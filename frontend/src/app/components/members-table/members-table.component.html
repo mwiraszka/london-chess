@@ -12,7 +12,7 @@
     [rowControls]="showsDetails() ? rowControls : undefined"
     [data]="rows()"
     [fullWidth]="true"
-    [loading]="loading()"
+    [loading]="isLoading()"
     [loadingRowCount]="loadingRowCount()"
     [rowHref]="rowHref()"
     [sizingRows]="sizingRows()"
@@ -33,15 +33,7 @@
 }
 
 @if (isAdmin() && isSafeMode()) {
-  <ea-alert
-    class="members__safe-mode"
-    live="off"
-    size="sm"
-    variant="success"
-    [icon]="safeModeIcon">
-    Members' personal details have been hidden from view. You can disable Safe Mode from
-    the User Settings menu.
-  </ea-alert>
+  <lcc-safe-mode-notice class="members__safe-mode" />
 }
 
 <ng-template
@@ -58,8 +50,9 @@
       " />
     @if (isCityChampion(row.member)) {
       <a
+        aria-label="2025 City Champion"
         class="members__champion-link"
-        routerLink="/city-champion"
+        routerLink="/city-championship"
         eaTooltip="2025 City Champion">
         <ea-icon-trophy class="members__champion-icon" />
       </a>
@@ -90,8 +83,9 @@
       *ngTemplateOutlet="memberName; context: { $implicit: row, text: row.lastName }" />
     @if (isCityChampion(row.member)) {
       <a
+        aria-label="2025 City Champion"
         class="members__champion-link"
-        routerLink="/city-champion"
+        routerLink="/city-championship"
         eaTooltip="2025 City Champion">
         <ea-icon-trophy class="members__champion-icon" />
       </a>

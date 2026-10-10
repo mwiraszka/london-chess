@@ -1,3 +1,4 @@
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Types } from 'mongoose';
 import sharp from 'sharp';
 import request from 'supertest';
@@ -8,7 +9,7 @@ import { CombinedImage, Image, ImageModel } from '../models/image.model';
 import { bearer } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import { MODIFICATION_INFO, createAdmin } from '../testing/fixtures';
-import { getSignedUrl, send, sentKeys } from '../testing/storage.mock';
+import { StorageCommand, getSignedUrl, send, sentKeys } from '../testing/storage.mock';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
@@ -37,13 +38,20 @@ async function createImage(overrides: Partial<Image> = {}): Promise<string> {
   return created._id.toString();
 }
 
-async function useInArticle(bannerImageId: string): Promise<void> {
+async function useInArticle(bannerImageId: string, body = 'Body'): Promise<void> {
   await ArticleModel.create({
     title: 'News',
-    body: 'Body',
+    body,
     bannerImageId,
     modificationInfo: MODIFICATION_INFO,
   });
+}
+
+function deletedKeys(): (string | undefined)[] {
+  return send.mock.calls
+    .map(([command]): StorageCommand => command)
+    .filter(command => command instanceof DeleteObjectCommand)
+    .map(command => command.input.Key);
 }
 
 function storageAnswers(httpStatusCode: number): void {
@@ -71,10 +79,6 @@ describe('images routes', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   describe('GET /v1/images/all-metadata', () => {
@@ -219,11 +223,11 @@ describe('images routes', () => {
       expect(response.body.data).not.toHaveProperty('thumbnailUrl');
     });
 
-    it('should reject a malformed id and report an unknown one', async () => {
+    it('should report a malformed or unknown id as not found', async () => {
       const malformed = await request(app).get('/v1/images/abc');
       const unknown = await request(app).get(`/v1/images/${new Types.ObjectId()}`);
 
-      expect(malformed.status).toBe(400);
+      expect(malformed.status).toBe(404);
       expect(unknown.status).toBe(404);
     });
 
@@ -295,29 +299,33 @@ describe('images routes', () => {
       expect(response.body.message).toBe('[IM-5.1] No files provided');
     });
 
-    it('should stop the transaction deadline once the upload is saved', async () => {
+    it('should turn away an image over 2.5 MB', async () => {
       await createAdmin(ADMIN);
-      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
-      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
       const response = await request(app)
         .post('/v1/images')
         .set('Authorization', bearer(ADMIN))
-        .attach('files', png, { filename: 'board.png', contentType: 'image/png' })
+        .attach('files', Buffer.alloc(2.5 * 1024 * 1024 + 1), {
+          filename: 'huge.png',
+          contentType: 'image/png',
+        })
         .field('imageMetadata', JSON.stringify(imagePayload()));
 
-      expect(response.status).toBe(201);
-      const deadlineIndex = setTimeoutSpy.mock.calls.findIndex(
-        ([, delay]) => delay === 120000,
-      );
-      const deadline = setTimeoutSpy.mock.results[deadlineIndex]?.value;
-      expect(deadline).toBeDefined();
-      expect(clearTimeoutSpy).toHaveBeenCalledWith(deadline);
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Each image must be under 2.5 MB.');
     });
 
-    it('should save nothing when storage does not accept an image', async () => {
+    it('should save nothing, and keep nothing stored, when storage turns an image away', async () => {
       await createAdmin(ADMIN);
-      storageAnswers(500);
+      send.mockImplementation(async command => {
+        if (
+          !(command instanceof DeleteObjectCommand) &&
+          command.input.Key?.endsWith('-thumb')
+        ) {
+          throw new Error('R2 down');
+        }
+        return { $metadata: { httpStatusCode: 200 } };
+      });
 
       const response = await request(app)
         .post('/v1/images')
@@ -327,11 +335,13 @@ describe('images routes', () => {
 
       expect(response.status).toBe(500);
       expect(await ImageModel.countDocuments()).toBe(0);
+      const [stored] = sentKeys();
+      expect(deletedKeys()).toEqual([stored, `${stored}-thumb`]);
     });
 
-    it('should respond with a timeout when the database runs out of time', async () => {
+    it('should remove the stored copies when the record cannot be saved', async () => {
       await createAdmin(ADMIN);
-      send.mockRejectedValue(new Error('ExceededTimeLimit'));
+      vi.spyOn(ImageModel, 'insertMany').mockRejectedValue(new Error('down'));
 
       const response = await request(app)
         .post('/v1/images')
@@ -339,8 +349,9 @@ describe('images routes', () => {
         .attach('files', png, { filename: 'board.png', contentType: 'image/png' })
         .field('imageMetadata', JSON.stringify(imagePayload()));
 
-      expect(response.status).toBe(504);
-      expect(await ImageModel.countDocuments()).toBe(0);
+      expect(response.status).toBe(500);
+      const [stored] = sentKeys();
+      expect(deletedKeys()).toEqual([stored, `${stored}-thumb`]);
     });
   });
 
@@ -370,7 +381,12 @@ describe('images routes', () => {
       expect(response.body.data.newImages).toHaveLength(1);
       const saved = await ImageModel.findById(id).lean();
       expect(saved?.caption).toBe('Renamed');
-      expect(saved?.modificationInfo.lastEditedBy).toBe('Ada Admin');
+      expect(saved?.modificationInfo).toEqual({
+        ...MODIFICATION_INFO,
+        lastEditedBy: 'Ada Admin',
+        lastEditedByNumber: expect.any(Number),
+        dateLastEdited: NOW.toISOString(),
+      });
       expect(await ImageModel.countDocuments()).toBe(2);
     });
 
@@ -413,20 +429,7 @@ describe('images routes', () => {
       expect((await ImageModel.findById(id).lean())?.caption).toBe('A board');
     });
 
-    it('should respond with a timeout when the database runs out of time', async () => {
-      await createAdmin(ADMIN);
-      send.mockRejectedValue(new Error('ExceededTimeLimit'));
-
-      const response = await request(app)
-        .put('/v1/images')
-        .set('Authorization', bearer(ADMIN))
-        .attach('files', png, { filename: 'new.png', contentType: 'image/png' })
-        .field('imageMetadata', JSON.stringify(imagePayload()));
-
-      expect(response.status).toBe(504);
-    });
-
-    it('should respond with a server error for a malformed image id', async () => {
+    it('should reject a malformed image id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
@@ -434,7 +437,8 @@ describe('images routes', () => {
         .set('Authorization', bearer(ADMIN))
         .field('existingImages', JSON.stringify(imagePayload({ id: 'abc' })));
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('[IM-6.5] Invalid image ID(s): abc');
     });
   });
 
@@ -464,27 +468,47 @@ describe('images routes', () => {
       expect(response.status).toBe(404);
     });
 
-    it('should keep the record when storage does not confirm the deletion', async () => {
+    it('should respond with not found for a malformed id, touching nothing', async () => {
+      await createAdmin(ADMIN);
+
+      const response = await request(app)
+        .delete('/v1/images/abc')
+        .set('Authorization', bearer(ADMIN));
+
+      expect(response.status).toBe(404);
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['as its banner', (id: string) => useInArticle(id)],
+      ['within its body', (id: string) => useInArticle('other', `{{{${id}}}}(((500)))`)],
+    ])('should keep an image an article shows %s', async (_, use) => {
       await createAdmin(ADMIN);
       const id = await createImage();
+      await use(id);
 
       const response = await request(app)
         .delete(`/v1/images/${id}`)
         .set('Authorization', bearer(ADMIN));
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
+      expect(send).not.toHaveBeenCalled();
       expect(await ImageModel.countDocuments()).toBe(1);
     });
 
-    it('should respond with a server error when storage fails', async () => {
+    it('should still delete the image when its stored copies cannot be removed', async () => {
       await createAdmin(ADMIN);
+      const id = await createImage();
       send.mockRejectedValue(new Error('R2 down'));
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       const response = await request(app)
-        .delete(`/v1/images/${new Types.ObjectId()}`)
+        .delete(`/v1/images/${id}`)
         .set('Authorization', bearer(ADMIN));
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(200);
+      expect(await ImageModel.countDocuments()).toBe(0);
+      expect(console.error).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -511,14 +535,10 @@ describe('images routes', () => {
 
     it('should report the images that could not be deleted', async () => {
       await createAdmin(ADMIN);
-      const first = await createImage();
       await createImage();
-      send.mockImplementation(async command => {
-        if (command.input.Key === first) {
-          throw new Error('R2 down');
-        }
-        return { $metadata: { httpStatusCode: 204 } };
-      });
+      await createImage();
+      vi.spyOn(ImageModel, 'deleteOne').mockRejectedValueOnce(new Error('down'));
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       const response = await request(app)
         .delete('/v1/images/album/Club night')
@@ -527,7 +547,7 @@ describe('images routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.message).toMatch(/^\[IM-8\.7\] Deleted 1 out of 2 images/);
-      expect(await ImageModel.exists({ _id: first })).not.toBeNull();
+      expect(await ImageModel.countDocuments()).toBe(1);
     });
 
     it('should respond with a server error when no image could be deleted', async () => {

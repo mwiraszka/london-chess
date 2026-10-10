@@ -12,7 +12,8 @@ interface BaseLink {
 
 type ControlMode = 'add' | 'edit' | 'view';
 
-export type InternalPath = NavPath | [NavPath, ControlMode] | [NavPath, ControlMode, Id];
+export type InternalPath =
+  NavPath | [NavPath, ControlMode] | [NavPath, ControlMode, Id] | ['members', number];
 
 export interface InternalLink extends BaseLink {
   internalPath: InternalPath;

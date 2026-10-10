@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import moment from '@app/utils/datetime/moment';
 
 import { formatDate } from './format-date.util';
 
@@ -85,6 +85,15 @@ describe('formatDate', () => {
     expect(formatDate('January 15, 1991', 'short')).toBe('Tue, Jan 15, 1991, 12:00 AM');
     expect(formatDate(new Date().toISOString(), 'short')).toBe(
       currentDate.format('ddd, MMM D, YYYY, h:mm A'),
+    );
+  });
+
+  it('transforms valid date strings correctly when `format` is set to "short at-time"', () => {
+    expect(formatDate('2000-01-01', 'short at-time')).toBe(
+      'Sat, Jan 1, 2000 at 12:00 AM',
+    );
+    expect(formatDate('January 15, 1991', 'short at-time')).toBe(
+      'Tue, Jan 15, 1991 at 12:00 AM',
     );
   });
 

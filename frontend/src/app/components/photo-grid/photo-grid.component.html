@@ -10,15 +10,16 @@
     @for (image of displayCovers(); track $index) {
       <button
         class="album-cover"
-        [class.skeleton]="showSkeleton()"
-        [style.animation-delay.s]="showSkeleton() ? $index * 0.08 : null"
-        [attr.aria-hidden]="showSkeleton() || null"
+        [class.skeleton]="isLoading()"
+        [style.animation-delay.s]="isLoading() ? $index * 0.08 : null"
+        [attr.aria-hidden]="isLoading() || null"
+        [disabled]="isLoading()"
         [adminControls]="
-          !showSkeleton() && isAdmin() ? getAdminControlsConfig(image.album) : null
+          !isLoading() && isAdmin() ? getAdminControlsConfig(image.album) : null
         "
-        (click)="showSkeleton() ? null : onClickAlbumCover(image.album)">
+        (click)="isLoading() ? null : onClickAlbumCover(image.album)">
         <figure>
-          @if (showSkeleton()) {
+          @if (isLoading()) {
             <div class="album-image-container skeleton-image">
               <ea-skeleton
                 variant="rect"
@@ -31,7 +32,7 @@
             </div>
           }
           <figcaption>
-            @if (showSkeleton()) {
+            @if (isLoading()) {
               <div class="skeleton-album-name">
                 <ea-skeleton
                   variant="rect"

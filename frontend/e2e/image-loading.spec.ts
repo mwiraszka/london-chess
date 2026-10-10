@@ -126,14 +126,10 @@ test.describe('image loading', () => {
     // Once the page settles, nothing the app still has in flight can save over the rewrite
     await page.waitForLoadState('networkidle');
 
-    // Rewrite the persisted state to cover both failure shapes: week-old
-    // entries, and retired-storage URLs carrying a fresh expiration (the
-    // corruption older app versions could write)
+    // Week-old URLs on a host that refuses every request, so any that is still used shows
     await page.evaluate(key => {
       const state = JSON.parse(localStorage.getItem(key) as string);
       const staleDate = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-      const freshDate = new Date(Date.now() + 11 * 3600 * 1000).toISOString();
-      let toggle = false;
       for (const id of Object.keys(state.entities ?? {})) {
         const image = state.entities[id]?.image;
         if (!image) {
@@ -145,8 +141,7 @@ test.describe('image loading', () => {
         if (image.thumbnailUrl) {
           image.thumbnailUrl = `https://retired-bucket.s3.us-east-2.amazonaws.com/${id}-thumb`;
         }
-        image.urlExpirationDate = toggle ? staleDate : freshDate;
-        toggle = !toggle;
+        image.urlExpirationDate = staleDate;
       }
       localStorage.setItem(key, JSON.stringify(state));
     }, storageKey);

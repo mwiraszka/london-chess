@@ -1,8 +1,9 @@
-import moment from 'moment-timezone';
+import { PAGE_SIZE_ALL } from '@eagami/ui';
 
-import { INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { DataPaginationOptions, Event, EventFormData } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 import { EventsState, eventsAdapter } from './events.reducer';
 import * as EventsSelectors from './events.selectors';
@@ -34,7 +35,7 @@ describe('Events Selectors', () => {
     ...eventsAdapter.getInitialState({
       failedLoads: [],
       isFetchingFiltered: false,
-      newEventFormData: INITIAL_EVENT_FORM_DATA,
+      newEventFormData: initialEventFormData(),
       lastHomePageFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredFetch: '2025-01-14T12:00:00.000Z',
       homePageEvents: [MOCK_EVENTS[0], MOCK_EVENTS[1]],
@@ -43,6 +44,8 @@ describe('Events Selectors', () => {
       filteredCount: 12,
       totalCount: 20,
       scheduleView: 'calendar',
+      calendarPage: 1,
+      calendarMonthsPerPage: 3,
     }),
     entities: {
       [MOCK_EVENTS[0].id]: {
@@ -51,7 +54,7 @@ describe('Events Selectors', () => {
       },
       [MOCK_EVENTS[1].id]: {
         event: MOCK_EVENTS[1],
-        formData: INITIAL_EVENT_FORM_DATA,
+        formData: initialEventFormData(),
       },
     },
     ids: [MOCK_EVENTS[0].id, MOCK_EVENTS[1].id],
@@ -185,22 +188,11 @@ describe('Events Selectors', () => {
     });
   });
 
-  describe('selectAllEvents', () => {
-    it('should select all events from entities', () => {
-      const allEventEntities = [
-        { event: MOCK_EVENTS[0], formData: mockEventFormData },
-        { event: MOCK_EVENTS[1], formData: INITIAL_EVENT_FORM_DATA },
-      ];
-      const result = EventsSelectors.selectAllEvents.projector(allEventEntities);
-      expect(result).toEqual([MOCK_EVENTS[0], MOCK_EVENTS[1]]);
-    });
-  });
-
   describe('selectEventById', () => {
     it('should select event by id when it exists', () => {
       const allEventEntities = [
         { event: MOCK_EVENTS[0], formData: mockEventFormData },
-        { event: MOCK_EVENTS[1], formData: INITIAL_EVENT_FORM_DATA },
+        { event: MOCK_EVENTS[1], formData: initialEventFormData() },
       ];
       const selector = EventsSelectors.selectEventById(MOCK_EVENTS[1].id);
       const result = selector.projector(allEventEntities);
@@ -234,7 +226,23 @@ describe('Events Selectors', () => {
       const allEventEntities = [{ event: MOCK_EVENTS[0], formData: mockEventFormData }];
       const selector = EventsSelectors.selectEventFormDataById(null);
       const result = selector.projector(mockEventsState, allEventEntities);
-      expect(result).toEqual(INITIAL_EVENT_FORM_DATA);
+      expect(result).toBe(mockEventsState.newEventFormData);
+    });
+
+    it("should start a new event from today's defaults before any draft", () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T16:00:00.000Z'));
+      const selector = EventsSelectors.selectEventFormDataById(null);
+
+      const result = selector.projector(
+        { ...mockEventsState, newEventFormData: null },
+        [],
+      );
+
+      expect(result).toEqual({
+        ...initialEventFormData(),
+        eventDate: '2026-10-05T22:00:00.000Z',
+      });
     });
   });
 
@@ -322,7 +330,7 @@ describe('Events Selectors', () => {
         eventDate: moment('2049-12-01').toISOString(),
       };
       const state = eventsAdapter.upsertOne(
-        { event: deletedEvent, formData: INITIAL_EVENT_FORM_DATA },
+        { event: deletedEvent, formData: initialEventFormData() },
         mockEventsState,
       );
 
@@ -332,68 +340,44 @@ describe('Events Selectors', () => {
     });
   });
 
-  describe('selectNextEvent', () => {
-    it('should select the next upcoming event', () => {
-      const now = moment.tz('America/Toronto');
-      const futureEvents = [
-        {
-          ...MOCK_EVENTS[0],
-          eventDate: now.clone().add(1, 'day').toISOString(),
-        },
-        {
-          ...MOCK_EVENTS[1],
-          eventDate: now.clone().add(2, 'days').toISOString(),
-        },
-        {
-          ...MOCK_EVENTS[2],
-          eventDate: now.clone().add(3, 'days').toISOString(),
-        },
-      ];
-      const result = EventsSelectors.selectNextEvent.projector(futureEvents);
-      expect(result?.id).toBe(MOCK_EVENTS[0].id);
+  describe('selectCalendarView', () => {
+    // Events on the 15th of each month, in the club's evening
+    const monthly = (months: string[]): Event[] =>
+      months.map((month, index) => ({
+        ...MOCK_EVENTS[0],
+        id: `event-${index}`,
+        eventDate: moment(`${month}-15T19:00`).toISOString(),
+      }));
+    const events = monthly(['2050-01', '2050-02', '2050-04', '2050-07']);
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2050-01-05T17:00:00.000Z'));
     });
 
-    it('should return null when no future events', () => {
-      const pastEvents = [
-        {
-          ...MOCK_EVENTS[0],
-          eventDate: moment().subtract(1, 'day').toISOString(),
-        },
-      ];
-      const result = EventsSelectors.selectNextEvent.projector(pastEvents);
-      expect(result).toBeNull();
+    afterEach(() => vi.useRealTimers());
+
+    it('should show a page of the months the events span, with their events', () => {
+      const view = EventsSelectors.selectCalendarView.projector(events, 2, 3);
+
+      expect(view.months).toEqual(['2050-04', '2050-05', '2050-06']);
+      expect(view.monthCount).toBe(7);
+      expect(view.page).toBe(2);
+      expect(view.events.map(event => event.id)).toEqual(['event-2']);
     });
 
-    it('should exclude events that ended more than 3 hours ago', () => {
-      const now = moment.tz('America/Toronto');
-      const events = [
-        {
-          ...MOCK_EVENTS[0],
-          eventDate: now.clone().subtract(4, 'hours').toISOString(),
-        },
-        {
-          ...MOCK_EVENTS[1],
-          eventDate: now.clone().add(1, 'day').toISOString(),
-        },
-      ];
-      const result = EventsSelectors.selectNextEvent.projector(events);
-      expect(result?.id).toBe(MOCK_EVENTS[1].id);
+    it('should show every month at once when asked for all', () => {
+      const view = EventsSelectors.selectCalendarView.projector(events, 1, PAGE_SIZE_ALL);
+
+      expect(view.months).toHaveLength(7);
+      expect(view.events).toEqual(events);
     });
 
-    it('should ignore a cached event that is no longer among the home page events', () => {
-      const deletedEvent: Event = {
-        ...MOCK_EVENTS[2],
-        id: 'deleted-event-id',
-        eventDate: moment('2049-12-01').toISOString(),
-      };
-      const state = eventsAdapter.upsertOne(
-        { event: deletedEvent, formData: INITIAL_EVENT_FORM_DATA },
-        mockEventsState,
-      );
+    it('should fall back to the last page once fewer months remain', () => {
+      const view = EventsSelectors.selectCalendarView.projector(events, 5, 6);
 
-      const result = EventsSelectors.selectNextEvent({ eventsState: state });
-
-      expect(result).toEqual(MOCK_EVENTS[0]);
+      expect(view.page).toBe(2);
+      expect(view.months).toEqual(['2050-07']);
     });
   });
 });

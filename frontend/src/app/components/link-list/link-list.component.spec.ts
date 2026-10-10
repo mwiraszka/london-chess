@@ -63,20 +63,6 @@ describe('LinkListComponent', () => {
   });
 
   describe('template rendering', () => {
-    it('should render header when provided', () => {
-      fixture.componentRef.setInput('header', 'Mock Header');
-      fixture.detectChanges();
-
-      expect(queryTextContent(fixture.debugElement, 'h3')).toBe('Mock Header');
-    });
-
-    it('should not render header when not provided', () => {
-      fixture.componentRef.setInput('header', undefined);
-      fixture.detectChanges();
-
-      expect(query(fixture.debugElement, 'h3')).toBeFalsy();
-    });
-
     it('should render internal links correctly', () => {
       fixture.componentRef.setInput('links', mockInternalLinks);
       fixture.detectChanges();

@@ -1,9 +1,6 @@
 import {
-  AlertComponent,
-  CheckCircleIconComponent,
   DataTableColumn,
   DataTableSortState,
-  DialogService,
   EmptyStateComponent,
   FilterXIconComponent,
   PAGE_SIZE_ALL,
@@ -26,13 +23,12 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
-import { MEMBERS_PAGE_SIZES } from '@app/constants/members-table';
-import { AdminControlsConfig, DataPaginationOptions, Dialog, Member } from '@app/models';
+import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
+import { PAGE_SIZES } from '@app/constants/filters';
+import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
-import { StoreRequestService } from '@app/services';
-import { MembersActions } from '@app/store/members';
+import { DeletionService } from '@app/services';
 import { isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
 
 // The sort keys hold what the server sorts by, so a page keeps the order it came in
@@ -86,7 +82,6 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
   templateUrl: './members-table.component.html',
   styleUrl: './members-table.component.scss',
   imports: [
-    AlertComponent,
     DataTableComponent,
     EmptyStateComponent,
     FormatDatePipe,
@@ -94,6 +89,7 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
     NgTemplateOutlet,
     PaginatorComponent,
     RouterLink,
+    SafeModeNoticeComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -105,14 +101,15 @@ export class MembersTableComponent {
   public readonly members = input.required<Member[]>();
   public readonly options = input.required<DataPaginationOptions<Member>>();
   public readonly filteredCount = input.required<number | null>();
+  // Placeholders replace the members during every fetch, so a change of filters shows at once
   public readonly isLoading = input(false);
-  public readonly widestMembers = input<Member[]>([]);
+  // Null while they are still on their way
+  public readonly widestMembers = input<Member[] | null>([]);
 
   public readonly optionsChange = output<DataPaginationOptions<Member>>();
 
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly router = inject(Router);
-  private readonly storeRequests = inject(StoreRequestService);
 
   private readonly nameCell = viewChild.required<CellTemplate>('nameCell');
   private readonly firstNameCell = viewChild.required<CellTemplate>('firstNameCell');
@@ -123,20 +120,16 @@ export class MembersTableComponent {
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
 
   protected readonly emptyIcon = FilterXIconComponent;
-  protected readonly safeModeIcon = CheckCircleIconComponent;
   protected readonly isCityChampion = isCityChampion;
-  protected readonly pageSizes = MEMBERS_PAGE_SIZES;
+  protected readonly pageSizes = PAGE_SIZES;
 
   // Admins see every detail and the controls to change it, unless safe mode hides them
   protected readonly showsDetails = computed(() => this.isAdmin() && !this.isSafeMode());
 
-  // Placeholders replace the members during every fetch, so a change of filters shows at once
-  protected readonly loading = computed(() => this.isLoading());
-
-  protected readonly empty = computed(() => !this.loading() && !this.members().length);
+  protected readonly empty = computed(() => !this.isLoading() && !this.members().length);
 
   protected readonly loadingRowCount = computed(() =>
-    pageRowCount(this.options().pageSize, this.filteredCount() ?? MEMBERS_PAGE_SIZES[0]),
+    pageRowCount(this.options().pageSize, this.filteredCount() ?? PAGE_SIZES[0]),
   );
 
   private readonly startIndex = computed(() => {
@@ -154,14 +147,16 @@ export class MembersTableComponent {
     const { page, pageSize } = this.options();
     const lastRow =
       pageSize === PAGE_SIZE_ALL
-        ? (this.filteredCount() ?? MEMBERS_PAGE_SIZES[0])
+        ? (this.filteredCount() ?? PAGE_SIZES[0])
         : page * pageSize;
     return 10 ** String(lastRow).length - 1;
   });
 
   // Sized from the first skeleton on by the widest of every member, not just this page
-  protected readonly sizingRows = computed(() =>
-    this.widestMembers().map(member => toMemberRow(member, this.widestRowNumber())),
+  protected readonly sizingRows = computed(
+    () =>
+      this.widestMembers()?.map(member => toMemberRow(member, this.widestRowNumber())) ??
+      null,
   );
 
   protected readonly columns = computed<DataTableColumn<MemberRow>[]>(() => {
@@ -247,7 +242,7 @@ export class MembersTableComponent {
   // A right click on a row offers admins its member's controls
   protected readonly rowControls = ({ member }: MemberRow): AdminControlsConfig => ({
     buttonSize: 31,
-    deleteCb: () => this.onDeleteMember(member),
+    deleteCb: () => this.deletion.deleteMember(member),
     editPath: ['member', 'edit', member.id],
     itemName: `${member.firstName} ${member.lastName}`,
   });
@@ -283,21 +278,5 @@ export class MembersTableComponent {
     if (member.number !== null) {
       this.router.navigate(['/members', member.number]);
     }
-  }
-
-  public async onDeleteMember(member: Member): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${member.firstName} ${member.lastName}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(MembersActions.deleteMemberRequested({ member }), [
-          MembersActions.deleteMemberSucceeded,
-          MembersActions.deleteMemberFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

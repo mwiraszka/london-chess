@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { Event, LccError } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 /**
  * Export an array of Event objects to an iCal (.ics) file for convenient importing

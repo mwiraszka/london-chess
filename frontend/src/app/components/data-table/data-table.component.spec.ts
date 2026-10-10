@@ -1,4 +1,9 @@
-import { DataTableColumn, DataTableSortState, PaginatorComponent } from '@eagami/ui';
+import {
+  DataTableColumn,
+  DataTableLayout,
+  DataTableSortState,
+  PaginatorComponent,
+} from '@eagami/ui';
 
 import { Component, TemplateRef, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -24,6 +29,7 @@ interface Row {
       [clickable]="clickable()"
       [columns]="columns()"
       [data]="rows()"
+      [layout]="layout()"
       [loading]="loading()"
       [loadingRowCount]="4"
       [rowControls]="rowControls"
@@ -64,6 +70,7 @@ class HostComponent {
     { id: 'b', name: 'Bob', score: 1 },
   ]);
   readonly loading = signal(false);
+  readonly layout = signal<DataTableLayout>('auto');
   readonly clickable = signal(true);
   readonly sort = signal<DataTableSortState>({ column: '', direction: null });
   readonly sizingRows: Row[] = [{ id: 'widest', name: 'Bartholomew', score: 100 }];
@@ -157,6 +164,15 @@ describe('DataTableComponent', () => {
     expect(table.componentInstance.ariaLabel()).toBe('Rows');
   });
 
+  it("should pass its layout to the library's table", () => {
+    const table = query(fixture.debugElement, 'ea-data-table');
+
+    host.layout.set('fixed');
+    fixture.detectChanges();
+
+    expect(table.componentInstance.layout()).toBe('fixed');
+  });
+
   it('should highlight rows on hover only while they link or act', () => {
     const table = query(fixture.debugElement, 'ea-data-table');
 
@@ -219,7 +235,6 @@ describe('DataTableComponent', () => {
 
     resized.forEach(resize => resize());
 
-    expect(element.classList).toContain('data-table--sticky-head');
     expect(element.style.getPropertyValue('--lcc-data-table-head-height')).toBe('40px');
     expect(element.style.getPropertyValue('--lcc-data-table-head-travel')).toBe('260px');
   });

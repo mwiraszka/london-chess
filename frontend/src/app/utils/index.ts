@@ -33,7 +33,9 @@ export {
   clubToday,
   isUpcomingTournament,
   registrationStatus,
+  summarizeTournament,
   tournamentFormData,
+  tournamentInput,
   tournamentTiming,
 } from './chess/tournament-status.util';
 export { trophyForResult, trophyShapeFor } from './chess/trophies.util';
@@ -41,10 +43,10 @@ export { trophyForResult, trophyShapeFor } from './chess/trophies.util';
 export { areSame } from './common/are-same.util';
 export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.util';
 export { compareCells } from './common/compare-cells.util';
+export { creditEditor } from './common/credit-editor.util';
 export { customSort } from './common/custom-sort.util';
 export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';
-export { takeRandomly } from './common/take-randomly.util';
 
 export {
   fromClubDateTime,
@@ -56,11 +58,15 @@ export { formatDate } from './datetime/format-date.util';
 export { formatDateRange } from './datetime/format-date-range.util';
 export { formatPartialDate } from './datetime/format-partial-date.util';
 export { isExpired } from './datetime/is-expired.util';
+export { calendarMonthKeys, dayKeyOf, monthKeyOf } from './datetime/calendar-months.util';
+export { countdownParts, describeCountdown } from './datetime/countdown.util';
+export type { CountdownPart } from './datetime/countdown.util';
 export { isUpcomingEvent } from './datetime/is-upcoming-event.util';
 export { isValidIsoDate } from './datetime/is-valid-iso-date.util';
 
 export { isMac } from './device/is-mac.util';
 export { isTouchDevice } from './device/is-touch-device.util';
+export { scrollBehavior } from './device/scroll-behavior.util';
 
 export { isLccError } from './error/is-lcc-error.util';
 export { parseError } from './error/parse-error.util';
@@ -71,6 +77,7 @@ export { exportEventsToIcal } from './file/export-events-to-ical.util';
 export { formatBytes } from './file/format-bytes.util';
 export { parseCsv } from './file/parse-csv.util';
 
+export { bindSearchControl } from './forms/bind-search-control.util';
 export { createEmailControl } from './forms/create-email-control.util';
 export { createMemberAccountGroup } from './forms/create-member-account-group.util';
 export { createMemberDetailsControls } from './forms/create-member-details-controls.util';
@@ -82,34 +89,39 @@ export { setPaginationParams } from './http/set-pagination-params.util';
 
 export { buildImagesFormData } from './image/build-images-form-data.util';
 export { isPresignedUrlExpired } from './image/is-presigned-url-expired.util';
-export {
-  calculateAspectRatio,
-  calculateDecimalAspectRatio,
-} from './image/calculate-aspect-ratio.util';
-export {
-  type MarkdownSegment,
-  type MarkdownTable,
-  type MarkdownTableColumn,
-  type MarkdownTableRow,
-  splitMarkdownTables,
+export { calculateAspectRatio } from './image/calculate-aspect-ratio.util';
+// The splitter itself is imported from its file, since it pulls in the markdown parser
+export type {
+  MarkdownSegment,
+  MarkdownTable,
+  MarkdownTableColumn,
+  MarkdownTableRow,
 } from './markdown/split-markdown-tables.util';
 
 export { pageOf } from './pagination/page-of.util';
 export { pageRowCount } from './pagination/page-row-count.util';
+export { widestRows } from './table/widest-rows.util';
 
 export { gamesQueryParams, parseGamesQuery } from './route/games-query.util';
 export { declaredAccess, hasAccess, requiredAccess } from './route/route-access.util';
 
-export { actionSanitizer } from './store/action-sanitizer.util';
-export { combinedLoadStatus, loadStatus } from './store/load-status.util';
+export {
+  combinedLoadStatus,
+  loadStatus,
+  withFailedLoad,
+  withLoadAttempt,
+} from './store/load-status.util';
+export { refreshedFormData } from './store/refreshed-form-data.util';
 
 export { closedDialogRef } from './test/closed-dialog-ref.util';
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
 export { lastOpenedDialog } from './test/last-opened-dialog.util';
 
 export { isAccountSection } from './type-guards/is-account-section.util';
+export { isBrand } from './type-guards/is-brand.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';
 export { isEntity } from './type-guards/is-entity.util';
+export { isRecord } from './type-guards/is-record.util';
 export { isRecordNumber } from './type-guards/is-record-number.util';
 export { isString } from './type-guards/is-string.util';

@@ -1,3 +1,5 @@
+import { TooltipDirective } from '@eagami/ui';
+
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -58,6 +60,61 @@ describe('PhotoCarouselComponent', () => {
 
       vi.advanceTimersByTime(4000);
       expect(component.currentIndex()).toBe(0);
+    });
+  });
+
+  describe('pausing', () => {
+    it('should hold still once paused, and cycle again once played', () => {
+      const toggle = query(fixture.debugElement, '.controls ea-button');
+
+      toggle.triggerEventHandler('clicked');
+      fixture.detectChanges();
+      vi.advanceTimersByTime(8000);
+
+      expect(component.currentIndex()).toBe(0);
+
+      toggle.triggerEventHandler('clicked');
+      fixture.detectChanges();
+      vi.advanceTimersByTime(4000);
+
+      expect(component.currentIndex()).toBe(1);
+    });
+
+    it('should hold still while the pointer is over it', () => {
+      fixture.nativeElement.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+      vi.advanceTimersByTime(8000);
+
+      expect(component.currentIndex()).toBe(0);
+
+      fixture.nativeElement.dispatchEvent(new MouseEvent('mouseleave'));
+      fixture.detectChanges();
+      vi.advanceTimersByTime(4000);
+
+      expect(component.currentIndex()).toBe(1);
+    });
+
+    it('should hold still while focus is inside it', () => {
+      const dot = query(fixture.debugElement, '.dot-button').nativeElement;
+
+      dot.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      fixture.detectChanges();
+      vi.advanceTimersByTime(8000);
+
+      expect(component.currentIndex()).toBe(0);
+    });
+
+    it('should name its button for what it will do', () => {
+      const toggle = query(fixture.debugElement, '.controls ea-button');
+      const tooltip = toggle.injector.get(TooltipDirective);
+      const before = [toggle.componentInstance.ariaLabel(), tooltip.eaTooltip()];
+
+      toggle.triggerEventHandler('clicked');
+      fixture.detectChanges();
+
+      expect(before).toEqual(['Pause the slideshow', 'Pause the slideshow']);
+      expect(toggle.componentInstance.ariaLabel()).toBe('Play the slideshow');
+      expect(tooltip.eaTooltip()).toBe('Play the slideshow');
     });
   });
 
@@ -222,20 +279,26 @@ describe('PhotoCarouselComponent', () => {
       expect(dotElements[2].nativeElement.classList.contains('active')).toBe(false);
     });
 
-    it('should set correct tabindex for active image wrapper', () => {
+    it('should leave only the photo on show reachable', () => {
       let imageWrappers = queryAll(fixture.debugElement, '.image-wrapper');
-      expect(imageWrappers[0].nativeElement.tabIndex).toBe(0);
-      expect(imageWrappers[1].nativeElement.tabIndex).toBe(-1);
-      expect(imageWrappers[2].nativeElement.tabIndex).toBe(-1);
+      expect(imageWrappers.map(wrapper => wrapper.nativeElement.inert)).toEqual([
+        false,
+        true,
+        true,
+      ]);
 
       component.currentIndex.set(2);
       fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
       fixture.detectChanges();
       imageWrappers = queryAll(fixture.debugElement, '.image-wrapper');
 
-      expect(imageWrappers[0].nativeElement.tabIndex).toBe(-1);
-      expect(imageWrappers[1].nativeElement.tabIndex).toBe(-1);
-      expect(imageWrappers[2].nativeElement.tabIndex).toBe(0);
+      expect(imageWrappers.map(wrapper => wrapper.nativeElement.inert)).toEqual([
+        true,
+        true,
+        false,
+      ]);
+      expect(imageWrappers[0].nativeElement.getAttribute('aria-hidden')).toBe('true');
+      expect(imageWrappers[2].nativeElement.getAttribute('aria-hidden')).toBeNull();
     });
 
     it('should have correct aria-label for active image wrapper', () => {
@@ -263,14 +326,6 @@ describe('PhotoCarouselComponent', () => {
       fixture.nativeElement.dispatchEvent(keydownEvent);
 
       expect(component.currentIndex()).toBe(0);
-    });
-
-    it('should move to next photo on enter keydown', () => {
-      const keydownEvent = new KeyboardEvent('keydown', { key: 'Enter' });
-
-      fixture.nativeElement.dispatchEvent(keydownEvent);
-
-      expect(component.currentIndex()).toBe(1);
     });
 
     it('should handle keyboard events from any focused child element', () => {

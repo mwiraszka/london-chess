@@ -1,4 +1,4 @@
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 
 import { HttpParams } from '@angular/common/http';
 import {
@@ -7,8 +7,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { BASE_IMAGE_PROPERTIES } from '@app/constants';
-import { MOCK_IMAGES } from '@app/mocks/images.mock';
+import { BASE_IMAGE_PROPERTIES, MOCK_IMAGES } from '@app/mocks/images.mock';
 import {
   ApiResponse,
   BaseImage,

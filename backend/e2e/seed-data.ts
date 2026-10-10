@@ -105,10 +105,12 @@ export interface SeedGame {
 
 // Where the fake image storage serves its objects
 export const STORAGE_PORT = 3100;
+export const IMAGES_BUCKET = 'images';
 
 const hexId = (group: number, index: number): string =>
   `e2e0${String(group).padStart(4, '0')}${String(index).padStart(16, '0')}`;
 
+// Numbers 1 and 2 stay free, since the site's own pages link them by the real members' names
 export const ADMIN: SeedMember = {
   key: 'admin',
   firstName: 'Avery',
@@ -117,7 +119,7 @@ export const ADMIN: SeedMember = {
   peakRating: '1804',
   city: 'London',
   isActive: true,
-  number: 1,
+  number: 5,
 };
 
 export const PROFILE_MEMBER: SeedMember = {
@@ -156,7 +158,7 @@ export const CHAMPION_MEMBER_DETAILS: Omit<SeedMember, 'firstName' | 'lastName'>
   city: 'London',
   isActive: true,
   dateJoined: '2016-02-11T23:00:00.000Z',
-  number: 2,
+  number: 6,
 };
 
 const OTHER_MEMBER_NAMES: [string, string, string, boolean][] = [
@@ -334,7 +336,7 @@ export const ARCHIVE_ONLY_TOURNAMENT = 'Fall Open';
 export const ALBUMS = {
   championship: 'Championship Finals',
   picnic: 'Summer Picnic',
-  banners: 'News Banners',
+  banners: 'Article Banners',
   unavailable: 'Storage Outage',
 } as const;
 
@@ -624,14 +626,4 @@ export function standings(section: SeedSection, isDoubleRound = false): SeedStan
         section.playerKeys.indexOf(a.playerKey) - section.playerKeys.indexOf(b.playerKey),
     )
     .map((row, index) => ({ ...row, rank: index + 1 }));
-}
-
-export function rankOf(tournament: SeedTournament, playerKey: string): number | null {
-  for (const section of tournament.sections) {
-    const standing = standings(section, tournament.isDoubleRound).find(
-      row => row.playerKey === playerKey,
-    );
-    if (standing) return standing.rank;
-  }
-  return null;
 }

@@ -1,10 +1,10 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { MOCK_TOURNAMENTS } from '@app/mocks/tournaments.mock';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
@@ -30,13 +30,7 @@ describe('tournamentGuard', () => {
       ),
     );
 
-  const outcomes = (tournamentNumber: string): (boolean | UrlTree)[] => {
-    const emitted: (boolean | UrlTree)[] = [];
-    (runGuard(tournamentNumber) as Observable<boolean | UrlTree>).subscribe(value =>
-      emitted.push(value),
-    );
-    return emitted;
-  };
+  const outcomes = (tournamentNumber: string) => [runGuard(tournamentNumber)];
 
   beforeEach(() => {
     actions$ = new ReplaySubject<Action>(1);
@@ -86,7 +80,8 @@ describe('tournamentGuard', () => {
   });
 
   it('should redirect home when the tournament does not exist', () => {
-    const emitted = outcomes(String(tournament.number));
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    outcomes(String(tournament.number));
 
     actions$.next(
       TournamentsActions.fetchTournamentFailed({
@@ -94,6 +89,6 @@ describe('tournamentGuard', () => {
       }),
     );
 
-    expect(emitted).toEqual([router.createUrlTree(['/'])]);
+    expect(navigateSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
   });
 });

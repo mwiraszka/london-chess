@@ -2,7 +2,7 @@
 
 lcc-pgn-viewer {
   cg-board {
-    background-color: var(--lcc-color--pgnViewer-board);
+    background-color: var(--lcc-board);
   }
 
   .lpv__player--top,
@@ -14,14 +14,14 @@ lcc-pgn-viewer {
       }
 
       .lpv__player__name {
-        color: var(--lcc-color--pgnViewer-playerNameText);
+        color: var(--color-neutral-300);
       }
     }
   }
 
   .lpv__pane {
     .lpv__fbt {
-      padding: 0.5em;
+      padding: 8px;
       font-size: 0.9em;
     }
   }

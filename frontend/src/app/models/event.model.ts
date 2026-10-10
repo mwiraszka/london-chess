@@ -25,6 +25,13 @@ export interface Event {
   modificationInfo: ModificationInfo;
 }
 
+// The saved event, and the members who could not be emailed about the change to the
+// schedule
+export interface EventSaveResult {
+  id: Id;
+  unnotifiedMemberNames: string[];
+}
+
 export type EventFormData = Pick<Event, (typeof EVENT_FORM_DATA_PROPERTIES)[number]>;
 
 // The date and time are picked apart and joined back into the event's instant

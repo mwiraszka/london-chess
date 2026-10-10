@@ -5,22 +5,22 @@ import {
   DialogService,
   SwitchComponent,
 } from '@eagami/ui';
-import { UntilDestroy } from '@ngneat/until-destroy';
 
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
+  afterEveryRender,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { BasicDialogResult, Dialog, Event } from '@app/models';
 import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
+import { scrollBehavior } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-schedule-toolbar',
   template: `
@@ -28,7 +28,7 @@ import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
       class="schedule-toolbar__today"
       variant="ghost"
       size="md"
-      [disabled]="!todayScrollPoint"
+      [disabled]="!canScrollToToday()"
       [icon]="todayIcon"
       (clicked)="onToday()">
       Today
@@ -55,7 +55,6 @@ import { EXPORT_EVENTS_TO_ICAL } from '@app/tokens';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScheduleToolbarComponent {
-  readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly dialogService = inject(DialogService);
 
   public readonly filteredEvents = input.required<Event[]>();
@@ -69,15 +68,23 @@ export class ScheduleToolbarComponent {
 
   private readonly exportEventsToIcal = inject(EXPORT_EVENTS_TO_ICAL);
 
+  // Today is marked by whichever schedule view sits beside the toolbar, so whether it is
+  // there is read once each render has drawn that view
+  protected readonly canScrollToToday = signal(false);
+
+  constructor() {
+    afterEveryRender({ read: () => this.canScrollToToday.set(!!this.todayScrollPoint) });
+  }
+
   public get todayScrollPoint(): Element | null {
-    return document.querySelector('.schedule-view.active .today-scroll-point');
+    return document.querySelector('.today-scroll-point');
   }
 
   public onToday(): void {
     const point = this.todayScrollPoint;
     // The row the point sits in, so the line along its top edge comes into view too
     const target = point?.closest('tr') ?? point;
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   }
 
   public async onExportToIcal(): Promise<void> {

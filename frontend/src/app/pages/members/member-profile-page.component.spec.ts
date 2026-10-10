@@ -1,6 +1,6 @@
 import { AvatarComponent, BadgeComponent, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { BehaviorSubject } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -94,6 +94,8 @@ describe('MemberProfilePageComponent', () => {
     store = TestBed.inject(MockStore);
     store.overrideSelector(MembersSelectors.selectAllMembers, [member]);
   });
+
+  afterEach(() => store.resetSelectors());
 
   describe("the member's openings", () => {
     it('should be fetched once for the openings card', () => {
@@ -239,13 +241,6 @@ describe('MemberProfilePageComponent', () => {
       expect(statValues()).toEqual([member.peakRating, '2015', member.yearOfBirth]);
     });
 
-    it('should show the founding member as having joined in 105 B.C.', () => {
-      paramMap.next(convertToParamMap({ number: '2' }));
-      showMember({ number: 2, showYearOfBirth: false });
-
-      expect(statValues()).toEqual([member.peakRating, member.city, '105 B.C.']);
-    });
-
     it.each([true, false])(
       'should show the admin icon only for an admin (%s)',
       isAdmin => {
@@ -255,13 +250,13 @@ describe('MemberProfilePageComponent', () => {
       },
     );
 
-    it('should link the city champion to the city champion page', () => {
+    it('should link the city champion to the City Championship page', () => {
       expect(query(fixture.debugElement, '.champion-link')).toBeFalsy();
 
       showMember(CITY_CHAMPION);
 
       expect(query(fixture.debugElement, '.champion-link').attributes['href']).toBe(
-        '/city-champion',
+        '/city-championship',
       );
     });
 
@@ -329,16 +324,16 @@ describe('MemberProfilePageComponent', () => {
     });
   });
 
-  it('should cover each card with a skeleton while the member loads', () => {
+  it('should cover the profile card with a skeleton while the member loads, the rest waiting for it', () => {
     store.overrideSelector(MembersSelectors.selectAllMembers, []);
 
     createComponent();
 
     const cards = queryAll(fixture.debugElement, '.profile-card');
-    expect(cards).toHaveLength(2);
+    expect(cards).toHaveLength(1);
     expect(query(cards[0], 'ea-card')).toBeTruthy();
-    expect(query(cards[1], 'ea-accordion')).toBeTruthy();
-    cards.forEach(card => expect(query(card, 'ea-skeleton')).toBeTruthy());
+    expect(query(cards[0], 'ea-skeleton')).toBeTruthy();
+    expect(query(fixture.debugElement, 'ea-accordion')).toBeFalsy();
     expect(query(fixture.debugElement, '.profile--loading')).toBeTruthy();
     expect(query(fixture.debugElement, '.profile').attributes['aria-busy']).toBe('true');
     expect(query(fixture.debugElement, 'lcc-member-tournaments')).toBeFalsy();

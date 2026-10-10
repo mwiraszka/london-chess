@@ -33,10 +33,15 @@ export function requiredAccess(state: { root: AccessRoute }): RouteAccess | null
   return strictest;
 }
 
-export function hasAccess(access: RouteAccess | null, user: User | null): boolean {
+// An admin can switch their controls off, so whether the user acts as one is passed apart
+export function hasAccess(
+  access: RouteAccess | null,
+  user: User | null,
+  isAdmin: boolean,
+): boolean {
   if (!access) {
     return true;
   }
 
-  return !!user && (access === 'member' || user.isAdmin);
+  return !!user && (access === 'member' || isAdmin);
 }

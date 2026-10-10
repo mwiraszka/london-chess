@@ -14,6 +14,7 @@ import {
 
 import { IMAGE_FALLBACK_SRC, TRANSPARENT_PIXEL_SRC } from '@app/constants/images';
 import { Image, ImageDisplayMode, Url } from '@app/models';
+import { LoadedImagesService } from '@app/services/loaded-images.service';
 import { calculateAspectRatio } from '@app/utils';
 
 /**
@@ -35,7 +36,6 @@ import { calculateAspectRatio } from '@app/utils';
 })
 export class ImageComponent {
   public readonly image = input.required<Image | null>();
-  public readonly priority = input<boolean>(false);
 
   public readonly loaded = output<void>();
 
@@ -58,6 +58,7 @@ export class ImageComponent {
   public readonly caption = computed<string>(() => this.image()?.caption ?? '');
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly loadedImages = inject(LoadedImagesService);
 
   private mainFailed = false;
   private thumbnailFailed = false;
@@ -91,6 +92,9 @@ export class ImageComponent {
     }
     this.hasLoaded.set(true);
     this.loaded.emit();
+    if (this.displayMode() === 'main') {
+      this.loadedImages.add(this.currentSrc());
+    }
 
     // The full-size upgrade starts only after the thumbnail has rendered, so
     // the two loads never race and no in-flight request gets cancelled
@@ -166,6 +170,14 @@ export class ImageComponent {
 
     const { mainUrl, thumbnailUrl } = img;
 
+    if (mainUrl && this.loadedImages.has(mainUrl)) {
+      this.hasLoaded.set(true);
+      this.displayMode.set('main');
+      this.currentSrc.set(mainUrl);
+      this.blurred.set(false);
+      return;
+    }
+
     if (mainUrl && thumbnailUrl) {
       if (this.currentSrc() === thumbnailUrl && this.hasLoaded()) {
         this.displayMode.set('thumbnail');
@@ -203,6 +215,7 @@ export class ImageComponent {
         return;
       }
       this.currentPreloader = null;
+      this.loadedImages.add(mainUrl);
       this.displayMode.set('main');
       this.currentSrc.set(mainUrl);
       this.blurred.set(false);

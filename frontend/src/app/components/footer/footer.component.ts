@@ -1,5 +1,6 @@
 import {
   DividerComponent,
+  EagamiWordmarkComponent,
   ExternalLinkIconComponent,
   TooltipDirective,
 } from '@eagami/ui';
@@ -13,8 +14,15 @@ import packageJson from '../../../../package.json';
   selector: 'lcc-footer',
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss',
-  imports: [DividerComponent, ExternalLinkIconComponent, RouterLink, TooltipDirective],
+  imports: [
+    DividerComponent,
+    EagamiWordmarkComponent,
+    ExternalLinkIconComponent,
+    RouterLink,
+    TooltipDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { role: 'contentinfo' },
 })
 export class FooterComponent {
   public readonly CURRENT_VERSION = packageJson.version;

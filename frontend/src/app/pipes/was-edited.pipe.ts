@@ -1,9 +1,8 @@
-import moment from 'moment-timezone';
-
 import { Pipe, PipeTransform } from '@angular/core';
 
 import { ModificationInfo } from '@app/models';
 import { isValidIsoDate } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 /**
  * Check whether dateLastEdited and dateCreated properties on a ModificationInfo object are the same

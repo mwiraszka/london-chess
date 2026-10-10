@@ -10,7 +10,11 @@ import { LccError } from '@app/models';
 import { tournamentFormData } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
-import { initialState, tournamentsReducer } from './tournaments.reducer';
+import {
+  TournamentsState,
+  initialState,
+  tournamentsReducer,
+} from './tournaments.reducer';
 
 describe('Tournaments Reducer', () => {
   const mockError: LccError = { name: 'LCCError', message: 'Something went wrong' };
@@ -51,15 +55,16 @@ describe('Tournaments Reducer', () => {
     });
 
     it('should forget a failure once the load is attempted again', () => {
-      const failed = tournamentsReducer(
-        initialState,
-        TournamentsActions.fetchTournamentFailed({ error: mockError }),
-      );
+      const failed: TournamentsState = {
+        ...initialState,
+        failedLoads: ['summaries', 'tournament', 'member-results'],
+      };
 
-      const state = tournamentsReducer(
-        failed,
+      const state = [
+        TournamentsActions.fetchTournamentsRequested(),
         TournamentsActions.fetchTournamentRequested({ tournamentNumber: 90 }),
-      );
+        TournamentsActions.fetchMemberTournamentsRequested({ memberNumber: 2 }),
+      ].reduce(tournamentsReducer, failed);
 
       expect(state.failedLoads).toEqual([]);
     });
@@ -185,6 +190,35 @@ describe('Tournaments Reducer', () => {
     });
   });
 
+  describe('refreshing a tournament with a draft', () => {
+    const number = MOCK_UPCOMING_TOURNAMENT.number;
+    const saved = tournamentFormData(MOCK_UPCOMING_TOURNAMENT);
+    const withDraft = (name: string): TournamentsState => ({
+      ...tournamentsReducer(
+        initialState,
+        TournamentsActions.fetchTournamentSucceeded({
+          tournament: MOCK_UPCOMING_TOURNAMENT,
+        }),
+      ),
+      formData: { [number]: { ...saved, name } },
+    });
+    const refresh = TournamentsActions.fetchTournamentSucceeded({
+      tournament: { ...MOCK_UPCOMING_TOURNAMENT, timeControl: 'G30+5' },
+    });
+
+    it('should keep unsaved edits', () => {
+      const state = tournamentsReducer(withDraft('Fall Rapid Open'), refresh);
+
+      expect(state.formData[number]?.name).toBe('Fall Rapid Open');
+    });
+
+    it('should let a draft without edits give way to the refreshed tournament', () => {
+      const state = tournamentsReducer(withDraft(saved.name), refresh);
+
+      expect(state.formData).toEqual({});
+    });
+  });
+
   describe('saving', () => {
     const loaded = {
       ...tournamentsReducer(
@@ -255,10 +289,10 @@ describe('Tournaments Reducer', () => {
       expect(state.entities[MOCK_UPCOMING_TOURNAMENT.number]?.registrants).toEqual([
         first,
       ]);
-      expect(state.summaries[0].registrationCount).toBe(1);
+      expect(state.summaries[0].registrants).toEqual([first]);
     });
 
-    it('should count a registration even when the tournament itself is not loaded', () => {
+    it('should record a registration even when the tournament itself is not loaded', () => {
       const state = tournamentsReducer(
         { ...loaded, ids: [], entities: {} },
         TournamentsActions.registrationSucceeded({
@@ -268,7 +302,7 @@ describe('Tournaments Reducer', () => {
         }),
       );
 
-      expect(state.summaries[0].registrationCount).toBe(0);
+      expect(state.summaries[0].registrants).toEqual([]);
       expect(state.entities).toEqual({});
     });
   });

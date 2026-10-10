@@ -3,12 +3,16 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { BasicDialogResult, Image } from '@app/models';
-import { AdminControlsService, StoreRequestService } from '@app/services';
+import { Image } from '@app/models';
+import {
+  AdminControlsService,
+  DeletionService,
+  LoadedImagesService,
+  StoreRequestService,
+} from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
-import { closedDialogRef, lastOpenedDialog, query, queryTextContent } from '@app/utils';
+import { closedDialogRef, query, queryTextContent } from '@app/utils';
 
 import { ImageViewerComponent } from './image-viewer.component';
 
@@ -19,10 +23,8 @@ describe('ImageViewerComponent', () => {
 
   let adminControlsCloseSpy: MockInstance;
   let adminControlsOpenSpy: MockInstance;
-  let dialogOpenSpy: Mock;
   let closeSpy: MockInstance;
   let dispatchSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   const createViewer = (images: Image[] = MOCK_IMAGES, isAdmin = true): void => {
     fixture = TestBed.createComponent(ImageViewerComponent);
@@ -81,16 +83,17 @@ describe('ImageViewerComponent', () => {
     store = TestBed.inject(MockStore);
     store.overrideSelector(ImagesSelectors.selectAllImages, MOCK_IMAGES);
 
-    dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
     adminControlsCloseSpy = vi.spyOn(TestBed.inject(AdminControlsService), 'close');
     adminControlsOpenSpy = vi
       .spyOn(TestBed.inject(AdminControlsService), 'open')
       .mockImplementation(() => undefined);
   });
 
-  afterEach(() => fixture.destroy());
+  afterEach(() => {
+    store.resetSelectors();
+    fixture.destroy();
+  });
 
   describe('fetching the shown image', () => {
     it('should fetch the first image when it has no main URL yet', () => {
@@ -271,6 +274,128 @@ describe('ImageViewerComponent', () => {
     });
   });
 
+  describe('moving between images', () => {
+    let preloaders: HTMLImageElement[];
+    let decodes: { resolve: () => void; reject: () => void }[];
+
+    beforeEach(() => {
+      preloaders = [];
+      decodes = [];
+      vi.spyOn(window, 'Image').mockImplementation(function () {
+        const preloader = document.createElement('img');
+        preloader.decode = () =>
+          new Promise<void>((resolve, reject) =>
+            decodes.push({
+              resolve,
+              reject: () => reject(new Error('Unable to decode')),
+            }),
+          );
+        preloaders.push(preloader);
+        return preloader;
+      });
+    });
+
+    const shownId = (): string | undefined =>
+      query(fixture.debugElement, 'figure lcc-image').componentInstance.image()?.id;
+
+    it('should keep the image on screen until the next one has loaded', async () => {
+      createViewer();
+
+      component.onNextImage();
+      fixture.detectChanges();
+      const whileLoading = shownId();
+      decodes[0].resolve();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(whileLoading).toBe(MOCK_IMAGES[0].id);
+      expect(preloaders[0].src).toBe(MOCK_IMAGES[1].mainUrl);
+      expect(shownId()).toBe(MOCK_IMAGES[1].id);
+      expect(TestBed.inject(LoadedImagesService).has(MOCK_IMAGES[1].mainUrl!)).toBe(true);
+    });
+
+    it('should still move on to an image that fails to load', async () => {
+      createViewer();
+
+      component.onNextImage();
+      decodes[0].reject();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(shownId()).toBe(MOCK_IMAGES[1].id);
+      expect(TestBed.inject(LoadedImagesService).has(MOCK_IMAGES[1].mainUrl!)).toBe(
+        false,
+      );
+    });
+
+    it('should load the images either side once the shown one has loaded', () => {
+      const last = MOCK_IMAGES.length - 1;
+      createViewer();
+      dispatchSpy.mockClear();
+
+      query(fixture.debugElement, 'figure lcc-image').triggerEventHandler('loaded');
+
+      expect(prefetched()).toContain(MOCK_IMAGES[last].id);
+      expect(preloaders.map(preloader => preloader.src)).toEqual([
+        MOCK_IMAGES[1].mainUrl,
+      ]);
+    });
+  });
+
+  describe('enlarging the image', () => {
+    const enlarged = (): HTMLDialogElement =>
+      query(fixture.debugElement, 'dialog.enlarged-image').nativeElement;
+
+    beforeEach(() => {
+      createViewer();
+      query(fixture.debugElement, '.enlarge-button').nativeElement.click();
+      fixture.detectChanges();
+    });
+
+    it('should show the image alone, outside the figure and its admin controls', () => {
+      expect(enlarged().open).toBe(true);
+      expect(enlarged().closest('figure')).toBeNull();
+      expect(query(fixture.debugElement, 'dialog.enlarged-image lcc-image')).toBeTruthy();
+      expect(enlarged().querySelector('button, figcaption')).toBeNull();
+    });
+
+    it('should shrink back to the viewer on a click anywhere', () => {
+      enlarged().click();
+      fixture.detectChanges();
+
+      expect(enlarged().open).toBe(false);
+      expect(query(fixture.debugElement, 'figure')).toBeTruthy();
+    });
+
+    it('should hand focus back to the figure rather than the image once closed', () => {
+      enlarged().dispatchEvent(new Event('close'));
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(
+        query(fixture.debugElement, 'figure').nativeElement,
+      );
+      expect(query(fixture.debugElement, 'dialog.enlarged-image lcc-image')).toBeNull();
+    });
+
+    it('should leave a right click to the browser', () => {
+      enlarged().dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      fixture.detectChanges();
+
+      expect(enlarged().open).toBe(true);
+    });
+  });
+
+  describe('focus', () => {
+    it('should rest on the figure, outside the tab order, when the viewer opens', () => {
+      createViewer();
+
+      const figure: HTMLElement = query(fixture.debugElement, 'figure').nativeElement;
+
+      expect(figure.hasAttribute('autofocus')).toBe(true);
+      expect(figure.tabIndex).toBe(-1);
+    });
+  });
+
   describe('template rendering', () => {
     it('should show the album name, and the caption once the image loads', () => {
       createViewer();
@@ -279,7 +404,9 @@ describe('ImageViewerComponent', () => {
       query(fixture.debugElement, 'lcc-image').triggerEventHandler('loaded');
       fixture.detectChanges();
 
-      expect(queryTextContent(fixture.debugElement, '.album-name')).toBe('Mock Album');
+      expect(queryTextContent(fixture.debugElement, '[slot="header"]')).toBe(
+        'Mock Album',
+      );
       expect(
         query(fixture.debugElement, 'dialog').nativeElement.hasAttribute('open'),
       ).toBe(true);
@@ -336,77 +463,27 @@ describe('ImageViewerComponent', () => {
       );
       expect(used.isDeleteDisabled).toBe(true);
     });
-
-    it('should ask to confirm a delete from the controls', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.getAdminControlsConfig(MOCK_IMAGES[1]).deleteCb();
-
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-    });
   });
 
   describe('image deletion', () => {
     beforeEach(() => createViewer());
 
-    describe('when the dialog is confirmed', () => {
-      beforeEach(() => {
-        dialogOpenSpy.mockImplementation(() => {
-          const confirmation = new DialogRef<BasicDialogResult>();
-          void lastOpenedDialog(dialogOpenSpy)
-            .confirmAction?.()
-            .then(() => confirmation.close('confirm'));
-          return confirmation;
-        });
-      });
+    it('should close the viewer once the image is deleted', async () => {
+      const deleteImage = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteImage')
+        .mockResolvedValue(true);
 
-      it('should delete the image from the confirmation dialog', async () => {
-        await component.onDeleteImage(MOCK_IMAGES[1]);
+      await component.getAdminControlsConfig(MOCK_IMAGES[1]).deleteCb();
 
-        expect(storeRequestSpy).toHaveBeenCalledWith(
-          ImagesActions.deleteImageRequested({ image: MOCK_IMAGES[1] }),
-          [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
-        );
-      });
-
-      it('should close the viewer once the image is deleted', async () => {
-        storeRequestSpy.mockResolvedValue(
-          ImagesActions.deleteImageSucceeded({ image: MOCK_IMAGES[1] }),
-        );
-
-        await component.onDeleteImage(MOCK_IMAGES[1]);
-
-        expect(closeSpy).toHaveBeenCalledTimes(1);
-      });
-
-      it('should keep the viewer open when the image fails to delete', async () => {
-        storeRequestSpy.mockResolvedValue(
-          ImagesActions.deleteImageFailed({
-            image: MOCK_IMAGES[1],
-            error: { name: 'LCCError', message: 'Unable to delete image.' },
-          }),
-        );
-
-        await component.onDeleteImage(MOCK_IMAGES[1]);
-
-        expect(closeSpy).not.toHaveBeenCalled();
-      });
+      expect(deleteImage).toHaveBeenCalledExactlyOnceWith(MOCK_IMAGES[1]);
+      expect(closeSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should not delete anything when the dialog is cancelled', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+    it('should keep the viewer open when the image is not deleted', async () => {
+      vi.spyOn(TestBed.inject(DeletionService), 'deleteImage').mockResolvedValue(false);
 
-      await component.onDeleteImage(MOCK_IMAGES[1]);
+      await component.getAdminControlsConfig(MOCK_IMAGES[1]).deleteCb();
 
-      expect(storeRequestSpy).not.toHaveBeenCalled();
       expect(closeSpy).not.toHaveBeenCalled();
     });
   });

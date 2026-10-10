@@ -4,16 +4,13 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageViewerComponent } from '@app/components/image-viewer/image-viewer.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { StoreRequestService } from '@app/services';
-import { ImagesActions } from '@app/store/images';
+import { DeletionService, StoreRequestService } from '@app/services';
 import {
   closedDialogRef,
   customSort,
-  lastOpenedDialog,
   query,
   queryAll,
   queryTextContent,
@@ -34,7 +31,6 @@ describe('PhotoGridComponent', () => {
 
   let dialogOpenSpy: MockInstance;
   let onClickAlbumCoverSpy: MockInstance;
-  let storeRequestSpy: Mock;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -64,30 +60,11 @@ describe('PhotoGridComponent', () => {
 
     dialogOpenSpy = vi.spyOn(dialogService, 'open');
     onClickAlbumCoverSpy = vi.spyOn(component, 'onClickAlbumCover');
-    storeRequestSpy = vi.mocked(TestBed.inject(StoreRequestService).dispatch);
 
     fixture.componentRef.setInput('isAdmin', true);
     fixture.componentRef.setInput('photoImages', MOCK_IMAGES);
 
     fixture.detectChanges();
-  });
-
-  describe('showSkeleton', () => {
-    it('should return true when isLoading is true', () => {
-      fixture.componentRef.setInput('isLoading', true);
-
-      expect(component.showSkeleton()).toBe(true);
-    });
-
-    it('should return false when isLoading is false', () => {
-      fixture.componentRef.setInput('isLoading', false);
-
-      expect(component.showSkeleton()).toBe(false);
-    });
-
-    it('should return false when isLoading is undefined', () => {
-      expect(component.showSkeleton()).toBe(false);
-    });
   });
 
   describe('displayCovers', () => {
@@ -149,38 +126,19 @@ describe('PhotoGridComponent', () => {
     });
   });
 
-  describe('onDeleteAlbum', () => {
-    it('should delete the album from the confirmation dialog', async () => {
-      await component.onDeleteAlbum(MOCK_IMAGES[1].album);
-      await lastOpenedDialog(dialogOpenSpy).confirmAction?.();
+  describe('deleting an album', () => {
+    it('should delete an album and its photos from its admin controls', () => {
+      const album = MOCK_IMAGES[1].album;
+      const deleteAlbum = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteAlbum')
+        .mockResolvedValue(false);
 
-      const photoCount = MOCK_IMAGES.filter(
-        image => image.album === MOCK_IMAGES[1].album,
-      ).length;
+      component.getAdminControlsConfig(album).deleteCb();
 
-      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
-        inputs: {
-          dialog: expect.objectContaining({
-            title: 'Confirm',
-            body: `Delete ${MOCK_IMAGES[1].album} and its ${photoCount} photos?`,
-            confirmButtonText: 'Delete',
-            confirmButtonType: 'warning',
-          }),
-        },
-      });
-      expect(storeRequestSpy).toHaveBeenCalledWith(
-        ImagesActions.deleteAlbumRequested({ album: MOCK_IMAGES[1].album }),
-        [ImagesActions.deleteAlbumSucceeded, ImagesActions.deleteAlbumFailed],
+      expect(deleteAlbum).toHaveBeenCalledExactlyOnceWith(
+        album,
+        component.getAlbumPhotoCountText(album),
       );
-    });
-
-    it('should not delete anything until the dialog is confirmed', async () => {
-      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
-
-      await component.onDeleteAlbum(MOCK_IMAGES[1].album);
-
-      expect(dialogOpenSpy).toHaveBeenCalledTimes(1);
-      expect(storeRequestSpy).not.toHaveBeenCalled();
     });
   });
 

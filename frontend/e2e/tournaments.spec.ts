@@ -86,7 +86,7 @@ test.describe('tournaments', () => {
     await runnerUp.getByRole('link', { name: /^Drew with black against/ }).click();
 
     await expect(page).toHaveURL(/\/game-archives\/[0-9a-f]{24}$/);
-    await expect(page.getByRole('heading', { level: 2 })).toContainText(
+    await expect(page.locator('main').getByRole('heading', { level: 2 })).toContainText(
       PROFILE_MEMBER.lastName,
     );
   });
@@ -119,16 +119,18 @@ test.describe('tournaments', () => {
     await expect(page).toHaveURL(new RegExp(`/members/${PROFILE_MEMBER.number}$`));
   });
 
-  test('shows an upcoming tournament above the table, with who has registered', async ({
+  test('shows an upcoming tournament on its card, with who has registered', async ({
     page,
   }) => {
     await page.goto('/tournaments');
 
-    const upcoming = page.locator('.upcoming__item').filter({ hasText: UPCOMING.name });
-    await expect(upcoming).toContainText('Registration open until');
+    const upcoming = page
+      .locator('lcc-tournament-card')
+      .filter({ hasText: UPCOMING.name });
+    await expect(upcoming).toContainText('Registration closes in');
     await expect(upcoming).toContainText('1 player registered');
 
-    await upcoming.getByRole('link', { name: UPCOMING.name }).click();
+    await upcoming.getByRole('link', { name: UPCOMING.name, exact: true }).click();
 
     await expect(page).toHaveURL(new RegExp(`/tournaments/${UPCOMING.number}$`));
     const registration = page.locator('.registration');

@@ -5,9 +5,9 @@
   flex-direction: column;
   align-items: stretch;
   height: 100dvh;
-  background-color: var(--lcc-color--app-mainBackground);
+  background-color: var(--lcc-page);
 
-  main {
+  .scroller {
     overflow-x: hidden;
     // A permanent scrollbar track keeps the width constant, so content never
     // jumps when a page grows past the fold
@@ -15,27 +15,48 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    align-items: center;
     height: 100%;
-    background-color: var(--lcc-color--app-mainBackground);
+    background-color: var(--lcc-page);
     // The classic scrollbar consumes the right edge; mirroring its measured
     // width on the left keeps content centred, and the nav shares the same
     // variable so its links line up with the content below in every browser
     padding: 0 8px 0 calc(8px + var(--lcc-scrollbar-inset, 0px));
+  }
 
-    &::ng-deep lcc-footer {
-      // Reaches back through the scroller's side paddings, the left one widened
-      // by the scrollbar inset, so the background meets both edges
-      align-self: stretch;
-      margin: auto -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
+  // At least a screen tall, so the footer always starts below the fold and never moves in
+  // view as a page fills in, however much shorter or taller it turns out than its skeleton
+  main {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
 
-      // Add padding when on Safari on mobile to keep footer visible
-      @media screen and (max-width: 767px) {
-        _::-webkit-full-page-media,
-        _:future {
-          padding-bottom: 65px;
-        }
-      }
+    // Only ever focused by the skip link, to move keyboard users past the header
+    &:focus {
+      outline: none;
+    }
+  }
+
+  lcc-footer {
+    // Reaches back through the scroller's side paddings, the left one widened
+    // by the scrollbar inset, so the background meets both edges
+    align-self: stretch;
+    margin: 0 -8px 0 calc(-8px - var(--lcc-scrollbar-inset, 0px));
+  }
+
+  // Over the top of the page, so it moves nothing as it comes and goes; quick page changes
+  // finish before it has faded in
+  .navigation-progress {
+    z-index: var(--z-index-toast);
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    transition: opacity 0.2s;
+
+    @starting-style {
+      opacity: 0;
     }
   }
 }

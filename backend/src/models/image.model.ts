@@ -55,28 +55,6 @@ const imageSchema = new Schema<Image>(
 
 export const ImageModel = model<Image>('Image', imageSchema);
 
-// This only includes the properties of the image that are passed in when updating
-export const imageTypes: Record<
-  keyof Omit<
-    Image,
-    | 'mainFileSize'
-    | 'mainWidth'
-    | 'mainHeight'
-    | 'thumbnailFileSize'
-    | 'thumbnailWidth'
-    | 'thumbnailHeight'
-  >,
-  string | string[]
-> = {
-  id: 'string',
-  filename: 'string',
-  caption: 'string',
-  album: 'string',
-  albumCover: 'boolean',
-  albumOrdinality: 'string',
-  modificationInfo: 'object',
-};
-
 export const imagesSortingConfig: SortingConfig = {
   fieldMappings: {
     uploadDate: 'modificationInfo.dateCreated',

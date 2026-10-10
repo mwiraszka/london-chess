@@ -1,3 +1,5 @@
+@use '../../../styles/abstracts/mixins' as *;
+
 // The trophies stand at the sizes they have on the tournaments page
 $trophy-height: 140px;
 $bowl-scale: 0.68;
@@ -34,7 +36,7 @@ $narrow-scale: 0.75;
   padding: 4px 4px 8px;
   border: 0;
   border-bottom: 3px solid transparent;
-  border-radius: var(--lcc-borderRadius--small);
+  border-radius: var(--radius-sm);
   background: none;
   cursor: pointer;
   transition:
@@ -47,7 +49,7 @@ $narrow-scale: 0.75;
   }
 
   &:focus-visible {
-    outline: 2px solid var(--lcc-color--memberTrophies-glow);
+    outline: 2px solid var(--lcc-accent-glow);
     outline-offset: 2px;
   }
 }
@@ -55,8 +57,8 @@ $narrow-scale: 0.75;
 // Lit and lifted while its details show below
 .trophy--selected,
 .trophy--selected:hover {
-  border-bottom-color: var(--lcc-color--memberTrophies-underline);
-  filter: brightness(1.1) drop-shadow(0 0 12px var(--lcc-color--memberTrophies-glow));
+  border-bottom-color: var(--lcc-accent);
+  filter: brightness(1.1) drop-shadow(0 0 12px var(--lcc-accent-glow));
   transform: scale(1.1);
 }
 
@@ -114,8 +116,8 @@ $narrow-scale: 0.75;
   grid-template-columns: repeat(4, auto);
   padding: 12px 24px;
   margin: 0;
-  border: 1px solid var(--lcc-color--general-dividerLine);
-  border-radius: var(--lcc-borderRadius--small);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
 
   @container (width < 480px) {
     justify-content: stretch;
@@ -134,10 +136,7 @@ $narrow-scale: 0.75;
 }
 
 .fact__label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-secondary);
+  @include stat-label;
 }
 
 .fact__value {

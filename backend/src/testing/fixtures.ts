@@ -7,6 +7,7 @@ import {
   MemberAccount,
   MemberModel,
   MemberRecord,
+  newMemberAccount,
 } from '../models/member.model';
 import { ModificationInfo } from '../models/modification-info.model';
 import { LinkedMemberRecord } from '../util/member-responses.util';
@@ -42,19 +43,7 @@ export function memberFields(
 }
 
 export function memberAccount(overrides: Partial<MemberAccount> = {}): MemberAccount {
-  return {
-    clerkUserId: 'user_test',
-    isAdmin: false,
-    clerkImageUrl: null,
-    avatarUrl: null,
-    avatarOriginalUrl: null,
-    avatarManagedByApp: false,
-    clerkImagePending: false,
-    avatarCropState: null,
-    avatarUpdatedAt: null,
-    temporaryPasswordHash: null,
-    ...overrides,
-  };
+  return { ...newMemberAccount('user_test'), ...overrides };
 }
 
 type NewMember = Partial<Omit<Member, 'id'>> & { _id?: Types.ObjectId };

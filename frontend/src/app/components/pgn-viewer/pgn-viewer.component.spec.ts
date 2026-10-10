@@ -14,6 +14,11 @@ vi.mock('lichess-pgn-viewer', () => ({
       <div class="lpv">
         <div class="lpv__player lpv__player--top"><span class="lpv__player__person"></span></div>
         <div class="lpv__player lpv__player--bottom"><span class="lpv__player__person"></span></div>
+        <div class="lpv__controls">
+          <button class="lpv__controls__goto lpv__controls__goto--prev"></button>
+          <button class="lpv__controls__menu"></button>
+          <button class="lpv__controls__goto lpv__controls__goto--next"></button>
+        </div>
       </div>`;
   }),
 }));
@@ -70,5 +75,28 @@ describe('PgnViewerComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('.lpv')).toHaveLength(
       1,
     );
+  });
+
+  describe('controls', () => {
+    const controls = (): HTMLElement =>
+      (fixture.nativeElement as HTMLElement).querySelector('.lpv__controls')!;
+    const labels = (): (string | null)[] =>
+      [...controls().querySelectorAll('button')].map(button =>
+        button.getAttribute('aria-label'),
+      );
+
+    it('should name each icon button on the board', () => {
+      expect(labels()).toEqual(['Previous move', 'Game menu', 'Next move']);
+    });
+
+    it('should name the buttons the board adds when its menu opens', async () => {
+      const first = document.createElement('button');
+      first.className = 'lpv__controls__goto lpv__controls__goto--first';
+
+      controls().prepend(first);
+      await Promise.resolve();
+
+      expect(first.getAttribute('aria-label')).toBe('First move');
+    });
   });
 });

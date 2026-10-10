@@ -4,8 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 
-import { ChangelogService, MetaAndTitleService, RoutingService } from '@app/services';
-import { initialState as membersInitialState } from '@app/store/members/members.reducer';
+import { MetaAndTitleService, RoutingService } from '@app/services';
 import { queryAll, queryTextContent } from '@app/utils';
 
 import packageJson from '../../../../package.json';
@@ -14,29 +13,20 @@ import { WebsiteChangelogPageComponent } from './website-changelog-page.componen
 
 describe('WebsiteChangelogPageComponent', () => {
   let fixture: ComponentFixture<WebsiteChangelogPageComponent>;
-  let markLatestReleaseSeenSpy: Mock;
   let fragment$: BehaviorSubject<string | null>;
 
   beforeEach(async () => {
-    markLatestReleaseSeenSpy = vi.fn();
     fragment$ = new BehaviorSubject<string | null>(null);
 
     await TestBed.configureTestingModule({
       imports: [WebsiteChangelogPageComponent],
       providers: [
+        provideMockStore(),
         {
           provide: MetaAndTitleService,
           useValue: { updateTitle: vi.fn(), updateDescription: vi.fn() },
         },
-        {
-          provide: ChangelogService,
-          useValue: {
-            releases: CHANGELOG_RELEASES,
-            markLatestReleaseSeen: markLatestReleaseSeenSpy,
-          },
-        },
         { provide: RoutingService, useValue: { fragment$ } },
-        provideMockStore({ initialState: { membersState: membersInitialState } }),
       ],
     }).compileComponents();
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -192,9 +182,5 @@ describe('WebsiteChangelogPageComponent', () => {
       fragment: CHANGELOG_RELEASES[1].version,
       replaceUrl: true,
     });
-  });
-
-  it('should mark the latest release as seen on init', () => {
-    expect(markLatestReleaseSeenSpy).toHaveBeenCalledTimes(1);
   });
 });

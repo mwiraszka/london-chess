@@ -1,10 +1,15 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { compact, pick } from 'lodash';
+import { compact, pick } from 'lodash-es';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { DataPaginationOptions, Id, Image, ImageFormData, IsoDate } from '@app/models';
-import { customSort } from '@app/utils';
+import {
+  customSort,
+  refreshedFormData,
+  withFailedLoad,
+  withLoadAttempt,
+} from '@app/utils';
 
 import * as ImagesActions from './images.actions';
 
@@ -27,7 +32,6 @@ export interface ImagesState extends EntityState<{
   filteredImages: Image[];
   options: DataPaginationOptions<Image>;
   filteredCount: number | null;
-  totalCount: number;
 }
 
 export const imagesAdapter = createEntityAdapter<{
@@ -57,7 +61,6 @@ export const initialState: ImagesState = imagesAdapter.getInitialState({
     search: '',
   },
   filteredCount: null,
-  totalCount: 0,
 });
 
 // A shared expiration covers whichever of the two presigned URLs an entity
@@ -71,14 +74,6 @@ function earlierIso(a: IsoDate | undefined, b: IsoDate | undefined): IsoDate | u
   return a < b ? a : b;
 }
 
-function withLoadAttempt(state: ImagesState, load: ImagesLoad): ImagesState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(state: ImagesState, load: ImagesLoad): ImagesState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
-
 export const imagesReducer = createReducer(
   initialState,
 
@@ -89,10 +84,9 @@ export const imagesReducer = createReducer(
     withFailedLoad(state, 'metadata'),
   ),
 
-  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState => ({
-    ...withLoadAttempt(state, 'filteredThumbnails'),
-    isFetchingFiltered: true,
-  })),
+  on(ImagesActions.fetchFilteredThumbnailsRequested, (state): ImagesState =>
+    withLoadAttempt(state, 'filteredThumbnails'),
+  ),
   on(ImagesActions.fetchFilteredThumbnailsFailed, (state): ImagesState => ({
     ...withFailedLoad(state, 'filteredThumbnails'),
     isFetchingFiltered: false,
@@ -127,7 +121,11 @@ export const imagesReducer = createReducer(
             thumbnailUrl: originalEntity?.image.thumbnailUrl,
             urlExpirationDate: originalEntity?.image.urlExpirationDate,
           },
-          formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+          formData: refreshedFormData(
+            originalEntity?.formData,
+            originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+            pick(image, IMAGE_FORM_DATA_PROPERTIES),
+          ),
         };
       }),
       {
@@ -139,7 +137,7 @@ export const imagesReducer = createReducer(
 
   on(
     ImagesActions.fetchFilteredThumbnailsSucceeded,
-    (state, { images, filteredCount, totalCount }): ImagesState => {
+    (state, { images, filteredCount }): ImagesState => {
       return imagesAdapter.upsertMany(
         images.map(image => {
           const originalEntity = image ? state.entities[image.id] : null;
@@ -155,7 +153,11 @@ export const imagesReducer = createReducer(
                   )
                 : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
             },
-            formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              originalEntity?.formData,
+              originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+              pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -164,7 +166,6 @@ export const imagesReducer = createReducer(
           lastFilteredThumbnailsFetch: new Date(Date.now()).toISOString(),
           filteredImages: images,
           filteredCount,
-          totalCount,
         },
       );
     },
@@ -188,7 +189,11 @@ export const imagesReducer = createReducer(
                   )
                 : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
             },
-            formData: pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            formData: refreshedFormData(
+              originalEntity?.formData,
+              originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+              pick(image, IMAGE_FORM_DATA_PROPERTIES),
+            ),
           };
         }),
         {
@@ -201,9 +206,12 @@ export const imagesReducer = createReducer(
       ),
   ),
 
+  // Only a page, filter or search the visitor asked for swaps the rows for placeholders, so
+  // a refresh in the background leaves the ones on screen in place
   on(ImagesActions.paginationOptionsChanged, (state, { options }): ImagesState => ({
     ...state,
     options,
+    isFetchingFiltered: true,
   })),
 
   on(ImagesActions.fetchMainImageSucceeded, (state, { image }): ImagesState => {
@@ -219,7 +227,11 @@ export const imagesReducer = createReducer(
             ? earlierIso(image.urlExpirationDate, originalEntity.image.urlExpirationDate)
             : (image.urlExpirationDate ?? originalEntity?.image.urlExpirationDate),
         },
-        formData: originalEntity?.formData ?? pick(image, IMAGE_FORM_DATA_PROPERTIES),
+        formData: refreshedFormData(
+          originalEntity?.formData,
+          originalEntity && pick(originalEntity.image, IMAGE_FORM_DATA_PROPERTIES),
+          pick(image, IMAGE_FORM_DATA_PROPERTIES),
+        ),
       },
       state,
     );
@@ -428,13 +440,6 @@ export const imagesReducer = createReducer(
     return {
       ...state,
       newImagesFormData: restNewImagesFormData,
-    };
-  }),
-
-  on(ImagesActions.allNewImagesRemoved, (state): ImagesState => {
-    return {
-      ...state,
-      newImagesFormData: {},
     };
   }),
 );

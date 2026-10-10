@@ -1,0 +1,204 @@
+import {
+  EmptyStateComponent,
+  FilterXIconComponent,
+  InputComponent,
+  NewspaperIconComponent,
+  PaginatorComponent,
+  PaginatorState,
+  PlusCircleIconComponent,
+  SearchIconComponent,
+} from '@eagami/ui';
+import { Store } from '@ngrx/store';
+import { Observable, combineLatest } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+} from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+
+import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
+import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
+import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
+import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { PAGE_SIZES } from '@app/constants/filters';
+import {
+  Article,
+  DataPaginationOptions,
+  Image,
+  InternalLink,
+  LoadStatus,
+} from '@app/models';
+import { MetaAndTitleService } from '@app/services';
+import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
+import { AuthSelectors } from '@app/store/auth';
+import { ImagesActions, ImagesSelectors } from '@app/store/images';
+import { bindSearchControl, combinedLoadStatus } from '@app/utils';
+
+@Component({
+  selector: 'lcc-articles-page',
+  template: `
+    @if (viewModel$ | async; as vm) {
+      <lcc-page-header
+        heading="Articles"
+        [icon]="pageIcon">
+      </lcc-page-header>
+
+      @if (vm.isAdmin) {
+        <lcc-admin-toolbar [adminLinks]="[createArticleLink]"></lcc-admin-toolbar>
+      }
+
+      <div class="filters">
+        <ea-input
+          class="filters__search"
+          label="Search"
+          placeholder="Search by author, title or content"
+          [formControl]="searchControl"
+          [icon]="searchIcon" />
+      </div>
+
+      @if (vm.status === 'failed') {
+        <lcc-load-failed
+          title="Unable to load articles"
+          (retry)="onRetry()" />
+      } @else if (
+        vm.status !== 'loading' && !vm.isFetching && !vm.filteredArticles.length
+      ) {
+        <ea-empty-state
+          description="No articles match your search."
+          [icon]="emptyIcon" />
+      } @else {
+        <lcc-article-grid
+          [articles]="vm.filteredArticles"
+          [filteredCount]="vm.filteredCount"
+          [images]="vm.images"
+          [isAdmin]="vm.isAdmin"
+          [isLoading]="vm.status === 'loading' || vm.isFetching"
+          [options]="vm.options">
+        </lcc-article-grid>
+        <!-- Added once the count is known, rather than filling in where it stands -->
+        @if (vm.filteredCount !== null) {
+          <div class="paginator">
+            <ea-paginator
+              align="center"
+              pageSizeLabel="articles"
+              size="sm"
+              [page]="vm.options.page"
+              [pageSize]="vm.options.pageSize"
+              [pageSizeOptions]="pageSizes"
+              [showAllOption]="true"
+              [totalItems]="vm.filteredCount"
+              (changed)="onPageChanged($event, vm.options)" />
+          </div>
+        }
+      }
+    }
+  `,
+  styleUrl: './articles-page.component.scss',
+  imports: [
+    AdminToolbarComponent,
+    ArticleGridComponent,
+    CommonModule,
+    EmptyStateComponent,
+    InputComponent,
+    LoadFailedComponent,
+    PageHeaderComponent,
+    PaginatorComponent,
+    ReactiveFormsModule,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ArticlesPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly metaAndTitleService = inject(MetaAndTitleService);
+  private readonly store = inject(Store);
+
+  protected readonly pageIcon = NewspaperIconComponent;
+  protected readonly emptyIcon = FilterXIconComponent;
+  protected readonly searchIcon = SearchIconComponent;
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly pageSizes = PAGE_SIZES;
+
+  public createArticleLink: InternalLink = {
+    internalPath: ['article', 'add'],
+    text: 'Create an article',
+    icon: PlusCircleIconComponent,
+  };
+
+  public viewModel$?: Observable<{
+    filteredArticles: Article[];
+    filteredCount: number | null;
+    images: Image[];
+    isAdmin: boolean;
+    isFetching: boolean;
+    options: DataPaginationOptions<Article>;
+    status: LoadStatus;
+  }>;
+
+  public ngOnInit(): void {
+    this.metaAndTitleService.updateTitle('Articles');
+    this.metaAndTitleService.updateDescription(
+      'Read about a variety of topics related to the London Chess Club.',
+    );
+
+    bindSearchControl(
+      this.searchControl,
+      this.store.select(ArticlesSelectors.selectOptions),
+      options => this.onOptionsChange(options),
+      this.destroyRef,
+    );
+
+    this.viewModel$ = combineLatest([
+      this.store.select(ArticlesSelectors.selectFilteredArticles),
+      this.store.select(ArticlesSelectors.selectFilteredCount),
+      this.store.select(ImagesSelectors.selectAllImages),
+      this.store.select(AuthSelectors.selectIsAdmin),
+      this.store.select(ArticlesSelectors.selectIsFetchingFiltered),
+      this.store.select(ArticlesSelectors.selectOptions),
+      this.store.select(ArticlesSelectors.selectFilteredArticlesStatus),
+      this.store.select(ImagesSelectors.selectMetadataStatus),
+    ]).pipe(
+      map(
+        ([
+          filteredArticles,
+          filteredCount,
+          images,
+          isAdmin,
+          isFetching,
+          options,
+          articlesStatus,
+          imagesStatus,
+        ]) => ({
+          filteredArticles,
+          filteredCount,
+          images,
+          isAdmin,
+          isFetching,
+          options,
+          status: combinedLoadStatus(articlesStatus, imagesStatus),
+        }),
+      ),
+    );
+  }
+
+  public onOptionsChange(options: DataPaginationOptions<Article>): void {
+    this.store.dispatch(ArticlesActions.paginationOptionsChanged({ options }));
+  }
+
+  public onPageChanged(
+    { page, pageSize }: PaginatorState,
+    options: DataPaginationOptions<Article>,
+  ): void {
+    this.onOptionsChange({ ...options, page, pageSize });
+  }
+
+  public onRetry(): void {
+    this.store.dispatch(ArticlesActions.fetchFilteredArticlesRequested());
+    this.store.dispatch(ImagesActions.fetchAllImagesMetadataRequested());
+  }
+}

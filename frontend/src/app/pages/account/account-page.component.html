@@ -10,8 +10,9 @@
       aria-label="Account settings">
       @for (item of navItems; track item.id) {
         <a
-          class="settings-nav__item"
-          [class.settings-nav__item--active]="activeSection() === item.id"
+          class="lcc-side-nav__item"
+          [attr.aria-current]="activeSection() === item.id ? 'page' : null"
+          [class.lcc-side-nav__item--active]="activeSection() === item.id"
           [routerLink]="['/account', item.id]">
           @switch (item.id) {
             @case ('profile') {
@@ -20,6 +21,11 @@
                 aria-hidden="true" />
             }
 
+            @case ('preferences') {
+              <ea-icon-sliders
+                class="settings-nav__icon"
+                aria-hidden="true" />
+            }
             @case ('security') {
               <ea-icon-shield
                 class="settings-nav__icon"
@@ -31,7 +37,11 @@
                 aria-hidden="true" />
             }
           }
-          {{ item.label }}
+          <span
+            class="lcc-side-nav__label"
+            [attr.data-label]="item.label">
+            {{ item.label }}
+          </span>
         </a>
       }
     </nav>
@@ -44,7 +54,9 @@
             <div class="avatar-section">
               <ea-avatar-editor
                 shape="circle"
+                [accept]="avatarTypes"
                 [canvasSize]="180"
+                [maxFileSize]="maxAvatarSize"
                 [loading]="avatarLoading() || loading()"
                 [currentSrc]="editorSrc()"
                 [cropState]="savedCropState()"
@@ -70,7 +82,7 @@
 
             @if (loading()) {
               <div class="details-form">
-                <div class="name-row">
+                <div class="lcc-form-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -83,7 +95,7 @@
                     </div>
                   }
                 </div>
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <div class="field-skeleton field-skeleton--half">
                     <ea-skeleton
                       variant="text"
@@ -104,7 +116,7 @@
                       height="17.5px" />
                   </div>
                 </div>
-                <div class="name-row">
+                <div class="lcc-form-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -117,7 +129,7 @@
                     </div>
                   }
                 </div>
-                <div class="name-row">
+                <div class="lcc-form-row">
                   @for (i of [1, 2]; track i) {
                     <div class="field-skeleton">
                       <ea-skeleton
@@ -135,18 +147,20 @@
               <div
                 class="details-form"
                 [formGroup]="detailsForm">
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <ea-input
+                    autocomplete="given-name"
                     label="First name"
                     formControlName="firstName"
                     [required]="true" />
                   <ea-input
+                    autocomplete="family-name"
                     label="Last name"
                     formControlName="lastName"
                     [required]="true" />
                 </div>
 
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <div class="year-of-birth">
                     <lcc-year-of-birth-field
                       [control]="detailsForm.controls.yearOfBirth" />
@@ -161,7 +175,7 @@
                   </div>
                 </div>
 
-                <div class="name-row">
+                <div class="lcc-form-row">
                   <ea-input
                     label="City"
                     autocomplete="address-level2"
@@ -178,7 +192,7 @@
               </div>
             }
 
-            <div class="actions">
+            <div class="actions actions--row">
               <ea-button
                 size="sm"
                 [disabled]="detailsForm.invalid || !hasDetailChanges()"
@@ -203,6 +217,39 @@
               We don't share your information with anyone. Your details are only used by
               the club.
             </ea-alert>
+            @if (profileLink(); as link) {
+              <ea-divider class="profile-link__divider" />
+              <lcc-link-list [links]="[link]" />
+            }
+          </ea-card>
+        }
+
+        @case ('preferences') {
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Appearance</h3>
+            <ea-segmented
+              label="Style"
+              hint="The colours and fonts of the whole site, on any device you log in on."
+              [disabled]="savingBrand()"
+              [options]="brandOptions"
+              [value]="brand()"
+              (changed)="onChangeBrand($event)" />
+          </ea-card>
+
+          <ea-card [fullWidth]="true">
+            <h3 slot="header">Email notifications</h3>
+            <div class="notification-options">
+              <ea-checkbox
+                label="Notify me of rating changes"
+                hint="An email whenever your rating is updated."
+                [checked]="notifyRatingChanges()"
+                (changed)="onChangeNotification('notifyRatingChanges', $event)" />
+              <ea-checkbox
+                label="Notify me of schedule changes"
+                hint="An email whenever an upcoming event is added, removed or updated."
+                [checked]="notifyScheduleChanges()"
+                (changed)="onChangeNotification('notifyScheduleChanges', $event)" />
+            </div>
           </ea-card>
         }
 
@@ -353,11 +400,9 @@
             </p>
             <div class="actions">
               <ea-button
-                class="danger-button"
                 size="sm"
                 variant="danger"
-                [loading]="deleting()"
-                (clicked)="deleteDialogOpen.set(true)">
+                (clicked)="onDeleteAccount()">
                 Delete account
               </ea-button>
             </div>
@@ -367,26 +412,3 @@
     </div>
   </div>
 </div>
-
-<ea-dialog
-  [(open)]="deleteDialogOpen"
-  width="md">
-  <span slot="header">Delete account</span>
-  <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-  <div slot="footer">
-    <ea-button
-      size="sm"
-      variant="secondary"
-      (clicked)="deleteDialogOpen.set(false)">
-      Cancel
-    </ea-button>
-    <ea-button
-      class="danger-button"
-      size="sm"
-      variant="danger"
-      [loading]="deleting()"
-      (clicked)="onConfirmDelete()">
-      Confirm
-    </ea-button>
-  </div>
-</ea-dialog>

@@ -4,33 +4,37 @@ import {
   ChevronRightIconComponent,
   DialogComponent,
   DialogRef,
-  DialogService,
   TooltipDirective,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { Action, Store } from '@ngrx/store';
-import { BehaviorSubject, Observable, from, timer } from 'rxjs';
-import { concatMap, map, switchMap, take } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
+import { BehaviorSubject, EMPTY, Observable, Subject, from, merge, timer } from 'rxjs';
+import { concatMap, distinctUntilChanged, map, switchMap, take } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  ElementRef,
   OnInit,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import { AdminControlsConfig, Dialog, Id, Image } from '@app/models';
-import { AdminControlsService, StoreRequestService } from '@app/services';
+import { AdminControlsConfig, Id, Image, Url } from '@app/models';
+import {
+  AdminControlsService,
+  DeletionService,
+  LoadedImagesService,
+} from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { isPresignedUrlExpired } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-image-viewer',
   templateUrl: './image-viewer.component.html',
@@ -46,8 +50,9 @@ import { isPresignedUrlExpired } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageViewerComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialogRef = inject(DialogRef);
-  private readonly dialogService = inject(DialogService);
+  private readonly deletion = inject(DeletionService);
   private readonly store = inject(Store);
 
   readonly album = input.required<string>();
@@ -56,6 +61,9 @@ export class ImageViewerComponent implements OnInit {
 
   public currentImage$!: Observable<Image | null>;
 
+  // The image on screen, which gives way to the one asked for only once it has loaded
+  protected readonly shownImage = signal<Image | null>(null);
+  protected readonly isEnlarged = signal(false);
   protected readonly displayedCaption = signal('');
   protected readonly isNextImageButtonActive = signal(false);
   protected readonly isPreviousImageButtonActive = signal(false);
@@ -73,18 +81,49 @@ export class ImageViewerComponent implements OnInit {
   private indexSubject = new BehaviorSubject<number>(0);
 
   private readonly adminControls = inject(AdminControlsService);
-  private readonly storeRequests = inject(StoreRequestService);
+  private readonly loadedImages = inject(LoadedImagesService);
+  private readonly enlargedDialog = viewChild<ElementRef<HTMLDialogElement>>('enlarged');
+  private readonly figure = viewChild<ElementRef<HTMLElement>>('figure');
+
+  private pendingImage: HTMLImageElement | null = null;
+  private readonly loadedIndex$ = new Subject<number>();
+  // Held so the browser keeps loading them
+  private readonly preloadedImages = new Map<Url, HTMLImageElement>();
 
   public ngOnInit(): void {
     this.currentImage$ = this.indexSubject.asObservable().pipe(
-      untilDestroyed(this),
+      takeUntilDestroyed(this.destroyRef),
       switchMap(index => {
         this.fetchImage(index);
         return this.store.select(ImagesSelectors.selectImageById(this.imageId));
       }),
     );
+    this.currentImage$.subscribe(image => this.show(image));
 
     this.prefetchAdjacentImages();
+    this.preloadNeighbours();
+    this.destroyRef.onDestroy(() => (this.pendingImage = null));
+  }
+
+  protected onImageLoaded(image: Image): void {
+    this.displayedCaption.set(image.caption);
+    this.loadedIndex$.next(this.images().findIndex(({ id }) => id === image.id));
+  }
+
+  protected onEnlarge(): void {
+    this.isEnlarged.set(true);
+    this.enlargedDialog()?.nativeElement.showModal();
+  }
+
+  // Back on the figure rather than the image that opened it, so stepping through with the
+  // arrow keys draws no focus ring around the image
+  protected onEnlargedClosed(): void {
+    this.isEnlarged.set(false);
+    this.figure()?.nativeElement.focus({ preventScroll: true });
+  }
+
+  protected onShrink(): void {
+    this.enlargedDialog()?.nativeElement.close();
   }
 
   public onPreviousImage(): void {
@@ -111,26 +150,77 @@ export class ImageViewerComponent implements OnInit {
     };
   }
 
-  public async onDeleteImage(image: Image): Promise<void> {
-    let outcome: Action | undefined;
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${image.filename}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: async () => {
-        outcome = await this.storeRequests.dispatch(
-          ImagesActions.deleteImageRequested({ image }),
-          [ImagesActions.deleteImageSucceeded, ImagesActions.deleteImageFailed],
-        );
-      },
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
-
-    if (outcome?.type === ImagesActions.deleteImageSucceeded.type) {
+  private async onDeleteImage(image: Image): Promise<void> {
+    if (await this.deletion.deleteImage(image)) {
       this.dialogRef.close();
     }
+  }
+
+  private show(image: Image | null): void {
+    const shown = this.shownImage();
+    if (!image || !shown || image.id === shown.id || !image.mainUrl) {
+      this.pendingImage = null;
+      this.shownImage.set(image);
+      return;
+    }
+
+    const { mainUrl } = image;
+    const pending = new window.Image();
+    this.pendingImage = pending;
+    pending.src = mainUrl;
+    const showOnceSettled = (hasLoaded: boolean) => {
+      if (this.pendingImage !== pending) {
+        return;
+      }
+      this.pendingImage = null;
+      if (hasLoaded) {
+        this.loadedImages.add(mainUrl);
+      }
+      // One that fails to load still takes its turn, falling back as it shows
+      this.shownImage.set(image);
+    };
+    pending.decode().then(
+      () => showOnceSettled(true),
+      () => showOnceSettled(false),
+    );
+  }
+
+  // Once the image on screen has loaded, the ones either side load ahead, so stepping to
+  // one is immediate
+  private preloadNeighbours(): void {
+    this.loadedIndex$
+      .pipe(
+        distinctUntilChanged(),
+        switchMap(index => {
+          const images = this.images();
+          const neighbours = [
+            ...new Set([
+              (index + 1) % images.length,
+              (index - 1 + images.length) % images.length,
+            ]),
+          ].filter(neighbour => index !== -1 && neighbour !== index);
+          neighbours.forEach(neighbour => this.fetchImage(neighbour, true));
+          return neighbours.length
+            ? merge(
+                ...neighbours.map(neighbour =>
+                  this.store.select(
+                    ImagesSelectors.selectImageById(images[neighbour].id),
+                  ),
+                ),
+              )
+            : EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(image => {
+        const mainUrl = image?.mainUrl;
+        if (mainUrl && !this.preloadedImages.has(mainUrl)) {
+          const preloaded = new window.Image();
+          preloaded.onload = () => this.loadedImages.add(mainUrl);
+          preloaded.src = mainUrl;
+          this.preloadedImages.set(mainUrl, preloaded);
+        }
+      });
   }
 
   private prefetchAdjacentImages(): void {
@@ -159,7 +249,7 @@ export class ImageViewerComponent implements OnInit {
     from(indicesToPrefetch)
       .pipe(
         concatMap(index => timer(1000).pipe(map(() => index))),
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(index => this.fetchImage(index, true));
   }

@@ -11,19 +11,22 @@ import {
   MemberRecord,
   editableMemberTypes,
   memberSortingConfig,
+  newMemberAccount,
+  profileMemberFilter,
 } from '../models/member.model';
-import { modificationInfoTypes } from '../models/modification-info.model';
+import { ModificationInfo } from '../models/modification-info.model';
 import { clerkClient } from '../services/clerk.service';
 import { sendEmail } from '../services/email.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
 import { widestMemberIds } from '../services/widest.service';
-import { isAllowedOrigin } from '../util/allowed-origins.util';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
+import { hashSecret } from '../util/hash-secret.util';
 import { isCollectionId } from '../util/is-collection-id.util';
 import {
   MemberChange,
+  NON_RATING_FIELDS,
   RATING_FIELDS,
   describeMemberChanges,
 } from '../util/member-changes.util';
@@ -42,12 +45,11 @@ import {
   toPublicMember,
   toPublicProfile,
 } from '../util/member-responses.util';
-import { Editor, creditEditor } from '../util/modification-info.util';
+import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
-import {
-  generateTemporaryPassword,
-  hashTemporaryPassword,
-} from '../util/temporary-password.util';
+import { parseRecordNumber } from '../util/parse-record-number.util';
+import { EMAILS_FROM_SITE_ONLY, siteUrlFor } from '../util/site-url.util';
+import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 type Scope = 'public' | 'admin';
@@ -73,9 +75,6 @@ interface RatingsUpdateResult {
   updatedIds: Id[];
   unnotifiedMemberNames: string[];
 }
-
-const EMAILS_FROM_SITE_ONLY =
-  'Member emails can only be sent from the London Chess website.';
 
 function toResponse(scope: Scope): (record: MemberRecord) => PublicMember | AdminMember {
   return scope === 'public' ? toPublicMember : toAdminMember;
@@ -209,12 +208,14 @@ export function getMemberByNumber(scope: Scope) {
   ): Promise<void> => {
     try {
       const { number } = req.params;
-      const record = /^\d+$/.test(number)
-        ? await MemberModel.findOne(
-            { number: Number(number), 'account.clerkUserId': { $ne: null } },
-            scope === 'public' ? PUBLIC_PROFILE_PROJECTION : null,
-          ).lean<MemberRecord>()
-        : null;
+      const memberNumber = parseRecordNumber(number);
+      const record =
+        memberNumber === null
+          ? null
+          : await MemberModel.findOne(
+              profileMemberFilter(memberNumber),
+              scope === 'public' ? PUBLIC_PROFILE_PROJECTION : null,
+            ).lean<MemberRecord>();
 
       if (!record) {
         res.status(404).json({ message: `Unable to find member [${number}]` });
@@ -281,8 +282,7 @@ export async function addMember(
 
     const member = prepareMemberForDB(
       req.body as EditableMemberFields,
-      await findEditor(req.user.id),
-      true,
+      creditEditor(await findEditor(req.user.id), null),
     );
 
     if (req.query['notify'] !== 'true') {
@@ -342,8 +342,7 @@ export async function updateMember(
 
     const member = prepareMemberForDB(
       req.body as EditableMemberFields,
-      await findEditor(req.user.id),
-      false,
+      creditEditor(await findEditor(req.user.id), existing.modificationInfo),
     );
     if (existing.account && member.email !== existing.email) {
       res.status(400).json({
@@ -422,9 +421,11 @@ export async function updateMembers(
     }
 
     const updates = new Map(members.map(member => [member.id, member]));
+    // A record saved before the preference existed has no value for it, which is a yes
     const accountHolders = await MemberModel.find({
       _id: { $in: [...updates.keys()] },
       'account.clerkUserId': { $ne: null },
+      'preferences.notifyRatingChanges': { $ne: false },
     }).lean<MemberRecord[]>();
     const notices: RatingNotice[] = accountHolders.flatMap(record => {
       const update = updates.get(record._id.toString());
@@ -439,18 +440,29 @@ export async function updateMembers(
     }
 
     const editor = await findEditor(req.user.id);
+    const stored = new Map(
+      (
+        await MemberModel.find(
+          { _id: { $in: [...updates.keys()] } },
+          { modificationInfo: 1 },
+        ).lean<Pick<MemberRecord, '_id' | 'modificationInfo'>[]>()
+      ).map(record => [record._id.toString(), record.modificationInfo]),
+    );
     const session = await MemberModel.startSession();
     const updatedIds: Id[] = [];
     try {
       await session.withTransaction(async () => {
         for (const { id, ...member } of members) {
-          const result = await MemberModel.updateOne(
-            { _id: id },
-            { $set: prepareMemberForDB(member, editor, false) },
-            { session },
-          );
+          const original = stored.get(id);
+          const result = original
+            ? await MemberModel.updateOne(
+                { _id: id },
+                { $set: prepareMemberForDB(member, creditEditor(editor, original)) },
+                { session },
+              )
+            : null;
 
-          if (result.matchedCount === 0) {
+          if (!result?.matchedCount) {
             throw new Error(`NOT_FOUND:${id}`);
           }
           updatedIds.push(id);
@@ -514,26 +526,15 @@ export async function deleteMember(
 
 function validateEditableMember(body: unknown): string | null {
   const memberValidationResult = validateObjectByTypes(body, editableMemberTypes);
-  if (memberValidationResult !== 'valid') {
-    return `Invalid member: ${memberValidationResult.message}`;
-  }
-
-  const modInfoValidationResult = validateObjectByTypes(
-    (body as EditableMemberFields).modificationInfo,
-    modificationInfoTypes,
-  );
-  if (modInfoValidationResult !== 'valid') {
-    return `Invalid member modification info: ${modInfoValidationResult.message}`;
-  }
-
-  return null;
+  return memberValidationResult === 'valid'
+    ? null
+    : `Invalid member: ${memberValidationResult.message}`;
 }
 
 // Remove id property and order remaining properties alphabetically
 function prepareMemberForDB(
   member: EditableMemberFields,
-  editor: Editor,
-  isNew: boolean,
+  modificationInfo: ModificationInfo,
 ): EditableMemberFields {
   return {
     chessComUsername: member.chessComUsername,
@@ -544,7 +545,7 @@ function prepareMemberForDB(
     isActive: member.isActive,
     lastName: member.lastName,
     lichessUsername: member.lichessUsername,
-    modificationInfo: creditEditor(member.modificationInfo, editor, isNew),
+    modificationInfo,
     peakRating: member.peakRating,
     phoneNumber: member.phoneNumber,
     rating: member.rating,
@@ -596,7 +597,11 @@ async function saveWithNewAccount({
   ];
   let failedStep = 'save the member';
   try {
-    await save(newAccount(clerkUserId, hashTemporaryPassword(temporaryPassword)));
+    await save(
+      newMemberAccount(clerkUserId, {
+        temporaryPasswordHash: hashSecret(temporaryPassword),
+      }),
+    );
     undoSteps.push(undoSave);
 
     failedStep = 'assign a member number';
@@ -607,7 +612,7 @@ async function saveWithNewAccount({
     const email = buildWelcomeEmail(
       record,
       temporaryPassword,
-      siteUrl,
+      `${siteUrl}/account`,
       profileUrlFor(siteUrl, record),
     );
     await sendEmail(record.email, email);
@@ -656,13 +661,18 @@ async function saveForAccountHolder(
     ]);
     const record = await readMember(existing._id);
 
-    const changes = describeMemberChanges(existing, member);
+    const changes = describeMemberChanges(
+      existing,
+      member,
+      existing.preferences?.notifyRatingChanges === false ? NON_RATING_FIELDS : undefined,
+    );
     if (siteUrl && changes.length) {
       failedStep = 'email the member about the changes';
       const email = buildMemberChangesEmail(
         record,
         changes,
         profileUrlFor(siteUrl, record),
+        `${siteUrl}/account/preferences`,
       );
       await sendEmail(record.email, email);
     }
@@ -683,6 +693,7 @@ async function notifyRatingChanges(
         record,
         changes,
         profileUrlFor(siteUrl, record),
+        `${siteUrl}/account/preferences`,
       );
       await sendEmail(record.email, email);
     }),
@@ -728,33 +739,12 @@ function accountDetailsProblem(member: EditableMemberFields): string | null {
   return validateDetailField('yearOfBirth', member.yearOfBirth);
 }
 
-function newAccount(clerkUserId: string, temporaryPasswordHash: string): MemberAccount {
-  return {
-    clerkUserId,
-    isAdmin: false,
-    clerkImageUrl: null,
-    avatarUrl: null,
-    avatarOriginalUrl: null,
-    avatarManagedByApp: false,
-    clerkImagePending: false,
-    avatarCropState: null,
-    avatarUpdatedAt: null,
-    temporaryPasswordHash,
-  };
-}
-
 async function readMember(id: Types.ObjectId): Promise<MemberRecord> {
   const record = await MemberModel.findById(id).lean<MemberRecord>();
   if (!record) {
     throw new Error('The saved member could not be read back.');
   }
   return record;
-}
-
-// Links in member emails lead back to the site the admin saved from
-function siteUrlFor(req: Pick<Request, 'header'>): string | null {
-  const origin = req.header('origin');
-  return origin && isAllowedOrigin(origin) ? origin : null;
 }
 
 function profileUrlFor(siteUrl: string, record: MemberRecord): string {

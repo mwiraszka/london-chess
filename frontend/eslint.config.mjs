@@ -13,6 +13,22 @@ export default [
     plugins: { perfectionist },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { ignoreRestSiblings: true }],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'moment-timezone',
+              message:
+                "Import moment from '@app/utils/datetime/moment', which loads only the club's time zone.",
+            },
+            {
+              name: 'lodash',
+              message: "Import from 'lodash-es', which the build can tree-shake.",
+            },
+          ],
+        },
+      ],
       'perfectionist/sort-arrays': [
         'error',
         {

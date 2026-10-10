@@ -1,6 +1,6 @@
 import { Page, expect, test } from '../fixtures';
 import { ADMIN, PROFILE_MEMBER, RIVAL_MEMBER, UPCOMING } from '../seed';
-import { fieldError, fieldLabel, fillDate, nextMonthOn } from './fields';
+import { fieldError, fieldLabel, fillField, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
@@ -52,7 +52,7 @@ test.describe('managing tournaments', () => {
     await page.getByRole('link', { name: 'Add a tournament' }).click();
     await expect(page).toHaveURL(/\/tournament\/add$/);
     await page.getByLabel(fieldLabel('Name')).fill(name);
-    await fillDate(page, 'start-date-input', nextMonthOn(10));
+    await fillField(page, 'Start date', nextMonthOn(10));
     await page.getByLabel(fieldLabel('Time control')).fill('G25+5');
     await importStandings(page, STANDINGS_CSV);
 

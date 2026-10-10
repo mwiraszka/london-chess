@@ -46,34 +46,6 @@
   }
 }
 
-.settings-nav__item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 14px;
-  text-align: left;
-  text-decoration: none;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.settings-nav__item:hover {
-  // The plain hover token is invisible against the light page background
-  background: var(--color-state-active);
-  color: var(--color-text-primary);
-}
-
-.settings-nav__item--active {
-  font-weight: 600;
-  background: var(--color-state-active);
-  color: var(--color-text-primary);
-}
-
 .settings-nav__icon {
   flex-shrink: 0;
   font-size: 18px;
@@ -92,67 +64,44 @@
   gap: 24px;
 }
 
-.name-row {
+.year-of-birth {
   display: flex;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 12px;
 
-  ea-input {
-    flex: 1;
+  // The same half-row width every other field gets, leaving the second half
+  // to the switch and giving the error message a full line to sit on
+  lcc-year-of-birth-field {
+    flex: 0 0 calc(50% - 8px);
   }
 
-  .year-of-birth {
+  // A strip the height of the input box, starting below the field's label, so
+  // the switch centres on the box and an error message underneath moves nothing
+  .profile-toggle {
     display: flex;
-    flex: 1;
-    align-items: flex-start;
-    gap: 12px;
-
-    // The same half-row width every other field gets, leaving the second half
-    // to the switch and giving the error message a full line to sit on
-    lcc-year-of-birth-field {
-      flex: 0 0 calc(50% - 8px);
-    }
-
-    // A strip the height of the input box, starting below the field's label, so
-    // the switch centres on the box and an error message underneath moves nothing
-    .profile-toggle {
-      display: flex;
-      align-items: center;
-      height: 2.5em;
-      margin-top: calc(
-        var(--ea-field-label-size, 0.875em) * var(--line-height-normal, 1.4) + 0.375em
-      );
-    }
-  }
-
-  // Same strip as the real switch sits in, so nothing moves when the form
-  // replaces it
-  .switch-skeleton {
-    display: flex;
-    flex: 0 0 auto;
     align-items: center;
-    gap: 8px;
     height: 2.5em;
     margin-top: calc(
       var(--ea-field-label-size, 0.875em) * var(--line-height-normal, 1.4) + 0.375em
     );
   }
+}
 
-  .field-skeleton {
-    flex: 1;
-  }
+// Same strip as the real switch sits in, so nothing moves when the form
+// replaces it
+.switch-skeleton {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  height: 2.5em;
+  margin-top: calc(
+    var(--ea-field-label-size, 0.875em) * var(--line-height-normal, 1.4) + 0.375em
+  );
+}
 
-  .field-skeleton--narrow {
-    flex: 0 0 84px;
-  }
-
-  .field-skeleton--half {
-    flex: 0 0 calc(50% - 8px);
-  }
-
-  // Paired columns get too tight for wrapped labels on phones
-  @include mixins.respond-to('lt-xs') {
-    flex-direction: column;
-  }
+.field-skeleton--half {
+  flex: 0 0 calc(50% - 8px);
 }
 
 .request-hint {
@@ -171,6 +120,11 @@
   display: block;
 }
 
+.profile-link__divider {
+  display: block;
+  margin: 24px 0;
+}
+
 .warning-heading {
   display: flex;
   align-items: center;
@@ -184,18 +138,7 @@
 .warning-heading__icon {
   flex-shrink: 0;
   font-size: 16px;
-  color: var(--lcc-color--accountPage-danger);
-}
-
-// The library paints danger buttons with its own error red; the club's red
-// keeps them in step with the safe mode controls
-.danger-button {
-  --ea-button-background-color: var(--lcc-color--accountPage-danger);
-  --ea-button-border-color: var(--lcc-color--accountPage-danger);
-  --ea-button-background-color-hover: var(--lcc-color--accountPage-dangerHover);
-  --ea-button-border-color-hover: var(--lcc-color--accountPage-dangerHover);
-  --ea-button-background-color-active: var(--lcc-color--accountPage-dangerHover);
-  --ea-button-border-color-active: var(--lcc-color--accountPage-dangerHover);
+  color: var(--color-error-default);
 }
 
 .card-desc {
@@ -255,7 +198,7 @@
 .session__icon {
   flex-shrink: 0;
   font-size: 20px;
-  color: var(--lcc-color--general-accentIcon);
+  color: var(--lcc-accent);
 }
 
 .session__info {
@@ -283,4 +226,10 @@
       width: 100%;
     }
   }
+}
+
+.notification-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }

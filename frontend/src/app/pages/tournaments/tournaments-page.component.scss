@@ -15,11 +15,8 @@ $trophies-width: 4 * $chalice-width + $bowl-width + $cup-width + 5 * $trophy-gap
 $side-by-side-from: 800px;
 
 :host {
-  display: flex;
-  flex-direction: column;
   align-items: stretch;
   gap: 16px;
-  width: 100%;
 }
 
 .intro__body {
@@ -48,13 +45,16 @@ $side-by-side-from: 800px;
   width: 100%;
   height: auto;
   max-height: 240px;
-  border-radius: var(--lcc-borderRadius--large);
+  border-radius: var(--radius-md);
 
+  // Takes no size from the photo itself, so the row is the text's height whether or not
+  // the photo has loaded
   @media (min-width: $side-by-side-from) {
     flex: 1 1 0;
     min-width: 0;
     min-height: 0;
     max-height: none;
+    contain: size;
   }
 }
 
@@ -64,8 +64,6 @@ $side-by-side-from: 800px;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  font-size: 16px;
-  color: var(--color-text-primary);
 
   // Two thirds of the card once there is room, the photo taking the rest
   @include respond-to('gt-xl') {
@@ -167,31 +165,10 @@ $side-by-side-from: 800px;
   color: var(--color-text-primary);
 }
 
+// Columns of one width, never wider than the page, so every card matches its neighbours
 .upcoming__list {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   list-style: none;
-}
-
-.upcoming__card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.upcoming__name {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-}
-
-.upcoming__details,
-.upcoming__registration {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
 }

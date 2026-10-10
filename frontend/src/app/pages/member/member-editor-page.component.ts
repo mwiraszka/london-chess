@@ -1,5 +1,4 @@
 import { ShieldCheckIconComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
@@ -25,7 +24,6 @@ import { MetaAndTitleService } from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-member-editor-page',
   template: `
@@ -96,7 +94,6 @@ export class MemberEditorPageComponent implements EditorPage, OnInit {
 
   public ngOnInit(): void {
     this.viewModel$ = this.activatedRoute.params.pipe(
-      untilDestroyed(this),
       map(params => (params['member_id'] ?? null) as string | null),
       switchMap(memberId =>
         combineLatest([

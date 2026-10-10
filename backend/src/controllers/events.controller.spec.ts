@@ -3,14 +3,26 @@ import request from 'supertest';
 
 import { app } from '../app';
 import { Event, EventModel } from '../models/event.model';
+import { sendEmail } from '../services/email.service';
 import { bearer } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
-import { MODIFICATION_INFO, createAdmin } from '../testing/fixtures';
+import {
+  MODIFICATION_INFO,
+  createAdmin,
+  createMember,
+  memberAccount,
+} from '../testing/fixtures';
+import { EMAILS_FROM_SITE_ONLY } from '../util/site-url.util';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
+vi.mock('../services/email.service', () => ({
+  sendEmail: vi.fn(),
+  sendAdminEmail: vi.fn(),
+}));
 
 const ADMIN = 'user_admin';
+const SITE = 'https://londonchess.ca';
 
 function eventPayload(overrides: Partial<Event> = {}): Event {
   return {
@@ -33,10 +45,6 @@ async function createEvent(overrides: Partial<Event> = {}): Promise<string> {
 
 describe('events routes', () => {
   useTestDatabase();
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
 
   describe('GET /v1/events', () => {
     it('should leave out past events when asked', async () => {
@@ -140,7 +148,9 @@ describe('events routes', () => {
   });
 
   describe('POST /v1/events', () => {
-    it('should save the event credited to the signed-in admin', async () => {
+    it('should save the event credited to the signed-in admin, made now', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-05T12:00:00.000Z'));
       await createAdmin(ADMIN);
 
       const response = await request(app)
@@ -149,25 +159,24 @@ describe('events routes', () => {
         .send(eventPayload());
 
       expect(response.status).toBe(201);
-      const saved = await EventModel.findById(response.body.data).lean();
+      const saved = await EventModel.findById(response.body.data.id).lean();
       expect(saved?.title).toBe('Blitz night');
-      expect(saved?.modificationInfo.createdBy).toBe('Ada Admin');
+      expect(saved?.modificationInfo).toMatchObject({
+        createdBy: 'Ada Admin',
+        dateCreated: '2026-10-05T12:00:00.000Z',
+        dateLastEdited: '2026-10-05T12:00:00.000Z',
+      });
     });
 
-    it('should reject invalid events and modification info', async () => {
+    it('should reject an invalid event', async () => {
       await createAdmin(ADMIN);
 
-      const invalidEvent = await request(app)
+      const response = await request(app)
         .post('/v1/events')
         .set('Authorization', bearer(ADMIN))
         .send({ ...eventPayload(), title: 5 });
-      const invalidInfo = await request(app)
-        .post('/v1/events')
-        .set('Authorization', bearer(ADMIN))
-        .send({ ...eventPayload(), modificationInfo: {} });
 
-      expect(invalidEvent.status).toBe(400);
-      expect(invalidInfo.status).toBe(400);
+      expect(response.status).toBe(400);
       expect(await EventModel.countDocuments()).toBe(0);
     });
 
@@ -184,19 +193,28 @@ describe('events routes', () => {
   });
 
   describe('PUT /v1/events/:id', () => {
-    it('should update the event', async () => {
+    it('should update the event, keeping who made it whatever the request says', async () => {
       await createAdmin(ADMIN);
       const id = await createEvent();
 
       const response = await request(app)
         .put(`/v1/events/${id}`)
         .set('Authorization', bearer(ADMIN))
-        .send(eventPayload({ id, title: 'Rapid night' }));
+        .send(
+          eventPayload({
+            id,
+            title: 'Rapid night',
+            modificationInfo: { ...MODIFICATION_INFO, createdBy: 'Forged' },
+          }),
+        );
 
       expect(response.status).toBe(200);
       const saved = await EventModel.findById(id).lean();
       expect(saved?.title).toBe('Rapid night');
-      expect(saved?.modificationInfo.lastEditedBy).toBe('Ada Admin');
+      expect(saved?.modificationInfo).toMatchObject({
+        createdBy: MODIFICATION_INFO.createdBy,
+        lastEditedBy: 'Ada Admin',
+      });
     });
 
     it('should accept a save that changes nothing', async () => {
@@ -214,7 +232,7 @@ describe('events routes', () => {
       const response = await save();
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toBe(id);
+      expect(response.body.data).toEqual({ id, unnotifiedMemberNames: [] });
     });
 
     it('should respond with not found for an unknown event', async () => {
@@ -232,24 +250,19 @@ describe('events routes', () => {
       });
     });
 
-    it('should reject invalid events and modification info', async () => {
+    it('should reject an invalid event', async () => {
       await createAdmin(ADMIN);
       const id = await createEvent();
 
-      const invalidEvent = await request(app)
+      const response = await request(app)
         .put(`/v1/events/${id}`)
         .set('Authorization', bearer(ADMIN))
         .send({ type: false });
-      const invalidInfo = await request(app)
-        .put(`/v1/events/${id}`)
-        .set('Authorization', bearer(ADMIN))
-        .send({ ...eventPayload(), modificationInfo: {} });
 
-      expect(invalidEvent.status).toBe(400);
-      expect(invalidInfo.status).toBe(400);
+      expect(response.status).toBe(400);
     });
 
-    it('should respond with a server error for a malformed id', async () => {
+    it('should respond with not found for a malformed id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
@@ -257,7 +270,7 @@ describe('events routes', () => {
         .set('Authorization', bearer(ADMIN))
         .send(eventPayload());
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
     });
   });
 
@@ -284,14 +297,134 @@ describe('events routes', () => {
       expect(response.status).toBe(404);
     });
 
-    it('should respond with a server error for a malformed id', async () => {
+    it('should respond with not found for a malformed id', async () => {
       await createAdmin(ADMIN);
 
       const response = await request(app)
         .delete('/v1/events/not-an-id')
         .set('Authorization', bearer(ADMIN));
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('schedule emails', () => {
+    const NO_SCHEDULE_EMAILS = {
+      showYearOfBirth: false,
+      brand: 'modern' as const,
+      notifyRatingChanges: true,
+      notifyScheduleChanges: false,
+    };
+
+    beforeEach(async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
+      await createAdmin(ADMIN);
+      await createMember({ number: 7, account: memberAccount() });
+      await createMember({
+        number: 8,
+        firstName: 'Olga',
+        email: 'olga@example.com',
+        account: memberAccount({ clerkUserId: 'user_olga' }),
+        preferences: NO_SCHEDULE_EMAILS,
+      });
+      await createMember({ firstName: 'Nina', email: 'nina@example.com' });
+    });
+
+    it('should email account holders who want them about a new upcoming event', async () => {
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(eventPayload());
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.unnotifiedMemberNames).toEqual([]);
+      expect(sendEmail).toHaveBeenCalledOnce();
+      expect(sendEmail).toHaveBeenCalledWith(
+        'jane@example.com',
+        expect.objectContaining({
+          subject: 'New on the London Chess schedule: Blitz night',
+          text: expect.stringContaining(`${SITE}/schedule`),
+        }),
+      );
+    });
+
+    it('should not email about an event that has already happened', async () => {
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(eventPayload({ eventDate: '2026-09-01T23:00:00.000Z' }));
+
+      expect(response.status).toBe(201);
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
+
+    it("should email a change to an event's title, but not to its details", async () => {
+      const id = await createEvent();
+      const save = (overrides: Partial<Event>) =>
+        request(app)
+          .put(`/v1/events/${id}`)
+          .set('Authorization', bearer(ADMIN))
+          .set('Origin', SITE)
+          .send(eventPayload({ id, ...overrides }));
+
+      await save({ details: 'Three minute games' });
+      const emailsAfterDetails = vi.mocked(sendEmail).mock.calls.length;
+      const response = await save({
+        details: 'Three minute games',
+        title: 'Bullet night',
+      });
+
+      expect(response.status).toBe(200);
+      expect(emailsAfterDetails).toBe(0);
+      expect(sendEmail).toHaveBeenCalledOnce();
+      const [, email] = vi.mocked(sendEmail).mock.calls[0];
+      expect(email.subject).toBe('London Chess schedule change: Bullet night');
+      expect(email.text).toContain('Blitz night');
+    });
+
+    it('should email the removal of an upcoming event', async () => {
+      const id = await createEvent();
+
+      const response = await request(app)
+        .delete(`/v1/events/${id}`)
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE);
+
+      expect(response.status).toBe(200);
+      expect(sendEmail).toHaveBeenCalledWith(
+        'jane@example.com',
+        expect.objectContaining({
+          subject: 'Removed from the London Chess schedule: Blitz night',
+        }),
+      );
+    });
+
+    it('should only save a change members would be emailed about from the site', async () => {
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .send(eventPayload());
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe(EMAILS_FROM_SITE_ONLY);
+      expect(await EventModel.countDocuments()).toBe(0);
+    });
+
+    it('should report members who could not be emailed', async () => {
+      vi.mocked(sendEmail).mockRejectedValue(new Error('SMTP down'));
+
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(eventPayload());
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.unnotifiedMemberNames).toEqual(['Jane Doe']);
+      expect(await EventModel.countDocuments()).toBe(1);
     });
   });
 });

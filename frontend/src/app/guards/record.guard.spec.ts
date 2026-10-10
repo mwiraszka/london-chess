@@ -7,10 +7,10 @@ import {
   props,
 } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { LccError } from '@app/models';
 import { isCollectionId } from '@app/utils';
@@ -63,12 +63,6 @@ describe('recordGuard', () => {
       guard(refreshes)(mockRoute(id), router.routerState.snapshot),
     );
 
-  const outcomes = (result: ReturnType<typeof runGuard>): (boolean | UrlTree)[] => {
-    const emitted: (boolean | UrlTree)[] = [];
-    (result as Observable<boolean | UrlTree>).subscribe(value => emitted.push(value));
-    return emitted;
-  };
-
   beforeEach(() => {
     actions$ = new ReplaySubject<Action>(1);
 
@@ -94,64 +88,67 @@ describe('recordGuard', () => {
   it('should let a stored record show at once', () => {
     store.setState({ recordsState: { records: [{ id: ID }] } });
 
-    const emitted = outcomes(runGuard(ID));
+    const result = runGuard(ID);
 
-    expect(emitted).toEqual([true]);
+    expect(result).toBe(true);
     expect(dispatchSpy).not.toHaveBeenCalled();
   });
 
   it('should fetch a stored record again as it shows when it may have changed', () => {
     store.setState({ recordsState: { records: [{ id: ID }] } });
 
-    const emitted = outcomes(runGuard(ID, true));
+    const result = runGuard(ID, true);
 
-    expect(emitted).toEqual([true]);
+    expect(result).toBe(true);
     expect(dispatchSpy).toHaveBeenCalledWith(fetchRequested({ id: ID }));
   });
 
-  it('should fetch a record that is not stored and show it once it arrives', () => {
-    const emitted = outcomes(runGuard(ID));
+  it('should open the page at once and fetch a record that is not stored', () => {
+    const result = runGuard(ID);
 
+    expect(result).toBe(true);
     expect(dispatchSpy).toHaveBeenCalledWith(fetchRequested({ id: ID }));
-    expect(emitted).toEqual([]);
-
-    store.setState({ recordsState: { records: [{ id: ID }] } });
-
-    expect(emitted).toEqual([true]);
   });
 
-  it('should redirect home when the server does not have the record', () => {
-    const emitted = outcomes(runGuard(ID));
+  describe('when the record is fetched', () => {
+    let navigateSpy: MockInstance;
 
-    actions$.next(
-      fetchFailed({ error: { name: 'LCCError', message: 'Not found', status: 404 } }),
-    );
-
-    expect(emitted).toEqual([router.createUrlTree(['/'])]);
-  });
-
-  it('should let the page show after any other failure, so it can try again', () => {
-    const emitted = outcomes(runGuard(ID));
-
-    actions$.next(fetchFailed({ error: { name: 'LCCError', message: 'Timed out' } }));
-
-    expect(emitted).toEqual([true]);
-  });
-
-  it('should await the outcome before the request goes out', () => {
-    const settled: (boolean | UrlTree)[] = [];
-    dispatchSpy.mockImplementation((action: Action) => {
-      if (action.type === fetchRequested.type) {
-        actions$.next(
-          fetchFailed({ error: { name: 'LCCError', message: 'Not found', status: 404 } }),
-        );
-      }
+    beforeEach(() => {
+      navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     });
 
-    (runGuard(ID) as Observable<boolean | UrlTree>).subscribe(value =>
-      settled.push(value),
-    );
+    it('should send the visitor home when the server does not have the record', () => {
+      runGuard(ID);
 
-    expect(settled).toEqual([router.createUrlTree(['/'])]);
+      actions$.next(
+        fetchFailed({ error: { name: 'LCCError', message: 'Not found', status: 404 } }),
+      );
+
+      expect(navigateSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
+    });
+
+    it('should leave the page to offer a retry after any other failure', () => {
+      runGuard(ID);
+
+      actions$.next(fetchFailed({ error: { name: 'LCCError', message: 'Timed out' } }));
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should catch a failure that arrives as the request goes out', () => {
+      dispatchSpy.mockImplementation((action: Action) => {
+        if (action.type === fetchRequested.type) {
+          actions$.next(
+            fetchFailed({
+              error: { name: 'LCCError', message: 'Not found', status: 404 },
+            }),
+          );
+        }
+      });
+
+      runGuard(ID);
+
+      expect(navigateSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
+    });
   });
 });

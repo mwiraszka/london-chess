@@ -1,3 +1,5 @@
+import { firstValueFrom } from 'rxjs';
+
 import { TestBed } from '@angular/core/testing';
 
 import { IS_MAC } from '@app/tokens';
@@ -29,85 +31,53 @@ describe('KeyStateService', () => {
   });
 
   describe('ctrlMetaKeyPressed$', () => {
-    it('should emit false initially', () =>
-      withDone(done => {
-        service.ctrlMetaKeyPressed$.subscribe(pressed => {
-          expect(pressed).toBe(false);
-          done();
-        });
-      }));
+    it('should emit false initially', async () => {
+      const pressed = await firstValueFrom(service.ctrlMetaKeyPressed$);
 
-    it('should emit true when Control key pressed on non-Mac', () =>
-      withDone(done => {
-        isMacSpy.mockReturnValue(false);
+      expect(pressed).toBe(false);
+    });
 
-        service.ctrlMetaKeyPressed$.subscribe(pressed => {
-          if (pressed) {
-            expect(pressed).toBe(true);
-            done();
-          }
-        });
+    it('should emit true when Control key pressed on non-Mac', () => {
+      isMacSpy.mockReturnValue(false);
+      const emissions: boolean[] = [];
+      service.ctrlMetaKeyPressed$.subscribe(pressed => emissions.push(pressed));
 
-        const event = new KeyboardEvent('keydown', { key: 'Control' });
-        document.dispatchEvent(event);
-      }));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Control' }));
 
-    it('should emit false when Control key released on non-Mac', () =>
-      withDone(done => {
-        isMacSpy.mockReturnValue(false);
+      expect(emissions).toEqual([false, true]);
+    });
 
-        let firstEmission = true;
+    it('should emit false when Control key released on non-Mac', () => {
+      isMacSpy.mockReturnValue(false);
+      const emissions: boolean[] = [];
+      service.ctrlMetaKeyPressed$.subscribe(pressed => emissions.push(pressed));
 
-        service.ctrlMetaKeyPressed$.subscribe(pressed => {
-          if (!firstEmission && !pressed) {
-            expect(pressed).toBe(false);
-            done();
-          }
-          firstEmission = false;
-        });
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Control' }));
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }));
 
-        const keydownEvent = new KeyboardEvent('keydown', { key: 'Control' });
-        document.dispatchEvent(keydownEvent);
+      expect(emissions).toEqual([false, true, false]);
+    });
 
-        const keyupEvent = new KeyboardEvent('keyup', { key: 'Control' });
-        document.dispatchEvent(keyupEvent);
-      }));
+    it('should emit true when Meta key pressed on Mac', () => {
+      isMacSpy.mockReturnValue(true);
+      const emissions: boolean[] = [];
+      service.ctrlMetaKeyPressed$.subscribe(pressed => emissions.push(pressed));
 
-    it('should emit true when Meta key pressed on Mac', () =>
-      withDone(done => {
-        isMacSpy.mockReturnValue(true);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Meta' }));
 
-        service.ctrlMetaKeyPressed$.subscribe(pressed => {
-          if (pressed) {
-            expect(pressed).toBe(true);
-            done();
-          }
-        });
+      expect(emissions).toEqual([false, true]);
+    });
 
-        const event = new KeyboardEvent('keydown', { key: 'Meta' });
-        document.dispatchEvent(event);
-      }));
+    it('should emit false when Meta key released on Mac', () => {
+      isMacSpy.mockReturnValue(true);
+      const emissions: boolean[] = [];
+      service.ctrlMetaKeyPressed$.subscribe(pressed => emissions.push(pressed));
 
-    it('should emit false when Meta key released on Mac', () =>
-      withDone(done => {
-        isMacSpy.mockReturnValue(true);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Meta' }));
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Meta' }));
 
-        let firstEmission = true;
-
-        service.ctrlMetaKeyPressed$.subscribe(pressed => {
-          if (!firstEmission && !pressed) {
-            expect(pressed).toBe(false);
-            done();
-          }
-          firstEmission = false;
-        });
-
-        const keydownEvent = new KeyboardEvent('keydown', { key: 'Meta' });
-        document.dispatchEvent(keydownEvent);
-
-        const keyupEvent = new KeyboardEvent('keyup', { key: 'Meta' });
-        document.dispatchEvent(keyupEvent);
-      }));
+      expect(emissions).toEqual([false, true, false]);
+    });
 
     it('should not emit for Meta key on non-Mac', () => {
       isMacSpy.mockReturnValue(false);

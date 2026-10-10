@@ -64,28 +64,24 @@ $skeleton-month-count: 12;
   text-align: center;
 
   &.no-events {
-    opacity: 0.4;
-
     .calendar-day {
-      background-color: var(--lcc-color--eventsCalendar-outsideMonthBackground);
+      background-color: var(--lcc-surface-sunken);
 
       .day-number {
-        color: var(--lcc-color--eventsCalendar-outsideMonthText) !important;
+        color: var(--color-text-secondary) !important;
       }
     }
 
     .day-header {
-      background-color: var(
-        --lcc-color--eventsCalendar-outsideMonthBackground
-      ) !important;
-      color: var(--lcc-color--eventsCalendar-outsideMonthText) !important;
+      background-color: var(--lcc-surface-sunken) !important;
+      color: var(--color-text-secondary) !important;
     }
   }
 
   .month-title {
     margin: 0 auto;
     font-size: 16px;
-    color: var(--lcc-color--eventsCalendar-monthHeaderText);
+    color: var(--color-text-primary);
   }
 
   .calendar-grid {
@@ -94,16 +90,16 @@ $skeleton-month-count: 12;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: auto repeat(6, 1fr);
     height: 100%;
-    border: 1px solid var(--lcc-color--eventsCalendar-gridBorder);
-    background-color: var(--lcc-color--eventsCalendar-gridBorder);
+    border: 1px solid var(--lcc-grid-line);
+    background-color: var(--lcc-grid-line);
 
     .day-header {
       padding: 4px 2px;
       font-size: 13px;
       font-weight: bold;
       text-align: center;
-      background-color: var(--lcc-color--eventsCalendar-dayHeaderBackground);
-      color: var(--lcc-color--eventsCalendar-dayHeaderText);
+      background-color: var(--lcc-surface-sunken);
+      color: var(--color-text-secondary);
     }
 
     .calendar-day {
@@ -112,24 +108,24 @@ $skeleton-month-count: 12;
       justify-content: space-between;
       min-height: 30px;
       padding: 4px;
-      background-color: var(--lcc-color--eventsCalendar-insideMonthBackground);
+      background-color: var(--lcc-surface);
 
       &.today {
-        border: 2px solid var(--lcc-color--schedule-today);
+        border: 2px solid var(--lcc-today);
       }
 
       .day-number {
         font-size: 12px;
         font-weight: bold;
         text-align: end;
-        color: var(--lcc-color--eventsCalendar-insideMonthText);
+        color: var(--color-text-primary);
       }
 
       &.other-month {
-        background-color: var(--lcc-color--eventsCalendar-outsideMonthBackground);
+        background-color: var(--lcc-surface-sunken);
 
         .day-number {
-          color: var(--lcc-color--eventsCalendar-outsideMonthText);
+          color: var(--color-text-secondary);
         }
       }
     }
@@ -141,13 +137,15 @@ $skeleton-month-count: 12;
   flex-flow: row wrap;
   min-width: 0;
   justify-content: center;
-  gap: 2px;
+  // With the 16px indicators, keeps each one 24px from the next, the smallest spacing
+  // a touch target can have
+  gap: 8px;
 
   .event-indicator {
     width: 16px;
     height: 16px;
-    border: 1px solid var(--lcc-color--eventsCalendar-eventIndicatorBorder);
-    border-radius: 50%;
+    border: 1px solid var(--lcc-indicator-border);
+    border-radius: var(--radius-full);
 
     &:not(.no-events) {
       &.other-month {
@@ -166,35 +164,35 @@ $skeleton-month-count: 12;
     }
 
     &.blitz-tournament-10-mins {
-      background-color: var(--lcc-color--schedule-blitz10TournamentDot);
+      background-color: var(--lcc-event-blitz-10-tournament);
     }
 
     &.rapid-tournament-25-mins {
-      background-color: var(--lcc-color--schedule-rapid25TournamentDot);
+      background-color: var(--lcc-event-rapid-25-tournament);
     }
 
     &.rapid-tournament-40-mins {
-      background-color: var(--lcc-color--schedule-rapid40TournamentDot);
+      background-color: var(--lcc-event-rapid-40-tournament);
     }
 
     &.lecture {
-      background-color: var(--lcc-color--schedule-lectureDot);
+      background-color: var(--lcc-event-lecture);
     }
 
     &.simul {
-      background-color: var(--lcc-color--schedule-simulDot);
+      background-color: var(--lcc-event-simul);
     }
 
     &.championship {
-      background-color: var(--lcc-color--schedule-championshipDot);
+      background-color: var(--lcc-event-championship);
     }
 
     &.other {
-      background-color: var(--lcc-color--schedule-otherDot);
+      background-color: var(--lcc-event-other);
     }
 
     &.closed {
-      background-color: var(--lcc-color--schedule-closedDot);
+      background-color: var(--lcc-event-closed);
     }
   }
 }
@@ -212,7 +210,7 @@ $skeleton-month-count: 12;
     justify-content: center;
     gap: 4px;
     font-size: 13px;
-    color: var(--lcc-color--eventsCalendar-primaryTooltipText);
+    color: var(--color-neutral-200);
 
     .calendar-icon {
       @include icon-size(16px);
@@ -230,11 +228,11 @@ $skeleton-month-count: 12;
   .event-title {
     font-size: 14px;
     font-weight: bold;
-    color: var(--lcc-color--eventsCalendar-primaryTooltipText);
+    color: var(--color-neutral-200);
   }
 
   .more-details {
     font-size: 12px;
-    color: var(--lcc-color--eventsCalendar-secondaryTooltipText);
+    color: var(--color-neutral-400);
   }
 }

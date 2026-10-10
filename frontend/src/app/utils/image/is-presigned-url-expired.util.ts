@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { IsoDate } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 // Treat a presigned URL as expired if its expiration is less than 2 hours
 // away, matching the 2-hour safety buffer the backend bakes into its 12-hour

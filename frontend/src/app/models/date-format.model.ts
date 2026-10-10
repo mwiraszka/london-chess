@@ -4,6 +4,7 @@ export type DateFormat =
   | 'long day-of-week'
   | 'long month-day-year'
   | 'short'
+  | 'short at-time'
   | 'short no-time'
   | 'short day-of-week'
   | 'short month-day'

@@ -7,11 +7,13 @@
       (ngSubmit)="onSubmit()">
       <div class="lcc-form-fields">
         <label
+          id="event-date-label"
           for="event-date-input"
           class="lcc-required-field">
           Event date:
         </label>
         <ea-date-picker
+          aria-labelledby="event-date-label"
           formControlName="eventDay"
           [id]="'event-date-input'"
           [required]="true"
@@ -54,10 +56,14 @@
           [minHeight]="100"
           [required]="true" />
 
-        <label class="lcc-required-field">Event type:</label>
+        <label
+          id="event-type-label"
+          class="lcc-required-field">
+          Event type:
+        </label>
         <ea-radio-group
-          class="event-type-group"
-          aria-label="Event type"
+          class="lcc-form-radio-box"
+          aria-labelledby="event-type-label"
           formControlName="type"
           [required]="true">
           @for (option of eventTypeOptions; track option.value) {
@@ -83,37 +89,13 @@
         <lcc-modification-info [info]="info" />
       }
 
-      <div class="lcc-form-actions">
-        <ea-button
-          class="lcc-form-actions__restore restore-button"
-          size="sm"
-          variant="ghost"
-          [disabled]="!hasUnsavedChanges()"
-          [icon]="restoreIcon"
-          (clicked)="onRestore()">
-          Revert
-        </ea-button>
-        <div class="lcc-form-actions__primary">
-          <ea-button
-            class="cancel-button"
-            size="sm"
-            variant="secondary"
-            [fullWidth]="true"
-            [uppercase]="true"
-            (clicked)="onCancel()">
-            Cancel
-          </ea-button>
-          <ea-button
-            class="submit-button"
-            size="sm"
-            type="submit"
-            [disabled]="form.invalid || !hasUnsavedChanges()"
-            [fullWidth]="true"
-            [uppercase]="true">
-            {{ originalEvent() ? 'Update event' : 'Add event' }}
-          </ea-button>
-        </div>
-      </div>
+      <lcc-form-actions
+        entity="event"
+        [hasUnsavedChanges]="hasUnsavedChanges()"
+        [submitDisabled]="form.invalid || !hasUnsavedChanges()"
+        [submitLabel]="originalEvent() ? 'Update event' : 'Add event'"
+        (cancel)="onCancel()"
+        (restore)="onRestore()" />
     </form>
   </div>
 </ea-card>

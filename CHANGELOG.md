@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.5.0] - 2026-10-10
+
+### Added
+
+- Choose how the site looks from your account's preferences, with five styles (Modern, Classic, Sunset, Newsprint and Playground), each with its own colours and fonts and kept on every device you log in on
+- List the tournaments taking online registration on the home page and the Tournaments page, each on a card with its details and a countdown to the second until registration opens or closes, and show in the Tournaments table how many have registered and how many rounds are planned
+- Open any photo in the photo viewer as large as the screen allows with a click, and close it again with another
+- Get an email whenever your rating changes or an upcoming event is added, changed or removed, with either one turned off in your account's preferences, and open your own member profile from your account page
+
+### Changed
+
+- Refresh the look of the site with a new typeface and plainer article cards, and even out text sizes, spacing and rounded corners across its pages, cards and tooltips
+- Load pages much faster on phones, showing content in about 3.5 seconds instead of 5 and finishing in around 6 seconds instead of 10, with nothing shifting as each page fills in
+- Show a game's board above its details on phones and tablets
+- Rename News to Articles and City Champion to City Championship, add Tournaments to the main menu, sort the footer's links into clearer sections, and list ten days of upcoming events on the home page instead of five
+- Page through the schedule's calendar by months, three, six or twelve at a time or all at once
+- Bring every page up to the WCAG AA accessibility standard, with stronger contrast in all five styles in both light and dark mode, easier use with a keyboard or screen reader, a labelled pause button for the City Championship slideshow, and less movement for visitors who ask their device for it
+
+### Fixed
+
+- Keep the schedule, the members list and the photo gallery on screen while they refresh in the background, instead of flashing placeholders
+- Show every line break in an event's details
+- Show trophies on member profiles only once a tournament has finished
+- Move between photos in the photo viewer without the current one flashing back in first
+- Stop pages and pop-ups from getting stuck when the site's server runs into a problem, and keep long messages within the notices that pop up
+- Keep the account page's menu still when moving between its sections
+- Show the menu's tooltips whenever it is down to its icons, and keep a table's header coloured while you hover over its rows
+
 ## [v6.4.0] - 2026-10-04
 
 ### Added
@@ -2023,6 +2051,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.5.0]: https://github.com/mwiraszka/london-chess/compare/v6.4.0...v6.5.0
 [v6.4.0]: https://github.com/mwiraszka/london-chess/compare/v6.3.1...v6.4.0
 [v6.3.1]: https://github.com/mwiraszka/london-chess/compare/v6.3.0...v6.3.1
 [v6.3.0]: https://github.com/mwiraszka/london-chess/compare/v6.2.2...v6.3.0

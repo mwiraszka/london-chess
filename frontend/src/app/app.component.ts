@@ -1,7 +1,5 @@
-import { ToastComponent } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { ProgressBarComponent, ToastComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { Observable, combineLatest, fromEvent } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 
@@ -10,14 +8,24 @@ import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DOCUMENT,
+  DestroyRef,
   ElementRef,
   OnInit,
   inject,
   viewChild,
 } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 
 import { AuthDrawerComponent } from '@app/components/auth-drawer/auth-drawer.component';
 import { EnvironmentTagComponent } from '@app/components/environment-tag/environment-tag.component';
@@ -26,20 +34,28 @@ import { HeaderComponent } from '@app/components/header/header.component';
 import { NavigationBarComponent } from '@app/components/navigation-bar/navigation-bar.component';
 import { PullToRefreshIndicatorComponent } from '@app/components/pull-to-refresh-indicator/pull-to-refresh-indicator.component';
 import { UpcomingEventBannerComponent } from '@app/components/upcoming-event-banner/upcoming-event-banner.component';
+import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import { GIT_BRANCH_NAME } from '@app/constants/git-branch.generated';
-import { Event, IsoDate } from '@app/models';
+import { Event } from '@app/models';
 import { RefreshService, RoutingService, TouchEventsService } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
 import { EventsSelectors } from '@app/store/events';
+import moment from '@app/utils/datetime/moment';
 
 import { environment } from '@env';
 
-@UntilDestroy()
 @Component({
   selector: 'app-root',
   template: `
     @if (viewModel$ | async; as vm) {
-      @if (vm.showUpcomingEventBanner && vm.nextEvents.length) {
+      <a
+        class="lcc-skip-link"
+        href="#main-content"
+        (click)="onSkipToContent($event)">
+        Skip to content
+      </a>
+
+      @if (vm.showUpcomingEventBanner) {
         <lcc-upcoming-event-banner
           [nextEvents]="vm.nextEvents"
           (clearBanner)="onClearBanner()">
@@ -52,12 +68,25 @@ import { environment } from '@env';
 
       <lcc-pull-to-refresh-indicator />
 
-      <main
-        #mainElement
+      @if (isNavigating()) {
+        <ea-progress-bar
+          class="navigation-progress"
+          size="xs"
+          [indeterminate]="true" />
+      }
+
+      <div
+        #scroller
+        class="scroller"
         cdkScrollable>
-        <router-outlet></router-outlet>
+        <main
+          #mainContent
+          id="main-content"
+          tabindex="-1">
+          <router-outlet (activate)="onPageActivated()"></router-outlet>
+        </main>
         <lcc-footer></lcc-footer>
-      </main>
+      </div>
     }
 
     @if (!environment.production) {
@@ -79,6 +108,7 @@ import { environment } from '@env';
     FooterComponent,
     HeaderComponent,
     NavigationBarComponent,
+    ProgressBarComponent,
     PullToRefreshIndicatorComponent,
     RouterOutlet,
     ToastComponent,
@@ -87,6 +117,8 @@ import { environment } from '@env';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly _document = inject<Document>(DOCUMENT);
   private readonly refreshService = inject(RefreshService);
   private readonly routingService = inject(RoutingService);
@@ -96,80 +128,77 @@ export class AppComponent implements OnInit, AfterViewInit {
   protected readonly environment = environment;
   protected readonly gitBranchName = GIT_BRANCH_NAME;
 
-  public readonly mainElement = viewChild.required('mainElement', { read: ElementRef });
+  // A link answers at once, even while the page it leads to is still on its way
+  protected readonly isNavigating = toSignal(
+    inject(Router).events.pipe(
+      filter(
+        event =>
+          event instanceof NavigationStart ||
+          event instanceof NavigationEnd ||
+          event instanceof NavigationCancel ||
+          event instanceof NavigationError,
+      ),
+      map(event => event instanceof NavigationStart),
+    ),
+    { initialValue: false },
+  );
+
+  public readonly scroller = viewChild.required('scroller', { read: ElementRef });
+  public readonly mainContent = viewChild.required('mainContent', { read: ElementRef });
 
   public viewModel$?: Observable<{
-    bannerLastCleared: IsoDate | null;
     isDarkMode: boolean;
-    isDesktopView: boolean;
-    isWideView: boolean;
-    nextEvents: Event[];
+    nextEvents: Event[] | null;
     showUpcomingEventBanner: boolean;
   }>;
 
   constructor() {
-    moment.tz.setDefault('America/Toronto');
+    moment.tz.setDefault(CLUB_TIME_ZONE);
   }
 
   public ngOnInit(): void {
     this.touchEventsService.listenForTouchEvents();
 
     this.viewModel$ = combineLatest([
-      this.store.select(AppSelectors.selectBannerLastCleared),
       this.store.select(AppSelectors.selectIsDarkMode),
-      this.store.select(AppSelectors.selectIsDesktopView),
-      this.store.select(AppSelectors.selectIsWideView),
       this.store.select(EventsSelectors.selectConcurrentNextEvents),
+      this.store.select(EventsSelectors.selectHomePageEventsStatus),
       this.store.select(AppSelectors.selectShowUpcomingEventBanner),
     ]).pipe(
-      untilDestroyed(this),
-      map(
-        ([
-          bannerLastCleared,
-          isDarkMode,
-          isDesktopView,
-          isWideView,
-          nextEvents,
-          showUpcomingEventBanner,
-        ]) => ({
-          bannerLastCleared,
-          isDarkMode,
-          isDesktopView,
-          isWideView,
-          nextEvents,
-          showUpcomingEventBanner,
-        }),
-      ),
+      map(([isDarkMode, nextEvents, eventsStatus, showUpcomingEventBanner]) => ({
+        isDarkMode,
+        nextEvents: eventsStatus === 'loading' ? null : nextEvents,
+        showUpcomingEventBanner,
+      })),
       tap(({ isDarkMode }) => {
-        const theme = isDarkMode ? 'dark' : 'light';
-        // @eagami/ui keys its themed tokens off <html data-theme>, while the
-        // app's own styles key off <body data-theme>
-        this._document.documentElement.setAttribute('data-theme', theme);
-        this._document.body.setAttribute('data-theme', theme);
+        this._document.documentElement.setAttribute(
+          'data-theme',
+          isDarkMode ? 'dark' : 'light',
+        );
       }),
     );
 
     this.store
       .select(AppSelectors.selectIsDesktopView)
-      .pipe(untilDestroyed(this))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(isDesktopView => {
         this.updateViewportForDesktopView(isDesktopView);
       });
 
     this.store
       .select(AppSelectors.selectIsWideView)
-      .pipe(untilDestroyed(this))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(isWideView => {
         this._document.body.setAttribute('data-wide-view', isWideView ? 'true' : 'false');
       });
   }
 
   public ngAfterViewInit(): void {
-    this.refreshService.initialize(this.mainElement().nativeElement);
+    this.refreshService.initialize(this.scroller().nativeElement);
     this.initNavigationListenerForScrollingBackToTop();
     this.measureScrollbarInset();
     fromEvent(window, 'resize')
-      .pipe(untilDestroyed(this))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.measureScrollbarInset());
   }
 
@@ -177,12 +206,25 @@ export class AppComponent implements OnInit, AfterViewInit {
   // variable lets the scroller mirror it on its left edge and the nav apply
   // the same inset, keeping everything on one centre line
   private measureScrollbarInset(): void {
-    const main = this.mainElement().nativeElement;
-    const inset = main.offsetWidth - main.clientWidth;
+    const scroller = this.scroller().nativeElement;
+    const inset = scroller.offsetWidth - scroller.clientWidth;
     this._document.documentElement.style.setProperty(
       '--lcc-scrollbar-inset',
       `${inset}px`,
     );
+  }
+
+  // A page is added before change detection fills in its bindings and @if blocks, so its
+  // first check runs at once rather than leaving a frame to paint it half built
+  public onPageActivated(): void {
+    this.changeDetectorRef.detectChanges();
+  }
+
+  // Handled here rather than by the browser, whose jump to the fragment the router would
+  // treat as a navigation
+  public onSkipToContent(event: MouseEvent): void {
+    event.preventDefault();
+    this.mainContent().nativeElement.focus();
   }
 
   public onClearBanner(): void {
@@ -192,10 +234,10 @@ export class AppComponent implements OnInit, AfterViewInit {
   private initNavigationListenerForScrollingBackToTop(): void {
     this.routingService.pageNavigated$
       .pipe(
-        untilDestroyed(this),
+        takeUntilDestroyed(this.destroyRef),
         filter(fragment => !fragment),
       )
-      .subscribe(() => this.mainElement().nativeElement.scrollTo({ top: 0 }));
+      .subscribe(() => this.scroller().nativeElement.scrollTo({ top: 0 }));
   }
 
   private updateViewportForDesktopView(isDesktopView: boolean): void {
@@ -209,7 +251,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       const scale = window.innerWidth / targetWidth;
       viewport.setAttribute(
         'content',
-        `width=${targetWidth}, initial-scale=${scale}, minimum-scale=${scale}, maximum-scale=3.0, user-scalable=yes`,
+        `width=${targetWidth}, initial-scale=${scale}, minimum-scale=${scale}, user-scalable=yes`,
       );
     } else {
       viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');

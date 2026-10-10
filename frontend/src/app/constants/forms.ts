@@ -14,6 +14,7 @@ export const FORM_ERROR_MESSAGES: EaErrorMessages = {
   invalidRating: 'Enter a rating such as 1500, or 1500/7 for a provisional rating',
   invalidYearOfBirth: 'Enter a valid year',
   invalidTimeControl: 'Enter a valid time control such as G25, G25+5 or 3 hours',
+  invalidRoundCount: 'Enter a whole number of rounds from 1 to 30',
   endBeforeStart: 'The end date cannot come before the start date',
   closesBeforeOpens: 'Registration must close after it opens',
 };

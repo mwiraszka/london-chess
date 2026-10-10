@@ -16,6 +16,7 @@ describe('route access', () => {
     lastName: 'Byron',
     email: 'ada@example.com',
     isAdmin: true,
+    memberNumber: null,
   };
   const nonAdmin: User = { ...admin, isAdmin: false };
 
@@ -60,18 +61,23 @@ describe('route access', () => {
 
   describe('hasAccess', () => {
     it('should allow anyone where no access is required', () => {
-      expect(hasAccess(null, null)).toBe(true);
+      expect(hasAccess(null, null, false)).toBe(true);
     });
 
     it('should require a user for a member route', () => {
-      expect(hasAccess('member', null)).toBe(false);
-      expect(hasAccess('member', nonAdmin)).toBe(true);
+      expect(hasAccess('member', null, false)).toBe(false);
+      expect(hasAccess('member', nonAdmin, false)).toBe(true);
     });
 
     it('should require an admin for an admin route', () => {
-      expect(hasAccess('admin', null)).toBe(false);
-      expect(hasAccess('admin', nonAdmin)).toBe(false);
-      expect(hasAccess('admin', admin)).toBe(true);
+      expect(hasAccess('admin', null, false)).toBe(false);
+      expect(hasAccess('admin', nonAdmin, false)).toBe(false);
+      expect(hasAccess('admin', admin, true)).toBe(true);
+    });
+
+    it('should turn an admin with their controls switched off away from an admin route', () => {
+      expect(hasAccess('admin', admin, false)).toBe(false);
+      expect(hasAccess('member', admin, false)).toBe(true);
     });
   });
 });

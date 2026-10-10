@@ -98,37 +98,13 @@
         <lcc-modification-info [info]="info" />
       }
 
-      <div class="lcc-form-actions">
-        <ea-button
-          class="lcc-form-actions__restore restore-button"
-          size="sm"
-          variant="ghost"
-          [disabled]="!hasUnsavedChanges()"
-          [icon]="restoreIcon"
-          (clicked)="onRestore()">
-          Revert
-        </ea-button>
-        <div class="lcc-form-actions__primary">
-          <ea-button
-            class="cancel-button"
-            size="sm"
-            variant="secondary"
-            [fullWidth]="true"
-            [uppercase]="true"
-            (clicked)="onCancel()">
-            Cancel
-          </ea-button>
-          <ea-button
-            class="submit-button"
-            size="sm"
-            type="submit"
-            [disabled]="form.invalid || !hasUnsavedChanges()"
-            [fullWidth]="true"
-            [uppercase]="true">
-            {{ originalArticle() ? 'Update article' : 'Publish article' }}
-          </ea-button>
-        </div>
-      </div>
+      <lcc-form-actions
+        entity="article"
+        [hasUnsavedChanges]="hasUnsavedChanges()"
+        [submitDisabled]="form.invalid || !hasUnsavedChanges()"
+        [submitLabel]="originalArticle() ? 'Update article' : 'Publish article'"
+        (cancel)="onCancel()"
+        (restore)="onRestore()" />
     </form>
   </div>
 </ea-card>

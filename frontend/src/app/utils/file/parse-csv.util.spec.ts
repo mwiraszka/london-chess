@@ -1,10 +1,12 @@
+import { assert } from 'vitest';
+
 import { isLccError } from '../error/is-lcc-error.util';
 import { parseCsv } from './parse-csv.util';
 
 const HEADERS = ['First Name', 'Last Name', 'Old', 'Perf', 'New', 'Peak'];
 
 function mockFile(content: string, name: string): File {
-  return { name, text: () => Promise.resolve(content) } as unknown as File;
+  return new File([content], name);
 }
 
 describe('parseCsv', () => {
@@ -66,9 +68,7 @@ describe('parseCsv', () => {
     const file = mockFile(content.trim(), 'ratings.csv');
     const result = await parseCsv(file, HEADERS, 3);
 
-    if (isLccError(result)) {
-      fail('Expected successful parse');
-    }
+    assert(!isLccError(result), 'Expected successful parse');
 
     // Should return only rows after header, with only columns matching HEADERS (6 columns)
     expect(result.length).toBe(1);
@@ -88,9 +88,7 @@ describe('parseCsv', () => {
     const file = mockFile(content.trim(), 'ratings.csv');
     const result = await parseCsv(file, HEADERS);
 
-    if (isLccError(result)) {
-      fail('Expected successful parse');
-    }
+    assert(!isLccError(result), 'Expected successful parse');
 
     expect(result.length).toBe(2);
     expect(result[0]).toEqual(['John', 'Doe', '1200', '1300', '1210', '1300']);
@@ -106,9 +104,7 @@ describe('parseCsv', () => {
     const file = mockFile(content.trim(), 'ratings.csv');
     const result = await parseCsv(file, HEADERS);
 
-    if (isLccError(result)) {
-      fail('Expected successful parse');
-    }
+    assert(!isLccError(result), 'Expected successful parse');
 
     expect(result.length).toBe(2);
     expect(result[0]).toEqual(['John', 'Doe, Jr.', '1200', '1300', '1210', '1300']);
@@ -130,9 +126,7 @@ describe('parseCsv', () => {
     const file = mockFile(content.trim(), 'ratings.csv');
     const result = await parseCsv(file, HEADERS);
 
-    if (isLccError(result)) {
-      fail('Expected successful parse');
-    }
+    assert(!isLccError(result), 'Expected successful parse');
 
     expect(result.length).toBe(1);
     expect(result[0]).toEqual(['John', 'O"Brien', '1200', '1300', '1210', '1300']);
@@ -148,9 +142,7 @@ describe('parseCsv', () => {
     const file = mockFile(content.trim(), 'ratings.csv');
     const result = await parseCsv(file, HEADERS);
 
-    if (isLccError(result)) {
-      fail('Expected successful parse');
-    }
+    assert(!isLccError(result), 'Expected successful parse');
 
     expect(result.length).toBe(3);
     expect(result[0]).toEqual(['John', 'Doe', '1200', '1300', '1210', '1300']);

@@ -18,32 +18,43 @@ import { environment } from '@env';
   selector: 'lcc-club-map',
   template: `
     <a
+      [attr.aria-label]="'Open ' + club().name + ' in Google Maps (opens in a new tab)'"
       [href]="club().mapUrl"
       rel="noopener noreferrer"
       target="_blank">
+      <!-- The whole map is the link, so the map's own controls are kept out of reach -->
       <div
         #mapContainer
         class="map"
+        inert
         [id]="club().id + '-location'">
       </div>
     </a>
   `,
   styles: `
     :host {
+      position: relative;
       width: 100%;
       min-width: 280px;
-      border-radius: 3px;
-      border: 3px solid #ffffff22;
+      border-radius: var(--radius-sm);
+      border: 3px solid var(--lcc-map-border);
 
       &:hover {
-        border-color: var(--lcc-color--link);
+        border-color: var(--color-text-link);
       }
+    }
+
+    // Out of the flow, filling the frame the card gives it, so nothing the map draws
+    // inside, even for a moment while it sets up, can change the card's height
+    a {
+      position: absolute;
+      inset: 0;
     }
 
     .map {
       width: 100%;
       height: 100%;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
 
       ::ng-deep .gm-style > div {
         cursor: pointer !important;

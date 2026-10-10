@@ -1,5 +1,10 @@
 import { IsoDate } from '../models/core.model';
-import { AvatarCropState, MemberAccount, MemberRecord } from '../models/member.model';
+import {
+  AvatarCropState,
+  Brand,
+  MemberAccount,
+  MemberRecord,
+} from '../models/member.model';
 import { ModificationInfo } from '../models/modification-info.model';
 
 export interface PublicMember {
@@ -49,6 +54,9 @@ export interface AccountRecord {
   avatarUpdatedAt: IsoDate | null;
   hasTemporaryPassword: boolean;
   showYearOfBirth: boolean;
+  brand: Brand;
+  notifyRatingChanges: boolean;
+  notifyScheduleChanges: boolean;
 }
 
 export interface MemberProfile {
@@ -196,5 +204,8 @@ export function toAccountRecord(record: LinkedMemberRecord): AccountRecord {
     avatarUpdatedAt: record.account.avatarUpdatedAt,
     hasTemporaryPassword: !!record.account.temporaryPasswordHash,
     showYearOfBirth: showsYearOfBirth(record),
+    brand: record.preferences?.brand ?? 'modern',
+    notifyRatingChanges: record.preferences?.notifyRatingChanges ?? true,
+    notifyScheduleChanges: record.preferences?.notifyScheduleChanges ?? true,
   };
 }

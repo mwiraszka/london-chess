@@ -4,7 +4,6 @@ import {
   DialogService,
   DividerComponent,
   FileUploaderComponent,
-  HistoryIconComponent,
   ImagePlusIconComponent,
   InputComponent,
   RadioComponent,
@@ -13,7 +12,7 @@ import {
   XCircleIconComponent,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
-import { omit, pick } from 'lodash';
+import { omit, pick } from 'lodash-es';
 import { debounceTime } from 'rxjs/operators';
 
 import {
@@ -37,6 +36,7 @@ import {
 } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
@@ -69,6 +69,7 @@ import { ordinalityValidator, textValidator } from '@app/validators';
     CardComponent,
     DividerComponent,
     FileUploaderComponent,
+    FormActionsComponent,
     ImageComponent,
     InputComponent,
     ModificationInfoComponent,
@@ -91,8 +92,7 @@ export class AlbumFormComponent implements OnInit {
   );
 
   public readonly album = input.required<string | null>();
-  public readonly existingAlbums = input.required<string[]>();
-  public readonly hasUnsavedChanges = input.required<boolean | null>();
+  public readonly hasUnsavedChanges = input.required<boolean>();
   public readonly imageEntities = input.required<
     {
       image: Image;
@@ -118,7 +118,6 @@ export class AlbumFormComponent implements OnInit {
   });
   protected readonly imagePlusIcon = ImagePlusIconComponent;
   protected readonly removeIcon = XCircleIconComponent;
-  protected readonly restoreIcon = HistoryIconComponent;
 
   public form!: FormGroup<AlbumFormGroup>;
   public readonly newImageDataUrls = signal<Record<string, Url>>({});
@@ -211,12 +210,6 @@ export class AlbumFormComponent implements OnInit {
       return;
     }
 
-    const deleteResult = await this.imageFileService.deleteImage(image.id);
-    if (isLccError(deleteResult)) {
-      this.fileActionFail.emit(deleteResult);
-      return;
-    }
-
     this.form.controls.newImages.removeAt(index);
     this.newImageDataUrls.update(urls => omit(urls, image.id));
     this.removeNewImage.emit(image.id);
@@ -274,23 +267,7 @@ export class AlbumFormComponent implements OnInit {
     });
   }
 
-  public async onRestore(): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: 'Revert to the original album data? All changes will be lost.',
-      confirmButtonText: 'Revert',
-      confirmButtonType: 'warning',
-    };
-
-    const dialogResult = await this.dialogService.open<BasicDialogResult>(
-      BasicDialogComponent,
-      { inputs: { dialog } },
-    ).result;
-
-    if (dialogResult !== 'confirm') {
-      return;
-    }
-
+  public onRestore(): void {
     const originals = this.imageEntities().map(({ image }) => image);
 
     this.restore.emit(this.album());
@@ -359,15 +336,13 @@ export class AlbumFormComponent implements OnInit {
         ]);
   }
 
-  private async fetchNewImageDataUrls(): Promise<void> {
-    const result = await this.imageFileService.getAllImages();
-    if (isLccError(result)) {
-      this.fileActionFail.emit(result);
-      return;
-    }
+  private fetchNewImageDataUrls(): void {
+    const imageFiles = this.imageFileService.getImages(
+      Object.keys(this.newImagesFormData()),
+    );
 
     this.newImageDataUrls.set(
-      Object.fromEntries(result.map(({ id, dataUrl }) => [id, dataUrl])),
+      Object.fromEntries(imageFiles.map(({ id, dataUrl }) => [id, dataUrl])),
     );
   }
 

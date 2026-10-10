@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 
 import { AdminControlsConfig } from '@app/models/admin-controls-config.model';
 import { KeyStateService } from '@app/services';
+import { IS_TOUCH_DEVICE } from '@app/tokens';
 import { query } from '@app/utils';
 
 import { AdminControlsComponent } from './admin-controls.component';
@@ -13,11 +14,12 @@ describe('AdminControlsComponent', () => {
   let fixture: ComponentFixture<AdminControlsComponent>;
   let config: AdminControlsConfig;
   let ctrlMetaKeyPressed$: BehaviorSubject<boolean>;
+  let touchDevice: boolean;
 
   const create = (overrides: Partial<AdminControlsConfig> = {}, touch = false): void => {
     config = { ...config, ...overrides };
+    touchDevice = touch;
     fixture = TestBed.createComponent(AdminControlsComponent);
-    fixture.componentInstance.isTouchDevice = touch;
     fixture.componentRef.setInput('anchor', document.createElement('div'));
     fixture.componentRef.setInput('config', config);
     fixture.detectChanges();
@@ -44,6 +46,7 @@ describe('AdminControlsComponent', () => {
       providers: [
         provideRouter([]),
         { provide: KeyStateService, useValue: { ctrlMetaKeyPressed$ } },
+        { provide: IS_TOUCH_DEVICE, useValue: () => touchDevice },
       ],
     }).compileComponents();
   });

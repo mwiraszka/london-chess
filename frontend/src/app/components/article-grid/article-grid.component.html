@@ -5,25 +5,25 @@
   @for (row of displayItems(); track $index) {
     <a
       class="article"
-      [class.skeleton]="showSkeleton()"
+      [class.skeleton]="isLoading()"
       [class.article--entering]="entering()"
       [style.animation-delay.s]="entering() ? $index * 0.1 : null"
-      [attr.aria-hidden]="showSkeleton() || null"
+      [attr.aria-hidden]="isLoading() || null"
       [adminControls]="
-        !showSkeleton() && isAdmin() ? getAdminControlsConfig(row.article) : null
+        !isLoading() && isAdmin() ? getAdminControlsConfig(row.article) : null
       "
       [routerLink]="
-        showSkeleton()
+        isLoading()
           ? undefined
           : row.article.title
             ? (['article', 'view', row.article.id] | routerLink)
             : undefined
       ">
-      @if (!showSkeleton() && row.article.bookmarkDate) {
+      @if (!isLoading() && row.article.bookmarkDate) {
         <ea-icon-bookmark class="bookmark-icon" />
       }
 
-      @if (showSkeleton()) {
+      @if (isLoading()) {
         <div class="image-container skeleton-image">
           <ea-skeleton
             variant="rect"
@@ -37,7 +37,7 @@
       }
 
       <div class="article-summary-container">
-        @if (showSkeleton()) {
+        @if (isLoading()) {
           <div class="article-title-wrapper">
             <ea-skeleton
               variant="rect"
@@ -53,7 +53,7 @@
           </div>
         }
         <ea-divider class="card-divider" />
-        @if (showSkeleton()) {
+        @if (isLoading()) {
           <div class="article-preview">
             <ea-skeleton
               variant="rect"

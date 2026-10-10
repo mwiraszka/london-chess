@@ -2,8 +2,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import { pick } from 'lodash';
-import moment from 'moment-timezone';
+import { pick } from 'lodash-es';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
@@ -20,7 +19,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 import { EditableMember, Member, MemberEmail } from '@app/models';
-import { MemberProfilesService, MembersApiService, UserService } from '@app/services';
+import { MemberProfilesService, MembersApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
@@ -30,7 +29,7 @@ import {
   IS_EXPIRED,
   PARSE_ERROR,
 } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
 
 import * as MembersActions from './members.actions';
 import * as MembersSelectors from './members.selectors';
@@ -46,7 +45,6 @@ export class MembersEffects {
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly getNewPeakRating = inject(GET_NEW_PEAK_RATING);
   private readonly memberProfiles = inject(MemberProfilesService);
-  private readonly userService = inject(UserService);
 
   // A saved member may have a new name or a new profile, and names shown by member
   // number come from the profiles
@@ -64,12 +62,12 @@ export class MembersEffects {
     { dispatch: false },
   );
 
-  // Records fetched before an admin logged in leave out the details admins work with
-  replacePublicRecordsForAdmin$ = createEffect(() => {
-    return this.store.select(AuthSelectors.selectIsAdmin).pipe(
-      filter(isAdmin => isAdmin),
+  // Records fetched before an admin logged in leave out the details admins work with, and
+  // an admin switching their controls off sees only what any other member would
+  replaceRecordsOnScopeChange$ = createEffect(() => {
+    return this.store.select(AuthSelectors.selectApiScope).pipe(
       concatLatestFrom(() => this.store.select(MembersSelectors.selectRecordsScope)),
-      filter(([, recordsScope]) => recordsScope === 'public'),
+      filter(([scope, recordsScope]) => recordsScope !== null && recordsScope !== scope),
       map(() => MembersActions.fetchAllMembersRequested()),
     );
   });
@@ -135,10 +133,7 @@ export class MembersEffects {
           MembersActions.deleteMemberSucceeded,
         ),
       ),
-      this.actions$.pipe(
-        ofType(MembersActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
-      ),
+      this.actions$.pipe(ofType(MembersActions.paginationOptionsChanged)),
     );
 
     const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
@@ -217,14 +212,7 @@ export class MembersEffects {
         const member: EditableMember = {
           ...formData,
           peakRating: formData.rating,
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user),
         };
 
         return this.membersApiService.addMember(member, notifyMember).pipe(
@@ -256,12 +244,7 @@ export class MembersEffects {
         const editableMember: EditableMember = {
           ...formData,
           peakRating: this.getNewPeakRating(formData.rating, formData.peakRating),
-          modificationInfo: {
-            ...member.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, member.modificationInfo),
         };
 
         return this.membersApiService
@@ -342,12 +325,7 @@ export class MembersEffects {
               ...member,
               rating: newRating,
               peakRating: newPeakRating,
-              modificationInfo: {
-                ...member.modificationInfo,
-                lastEditedBy: `${user.firstName} ${user.lastName}`,
-                lastEditedByNumber: this.userService.memberNumber(),
-                dateLastEdited: moment().toISOString(),
-              },
+              modificationInfo: creditEditor(user, member.modificationInfo),
             };
           },
         );

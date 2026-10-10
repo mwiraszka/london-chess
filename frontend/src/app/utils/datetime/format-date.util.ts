@@ -1,6 +1,5 @@
-import moment from 'moment-timezone';
-
 import { DateFormat, IsoDate } from '@app/models';
+import moment from '@app/utils/datetime/moment';
 
 /**
  * Convert ISO8601 date string (`YYYY-MM-DDTHH:mm:ss`) to one of the following formats:
@@ -9,6 +8,7 @@ import { DateFormat, IsoDate } from '@app/models';
  * * `long day-of-week`: Thursday
  * * `long month-day-year`: January 1st, 2024
  * * `short`: Thu, Jan 1, 2024, 6:00 PM
+ * * `short at-time`: Thu, Jan 1, 2024 at 6:00 PM
  * * `short no-time`: Thu, Jan 1, 2024
  * * `short day-of-week`: Thu
  * * `short month-day`: Jan 1
@@ -32,6 +32,8 @@ export function formatDate(date?: IsoDate, format: DateFormat = 'long'): string 
       return moment(date).format('dddd');
     case 'short':
       return moment(date).format('ddd, MMM D, YYYY, h:mm A');
+    case 'short at-time':
+      return moment(date).format('ddd, MMM D, YYYY [at] h:mm A');
     case 'short no-time':
       return moment(date).format('ddd, MMM D, YYYY');
     case 'short day-of-week':

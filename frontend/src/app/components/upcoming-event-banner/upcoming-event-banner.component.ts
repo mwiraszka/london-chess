@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { Event, EventType } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 
@@ -22,14 +23,20 @@ import { FormatDatePipe } from '@app/pipes';
   selector: 'lcc-upcoming-event-banner',
   templateUrl: './upcoming-event-banner.component.html',
   styleUrl: './upcoming-event-banner.component.scss',
-  imports: [ButtonComponent, FormatDatePipe, NgTemplateOutlet, RouterLink],
+  imports: [
+    ButtonComponent,
+    FormatDatePipe,
+    NgTemplateOutlet,
+    RouterLink,
+    TextSkeletonComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
   private readonly TYPE_COLOR_VARS: Record<EventType, string> = {
-    'blitz tournament (10 mins)': 'blitz10Tournament',
-    'rapid tournament (25 mins)': 'rapid25Tournament',
-    'rapid tournament (40 mins)': 'rapid40Tournament',
+    'blitz tournament (10 mins)': 'blitz-10-tournament',
+    'rapid tournament (25 mins)': 'rapid-25-tournament',
+    'rapid tournament (40 mins)': 'rapid-40-tournament',
     lecture: 'lecture',
     simul: 'simul',
     championship: 'championship',
@@ -45,7 +52,9 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
     read: ElementRef,
   });
 
-  public readonly nextEvents = input.required<Event[]>();
+  // Null while the events are on their way; the banner holds its height in every state,
+  // so nothing below it moves as it fills in
+  public readonly nextEvents = input.required<Event[] | null>();
 
   public readonly clearBanner = output<void>();
 
@@ -54,9 +63,13 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
   protected readonly animationDuration = signal(20);
 
   protected readonly backgroundStyling = computed(() => {
-    const nextEvents = this.nextEvents();
+    const nextEvents = this.nextEvents() ?? [];
     const colorVar = (type: EventType) =>
-      `var(--lcc-color--upcomingEventBanner-background-${this.TYPE_COLOR_VARS[type]})`;
+      `var(--lcc-event-${this.TYPE_COLOR_VARS[type]})`;
+
+    if (!nextEvents.length) {
+      return colorVar('other');
+    }
 
     if (nextEvents.length === 1) {
       return colorVar(nextEvents[0].type);
@@ -93,7 +106,11 @@ export class UpcomingEventBannerComponent implements AfterViewInit, OnDestroy {
     // Calculate actual content width accounting for duplicates if present
     const singleItemWidth = this.shouldAnimate() ? contentWidth / 2 : contentWidth;
 
-    this.shouldAnimate.set(singleItemWidth > containerWidth);
+    // Visitors who ask for less motion scroll the message by hand instead
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    this.shouldAnimate.set(!prefersReducedMotion && singleItemWidth > containerWidth);
 
     if (this.shouldAnimate()) {
       // Calculate duration based on content width: ~50 pixels per second for smooth scrolling

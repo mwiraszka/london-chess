@@ -7,8 +7,8 @@
   justify-content: center;
   width: 100%;
   padding: 8px;
-  border-radius: var(--lcc-borderRadius--small);
-  background: var(--lcc-color--adminToolbar-outerBackground);
+  border-radius: var(--radius-sm);
+  background: var(--lcc-admin);
 
   .admin-icon {
     position: absolute;
@@ -16,7 +16,7 @@
     left: 12px;
 
     @include icon-size(40px);
-    color: var(--lcc-color--adminToolbar-adminIcon);
+    color: var(--lcc-admin-faint);
   }
 
   .controls-container {
@@ -26,9 +26,9 @@
     align-items: center;
     justify-content: center;
     gap: 0 32px;
-    border-radius: var(--lcc-borderRadius--small);
-    box-shadow: 0 2px 4px 0 var(--lcc-color--adminToolbar-boxShadow);
-    background: var(--lcc-color--adminToolbar-innerBackground);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 4px 0 var(--lcc-shadow);
+    background: var(--lcc-surface-sunken);
 
     lcc-link-list {
       min-height: 46px;

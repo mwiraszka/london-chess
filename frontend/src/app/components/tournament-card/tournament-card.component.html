@@ -1,0 +1,95 @@
+<ea-card [fullWidth]="true">
+  <div class="card">
+    @if (summary(); as summary) {
+      <a
+        class="card__name lcc-link"
+        [eaTooltip]="summary.name"
+        [routerLink]="['/tournaments', summary.number]"
+        [whenClipped]="true">
+        {{ summary.name }}
+      </a>
+      <p
+        class="card__details"
+        [eaTooltip]="details().join(' · ')"
+        [whenClipped]="true">
+        @for (detail of details(); track $index) {
+          <span class="card__detail">{{ detail }}</span>
+        }
+      </p>
+
+      @if (registration(); as registration) {
+        <ea-divider class="card__divider" />
+        <p class="card__label">{{ registration.label }}</p>
+        <div class="card__status">
+          <div class="card__status-content">
+            @if (registration.countdown.length) {
+              <span
+                class="countdown"
+                role="timer"
+                [attr.aria-label]="registration.description">
+                @for (part of registration.countdown; track part.unit) {
+                  <span
+                    class="countdown__part"
+                    aria-hidden="true">
+                    @for (digit of part.digits.split(''); track $index) {
+                      <span class="countdown__digit">
+                        @for (glyph of glyphs; track glyph) {
+                          <span
+                            class="countdown__glyph"
+                            [class.countdown__glyph--shown]="glyph === digit">
+                            {{ glyph }}
+                          </span>
+                        }
+                      </span>
+                    }
+                    <span class="countdown__unit">{{ part.unit }}</span>
+                  </span>
+                }
+              </span>
+            } @else {
+              <span class="countdown countdown--closed">Closed</span>
+            }
+            @if (registration.status === 'open') {
+              <a
+                eaButtonLink
+                class="register-button"
+                size="sm"
+                [attr.aria-label]="'Register for ' + summary.name"
+                [routerLink]="['/tournaments', summary.number]">
+                Register
+              </a>
+            }
+          </div>
+          <a
+            eaButtonLink
+            class="register-button card__status-sizer"
+            size="sm">
+            Register
+          </a>
+        </div>
+      }
+    } @else {
+      <span class="card__name">
+        <lcc-text-skeleton width="9em" />
+      </span>
+      <p class="card__details">
+        <lcc-text-skeleton width="14em" />
+      </p>
+      <ea-divider class="card__divider" />
+      <p class="card__label">
+        <lcc-text-skeleton width="9em" />
+      </p>
+      <div class="card__status">
+        <span class="card__status-content countdown">
+          <lcc-text-skeleton width="6em" />
+        </span>
+        <a
+          eaButtonLink
+          class="register-button card__status-sizer"
+          size="sm">
+          Register
+        </a>
+      </div>
+    }
+  </div>
+</ea-card>

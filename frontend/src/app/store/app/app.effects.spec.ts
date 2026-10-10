@@ -53,11 +53,11 @@ describe('AppEffects', () => {
   function notify(action: Action): Toast | undefined {
     toastService.show.mockClear();
     actions$.next(action);
-    const displayed: Array<ReturnType<typeof AppActions.toastDisplayed>> = [];
+    const displayed: Toast[] = [];
     effects.notify$.subscribe(result => displayed.push(result)).unsubscribe();
 
     expect(displayed.length).toBeLessThanOrEqual(1);
-    const toast = displayed[0]?.toast;
+    const toast = displayed[0];
     if (toast) {
       expect(toastService.show).toHaveBeenCalledExactlyOnceWith(toast.message, {
         title: toast.title,
@@ -87,6 +87,7 @@ describe('AppEffects', () => {
   });
 
   afterEach(() => {
+    store.resetSelectors();
     vi.useRealTimers();
   });
 
@@ -97,7 +98,6 @@ describe('AppEffects', () => {
     });
 
     const failures: Action[] = [
-      AppActions.unexpectedErrorOccurred({ error: mockError }),
       ArticlesActions.deleteArticleFailed({ error: mockError }),
       ArticlesActions.fetchArticleFailed({ error: mockError }),
       ArticlesActions.fetchFilteredArticlesFailed({ error: mockError }),
@@ -169,17 +169,38 @@ describe('AppEffects', () => {
         'success',
         'Old',
       ],
-      [EventsActions.addEventSucceeded({ event }), 'success', event.title],
       [
-        EventsActions.deleteEventSucceeded({ eventId: 'e1', eventTitle: 'Blitz' }),
+        EventsActions.addEventSucceeded({ event, unnotifiedMemberNames: [] }),
+        'success',
+        event.title,
+      ],
+      [
+        EventsActions.deleteEventSucceeded({
+          eventId: 'e1',
+          eventTitle: 'Blitz',
+          unnotifiedMemberNames: [],
+        }),
         'success',
         'Blitz',
       ],
       [EventsActions.exportEventsToCsvSucceeded({ exportedCount: 17 }), 'success', '17'],
       [
-        EventsActions.updateEventSucceeded({ event, originalEventTitle: 'Rapid' }),
+        EventsActions.updateEventSucceeded({
+          event,
+          originalEventTitle: 'Rapid',
+          unnotifiedMemberNames: [],
+        }),
         'success',
         'Rapid',
+      ],
+      [
+        EventsActions.updateEventSucceeded({
+          event,
+          originalEventTitle: 'Rapid',
+          unnotifiedMemberNames: ['Jane Doe'],
+        }),
+        'warning',
+        'Jane Doe',
       ],
       [ImagesActions.addImageSucceeded({ image }), 'success', image.filename],
       [ImagesActions.addImagesSucceeded({ images: [image] }), 'success', '1'],
@@ -344,20 +365,6 @@ describe('AppEffects', () => {
       expect(new Set([updateWelcome, updateChanges, updateNone]).size).toBe(3);
       expect(addWelcome).not.toBe(addNone);
       expect(addChanges).toBe(addNone);
-    });
-
-    it('should not toast an action it has no message for', () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => undefined);
-
-      const toast = effects['mapActionToToast'](ArticlesActions.cancelSelected());
-
-      expect(toast).toBeNull();
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.any(String),
-        ArticlesActions.cancelSelected.type,
-      );
     });
 
     describe('in production', () => {

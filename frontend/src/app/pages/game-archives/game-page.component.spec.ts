@@ -181,11 +181,11 @@ describe('GamePageComponent', () => {
       expect(queryAll(fixture.debugElement, '.details dt')).toHaveLength(8);
     });
 
-    it('should offer only the way back while the game loads', () => {
-      const links = queryAll(fixture.debugElement, '.game__links a');
+    it('should offer only the way back while the game loads, its own link held unseen', () => {
+      const links = queryAll(fixture.debugElement, '.game__links--loading a');
 
-      expect(links).toHaveLength(1);
-      expect(links[0].injector.get(RouterLink).urlTree?.toString()).toBe(
+      expect(links).toHaveLength(2);
+      expect(links[1].injector.get(RouterLink).urlTree?.toString()).toBe(
         '/game-archives',
       );
     });

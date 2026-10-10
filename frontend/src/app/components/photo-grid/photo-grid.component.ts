@@ -15,20 +15,12 @@ import {
 } from '@angular/core';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageExplorerComponent } from '@app/components/image-explorer/image-explorer.component';
 import { ImageViewerComponent } from '@app/components/image-viewer/image-viewer.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
-import {
-  AdminButton,
-  AdminControlsConfig,
-  Dialog,
-  Image,
-  InternalLink,
-} from '@app/models';
-import { StoreRequestService } from '@app/services';
-import { ImagesActions } from '@app/store/images';
+import { AdminButton, AdminControlsConfig, Image, InternalLink } from '@app/models';
+import { DeletionService } from '@app/services';
 import { customSort } from '@app/utils';
 
 @Component({
@@ -45,13 +37,13 @@ import { customSort } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhotoGridComponent {
+  private readonly deletion = inject(DeletionService);
   private readonly dialogService = inject(DialogService);
-  private readonly storeRequests = inject(StoreRequestService);
 
   public readonly isAdmin = input.required<boolean>();
   public readonly photoImages = input.required<Image[]>();
 
-  public readonly isLoading = input<boolean>();
+  public readonly isLoading = input(false);
   public readonly maxAlbums = input<number>();
 
   private readonly defaultSkeletonCovers: Image[] = Array.from({ length: 20 }, () => ({
@@ -79,8 +71,6 @@ export class PhotoGridComponent {
     icon: PlusCircleIconComponent,
   };
 
-  public readonly showSkeleton = computed(() => !!this.isLoading());
-
   public readonly visibleAlbumCovers = computed<Image[]>(() => {
     const covers = this.photoImages()
       .filter(image => image.albumCover)
@@ -96,7 +86,7 @@ export class PhotoGridComponent {
   });
 
   public readonly displayCovers = computed<Image[]>(() =>
-    this.showSkeleton() ? this.defaultSkeletonCovers : this.visibleAlbumCovers(),
+    this.isLoading() ? this.defaultSkeletonCovers : this.visibleAlbumCovers(),
   );
 
   public async onClickAlbumCover(album: string): Promise<void> {
@@ -120,29 +110,14 @@ export class PhotoGridComponent {
   public getAdminControlsConfig(album: string): AdminControlsConfig {
     return {
       buttonSize: 34,
-      deleteCb: () => this.onDeleteAlbum(album),
+      deleteCb: () =>
+        this.deletion.deleteAlbum(album, this.getAlbumPhotoCountText(album)),
       editPath: ['album', 'edit', album],
       editInNewTab: true,
       isEditDisabled: false,
       isDeleteDisabled: false,
       itemName: album,
     };
-  }
-
-  public async onDeleteAlbum(album: string): Promise<void> {
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Delete ${album} and its ${this.getAlbumPhotoCountText(album)}?`,
-      confirmButtonText: 'Delete',
-      confirmButtonType: 'warning',
-      confirmAction: () =>
-        this.storeRequests.dispatch(ImagesActions.deleteAlbumRequested({ album }), [
-          ImagesActions.deleteAlbumSucceeded,
-          ImagesActions.deleteAlbumFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 
   public getAlbumPhotoCountText(album: string): string {

@@ -2,7 +2,6 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import moment from 'moment-timezone';
 import { combineLatest, merge, of, timer } from 'rxjs';
 import {
   catchError,
@@ -18,12 +17,13 @@ import { Injectable, inject } from '@angular/core';
 
 import { MAX_ARTICLE_BODY_IMAGES } from '@app/constants';
 import { Article, DataPaginationOptions, LccError } from '@app/models';
-import { ArticlesApiService, UserService } from '@app/services';
+import { ArticlesApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
 import { IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
-import { isDefined } from '@app/utils';
+import { creditEditor, isDefined } from '@app/utils';
+import moment from '@app/utils/datetime/moment';
 
 import * as ArticlesActions from './articles.actions';
 import * as ArticlesSelectors from './articles.selectors';
@@ -36,7 +36,6 @@ export class ArticlesEffects {
 
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
-  private readonly userService = inject(UserService);
 
   fetchHomePageArticles$ = createEffect(() => {
     return this.actions$.pipe(
@@ -55,7 +54,6 @@ export class ArticlesEffects {
           map(response =>
             ArticlesActions.fetchHomePageArticlesSucceeded({
               articles: response.data.items,
-              totalCount: response.data.totalCount,
             }),
           ),
           catchError(error =>
@@ -80,7 +78,6 @@ export class ArticlesEffects {
             ArticlesActions.fetchFilteredArticlesSucceeded({
               articles: response.data.items,
               filteredCount: response.data.filteredCount,
-              totalCount: response.data.totalCount,
             }),
           ),
           catchError(error =>
@@ -127,10 +124,7 @@ export class ArticlesEffects {
           ArticlesActions.deleteArticleSucceeded,
         ),
       ),
-      this.actions$.pipe(
-        ofType(ArticlesActions.paginationOptionsChanged),
-        filter(({ fetch }) => fetch),
-      ),
+      this.actions$.pipe(ofType(ArticlesActions.paginationOptionsChanged)),
     );
 
     const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
@@ -142,8 +136,7 @@ export class ArticlesEffects {
       ),
       filter(
         ([lastFetch, currentPath]) =>
-          this.isExpired(lastFetch) &&
-          !!(currentPath?.includes('/news') || currentPath?.includes('/article')),
+          this.isExpired(lastFetch) && !!currentPath?.includes('/article'),
       ),
     );
 
@@ -151,7 +144,7 @@ export class ArticlesEffects {
       ofType(routerNavigatedAction),
       filter(({ payload }) => {
         const url = payload.event.url;
-        return url.includes('/news') || url.includes('/article');
+        return url.includes('/article');
       }),
       switchMap(() =>
         this.store.select(ArticlesSelectors.selectLastFilteredFetch).pipe(take(1)),
@@ -207,14 +200,7 @@ export class ArticlesEffects {
           ...formData,
           id: '',
           bookmarkDate: null,
-          modificationInfo: {
-            createdBy: `${user.firstName} ${user.lastName}`,
-            createdByNumber: this.userService.memberNumber(),
-            dateCreated: moment().toISOString(),
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user),
         };
 
         return this.articlesApiService.addArticle(article).pipe(
@@ -258,12 +244,7 @@ export class ArticlesEffects {
         const updatedArticle: Article = {
           ...article,
           ...formData,
-          modificationInfo: {
-            ...article.modificationInfo,
-            lastEditedBy: `${user.firstName} ${user.lastName}`,
-            lastEditedByNumber: this.userService.memberNumber(),
-            dateLastEdited: moment().toISOString(),
-          },
+          modificationInfo: creditEditor(user, article.modificationInfo),
         };
 
         return this.articlesApiService.updateArticle(updatedArticle).pipe(

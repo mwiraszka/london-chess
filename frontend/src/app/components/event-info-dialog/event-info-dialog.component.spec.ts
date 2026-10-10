@@ -37,12 +37,22 @@ describe('EventInfoDialogComponent', () => {
   });
 
   it('should show the event in an open dialog', () => {
-    expect(queryTextContent(fixture.debugElement, '.dialog-title')).toBe(
+    expect(queryTextContent(fixture.debugElement, '[slot="header"]')).toBe(
       withArticle.title,
     );
     expect(queryTextContent(fixture.debugElement, '.event-type')).toBe(withArticle.type);
     expect(query(fixture.debugElement, 'dialog').nativeElement.hasAttribute('open')).toBe(
       true,
+    );
+  });
+
+  it('should break the details into paragraphs at every escaped line break', () => {
+    fixture.destroy();
+
+    render({ ...withArticle, details: 'Round one\\nRound two\\nRound three' });
+
+    expect(query(fixture.debugElement, '.event-details').nativeElement.textContent).toBe(
+      'Round one\n\nRound two\n\nRound three',
     );
   });
 

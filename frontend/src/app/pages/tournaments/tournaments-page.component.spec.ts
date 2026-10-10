@@ -1,4 +1,4 @@
-import { DialogRef, DialogService, TooltipDirective } from '@eagami/ui';
+import { DialogService, TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -15,14 +15,17 @@ import {
   MOCK_TOURNAMENT_SUMMARIES,
   MOCK_UPCOMING_SUMMARY,
 } from '@app/mocks/tournaments.mock';
-import { BasicDialogResult } from '@app/models';
-import { KEEP_SCROLL, MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  DeletionService,
+  KEEP_SCROLL,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
   closedDialogRef,
   clubToday,
-  lastOpenedDialog,
   query,
   queryAll,
   queryTextContent,
@@ -96,6 +99,8 @@ describe('TournamentsPageComponent', () => {
     store.overrideSelector(AuthSelectors.selectIsAdmin, false);
     store.refreshState();
   });
+
+  afterEach(() => store.resetSelectors());
 
   it('should set the page title', () => {
     fixture.detectChanges();
@@ -355,15 +360,11 @@ describe('TournamentsPageComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should hold the table with skeleton rows', () => {
-      expect(bodyRows()).toHaveLength(10);
-      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(6);
-    });
-
-    it('should not open skeleton rows', () => {
-      bodyRows()[0].triggerEventHandler('click');
-
-      expect(navigateSpy).not.toHaveBeenCalled();
+    it('should hold the page below its heading under a single skeleton', () => {
+      expect(query(fixture.debugElement, 'lcc-page-header')).toBeTruthy();
+      expect(query(fixture.debugElement, 'ea-skeleton')).toBeTruthy();
+      expect(query(fixture.debugElement, '.intro')).toBeFalsy();
+      expect(query(fixture.debugElement, 'ea-data-table')).toBeFalsy();
     });
   });
 
@@ -396,16 +397,35 @@ describe('TournamentsPageComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should show tournaments still to come above the archive, with their registration', () => {
-      const [card] = queryAll(fixture.debugElement, '.upcoming__item');
-      const text = card.nativeElement.textContent.replace(/\s+/g, ' ');
+    it('should show tournaments still to come below the introduction, each on its card', () => {
+      const section = query(fixture.debugElement, '.upcoming');
+      const cards = queryAll(section, 'lcc-tournament-card');
 
-      expect(query(fixture.debugElement, '.upcoming__name').attributes['href']).toBe(
-        `/tournaments/${MOCK_UPCOMING_SUMMARY.number}`,
+      expect(section.nativeElement.previousElementSibling.classList).toContain('intro');
+      expect(cards.map(card => card.componentInstance.summary())).toEqual([
+        MOCK_UPCOMING_SUMMARY,
+      ]);
+    });
+
+    it('should show the rounds a tournament still to come is set to run, or TBD', () => {
+      const tbd = cellTexts(bodyRows()[0]).at(-2);
+      store.overrideSelector(TournamentsSelectors.selectSummaries, [
+        { ...MOCK_UPCOMING_SUMMARY, roundCount: 7 },
+        ...MOCK_TOURNAMENT_SUMMARIES,
+      ]);
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(tbd).toBe('TBD');
+      expect(cellTexts(bodyRows()[0]).at(-2)).toBe('7');
+    });
+
+    it('should count the players registered online for a tournament still to come', () => {
+      const [first] = bodyRows();
+
+      expect(cellTexts(first).at(-1)).toBe(
+        String(MOCK_UPCOMING_SUMMARY.registrants.length),
       );
-      expect(text).toContain('October 15–29, 2050');
-      expect(text).toContain('Registration open until');
-      expect(text).toContain('2 players registered');
     });
 
     it('should list tournaments still to come first in the table, badged as upcoming', () => {
@@ -446,32 +466,17 @@ describe('TournamentsPageComponent', () => {
       ).toEqual([expect.objectContaining({ internalPath: ['tournament', 'add'] })]);
     });
 
-    it('should edit and delete a tournament from its controls', async () => {
+    it('should edit and delete a tournament from its controls', () => {
       const [summary] = MOCK_TOURNAMENT_SUMMARIES;
-      const dialogOpenSpy = vi.mocked(TestBed.inject(DialogService).open);
-      dialogOpenSpy.mockImplementation(() => {
-        const confirmation = new DialogRef<BasicDialogResult>();
-        void lastOpenedDialog(dialogOpenSpy)
-          .confirmAction?.()
-          .then(() => confirmation.close('confirm'));
-        return confirmation;
-      });
+      const deleteTournament = vi
+        .spyOn(TestBed.inject(DeletionService), 'deleteTournament')
+        .mockResolvedValue(false);
 
       const controls = fixture.componentInstance.controlsFor(summary);
       controls.deleteCb();
-      await fixture.whenStable();
 
       expect(controls.editPath).toEqual(['tournament', 'edit', String(summary.number)]);
-      expect(TestBed.inject(StoreRequestService).dispatch).toHaveBeenCalledWith(
-        TournamentsActions.deleteTournamentRequested({
-          tournamentNumber: summary.number,
-          tournamentName: summary.name,
-        }),
-        [
-          TournamentsActions.deleteTournamentSucceeded,
-          TournamentsActions.deleteTournamentFailed,
-        ],
-      );
+      expect(deleteTournament).toHaveBeenCalledExactlyOnceWith(summary);
     });
   });
 });

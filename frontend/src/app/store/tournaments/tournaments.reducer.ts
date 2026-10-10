@@ -1,6 +1,6 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { omit } from 'lodash';
+import { omit } from 'lodash-es';
 
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import {
@@ -11,7 +11,7 @@ import {
   TournamentRegistrant,
   TournamentSummary,
 } from '@app/models';
-import { tournamentFormData } from '@app/utils';
+import { areSame, tournamentFormData, withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as TournamentsActions from './tournaments.actions';
 
@@ -41,20 +41,6 @@ export const initialState: TournamentsState = tournamentsAdapter.getInitialState
   newTournamentFormData: INITIAL_TOURNAMENT_FORM_DATA,
 });
 
-function withLoadAttempt(
-  state: TournamentsState,
-  load: TournamentsLoad,
-): TournamentsState {
-  return { ...state, failedLoads: state.failedLoads.filter(failed => failed !== load) };
-}
-
-function withFailedLoad(
-  state: TournamentsState,
-  load: TournamentsLoad,
-): TournamentsState {
-  return { ...state, failedLoads: [...withLoadAttempt(state, load).failedLoads, load] };
-}
-
 function withRegistrants(
   state: TournamentsState,
   tournamentNumber: number,
@@ -63,9 +49,7 @@ function withRegistrants(
   const withSummary: TournamentsState = {
     ...state,
     summaries: state.summaries.map(summary =>
-      summary.number === tournamentNumber
-        ? { ...summary, registrationCount: registrants.length }
-        : summary,
+      summary.number === tournamentNumber ? { ...summary, registrants } : summary,
     ),
   };
   return state.entities[tournamentNumber]
@@ -102,8 +86,19 @@ export const tournamentsReducer = createReducer(
   ),
   on(
     TournamentsActions.fetchTournamentSucceeded,
-    (state, { tournament }): TournamentsState =>
-      tournamentsAdapter.upsertOne(tournament, state),
+    (state, { tournament }): TournamentsState => {
+      const draft = state.formData[tournament.number];
+      const previous = state.entities[tournament.number];
+      // A draft without edits gives way to the refreshed tournament
+      const hasEdits =
+        !!draft && !!previous && !areSame(draft, tournamentFormData(previous));
+      return tournamentsAdapter.upsertOne(
+        tournament,
+        hasEdits
+          ? state
+          : { ...state, formData: omit(state.formData, tournament.number) },
+      );
+    },
   ),
 
   on(TournamentsActions.fetchMemberTournamentsRequested, (state): TournamentsState =>

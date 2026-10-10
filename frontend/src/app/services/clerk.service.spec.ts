@@ -1,11 +1,8 @@
 import { Clerk } from '@clerk/clerk-js';
 import { ToastService } from '@eagami/ui';
-import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-
-import { AuthActions } from '@app/store/auth';
 
 import { environment } from '@env';
 
@@ -71,7 +68,6 @@ describe('ClerkService', () => {
   let service: ClerkService;
   let fake: FakeClerk;
 
-  let dispatchSpy: MockInstance;
   let navigateByUrlSpy: Mock;
   let toastSpy: Mock;
 
@@ -137,36 +133,25 @@ describe('ClerkService', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideMockStore(),
         { provide: Router, useValue: { navigateByUrl: navigateByUrlSpy } },
         { provide: ToastService, useValue: { show: toastSpy } },
       ],
     });
 
     service = TestBed.inject(ClerkService);
-    dispatchSpy = vi.spyOn(TestBed.inject(MockStore), 'dispatch');
 
     await service.load();
   });
 
+  afterEach(() => {
+    localStorage.removeItem('lcc.hasSession');
+  });
+
   describe('load', () => {
-    it('should load Clerk and sync the logged in user to the store', () => {
+    it('should load Clerk and report the logged in user', () => {
       expect(Clerk).toHaveBeenCalledWith(environment.clerkPublishableKey);
-      expect(service.client).toBe(fake);
-      expect(service.isLoaded()).toBe(true);
       expect(service.isLoggedIn()).toBe(true);
       expect(service.user()).toBe(fake.user);
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        AuthActions.userChanged({
-          user: {
-            id: 'user_1',
-            firstName: 'Ann',
-            lastName: 'Lee',
-            email: 'ann@example.com',
-            isAdmin: true,
-          },
-        }),
-      );
     });
 
     it('should route Clerk navigation through the Angular router', () => {
@@ -179,34 +164,26 @@ describe('ClerkService', () => {
       expect(navigateByUrlSpy).toHaveBeenCalledWith('/', { replaceUrl: true });
     });
 
-    it('should map missing user details to empty values and a non-admin', async () => {
-      fake.user = createUser({
-        firstName: null,
-        lastName: null,
-        primaryEmailAddress: null,
-        publicMetadata: {},
-      });
-
-      await service.load();
-
-      expect(dispatchSpy).toHaveBeenLastCalledWith(
-        AuthActions.userChanged({
-          user: { id: 'user_1', firstName: '', lastName: '', email: '', isAdmin: false },
-        }),
-      );
-    });
-
     it('should sign out a session left pending on a new password', async () => {
       fake.session = createSession({ status: 'pending' });
+      const freshService = TestBed.runInInjectionContext(() => new ClerkService());
 
-      await service.load();
+      await freshService.load();
 
       expect(fake.signOut).toHaveBeenCalled();
-      expect(service.isLoggedIn()).toBe(false);
-      expect(service.user()).toBeNull();
-      expect(dispatchSpy).toHaveBeenLastCalledWith(
-        AuthActions.userChanged({ user: null }),
-      );
+      expect(freshService.isLoggedIn()).toBe(false);
+      expect(freshService.user()).toBeNull();
+    });
+
+    it('should load Clerk only once however often it is asked', async () => {
+      await service.load();
+
+      expect(Clerk).toHaveBeenCalledOnce();
+      expect(service.isLoaded()).toBe(true);
+    });
+
+    it('should remember that this browser has a session', () => {
+      expect(localStorage.getItem('lcc.hasSession')).toBe('true');
     });
   });
 
@@ -240,6 +217,16 @@ describe('ClerkService', () => {
       notifyListeners();
 
       expect(toastSpy).not.toHaveBeenCalled();
+    });
+
+    it('should show the notice once an expected session end is called off', () => {
+      service.expectSessionEnd();
+      service.clearSessionEndExpectation();
+      fake.user = null;
+
+      notifyListeners();
+
+      expect(toastSpy).toHaveBeenCalledOnce();
     });
 
     it('should show the notice for a later unexpected session end', () => {
@@ -523,15 +510,6 @@ describe('ClerkService', () => {
 
       expect(service.user()).toBeNull();
     });
-
-    it('should update the name', async () => {
-      await service.updateProfile('Anna', 'Leigh');
-
-      expect(fake.user?.update).toHaveBeenCalledWith({
-        firstName: 'Anna',
-        lastName: 'Leigh',
-      });
-    });
   });
 
   describe('getToken', () => {
@@ -543,6 +521,38 @@ describe('ClerkService', () => {
       fake.session = null;
 
       await expect(service.getToken()).resolves.toBeNull();
+    });
+
+    describe('before Clerk has loaded', () => {
+      let freshService: ClerkService;
+
+      beforeEach(() => {
+        vi.mocked(Clerk).mockClear();
+        freshService = TestBed.runInInjectionContext(() => new ClerkService());
+      });
+
+      it('should not wait for Clerk for a browser that has never been logged in', async () => {
+        localStorage.removeItem('lcc.hasSession');
+
+        await expect(freshService.getToken()).resolves.toBeNull();
+
+        expect(Clerk).not.toHaveBeenCalled();
+      });
+
+      it('should wait for Clerk for a browser that has been logged in', async () => {
+        localStorage.setItem('lcc.hasSession', 'true');
+
+        await expect(freshService.getToken()).resolves.toBe('token-123');
+
+        expect(Clerk).toHaveBeenCalledOnce();
+      });
+
+      it('should send no token when Clerk fails to load', async () => {
+        localStorage.setItem('lcc.hasSession', 'true');
+        fake.load.mockRejectedValue(new Error('Clerk is unavailable'));
+
+        await expect(freshService.getToken()).resolves.toBeNull();
+      });
     });
   });
 

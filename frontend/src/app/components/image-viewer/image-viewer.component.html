@@ -4,16 +4,26 @@
   (keyup)="onKeyup($event)">
   <h3
     slot="header"
-    class="album-name lcc-truncate">
+    class="lcc-truncate">
     {{ album() }}
   </h3>
 
-  @if (currentImage$ | async; as image) {
-    <figure [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
+  @if (shownImage(); as image) {
+    <figure
+      #figure
+      tabindex="-1"
+      autofocus
+      [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
       <div class="image-container">
-        <lcc-image
-          [image]="image"
-          (loaded)="displayedCaption.set(image.caption)" />
+        <button
+          type="button"
+          class="enlarge-button"
+          aria-label="Enlarge image"
+          (click)="onEnlarge()">
+          <lcc-image
+            [image]="image"
+            (loaded)="onImageLoaded(image)" />
+        </button>
 
         <ea-button
           class="previous-image-button"
@@ -38,5 +48,18 @@
 
       <figcaption class="image-caption lcc-truncate">{{ displayedCaption() }}</figcaption>
     </figure>
+
+    <!-- Outside the figure, so a right click brings up the browser's own menu -->
+    <dialog
+      #enlarged
+      class="enlarged-image"
+      [attr.aria-label]="image.caption || 'Enlarged image'"
+      (click)="onShrink()"
+      (close)="onEnlargedClosed()"
+      (keydown)="$event.stopPropagation()">
+      @if (isEnlarged()) {
+        <lcc-image [image]="image" />
+      }
+    </dialog>
   }
 </ea-dialog>

@@ -1,7 +1,4 @@
-import {
-  generateTemporaryPassword,
-  hashTemporaryPassword,
-} from './temporary-password.util';
+import { generateTemporaryPassword } from './temporary-password.util';
 
 describe('generateTemporaryPassword', () => {
   it('should be 16 characters with a lowercase letter, an uppercase letter and a digit', () => {
@@ -25,18 +22,5 @@ describe('generateTemporaryPassword', () => {
     const second = generateTemporaryPassword();
 
     expect(first).not.toBe(second);
-  });
-});
-
-describe('hashTemporaryPassword', () => {
-  it('should recognise the same password without containing it', () => {
-    const hash = hashTemporaryPassword('Temp4Pass');
-
-    const sameHash = hashTemporaryPassword('Temp4Pass');
-    const otherHash = hashTemporaryPassword('Temp4Pass2');
-
-    expect(sameHash).toBe(hash);
-    expect(otherHash).not.toBe(hash);
-    expect(hash).not.toContain('Temp4Pass');
   });
 });

@@ -1,12 +1,12 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { pick } from 'lodash';
+import { pick } from 'lodash-es';
 import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { EVENT_FORM_DATA_PROPERTIES, INITIAL_EVENT_FORM_DATA } from '@app/constants';
+import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { Event, EventFormData, Id } from '@app/models';
 import { MetaAndTitleService } from '@app/services';
@@ -128,7 +128,7 @@ describe('EventEditorPageComponent', () => {
 
         expect(vm).toStrictEqual({
           eventId: null,
-          formData: INITIAL_EVENT_FORM_DATA,
+          formData: initialEventFormData(),
           hasUnsavedChanges: false,
           originalEvent: null,
           pageHeading: 'Add an event',
@@ -264,5 +264,31 @@ describe('EventEditorPageComponent', () => {
         );
       });
     });
+  });
+
+  it('should flag edits to an event that are not yet saved', async () => {
+    const [event] = MOCK_EVENTS;
+    store.setState({
+      eventsState: {
+        ...eventsInitialState,
+        ids: [event.id],
+        entities: {
+          [event.id]: {
+            event,
+            formData: { ...pick(event, EVENT_FORM_DATA_PROPERTIES), title: 'Renamed' },
+          },
+        },
+      },
+    });
+    mockParamsSubject.next({ event_id: event.id });
+    fixture.detectChanges();
+
+    const vm = await firstValueFrom(component.viewModel$!);
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+    expect(query(fixture.debugElement, '.end-with-asterisk')).toBeTruthy();
+    expect(
+      query(fixture.debugElement, 'lcc-event-form').componentInstance.hasUnsavedChanges(),
+    ).toBe(true);
   });
 });

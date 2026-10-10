@@ -1,13 +1,16 @@
 import { type AvatarEditorCropState } from '@eagami/ui';
 
+import { Brand } from './brand.model';
 import { Id } from './core.model';
 
+// The signed-in member, as their record on the site has them
 export interface User {
   id: Id;
   firstName: string;
   lastName: string;
   email: string;
   isAdmin: boolean;
+  memberNumber: number | null;
 }
 
 export interface UserRecord {
@@ -24,6 +27,9 @@ export interface UserRecord {
   avatarUpdatedAt: string | null;
   hasTemporaryPassword: boolean;
   showYearOfBirth: boolean;
+  brand: Brand;
+  notifyRatingChanges: boolean;
+  notifyScheduleChanges: boolean;
 }
 
 export interface UserSessionRecord {

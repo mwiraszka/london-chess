@@ -27,8 +27,8 @@
     align-items: center;
     justify-content: center;
     height: 180px;
-    border-radius: var(--lcc-borderRadius--large);
-    background-color: var(--lcc-color--general-imageBackdrop);
+    border-radius: var(--radius-md);
+    background-color: var(--lcc-image-backdrop);
 
     img {
       object-fit: contain;
@@ -95,7 +95,7 @@
 
 .new-images-header {
   align-self: start;
-  color: var(--lcc-color--albumForm-headerText);
+  color: var(--color-text-primary);
 }
 
 .control-buttons-container {

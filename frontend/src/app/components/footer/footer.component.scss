@@ -7,8 +7,8 @@
   font-size: 13px;
   text-align: center;
   white-space: nowrap;
-  background-color: var(--lcc-color--footer-background);
-  color: var(--lcc-color--footer-primaryText);
+  background-color: var(--lcc-surface);
+  color: var(--color-text-primary);
 }
 
 .main-section {
@@ -47,19 +47,17 @@
 
       .socials {
         display: grid;
-        grid-template-columns: auto auto auto auto;
-        margin-top: 32px;
+        justify-content: center;
+        gap: 8px;
+        grid-template-columns: repeat(2, 40px);
+        margin-top: 24px;
 
         a {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
+          height: 40px;
           filter: grayscale(0.4);
-
-          &.chesscom {
-            width: 22px;
-          }
         }
 
         a:hover {
@@ -75,10 +73,9 @@
     .site-links {
       display: grid;
       grid-template-areas:
-        'about-us'
-        'club-events'
+        'about'
+        'events'
         'archives'
-        'documents'
         'website';
       gap: 16px;
       font-size: 12px;
@@ -86,15 +83,14 @@
       @include respond-to('gt-md') {
         grid-template-columns: 1fr 1fr;
         grid-template-areas:
-          'about-us archives'
-          'about-us documents'
-          'club-events website';
+          'about events'
+          'archives website';
         font-size: 13px;
       }
 
       @include respond-to('gt-lg') {
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-        grid-template-areas: 'about-us club-events archives documents website';
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-areas: 'about events archives website';
       }
 
       section {
@@ -102,24 +98,22 @@
         flex-direction: column;
         align-items: start;
 
-        &.about-us {
-          grid-area: about-us;
+        &.about {
+          grid-area: about;
         }
-        &.club-events {
-          grid-area: club-events;
+        &.events {
+          grid-area: events;
         }
         &.archives {
           grid-area: archives;
-        }
-        &.documents {
-          grid-area: documents;
         }
         &.website {
           grid-area: website;
         }
 
-        header {
-          font-style: normal;
+        h2 {
+          font-size: inherit;
+          text-transform: uppercase;
         }
 
         ea-divider {
@@ -128,8 +122,14 @@
           margin: 4px 0 8px;
         }
 
-        a {
+        .wordmark {
           margin: 4px 0;
+        }
+
+        // The room after the longest link widens every column, since they share one width,
+        // so no link runs right up to the column beside it
+        a {
+          margin: 4px 16px 4px 0;
           line-height: 18px;
 
           ea-icon-external-link {
@@ -137,7 +137,7 @@
             @include link-icon-lift;
 
             vertical-align: text-bottom;
-            margin-left: 6px;
+            margin-left: 4px;
           }
         }
       }
@@ -149,8 +149,8 @@
   width: 100%;
   padding: 4px 8px;
   font-size: 10px;
-  background-color: var(--lcc-color--footer-copyrightSectionBackground);
-  color: var(--lcc-color--footer-copyrightSectionText);
+  background-color: var(--lcc-band);
+  color: var(--lcc-on-band);
 
   @include respond-to('gt-xxs') {
     font-size: 11px;
@@ -163,7 +163,7 @@
 
 // The brand-coloured bar needs a more opaque rule than the library's translucent one
 .copyright-divider {
-  --color-divider: var(--lcc-color--footer-verticalSpacer);
+  --color-divider: var(--lcc-grid-line);
   --ea-divider-length: 1em;
 
   display: inline-flex;
@@ -171,8 +171,21 @@
   margin: 0 8px;
 }
 
-.tooltip-highlighted-text {
-  color: var(--lcc-color--tooltip-highlightedText) !important;
+// Each tooltip leads in quietly to where its link goes, which stands out below it
+.social-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.social-tooltip__lead {
+  opacity: 0.75;
+}
+
+.social-tooltip__destination {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 @keyframes raise {

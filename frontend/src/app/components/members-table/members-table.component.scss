@@ -19,10 +19,9 @@
 // An inactive member reads in italics with an asterisk after the name
 .members__name--inactive {
   font-style: italic;
-  color: var(--lcc-color--membersTable-inactiveMemberText);
+  color: var(--color-text-secondary);
 
   &::after {
-    color: var(--lcc-color--membersTable-inactiveMemberAsterisk);
     content: '*';
   }
 }
@@ -39,7 +38,7 @@
 // The trophy sits on the text's line, so the row stays as tall as any other
 .members__champion-link {
   display: inline;
-  margin: 0 6px;
+  margin: 0 4px;
 }
 
 .members__champion-icon {
@@ -47,10 +46,10 @@
   @include link-icon-lift;
 
   vertical-align: middle;
-  color: var(--lcc-color--membersTable-cityChampionIcon);
+  color: var(--lcc-accent);
   transition: color 1s ease;
 
   .members__champion-link:hover & {
-    color: var(--lcc-color--membersTable-cityChampionIconHover);
+    color: var(--lcc-accent-hover);
   }
 }

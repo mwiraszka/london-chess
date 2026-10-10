@@ -1,12 +1,5 @@
 @use '../../../styles/abstracts/mixins' as *;
 
-:host {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
 .page-body {
   display: grid;
   justify-content: center;
@@ -72,25 +65,6 @@
 }
 
 .version-nav__item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 14px;
-  text-align: left;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-
-  &:hover {
-    // The plain hover token is invisible against the light page background
-    background: var(--color-state-active);
-    color: var(--color-text-primary);
-  }
-
   // Three columns leave little room on a narrow phone, so the chip tightens up
   @include respond-to('lt-md') {
     justify-content: center;
@@ -99,27 +73,19 @@
   }
 }
 
-.version-nav__item--active {
-  font-weight: 600;
-  background: var(--color-state-active);
-  color: var(--color-text-primary);
-}
-
 .version-nav__icon {
   flex-shrink: 0;
   @include icon-size(16px);
 }
 
-// Mirrors the section headings on the City Champion page
+// Mirrors the section headings on the City Championship page
 .section-title {
   h3 {
     width: 100%;
     text-align: left;
-    color: var(--lcc-color--websiteChangelogPage-headerText);
+    color: var(--color-text-primary);
   }
 
-  // The LCC divider token is near-black in dark mode, so the library's own
-  // divider is what stays visible on the page background
   .section-title__rule {
     display: block;
     width: 100%;
@@ -162,9 +128,7 @@
   .text-container {
     p {
       margin-bottom: 16px;
-      font-size: 16px;
       line-height: 24px;
-      color: var(--color-text-primary);
 
       &:last-child {
         margin-bottom: 0;
@@ -236,7 +200,7 @@
     flex-shrink: 0;
     @include icon-size(18px);
 
-    color: var(--lcc-color--websiteChangelogPage-secondaryText);
+    color: var(--color-text-secondary);
     transition: transform 150ms ease;
   }
 
@@ -259,7 +223,7 @@
     .release-date {
       font-size: 13px;
       line-height: 16px;
-      color: var(--lcc-color--websiteChangelogPage-secondaryText);
+      color: var(--color-text-secondary);
     }
   }
 
@@ -273,7 +237,7 @@
   .release-link {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 14px;
     line-height: 1;
     white-space: nowrap;
@@ -327,7 +291,7 @@
       display: inline-flex;
       @include icon-size(18px);
 
-      color: var(--lcc-color--pageHeader-icon);
+      color: var(--lcc-accent);
     }
   }
 
@@ -341,7 +305,6 @@
     flex-direction: column;
     gap: 4px;
     padding-left: 24px;
-    font-size: 16px;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -382,7 +345,7 @@
     margin-top: 2px;
     @include icon-size(20px);
 
-    color: var(--lcc-color--pageHeader-icon);
+    color: var(--lcc-accent);
   }
 
   .page-link__text {
@@ -394,7 +357,7 @@
   .page-link__title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 14px;
     font-weight: 600;
 

@@ -1,0 +1,120 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+ea-card {
+  --ea-card-body-padding: 12px 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+// The name and details each keep to one line, cut short when they run out of room, so
+// every card is as tall as its placeholder whatever they turn out to be
+.card__name,
+.card__details {
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card__name {
+  font-weight: 600;
+}
+
+.card__details {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.card__detail + .card__detail::before {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  content: '·';
+}
+
+.card__divider {
+  display: block;
+  width: 100%;
+  margin: 8px 0 4px;
+}
+
+.card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+// As tall as the Register button in every state, which a hidden copy of it laid under
+// the row holds, so the card keeps its height as registration opens and closes
+.card__status {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.card__status-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.card__status-sizer {
+  visibility: hidden;
+}
+
+.countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  white-space: nowrap;
+  color: var(--lcc-accent-text);
+}
+
+.countdown__digit {
+  display: inline-grid;
+}
+
+.countdown__glyph {
+  visibility: hidden;
+  justify-self: center;
+  grid-area: 1 / 1;
+}
+
+.countdown__glyph--shown {
+  visibility: visible;
+}
+
+.countdown__unit {
+  margin-left: 2px;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.countdown--closed {
+  color: var(--color-text-primary);
+}
+
+.register-button {
+  @include secondary-button-colors;
+
+  flex-shrink: 0;
+}

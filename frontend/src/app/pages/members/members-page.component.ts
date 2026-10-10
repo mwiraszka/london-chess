@@ -11,46 +11,46 @@ import {
   UploadIconComponent,
   UsersIconComponent,
 } from '@eagami/ui';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest, firstValueFrom } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, withLatestFrom } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
-  input,
   signal,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
-import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MembersTableComponent } from '@app/components/members-table/members-table.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingChangesComponent } from '@app/components/rating-changes/rating-changes.component';
-import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import {
   AdminButton,
   DataPaginationOptions,
-  Dialog,
   InternalLink,
   LoadStatus,
   Member,
   MemberWithNewRatings,
 } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  CsvExportService,
+  MembersApiService,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
-import { isLccError } from '@app/utils';
+import { bindSearchControl, isLccError, widestRows } from '@app/utils';
 
-@UntilDestroy()
 @Component({
   selector: 'lcc-members-page',
   template: `
@@ -137,12 +137,21 @@ import { isLccError } from '@app/utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersPageComponent implements OnInit {
-  // The widest members, resolved with the route, size the table before its first page
-  public readonly widestMembers = input<Member[]>([]);
+  private readonly destroyRef = inject(DestroyRef);
 
+  private readonly csvExport = inject(CsvExportService);
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly store = inject(Store);
+  private readonly membersApi = inject(MembersApiService);
+
+  // The widest members size the table from its first skeleton on, in the columns the
+  // visitor's access shows
+  protected readonly widestMembers = widestRows(
+    this.store
+      .select(AuthSelectors.selectApiScope)
+      .pipe(switchMap(scope => this.membersApi.getWidestMembers(scope))),
+  );
 
   protected readonly pageIcon = UsersIconComponent;
   protected readonly searchIcon = SearchIconComponent;
@@ -161,7 +170,7 @@ export class MembersPageComponent implements OnInit {
     id: 'export-to-csv',
     tooltip: 'Export to CSV',
     icon: DownloadIconComponent,
-    action: () => this.onExportToCsv(),
+    action: () => this.csvExport.exportMembers(),
   };
 
   public viewModel$?: Observable<{
@@ -184,25 +193,12 @@ export class MembersPageComponent implements OnInit {
       'Club ratings and other members information',
     );
 
-    // The box shows the search in force, wherever it was set, and sends new text on a pause
-    this.store
-      .select(MembersSelectors.selectOptions)
-      .pipe(untilDestroyed(this))
-      .subscribe(({ search }) => {
-        if (this.searchControl.value !== search) {
-          this.searchControl.setValue(search, { emitEvent: false });
-        }
-      });
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(SEARCH_DEBOUNCE),
-        distinctUntilChanged(),
-        withLatestFrom(this.store.select(MembersSelectors.selectOptions)),
-        untilDestroyed(this),
-      )
-      .subscribe(([search, options]) =>
-        this.onOptionsChange({ ...options, search, page: 1 }),
-      );
+    bindSearchControl(
+      this.searchControl,
+      this.store.select(MembersSelectors.selectOptions),
+      options => this.onOptionsChange(options),
+      this.destroyRef,
+    );
 
     this.viewModel$ = combineLatest([
       this.store.select(MembersSelectors.selectFilteredCount),
@@ -214,7 +210,6 @@ export class MembersPageComponent implements OnInit {
       this.store.select(MembersSelectors.selectTotalCount),
       this.store.select(MembersSelectors.selectFilteredMembersStatus),
     ]).pipe(
-      untilDestroyed(this),
       map(
         ([
           filteredCount,
@@ -239,8 +234,8 @@ export class MembersPageComponent implements OnInit {
     );
   }
 
-  public onOptionsChange(options: DataPaginationOptions<Member>, fetch = true): void {
-    this.store.dispatch(MembersActions.paginationOptionsChanged({ options, fetch }));
+  public onOptionsChange(options: DataPaginationOptions<Member>): void {
+    this.store.dispatch(MembersActions.paginationOptionsChanged({ options }));
   }
 
   public onToggleInactiveMembers(
@@ -376,33 +371,5 @@ export class MembersPageComponent implements OnInit {
     return outcome.type === MembersActions.fetchAllMembersSucceeded.type
       ? firstValueFrom(this.store.select(MembersSelectors.selectAllMembers))
       : null;
-  }
-
-  public async onExportToCsv(): Promise<void> {
-    if (!this.viewModel$) {
-      return;
-    }
-
-    const memberCount = await firstValueFrom(
-      this.viewModel$.pipe(map(vm => vm.totalCount)),
-    );
-
-    if (!memberCount) {
-      return;
-    }
-
-    const dialog: Dialog = {
-      title: 'Confirm',
-      body: `Export all ${memberCount} members to a CSV file?`,
-      confirmButtonText: 'Export',
-      confirmButtonType: 'primary',
-      confirmAction: () =>
-        this.storeRequests.dispatch(MembersActions.exportMembersToCsvRequested(), [
-          MembersActions.exportMembersToCsvSucceeded,
-          MembersActions.exportMembersToCsvFailed,
-        ]),
-    };
-
-    await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
   }
 }

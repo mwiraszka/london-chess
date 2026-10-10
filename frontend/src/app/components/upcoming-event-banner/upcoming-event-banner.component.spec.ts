@@ -88,7 +88,7 @@ describe('UpcomingEventBannerComponent', () => {
   describe('background', () => {
     it("should take a single event's colour", () => {
       expect(element('.container').style.background).toBe(
-        'var(--lcc-color--upcomingEventBanner-background-blitz10Tournament)',
+        'var(--lcc-event-blitz-10-tournament)',
       );
     });
 
@@ -98,7 +98,7 @@ describe('UpcomingEventBannerComponent', () => {
 
       const background = element('.container').style.background;
       expect(background).toContain('repeating-linear-gradient');
-      expect(background).toContain('blitz10Tournament');
+      expect(background).toContain('blitz-10-tournament');
       expect(background).toContain('championship');
     });
   });
@@ -132,6 +132,30 @@ describe('UpcomingEventBannerComponent', () => {
       expect(element('.marquee-content').classList).toContain('animate');
       expect(queryAll(fixture.debugElement, '.marquee-item')).toHaveLength(2);
       expect(element('.marquee-content').style.animationDuration).toBe('20s');
+    });
+
+    it('should keep the looping copy from being read out or focused', () => {
+      vi.advanceTimersByTime(2000);
+
+      resize(500, 1000);
+
+      const [original, copy] = queryAll(fixture.debugElement, '.marquee-item');
+      expect(original.nativeElement.getAttribute('aria-hidden')).toBeNull();
+      expect(original.nativeElement.inert).toBe(false);
+      expect(copy.nativeElement.getAttribute('aria-hidden')).toBe('true');
+      expect(copy.nativeElement.inert).toBe(true);
+    });
+
+    it('should not scroll by itself for a visitor who asks for less motion', () => {
+      vi.mocked(window.matchMedia).mockReturnValueOnce({
+        matches: true,
+      } as MediaQueryList);
+      vi.advanceTimersByTime(2000);
+
+      resize(500, 1000);
+
+      expect(element('.marquee-content').classList).not.toContain('animate');
+      expect(queryAll(fixture.debugElement, '.marquee-item')).toHaveLength(1);
     });
 
     it('should stop scrolling once the message fits again', () => {

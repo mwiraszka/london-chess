@@ -11,11 +11,12 @@ $grid-gap: 8px;
   justify-content: center;
   width: 100%;
 
+  // Room inside the scroller for a hovered card's lift and shadow
   &.is-home-page {
     overflow-x: auto;
     align-items: flex-start;
     justify-content: flex-start;
-    padding-bottom: 4px;
+    padding: 4px 0 12px;
 
     @include respond-to('lt-xs') {
       scroll-snap-type: x mandatory;
@@ -76,16 +77,19 @@ $grid-gap: 8px;
     }
   }
 
+  // The surface, edge and shadows of the site's other cards
   .article {
+    overflow: clip;
     display: flex;
     flex-flow: column nowrap;
     flex-grow: 1;
     gap: 4px;
     max-width: $card-max-width;
     height: auto;
-    border-radius: var(--lcc-borderRadius--large);
-    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
-    background-color: var(--lcc-color--articleGrid-cardBackground);
+    border: var(--border-width-thin) solid var(--lcc-card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    background-color: var(--lcc-card);
     transition:
       transform 0.3s ease,
       box-shadow 0.3s ease,
@@ -97,9 +101,9 @@ $grid-gap: 8px;
     }
 
     &:not(.skeleton):hover {
-      background-color: var(--lcc-color--articleGrid-cardBackgroundOnHover);
+      background-color: var(--lcc-card-hover);
       cursor: pointer;
-      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--shadow-md);
       transform: scale(1.005);
     }
 
@@ -110,20 +114,18 @@ $grid-gap: 8px;
       justify-content: center;
       width: 100%;
       aspect-ratio: 3 / 2;
-      border-top-left-radius: var(--lcc-borderRadius--large);
-      border-top-right-radius: var(--lcc-borderRadius--large);
 
       // The vignette fades only the loaded photo; the skeleton shown while it
       // loads stays a plain rectangle
       &:not(.skeleton-image) ::ng-deep img {
         mask-image: radial-gradient(
           ellipse 95% 95% at 50% 45%,
-          black 30%,
+          var(--color-neutral-950) 30%,
           transparent 100%
         );
         -webkit-mask-image: radial-gradient(
           ellipse 95% 95% at 50% 45%,
-          black 30%,
+          var(--color-neutral-950) 30%,
           transparent 100%
         );
       }
@@ -148,7 +150,7 @@ $grid-gap: 8px;
       width: 24px;
       height: 24px;
       margin: 4px;
-      color: var(--lcc-color--articleGrid-bookmarkIcon);
+      color: var(--lcc-on-band-faint);
     }
 
     .article-summary-container {
@@ -158,23 +160,26 @@ $grid-gap: 8px;
       height: 100%;
       padding: 8px 12px;
 
+      // Three lines tall whatever the title's length, so title sections align between
+      // cards; a set line height keeps that true in every brand's font
       .article-title-wrapper {
-        // Hardcode height to ensure title sections align between cards
-        // regardless of how many lines of text
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 62px;
-        border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        background-color: rgba(255, 255, 255, 0.025);
+        height: calc(3lh + 8px);
         padding: 4px 8px;
+        font-size: 16px;
+        line-height: 1.2;
+        border-radius: var(--radius-sm);
+        background-color: var(--lcc-card-inset);
       }
 
       .article-title {
+        font-size: inherit;
         font-weight: 400;
+        line-height: inherit;
         text-align: center;
-        color: var(--lcc-color--articleGrid-articleHeaderText);
+        color: var(--color-text-primary);
       }
 
       .card-divider {
@@ -187,11 +192,11 @@ $grid-gap: 8px;
         height: 94px;
         font-size: 14px;
         line-height: 1.3em !important;
-        color: var(--lcc-color--articleGrid-articleSummaryText);
+        color: var(--color-text-primary);
 
         ::ng-deep .result-preview-rating {
           font-size: 13px;
-          color: var(--lcc-color--articleGrid-articleSummarySecondaryText);
+          color: var(--color-text-secondary);
         }
       }
 
@@ -199,7 +204,7 @@ $grid-gap: 8px;
         margin-top: 16px;
         font-size: 11px;
         text-align: center;
-        color: var(--lcc-color--articleGrid-articleCreationDateText);
+        color: var(--color-text-secondary);
       }
 
       .skeleton-date {

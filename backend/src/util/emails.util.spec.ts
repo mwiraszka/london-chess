@@ -9,6 +9,7 @@ import { MemberChange } from './member-changes.util';
 
 const LOGIN_URL = 'https://londonchess.ca/account';
 const PROFILE_URL = 'https://londonchess.ca/members/7';
+const PREFERENCES_URL = 'https://londonchess.ca/account/preferences';
 
 describe('buildWelcomeEmail', () => {
   it('should give the member their temporary password and link to the login page and their profile', () => {
@@ -45,11 +46,30 @@ describe('buildMemberChangesEmail', () => {
     after: 'Toronto',
   };
 
+  it('should say how to stop rating emails, but only in one about ratings alone', () => {
+    const ratingOnly = buildMemberChangesEmail(
+      { firstName: 'Jane' },
+      [ratingChange],
+      PROFILE_URL,
+      PREFERENCES_URL,
+    );
+    const withCity = buildMemberChangesEmail(
+      { firstName: 'Jane' },
+      [ratingChange, cityChange],
+      PROFILE_URL,
+      PREFERENCES_URL,
+    );
+
+    expect(ratingOnly.text).toContain(PREFERENCES_URL);
+    expect(withCity.text).not.toContain(PREFERENCES_URL);
+  });
+
   it('should use a rating subject when only ratings changed', () => {
     const email = buildMemberChangesEmail(
       { firstName: 'Jane' },
       [ratingChange],
       PROFILE_URL,
+      PREFERENCES_URL,
     );
 
     expect(email.subject).toBe('Your London Chess rating has been updated');
@@ -60,6 +80,7 @@ describe('buildMemberChangesEmail', () => {
       { firstName: 'Jane' },
       [ratingChange, cityChange],
       PROFILE_URL,
+      PREFERENCES_URL,
     );
 
     expect(email.subject).toBe('Your London Chess member details have been updated');
@@ -70,6 +91,7 @@ describe('buildMemberChangesEmail', () => {
       { firstName: 'Jane' },
       [ratingChange, cityChange],
       PROFILE_URL,
+      PREFERENCES_URL,
     );
 
     expect(email.text).toContain('Rating: previous 1500, new 1550');
