@@ -48,14 +48,13 @@ describe('TournamentRegistrationsComponent', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('should list the tournaments taking registrations soonest first, details on one line', () => {
+  it('should list the tournaments taking registrations soonest first', () => {
     render([
       summary({ number: 2, name: 'Fall Rapid', date: '2026-11-03' }),
       summary({ number: 1, name: 'Club Blitz' }),
     ]);
 
     expect(namesOnCards()).toEqual(['Club Blitz', 'Fall Rapid']);
-    expect(cards().every(card => card.componentInstance.detailsOnOneLine())).toBe(true);
   });
 
   it('should keep a tournament under way, but leave out finished ones and those without online registration', () => {

@@ -59,9 +59,10 @@ const SECOND_TICKS = defer(() => timer(1000 - (Date.now() % 1000))).pipe(repeat(
 export class TournamentCardComponent {
   // Null while the tournaments load, for a placeholder in the card's own shape
   public readonly summary = input.required<TournamentSummary | null>();
-  // Kept to one line and cut short, so the card is as tall as its placeholder whatever
-  // its details turn out to be
-  public readonly detailsOnOneLine = input(false);
+
+  // Every digit a countdown place can show, laid over one another with only the current
+  // one visible, so a place is as wide as its widest digit and nothing moves as it ticks
+  protected readonly glyphs = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   private readonly now = toSignal(SECOND_TICKS.pipe(map(() => new Date())), {
     initialValue: new Date(),

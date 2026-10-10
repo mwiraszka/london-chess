@@ -29,7 +29,13 @@ describe('TournamentCardComponent', () => {
       /\s+/g,
       '',
     ) ?? '';
-  const registerButton = () => query(fixture.debugElement, '.register-button');
+  // The digit showing in each place, and each unit
+  const countdownText = (): string =>
+    queryAll(fixture.debugElement, '.countdown__glyph--shown, .countdown__unit')
+      .map(element => element.nativeElement.textContent.trim())
+      .join('');
+  const registerButton = () =>
+    query(fixture.debugElement, '.register-button:not(.card__status-sizer)');
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -58,23 +64,23 @@ describe('TournamentCardComponent', () => {
     ).toBe(`/tournaments/${MOCK_UPCOMING_SUMMARY.number}`);
   });
 
-  it('should count down to the second until registration opens, holding the place of its button', () => {
+  it('should count down to the second until registration opens', () => {
     render({
       registrationOpens: at(DAY + 2 * 3_600 * SECOND + 3 * 60 * SECOND + 4 * SECOND),
       registrationCloses: at(9 * DAY),
     });
 
-    const before = textOf('.countdown');
+    const before = countdownText();
     vi.advanceTimersByTime(SECOND);
     fixture.detectChanges();
 
     expect(textOf('.card__label')).toBe('Registrationopensin');
     expect(before).toBe('1d02h03m04s');
-    expect(textOf('.countdown')).toBe('1d02h03m03s');
+    expect(countdownText()).toBe('1d02h03m03s');
     expect(query(fixture.debugElement, '.countdown').attributes['aria-label']).toBe(
       '1 day, 2 hours, 3 minutes, 3 seconds',
     );
-    expect(registerButton().classes['register-button--held']).toBe(true);
+    expect(registerButton()).toBeNull();
   });
 
   it('should offer to register once registration opens, counting down to its close', () => {
@@ -84,8 +90,7 @@ describe('TournamentCardComponent', () => {
     fixture.detectChanges();
 
     expect(textOf('.card__label')).toBe('Registrationclosesin');
-    expect(textOf('.countdown')).toBe('1d23h59m59s');
-    expect(registerButton().classes['register-button--held']).toBeFalsy();
+    expect(countdownText()).toBe('1d23h59m59s');
     expect(registerButton().attributes['aria-label']).toBe(
       `Register for ${MOCK_UPCOMING_SUMMARY.name}`,
     );
@@ -94,30 +99,22 @@ describe('TournamentCardComponent', () => {
   it('should say registration has closed', () => {
     render({ registrationOpens: at(-9 * DAY), registrationCloses: at(-DAY) });
 
-    expect(textOf('.card__status')).toBe('RegistrationClosed');
-    expect(registerButton().classes['register-button--held']).toBe(true);
+    expect(textOf('.card__label')).toBe('Registration');
+    expect(textOf('.countdown')).toBe('Closed');
+    expect(registerButton()).toBeNull();
   });
 
   it('should leave out registration for a tournament that takes none online', () => {
     render({ registrationOpens: null, registrationCloses: null });
 
     expect(query(fixture.debugElement, '.card__status')).toBeNull();
-    expect(registerButton()).toBeNull();
+    expect(query(fixture.debugElement, '.register-button')).toBeNull();
   });
 
   it('should hold the shape of a card while the tournaments load', () => {
     render(null);
 
     expect(queryAll(fixture.debugElement, 'lcc-text-skeleton')).toHaveLength(4);
-    expect(registerButton().classes['register-button--held']).toBe(true);
-  });
-
-  it('should keep its details to one line when asked', () => {
-    fixture.componentRef.setInput('detailsOnOneLine', true);
-    render({});
-
-    expect(
-      query(fixture.debugElement, '.card__details').classes['card__details--one-line'],
-    ).toBe(true);
+    expect(query(fixture.debugElement, '.card__status-sizer')).toBeTruthy();
   });
 });

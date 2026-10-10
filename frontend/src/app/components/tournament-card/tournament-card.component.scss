@@ -12,74 +12,69 @@ ea-card {
 .card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  text-align: start;
-}
-
-// As tall as the button beside the name in every state, the button only showing while
-// registration is open, so the card keeps its height as registration opens and closes
-.card__header {
-  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
+  text-align: center;
 }
 
-.card__name {
+// The name and details each keep to one line, cut short when they run out of room, so
+// every card is as tall as its placeholder whatever they turn out to be
+.card__name,
+.card__details {
   overflow: hidden;
   display: block;
-  flex: 1;
-  min-width: 0;
-  font-weight: 600;
+  width: 100%;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-// Every detail leads with a dot, and the list starts a dot's width past the card's edge,
-// so the dot leading each line is cut off and dots only ever sit between details
+.card__name {
+  font-weight: 600;
+}
+
 .card__details {
-  overflow: hidden;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-.card__detail-list {
-  display: flex;
-  flex-wrap: wrap;
-  margin-left: -16px;
-}
-
-.card__detail {
-  white-space: nowrap;
-
-  &::before {
-    display: inline-block;
-    width: 16px;
-    text-align: center;
-    content: '·';
-  }
-}
-
-.card__details--one-line .card__detail-list {
-  overflow: hidden;
-  display: block;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.card__detail + .card__detail::before {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  content: '·';
 }
 
 .card__divider {
   display: block;
+  width: 100%;
   margin: 8px 0 4px;
-}
-
-.card__status {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
 }
 
 .card__label {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+// As tall as the Register button in every state, which a hidden copy of it laid under
+// the row holds, so the card keeps its height as registration opens and closes
+.card__status {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.card__status-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.card__status-sizer {
+  visibility: hidden;
 }
 
 .countdown {
@@ -93,12 +88,18 @@ ea-card {
   color: var(--lcc-accent-text);
 }
 
-// Each digit in a box a zero wide, since most faces draw their digits at different widths,
-// so the count holds its width as it ticks; set at the start of its box, so no digit's
-// edge moves as it changes either
 .countdown__digit {
-  display: inline-block;
-  width: 1ch;
+  display: inline-grid;
+}
+
+.countdown__glyph {
+  visibility: hidden;
+  justify-self: center;
+  grid-area: 1 / 1;
+}
+
+.countdown__glyph--shown {
+  visibility: visible;
 }
 
 .countdown__unit {
@@ -116,8 +117,4 @@ ea-card {
   @include secondary-button-colors;
 
   flex-shrink: 0;
-}
-
-.register-button--held {
-  visibility: hidden;
 }

@@ -6,9 +6,7 @@
     [attr.aria-hidden]="!isLoading() || null"
     [class.registrations--reserve]="!isLoading()">
     <li>
-      <lcc-tournament-card
-        [detailsOnOneLine]="true"
-        [summary]="null" />
+      <lcc-tournament-card [summary]="null" />
     </li>
   </ul>
 
@@ -19,9 +17,7 @@
         aria-label="Tournament registration">
         @for (summary of registrations(); track summary.number) {
           <li>
-            <lcc-tournament-card
-              [detailsOnOneLine]="true"
-              [summary]="summary" />
+            <lcc-tournament-card [summary]="summary" />
           </li>
         }
       </ul>
