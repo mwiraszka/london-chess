@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Choose how the site looks from your account's preferences, with five styles (Modern, Classic, Sunset, Newsprint and Playground), each with its own colours and fonts and kept on every device you log in on
-- List the tournaments taking online registration on the home page, each with a countdown to when registration opens or a button to register
+- List the tournaments taking online registration on the home page and the Tournaments page, each on a card with its details and a countdown to the second until registration opens or closes, and count who has registered in the Tournaments table
 - Open any photo in the photo viewer as large as the screen allows with a click, and close it again with another
 - Get an email whenever your rating changes or an upcoming event is added, changed or removed, with either one turned off in your account's preferences, and open your own member profile from your account page
 
