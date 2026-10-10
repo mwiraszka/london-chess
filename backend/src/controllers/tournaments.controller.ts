@@ -58,6 +58,7 @@ function toDetails(input: TournamentInput): TournamentDetails {
     endDate: input.endDate,
     format: input.format,
     timeControl: input.timeControl.trim(),
+    roundCount: input.roundCount,
     isRated: input.isRated,
     articleId: input.articleId || null,
     registrationOpens: input.registrationOpens,

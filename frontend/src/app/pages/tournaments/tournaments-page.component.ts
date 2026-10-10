@@ -78,7 +78,8 @@ export interface TournamentRow {
   timeControl: string;
   // Minutes, so time controls sort by length
   thinkingTime: number;
-  rounds: number;
+  // Null while the rounds are undecided
+  rounds: number | null;
   players: number;
 }
 
@@ -96,7 +97,10 @@ function toTournamentRow(summary: TournamentSummary, today: string): TournamentR
     format: TOURNAMENT_FORMAT_LABELS[summary.format],
     timeControl: summary.timeControl,
     thinkingTime: timeControlMinutes(summary.timeControl),
-    rounds: Math.max(0, ...summary.sections.map(({ roundCount }) => roundCount)),
+    // Results once they are in, and until then the rounds it is set to run
+    rounds: summary.sections.length
+      ? Math.max(...summary.sections.map(({ roundCount }) => roundCount))
+      : summary.roundCount,
     // Until results are in, the players are the ones who have registered online
     players: isUpcomingTournament(summary, today)
       ? summary.registrants.length
@@ -305,7 +309,7 @@ export class TournamentsPageComponent implements OnInit {
         label: 'Rounds',
         sortable: true,
         align: 'right',
-        cellTemplate: cells.text,
+        format: rounds => (rounds === null ? 'TBD' : String(rounds)),
       },
       {
         key: 'players',

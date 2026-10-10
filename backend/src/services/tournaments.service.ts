@@ -66,6 +66,8 @@ export const TOURNAMENT_SUMMARY_PIPELINE: PipelineStage[] = [
       endDate: 1,
       format: 1,
       timeControl: 1,
+      // Tournaments recorded before rounds could be set ahead have none
+      roundCount: { $ifNull: ['$roundCount', null] },
       isRated: 1,
       articleId: { $ifNull: ['$articleId', null] },
       // Tournaments recorded before online registration have neither field

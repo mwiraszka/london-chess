@@ -65,6 +65,7 @@ function input(overrides: Partial<TournamentInput> = {}): TournamentInput {
     endDate: null,
     format: 'swiss',
     timeControl: 'G25+5',
+    roundCount: 5,
     isRated: true,
     articleId: '6a7f6f69f983bd7b3881d3e6',
     registrationOpens: '2026-10-01T12:00:00.000Z',
@@ -82,9 +83,10 @@ const messageOf = (value: unknown): string | null => {
 };
 
 describe('validateTournamentInput', () => {
-  it('should accept a complete tournament and one with no results or registration', () => {
+  it('should accept a complete tournament and one with no results, rounds or registration', () => {
     const upcoming = input({
       sections: null,
+      roundCount: null,
       articleId: null,
       registrationOpens: null,
       registrationCloses: null,
@@ -140,6 +142,12 @@ describe('validateTournamentInput', () => {
     );
     expect(messageOf(input({ timeControl: '25 minutes' }))).toBe(
       'time control must look like G25, G25+5 or 3 hours',
+    );
+    expect(messageOf(input({ roundCount: 0 }))).toBe(
+      'rounds must be a whole number from 1 to 30',
+    );
+    expect(messageOf(input({ roundCount: 4.5 }))).toBe(
+      'rounds must be a whole number from 1 to 30',
     );
     expect(
       messageOf(

@@ -253,6 +253,7 @@ describe('TournamentFormComponent', () => {
         name: 'Fall Rapid Open',
         articleId: '',
         endDate: null,
+        roundCount: 7,
       });
       vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
 
@@ -262,6 +263,7 @@ describe('TournamentFormComponent', () => {
           name: 'Fall Rapid Open',
           articleId: null,
           endDate: null,
+          roundCount: 7,
         }),
       );
     });
@@ -354,6 +356,16 @@ describe('TournamentFormComponent', () => {
 
       expect(unknown).toBe(true);
       expect(component.form.controls.timeControl.valid).toBe(true);
+    });
+
+    it('should take an optional whole number of rounds', () => {
+      component.form.controls.roundCount.setValue(31);
+      const tooMany = component.form.controls.roundCount.hasError('invalidRoundCount');
+
+      component.form.controls.roundCount.setValue(null);
+
+      expect(tooMany).toBe(true);
+      expect(component.form.controls.roundCount.valid).toBe(true);
     });
   });
 

@@ -72,6 +72,9 @@ export const MEMBER_TOURNAMENTS_PAGE_SIZES = [10, 25, 50];
 
 export const LOADING_RESULT_COUNT = 3;
 
+// As many rounds as the server stores for a tournament
+export const MAX_ROUND_COUNT = 30;
+
 export const TOURNAMENT_FORMAT_OPTIONS: SelectOption[] = (
   Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat[]
 ).map(format => ({ value: format, label: TOURNAMENT_FORMAT_LABELS[format] }));
@@ -84,6 +87,7 @@ export const TOURNAMENT_FORM_DATA_PROPERTIES = [
   'endDate',
   'format',
   'timeControl',
+  'roundCount',
   'isRated',
   'articleId',
   'registrationOpens',
@@ -97,6 +101,7 @@ export const INITIAL_TOURNAMENT_FORM_DATA: TournamentFormData = {
   endDate: null,
   format: 'swiss',
   timeControl: '',
+  roundCount: null,
   isRated: true,
   articleId: null,
   registrationOpens: null,

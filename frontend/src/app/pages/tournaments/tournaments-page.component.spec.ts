@@ -407,6 +407,19 @@ describe('TournamentsPageComponent', () => {
       ]);
     });
 
+    it('should show the rounds a tournament still to come is set to run, or TBD', () => {
+      const tbd = cellTexts(bodyRows()[0]).at(-2);
+      store.overrideSelector(TournamentsSelectors.selectSummaries, [
+        { ...MOCK_UPCOMING_SUMMARY, roundCount: 7 },
+        ...MOCK_TOURNAMENT_SUMMARIES,
+      ]);
+      store.refreshState();
+      fixture.detectChanges();
+
+      expect(tbd).toBe('TBD');
+      expect(cellTexts(bodyRows()[0]).at(-2)).toBe('7');
+    });
+
     it('should count the players registered online for a tournament still to come', () => {
       const [first] = bodyRows();
 

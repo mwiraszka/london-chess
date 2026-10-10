@@ -17,6 +17,7 @@ const tournamentInputTypes: Record<keyof TournamentInput, string | string[]> = {
   endDate: ['string', 'null'],
   format: 'string',
   timeControl: 'string',
+  roundCount: ['number', 'null'],
   isRated: 'boolean',
   articleId: ['string', 'null'],
   registrationOpens: ['string', 'null'],
@@ -306,6 +307,9 @@ export function validateTournamentInput(body: unknown): Error | 'valid' {
   }
   if (input.timeControl && !TIME_CONTROL_PATTERN.test(input.timeControl.trim())) {
     return new Error('time control must look like G25, G25+5 or 3 hours');
+  }
+  if (input.roundCount !== null && !isWholeNumber(input.roundCount, 1, MAX_ROUNDS)) {
+    return new Error(`rounds must be a whole number from 1 to ${MAX_ROUNDS}`);
   }
   if (input.articleId !== null && !ID_PATTERN.test(input.articleId)) {
     return new Error('article ID must be 24 hexadecimal characters');

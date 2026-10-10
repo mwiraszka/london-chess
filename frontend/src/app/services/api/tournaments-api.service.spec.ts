@@ -86,6 +86,7 @@ describe('TournamentsApiService', () => {
       endDate: null,
       format: 'swiss',
       timeControl: 'G25+5',
+      roundCount: null,
       isRated: true,
       articleId: null,
       registrationOpens: null,

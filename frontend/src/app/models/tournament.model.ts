@@ -78,6 +78,8 @@ export interface Tournament {
   endDate: string | null;
   format: TournamentFormat;
   timeControl: string;
+  // The rounds it is set to run, or null while undecided; its results record their own
+  roundCount: number | null;
   isRated: boolean;
   articleId: Id | null;
   sections: TournamentSection[];
@@ -98,6 +100,7 @@ export type TournamentSummary = Pick<
   | 'endDate'
   | 'format'
   | 'timeControl'
+  | 'roundCount'
   | 'isRated'
   | 'articleId'
   | 'registrationOpens'
@@ -151,6 +154,7 @@ export type TournamentDetails = Pick<
   | 'endDate'
   | 'format'
   | 'timeControl'
+  | 'roundCount'
   | 'isRated'
   | 'articleId'
   | 'registrationOpens'
@@ -205,6 +209,7 @@ export interface TournamentFormGroup {
   endDate: FormControl<Date | null>;
   format: FormControl<TournamentFormat>;
   timeControl: FormControl<string>;
+  roundCount: FormControl<number | null>;
   isRated: FormControl<boolean>;
   articleId: FormControl<string>;
   hasRegistration: FormControl<boolean>;

@@ -145,6 +145,7 @@ function tournamentInput(overrides: Partial<TournamentInput> = {}): TournamentIn
     endDate: '2026-10-29',
     format: 'swiss',
     timeControl: 'G25+5',
+    roundCount: 5,
     isRated: true,
     articleId: null,
     registrationOpens: '2026-10-01T12:00:00.000Z',
@@ -203,7 +204,11 @@ describe('tournaments routes', () => {
       expect(response.status).toBe(200);
       const summaries: TournamentSummary[] = response.body.data;
       expect(summaries.map(summary => summary.number)).toEqual([2, 1]);
-      expect(summaries[1]).toMatchObject({ articleId: null, playerCount: 3 });
+      expect(summaries[1]).toMatchObject({
+        articleId: null,
+        roundCount: null,
+        playerCount: 3,
+      });
     });
 
     it("should describe each section's shape, counting its archived games", async () => {
@@ -534,6 +539,8 @@ describe('tournaments routes', () => {
         name: 'Fall Rapid',
         date: '2026-10-15',
         endDate: '2026-10-29',
+        timeControl: 'G25+5',
+        roundCount: 5,
         registrationOpens: '2026-10-01T12:00:00.000Z',
         registrationCloses: '2026-10-15T21:00:00.000Z',
         registrations: [],

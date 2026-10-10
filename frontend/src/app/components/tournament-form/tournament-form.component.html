@@ -70,6 +70,15 @@
           [id]="'time-control-input'"
           [maxLength]="30" />
 
+        <label for="rounds-input">Rounds:</label>
+        <ea-number-input
+          formControlName="roundCount"
+          [errorMessages]="errorMessages"
+          [id]="'rounds-input'"
+          [maxDigits]="2"
+          [max]="maxRoundCount"
+          [min]="1" />
+
         <label for="rated-input">Rated:</label>
         <ea-checkbox
           formControlName="isRated"

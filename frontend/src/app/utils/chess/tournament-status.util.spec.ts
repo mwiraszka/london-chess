@@ -40,6 +40,7 @@ describe('tournament status', () => {
         endDate: '2050-10-29',
         format: 'swiss',
         timeControl: 'G25+5',
+        roundCount: null,
         isRated: true,
         articleId: null,
         registrationOpens: MOCK_UPCOMING_TOURNAMENT.registrationOpens,

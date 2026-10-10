@@ -10,6 +10,7 @@ import {
   DropdownComponent,
   FileUploaderComponent,
   InputComponent,
+  NumberInputComponent,
   SwitchComponent,
   TimePickerComponent,
 } from '@eagami/ui';
@@ -44,6 +45,7 @@ import {
 } from '@app/constants/forms';
 import {
   MAX_LISTED_IMPORT_PROBLEMS,
+  MAX_ROUND_COUNT,
   TOURNAMENT_FORMAT_OPTIONS,
 } from '@app/constants/tournaments';
 import {
@@ -80,6 +82,7 @@ import {
   closesAfterOpensValidator,
   idValidator,
   notBeforeDayValidator,
+  roundCountValidator,
   textValidator,
   timeControlValidator,
 } from '@app/validators';
@@ -101,6 +104,7 @@ import {
     FormActionsComponent,
     InputComponent,
     ModificationInfoComponent,
+    NumberInputComponent,
     ReactiveFormsModule,
     SwitchComponent,
     TimePickerComponent,
@@ -130,6 +134,7 @@ export class TournamentFormComponent implements OnInit {
 
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
   protected readonly formatOptions = TOURNAMENT_FORMAT_OPTIONS;
+  protected readonly maxRoundCount = MAX_ROUND_COUNT;
   protected readonly weekStartsOn = WEEK_STARTS_ON;
 
   // Results read from a file but not yet saved; null keeps the recorded ones
@@ -590,6 +595,7 @@ export class TournamentFormComponent implements OnInit {
       endDate: data.endDate ? fromDayString(data.endDate) : null,
       format: data.format,
       timeControl: data.timeControl,
+      roundCount: data.roundCount,
       isRated: data.isRated,
       articleId: data.articleId ?? '',
       hasRegistration: !!opens || !!closes,
@@ -621,6 +627,7 @@ export class TournamentFormComponent implements OnInit {
         nonNullable: true,
         validators: timeControlValidator,
       }),
+      roundCount: new FormControl<number | null>(value.roundCount, roundCountValidator),
       isRated: new FormControl(value.isRated, { nonNullable: true }),
       articleId: new FormControl(value.articleId, {
         nonNullable: true,
@@ -665,6 +672,7 @@ export class TournamentFormComponent implements OnInit {
         endDate: value.endDate ? toDayString(value.endDate) : null,
         format: value.format,
         timeControl: value.timeControl,
+        roundCount: value.roundCount,
         isRated: value.isRated,
         articleId: value.articleId || null,
         registrationOpens: register

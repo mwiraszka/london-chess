@@ -81,6 +81,8 @@ export interface Tournament {
   endDate: string | null;
   format: TournamentFormat;
   timeControl: string;
+  // The rounds it is set to run, or null while undecided; its results record their own
+  roundCount: number | null;
   isRated: boolean;
   articleId: Id | null;
   // The archive's name for the tournament, when its games are archived
@@ -105,6 +107,7 @@ export type TournamentSummary = Pick<
   | 'endDate'
   | 'format'
   | 'timeControl'
+  | 'roundCount'
   | 'isRated'
   | 'articleId'
   | 'registrationOpens'
@@ -219,6 +222,7 @@ export type TournamentDetails = Pick<
   | 'endDate'
   | 'format'
   | 'timeControl'
+  | 'roundCount'
   | 'isRated'
   | 'articleId'
   | 'registrationOpens'
@@ -319,6 +323,7 @@ const tournamentSchema = new Schema<Tournament>(
     endDate: { type: String, default: null },
     format: { type: String, required: true },
     timeControl: { type: String, default: '' },
+    roundCount: { type: Number, default: null },
     isRated: { type: Boolean, default: false },
     articleId: { type: String, default: null },
     gameArchiveTournament: { type: String, default: null },

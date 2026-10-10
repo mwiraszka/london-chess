@@ -74,6 +74,7 @@ const tournament = (): Tournament => ({
   endDate: '2026-10-29',
   format: 'round-robin',
   timeControl: 'G85',
+  roundCount: null,
   isRated: true,
   articleId: null,
   registrationOpens: null,
