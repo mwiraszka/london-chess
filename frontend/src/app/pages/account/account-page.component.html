@@ -200,15 +200,6 @@
                 (clicked)="onRequestChanges()">
                 Request changes
               </ea-button>
-              @if (memberNumber(); as number) {
-                <a
-                  eaButtonLink
-                  size="sm"
-                  variant="secondary"
-                  [routerLink]="['/members', number]">
-                  View profile
-                </a>
-              }
             </div>
 
             <p class="request-hint">
@@ -226,6 +217,10 @@
               We don't share your information with anyone. Your details are only used by
               the club.
             </ea-alert>
+            @if (profileLink(); as link) {
+              <ea-divider class="profile-link__divider" />
+              <lcc-link-list [links]="[link]" />
+            }
           </ea-card>
         }
 

@@ -286,7 +286,17 @@ describe('AccountPageComponent', () => {
 
     const link = fixture.nativeElement.querySelector('a[href="/members/7"]');
 
-    expect(link?.textContent.trim()).toBe('View profile');
+    expect(link?.textContent.trim()).toBe('View profile page');
+  });
+
+  it('should link the first member, numbered 0, to their profile', async () => {
+    userService.user.set({ ...record, memberNumber: 0 });
+
+    await render();
+
+    const link = fixture.nativeElement.querySelector('a[href="/members/0"]');
+
+    expect(link?.textContent.trim()).toBe('View profile page');
   });
 
   it('should leave out the profile link for an account with no member number', async () => {
@@ -295,7 +305,7 @@ describe('AccountPageComponent', () => {
     await render();
 
     const links = [...fixture.nativeElement.querySelectorAll('a')].filter(
-      (link: HTMLAnchorElement) => link.textContent?.trim() === 'View profile',
+      (link: HTMLAnchorElement) => link.textContent?.trim() === 'View profile page',
     );
     expect(links).toHaveLength(0);
   });

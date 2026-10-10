@@ -4,10 +4,10 @@ import {
   AvatarEditorComponent,
   type AvatarEditorCropState,
   ButtonComponent,
-  ButtonLinkComponent,
   CardComponent,
   CheckboxComponent,
   DialogService,
+  DividerComponent,
   InputComponent,
   LockIconComponent,
   MonitorIconComponent,
@@ -41,6 +41,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
+import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PhoneNumberFieldComponent } from '@app/components/phone-number-field/phone-number-field.component';
@@ -56,6 +57,7 @@ import { UPLOAD_TIMEOUT_MS } from '@app/constants/http';
 import {
   AccountSection,
   Dialog,
+  InternalLink,
   Member,
   MemberDetailsFormData,
   SessionInfo,
@@ -77,6 +79,7 @@ import {
   createNewPasswordGroup,
   isAccountSection,
   isBrand,
+  isDefined,
   normalizePhoneNumber,
 } from '@app/utils';
 import { asSentence } from '@app/utils/sentence.util';
@@ -91,11 +94,12 @@ import { asSentence } from '@app/utils/sentence.util';
     AlertTriangleIconComponent,
     AvatarEditorComponent,
     ButtonComponent,
-    ButtonLinkComponent,
     CardComponent,
     CheckboxComponent,
     ChessUsernameFieldsComponent,
+    DividerComponent,
     InputComponent,
+    LinkListComponent,
     MonitorIconComponent,
     NewPasswordFieldsComponent,
     PageHeaderComponent,
@@ -132,7 +136,16 @@ export class AccountPageComponent implements OnInit {
   protected readonly navItems = ACCOUNT_SECTIONS;
   protected readonly brandOptions = BRAND_OPTIONS;
   protected readonly brand = this.brandService.brand;
-  protected readonly memberNumber = computed(() => this.userService.user()?.memberNumber);
+  protected readonly profileLink = computed((): InternalLink | null => {
+    const memberNumber = this.userService.user()?.memberNumber;
+    return isDefined(memberNumber)
+      ? {
+          text: 'View profile page',
+          internalPath: ['members', memberNumber],
+          icon: UserIconComponent,
+        }
+      : null;
+  });
   protected readonly savingBrand = signal(false);
   // Follow the account record, but a ticked box shows at once and is put back if the
   // account cannot save it
