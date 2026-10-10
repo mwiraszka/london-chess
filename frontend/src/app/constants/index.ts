@@ -11,7 +11,7 @@ import { CLUB_TIME_ZONE } from './clubs';
 
 export const ARTICLE_FORM_DATA_PROPERTIES = ['title', 'body', 'bannerImageId'] as const;
 
-export const MAX_ARTICLE_BODY_IMAGES = 5;
+export const MAX_ARTICLE_BODY_IMAGES = 15;
 
 export const INITIAL_ARTICLE_FORM_DATA: ArticleFormData = {
   title: '',
