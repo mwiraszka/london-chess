@@ -99,7 +99,10 @@ function toTournamentRow(summary: TournamentSummary, today: string): TournamentR
     timeControl: summary.timeControl,
     thinkingTime: timeControlMinutes(summary.timeControl),
     rounds: Math.max(0, ...summary.sections.map(({ roundCount }) => roundCount)),
-    players: summary.playerCount,
+    // Until results are in, the players are the ones who have registered online
+    players: isUpcomingTournament(summary, today)
+      ? summary.registrants.length
+      : summary.playerCount,
   };
 }
 

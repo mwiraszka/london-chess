@@ -409,6 +409,14 @@ describe('TournamentsPageComponent', () => {
       expect(text).toContain('2 players registered');
     });
 
+    it('should count the players registered online for a tournament still to come', () => {
+      const [first] = bodyRows();
+
+      expect(cellTexts(first).at(-1)).toBe(
+        String(MOCK_UPCOMING_SUMMARY.registrants.length),
+      );
+    });
+
     it('should list tournaments still to come first in the table, badged as upcoming', () => {
       const [first] = bodyRows();
 
