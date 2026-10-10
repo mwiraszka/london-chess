@@ -130,7 +130,7 @@ test.describe('tournaments', () => {
     await expect(upcoming).toContainText('Registration closes in');
     await expect(upcoming).toContainText('1 player registered');
 
-    await upcoming.getByRole('link', { name: UPCOMING.name }).click();
+    await upcoming.getByRole('link', { name: UPCOMING.name, exact: true }).click();
 
     await expect(page).toHaveURL(new RegExp(`/tournaments/${UPCOMING.number}$`));
     const registration = page.locator('.registration');
