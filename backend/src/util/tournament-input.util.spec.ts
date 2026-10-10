@@ -140,6 +140,9 @@ describe('validateTournamentInput', () => {
     expect(messageOf(input({ format: 'knockout' as TournamentInput['format'] }))).toBe(
       'format is not one the site knows',
     );
+    expect(messageOf(input({ timeControl: ' ' }))).toBe(
+      'the tournament needs a time control',
+    );
     expect(messageOf(input({ timeControl: '25 minutes' }))).toBe(
       'time control must look like G25, G25+5 or 3 hours',
     );

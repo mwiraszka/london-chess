@@ -307,11 +307,12 @@ describe('TournamentFormComponent', () => {
   describe('validation', () => {
     beforeEach(() => render());
 
-    it('should require a name and a start date', () => {
-      component.form.patchValue({ name: '', date: null });
+    it('should require a name, a start date and a time control', () => {
+      component.form.patchValue({ name: '', date: null, timeControl: '' });
 
       expect(component.form.controls.name.hasError('required')).toBe(true);
       expect(component.form.controls.date.hasError('required')).toBe(true);
+      expect(component.form.controls.timeControl.hasError('required')).toBe(true);
     });
 
     it('should refuse an end date before the start, and recheck it when the start moves', () => {
@@ -547,7 +548,12 @@ describe('TournamentFormComponent', () => {
 
     it('should add a new tournament from the confirmation dialog', async () => {
       render(
-        { ...INITIAL_TOURNAMENT_FORM_DATA, name: 'Winter Blitz', date: '2050-12-03' },
+        {
+          ...INITIAL_TOURNAMENT_FORM_DATA,
+          name: 'Winter Blitz',
+          date: '2050-12-03',
+          timeControl: 'G5',
+        },
         true,
         null,
       );

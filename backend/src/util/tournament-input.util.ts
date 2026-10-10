@@ -305,7 +305,10 @@ export function validateTournamentInput(body: unknown): Error | 'valid' {
   if (!TOURNAMENT_FORMATS.includes(input.format)) {
     return new Error('format is not one the site knows');
   }
-  if (input.timeControl && !TIME_CONTROL_PATTERN.test(input.timeControl.trim())) {
+  if (!input.timeControl.trim()) {
+    return new Error('the tournament needs a time control');
+  }
+  if (!TIME_CONTROL_PATTERN.test(input.timeControl.trim())) {
     return new Error('time control must look like G25, G25+5 or 3 hours');
   }
   if (input.roundCount !== null && !isWholeNumber(input.roundCount, 1, MAX_ROUNDS)) {

@@ -62,13 +62,18 @@
           [options]="formatOptions"
           [required]="true" />
 
-        <label for="time-control-input">Time control:</label>
+        <label
+          for="time-control-input"
+          class="lcc-required-field">
+          Time control:
+        </label>
         <ea-input
-          placeholder="G25+5"
+          placeholder="e.g. G25+5"
           formControlName="timeControl"
           [errorMessages]="errorMessages"
           [id]="'time-control-input'"
-          [maxLength]="30" />
+          [maxLength]="30"
+          [required]="true" />
 
         <label for="rounds-input">Rounds:</label>
         <ea-number-input

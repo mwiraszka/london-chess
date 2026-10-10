@@ -625,7 +625,7 @@ export class TournamentFormComponent implements OnInit {
       }),
       timeControl: new FormControl(value.timeControl, {
         nonNullable: true,
-        validators: timeControlValidator,
+        validators: [Validators.required, timeControlValidator],
       }),
       roundCount: new FormControl<number | null>(value.roundCount, roundCountValidator),
       isRated: new FormControl(value.isRated, { nonNullable: true }),
