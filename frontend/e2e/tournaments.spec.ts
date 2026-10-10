@@ -119,13 +119,15 @@ test.describe('tournaments', () => {
     await expect(page).toHaveURL(new RegExp(`/members/${PROFILE_MEMBER.number}$`));
   });
 
-  test('shows an upcoming tournament above the table, with who has registered', async ({
+  test('shows an upcoming tournament on its card, with who has registered', async ({
     page,
   }) => {
     await page.goto('/tournaments');
 
-    const upcoming = page.locator('.upcoming__item').filter({ hasText: UPCOMING.name });
-    await expect(upcoming).toContainText('Registration open until');
+    const upcoming = page
+      .locator('lcc-tournament-card')
+      .filter({ hasText: UPCOMING.name });
+    await expect(upcoming).toContainText('Registration closes in');
     await expect(upcoming).toContainText('1 player registered');
 
     await upcoming.getByRole('link', { name: UPCOMING.name }).click();

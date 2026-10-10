@@ -37,6 +37,7 @@ import { DataTableComponent } from '@app/components/data-table/data-table.compon
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { TournamentCardComponent } from '@app/components/tournament-card/tournament-card.component';
 import {
   TOURNAMENTS_PAGE_SIZES,
   TOURNAMENT_FORMAT_LABELS,
@@ -47,7 +48,6 @@ import { AdminControlsDirective } from '@app/directives/admin-controls.directive
 import {
   AdminControlsConfig,
   InternalLink,
-  RegistrationStatus,
   TournamentFormat,
   TournamentSummary,
 } from '@app/models';
@@ -57,11 +57,9 @@ import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments
 import {
   clubToday,
   compareCells,
-  formatDate,
   formatDateRange,
   isUpcomingTournament,
   pageOf,
-  registrationStatus,
   shortenSubtitle,
   timeControlMinutes,
   tournamentTiming,
@@ -146,6 +144,7 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
     RouterLink,
     SkeletonComponent,
     TooltipDirective,
+    TournamentCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -178,19 +177,11 @@ export class TournamentsPageComponent implements OnInit {
     TournamentsSelectors.selectSummaries,
   );
 
-  // Soonest first, each with where its online registration stands right now
-  protected readonly upcoming = computed(() => {
-    const now = new Date();
-    return this.allSummaries()
+  protected readonly upcoming = computed(() =>
+    this.allSummaries()
       .filter(summary => isUpcomingTournament(summary))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.number - b.number)
-      .map(summary => ({
-        summary,
-        dateLabel: formatDateRange(summary.date, summary.endDate),
-        format: TOURNAMENT_FORMAT_LABELS[summary.format],
-        registration: this.registrationBadge(registrationStatus(summary, now), summary),
-      }));
-  });
+      .sort((a, b) => a.date.localeCompare(b.date) || a.number - b.number),
+  );
 
   protected readonly status = this.store.selectSignal(
     TournamentsSelectors.selectSummariesStatus,
@@ -366,28 +357,6 @@ export class TournamentsPageComponent implements OnInit {
       editPath: ['tournament', 'edit', String(summary.number)],
       itemName: summary.name,
     };
-  }
-
-  private registrationBadge(
-    status: RegistrationStatus,
-    { registrationOpens, registrationCloses }: TournamentSummary,
-  ): { label: string; variant: BadgeVariant } | null {
-    switch (status) {
-      case 'open':
-        return {
-          label: `Registration open until ${formatDate(registrationCloses ?? undefined, 'short')}`,
-          variant: 'success',
-        };
-      case 'not-open':
-        return {
-          label: `Registration opens ${formatDate(registrationOpens ?? undefined, 'short')}`,
-          variant: 'info',
-        };
-      case 'closed':
-        return { label: 'Registration closed', variant: 'default' };
-      default:
-        return null;
-    }
   }
 
   private applyFilters(filters: TournamentFilters): void {

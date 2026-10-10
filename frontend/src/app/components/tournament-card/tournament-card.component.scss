@@ -1,0 +1,123 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+ea-card {
+  --ea-card-body-padding: 12px 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: start;
+}
+
+// As tall as the button beside the name in every state, the button only showing while
+// registration is open, so the card keeps its height as registration opens and closes
+.card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card__name {
+  overflow: hidden;
+  display: block;
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// Every detail leads with a dot, and the list starts a dot's width past the card's edge,
+// so the dot leading each line is cut off and dots only ever sit between details
+.card__details {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.card__detail-list {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -16px;
+}
+
+.card__detail {
+  white-space: nowrap;
+
+  &::before {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    content: '·';
+  }
+}
+
+.card__details--one-line .card__detail-list {
+  overflow: hidden;
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card__divider {
+  display: block;
+  margin: 8px 0 4px;
+}
+
+.card__status {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  white-space: nowrap;
+  color: var(--lcc-accent-text);
+}
+
+// Each digit in a box a zero wide, since most faces draw their digits at different widths,
+// so the count holds its width as it ticks; set at the start of its box, so no digit's
+// edge moves as it changes either
+.countdown__digit {
+  display: inline-block;
+  width: 1ch;
+}
+
+.countdown__unit {
+  margin-left: 2px;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.countdown--closed {
+  color: var(--color-text-primary);
+}
+
+.register-button {
+  @include secondary-button-colors;
+
+  flex-shrink: 0;
+}
+
+.register-button--held {
+  visibility: hidden;
+}

@@ -165,30 +165,10 @@ $side-by-side-from: 800px;
   color: var(--color-text-primary);
 }
 
+// Columns of one width, never wider than the page, so every card matches its neighbours
 .upcoming__list {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   list-style: none;
-}
-
-.upcoming__card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.upcoming__name {
-  font-weight: 600;
-}
-
-.upcoming__details,
-.upcoming__registration {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
 }

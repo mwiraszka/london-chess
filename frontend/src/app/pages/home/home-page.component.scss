@@ -54,13 +54,9 @@
       .main-links {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        padding: 8px 0;
-        margin: auto;
-      }
-
-      lcc-tournament-registrations {
-        margin-top: 16px;
+        align-items: center;
+        gap: 16px;
+        margin: 16px 0 8px;
       }
     }
 

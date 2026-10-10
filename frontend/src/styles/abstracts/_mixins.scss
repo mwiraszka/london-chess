@@ -167,3 +167,13 @@ $breakpoints: (
   --ea-data-table-header-hover-color: var(--lcc-on-band);
   --ea-data-table-header-sorted-color: var(--lcc-on-band);
 }
+
+// The club's orange, in the library's shades of it that keep white text readable
+@mixin secondary-button-colors {
+  --ea-button-background-color: var(--color-brand-secondary-default);
+  --ea-button-background-color-hover: var(--color-brand-secondary-hover);
+  --ea-button-background-color-active: var(--color-brand-secondary-active);
+  --ea-button-border-color: var(--color-brand-secondary-default);
+  --ea-button-border-color-hover: var(--color-brand-secondary-hover);
+  --ea-button-border-color-active: var(--color-brand-secondary-active);
+}

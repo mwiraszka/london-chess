@@ -397,16 +397,14 @@ describe('TournamentsPageComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should show tournaments still to come above the archive, with their registration', () => {
-      const [card] = queryAll(fixture.debugElement, '.upcoming__item');
-      const text = card.nativeElement.textContent.replace(/\s+/g, ' ');
+    it('should show tournaments still to come below the introduction, each on its card', () => {
+      const section = query(fixture.debugElement, '.upcoming');
+      const cards = queryAll(section, 'lcc-tournament-card');
 
-      expect(query(fixture.debugElement, '.upcoming__name').attributes['href']).toBe(
-        `/tournaments/${MOCK_UPCOMING_SUMMARY.number}`,
-      );
-      expect(text).toContain('October 15–29, 2050');
-      expect(text).toContain('Registration open until');
-      expect(text).toContain('2 players registered');
+      expect(section.nativeElement.previousElementSibling.classList).toContain('intro');
+      expect(cards.map(card => card.componentInstance.summary())).toEqual([
+        MOCK_UPCOMING_SUMMARY,
+      ]);
     });
 
     it('should count the players registered online for a tournament still to come', () => {

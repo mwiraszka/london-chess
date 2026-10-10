@@ -28,16 +28,16 @@ describe('TournamentRegistrationsComponent', () => {
     fixture.detectChanges();
   };
 
-  const rows = () =>
+  const cards = () =>
     queryAll(
       fixture.debugElement,
-      '.registrations:not(.registrations--reserve) .registration',
+      '.registrations:not(.registrations--reserve) lcc-tournament-card',
     );
-  const textOf = (element: { nativeElement: HTMLElement }): string =>
-    element.nativeElement.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+  const namesOnCards = () =>
+    cards().map(card => card.componentInstance.summary()?.name ?? null);
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
     TestBed.configureTestingModule({
       imports: [TournamentRegistrationsComponent],
@@ -48,37 +48,14 @@ describe('TournamentRegistrationsComponent', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('should list the tournaments taking registrations, soonest first, with a way to register', () => {
+  it('should list the tournaments taking registrations soonest first, details on one line', () => {
     render([
       summary({ number: 2, name: 'Fall Rapid', date: '2026-11-03' }),
       summary({ number: 1, name: 'Club Blitz' }),
     ]);
 
-    const [first, second] = rows();
-    const register = query(first, '.register-button');
-
-    expect(rows()).toHaveLength(2);
-    expect(textOf(query(first, '.registration__name'))).toBe('Club Blitz');
-    expect(textOf(query(second, '.registration__name'))).toBe('Fall Rapid');
-    expect(register.attributes['aria-label']).toBe('Register for Club Blitz');
-    expect(register.injector.get(RouterLink).urlTree?.toString()).toBe('/tournaments/1');
-  });
-
-  it('should count down to registration opening, then offer to register once it has', () => {
-    render([summary({ registrationOpens: '2026-10-09T03:30:00.000Z' })]);
-
-    const before = textOf(query(rows()[0], '.registration__status'));
-    vi.advanceTimersByTime(2 * 24 * 60 * 60_000 + 4 * 60 * 60_000 + 31 * 60_000);
-    fixture.detectChanges();
-
-    expect(before).toBe('Registration opens in 2 days, 4 hours');
-    expect(query(rows()[0], '.register-button')).toBeTruthy();
-  });
-
-  it('should say when registration has closed before the tournament', () => {
-    render([summary({ registrationCloses: '2026-10-05T04:00:00.000Z' })]);
-
-    expect(textOf(query(rows()[0], '.registration__status'))).toBe('Registration closed');
+    expect(namesOnCards()).toEqual(['Club Blitz', 'Fall Rapid']);
+    expect(cards().every(card => card.componentInstance.detailsOnOneLine())).toBe(true);
   });
 
   it('should keep a tournament under way, but leave out finished ones and those without online registration', () => {
@@ -98,31 +75,29 @@ describe('TournamentRegistrationsComponent', () => {
       }),
     ]);
 
-    expect(rows().map(row => textOf(query(row, '.registration__name')))).toEqual([
-      'Under Way',
-    ]);
+    expect(namesOnCards()).toEqual(['Under Way']);
   });
 
   it('should fall back to one large way into the tournaments when none take registrations', () => {
     render([summary({ registrationOpens: null, registrationCloses: null })]);
 
-    const button = query(fixture.debugElement, '.register-button--large');
+    const button = query(fixture.debugElement, '.stack > .register-button');
 
-    expect(rows()).toHaveLength(0);
+    expect(cards()).toHaveLength(0);
     expect(
       query(fixture.debugElement, '.registrations--reserve').attributes['aria-hidden'],
     ).toBe('true');
-    expect(textOf(button)).toBe('Register for a tournament');
+    expect(button.nativeElement.textContent.trim()).toBe('Register for a tournament');
     expect(button.injector.get(RouterLink).urlTree?.toString()).toBe('/tournaments');
   });
 
-  it('should hold the place of a tournament while they load', () => {
+  it('should hold the place of a tournament card while they load', () => {
     render([], true);
 
-    expect(rows()).toHaveLength(1);
-    expect(query(fixture.debugElement, '.registrations').attributes['aria-busy']).toBe(
-      'true',
-    );
-    expect(query(fixture.debugElement, '.register-button--large')).toBeNull();
+    const reserve = query(fixture.debugElement, '.registrations');
+
+    expect(reserve.attributes['aria-busy']).toBe('true');
+    expect(query(reserve, 'lcc-tournament-card').componentInstance.summary()).toBeNull();
+    expect(query(fixture.debugElement, '.stack > .register-button')).toBeNull();
   });
 });

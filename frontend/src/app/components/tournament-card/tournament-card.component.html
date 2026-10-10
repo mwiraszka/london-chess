@@ -1,0 +1,88 @@
+<ea-card [fullWidth]="true">
+  <div class="card">
+    @if (summary(); as summary) {
+      <div class="card__header">
+        <a
+          class="card__name lcc-link"
+          [eaTooltip]="summary.name"
+          [routerLink]="['/tournaments', summary.number]"
+          [whenClipped]="true">
+          {{ summary.name }}
+        </a>
+        @if (registration(); as registration) {
+          <a
+            eaButtonLink
+            class="register-button"
+            size="sm"
+            [attr.aria-label]="'Register for ' + summary.name"
+            [class.register-button--held]="registration.status !== 'open'"
+            [routerLink]="['/tournaments', summary.number]">
+            Register
+          </a>
+        }
+      </div>
+      <p
+        class="card__details"
+        [class.card__details--one-line]="detailsOnOneLine()">
+        <span
+          class="card__detail-list"
+          [eaTooltip]="details().join(' · ')"
+          [whenClipped]="true">
+          @for (detail of details(); track $index) {
+            <span class="card__detail">{{ detail }}</span>
+          }
+        </span>
+      </p>
+
+      @if (registration(); as registration) {
+        <ea-divider class="card__divider" />
+        <p class="card__status">
+          <span class="card__label">{{ registration.label }}</span>
+          @if (registration.countdown.length) {
+            <span
+              class="countdown"
+              role="timer"
+              [attr.aria-label]="registration.description">
+              @for (part of registration.countdown; track part.unit) {
+                <span
+                  class="countdown__part"
+                  aria-hidden="true">
+                  @for (digit of part.digits.split(''); track $index) {
+                    <span class="countdown__digit">{{ digit }}</span>
+                  }
+                  <span class="countdown__unit">{{ part.unit }}</span>
+                </span>
+              }
+            </span>
+          } @else {
+            <span class="countdown countdown--closed">Closed</span>
+          }
+        </p>
+      }
+    } @else {
+      <div class="card__header">
+        <span class="card__name">
+          <lcc-text-skeleton width="9em" />
+        </span>
+        <a
+          eaButtonLink
+          class="register-button register-button--held"
+          size="sm">
+          Register
+        </a>
+      </div>
+      <p class="card__details">
+        <lcc-text-skeleton width="14em" />
+      </p>
+      <ea-divider class="card__divider" />
+      <p class="card__status">
+        <span class="card__label">
+          <lcc-text-skeleton width="9em" />
+        </span>
+        <span class="countdown">
+          <lcc-text-skeleton width="6em" />
+        </span>
+      </p>
+    }
+  </div>
+</ea-card>
