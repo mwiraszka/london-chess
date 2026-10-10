@@ -15,26 +15,23 @@
       aria-busy="true" />
   }
   @default {
-    @if (hasEnoughData()) {
-      <ea-line-chart
-        aria-label="Rating at each rated tournament, oldest first"
-        animation="draw"
-        curve="smooth"
-        xLabelOrientation="auto"
-        [animationDuration]="3000"
-        [formatValue]="formatRating"
-        [height]="chartHeight"
-        [labels]="labels()"
-        [series]="series()"
-        [showAxisBreak]="true"
-        [showLegend]="false"
-        [visibleXSpan]="visibleSpan"
-        [xTicks]="xTicks()"
-        [xValues]="xValues()" />
-    } @else {
-      <p class="rating-progression__message rating-progression__empty">
-        Rating progression shows once a member has played two rated tournaments.
-      </p>
-    }
+    <ea-line-chart
+      aria-label="Rating at each rated tournament, oldest first"
+      animation="draw"
+      curve="smooth"
+      xLabelOrientation="auto"
+      [animationDuration]="3000"
+      [formatValue]="formatRating"
+      [height]="chartHeight"
+      [labels]="labels()"
+      [maxYStep]="maxRatingStep"
+      [series]="series()"
+      [showAxisBreak]="true"
+      [showLegend]="false"
+      [visibleXSpan]="visibleSpan"
+      [xTicks]="xTicks()"
+      [xValues]="xValues()"
+      [yMax]="yMax()"
+      [yMin]="yMin()" />
   }
 }

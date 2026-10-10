@@ -18,12 +18,10 @@ import {
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
+import { RATING_AXIS_CEILING, RATING_AXIS_MAX_STEP } from '@app/constants/member-profile';
 import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import moment from '@app/utils/datetime/moment';
-
-// A line needs two points before it shows any change
-const MIN_RATED_TOURNAMENTS = 2;
 
 // The chart opens on the latest five years and scrolls back through the rest
 const VISIBLE_SPAN_MS = moment.duration(5, 'years').asMilliseconds();
@@ -55,6 +53,8 @@ export class RatingProgressionComponent {
   private readonly store = inject(Store);
 
   protected readonly chartHeight = 240;
+
+  protected readonly maxRatingStep = RATING_AXIS_MAX_STEP;
 
   private readonly state = toSignal(
     toObservable(this.memberNumber).pipe(
@@ -88,9 +88,16 @@ export class RatingProgressionComponent {
     );
   });
 
-  protected readonly hasEnoughData = computed(
-    () => this.ratedResults().length >= MIN_RATED_TOURNAMENTS,
+  // A lone rating has no spread to fit, so its axis spans every rating the club sees
+  protected readonly yMin = computed(() =>
+    this.ratedResults().length === 1 ? 0 : undefined,
   );
+
+  protected readonly yMax = computed(() => {
+    const results = this.ratedResults();
+    const rating = results.length === 1 ? results[0].rating : null;
+    return rating === null ? undefined : Math.max(RATING_AXIS_CEILING, rating);
+  });
 
   protected readonly visibleSpan = VISIBLE_SPAN_MS;
 
