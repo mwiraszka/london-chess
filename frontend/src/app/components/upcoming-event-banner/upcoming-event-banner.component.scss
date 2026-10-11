@@ -6,15 +6,17 @@
 }
 
 .banner-message-container {
-  overflow: hidden;
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+  min-width: 0;
   max-width: var(--lcc-width--wide);
 }
 
+// The padding gives a focused link's ring room inside the clip, and the margin takes
+// it back so the banner grows no taller
 .banner-message {
   overflow: hidden;
   display: flex;
@@ -22,6 +24,8 @@
   align-items: center;
   width: 100%;
   min-width: 0;
+  padding: 4px 0;
+  margin: -4px 0;
   font-size: 14px;
   white-space: nowrap;
   color: var(--lcc-on-event);

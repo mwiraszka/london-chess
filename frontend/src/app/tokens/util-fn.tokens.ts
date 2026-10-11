@@ -13,6 +13,7 @@ import {
   isTouchDevice,
   parseCsv,
   parseError,
+  reloadPage,
   setPaginationParams,
 } from '@app/utils';
 
@@ -80,4 +81,8 @@ export const DATA_URL_TO_FILE = new InjectionToken<typeof dataUrlToFile>(
 
 export const IS_LCC_ERROR = new InjectionToken<typeof isLccError>('IS_LCC_ERROR', {
   factory: () => isLccError,
+});
+
+export const RELOAD_PAGE = new InjectionToken<typeof reloadPage>('RELOAD_PAGE', {
+  factory: () => reloadPage,
 });

@@ -283,7 +283,7 @@ describe('MemberTournamentsComponent', () => {
     render(2);
 
     expect(textOf(query(fixture.debugElement, '.ea-data-table__body'))).toBe(
-      'No tournaments on record yet.',
+      'Tournaments will show once this member has played in one.',
     );
   });
 

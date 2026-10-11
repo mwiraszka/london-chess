@@ -36,16 +36,15 @@
                 [showPercentages]="true" />
             } @else {
               <p class="openings__empty">
-                No games as {{ chart.colour }} in the archives yet.
+                Openings as {{ chart.colour }} will show once this member has games as
+                {{ chart.colour }} in the archives.
               </p>
             }
           </div>
         }
       </div>
     } @else {
-      <p class="openings__empty">
-        Openings show once a member has games in the archives.
-      </p>
+      <p class="openings__empty"> This member has no games in the archives. </p>
     }
   }
 }

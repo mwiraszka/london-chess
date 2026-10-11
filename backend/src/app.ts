@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import cors, { CorsOptions } from 'cors';
 import express, { NextFunction, Request, Response, Router } from 'express';
 
+import { dataset } from './middlewares/dataset.middleware';
 import { errorHandler, notFound } from './middlewares/error-handler.middleware';
 import { logger } from './middlewares/logger.middleware';
 import { version } from './middlewares/version.middleware';
@@ -26,6 +27,7 @@ Sentry.init({
 
 const router = Router()
   .use('/v1/version', version)
+  .use('/v1/dataset', dataset)
   .use('/v1/articles', articlesRouter)
   .use('/v1/events', eventsRouter)
   .use('/v1/games', gamesRouter)

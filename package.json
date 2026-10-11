@@ -1,6 +1,6 @@
 {
   "name": "london-chess",
-  "version": "6.5.1",
+  "version": "6.5.2",
   "description": "London Chess Club monorepo: Angular frontend + Node/Express backend",
   "author": "Michal Wiraszka",
   "license": "MIT",
@@ -11,6 +11,7 @@
   },
   "scripts": {
     "backup": "pnpm -C backend run backup",
+    "sync:dev": "pnpm -C backend run sync:dev",
     "dev": "concurrently --kill-others -n tunnel,backend,frontend -c yellow,magenta,cyan \"pnpm -C backend run tunnel\" \"pnpm -C backend run start\" \"pnpm -C frontend run start\"",
     "dev:tunnel": "pnpm -C backend run tunnel",
     "dev:fe": "pnpm -C frontend run start",

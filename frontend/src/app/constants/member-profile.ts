@@ -29,3 +29,9 @@ export const PLACEHOLDER_PROFILE_MEMBER: Member = {
   },
   avatarUrl: null,
 };
+
+// Club ratings top out near 2200, so the rating chart never needs to reach past this
+export const RATING_AXIS_CEILING = 2500;
+
+// Wider gaps would leave the rating chart with too few lines to read a rating against
+export const RATING_AXIS_MAX_STEP = 500;

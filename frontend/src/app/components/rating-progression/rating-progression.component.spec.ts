@@ -5,7 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
 import { MemberTournamentResult } from '@app/models';
 import { TournamentsActions, initialState } from '@app/store/tournaments';
-import { query, queryTextContent } from '@app/utils';
+import { query } from '@app/utils';
 
 import { RatingProgressionComponent } from './rating-progression.component';
 
@@ -68,6 +68,7 @@ describe('RatingProgressionComponent', () => {
     expect(chart().curve()).toBe('smooth');
     expect(chart().showAxisBreak()).toBe(true);
     expect(chart().xLabelOrientation()).toBe('auto');
+    expect(chart().maxYStep()).toBe(500);
   });
 
   it('should place each tournament at its date, with a tick every quarter', () => {
@@ -122,15 +123,29 @@ describe('RatingProgressionComponent', () => {
     expect(chart().series()[0].data).toEqual([1810, championship.rating]);
   });
 
-  it('should explain the missing graph until two rated tournaments are on record', () => {
+  it('should plot a single rated tournament as a lone point', () => {
     store.setState(stateWith({ 2: [{ ...championship, rating: 1880 }] }));
 
     render();
 
-    expect(chart()).toBeUndefined();
-    expect(queryTextContent(fixture.debugElement, '.rating-progression__empty')).toBe(
-      'Rating progression shows once a member has played two rated tournaments.',
-    );
+    expect(chart().series()).toEqual([{ name: 'Rating at start', data: [1880] }]);
+    expect([chart().yMin(), chart().yMax()]).toEqual([0, 2500]);
+  });
+
+  it('should fit the y-axis to the ratings once there are two or more', () => {
+    store.setState(stateWith({ 2: [championship, fallActive] }));
+
+    render();
+
+    expect([chart().yMin(), chart().yMax()]).toEqual([undefined, undefined]);
+  });
+
+  it('should still draw the graph when no rated tournament is on record', () => {
+    store.setState(stateWith({ 2: [] }));
+
+    render();
+
+    expect(chart().series()).toEqual([{ name: 'Rating at start', data: [] }]);
   });
 
   it('should hold the height of the graph in every state', () => {

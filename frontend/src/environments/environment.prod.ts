@@ -6,4 +6,5 @@ export const environment = {
   sentryDsn:
     'https://15ca529d0b2ea8ff491edc33e2f234fc@o4511323014234112.ingest.de.sentry.io/4511323126956112',
   isPreview: false,
+  watchesDataset: false,
 };

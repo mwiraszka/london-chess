@@ -1,6 +1,6 @@
 {
   "name": "lcc-server",
-  "version": "6.5.0",
+  "version": "6.5.2",
   "description": "REST API for the London Chess Club website, built with Node and Express",
   "author": "Michal Wiraszka",
   "repository": {
@@ -10,6 +10,7 @@
   "private": true,
   "scripts": {
     "backup": "npx tsx --env-file=.env scripts/backup.ts",
+    "sync:dev": "npx tsx --env-file=.env scripts/sync-dev.ts",
     "start": "npx tsx watch --env-file=.env src/server.ts",
     "start:e2e": "tsx e2e/server.ts",
     "tunnel": "ngrok http 3000 --log stdout --log-level warn",
