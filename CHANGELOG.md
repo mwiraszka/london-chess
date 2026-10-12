@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.5.3] - 2026-10-12
+
+### Changed
+
+- Load pages faster, and only check for new content while the site is on screen, catching up as soon as you return to its tab
+
 ## [v6.5.2] - 2026-10-11
 
 ### Changed
@@ -2074,6 +2080,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.5.3]: https://github.com/mwiraszka/london-chess/compare/v6.5.2...v6.5.3
 [v6.5.2]: https://github.com/mwiraszka/london-chess/compare/v6.5.1...v6.5.2
 [v6.5.1]: https://github.com/mwiraszka/london-chess/compare/v6.5.0...v6.5.1
 [v6.5.0]: https://github.com/mwiraszka/london-chess/compare/v6.4.0...v6.5.0
