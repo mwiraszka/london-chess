@@ -13,14 +13,15 @@
     "sync:dev": "npx tsx --env-file=.env scripts/sync-dev.ts",
     "start": "npx tsx watch --env-file=.env src/server.ts",
     "start:e2e": "tsx e2e/server.ts",
+    "bundle": "esbuild src/vercel-handler.ts --bundle --platform=node --target=node24 --format=cjs --external:sharp --outfile=api/index.js",
     "tunnel": "ngrok http 3000 --log stdout --log-level warn",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint 'src/**' 'api/**' 'e2e/**' 'scripts/**'",
-    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
+    "lint": "eslint 'src/**' 'e2e/**' 'scripts/**'",
+    "format": "prettier --write 'src/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1149.0",

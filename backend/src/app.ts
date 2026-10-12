@@ -24,6 +24,8 @@ Sentry.init({
   environment: process.env['VERCEL_ENV'] ?? 'development',
   enabled: !!process.env['SENTRY_DSN'],
   tracesSampleRate: 0,
+  // Its module hooks only record spans, and cannot reach the modules in a bundled function
+  enableRuntimeChannelInjection: false,
 });
 
 const dataRouter = Router()

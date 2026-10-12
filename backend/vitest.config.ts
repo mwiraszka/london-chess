@@ -22,6 +22,7 @@ export default defineConfig({
       exclude: [
         'src/**/*.spec.ts',
         'src/server.ts',
+        'src/vercel-handler.ts',
         'src/testing/**',
         // Type declarations only
         'src/models/api-response.model.ts',
