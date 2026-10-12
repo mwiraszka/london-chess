@@ -58,6 +58,31 @@ describe('visibleTimer', () => {
     expect(ticks).toEqual([0, 1, 0, 1]);
   });
 
+  it('should tick straight away on a return, without waiting out the delay again', () => {
+    const ticks: number[] = [];
+    const subscription = visibleTimer(3000, 1000).subscribe(tick => ticks.push(tick));
+    vi.advanceTimersByTime(1000);
+    setVisibility('hidden');
+
+    setVisibility('visible');
+    vi.advanceTimersByTime(0);
+    subscription.unsubscribe();
+
+    expect(ticks).toEqual([0]);
+  });
+
+  it('should tick as soon as a page opened out of view is first seen', () => {
+    visibility = 'hidden';
+    const ticks: number[] = [];
+    const subscription = visibleTimer(3000, 1000).subscribe(tick => ticks.push(tick));
+
+    setVisibility('visible');
+    vi.advanceTimersByTime(0);
+    subscription.unsubscribe();
+
+    expect(ticks).toEqual([0]);
+  });
+
   it('should wait out the delay before its first tick', () => {
     const ticks: number[] = [];
 
