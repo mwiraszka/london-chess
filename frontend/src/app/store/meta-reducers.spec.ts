@@ -519,6 +519,7 @@ describe('Meta Reducers', () => {
           ...imagesInitialState,
           failedLoads: ['metadata'],
           uploadProgress: { uploaded: 1, total: 2 },
+          pendingThumbnailIds: [MOCK_IMAGES[0].id],
         },
       };
       mockReducer = vi.fn(() => state);
@@ -533,6 +534,7 @@ describe('Meta Reducers', () => {
       expect(savedArticles).toHaveProperty('options');
       expect(savedImages).not.toHaveProperty('failedLoads');
       expect(savedImages).not.toHaveProperty('uploadProgress');
+      expect(savedImages).not.toHaveProperty('pendingThumbnailIds');
     });
 
     it('should leave the drafts of new images out of local storage', async () => {

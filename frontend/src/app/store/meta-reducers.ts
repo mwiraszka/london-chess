@@ -84,6 +84,7 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
     'isFetchingFiltered',
     // Only the tab that picked a new image holds its file
     'newImagesFormData',
+    'pendingThumbnailIds',
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),

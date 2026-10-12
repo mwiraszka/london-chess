@@ -167,12 +167,18 @@ export const selectAlbumHasUnsavedChanges = (album: string | null) =>
     },
   );
 
+const selectPendingThumbnailIds = createSelector(
+  selectImagesState,
+  state => state.pendingThumbnailIds,
+);
+
 export const selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls = createSelector(
   selectAllImages,
-  allImages => {
+  selectPendingThumbnailIds,
+  (allImages, pendingIds) => {
     return allImages
       .filter(image => {
-        if (!image.albumCover) {
+        if (!image.albumCover || pendingIds.includes(image.id)) {
           return false;
         }
         // Include album covers with missing or expired thumbnail URLs
@@ -189,11 +195,14 @@ export const selectAllExistingAlbums = createSelector(selectAllImages, allImages
 export const selectIdsOfArticleBannerImagesWithMissingOrExpiredThumbnailUrls = (
   articles: Article[],
 ) =>
-  createSelector(selectAllImages, allImages => {
+  createSelector(selectAllImages, selectPendingThumbnailIds, (allImages, pendingIds) => {
     return uniq(
       articles
         .map(article => article.bannerImageId)
         .filter(bannerImageId => {
+          if (pendingIds.includes(bannerImageId)) {
+            return false;
+          }
           const image = allImages.find(img => img.id === bannerImageId);
           return !image?.thumbnailUrl || isPresignedUrlExpired(image.urlExpirationDate);
         }),

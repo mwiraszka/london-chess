@@ -84,7 +84,10 @@ describe('Images Reducer', () => {
 
     it('should leave loads untouched when a change fails to save', () => {
       const actions = [
-        ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+        ImagesActions.fetchBatchThumbnailsFailed({
+          imageIds: [MOCK_IMAGES[0].id],
+          error: mockError,
+        }),
         ImagesActions.addImageFailed({ error: mockError }),
         ImagesActions.updateImageFailed({ baseImage: mockBaseImage, error: mockError }),
         ImagesActions.deleteImageFailed({ image: MOCK_IMAGES[0], error: mockError }),
@@ -150,6 +153,7 @@ describe('Images Reducer', () => {
       [
         'a batch of thumbnails',
         ImagesActions.fetchBatchThumbnailsSucceeded({
+          imageIds: [refreshed.id],
           images: [refreshed],
           context: 'photos-in-album',
         }),
@@ -235,6 +239,7 @@ describe('Images Reducer', () => {
     it('should upsert batch of images', () => {
       const images = [MOCK_IMAGES[0], MOCK_IMAGES[1]];
       const action = ImagesActions.fetchBatchThumbnailsSucceeded({
+        imageIds: images.map(({ id }) => id),
         images,
         context: 'album-covers',
       });
@@ -253,6 +258,7 @@ describe('Images Reducer', () => {
 
     it('should update lastAlbumCoversFetch when context is album-covers', () => {
       const action = ImagesActions.fetchBatchThumbnailsSucceeded({
+        imageIds: [MOCK_IMAGES[0].id],
         images: [MOCK_IMAGES[0]],
         context: 'album-covers',
       });
@@ -263,12 +269,57 @@ describe('Images Reducer', () => {
 
     it('should not update lastAlbumCoversFetch for other contexts', () => {
       const action = ImagesActions.fetchBatchThumbnailsSucceeded({
+        imageIds: [MOCK_IMAGES[0].id],
         images: [MOCK_IMAGES[0]],
         context: 'article-banner-images',
       });
       const state = imagesReducer(initialState, action);
 
       expect(state.lastAlbumCoversFetch).toBeNull();
+    });
+  });
+
+  describe('pending thumbnails', () => {
+    const pendingState: ImagesState = {
+      ...initialState,
+      pendingThumbnailIds: ['mock-id-1', 'mock-id-2', 'mock-id-3'],
+    };
+
+    it('should mark the thumbnails of a requested batch as on their way', () => {
+      const action = ImagesActions.fetchBatchThumbnailsRequested({
+        imageIds: ['mock-id-1', 'mock-id-2'],
+        context: 'album-covers',
+      });
+
+      const state = imagesReducer(
+        { ...initialState, pendingThumbnailIds: ['mock-id-2'] },
+        action,
+      );
+
+      expect(state.pendingThumbnailIds).toEqual(['mock-id-2', 'mock-id-1']);
+    });
+
+    it('should stop treating a batch as on its way once it arrives', () => {
+      const action = ImagesActions.fetchBatchThumbnailsSucceeded({
+        imageIds: ['mock-id-1', 'mock-id-2'],
+        images: [MOCK_IMAGES[0]],
+        context: 'album-covers',
+      });
+
+      const state = imagesReducer(pendingState, action);
+
+      expect(state.pendingThumbnailIds).toEqual(['mock-id-3']);
+    });
+
+    it('should stop treating a batch as on its way once it fails', () => {
+      const action = ImagesActions.fetchBatchThumbnailsFailed({
+        imageIds: ['mock-id-1', 'mock-id-2'],
+        error: mockError,
+      });
+
+      const state = imagesReducer(pendingState, action);
+
+      expect(state.pendingThumbnailIds).toEqual(['mock-id-3']);
     });
   });
 
@@ -325,6 +376,7 @@ describe('Images Reducer', () => {
       const previousState = imagesReducer(
         initialState,
         ImagesActions.fetchBatchThumbnailsSucceeded({
+          imageIds: [existing.id],
           images: [existing],
           context: 'album-covers',
         }),
@@ -891,6 +943,7 @@ describe('Images Reducer', () => {
         const batchState = imagesReducer(
           previousState,
           ImagesActions.fetchBatchThumbnailsSucceeded({
+            imageIds: [thumbnail.id],
             images: [thumbnail],
             context: 'album-covers',
           }),

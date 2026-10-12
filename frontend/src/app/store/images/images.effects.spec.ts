@@ -97,6 +97,7 @@ describe('ImagesEffects', () => {
     failedLoads: [],
     isFetchingFiltered: false,
     uploadProgress: null,
+    pendingThumbnailIds: [],
     newImageFormData: null,
     newImagesFormData: {},
     lastMetadataFetch: null,
@@ -262,6 +263,7 @@ describe('ImagesEffects', () => {
 
       expect(action).toEqual(
         ImagesActions.fetchBatchThumbnailsSucceeded({
+          imageIds,
           images: mockBatchResponse.data,
           context: 'album-covers',
         }),
@@ -285,7 +287,7 @@ describe('ImagesEffects', () => {
       const action = await firstValueFrom(effects.fetchBatchThumbnailImages$);
 
       expect(action).toEqual(
-        ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+        ImagesActions.fetchBatchThumbnailsFailed({ imageIds, error: mockError }),
       );
     });
   });
@@ -1116,6 +1118,7 @@ describe('ImagesEffects', () => {
       expect(imagesApiService.getBatchThumbnailImages).toHaveBeenCalledWith(albumIds);
       expect(action).toEqual(
         ImagesActions.fetchBatchThumbnailsSucceeded({
+          imageIds: albumIds,
           images: albumImages,
           context: 'photos-in-album',
         }),
@@ -1138,6 +1141,7 @@ describe('ImagesEffects', () => {
 
       await expect(action).resolves.toEqual(
         ImagesActions.fetchBatchThumbnailsSucceeded({
+          imageIds: albumIds,
           images: albumImages,
           context: 'photos-in-album',
         }),
@@ -1153,7 +1157,10 @@ describe('ImagesEffects', () => {
       const action = await firstValueFrom(effects.fetchAlbumThumbnailImages$);
 
       expect(action).toEqual(
-        ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+        ImagesActions.fetchBatchThumbnailsFailed({
+          imageIds: albumIds,
+          error: mockError,
+        }),
       );
     });
 

@@ -185,6 +185,7 @@ export class ImagesEffects {
         this.imagesApiService.getBatchThumbnailImages(imageIds).pipe(
           map(response =>
             ImagesActions.fetchBatchThumbnailsSucceeded({
+              imageIds,
               images: response.data,
               context,
             }),
@@ -192,6 +193,7 @@ export class ImagesEffects {
           catchError(error =>
             of(
               ImagesActions.fetchBatchThumbnailsFailed({
+                imageIds,
                 error: this.parseError(error),
               }),
             ),
@@ -235,6 +237,7 @@ export class ImagesEffects {
             this.imagesApiService.getBatchThumbnailImages(imageIds).pipe(
               map(response =>
                 ImagesActions.fetchBatchThumbnailsSucceeded({
+                  imageIds,
                   images: response.data,
                   context: 'photos-in-album',
                 }),
@@ -242,6 +245,7 @@ export class ImagesEffects {
               catchError(error =>
                 of(
                   ImagesActions.fetchBatchThumbnailsFailed({
+                    imageIds,
                     error: this.parseError(error),
                   }),
                 ),
