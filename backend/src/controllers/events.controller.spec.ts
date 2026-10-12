@@ -63,6 +63,21 @@ describe('events routes', () => {
       expect(response.body.data.totalCount).toBe(2);
     });
 
+    it('should keep a list of upcoming events on the CDN only until the next one starts', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
+      await createEvent({ title: 'Past', eventDate: '2026-09-01T23:00:00.000Z' });
+      await createEvent({ title: 'Next', eventDate: '2026-09-26T14:00:00.000Z' });
+      await createEvent({ title: 'Later', eventDate: '2026-10-01T23:00:00.000Z' });
+
+      const upcoming = await request(app).get('/v1/events?filter_showPastEvents=false');
+      const all = await request(app).get('/v1/events');
+
+      expect(upcoming.headers['vercel-cdn-cache-control']).toBe('s-maxage=7200');
+      expect(all.headers['vercel-cdn-cache-control']).toBe('s-maxage=86400');
+    });
+
     it('should page through events', async () => {
       await createEvent({ title: 'First', eventDate: '2026-10-01T23:00:00.000Z' });
       await createEvent({ title: 'Second', eventDate: '2026-10-08T23:00:00.000Z' });

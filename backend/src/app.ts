@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import cors, { CorsOptions } from 'cors';
 import express, { NextFunction, Request, Response, Router } from 'express';
 
+import { clearCacheAfterWrite, publicCache } from './middlewares/cdn-cache.middleware';
 import { dataset } from './middlewares/dataset.middleware';
 import { errorHandler, notFound } from './middlewares/error-handler.middleware';
 import { logger } from './middlewares/logger.middleware';
@@ -26,14 +27,14 @@ Sentry.init({
 });
 
 const dataRouter = Router()
-  .use('/dataset', dataset)
-  .use('/articles', articlesRouter)
-  .use('/events', eventsRouter)
-  .use('/games', gamesRouter)
-  .use('/images', imagesRouter)
-  .use('/public/members', publicMembersRouter)
+  .use('/dataset', publicCache, dataset)
+  .use('/articles', publicCache, articlesRouter)
+  .use('/events', publicCache, eventsRouter)
+  .use('/games', publicCache, gamesRouter)
+  .use('/images', publicCache, imagesRouter)
+  .use('/public/members', publicCache, publicMembersRouter)
   .use('/admin/members', adminMembersRouter)
-  .use('/tournaments', tournamentsRouter)
+  .use('/tournaments', publicCache, tournamentsRouter)
   .use('/users', usersRouter);
 
 const corsOptions: CorsOptions = {
@@ -73,7 +74,8 @@ export const app = express();
 app
   .use(cors(corsOptions))
   .use(logger)
-  .use('/v1/version', version)
+  .use(clearCacheAfterWrite)
+  .use('/v1/version', publicCache, version)
   // Svix signature verification needs the raw request body, so this mounts before the JSON parser
   .use('/v1/webhooks', ensureDatabaseConnection, webhooksRouter)
   // Vercel turns away any larger request before it reaches the app

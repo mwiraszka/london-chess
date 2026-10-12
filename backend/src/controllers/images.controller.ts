@@ -9,6 +9,7 @@ import type { ClientSession } from 'mongoose';
 import { Types, startSession } from 'mongoose';
 import sharp from 'sharp';
 
+import { limitCdnCache } from '../middlewares/cdn-cache.middleware';
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import {
@@ -36,6 +37,14 @@ const URL_EXPIRY_SECONDS = 12 * 3600;
 // This guarantees any cached response still has at least URL_EXPIRY_SECONDS / 2
 // of validity remaining when served from cache.
 const IMAGE_CACHE_MAX_AGE_SECONDS = URL_EXPIRY_SECONDS / 2;
+
+// Short enough that a browser's copy of a response the CDN held still expires before its URLs
+const IMAGE_CDN_CACHE_SECONDS = 3600;
+
+function cacheSignedUrls(res: Response): void {
+  res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+  limitCdnCache(res, IMAGE_CDN_CACHE_SECONDS);
+}
 
 // Committed whole or not at all
 async function inTransaction<T>(
@@ -117,7 +126,7 @@ export async function getThumbnailImages(
     );
 
     const failedCount = findResults.length - combinedImages.length;
-    res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+    cacheSignedUrls(res);
     res.status(200).json({
       data: {
         items: combinedImages,
@@ -203,7 +212,7 @@ export async function getBatchThumbnailImages(
       return;
     }
 
-    res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+    cacheSignedUrls(res);
     res.status(200).json({ data: combinedImages });
   } catch (error) {
     res.status(500).json({
@@ -228,7 +237,7 @@ export async function getMainImage(
       return;
     }
 
-    res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+    cacheSignedUrls(res);
     res.status(200).json({ data: combinedImage });
   } catch {
     res.status(500).json({
