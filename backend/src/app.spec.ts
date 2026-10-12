@@ -64,10 +64,17 @@ describe('app', () => {
   it('should respond with a server error when the database cannot be reached', async () => {
     vi.mocked(connectToDatabase).mockRejectedValueOnce(new Error('refused'));
 
-    const response = await request(app).get('/v1/version');
+    const response = await request(app).get('/v1/dataset');
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ message: 'Unknown error.' });
+  });
+
+  it('should leave the database alone for requests that never read it', async () => {
+    await request(app).get('/v1/version');
+    await request(app).get('/robots.txt');
+
+    expect(connectToDatabase).not.toHaveBeenCalled();
   });
 
   it('should answer a route it does not have in JSON', async () => {
