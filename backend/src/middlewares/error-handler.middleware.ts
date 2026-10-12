@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import multer from 'multer';
 
 import { ApiErrorResponse } from '../models/api-response.model';
 
-// Body parsing and upload errors carry the status and a message meant for the caller;
+// Body parsing errors carry the status and a message meant for the caller;
 // anything else is reported to Sentry before it reaches here
 export function errorHandler(
   error: unknown,
@@ -14,11 +13,6 @@ export function errorHandler(
   // A response already under way can only be cut short, which Express's own handler does
   if (res.headersSent) {
     next(error);
-    return;
-  }
-
-  if (error instanceof multer.MulterError) {
-    res.status(400).json({ message: `${error.message}.` });
     return;
   }
 

@@ -1,4 +1,4 @@
-import nodemailer, { Transporter } from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 import { EmailContent } from '../util/email-template.util';
 
@@ -17,6 +17,8 @@ export async function sendEmail(
     throw new Error('Unable to parse SMTP environment variables.');
   }
 
+  // Loaded on first use, so only a request that sends mail pays for it
+  const { default: nodemailer } = await import('nodemailer');
   transport ??= nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,

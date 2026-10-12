@@ -7,7 +7,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request, Response } from 'express';
 import type { ClientSession } from 'mongoose';
 import { Types, startSession } from 'mongoose';
-import sharp from 'sharp';
+import type { Metadata } from 'sharp';
 
 import { limitCdnCache } from '../middlewares/cdn-cache.middleware';
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
@@ -547,6 +547,9 @@ async function prepareNewImages(
   metadataArray: Image[],
   modificationInfo: ModificationInfo,
 ): Promise<NewImage[]> {
+  // Loaded on first use, so only an upload pays for it rather than every cold start
+  const { default: sharp } = await import('sharp');
+
   return Promise.all(
     files.map(async (file, i) => {
       const [main, thumbnail] = await Promise.all(
@@ -666,8 +669,8 @@ async function toCombinedImages(images: NewImage[]): Promise<CombinedImage[]> {
 function prepareImageForDB(
   image: Image,
   modificationInfo: ModificationInfo,
-  mainMetadata?: sharp.Metadata,
-  thumbnailMetadata?: sharp.Metadata,
+  mainMetadata?: Metadata,
+  thumbnailMetadata?: Metadata,
 ): Omit<Image, 'id'> {
   return {
     album: image.album,
