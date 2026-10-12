@@ -38,7 +38,7 @@ describe('AdminControlsComponent', () => {
   };
 
   beforeEach(async () => {
-    config = { buttonSize: 15, deleteCb: vi.fn(), itemName: 'Spring Open' };
+    config = { deleteCb: vi.fn(), itemName: 'Spring Open' };
     ctrlMetaKeyPressed$ = new BehaviorSubject(false);
 
     await TestBed.configureTestingModule({
@@ -49,16 +49,6 @@ describe('AdminControlsComponent', () => {
         { provide: IS_TOUCH_DEVICE, useValue: () => touchDevice },
       ],
     }).compileComponents();
-  });
-
-  it('should size its buttons from the config', () => {
-    create();
-
-    expect(
-      query(fixture.debugElement, '.admin-controls').nativeElement.style.getPropertyValue(
-        '--button-size',
-      ),
-    ).toBe('15px');
   });
 
   it('should sit over the top start corner of the item, or centred on its start edge', () => {
@@ -155,7 +145,7 @@ describe('AdminControlsComponent', () => {
       });
 
       const link = query(fixture.debugElement, '.edit-button');
-      expect(link.classes['disabled']).toBe(true);
+      expect(link.nativeElement.getAttribute('aria-disabled')).toBe('true');
       expect(link.nativeElement.getAttribute('href')).toBeNull();
       expect(tooltipText('.edit-button')).toBe('Locked for review');
     });

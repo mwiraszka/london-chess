@@ -118,7 +118,6 @@ describe('PhotoGridComponent', () => {
       const album = MOCK_IMAGES[0].album;
       const config = component.getAdminControlsConfig(album);
 
-      expect(config.buttonSize).toBe(34);
       expect(config.editPath).toEqual(['album', 'edit', album]);
       expect(config.isEditDisabled).toBe(false);
       expect(config.isDeleteDisabled).toBe(false);

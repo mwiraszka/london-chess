@@ -1,6 +1,7 @@
 import {
   BookmarkIconComponent,
   ButtonComponent,
+  ButtonLinkComponent,
   EditIconComponent,
   PopoverComponent,
   PopoverPlacement,
@@ -31,7 +32,7 @@ import { IS_TOUCH_DEVICE } from '@app/tokens';
   styleUrl: './admin-controls.component.scss',
   imports: [
     ButtonComponent,
-    EditIconComponent,
+    ButtonLinkComponent,
     IsDefinedPipe,
     PopoverComponent,
     RouterLink,
@@ -55,6 +56,7 @@ export class AdminControlsComponent {
 
   protected readonly bookmarkIcon = BookmarkIconComponent;
   protected readonly deleteIcon = TrashIconComponent;
+  protected readonly editIcon = EditIconComponent;
 
   // A touch screen has no key to hold down, so deleting is always offered there
   protected readonly showDeleteButton = inject(IS_TOUCH_DEVICE)()

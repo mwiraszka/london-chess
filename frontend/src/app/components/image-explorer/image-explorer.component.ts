@@ -131,7 +131,6 @@ export class ImageExplorerComponent implements OnInit {
 
   public getAdminControlsConfig(image: Image): AdminControlsConfig {
     return {
-      buttonSize: 34,
       deleteCb: () => this.deletion.deleteImage(image),
       editPath: ['image', 'edit', image.id.split('-')[0]],
       editInNewTab: true,

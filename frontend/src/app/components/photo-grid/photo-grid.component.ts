@@ -109,7 +109,6 @@ export class PhotoGridComponent {
 
   public getAdminControlsConfig(album: string): AdminControlsConfig {
     return {
-      buttonSize: 34,
       deleteCb: () =>
         this.deletion.deleteAlbum(album, this.getAlbumPhotoCountText(album)),
       editPath: ['album', 'edit', album],

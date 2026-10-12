@@ -9,7 +9,6 @@ describe('AdminControlsService', () => {
   let service: AdminControlsService;
 
   const config: AdminControlsConfig = {
-    buttonSize: 34,
     deleteCb: vi.fn(),
     editPath: ['event', 'edit'],
     itemName: 'Test Item',

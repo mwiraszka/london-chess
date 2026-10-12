@@ -96,7 +96,6 @@ export class EventsCalendarGridComponent {
 
   public getAdminControlsConfig(event: Event): AdminControlsConfig {
     return {
-      buttonSize: 34,
       deleteCb: () => this.deletion.deleteEvent(event),
       editPath: ['event', 'edit', event.id],
       itemName: event.title,
