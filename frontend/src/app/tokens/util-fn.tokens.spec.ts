@@ -16,6 +16,7 @@ import {
   parseError,
   reloadPage,
   setPaginationParams,
+  visibleTimer,
 } from '@app/utils';
 
 import {
@@ -33,6 +34,7 @@ import {
   PARSE_ERROR,
   RELOAD_PAGE,
   SET_PAGINATION_PARAMS,
+  VISIBLE_TIMER,
 } from './util-fn.tokens';
 
 describe('util function tokens', () => {
@@ -51,6 +53,7 @@ describe('util function tokens', () => {
     ['DATA_URL_TO_FILE', DATA_URL_TO_FILE, dataUrlToFile],
     ['IS_LCC_ERROR', IS_LCC_ERROR, isLccError],
     ['RELOAD_PAGE', RELOAD_PAGE, reloadPage],
+    ['VISIBLE_TIMER', VISIBLE_TIMER, visibleTimer],
   ])('%s provides the matching utility by default', (_name, token, utilFn) => {
     const provided = TestBed.inject(token);
 

@@ -10,7 +10,6 @@ import {
   from,
   merge,
   of,
-  timer,
 } from 'rxjs';
 import {
   catchError,
@@ -42,6 +41,7 @@ import {
   IS_EXPIRED,
   IS_LCC_ERROR,
   PARSE_ERROR,
+  VISIBLE_TIMER,
 } from '@app/tokens';
 import { creditEditor, isDefined } from '@app/utils';
 import moment from '@app/utils/datetime/moment';
@@ -61,6 +61,7 @@ export class ImagesEffects {
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly isLccError = inject(IS_LCC_ERROR);
   private readonly parseError = inject(PARSE_ERROR);
+  private readonly visibleTimer = inject(VISIBLE_TIMER);
 
   // Serverless functions cap the request body (~4.5MB), so images are uploaded one
   // file per request with a small concurrency pool rather than one large batch.
@@ -402,7 +403,7 @@ export class ImagesEffects {
       ),
     );
 
-    const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
+    const periodicCheck$ = this.visibleTimer(0, 5 * 60 * 1000).pipe(
       switchMap(() =>
         this.store.select(ImagesSelectors.selectLastMetadataFetch).pipe(take(1)),
       ),
@@ -431,7 +432,7 @@ export class ImagesEffects {
       this.actions$.pipe(ofType(ImagesActions.paginationOptionsChanged)),
     );
 
-    const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
+    const periodicCheck$ = this.visibleTimer(0, 5 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(ImagesSelectors.selectLastFilteredThumbnailsFetch),
@@ -460,7 +461,7 @@ export class ImagesEffects {
       ofType(ImagesActions.fetchAllImagesMetadataSucceeded),
     );
 
-    const periodicCheck$ = timer(0, 5 * 60 * 1000).pipe(
+    const periodicCheck$ = this.visibleTimer(0, 5 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(ImagesSelectors.selectLastAlbumCoversFetch),
@@ -492,7 +493,7 @@ export class ImagesEffects {
   retryFailedArticleBannerImages$ = createEffect(() => {
     // Periodic check to retry failed/expired article banner images, but only
     // while the user is on a page that actually renders article banners.
-    const periodicCheck$ = timer(5 * 60 * 1000, 10 * 60 * 1000).pipe(
+    const periodicCheck$ = this.visibleTimer(5 * 60 * 1000, 10 * 60 * 1000).pipe(
       switchMap(() => this.store.select(NavSelectors.selectCurrentPath).pipe(take(1))),
       filter(
         currentPath =>
