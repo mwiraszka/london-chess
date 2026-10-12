@@ -2,7 +2,7 @@ import { ToastService } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { Observable, ReplaySubject, of } from 'rxjs';
+import { Observable, ReplaySubject, of, throwError } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 
@@ -21,7 +21,7 @@ import { ImagesActions } from '@app/store/images';
 import { MembersActions } from '@app/store/members';
 import { NavActions } from '@app/store/nav';
 import { TournamentsActions } from '@app/store/tournaments';
-import { RELOAD_PAGE } from '@app/tokens';
+import { PARSE_ERROR, RELOAD_PAGE } from '@app/tokens';
 
 import { environment } from '@env';
 
@@ -37,6 +37,7 @@ describe('AppEffects', () => {
   let toastService: Mocked<ToastService>;
   let datasetApi: Mocked<DatasetApiService>;
   let reloadPage: Mock<() => void>;
+  let parseError: Mock<LccError, [unknown]>;
 
   const mockError: LccError = {
     name: 'LCCError',
@@ -75,6 +76,7 @@ describe('AppEffects', () => {
   }
 
   beforeEach(() => {
+    parseError = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         AppEffects,
@@ -82,6 +84,7 @@ describe('AppEffects', () => {
         { provide: ToastService, useValue: { show: vi.fn() } },
         { provide: DatasetApiService, useValue: { getDataset: vi.fn() } },
         { provide: RELOAD_PAGE, useValue: vi.fn() },
+        { provide: PARSE_ERROR, useValue: parseError },
         provideMockStore(),
       ],
     });
@@ -146,6 +149,18 @@ describe('AppEffects', () => {
       const results = collect(effects.dropRecordsFromReplacedDataset$);
 
       expect(results).toEqual([]);
+    });
+
+    it('should report a check that fails and keep the saved records', () => {
+      localStorage.setItem(DATASET_STORAGE_KEY, replacedAt);
+      datasetApi.getDataset.mockReturnValue(throwError(() => mockError));
+      parseError.mockReturnValue(mockError);
+      actions$.next(AppActions.datasetCheckRequested());
+
+      const results = collect(effects.dropRecordsFromReplacedDataset$);
+
+      expect(results).toEqual([AppActions.datasetCheckFailed({ error: mockError })]);
+      expect(localStorage.getItem(DATASET_STORAGE_KEY)).toBe(replacedAt);
     });
 
     it('should reload the page once the dropped records are saved', async () => {
