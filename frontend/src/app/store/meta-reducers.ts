@@ -84,6 +84,7 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
     'isFetchingFiltered',
     // Only the tab that picked a new image holds its file
     'newImagesFormData',
+    'pendingThumbnailIds',
     'uploadProgress',
   ]),
   membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
@@ -274,14 +275,31 @@ export function hydrationMetaReducer(
   })(reducer);
 }
 
+function onlyUnpersistedFieldsChanged(
+  previous: object,
+  next: object,
+  unpersistedFields: string[],
+): boolean {
+  const previousFields = new Map(Object.entries(previous));
+  const nextFields = Object.entries(next);
+  return (
+    nextFields.length === previousFields.size &&
+    nextFields.every(
+      ([field, value]) =>
+        unpersistedFields.includes(field) || previousFields.get(field) === value,
+    )
+  );
+}
+
 /**
- * Saves the hydrated slices to local storage once per task, and only the slices that
- * changed, so a burst of actions costs a single write rather than a full one after each.
+ * Saves the hydrated slices to local storage once per task, and only the slices whose
+ * saved fields changed, so a burst of actions costs a single write rather than a full one
+ * after each.
  */
 export function persistStateMetaReducer(
   reducer: ActionReducer<MetaState>,
 ): ActionReducer<MetaState> {
-  const lastSaved = new Map<keyof MetaState, unknown>();
+  const lastSaved = new Map<keyof MetaState, object>();
   let latestState: MetaState | undefined;
   let isSaveQueued = false;
 
@@ -289,11 +307,18 @@ export function persistStateMetaReducer(
     isSaveQueued = false;
     for (const stateKey of hydratedStates) {
       const stateSlice = latestState?.[stateKey];
-      if (!stateSlice || lastSaved.get(stateKey) === stateSlice) {
+      const previousSlice = lastSaved.get(stateKey);
+      if (!stateSlice || previousSlice === stateSlice) {
         continue;
       }
       lastSaved.set(stateKey, stateSlice);
       const unpersistedFields = Object.keys(UNPERSISTED_FIELDS[stateKey] ?? {});
+      if (
+        previousSlice &&
+        onlyUnpersistedFieldsChanged(previousSlice, stateSlice, unpersistedFields)
+      ) {
+        continue;
+      }
       versionedStorage.setItem(
         stateKey,
         JSON.stringify(omit(stateSlice, unpersistedFields)),

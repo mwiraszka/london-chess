@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import cors, { CorsOptions } from 'cors';
 import express, { NextFunction, Request, Response, Router } from 'express';
 
+import { clearCacheAfterWrite, publicCache } from './middlewares/cdn-cache.middleware';
 import { dataset } from './middlewares/dataset.middleware';
 import { errorHandler, notFound } from './middlewares/error-handler.middleware';
 import { logger } from './middlewares/logger.middleware';
@@ -23,19 +24,20 @@ Sentry.init({
   environment: process.env['VERCEL_ENV'] ?? 'development',
   enabled: !!process.env['SENTRY_DSN'],
   tracesSampleRate: 0,
+  // Its module hooks only record spans, and cannot reach the modules in a bundled function
+  enableRuntimeChannelInjection: false,
 });
 
-const router = Router()
-  .use('/v1/version', version)
-  .use('/v1/dataset', dataset)
-  .use('/v1/articles', articlesRouter)
-  .use('/v1/events', eventsRouter)
-  .use('/v1/games', gamesRouter)
-  .use('/v1/images', imagesRouter)
-  .use('/v1/public/members', publicMembersRouter)
-  .use('/v1/admin/members', adminMembersRouter)
-  .use('/v1/tournaments', tournamentsRouter)
-  .use('/v1/users', usersRouter);
+const dataRouter = Router()
+  .use('/dataset', publicCache, dataset)
+  .use('/articles', publicCache, clearCacheAfterWrite, articlesRouter)
+  .use('/events', publicCache, clearCacheAfterWrite, eventsRouter)
+  .use('/games', publicCache, gamesRouter)
+  .use('/images', publicCache, clearCacheAfterWrite, imagesRouter)
+  .use('/public/members', publicCache, publicMembersRouter)
+  .use('/admin/members', clearCacheAfterWrite, adminMembersRouter)
+  .use('/tournaments', publicCache, clearCacheAfterWrite, tournamentsRouter)
+  .use('/users', usersRouter);
 
 const corsOptions: CorsOptions = {
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -54,7 +56,7 @@ const corsOptions: CorsOptions = {
   },
 };
 
-// Ensure a (cached) database connection before any route handler runs. In a
+// Ensure a (cached) database connection before any route that reads it runs. In a
 // long-running server this connects once; in serverless it reuses the warm pool.
 const ensureDatabaseConnection = async (
   _req: Request,
@@ -74,13 +76,13 @@ export const app = express();
 app
   .use(cors(corsOptions))
   .use(logger)
+  .use('/v1/version', publicCache, version)
   // Svix signature verification needs the raw request body, so this mounts before the JSON parser
-  .use('/v1/webhooks', ensureDatabaseConnection, webhooksRouter)
+  .use('/v1/webhooks', ensureDatabaseConnection, clearCacheAfterWrite, webhooksRouter)
   // Vercel turns away any larger request before it reaches the app
   .use(express.json({ limit: '4.5mb' }))
   .use(express.urlencoded({ extended: true, limit: '4.5mb' }))
-  .use(ensureDatabaseConnection)
-  .use(router)
+  .use('/v1', ensureDatabaseConnection, dataRouter)
   .use(notFound);
 
 Sentry.setupExpressErrorHandler(app);

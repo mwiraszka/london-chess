@@ -1,6 +1,6 @@
 import { EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { compact, pick } from 'lodash-es';
+import { compact, difference, pick, union } from 'lodash-es';
 
 import { IMAGE_FORM_DATA_PROPERTIES, INITIAL_IMAGE_FORM_DATA } from '@app/constants';
 import { DataPaginationOptions, Id, Image, ImageFormData, IsoDate } from '@app/models';
@@ -26,6 +26,8 @@ export interface ImagesState extends EntityState<{
   isFetchingFiltered: boolean;
   // Progress of the image uploads in flight, which is never persisted
   uploadProgress: { uploaded: number; total: number } | null;
+  // Thumbnails whose batch is on its way, never persisted
+  pendingThumbnailIds: Id[];
   lastMetadataFetch: IsoDate | null;
   lastFilteredThumbnailsFetch: IsoDate | null;
   lastAlbumCoversFetch: IsoDate | null;
@@ -48,6 +50,7 @@ export const initialState: ImagesState = imagesAdapter.getInitialState({
   failedLoads: [],
   isFetchingFiltered: false,
   uploadProgress: null,
+  pendingThumbnailIds: [],
   lastMetadataFetch: null,
   lastFilteredThumbnailsFetch: null,
   lastAlbumCoversFetch: null,
@@ -90,6 +93,15 @@ export const imagesReducer = createReducer(
   on(ImagesActions.fetchFilteredThumbnailsFailed, (state): ImagesState => ({
     ...withFailedLoad(state, 'filteredThumbnails'),
     isFetchingFiltered: false,
+  })),
+
+  on(ImagesActions.fetchBatchThumbnailsRequested, (state, { imageIds }): ImagesState => ({
+    ...state,
+    pendingThumbnailIds: union(state.pendingThumbnailIds, imageIds),
+  })),
+  on(ImagesActions.fetchBatchThumbnailsFailed, (state, { imageIds }): ImagesState => ({
+    ...state,
+    pendingThumbnailIds: difference(state.pendingThumbnailIds, imageIds),
   })),
 
   on(ImagesActions.fetchMainImageRequested, (state): ImagesState =>
@@ -173,7 +185,7 @@ export const imagesReducer = createReducer(
 
   on(
     ImagesActions.fetchBatchThumbnailsSucceeded,
-    (state, { images, context }): ImagesState =>
+    (state, { imageIds, images, context }): ImagesState =>
       imagesAdapter.upsertMany(
         images.map(image => {
           const originalEntity = image ? state.entities[image.id] : null;
@@ -198,6 +210,7 @@ export const imagesReducer = createReducer(
         }),
         {
           ...state,
+          pendingThumbnailIds: difference(state.pendingThumbnailIds, imageIds),
           lastAlbumCoversFetch:
             context === 'album-covers'
               ? new Date(Date.now()).toISOString()

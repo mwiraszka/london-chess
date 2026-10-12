@@ -35,6 +35,7 @@ describe('Images Selectors', () => {
       failedLoads: [],
       isFetchingFiltered: false,
       uploadProgress: { uploaded: 1, total: 3 },
+      pendingThumbnailIds: [],
       newImagesFormData: {},
       lastMetadataFetch: '2025-01-15T10:00:00.000Z',
       lastFilteredThumbnailsFetch: '2025-01-14T12:00:00.000Z',
@@ -473,7 +474,7 @@ describe('Images Selectors', () => {
         ImagesSelectors.selectIdsOfArticleBannerImagesWithMissingOrExpiredThumbnailUrls(
           articles,
         );
-      const result = selector.projector(allImages);
+      const result = selector.projector(allImages, []);
       expect(result).toEqual(['img-1']);
     });
 
@@ -510,7 +511,7 @@ describe('Images Selectors', () => {
         ImagesSelectors.selectIdsOfArticleBannerImagesWithMissingOrExpiredThumbnailUrls(
           articles,
         );
-      const result = selector.projector(allImages);
+      const result = selector.projector(allImages, []);
       expect(result).toEqual(['img-1', 'img-3']);
     });
 
@@ -539,8 +540,27 @@ describe('Images Selectors', () => {
         ImagesSelectors.selectIdsOfArticleBannerImagesWithMissingOrExpiredThumbnailUrls(
           articles,
         );
-      const result = selector.projector(allImages);
+      const result = selector.projector(allImages, []);
       expect(result).toEqual(['img-1', 'img-2']);
+    });
+
+    it('should leave out banner images whose thumbnails are already on their way', () => {
+      const articles = [
+        { ...MOCK_ARTICLES[0], bannerImageId: 'img-1' },
+        { ...MOCK_ARTICLES[1], bannerImageId: 'img-2' },
+      ];
+      const allImages = [
+        { ...MOCK_IMAGES[0], id: 'img-1', thumbnailUrl: undefined },
+        { ...MOCK_IMAGES[1], id: 'img-2', thumbnailUrl: undefined },
+      ];
+      const selector =
+        ImagesSelectors.selectIdsOfArticleBannerImagesWithMissingOrExpiredThumbnailUrls(
+          articles,
+        );
+
+      const result = selector.projector(allImages, ['img-1']);
+
+      expect(result).toEqual(['img-2']);
     });
   });
 
@@ -648,9 +668,25 @@ describe('Images Selectors', () => {
       const result =
         ImagesSelectors.selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls.projector(
           allImages,
+          [],
         );
 
       expect(result).toEqual(['missing', 'expired']);
+    });
+
+    it('should leave out album covers whose thumbnails are already on their way', () => {
+      const allImages = [
+        { ...MOCK_IMAGES[0], id: 'pending', albumCover: true, thumbnailUrl: undefined },
+        { ...MOCK_IMAGES[1], id: 'missing', albumCover: true, thumbnailUrl: undefined },
+      ];
+
+      const result =
+        ImagesSelectors.selectIdsOfAlbumCoversWithMissingOrExpiredThumbnailUrls.projector(
+          allImages,
+          ['pending'],
+        );
+
+      expect(result).toEqual(['missing']);
     });
   });
 

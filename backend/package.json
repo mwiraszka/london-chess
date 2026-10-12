@@ -1,6 +1,6 @@
 {
   "name": "lcc-server",
-  "version": "6.5.2",
+  "version": "6.5.3",
   "description": "REST API for the London Chess Club website, built with Node and Express",
   "author": "Michal Wiraszka",
   "repository": {
@@ -13,20 +13,22 @@
     "sync:dev": "npx tsx --env-file=.env scripts/sync-dev.ts",
     "start": "npx tsx watch --env-file=.env src/server.ts",
     "start:e2e": "tsx e2e/server.ts",
+    "bundle": "esbuild src/vercel-handler.ts --bundle --platform=node --target=node24 --format=cjs --external:sharp --outfile=api/index.js",
     "tunnel": "ngrok http 3000 --log stdout --log-level warn",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint 'src/**' 'api/**' 'e2e/**' 'scripts/**'",
-    "format": "prettier --write 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts' 'api/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
+    "lint": "eslint 'src/**' 'e2e/**' 'scripts/**'",
+    "format": "prettier --write 'src/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1149.0",
     "@aws-sdk/s3-request-presigner": "3.1149.0",
     "@clerk/backend": "3.23.2",
     "@sentry/node": "11.6.0",
+    "@vercel/functions": "3.9.11",
     "cors": "2.8.6",
     "express": "5.3.0",
     "mongoose": "9.11.1",
@@ -44,6 +46,7 @@
     "@types/nodemailer": "8.0.2",
     "@types/supertest": "7.2.1",
     "@vitest/coverage-v8": "5.0.3",
+    "esbuild": "0.28.2",
     "eslint": "10.12.0",
     "mongodb-memory-server": "11.3.0",
     "prettier": "3.9.10",

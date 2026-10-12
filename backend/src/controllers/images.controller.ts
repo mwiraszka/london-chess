@@ -7,8 +7,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request, Response } from 'express';
 import type { ClientSession } from 'mongoose';
 import { Types, startSession } from 'mongoose';
-import sharp from 'sharp';
+import type { Metadata } from 'sharp';
 
+import { limitCdnCache } from '../middlewares/cdn-cache.middleware';
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import {
@@ -36,6 +37,15 @@ const URL_EXPIRY_SECONDS = 12 * 3600;
 // This guarantees any cached response still has at least URL_EXPIRY_SECONDS / 2
 // of validity remaining when served from cache.
 const IMAGE_CACHE_MAX_AGE_SECONDS = URL_EXPIRY_SECONDS / 2;
+
+// Short enough that a browser's copy of a response the CDN held still expires before its URLs
+const IMAGE_CDN_CACHE_SECONDS = 3600;
+
+// Not marked private, which would keep the CDN from storing it
+function cacheSignedUrls(res: Response): void {
+  res.setHeader('Cache-Control', `max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+  limitCdnCache(res, IMAGE_CDN_CACHE_SECONDS);
+}
 
 // Committed whole or not at all
 async function inTransaction<T>(
@@ -117,7 +127,7 @@ export async function getThumbnailImages(
     );
 
     const failedCount = findResults.length - combinedImages.length;
-    res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+    cacheSignedUrls(res);
     res.status(200).json({
       data: {
         items: combinedImages,
@@ -203,7 +213,7 @@ export async function getBatchThumbnailImages(
       return;
     }
 
-    res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+    cacheSignedUrls(res);
     res.status(200).json({ data: combinedImages });
   } catch (error) {
     res.status(500).json({
@@ -228,7 +238,7 @@ export async function getMainImage(
       return;
     }
 
-    res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+    cacheSignedUrls(res);
     res.status(200).json({ data: combinedImage });
   } catch {
     res.status(500).json({
@@ -538,6 +548,9 @@ async function prepareNewImages(
   metadataArray: Image[],
   modificationInfo: ModificationInfo,
 ): Promise<NewImage[]> {
+  // Loaded on first use, so only an upload pays for it rather than every cold start
+  const { default: sharp } = await import('sharp');
+
   return Promise.all(
     files.map(async (file, i) => {
       const [main, thumbnail] = await Promise.all(
@@ -657,8 +670,8 @@ async function toCombinedImages(images: NewImage[]): Promise<CombinedImage[]> {
 function prepareImageForDB(
   image: Image,
   modificationInfo: ModificationInfo,
-  mainMetadata?: sharp.Metadata,
-  thumbnailMetadata?: sharp.Metadata,
+  mainMetadata?: Metadata,
+  thumbnailMetadata?: Metadata,
 ): Omit<Image, 'id'> {
   return {
     album: image.album,

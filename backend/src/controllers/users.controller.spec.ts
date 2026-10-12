@@ -10,6 +10,11 @@ import { createAccountHolder, createMember, readMember } from '../testing/fixtur
 import { send, sentKeys } from '../testing/storage.mock';
 import { hashSecret } from '../util/hash-secret.util';
 
+const { dangerouslyDeleteByTag } = vi.hoisted(() => ({
+  dangerouslyDeleteByTag: vi.fn<(tag: string) => Promise<void>>(async () => undefined),
+}));
+
+vi.mock('@vercel/functions', () => ({ dangerouslyDeleteByTag, waitUntil: vi.fn() }));
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/storage.service', () => import('../testing/storage.mock.js'));
@@ -70,6 +75,17 @@ describe('users routes', () => {
       const saved = await AccountVerificationModel.findOne({ email: 'jane@example.com' });
       expect(saved?.codeHash).not.toContain(code);
       expect(saved?.expiresAt).toEqual(new Date('2026-09-26T12:10:00.000Z'));
+    });
+
+    it('should leave the CDN alone, since nothing public changes', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+
+      const response = await request(app)
+        .post('/v1/users/account-requests/verification')
+        .send({ email: 'jane@example.com' });
+
+      expect(response.status).toBe(200);
+      expect(dangerouslyDeleteByTag).not.toHaveBeenCalled();
     });
 
     it('should reject an invalid email address', async () => {

@@ -1,4 +1,5 @@
 export { isStorageSupported } from './browser/is-storage-supported.util';
+export { visibleTimer } from './browser/visible-timer.util';
 
 export { buildPgn } from './chess/build-pgn.util';
 export {

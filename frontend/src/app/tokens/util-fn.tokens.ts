@@ -15,6 +15,7 @@ import {
   parseError,
   reloadPage,
   setPaginationParams,
+  visibleTimer,
 } from '@app/utils';
 
 // Injectable wrappers for free-function utilities so they can be replaced in tests.
@@ -85,4 +86,8 @@ export const IS_LCC_ERROR = new InjectionToken<typeof isLccError>('IS_LCC_ERROR'
 
 export const RELOAD_PAGE = new InjectionToken<typeof reloadPage>('RELOAD_PAGE', {
   factory: () => reloadPage,
+});
+
+export const VISIBLE_TIMER = new InjectionToken<typeof visibleTimer>('VISIBLE_TIMER', {
+  factory: () => visibleTimer,
 });

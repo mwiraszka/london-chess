@@ -3,7 +3,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
-import { combineLatest, merge, of, timer } from 'rxjs';
+import { combineLatest, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -21,7 +21,7 @@ import { EventsApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
-import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR } from '@app/tokens';
+import { EXPORT_DATA_TO_CSV, IS_EXPIRED, PARSE_ERROR, VISIBLE_TIMER } from '@app/tokens';
 import { creditEditor, isDefined } from '@app/utils';
 
 import * as EventsActions from './events.actions';
@@ -36,6 +36,7 @@ export class EventsEffects {
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly isExpired = inject(IS_EXPIRED);
   private readonly parseError = inject(PARSE_ERROR);
+  private readonly visibleTimer = inject(VISIBLE_TIMER);
 
   fetchHomePageEvents$ = createEffect(() => {
     return this.actions$.pipe(
@@ -118,7 +119,7 @@ export class EventsEffects {
       ),
     );
 
-    const periodicCheck$ = timer(0, 10 * 60 * 1000).pipe(
+    const periodicCheck$ = this.visibleTimer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         this.store.select(EventsSelectors.selectLastHomePageFetch).pipe(take(1)),
       ),
@@ -145,7 +146,7 @@ export class EventsEffects {
       ),
     );
 
-    const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
+    const timerCheck$ = this.visibleTimer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(EventsSelectors.selectLastFilteredFetch),

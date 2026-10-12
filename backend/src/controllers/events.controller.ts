@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 
+import { limitCdnCache } from '../middlewares/cdn-cache.middleware';
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import { Event, EventModel, eventSortingConfig, eventTypes } from '../models/event.model';
@@ -36,16 +37,24 @@ export async function getEvents(
   res: Response<ApiPaginatedResponse<Event>>,
 ): Promise<void> {
   try {
-    const query = buildPaginationQuery<Event>(
-      parsePaginationParams(req),
-      eventSortingConfig,
-    );
+    const params = parsePaginationParams(req);
+    const query = buildPaginationQuery<Event>(params, eventSortingConfig);
 
-    const { records, filteredCount, totalCount } = await findPage(EventModel, query);
+    const [{ records, filteredCount, totalCount }, nextEvent] = await Promise.all([
+      findPage(EventModel, query),
+      'eventDate' in params.filters
+        ? EventModel.findOne(query.filter, { eventDate: 1 }).sort({ eventDate: 1 }).lean()
+        : null,
+    ]);
     const events: Event[] = records.map(({ _id, ...event }) => ({
       ...event,
       id: _id.toString(),
     }));
+
+    // An upcoming event leaves the list as it starts, so the stored list lasts until then
+    if (nextEvent) {
+      limitCdnCache(res, (Date.parse(nextEvent.eventDate) - Date.now()) / 1000);
+    }
 
     res.status(200).json({
       data: {

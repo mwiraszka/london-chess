@@ -41,13 +41,14 @@ export const fetchAlbumThumbnailsRequested = createAction(
 export const fetchBatchThumbnailsSucceeded = createAction(
   '[Images] Fetch batch thumbnails succeeded',
   props<{
+    imageIds: Id[];
     images: Image[];
     context: 'album-covers' | 'article-banner-images' | 'photos-in-album';
   }>(),
 );
 export const fetchBatchThumbnailsFailed = createAction(
   '[Images] Fetch batch thumbnails failed',
-  props<{ error: LccError }>(),
+  props<{ imageIds: Id[]; error: LccError }>(),
 );
 
 export const fetchMainImageRequested = createAction(

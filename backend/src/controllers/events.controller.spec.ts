@@ -14,6 +14,11 @@ import {
 } from '../testing/fixtures';
 import { EMAILS_FROM_SITE_ONLY } from '../util/site-url.util';
 
+const { dangerouslyDeleteByTag } = vi.hoisted(() => ({
+  dangerouslyDeleteByTag: vi.fn<(tag: string) => Promise<void>>(async () => undefined),
+}));
+
+vi.mock('@vercel/functions', () => ({ dangerouslyDeleteByTag, waitUntil: vi.fn() }));
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/email.service', () => ({
@@ -61,6 +66,21 @@ describe('events routes', () => {
       ]);
       expect(response.body.data.filteredCount).toBe(1);
       expect(response.body.data.totalCount).toBe(2);
+    });
+
+    it('should keep a list of upcoming events on the CDN only until the next one starts', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-26T12:00:00.000Z'));
+      await createEvent({ title: 'Past', eventDate: '2026-09-01T23:00:00.000Z' });
+      await createEvent({ title: 'Next', eventDate: '2026-09-26T14:00:00.000Z' });
+      await createEvent({ title: 'Later', eventDate: '2026-10-01T23:00:00.000Z' });
+
+      const upcoming = await request(app).get('/v1/events?filter_showPastEvents=false');
+      const all = await request(app).get('/v1/events');
+
+      expect(upcoming.headers['vercel-cdn-cache-control']).toBe('s-maxage=7200');
+      expect(all.headers['vercel-cdn-cache-control']).toBe('s-maxage=86400');
     });
 
     it('should page through events', async () => {
@@ -166,6 +186,19 @@ describe('events routes', () => {
         dateCreated: '2026-10-05T12:00:00.000Z',
         dateLastEdited: '2026-10-05T12:00:00.000Z',
       });
+    });
+
+    it('should clear the public data from the CDN once the event is saved', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      await createAdmin(ADMIN);
+
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .send(eventPayload());
+
+      expect(response.status).toBe(201);
+      expect(dangerouslyDeleteByTag).toHaveBeenCalledExactlyOnceWith('public-data');
     });
 
     it('should reject an invalid event', async () => {

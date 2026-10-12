@@ -26,8 +26,19 @@ jobs:
         with:
           version: 10
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
       - name: Install Vercel CLI
         run: pnpm install --global vercel
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The function ships as this one file, which starts far faster than loading each module
+      - name: Bundle Function
+        run: pnpm bundle
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}

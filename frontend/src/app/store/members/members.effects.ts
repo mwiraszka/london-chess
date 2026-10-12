@@ -3,7 +3,7 @@ import { concatLatestFrom } from '@ngrx/operators';
 import { routerNavigatedAction } from '@ngrx/router-store';
 import { Store } from '@ngrx/store';
 import { pick } from 'lodash-es';
-import { combineLatest, merge, of, timer } from 'rxjs';
+import { combineLatest, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -28,6 +28,7 @@ import {
   GET_NEW_PEAK_RATING,
   IS_EXPIRED,
   PARSE_ERROR,
+  VISIBLE_TIMER,
 } from '@app/tokens';
 import { creditEditor, isDefined } from '@app/utils';
 
@@ -42,6 +43,7 @@ export class MembersEffects {
 
   private readonly parseError = inject(PARSE_ERROR);
   private readonly isExpired = inject(IS_EXPIRED);
+  private readonly visibleTimer = inject(VISIBLE_TIMER);
   private readonly exportDataToCsv = inject(EXPORT_DATA_TO_CSV);
   private readonly getNewPeakRating = inject(GET_NEW_PEAK_RATING);
   private readonly memberProfiles = inject(MemberProfilesService);
@@ -136,7 +138,7 @@ export class MembersEffects {
       this.actions$.pipe(ofType(MembersActions.paginationOptionsChanged)),
     );
 
-    const timerCheck$ = timer(0, 10 * 60 * 1000).pipe(
+    const timerCheck$ = this.visibleTimer(0, 10 * 60 * 1000).pipe(
       switchMap(() =>
         combineLatest([
           this.store.select(MembersSelectors.selectLastFilteredFetch),

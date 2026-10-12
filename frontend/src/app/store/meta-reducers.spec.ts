@@ -519,6 +519,7 @@ describe('Meta Reducers', () => {
           ...imagesInitialState,
           failedLoads: ['metadata'],
           uploadProgress: { uploaded: 1, total: 2 },
+          pendingThumbnailIds: [MOCK_IMAGES[0].id],
         },
       };
       mockReducer = vi.fn(() => state);
@@ -533,6 +534,7 @@ describe('Meta Reducers', () => {
       expect(savedArticles).toHaveProperty('options');
       expect(savedImages).not.toHaveProperty('failedLoads');
       expect(savedImages).not.toHaveProperty('uploadProgress');
+      expect(savedImages).not.toHaveProperty('pendingThumbnailIds');
     });
 
     it('should leave the drafts of new images out of local storage', async () => {
@@ -703,6 +705,22 @@ describe('Meta Reducers', () => {
       await Promise.resolve();
 
       expect(setItemSpy.mock.calls.map(([key]) => key)).toEqual(['membersState']);
+    });
+
+    it('should not save a slice whose only changes are never saved', async () => {
+      const first: MetaState = { imagesState: imagesInitialState };
+      const second: MetaState = {
+        imagesState: { ...imagesInitialState, pendingThumbnailIds: [MOCK_IMAGES[0].id] },
+      };
+      mockReducer = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+      wrappedReducer(undefined, { type: '@ngrx/store/init' });
+      await Promise.resolve();
+
+      wrappedReducer(first, { type: '[Test] Thumbnails requested' });
+      await Promise.resolve();
+
+      expect(setItemSpy).not.toHaveBeenCalled();
     });
 
     it('should not save the state the store starts with', async () => {

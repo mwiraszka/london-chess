@@ -188,7 +188,10 @@ describe('AppEffects', () => {
       ImagesActions.deleteAlbumFailed({ album: 'Club', error: mockError }),
       ImagesActions.deleteImageFailed({ image, error: mockError }),
       ImagesActions.fetchAllImagesMetadataFailed({ error: mockError }),
-      ImagesActions.fetchBatchThumbnailsFailed({ error: mockError }),
+      ImagesActions.fetchBatchThumbnailsFailed({
+        imageIds: [image.id],
+        error: mockError,
+      }),
       ImagesActions.fetchFilteredThumbnailsFailed({ error: mockError }),
       ImagesActions.fetchMainImageFailed({ error: mockError }),
       ImagesActions.imageFileActionFailed({ error: mockError }),
