@@ -130,7 +130,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
         ? `<div class="markdown-image-caption">${captionValue}</div>`
         : '';
 
-      return `\n\n<div class="markdown-image-container" style="max-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}"${dimensions} onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
+      return `\n\n<div class="markdown-image-container" style="--markdown-image-width: ${widthValue}px;"><img src="${imageUrl}" alt="${captionValue}"${dimensions} onerror="this.src='assets/fallback-image.png'">${captionHtml}</div>\n\n`;
     });
   }
 

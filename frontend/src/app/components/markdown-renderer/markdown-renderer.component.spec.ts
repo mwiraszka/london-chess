@@ -155,7 +155,7 @@ describe('MarkdownRendererComponent', () => {
     it('should render a stored image at the given width with its caption', async () => {
       await render(`{{{${imageId}}}}(((500)))<<< The board >>>`, [image]);
 
-      expect(container().style.maxWidth).toBe('500px');
+      expect(container().style.getPropertyValue('--markdown-image-width')).toBe('500px');
       expect(container().querySelector('img')?.getAttribute('src')).toBe(image.mainUrl);
       expect(container().querySelector('img')?.getAttribute('alt')).toBe('The board');
       expect(container().querySelector('.markdown-image-caption')?.textContent).toBe(
@@ -166,7 +166,7 @@ describe('MarkdownRendererComponent', () => {
     it('should find a stored image by the id in a URL and use its own width', async () => {
       await render(`{{{https://example.com/images/${imageId}.jpg}}}`, [image]);
 
-      expect(container().style.maxWidth).toBe('640px');
+      expect(container().style.getPropertyValue('--markdown-image-width')).toBe('640px');
       expect(container().querySelector('img')?.getAttribute('src')).toBe(image.mainUrl);
       expect(container().querySelector('.markdown-image-caption')).toBeNull();
     });
@@ -174,7 +174,7 @@ describe('MarkdownRendererComponent', () => {
     it('should fall back for an image id that is not stored', async () => {
       await render(`{{{${imageId}}}}`);
 
-      expect(container().style.maxWidth).toBe('300px');
+      expect(container().style.getPropertyValue('--markdown-image-width')).toBe('300px');
       expect(container().querySelector('img')?.getAttribute('src')).toBe(
         'assets/fallback-image.png',
       );
@@ -183,7 +183,7 @@ describe('MarkdownRendererComponent', () => {
     it('should use any other source as is, at no more than the widest width', async () => {
       await render('{{{https://example.com/photo.png}}}(((5000)))');
 
-      expect(container().style.maxWidth).toBe('1200px');
+      expect(container().style.getPropertyValue('--markdown-image-width')).toBe('1200px');
       expect(container().querySelector('img')?.getAttribute('src')).toBe(
         'https://example.com/photo.png',
       );
