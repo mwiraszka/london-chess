@@ -27,7 +27,18 @@
                 class="countdown"
                 role="timer"
                 [attr.aria-label]="registration.description">
-                @for (part of registration.countdown; track part.unit) {
+                @for (
+                  part of registration.countdown;
+                  track part.unit;
+                  let first = $first
+                ) {
+                  @if (!first) {
+                    <span
+                      class="countdown__separator"
+                      aria-hidden="true">
+                      :
+                    </span>
+                  }
                   <span
                     class="countdown__part"
                     aria-hidden="true">
@@ -42,7 +53,6 @@
                         }
                       </span>
                     }
-                    <span class="countdown__unit">{{ part.unit }}</span>
                   </span>
                 }
               </span>
