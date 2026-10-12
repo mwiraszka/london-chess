@@ -22,6 +22,9 @@ describe('timeControlValidator', () => {
     expect(getErrorForValue('g25')).toEqual(error);
     expect(getErrorForValue('G25 + 5')).toEqual(error);
     expect(getErrorForValue('G25+')).toEqual(error);
+    expect(getErrorForValue('G0')).toEqual(error);
+    expect(getErrorForValue('G05+5')).toEqual(error);
+    expect(getErrorForValue('0 hours')).toEqual(error);
   });
 });
 

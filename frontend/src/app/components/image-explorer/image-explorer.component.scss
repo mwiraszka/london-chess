@@ -84,7 +84,8 @@ $side-padding: 8px;
     background-color: var(--lcc-surface);
     transition: all 0.2s ease;
 
-    &.selectable:hover {
+    &.selectable:hover,
+    &.selectable.lcc-admin-controls-open {
       box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       cursor: pointer;
       animation: raise 0.2s ease forwards;

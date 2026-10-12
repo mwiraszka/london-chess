@@ -21,7 +21,6 @@ import { AdminControlsDirective } from './admin-controls.directive';
 })
 class HostComponent {
   readonly config = signal<AdminControlsConfig | null>({
-    buttonSize: 34,
     deleteCb: vi.fn(),
     editPath: ['event', 'edit'],
     itemName: 'Test Item',

@@ -355,7 +355,6 @@ export class TournamentsPageComponent implements OnInit {
 
   public controlsFor(summary: TournamentSummary): AdminControlsConfig {
     return {
-      buttonSize: 31,
       deleteCb: () => this.deletion.deleteTournament(summary),
       editPath: ['tournament', 'edit', String(summary.number)],
       itemName: summary.name,

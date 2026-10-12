@@ -130,7 +130,6 @@ describe('ArticleGridComponent', () => {
       const config = component.getAdminControlsConfig(article);
 
       expect(config.bookmarked).toBe(true);
-      expect(config.buttonSize).toBe(34);
       expect(config.editPath).toEqual(['article', 'edit', article.id]);
       expect(config.itemName).toBe(article.title);
       expect(config.bookmarkCb).toBeDefined();

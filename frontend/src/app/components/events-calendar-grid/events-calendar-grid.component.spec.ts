@@ -82,7 +82,6 @@ describe('EventsCalendarGridComponent', () => {
     it('should return correct configuration for event', () => {
       const config = component.getAdminControlsConfig(mockEvents[0]);
 
-      expect(config.buttonSize).toBe(34);
       expect(config.editPath).toEqual(['event', 'edit', mockEvents[0].id]);
       expect(config.itemName).toBe(mockEvents[0].title);
     });

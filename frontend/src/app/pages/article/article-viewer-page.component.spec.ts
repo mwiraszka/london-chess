@@ -202,7 +202,6 @@ describe('ArticleViewerPageComponent', () => {
       const config = adminControls();
 
       expect(config).toStrictEqual({
-        buttonSize: 34,
         deleteCb: expect.any(Function),
         editPath: ['article', 'edit', mockArticle.id],
         itemName: mockArticle.title,

@@ -29,9 +29,9 @@ describe('TournamentCardComponent', () => {
       /\s+/g,
       '',
     ) ?? '';
-  // The digit showing in each place, and each unit
+  // The digit showing in each place, and the separators between the units
   const countdownText = (): string =>
-    queryAll(fixture.debugElement, '.countdown__glyph--shown, .countdown__unit')
+    queryAll(fixture.debugElement, '.countdown__glyph--shown, .countdown__separator')
       .map(element => element.nativeElement.textContent.trim())
       .join('');
   const registerButton = () =>
@@ -75,8 +75,8 @@ describe('TournamentCardComponent', () => {
     fixture.detectChanges();
 
     expect(textOf('.card__label')).toBe('Registrationopensin');
-    expect(before).toBe('1d02h03m04s');
-    expect(countdownText()).toBe('1d02h03m03s');
+    expect(before).toBe('1:02:03:04');
+    expect(countdownText()).toBe('1:02:03:03');
     expect(query(fixture.debugElement, '.countdown').attributes['aria-label']).toBe(
       '1 day, 2 hours, 3 minutes, 3 seconds',
     );
@@ -90,7 +90,7 @@ describe('TournamentCardComponent', () => {
     fixture.detectChanges();
 
     expect(textOf('.card__label')).toBe('Registrationclosesin');
-    expect(countdownText()).toBe('1d23h59m59s');
+    expect(countdownText()).toBe('1:23:59:59');
     expect(registerButton().attributes['aria-label']).toBe(
       `Register for ${MOCK_UPCOMING_SUMMARY.name}`,
     );

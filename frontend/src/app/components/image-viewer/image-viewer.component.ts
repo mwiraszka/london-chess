@@ -140,7 +140,6 @@ export class ImageViewerComponent implements OnInit {
 
   public getAdminControlsConfig(image: Image): AdminControlsConfig {
     return {
-      buttonSize: 34,
       deleteCb: () => this.onDeleteImage(image),
       editPath: ['image', 'edit', image.id],
       editInNewTab: true,

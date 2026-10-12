@@ -134,7 +134,6 @@ export class ArticleGridComponent {
     return {
       bookmarkCb: () => this.onBookmarkArticle(article),
       bookmarked: isDefined(article.bookmarkDate),
-      buttonSize: 34,
       deleteCb: () => this.deletion.deleteArticle(article),
       editPath: ['article', 'edit', article.id],
       itemName: article.title,

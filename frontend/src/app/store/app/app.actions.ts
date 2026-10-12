@@ -1,6 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 
-import { Brand } from '@app/models';
+import { Brand, LccError } from '@app/models';
 
 export const upcomingEventBannerCleared = createAction(
   '[App] Upcoming event banner cleared',
@@ -30,3 +30,8 @@ export const refreshAppRequested = createAction('[App] Refresh app requested');
 export const datasetCheckRequested = createAction('[App] Dataset check requested');
 
 export const datasetReplaced = createAction('[App] Dataset replaced');
+
+export const datasetCheckFailed = createAction(
+  '[App] Dataset check failed',
+  props<{ error: LccError }>(),
+);

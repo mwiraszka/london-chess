@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { ADMIN_CONTROLS_OPEN_CLASS } from '@app/constants/admin-controls';
 import { AdminControlsConfig } from '@app/models';
 
 import { AdminControlsService } from './admin-controls.service';
@@ -9,7 +10,6 @@ describe('AdminControlsService', () => {
   let service: AdminControlsService;
 
   const config: AdminControlsConfig = {
-    buttonSize: 34,
     deleteCb: vi.fn(),
     editPath: ['event', 'edit'],
     itemName: 'Test Item',
@@ -39,6 +39,19 @@ describe('AdminControlsService', () => {
     expect(shown).toBe(1);
     expect(service.isOpen).toBe(false);
     expect(controls()).toHaveLength(0);
+  });
+
+  it('should mark the item while its controls are open', () => {
+    const item = anchor();
+    const other = anchor();
+    service.open(config, item);
+    const markedWhileOpen = item.classList.contains(ADMIN_CONTROLS_OPEN_CLASS);
+
+    service.open(config, other);
+
+    expect(markedWhileOpen).toBe(true);
+    expect(item.classList.contains(ADMIN_CONTROLS_OPEN_CLASS)).toBe(false);
+    expect(other.classList.contains(ADMIN_CONTROLS_OPEN_CLASS)).toBe(true);
   });
 
   it("should show one item's controls at a time", () => {

@@ -12,12 +12,12 @@
   <!-- Any control used ends the controls, as a click anywhere else does -->
   <div
     class="admin-controls"
-    [style.--button-size.px]="controls.buttonSize"
     (click)="closed.emit()">
     @if (controls.bookmarkCb && (controls.bookmarked | isDefined)) {
       <ea-button
-        class="admin-control-button bookmark-button"
-        variant="secondary"
+        class="bookmark-button"
+        size="2xs"
+        variant="ghost"
         [aria-label]="
           (controls.bookmarked ? 'Remove bookmark from ' : 'Bookmark ') +
           controls.itemName
@@ -29,23 +29,27 @@
 
     @if (controls.editPath) {
       <a
-        class="admin-control-button edit-button"
-        [class.disabled]="controls.isEditDisabled"
+        eaButtonLink
+        class="edit-button"
+        size="2xs"
+        variant="ghost"
         [attr.aria-label]="'Edit ' + controls.itemName"
+        [disabled]="controls.isEditDisabled ?? false"
         [eaTooltip]="editTooltipContent"
+        [icon]="editIcon"
         [rel]="controls.editInNewTab ? 'noopener noreferrer' : undefined"
         [target]="controls.editInNewTab ? '_blank' : undefined"
         [routerLink]="
           controls.isEditDisabled ? undefined : (controls.editPath | routerLink)
         ">
-        <ea-icon-edit class="edit-icon" />
       </a>
     }
 
     @if (showDeleteButton()) {
       <ea-button
-        class="admin-control-button delete-button"
-        variant="secondary"
+        class="delete-button"
+        size="2xs"
+        variant="ghost"
         [aria-label]="'Delete ' + controls.itemName"
         [disabled]="controls.isDeleteDisabled ?? false"
         [eaTooltip]="deleteTooltipContent"

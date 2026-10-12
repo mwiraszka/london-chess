@@ -80,7 +80,7 @@ ea-card {
 .countdown {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 4px;
   font-size: 20px;
   font-weight: 700;
   line-height: 28px;
@@ -88,8 +88,20 @@ ea-card {
   color: var(--lcc-accent-text);
 }
 
+.countdown__part {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+// Each digit holds the width of the widest on a tile of its own, so the count never shifts
+// and a narrow digit sits centred in its tile
 .countdown__digit {
   display: inline-grid;
+  padding: 0 1px;
+  border: 1px solid var(--lcc-card-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--lcc-card-inset);
 }
 
 .countdown__glyph {
@@ -102,10 +114,7 @@ ea-card {
   visibility: visible;
 }
 
-.countdown__unit {
-  margin-left: 2px;
-  font-size: var(--font-size-sm);
-  font-weight: 400;
+.countdown__separator {
   color: var(--color-text-secondary);
 }
 

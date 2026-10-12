@@ -129,7 +129,6 @@ export class ArticleViewerPageComponent implements OnInit {
 
   public getAdminControlsConfig(article: Article): AdminControlsConfig {
     return {
-      buttonSize: 34,
       deleteCb: () => this.deletion.deleteArticle(article),
       editPath: ['article', 'edit', article.id!],
       itemName: article.title,

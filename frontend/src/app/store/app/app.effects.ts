@@ -2,7 +2,8 @@ import { ToastService } from '@eagami/ui';
 import { Actions, OnInitEffects, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { Action, Store } from '@ngrx/store';
-import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 
@@ -17,7 +18,7 @@ import * as ImagesActions from '@app/store/images/images.actions';
 import * as MembersActions from '@app/store/members/members.actions';
 import * as NavActions from '@app/store/nav/nav.actions';
 import * as TournamentsActions from '@app/store/tournaments/tournaments.actions';
-import { RELOAD_PAGE } from '@app/tokens';
+import { PARSE_ERROR, RELOAD_PAGE } from '@app/tokens';
 import { isDefined } from '@app/utils';
 import moment from '@app/utils/datetime/moment';
 
@@ -108,6 +109,7 @@ type NotifyAction = ReturnType<(typeof ACTIONS_TO_NOTIFY)[number]>;
 export class AppEffects implements OnInitEffects {
   private readonly actions$ = inject(Actions);
   private readonly datasetApi = inject(DatasetApiService);
+  private readonly parseError = inject(PARSE_ERROR);
   private readonly reloadPage = inject(RELOAD_PAGE);
   private readonly store = inject(Store);
   private readonly toastService = inject(ToastService);
@@ -148,17 +150,23 @@ export class AppEffects implements OnInitEffects {
     this.actions$.pipe(
       ofType(AppActions.datasetCheckRequested),
       filter(() => environment.watchesDataset),
-      switchMap(() => this.datasetApi.getDataset()),
-      map(({ data }) => data.replacedAt),
-      filter(replacedAt => replacedAt !== localStorage.getItem(DATASET_STORAGE_KEY)),
-      tap(replacedAt => {
-        if (replacedAt === null) {
-          localStorage.removeItem(DATASET_STORAGE_KEY);
-        } else {
-          localStorage.setItem(DATASET_STORAGE_KEY, replacedAt);
-        }
-      }),
-      map(() => AppActions.datasetReplaced()),
+      switchMap(() =>
+        this.datasetApi.getDataset().pipe(
+          map(({ data }) => data.replacedAt),
+          filter(replacedAt => replacedAt !== localStorage.getItem(DATASET_STORAGE_KEY)),
+          tap(replacedAt => {
+            if (replacedAt === null) {
+              localStorage.removeItem(DATASET_STORAGE_KEY);
+            } else {
+              localStorage.setItem(DATASET_STORAGE_KEY, replacedAt);
+            }
+          }),
+          map(() => AppActions.datasetReplaced()),
+          catchError(error =>
+            of(AppActions.datasetCheckFailed({ error: this.parseError(error) })),
+          ),
+        ),
+      ),
     ),
   );
 

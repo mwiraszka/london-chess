@@ -74,7 +74,7 @@ const MAX_ROUNDS = 30;
 const MAX_RATING = 3500;
 const SCORES = [0, 0.5, 1];
 const ID_PATTERN = /^[a-fA-F0-9]{24}$/;
-const TIME_CONTROL_PATTERN = /^(?:G\d{1,3}(?:\+\d{1,2})?|\d{1,2} hours?)$/;
+const TIME_CONTROL_PATTERN = /^(?:G[1-9]\d{0,2}(?:\+\d{1,2})?|[1-9]\d? hours?)$/;
 
 // A day that does not exist, such as February 30, parses as a later one or not at all
 function isDay(value: string): boolean {

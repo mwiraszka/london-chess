@@ -98,7 +98,6 @@ describe('ImageExplorerComponent', () => {
     it('should return correct admin controls config', () => {
       const config = component.getAdminControlsConfig(mockImages[0]);
 
-      expect(config.buttonSize).toBe(34);
       expect(config.editPath).toEqual(['image', 'edit', mockImages[0].id.split('-')[0]]);
       expect(config.editInNewTab).toBe(true);
       expect(config.isDeleteDisabled).toBe(false); // mockImages[0] has no article appearances

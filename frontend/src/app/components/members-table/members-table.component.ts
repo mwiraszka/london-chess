@@ -241,7 +241,6 @@ export class MembersTableComponent {
 
   // A right click on a row offers admins its member's controls
   protected readonly rowControls = ({ member }: MemberRow): AdminControlsConfig => ({
-    buttonSize: 31,
     deleteCb: () => this.deletion.deleteMember(member),
     editPath: ['member', 'edit', member.id],
     itemName: `${member.firstName} ${member.lastName}`,

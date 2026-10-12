@@ -76,7 +76,6 @@ class HostComponent {
   readonly sizingRows: Row[] = [{ id: 'widest', name: 'Bartholomew', score: 100 }];
   readonly rowHref = signal<((row: Row) => string) | undefined>(row => `/rows/${row.id}`);
   readonly rowControls = (row: Row): AdminControlsConfig => ({
-    buttonSize: 31,
     deleteCb: () => undefined,
     itemName: row.name,
   });

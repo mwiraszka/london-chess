@@ -146,6 +146,12 @@ describe('validateTournamentInput', () => {
     expect(messageOf(input({ timeControl: '25 minutes' }))).toBe(
       'time control must look like G25, G25+5 or 3 hours',
     );
+    expect(messageOf(input({ timeControl: 'G0+5' }))).toBe(
+      'time control must look like G25, G25+5 or 3 hours',
+    );
+    expect(messageOf(input({ timeControl: '0 hours' }))).toBe(
+      'time control must look like G25, G25+5 or 3 hours',
+    );
     expect(messageOf(input({ roundCount: 0 }))).toBe(
       'rounds must be a whole number from 1 to 30',
     );
