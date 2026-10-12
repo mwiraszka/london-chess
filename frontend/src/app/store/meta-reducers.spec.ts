@@ -707,6 +707,22 @@ describe('Meta Reducers', () => {
       expect(setItemSpy.mock.calls.map(([key]) => key)).toEqual(['membersState']);
     });
 
+    it('should not save a slice whose only changes are never saved', async () => {
+      const first: MetaState = { imagesState: imagesInitialState };
+      const second: MetaState = {
+        imagesState: { ...imagesInitialState, pendingThumbnailIds: [MOCK_IMAGES[0].id] },
+      };
+      mockReducer = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+      const wrappedReducer = persistStateMetaReducer(mockReducer);
+      wrappedReducer(undefined, { type: '@ngrx/store/init' });
+      await Promise.resolve();
+
+      wrappedReducer(first, { type: '[Test] Thumbnails requested' });
+      await Promise.resolve();
+
+      expect(setItemSpy).not.toHaveBeenCalled();
+    });
+
     it('should not save the state the store starts with', async () => {
       mockReducer = vi.fn(() => changed(1));
       const wrappedReducer = persistStateMetaReducer(mockReducer);
