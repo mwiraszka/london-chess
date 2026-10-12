@@ -3,11 +3,14 @@ import request from 'supertest';
 
 import { clearCacheAfterWrite, limitCdnCache, publicCache } from './cdn-cache.middleware';
 
-const { dangerouslyDeleteByTag } = vi.hoisted(() => ({
+const { captureException, dangerouslyDeleteByTag, waitUntil } = vi.hoisted(() => ({
+  captureException: vi.fn<(error: unknown) => string>(() => ''),
   dangerouslyDeleteByTag: vi.fn<(tag: string) => Promise<void>>(async () => undefined),
+  waitUntil: vi.fn<(promise: Promise<unknown>) => void>(),
 }));
 
-vi.mock('@vercel/functions', () => ({ dangerouslyDeleteByTag }));
+vi.mock('@sentry/node', () => ({ captureException }));
+vi.mock('@vercel/functions', () => ({ dangerouslyDeleteByTag, waitUntil }));
 
 const answer =
   (status: number): RequestHandler =>
@@ -75,6 +78,13 @@ describe('limitCdnCache', () => {
 
     expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=1');
   });
+
+  it('should leave off the CDN an answer whose lifetime cannot be worked out', async () => {
+    const response = await request(appLimitedTo(NaN)).get('/');
+
+    expect(response.headers['vercel-cdn-cache-control']).toBeUndefined();
+    expect(response.headers['vercel-cache-tag']).toBeUndefined();
+  });
 });
 
 describe('clearCacheAfterWrite', () => {
@@ -88,12 +98,21 @@ describe('clearCacheAfterWrite', () => {
     vi.stubEnv('VERCEL_ENV', 'production');
   });
 
-  it('should clear the public data from the CDN before answering a successful write', async () => {
+  it('should clear the public data from the CDN after a successful write', async () => {
     const response = await request(app).post('/');
 
-    expect(dangerouslyDeleteByTag).toHaveBeenCalledExactlyOnceWith('public-data');
     expect(response.status).toBe(201);
     expect(response.body).toEqual({ data: 'answer' });
+    expect(dangerouslyDeleteByTag).toHaveBeenCalledExactlyOnceWith('public-data');
+    expect(waitUntil).toHaveBeenCalledOnce();
+  });
+
+  it('should answer a write without waiting for the CDN to clear', async () => {
+    dangerouslyDeleteByTag.mockReturnValueOnce(new Promise<void>(() => undefined));
+
+    const response = await request(app).post('/');
+
+    expect(response.status).toBe(201);
   });
 
   it('should leave the CDN alone for a write that fails', async () => {
@@ -117,15 +136,18 @@ describe('clearCacheAfterWrite', () => {
     expect(dangerouslyDeleteByTag).not.toHaveBeenCalled();
   });
 
-  it('should still answer a write when the CDN cannot be cleared', async () => {
+  it('should report a CDN that cannot be cleared', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    dangerouslyDeleteByTag.mockRejectedValueOnce(new Error('unreachable'));
+    const failure = new Error('unreachable');
+    dangerouslyDeleteByTag.mockRejectedValueOnce(failure);
 
     const response = await request(app).post('/');
+    await waitUntil.mock.calls[0][0];
 
     expect(response.status).toBe(201);
     expect(error).toHaveBeenCalledWith(
       '[LCC] Unable to clear the CDN cache: Error: unreachable',
     );
+    expect(captureException).toHaveBeenCalledWith(failure);
   });
 });

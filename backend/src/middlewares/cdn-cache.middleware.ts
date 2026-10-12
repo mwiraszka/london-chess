@@ -1,4 +1,5 @@
-import { dangerouslyDeleteByTag } from '@vercel/functions';
+import * as Sentry from '@sentry/node';
+import { dangerouslyDeleteByTag, waitUntil } from '@vercel/functions';
 import { NextFunction, Request, Response } from 'express';
 
 const PUBLIC_DATA_TAG = 'public-data';
@@ -10,6 +11,12 @@ const cachesOnCdn = (): boolean => process.env['VERCEL_ENV'] === 'production';
 
 function storeOnCdn(res: Response, seconds: number): void {
   if (!cachesOnCdn()) {
+    return;
+  }
+
+  if (Number.isNaN(seconds)) {
+    res.removeHeader('Vercel-CDN-Cache-Control');
+    res.removeHeader('Vercel-Cache-Tag');
     return;
   }
 
@@ -27,13 +34,15 @@ export function publicCache(req: Request, res: Response, next: NextFunction): vo
   next();
 }
 
-// For an answer that goes out of date on its own, before any write would clear it
+// For an answer that goes out of date on its own, before any write would clear it. One
+// whose lifetime cannot be worked out is not stored at all
 export function limitCdnCache(res: Response, seconds: number): void {
   storeOnCdn(res, Math.min(seconds, PUBLIC_DATA_CACHE_SECONDS));
 }
 
-// The purge only reaches the CDN from inside the request, so a successful write's response
-// waits for it. Deleting rather than invalidating means no visitor gets the old answer again
+// For routes whose writes change what the public reads. The purge only reaches the CDN
+// when started inside the request, and deleting rather than invalidating means no
+// visitor gets the old answer again
 export function clearCacheAfterWrite(
   req: Request,
   res: Response,
@@ -46,15 +55,15 @@ export function clearCacheAfterWrite(
 
   const json = res.json.bind(res);
   res.json = body => {
-    if (res.statusCode >= 300) {
-      return json(body);
+    if (res.statusCode < 300) {
+      waitUntil(
+        dangerouslyDeleteByTag(PUBLIC_DATA_TAG).catch(error => {
+          console.error(`[LCC] Unable to clear the CDN cache: ${error}`);
+          Sentry.captureException(error);
+        }),
+      );
     }
-
-    dangerouslyDeleteByTag(PUBLIC_DATA_TAG)
-      .catch(error => console.error(`[LCC] Unable to clear the CDN cache: ${error}`))
-      .then(() => json(body))
-      .catch(next);
-    return res;
+    return json(body);
   };
   next();
 }

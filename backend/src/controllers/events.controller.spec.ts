@@ -14,6 +14,11 @@ import {
 } from '../testing/fixtures';
 import { EMAILS_FROM_SITE_ONLY } from '../util/site-url.util';
 
+const { dangerouslyDeleteByTag } = vi.hoisted(() => ({
+  dangerouslyDeleteByTag: vi.fn<(tag: string) => Promise<void>>(async () => undefined),
+}));
+
+vi.mock('@vercel/functions', () => ({ dangerouslyDeleteByTag, waitUntil: vi.fn() }));
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/email.service', () => ({
@@ -181,6 +186,19 @@ describe('events routes', () => {
         dateCreated: '2026-10-05T12:00:00.000Z',
         dateLastEdited: '2026-10-05T12:00:00.000Z',
       });
+    });
+
+    it('should clear the public data from the CDN once the event is saved', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      await createAdmin(ADMIN);
+
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .send(eventPayload());
+
+      expect(response.status).toBe(201);
+      expect(dangerouslyDeleteByTag).toHaveBeenCalledExactlyOnceWith('public-data');
     });
 
     it('should reject an invalid event', async () => {

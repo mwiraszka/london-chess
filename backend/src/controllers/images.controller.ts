@@ -41,8 +41,9 @@ const IMAGE_CACHE_MAX_AGE_SECONDS = URL_EXPIRY_SECONDS / 2;
 // Short enough that a browser's copy of a response the CDN held still expires before its URLs
 const IMAGE_CDN_CACHE_SECONDS = 3600;
 
+// Not marked private, which would keep the CDN from storing it
 function cacheSignedUrls(res: Response): void {
-  res.setHeader('Cache-Control', `private, max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
+  res.setHeader('Cache-Control', `max-age=${IMAGE_CACHE_MAX_AGE_SECONDS}`);
   limitCdnCache(res, IMAGE_CDN_CACHE_SECONDS);
 }
 

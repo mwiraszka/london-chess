@@ -30,13 +30,13 @@ Sentry.init({
 
 const dataRouter = Router()
   .use('/dataset', publicCache, dataset)
-  .use('/articles', publicCache, articlesRouter)
-  .use('/events', publicCache, eventsRouter)
+  .use('/articles', publicCache, clearCacheAfterWrite, articlesRouter)
+  .use('/events', publicCache, clearCacheAfterWrite, eventsRouter)
   .use('/games', publicCache, gamesRouter)
-  .use('/images', publicCache, imagesRouter)
+  .use('/images', publicCache, clearCacheAfterWrite, imagesRouter)
   .use('/public/members', publicCache, publicMembersRouter)
-  .use('/admin/members', adminMembersRouter)
-  .use('/tournaments', publicCache, tournamentsRouter)
+  .use('/admin/members', clearCacheAfterWrite, adminMembersRouter)
+  .use('/tournaments', publicCache, clearCacheAfterWrite, tournamentsRouter)
   .use('/users', usersRouter);
 
 const corsOptions: CorsOptions = {
@@ -76,10 +76,9 @@ export const app = express();
 app
   .use(cors(corsOptions))
   .use(logger)
-  .use(clearCacheAfterWrite)
   .use('/v1/version', publicCache, version)
   // Svix signature verification needs the raw request body, so this mounts before the JSON parser
-  .use('/v1/webhooks', ensureDatabaseConnection, webhooksRouter)
+  .use('/v1/webhooks', ensureDatabaseConnection, clearCacheAfterWrite, webhooksRouter)
   // Vercel turns away any larger request before it reaches the app
   .use(express.json({ limit: '4.5mb' }))
   .use(express.urlencoded({ extended: true, limit: '4.5mb' }))

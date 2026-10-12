@@ -117,7 +117,7 @@ describe('images routes', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(response.headers['cache-control']).toBe('private, max-age=21600');
+      expect(response.headers['cache-control']).toBe('max-age=21600');
       const images: CombinedImage[] = response.body.data.items;
       expect(images.map(image => image.caption)).toEqual(['Alpha', 'Bravo']);
       expect(images[0]).toMatchObject({
@@ -178,7 +178,7 @@ describe('images routes', () => {
       const response = await request(app).get(`/v1/images/batch-thumbnails?ids=${id}`);
 
       expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=3600');
-      expect(response.headers['cache-control']).toBe('private, max-age=21600');
+      expect(response.headers['cache-control']).toBe('max-age=21600');
     });
 
     it('should reject a missing, oversized or malformed list of ids', async () => {
