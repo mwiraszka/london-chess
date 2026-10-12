@@ -100,7 +100,8 @@ $grid-gap: 8px;
       animation: fade-in-over 0.6s ease-out forwards;
     }
 
-    &:not(.skeleton):hover {
+    &:not(.skeleton):hover,
+    &.lcc-admin-controls-open {
       background-color: var(--lcc-card-hover);
       cursor: pointer;
       box-shadow: var(--shadow-md);
