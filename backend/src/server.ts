@@ -1,6 +1,6 @@
 import { app } from './app';
 
-// Local entry point. On Vercel the app is served by api/index.ts instead.
+// Local entry point. On Vercel the app is served by src/vercel-handler.ts instead.
 const { PORT } = process.env;
 if (!PORT) {
   throw new Error('Unable to parse server port from environment variables.');
