@@ -1,5 +1,4 @@
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import nodemailer from 'nodemailer';
 
 import { IMAGES_BUCKET, STORAGE_PORT, UNAVAILABLE_IMAGE } from './seed-data';
 
@@ -54,7 +53,10 @@ async function main(): Promise<void> {
   });
   delete process.env['SENTRY_DSN'];
 
-  // Every message is rendered to JSON in memory instead of reaching the mail server
+  // Every message is rendered to JSON in memory instead of reaching the mail server. The
+  // package ships separate builds for import and require, so this patches the one the app
+  // imports
+  const { default: nodemailer } = await import('nodemailer');
   const createTransport = nodemailer.createTransport.bind(nodemailer);
   Object.assign(nodemailer, {
     createTransport: () => createTransport({ jsonTransport: true }),
