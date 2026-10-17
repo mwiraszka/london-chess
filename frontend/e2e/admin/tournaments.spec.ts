@@ -77,7 +77,7 @@ test.describe('managing tournaments', () => {
     await expect(page.getByRole('heading', { name, level: 2 })).toBeVisible();
     await expect(page.getByRole('table', { name: 'Standings' })).toContainText(NEWCOMER);
 
-    await page.getByRole('link', { name: 'Edit this tournament' }).click();
+    await chooseAdminAction(page, 'Edit tournament');
     await expect(page).toHaveURL(new RegExp(`/tournament/edit/${number}$`));
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue(name);
     await page.getByLabel(fieldLabel('Name')).fill(`${name} Open`);
@@ -91,7 +91,7 @@ test.describe('managing tournaments', () => {
     ).toBeVisible();
 
     const deleted = waitForSave(page, 'DELETE');
-    await page.getByRole('button', { name: 'Delete this tournament' }).click();
+    await chooseAdminAction(page, 'Delete tournament');
     await confirm(page, 'Delete');
 
     expect((await deleted).status()).toBe(200);

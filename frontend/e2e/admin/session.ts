@@ -59,8 +59,13 @@ export async function logIn(page: Page): Promise<string> {
   return response.request().headers()['authorization'];
 }
 
-// Right-clicking an item is how an admin brings up its menu of edit and delete actions
+// Right-clicking an item is how an admin brings up its menu of edit and delete actions.
+// Items only offer it once the page knows the user is an admin, which the admin actions
+// button showing confirms
 export async function openAdminControls(item: Locator): Promise<Locator> {
+  await expect(
+    item.page().getByRole('button', { name: 'Admin actions', exact: true }),
+  ).toBeVisible();
   await item.click({ button: 'right' });
   const menu = item.page().getByRole('menu', { name: /^Admin actions for / });
   await expect(menu).toBeVisible();
