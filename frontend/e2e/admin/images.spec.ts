@@ -143,12 +143,21 @@ test.describe('managing images', () => {
     await page
       .getByRole('textbox', { name: 'New album name' })
       .fill(uniqueName('Blitz night'));
-    await expect(addImage).toBeDisabled();
+    await addImage.click();
+
+    await expect(page.getByText('Choose an image to upload')).toBeVisible();
+    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
 
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
       .setInputFiles(png('blitz-night.png'));
-    await expect(addImage).toBeEnabled();
+    await expect(page.getByText('Choose an image to upload')).toHaveCount(0);
+    await addImage.click();
+    await expect(page.locator('lcc-basic-dialog')).toBeVisible();
+    await page
+      .locator('lcc-basic-dialog')
+      .getByRole('button', { name: 'Cancel' })
+      .click();
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();

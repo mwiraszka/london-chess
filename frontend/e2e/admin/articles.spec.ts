@@ -105,15 +105,23 @@ test.describe('managing articles', () => {
     await page.getByLabel(fieldLabel('Title')).fill(uniqueName('Unfinished notice'));
     await page.getByLabel(fieldLabel('Content')).focus();
     await page.getByLabel(fieldLabel('Title')).focus();
+    await expect(fieldError(page, 'Content')).toHaveCount(0);
+
+    await publish.click();
 
     await expect(fieldError(page, 'Content')).toHaveText('This field is required');
-    await expect(publish).toBeDisabled();
+    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Select a new banner image' }).click();
     await chooseFromExplorer(page, BANNER_IMAGES[0].caption);
     await page.getByLabel(fieldLabel('Content')).fill('Ready to go.');
     await expect(fieldError(page, 'Content')).toHaveCount(0);
-    await expect(publish).toBeEnabled();
+    await publish.click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText('to the Articles page?');
+    await page
+      .locator('lcc-basic-dialog')
+      .getByRole('button', { name: 'Cancel' })
+      .click();
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
