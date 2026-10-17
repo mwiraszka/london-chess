@@ -1,16 +1,11 @@
-import { DialogRef, DialogService } from '@eagami/ui';
+import { DialogRef, DialogService, MenuComponent } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Image } from '@app/models';
-import {
-  AdminControlsService,
-  DeletionService,
-  LoadedImagesService,
-  StoreRequestService,
-} from '@app/services';
+import { DeletionService, LoadedImagesService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { closedDialogRef, query, queryTextContent } from '@app/utils';
 
@@ -21,8 +16,8 @@ describe('ImageViewerComponent', () => {
   let component: ImageViewerComponent;
   let store: MockStore;
 
-  let adminControlsCloseSpy: MockInstance;
-  let adminControlsOpenSpy: MockInstance;
+  let adminMenuCloseSpy: MockInstance;
+  let adminMenuOpenSpy: MockInstance;
   let closeSpy: MockInstance;
   let dispatchSpy: MockInstance;
 
@@ -84,9 +79,9 @@ describe('ImageViewerComponent', () => {
     store.overrideSelector(ImagesSelectors.selectAllImages, MOCK_IMAGES);
 
     dispatchSpy = vi.spyOn(store, 'dispatch');
-    adminControlsCloseSpy = vi.spyOn(TestBed.inject(AdminControlsService), 'close');
-    adminControlsOpenSpy = vi
-      .spyOn(TestBed.inject(AdminControlsService), 'open')
+    adminMenuCloseSpy = vi.spyOn(MenuComponent.prototype, 'close');
+    adminMenuOpenSpy = vi
+      .spyOn(MenuComponent.prototype, 'openAsContextMenu')
       .mockImplementation(() => undefined);
   });
 
@@ -210,7 +205,7 @@ describe('ImageViewerComponent', () => {
 
       expect(afterFirst).toBe(MOCK_IMAGES[1].id);
       expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
-      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(MOCK_IMAGES.length);
+      expect(adminMenuCloseSpy).toHaveBeenCalledTimes(MOCK_IMAGES.length);
     });
 
     it('should go to the previous image, and from the first round to the last', () => {
@@ -220,7 +215,7 @@ describe('ImageViewerComponent', () => {
 
       expect(afterFirst).toBe(MOCK_IMAGES[MOCK_IMAGES.length - 1].id);
       expect(shownImageId()).toBe(MOCK_IMAGES[MOCK_IMAGES.length - 2].id);
-      expect(adminControlsCloseSpy).toHaveBeenCalledTimes(2);
+      expect(adminMenuCloseSpy).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -270,7 +265,7 @@ describe('ImageViewerComponent', () => {
       press('keyup', 'ArrowLeft');
 
       expect(shownImageId()).toBe(MOCK_IMAGES[0].id);
-      expect(adminControlsCloseSpy).not.toHaveBeenCalled();
+      expect(adminMenuCloseSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -442,7 +437,7 @@ describe('ImageViewerComponent', () => {
         new MouseEvent('contextmenu', { cancelable: true }),
       );
 
-      expect(adminControlsOpenSpy).toHaveBeenCalledTimes(1);
+      expect(adminMenuOpenSpy).toHaveBeenCalledTimes(1);
     });
   });
 

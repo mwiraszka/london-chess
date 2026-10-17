@@ -3,10 +3,6 @@
   [icon]="pageIcon">
 </lcc-page-header>
 
-@if (isAdmin()) {
-  <lcc-admin-toolbar [adminLinks]="[addTournamentLink]" />
-}
-
 <!-- A first visit has no list yet, so the page below its heading waits as one block at
      least a screen tall, leaving nothing in view to move once it fills in -->
 @if (loading()) {
@@ -80,7 +76,9 @@
       </h3>
       <ul class="upcoming__list">
         @for (summary of upcoming(); track summary.number) {
-          <li [adminControls]="isAdmin() ? controlsFor(summary) : null">
+          <li
+            [eaContextMenuTrigger]="isAdmin() ? adminMenu.menu() : null"
+            [contextMenuData]="isAdmin() ? controlsFor(summary) : null">
             <lcc-tournament-card [summary]="summary" />
           </li>
         }
@@ -195,3 +193,5 @@
   let-value="value">
   {{ value }}
 </ng-template>
+
+<lcc-admin-menu #adminMenu />

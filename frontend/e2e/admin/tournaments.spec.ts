@@ -4,6 +4,7 @@ import { fieldError, fieldLabel, fillField, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   confirm,
   logIn,
   requireAdminCredentials,
@@ -49,7 +50,7 @@ test.describe('managing tournaments', () => {
     await logIn(page);
 
     await page.goto('/tournaments');
-    await page.getByRole('link', { name: 'Add a tournament' }).click();
+    await chooseAdminAction(page, 'Add tournament');
     await expect(page).toHaveURL(/\/tournament\/add$/);
     await page.getByLabel(fieldLabel('Name')).fill(name);
     await fillField(page, 'Start date', nextMonthOn(10));
@@ -76,7 +77,7 @@ test.describe('managing tournaments', () => {
     await expect(page.getByRole('heading', { name, level: 2 })).toBeVisible();
     await expect(page.getByRole('table', { name: 'Standings' })).toContainText(NEWCOMER);
 
-    await page.getByRole('link', { name: 'Edit this tournament' }).click();
+    await chooseAdminAction(page, 'Edit tournament');
     await expect(page).toHaveURL(new RegExp(`/tournament/edit/${number}$`));
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue(name);
     await page.getByLabel(fieldLabel('Name')).fill(`${name} Open`);
@@ -90,7 +91,7 @@ test.describe('managing tournaments', () => {
     ).toBeVisible();
 
     const deleted = waitForSave(page, 'DELETE');
-    await page.getByRole('button', { name: 'Delete this tournament' }).click();
+    await chooseAdminAction(page, 'Delete tournament');
     await confirm(page, 'Delete');
 
     expect((await deleted).status()).toBe(200);
@@ -137,12 +138,9 @@ test.describe('managing tournaments', () => {
     await page.goto('/tournament/add');
     await page.getByLabel(fieldLabel('Name')).focus();
     await page.getByLabel(fieldLabel('Time control')).fill('G10');
-    await expect(fieldError(page, 'Name')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Add tournament' }).click();
 
     await expect(fieldError(page, 'Name')).toHaveText('This field is required');
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add tournament' })).toBeDisabled();
   });
 });
 

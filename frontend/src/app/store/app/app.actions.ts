@@ -14,8 +14,6 @@ export const themeToggled = createAction('[App] Theme toggled');
 
 export const safeModeToggled = createAction('[App] Safe mode toggled');
 
-export const adminControlsToggled = createAction('[App] Admin controls toggled');
-
 export const brandChanged = createAction(
   '[App] Brand changed',
   props<{ brand: Brand }>(),

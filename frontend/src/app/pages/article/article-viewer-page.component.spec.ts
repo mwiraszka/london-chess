@@ -1,4 +1,4 @@
-import { DialogService } from '@eagami/ui';
+import { ContextMenuTriggerDirective, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash-es';
 import { provideMarkdown } from 'ngx-markdown';
@@ -9,7 +9,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
 import { ARTICLE_FORM_DATA_PROPERTIES, IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Id } from '@app/models';
@@ -27,7 +26,7 @@ import {
 } from '@app/store/articles';
 import { AuthState } from '@app/store/auth';
 import { ImagesState, initialState as imagesInitialState } from '@app/store/images';
-import { closedDialogRef, query } from '@app/utils';
+import { closedDialogRef, isAdminControlsConfig, query } from '@app/utils';
 
 import { ArticleViewerPageComponent } from './article-viewer-page.component';
 
@@ -191,10 +190,14 @@ describe('ArticleViewerPageComponent', () => {
   });
 
   describe('admin controls', () => {
-    const adminControls = () =>
-      query(fixture.debugElement, 'lcc-article')
-        .injector.get(AdminControlsDirective)
-        .adminControls();
+    const trigger = () =>
+      query(fixture.debugElement, 'lcc-article').injector.get(
+        ContextMenuTriggerDirective,
+      );
+    const adminControls = () => {
+      const data = trigger().contextMenuData();
+      return isAdminControlsConfig(data) ? data : null;
+    };
 
     it('should let an admin edit or delete the article', () => {
       fixture.detectChanges();
@@ -225,6 +228,7 @@ describe('ArticleViewerPageComponent', () => {
 
       fixture.detectChanges();
 
+      expect(trigger().target()).toBeNull();
       expect(adminControls()).toBeNull();
     });
   });

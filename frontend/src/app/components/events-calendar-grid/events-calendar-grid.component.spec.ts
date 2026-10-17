@@ -5,7 +5,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { EventInfoDialogComponent } from '@app/components/event-info-dialog/event-info-dialog.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { CalendarMonth, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
@@ -44,7 +43,6 @@ describe('EventsCalendarGridComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [
-        AdminControlsDirective,
         EventsCalendarGridComponent,
         FormatDatePipe,
         HighlightPipe,

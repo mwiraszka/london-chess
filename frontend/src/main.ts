@@ -94,7 +94,7 @@ bootstrapApplication(AppComponent, {
       withRouterConfig({ onSameUrlNavigation: 'reload' }),
     ),
     provideHttpClient(withXhr(), withInterceptorsFromDi()),
-    provideEagamiUi(),
+    provideEagamiUi({ forms: { showErrorsOn: 'blur' } }),
     provideAppInitializer(() => {
       // Instantiate UserService so its login effect starts and the user record
       // is available app-wide once Clerk reports the session.

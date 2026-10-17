@@ -29,7 +29,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
@@ -39,7 +38,8 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { TOURNAMENT_FORMAT_LABELS } from '@app/constants/tournaments';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   Dialog,
   InternalLink,
   RegistrationStatus,
@@ -53,6 +53,7 @@ import {
   TournamentSummary,
 } from '@app/models';
 import {
+  AdminActionsService,
   AuthDrawerService,
   DeletionService,
   MetaAndTitleService,
@@ -235,7 +236,6 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   templateUrl: './tournament-page.component.html',
   styleUrl: './tournament-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ButtonComponent,
     CardComponent,
     DataTableComponent,
@@ -285,11 +285,11 @@ export class TournamentPageComponent implements OnInit {
   protected readonly user = this.store.selectSignal(AuthSelectors.selectUser);
   protected readonly registering = signal(false);
 
-  protected readonly deleteButton: AdminButton = {
-    id: 'delete-tournament',
-    tooltip: 'Delete this tournament',
+  protected readonly deleteAction: AdminCommandAction = {
+    label: 'Delete tournament',
     icon: TrashIconComponent,
-    action: () => {
+    group: 'delete',
+    run: () => {
       const tournament = this.viewModel()?.tournament;
       if (tournament) {
         void this.deletion.deleteTournament(tournament);
@@ -353,14 +353,11 @@ export class TournamentPageComponent implements OnInit {
       : [];
   });
 
-  protected readonly editLink = computed<InternalLink>(() => ({
-    text: 'Edit this tournament',
-    internalPath: [
-      'tournament',
-      'edit',
-      String(this.viewModel()?.tournamentNumber ?? ''),
-    ],
+  protected readonly editAction = computed<AdminLinkAction>(() => ({
+    label: 'Edit tournament',
     icon: EditIconComponent,
+    group: 'manage',
+    path: ['tournament', 'edit', String(this.viewModel()?.tournamentNumber ?? '')],
   }));
 
   protected readonly hasResults = computed(() => !!this.summary()?.playerCount);
@@ -439,6 +436,12 @@ export class TournamentPageComponent implements OnInit {
 
   protected readonly gameHref = ({ game }: GameRow): string =>
     `/game-archives/${game.id}`;
+
+  constructor() {
+    inject(AdminActionsService).register(() =>
+      this.viewModel()?.tournament ? [this.editAction(), this.deleteAction] : [],
+    );
+  }
 
   public ngOnInit(): void {
     this.tournamentNumber$

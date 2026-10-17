@@ -47,12 +47,6 @@
       </span>
     </p>
 
-    @if (isAdmin()) {
-      <lcc-admin-toolbar
-        [adminButtons]="[deleteButton]"
-        [adminLinks]="[editLink()]" />
-    }
-
     @if (registration(); as registration) {
       <ea-card
         class="registration"

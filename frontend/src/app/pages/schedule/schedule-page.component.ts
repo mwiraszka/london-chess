@@ -24,21 +24,25 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { EventsCalendarGridComponent } from '@app/components/events-calendar-grid/events-calendar-grid.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/schedule-toolbar.component';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   CalendarPage,
   DataPaginationOptions,
   Event,
-  InternalLink,
   LoadStatus,
 } from '@app/models';
-import { CsvExportService, EventsApiService, MetaAndTitleService } from '@app/services';
+import {
+  AdminActionsService,
+  CsvExportService,
+  EventsApiService,
+  MetaAndTitleService,
+} from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { bindSearchControl, widestRows } from '@app/utils';
@@ -51,13 +55,6 @@ import { bindSearchControl, widestRows } from '@app/utils';
         heading="Schedule"
         [icon]="pageIcon">
       </lcc-page-header>
-
-      @if (vm.isAdmin) {
-        <lcc-admin-toolbar
-          [adminLinks]="[addEventLink]"
-          [adminButtons]="[exportToCsvButton]">
-        </lcc-admin-toolbar>
-      }
 
       <div class="filters">
         <ea-input
@@ -130,7 +127,6 @@ import { bindSearchControl, widestRows } from '@app/utils';
   `,
   styleUrl: './schedule-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ButtonComponent,
     CommonModule,
     EmptyStateComponent,
@@ -161,17 +157,18 @@ export class SchedulePageComponent implements OnInit {
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  public readonly addEventLink: InternalLink = {
-    text: 'Add an event',
-    internalPath: ['event', 'add'],
+  public readonly addEventAction: AdminLinkAction = {
+    label: 'Add event',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['event', 'add'],
   };
 
-  public readonly exportToCsvButton: AdminButton = {
-    id: 'export-to-csv',
-    tooltip: 'Export to CSV',
+  public readonly exportEventsAction: AdminCommandAction = {
+    label: 'Export events to CSV',
     icon: DownloadIconComponent,
-    action: () => this.csvExport.exportEvents(),
+    group: 'data',
+    run: () => this.csvExport.exportEvents(),
   };
 
   public viewModel$?: Observable<{
@@ -185,6 +182,13 @@ export class SchedulePageComponent implements OnInit {
     status: LoadStatus;
     totalCount: number;
   }>;
+
+  constructor() {
+    inject(AdminActionsService).register(() => [
+      this.addEventAction,
+      this.exportEventsAction,
+    ]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Schedule');

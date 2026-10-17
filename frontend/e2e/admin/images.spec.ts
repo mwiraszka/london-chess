@@ -5,6 +5,7 @@ import { png } from './files';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   clickDelete,
   confirm,
   logIn,
@@ -42,7 +43,7 @@ test.describe('managing images', () => {
     await logIn(page);
 
     await page.goto('/photo-gallery');
-    await page.getByRole('link', { name: 'Add an image' }).click();
+    await chooseAdminAction(page, 'Add image');
     await expect(page).toHaveURL(/\/image\/add$/);
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
@@ -69,7 +70,7 @@ test.describe('managing images', () => {
     await logIn(page);
 
     await page.goto('/photo-gallery');
-    await page.getByRole('link', { name: 'Create an album' }).click();
+    await chooseAdminAction(page, 'Add album');
     await expect(page).toHaveURL(/\/album\/add$/);
     await page.getByLabel(fieldLabel('Album title')).fill(album);
     await page
@@ -102,7 +103,7 @@ test.describe('managing images', () => {
     // An album opens in its editor in a new tab
     const [editor] = await Promise.all([
       page.waitForEvent('popup'),
-      controls.getByRole('link', { name: /^Edit / }).click(),
+      controls.getByRole('menuitem', { name: 'Edit' }).click(),
     ]);
     await expect(editor).toHaveURL(
       new RegExp(`/album/edit/${encodeURIComponent(ALBUMS.picnic)}$`),
@@ -137,26 +138,18 @@ test.describe('managing images', () => {
     await logIn(page);
     const writes = watchWrites(page, `${APP_API}/images`);
     const addImage = page.getByRole('button', { name: 'Add image' });
-    const album = uniqueName('Blitz night');
 
     await page.goto('/image/add');
     await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
-    await page.getByRole('textbox', { name: 'New album name' }).fill(album);
-    await addImage.click();
-
-    await expect(page.getByText('Choose an image to upload')).toBeVisible();
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await page
+      .getByRole('textbox', { name: 'New album name' })
+      .fill(uniqueName('Blitz night'));
+    await expect(addImage).toBeDisabled();
 
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
       .setInputFiles(png('blitz-night.png'));
-    await expect(page.getByText('Choose an image to upload')).toHaveCount(0);
-    await addImage.click();
-    await expect(page.locator('lcc-basic-dialog')).toContainText(`to ${album}?`);
-    await page
-      .locator('lcc-basic-dialog')
-      .getByRole('button', { name: 'Cancel' })
-      .click();
+    await expect(addImage).toBeEnabled();
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();

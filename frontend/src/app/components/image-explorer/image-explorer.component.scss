@@ -29,11 +29,6 @@ $side-padding: 8px;
   gap: 4px;
   height: 100%;
 
-  lcc-admin-toolbar {
-    width: calc(100% - 16px);
-    margin: 8px 8px 0;
-  }
-
   .image-grid-wrapper {
     overflow: auto;
     display: flex;
@@ -84,8 +79,7 @@ $side-padding: 8px;
     background-color: var(--lcc-surface);
     transition: all 0.2s ease;
 
-    &.selectable:hover,
-    &.selectable.lcc-admin-controls-open {
+    &.selectable:hover {
       box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       cursor: pointer;
       animation: raise 0.2s ease forwards;

@@ -1,0 +1,38 @@
+.privacy {
+  section {
+    margin-top: 24px;
+  }
+
+  h3 {
+    margin-bottom: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  p,
+  li {
+    line-height: 1.5;
+  }
+
+  p + p {
+    margin-top: 8px;
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 24px;
+    list-style: disc;
+  }
+}
+
+.privacy__lead {
+  font-size: 17px;
+}
+
+.privacy__updated {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}

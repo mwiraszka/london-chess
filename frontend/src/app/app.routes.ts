@@ -115,6 +115,11 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'privacy',
+    loadComponent: () =>
+      import('./pages/privacy/privacy-page.component').then(c => c.PrivacyPageComponent),
+  },
+  {
     path: 'regional-clubs',
     loadChildren: () =>
       import('./pages/regional-clubs/regional-clubs.routes').then(

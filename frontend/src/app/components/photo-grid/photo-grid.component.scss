@@ -62,8 +62,7 @@
       animation: fade-in-up 0.6s ease-out forwards;
     }
 
-    &:not(.skeleton):hover,
-    &.lcc-admin-controls-open {
+    &:not(.skeleton):hover {
       box-shadow: 4px 4px 8px var(--lcc-shadow-soft);
       transition:
         transform 0.2s ease,

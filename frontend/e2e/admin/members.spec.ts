@@ -7,6 +7,7 @@ import { fieldError, fieldLabel, watchWrites } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   clickDelete,
   confirm,
   logIn,
@@ -25,7 +26,7 @@ async function findMember(page: Page, lastName: string) {
 
 async function openNewMemberForm(page: Page): Promise<void> {
   await page.goto('/members');
-  await page.getByRole('link', { name: 'Add a member' }).click();
+  await chooseAdminAction(page, 'Add member');
   await expect(page).toHaveURL(/\/member\/add$/);
 }
 
@@ -58,7 +59,7 @@ test.describe('managing members', () => {
     await expect(row).toContainText('Strathroy');
 
     let controls = await openAdminControls(row);
-    await controls.getByRole('link', { name: /^Edit / }).click();
+    await controls.getByRole('menuitem', { name: 'Edit' }).click();
     await expect(page).toHaveURL(/\/member\/edit\/[0-9a-f]{24}$/);
     await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(lastName);
     // Opening a member is not an edit, so there is nothing to save or discard yet
@@ -103,12 +104,8 @@ test.describe('managing members', () => {
     await expect(fieldError(page, 'LCC rating')).toHaveText(
       'Enter a rating such as 1500, or 1500/7 for a provisional rating',
     );
-    await expect(fieldError(page, 'Last name')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Add member' }).click();
-
     await expect(fieldError(page, 'Last name')).toHaveText('This field is required');
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add member' })).toBeDisabled();
 
     await page.getByLabel(fieldLabel('LCC rating')).fill('1500/7');
     await page.getByLabel(fieldLabel('Last name')).fill('Pemberly');
@@ -153,10 +150,7 @@ test.describe('managing members', () => {
   test('exports every member to a CSV file', async ({ page }) => {
     await logIn(page);
     await page.goto('/members');
-    await page
-      .locator('lcc-admin-toolbar')
-      .getByRole('button', { name: 'Export to CSV' })
-      .click();
+    await chooseAdminAction(page, 'Export members to CSV');
     await expect(page.locator('lcc-basic-dialog')).toContainText(
       /Export all \d+ members to a CSV file\?/,
     );

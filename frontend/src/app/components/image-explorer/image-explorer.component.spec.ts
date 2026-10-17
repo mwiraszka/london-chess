@@ -6,7 +6,6 @@ import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { DataPaginationOptions, Id, Image } from '@app/models';
 import { DeletionService, StoreRequestService } from '@app/services';
@@ -40,7 +39,7 @@ describe('ImageExplorerComponent', () => {
     closeSpy = vi.spyOn(dialogRef, 'close');
 
     await TestBed.configureTestingModule({
-      imports: [AdminControlsDirective, ImageExplorerComponent],
+      imports: [ImageExplorerComponent],
       providers: [
         {
           provide: ActivatedRoute,

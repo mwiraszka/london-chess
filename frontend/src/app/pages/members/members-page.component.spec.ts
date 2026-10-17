@@ -18,6 +18,7 @@ import {
   MemberWithNewRatings,
 } from '@app/models';
 import {
+  AdminActionsService,
   CsvExportService,
   MetaAndTitleService,
   StoreRequestService,
@@ -378,25 +379,26 @@ describe('MembersPageComponent', () => {
   });
 
   describe('component properties', () => {
-    it('should have correct addMemberLink configuration', () => {
-      expect(component.addMemberLink).toStrictEqual({
-        internalPath: ['member', 'add'],
-        text: 'Add a member',
+    it('should have correct addMemberAction configuration', () => {
+      expect(component.addMemberAction).toStrictEqual({
+        label: 'Add member',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['member', 'add'],
       });
     });
 
     it('should have correct admin button configurations', () => {
-      expect(component.exportToCsvButton).toEqual({
-        id: 'export-to-csv',
-        tooltip: 'Export to CSV',
+      expect(component.exportMembersAction).toEqual({
+        label: 'Export members to CSV',
         icon: DownloadIconComponent,
-        action: expect.any(Function),
+        group: 'data',
+        run: expect.any(Function),
       });
     });
 
     it('should export the members from the export button', () => {
-      component.exportToCsvButton.action();
+      component.exportMembersAction.run();
 
       expect(TestBed.inject(CsvExportService).exportMembers).toHaveBeenCalledOnce();
     });
@@ -406,8 +408,6 @@ describe('MembersPageComponent', () => {
     describe('when viewModel$ is undefined', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, '.ratings-upload')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeFalsy();
       });
@@ -422,36 +422,47 @@ describe('MembersPageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-members-table')).toBeTruthy();
       });
 
-      it('should offer admins a CSV upload button in the admin toolbar', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      it('should offer adding, exporting and importing ratings as admin actions', () => {
         fixture.detectChanges();
 
-        const upload = query(fixture.debugElement, 'lcc-admin-toolbar .ratings-upload');
-        expect(upload.componentInstance.variant()).toBe('button');
-        expect(upload.componentInstance.accept()).toBe('.csv');
-        expect(upload.componentInstance.multiple()).toBe(false);
+        const labels = TestBed.inject(AdminActionsService)
+          .actions()
+          .map(action => action.label);
+
+        expect(labels).toEqual([
+          'Add member',
+          'Export members to CSV',
+          'Import ratings from CSV',
+        ]);
+      });
+
+      it('should open the CSV picker from the ratings import action', () => {
+        fixture.detectChanges();
+        const input: HTMLInputElement = query(
+          fixture.debugElement,
+          'input[type="file"]',
+        ).nativeElement;
+        const click = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+
+        component.importRatingsAction.run();
+
+        expect(input.accept).toBe('.csv');
+        expect(click).toHaveBeenCalledOnce();
       });
 
       it('should prepare the ratings from the chosen file', () => {
         const chosenSpy = vi.spyOn(component, 'onRatingsFileChosen').mockResolvedValue();
         const file = new File(['test,data'], 'test.csv', { type: 'text/csv' });
-        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
         fixture.detectChanges();
+        const input: HTMLInputElement = query(
+          fixture.debugElement,
+          'input[type="file"]',
+        ).nativeElement;
+        Object.defineProperty(input, 'files', { value: [file] });
 
-        query(fixture.debugElement, '.ratings-upload').triggerEventHandler(
-          'valueChange',
-          [file],
-        );
+        input.dispatchEvent(new Event('change'));
 
         expect(chosenSpy).toHaveBeenCalledWith([file]);
-      });
-
-      it('should not render the CSV upload or admin toolbar for non-admins', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, '.ratings-upload')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
       });
     });
 

@@ -45,7 +45,9 @@ describe('AppComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideMockStore(),
+        provideMockStore({
+          selectors: [{ selector: AuthSelectors.selectIsAdmin, value: false }],
+        }),
         provideRouter([]),
         {
           provide: RoutingService,

@@ -19,6 +19,7 @@ import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { MOCK_UPCOMING_SUMMARY } from '@app/mocks/tournaments.mock';
 import { Image } from '@app/models';
 import {
+  AdminActionsService,
   CsvExportService,
   MetaAndTitleService,
   StoreRequestService,
@@ -208,16 +209,18 @@ describe('HomePageComponent', () => {
         icon: InfoIconComponent,
       });
 
-      expect(component.addEventLink).toStrictEqual({
-        text: 'Add an event',
-        internalPath: ['event', 'add'],
+      expect(component.addEventAction).toStrictEqual({
+        label: 'Add event',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['event', 'add'],
       });
 
-      expect(component.createArticleLink).toStrictEqual({
-        text: 'Create an article',
-        internalPath: ['article', 'add'],
+      expect(component.addArticleAction).toStrictEqual({
+        label: 'Add article',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['article', 'add'],
       });
 
       expect(component.articlesPageLink).toStrictEqual({
@@ -239,17 +242,17 @@ describe('HomePageComponent', () => {
       });
     });
 
-    it('should have correct exportToCsvButton configuration', () => {
-      expect(component.exportToCsvButton).toEqual({
-        id: 'export-to-csv',
-        tooltip: 'Export to CSV',
+    it('should have correct exportEventsAction configuration', () => {
+      expect(component.exportEventsAction).toEqual({
+        label: 'Export events to CSV',
         icon: DownloadIconComponent,
-        action: expect.any(Function),
+        group: 'data',
+        run: expect.any(Function),
       });
     });
 
     it('should export the events from the export button', () => {
-      component.exportToCsvButton.action();
+      component.exportEventsAction.run();
 
       expect(TestBed.inject(CsvExportService).exportEvents).toHaveBeenCalledOnce();
     });
@@ -293,20 +296,16 @@ describe('HomePageComponent', () => {
         expect(query(fixture.debugElement, '.photos-section lcc-link-list')).toBeTruthy();
       });
 
-      it('should render articles section admin toolbar in when admin', () => {
-        expect(
-          query(fixture.debugElement, '.articles-section lcc-admin-toolbar'),
-        ).toBeTruthy();
-      });
+      it('should list the events and articles actions first in the admin actions menu', () => {
+        const labels = TestBed.inject(AdminActionsService)
+          .actions()
+          .map(action => action.label);
 
-      it('should not render articles section admin toolbar when not admin', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        store.refreshState();
-        fixture.detectChanges();
-
-        expect(
-          query(fixture.debugElement, '.articles-section lcc-admin-toolbar'),
-        ).toBeFalsy();
+        expect(labels.slice(0, 3)).toEqual([
+          'Add event',
+          'Export events to CSV',
+          'Add article',
+        ]);
       });
     });
 

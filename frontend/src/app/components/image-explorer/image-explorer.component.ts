@@ -1,4 +1,6 @@
 import {
+  ButtonLinkComponent,
+  ContextMenuTriggerDirective,
   DialogComponent,
   DialogRef,
   EmptyStateComponent,
@@ -25,13 +27,13 @@ import {
   input,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { PAGE_SIZES } from '@app/constants/filters';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   DataPaginationOptions,
@@ -40,7 +42,12 @@ import {
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { FormatBytesPipe, FormatDatePipe, HighlightPipe } from '@app/pipes';
+import {
+  FormatBytesPipe,
+  FormatDatePipe,
+  HighlightPipe,
+  RouterLinkPipe,
+} from '@app/pipes';
 import { DeletionService } from '@app/services';
 import * as ImagesActions from '@app/store/images/images.actions';
 import * as ImagesSelectors from '@app/store/images/images.selectors';
@@ -51,10 +58,11 @@ import { bindSearchControl, pageRowCount } from '@app/utils';
   templateUrl: './image-explorer.component.html',
   styleUrl: './image-explorer.component.scss',
   imports: [
-    AdminControlsDirective,
-    AdminToolbarComponent,
+    AdminMenuComponent,
+    ButtonLinkComponent,
     CdkScrollableModule,
     CommonModule,
+    ContextMenuTriggerDirective,
     DialogComponent,
     EmptyStateComponent,
     FormatBytesPipe,
@@ -65,6 +73,8 @@ import { bindSearchControl, pageRowCount } from '@app/utils';
     LoadFailedComponent,
     PaginatorComponent,
     ReactiveFormsModule,
+    RouterLink,
+    RouterLinkPipe,
     SkeletonComponent,
     TextSkeletonComponent,
   ],
@@ -89,7 +99,7 @@ export class ImageExplorerComponent implements OnInit {
 
   public readonly addImageLink: InternalLink = {
     internalPath: ['image', 'add'],
-    text: 'Add an image',
+    text: 'Add image',
     icon: PlusCircleIconComponent,
   };
 

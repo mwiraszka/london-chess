@@ -50,7 +50,10 @@
                   <div class="event-indicators">
                     @for (event of day.events; track event.id) {
                       <a
-                        [adminControls]="isAdmin() ? getAdminControlsConfig(event) : null"
+                        [eaContextMenuTrigger]="isAdmin() ? adminMenu.menu() : null"
+                        [contextMenuData]="
+                          isAdmin() ? getAdminControlsConfig(event) : null
+                        "
                         class="event-indicator"
                         [class]="event.type | kebabCase"
                         [class.no-events]="
@@ -127,3 +130,5 @@
       (changed)="pageChange.emit($event)" />
   </div>
 }
+
+<lcc-admin-menu #adminMenu />

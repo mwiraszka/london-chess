@@ -27,6 +27,7 @@ import {
   RouterOutlet,
 } from '@angular/router';
 
+import { AdminActionsComponent } from '@app/components/admin-actions/admin-actions.component';
 import { AuthDrawerComponent } from '@app/components/auth-drawer/auth-drawer.component';
 import { EnvironmentTagComponent } from '@app/components/environment-tag/environment-tag.component';
 import { FooterComponent } from '@app/components/footer/footer.component';
@@ -96,11 +97,13 @@ import { environment } from '@env';
       </lcc-environment-tag>
     }
 
+    <lcc-admin-actions />
     <lcc-auth-drawer></lcc-auth-drawer>
     <ea-toast></ea-toast>
   `,
   styleUrl: './app.component.scss',
   imports: [
+    AdminActionsComponent,
     AuthDrawerComponent,
     CdkScrollableModule,
     CommonModule,

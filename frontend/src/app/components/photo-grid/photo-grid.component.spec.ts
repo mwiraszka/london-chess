@@ -5,9 +5,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { ImageViewerComponent } from '@app/components/image-viewer/image-viewer.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
-import { DeletionService, StoreRequestService } from '@app/services';
+import { AdminActionsService, DeletionService, StoreRequestService } from '@app/services';
 import {
   closedDialogRef,
   customSort,
@@ -34,7 +33,7 @@ describe('PhotoGridComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminControlsDirective, PhotoGridComponent],
+      imports: [PhotoGridComponent],
       providers: [
         {
           provide: DialogService,
@@ -172,18 +171,12 @@ describe('PhotoGridComponent', () => {
       expect(queryAll(fixture.debugElement, '.album-cover').length).toBe(3);
     });
 
-    it('should display admin toolbar when isAdmin is true', () => {
-      fixture.componentRef.setInput('isAdmin', true);
-      fixture.detectChanges();
+    it('should list its actions in the admin actions menu', () => {
+      const labels = TestBed.inject(AdminActionsService)
+        .actions()
+        .map(action => action.label);
 
-      expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeTruthy();
-    });
-
-    it('should not display admin toolbar when isAdmin is false', () => {
-      fixture.componentRef.setInput('isAdmin', false);
-      fixture.detectChanges();
-
-      expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
+      expect(labels).toEqual(['Add image', 'Add album', 'Browse images']);
     });
 
     describe('when loading', () => {

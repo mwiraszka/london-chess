@@ -14,7 +14,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
 import { ClubLinksComponent } from '@app/components/club-links/club-links.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
@@ -23,7 +22,8 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
 import { TournamentRegistrationsComponent } from '@app/components/tournament-registrations/tournament-registrations.component';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   Article,
   Event,
   Image,
@@ -31,7 +31,11 @@ import {
   LoadStatus,
   TournamentSummary,
 } from '@app/models';
-import { CsvExportService, MetaAndTitleService } from '@app/services';
+import {
+  AdminActionsService,
+  CsvExportService,
+  MetaAndTitleService,
+} from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
@@ -44,7 +48,6 @@ import { combinedLoadStatus } from '@app/utils';
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ArticleGridComponent,
     ClubLinksComponent,
     CommonModule,
@@ -80,15 +83,17 @@ export class HomePageComponent implements OnInit {
     internalPath: 'faq',
     icon: InfoIconComponent,
   };
-  public readonly addEventLink: InternalLink = {
-    text: 'Add an event',
-    internalPath: ['event', 'add'],
+  public readonly addEventAction: AdminLinkAction = {
+    label: 'Add event',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['event', 'add'],
   };
-  public createArticleLink: InternalLink = {
-    text: 'Create an article',
-    internalPath: ['article', 'add'],
+  public readonly addArticleAction: AdminLinkAction = {
+    label: 'Add article',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['article', 'add'],
   };
   public articlesPageLink: InternalLink = {
     text: 'More articles',
@@ -106,12 +111,20 @@ export class HomePageComponent implements OnInit {
     icon: CalendarDaysIconComponent,
   };
 
-  public exportToCsvButton: AdminButton = {
-    id: 'export-to-csv',
-    tooltip: 'Export to CSV',
+  public readonly exportEventsAction: AdminCommandAction = {
+    label: 'Export events to CSV',
     icon: DownloadIconComponent,
-    action: () => this.csvExport.exportEvents(),
+    group: 'data',
+    run: () => this.csvExport.exportEvents(),
   };
+
+  constructor() {
+    inject(AdminActionsService).register(() => [
+      this.addEventAction,
+      this.exportEventsAction,
+      this.addArticleAction,
+    ]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('London Chess Club');

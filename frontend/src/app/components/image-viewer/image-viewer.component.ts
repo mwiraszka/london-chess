@@ -2,6 +2,7 @@ import {
   ButtonComponent,
   ChevronLeftIconComponent,
   ChevronRightIconComponent,
+  ContextMenuTriggerDirective,
   DialogComponent,
   DialogRef,
   TooltipDirective,
@@ -24,14 +25,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { ImageComponent } from '@app/components/image/image.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { AdminControlsConfig, Id, Image, Url } from '@app/models';
-import {
-  AdminControlsService,
-  DeletionService,
-  LoadedImagesService,
-} from '@app/services';
+import { DeletionService, LoadedImagesService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { isPresignedUrlExpired } from '@app/utils';
 
@@ -40,9 +37,10 @@ import { isPresignedUrlExpired } from '@app/utils';
   templateUrl: './image-viewer.component.html',
   styleUrl: './image-viewer.component.scss',
   imports: [
-    AdminControlsDirective,
+    AdminMenuComponent,
     ButtonComponent,
     CommonModule,
+    ContextMenuTriggerDirective,
     DialogComponent,
     ImageComponent,
     TooltipDirective,
@@ -80,8 +78,8 @@ export class ImageViewerComponent implements OnInit {
 
   private indexSubject = new BehaviorSubject<number>(0);
 
-  private readonly adminControls = inject(AdminControlsService);
   private readonly loadedImages = inject(LoadedImagesService);
+  private readonly adminMenu = viewChild(AdminMenuComponent);
   private readonly enlargedDialog = viewChild<ElementRef<HTMLDialogElement>>('enlarged');
   private readonly figure = viewChild<ElementRef<HTMLElement>>('figure');
 
@@ -127,13 +125,13 @@ export class ImageViewerComponent implements OnInit {
   }
 
   public onPreviousImage(): void {
-    this.adminControls.close();
+    this.adminMenu()?.menu()?.close();
     const newIndex = this.index > 0 ? this.index - 1 : this.images().length - 1;
     this.indexSubject.next(newIndex);
   }
 
   public onNextImage(): void {
-    this.adminControls.close();
+    this.adminMenu()?.menu()?.close();
     const newIndex = this.index < this.images().length - 1 ? this.index + 1 : 0;
     this.indexSubject.next(newIndex);
   }

@@ -13,6 +13,7 @@ import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { CalendarPage, DataPaginationOptions, Event } from '@app/models';
 import {
+  AdminActionsService,
   CsvExportService,
   MetaAndTitleService,
   StoreRequestService,
@@ -191,25 +192,26 @@ describe('SchedulePageComponent', () => {
   });
 
   describe('component properties', () => {
-    it('should have correct addEventLink configuration', () => {
-      expect(component.addEventLink).toStrictEqual({
-        internalPath: ['event', 'add'],
-        text: 'Add an event',
+    it('should have correct addEventAction configuration', () => {
+      expect(component.addEventAction).toStrictEqual({
+        label: 'Add event',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['event', 'add'],
       });
     });
 
-    it('should have correct exportToCsvButton configuration', () => {
-      expect(component.exportToCsvButton).toEqual({
-        id: 'export-to-csv',
-        tooltip: 'Export to CSV',
+    it('should have correct exportEventsAction configuration', () => {
+      expect(component.exportEventsAction).toEqual({
+        label: 'Export events to CSV',
         icon: DownloadIconComponent,
-        action: expect.any(Function),
+        group: 'data',
+        run: expect.any(Function),
       });
     });
 
     it('should export the events from the export button', () => {
-      component.exportToCsvButton.action();
+      component.exportEventsAction.run();
 
       expect(TestBed.inject(CsvExportService).exportEvents).toHaveBeenCalledOnce();
     });
@@ -219,7 +221,6 @@ describe('SchedulePageComponent', () => {
     describe('when viewModel$ is undefined', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
@@ -236,18 +237,14 @@ describe('SchedulePageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeTruthy();
       });
 
-      it('should render admin toolbar for admins', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      it('should list its actions in the admin actions menu', () => {
         fixture.detectChanges();
 
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeTruthy();
-      });
+        const labels = TestBed.inject(AdminActionsService)
+          .actions()
+          .map(action => action.label);
 
-      it('should not render admin toolbar for non-admins', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
+        expect(labels).toEqual(['Add event', 'Export events to CSV']);
       });
 
       it('should render only the list in list view', () => {

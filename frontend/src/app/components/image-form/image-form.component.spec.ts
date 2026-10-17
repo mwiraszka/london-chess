@@ -509,10 +509,10 @@ describe('ImageFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should keep the save button enabled while the form is invalid', () => {
+    it('should disable the save button while the form is invalid', () => {
       render(null, { ...newImageData, caption: '' }, true);
 
-      expect(button('.submit-button').disabled()).toBe(false);
+      expect(button('.submit-button').disabled()).toBe(true);
     });
 
     it('should cancel from the cancel button', () => {

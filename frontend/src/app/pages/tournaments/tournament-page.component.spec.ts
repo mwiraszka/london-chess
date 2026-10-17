@@ -22,6 +22,7 @@ import {
 } from '@app/mocks/tournaments.mock';
 import { BasicDialogResult, Tournament, TournamentSummary, User } from '@app/models';
 import {
+  AdminActionsService,
   AuthDrawerService,
   DeletionService,
   MetaAndTitleService,
@@ -693,10 +694,10 @@ describe('TournamentPageComponent', () => {
         .spyOn(TestBed.inject(DeletionService), 'deleteTournament')
         .mockResolvedValue(false);
 
-      query(
-        fixture.debugElement,
-        'lcc-admin-toolbar #delete-tournament',
-      ).triggerEventHandler('clicked');
+      const deleteAction = TestBed.inject(AdminActionsService)
+        .actions()
+        .find(action => action.label === 'Delete tournament');
+      deleteAction?.run?.();
 
       expect(deleteTournament).toHaveBeenCalledExactlyOnceWith(MOCK_UPCOMING_TOURNAMENT);
     });
@@ -706,11 +707,11 @@ describe('TournamentPageComponent', () => {
 
       openUpcoming();
 
-      expect(
-        queryAll(fixture.debugElement, 'lcc-admin-toolbar lcc-link-list a').map(link =>
-          link.injector.get(RouterLink).urlTree?.toString(),
-        ),
-      ).toEqual([`/tournament/edit/${MOCK_UPCOMING_TOURNAMENT.number}`]);
+      expect(TestBed.inject(AdminActionsService).actions()).toContainEqual(
+        expect.objectContaining({
+          path: ['tournament', 'edit', String(MOCK_UPCOMING_TOURNAMENT.number)],
+        }),
+      );
     });
   });
 });
