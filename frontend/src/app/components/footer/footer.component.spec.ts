@@ -159,6 +159,7 @@ describe('FooterComponent', () => {
               ['Code of Conduct', '/documents'],
               ['Club Bylaws', '/documents'],
               ['Membership Fees', '/documents'],
+              ['Privacy', '/privacy'],
               ['Regional Clubs', '/regional-clubs'],
             ],
           },
