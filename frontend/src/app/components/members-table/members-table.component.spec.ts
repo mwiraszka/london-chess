@@ -245,8 +245,10 @@ describe('MembersTableComponent', () => {
       ]);
     });
 
-    it('should not make the rows links, as they hold the controls', () => {
-      expect(query(fixture.debugElement, 'a.ea-data-table__row-link')).toBeFalsy();
+    it('should link a member with a profile to it by row, as for the public', () => {
+      expect(query(bodyRows()[0], 'a.ea-data-table__row-link').attributes['href']).toBe(
+        '/members/0',
+      );
       expect(query(bodyRows()[0], 'a.members__profile-link')).toBeTruthy();
     });
 
@@ -282,6 +284,14 @@ describe('MembersTableComponent', () => {
       const notice = query(fixture.debugElement, 'lcc-safe-mode-notice');
       expect(headers()).toHaveLength(7);
       expect(notice).toBeTruthy();
+    });
+
+    it('should still offer the controls of a member in safe mode', () => {
+      render({ isAdmin: true, isSafeMode: true });
+
+      const controls = controlsOf(bodyRows()[0]);
+
+      expect(controls.editPath).toEqual(['member', 'edit', members[0].id]);
     });
   });
 

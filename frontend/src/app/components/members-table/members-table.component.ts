@@ -123,7 +123,7 @@ export class MembersTableComponent {
   protected readonly isCityChampion = isCityChampion;
   protected readonly pageSizes = PAGE_SIZES;
 
-  // Admins see every detail and the controls to change it, unless safe mode hides them
+  // Admins see every detail unless safe mode hides it from the screen
   protected readonly showsDetails = computed(() => this.isAdmin() && !this.isSafeMode());
 
   protected readonly empty = computed(() => !this.isLoading() && !this.members().length);
@@ -246,13 +246,8 @@ export class MembersTableComponent {
     itemName: `${member.firstName} ${member.lastName}`,
   });
 
-  // Rows lead to the member's profile, except for admins, whose rows hold controls
-  protected readonly rowHref = computed(() =>
-    this.showsDetails()
-      ? undefined
-      : ({ member }: MemberRow) =>
-          member.number === null ? null : `/members/${member.number}`,
-  );
+  protected readonly rowHref = ({ member }: MemberRow): string | null =>
+    member.number === null ? null : `/members/${member.number}`;
 
   public onSorted({ column }: DataTableSortState): void {
     const options = this.options();
