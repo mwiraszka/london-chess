@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Redesign the admin controls as menus that cover nothing on the page: right-click or long-press an item to edit, bookmark or delete it, and use the button in the bottom corner to add or export
 - Update third-party packages
 
 ## [v6.5.5] - 2026-10-17
