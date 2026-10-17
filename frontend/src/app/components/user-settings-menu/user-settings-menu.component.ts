@@ -59,9 +59,7 @@ export class UserSettingsMenuComponent implements OnInit {
 
   public viewModel$?: Observable<{
     user: User | null;
-    hasAdminRights: boolean;
     isSafeMode: boolean;
-    showAdminControls: boolean;
     isDarkMode: boolean;
     isWideView: boolean;
     isDesktopView: boolean;
@@ -83,41 +81,23 @@ export class UserSettingsMenuComponent implements OnInit {
   public ngOnInit(): void {
     this.viewModel$ = combineLatest([
       this.store.select(AuthSelectors.selectUser),
-      this.store.select(AuthSelectors.selectHasAdminRights),
       this.store.select(AppSelectors.selectIsSafeMode),
-      this.store.select(AppSelectors.selectShowAdminControls),
       this.store.select(AppSelectors.selectIsDarkMode),
       this.store.select(AppSelectors.selectIsWideView),
       this.store.select(AppSelectors.selectIsDesktopView),
     ]).pipe(
-      map(
-        ([
-          user,
-          hasAdminRights,
-          isSafeMode,
-          showAdminControls,
-          isDarkMode,
-          isWideView,
-          isDesktopView,
-        ]) => ({
-          user,
-          hasAdminRights,
-          isSafeMode,
-          showAdminControls,
-          isDarkMode,
-          isWideView,
-          isDesktopView,
-        }),
-      ),
+      map(([user, isSafeMode, isDarkMode, isWideView, isDesktopView]) => ({
+        user,
+        isSafeMode,
+        isDarkMode,
+        isWideView,
+        isDesktopView,
+      })),
     );
   }
 
   public onToggleSafeMode(): void {
     this.store.dispatch(AppActions.safeModeToggled());
-  }
-
-  public onToggleAdminControls(): void {
-    this.store.dispatch(AppActions.adminControlsToggled());
   }
 
   public onToggleTheme(): void {

@@ -7,7 +7,6 @@ import { TestBed } from '@angular/core/testing';
 import { Data, Router } from '@angular/router';
 
 import { User } from '@app/models';
-import { AppActions } from '@app/store/app';
 
 import * as AuthActions from './auth.actions';
 import { AuthEffects } from './auth.effects';
@@ -59,9 +58,9 @@ describe('AuthEffects', () => {
   });
 
   // The store already holds the user an action announces by the time the effect runs
-  const storeUser = (user: User | null, isAdmin = !!user?.isAdmin): void => {
+  const storeUser = (user: User | null): void => {
     store.overrideSelector(AuthSelectors.selectUser, user);
-    store.overrideSelector(AuthSelectors.selectIsAdmin, isAdmin);
+    store.overrideSelector(AuthSelectors.selectIsAdmin, !!user?.isAdmin);
     store.refreshState();
   };
 
@@ -105,26 +104,6 @@ describe('AuthEffects', () => {
 
     storeUser(admin);
     actions$.next(AuthActions.userChanged({ user: admin }));
-
-    expect(navigate).not.toHaveBeenCalled();
-  });
-
-  it('should leave an admin route when an admin switches their controls off', () => {
-    routerState.snapshot = { root: routeRequiring('admin') };
-    effects.leaveProtectedRouteOnAccessLoss$.subscribe();
-
-    storeUser(admin, false);
-    actions$.next(AppActions.adminControlsToggled());
-
-    expect(navigate).toHaveBeenCalledWith(['/']);
-  });
-
-  it('should stay on a member route when an admin switches their controls off', () => {
-    routerState.snapshot = { root: routeRequiring('member') };
-    effects.leaveProtectedRouteOnAccessLoss$.subscribe();
-
-    storeUser(admin, false);
-    actions$.next(AppActions.adminControlsToggled());
 
     expect(navigate).not.toHaveBeenCalled();
   });

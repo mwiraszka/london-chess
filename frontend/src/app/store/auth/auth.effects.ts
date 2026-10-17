@@ -5,7 +5,6 @@ import { filter, tap } from 'rxjs/operators';
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import * as AppActions from '@app/store/app/app.actions';
 import { hasAccess, requiredAccess } from '@app/utils';
 
 import * as AuthActions from './auth.actions';
@@ -17,12 +16,12 @@ export class AuthEffects {
   private readonly router = inject(Router);
   private readonly store = inject(Store);
 
-  // Guards run on navigation, so a session ending, or an admin switching their controls
-  // off, while a protected page is already open has to be caught here
+  // Guards run on navigation, so a session ending while a protected page is already open
+  // has to be caught here
   leaveProtectedRouteOnAccessLoss$ = createEffect(
     () =>
       this.actions$.pipe(
-        ofType(AuthActions.userChanged, AppActions.adminControlsToggled),
+        ofType(AuthActions.userChanged),
         filter(
           () =>
             !hasAccess(
