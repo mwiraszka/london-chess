@@ -22,7 +22,6 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
@@ -34,7 +33,7 @@ import {
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { AdminActionsService, MetaAndTitleService } from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
@@ -48,10 +47,6 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
         heading="Articles"
         [icon]="pageIcon">
       </lcc-page-header>
-
-      @if (vm.isAdmin) {
-        <lcc-admin-toolbar [adminLinks]="[createArticleLink]"></lcc-admin-toolbar>
-      }
 
       <div class="filters">
         <ea-input
@@ -101,7 +96,6 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
   `,
   styleUrl: './articles-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ArticleGridComponent,
     CommonModule,
     EmptyStateComponent,
@@ -139,6 +133,10 @@ export class ArticlesPageComponent implements OnInit {
     options: DataPaginationOptions<Article>;
     status: LoadStatus;
   }>;
+
+  constructor() {
+    inject(AdminActionsService).register(() => [this.createArticleLink]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Articles');

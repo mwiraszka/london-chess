@@ -59,31 +59,24 @@ export async function logIn(page: Page): Promise<string> {
   return response.request().headers()['authorization'];
 }
 
-// Right-clicking an item is how an admin brings up its edit and delete controls
+// Right-clicking an item is how an admin brings up its menu of edit and delete actions
 export async function openAdminControls(item: Locator): Promise<Locator> {
-  // The controls close on scroll, and the browser fires the scroll that brings the item
-  // into view on the next frame, so it has to land before the right-click opens them
-  await item.scrollIntoViewIfNeeded();
-  await item.evaluate(
-    () =>
-      new Promise<void>(resolve =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
-  );
   await item.click({ button: 'right' });
-  const controls = item.page().getByRole('dialog', { name: /^Admin controls for / });
-  await expect(controls).toBeVisible();
-  return controls;
+  const menu = item.page().getByRole('menu', { name: /^Admin actions for / });
+  await expect(menu).toBeVisible();
+  return menu;
 }
 
-// Delete only appears in the controls while Ctrl is held, as the test browser reports a
-// Windows machine. The click is dispatched rather than performed, since a Ctrl-held click
-// on macOS opens the context menu and Enter does not activate a button under Ctrl
 export async function clickDelete(controls: Locator): Promise<void> {
-  const keyboard = controls.page().keyboard;
-  await keyboard.down('Control');
-  await controls.getByRole('button', { name: /^Delete / }).dispatchEvent('click');
-  await keyboard.up('Control');
+  await controls.getByRole('menuitem', { name: 'Delete' }).click();
+}
+
+// The button over the page lists what the views on screen let an admin add or export
+export async function openAdminActions(page: Page): Promise<Locator> {
+  await page.getByRole('button', { name: 'Admin actions', exact: true }).click();
+  const menu = page.getByRole('menu', { name: 'Admin actions', exact: true });
+  await expect(menu).toBeVisible();
+  return menu;
 }
 
 export async function confirm(page: Page, button: string): Promise<void> {

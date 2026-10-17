@@ -1,0 +1,9 @@
+// Over the page rather than in its flow, so nothing shifts when it comes and goes
+.admin-actions-button {
+  z-index: var(--z-index-sticky);
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}

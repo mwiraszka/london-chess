@@ -1,4 +1,4 @@
-import { NewspaperIconComponent } from '@eagami/ui';
+import { ContextMenuTriggerDirective, NewspaperIconComponent } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { isEqual } from 'lodash-es';
 import { Observable, combineLatest, of } from 'rxjs';
@@ -8,11 +8,11 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { ArticleSkeletonComponent } from '@app/components/article-skeleton/article-skeleton.component';
 import { ArticleComponent } from '@app/components/article/article.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   Article,
@@ -34,7 +34,8 @@ import { ImagesSelectors } from '@app/store/images';
       @if (vm.article && vm.imagesStatus !== 'loading') {
         @let article = vm.article;
         <lcc-article
-          [adminControls]="vm.isAdmin ? getAdminControlsConfig(article) : null"
+          [eaContextMenuTrigger]="vm.isAdmin ? adminMenu.menu() : null"
+          [contextMenuData]="vm.isAdmin ? getAdminControlsConfig(article) : null"
           [article]="article"
           [bannerImage]="vm.bannerImage"
           [bodyImages]="vm.bodyImages">
@@ -48,12 +49,14 @@ import { ImagesSelectors } from '@app/store/images';
         <lcc-article-skeleton />
       }
     }
+    <lcc-admin-menu #adminMenu />
   `,
   imports: [
-    AdminControlsDirective,
+    AdminMenuComponent,
     ArticleComponent,
     ArticleSkeletonComponent,
     CommonModule,
+    ContextMenuTriggerDirective,
     LinkListComponent,
     LoadFailedComponent,
   ],

@@ -157,8 +157,7 @@ $skeleton-month-count: 12;
         cursor: pointer;
         transition: transform 0.3s ease;
 
-        &:hover,
-        &.lcc-admin-controls-open {
+        &:hover {
           transform: scale(1.2);
         }
       }

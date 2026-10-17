@@ -1,0 +1,10 @@
+// Holds no layout of its own, so it can sit among the items of a grid or list
+:host {
+  display: contents;
+}
+
+.reason {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}

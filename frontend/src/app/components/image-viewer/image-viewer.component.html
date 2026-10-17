@@ -13,7 +13,8 @@
       #figure
       tabindex="-1"
       autofocus
-      [adminControls]="isAdmin() ? getAdminControlsConfig(image) : null">
+      [eaContextMenuTrigger]="isAdmin() ? adminMenu.menu() : null"
+      [contextMenuData]="isAdmin() ? getAdminControlsConfig(image) : null">
       <div class="image-container">
         <button
           type="button"
@@ -63,3 +64,5 @@
     </dialog>
   }
 </ea-dialog>
+
+<lcc-admin-menu #adminMenu />

@@ -4,6 +4,7 @@ import {
   BadgeVariant,
   ButtonComponent,
   CardComponent,
+  ContextMenuTriggerDirective,
   DataTableColumn,
   DataTableSortState,
   DropdownComponent,
@@ -32,7 +33,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
@@ -44,14 +45,18 @@ import {
   TOURNAMENT_TIMING_BADGES,
   TROPHIES,
 } from '@app/constants/tournaments';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   InternalLink,
   TournamentFormat,
   TournamentSummary,
 } from '@app/models';
-import { DeletionService, KEEP_SCROLL, MetaAndTitleService } from '@app/services';
+import {
+  AdminActionsService,
+  DeletionService,
+  KEEP_SCROLL,
+  MetaAndTitleService,
+} from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
@@ -133,11 +138,11 @@ type CellTemplate = TemplateRef<{ $implicit: TournamentRow; value: unknown }>;
   templateUrl: './tournaments-page.component.html',
   styleUrl: './tournaments-page.component.scss',
   imports: [
-    AdminControlsDirective,
-    AdminToolbarComponent,
+    AdminMenuComponent,
     BadgeComponent,
     ButtonComponent,
     CardComponent,
+    ContextMenuTriggerDirective,
     DataTableComponent,
     DropdownComponent,
     EmptyStateComponent,
@@ -320,6 +325,10 @@ export class TournamentsPageComponent implements OnInit {
       },
     ];
   });
+
+  constructor() {
+    inject(AdminActionsService).register(() => [this.addTournamentLink]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Tournaments');

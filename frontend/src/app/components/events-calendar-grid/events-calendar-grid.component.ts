@@ -1,5 +1,6 @@
 import {
   CalendarDaysIconComponent,
+  ContextMenuTriggerDirective,
   DialogService,
   PAGE_SIZE_ALL,
   PaginatorComponent,
@@ -17,10 +18,10 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { CALENDAR_MONTHS_PER_PAGE } from '@app/constants/filters';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { AdminControlsConfig, CalendarDay, CalendarMonth, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe, KebabCasePipe } from '@app/pipes';
 import { DeletionService } from '@app/services';
@@ -35,8 +36,9 @@ import { EventInfoDialogComponent } from '../event-info-dialog/event-info-dialog
   templateUrl: './events-calendar-grid.component.html',
   styleUrl: './events-calendar-grid.component.scss',
   imports: [
-    AdminControlsDirective,
+    AdminMenuComponent,
     CalendarDaysIconComponent,
+    ContextMenuTriggerDirective,
     EventTypeTagComponent,
     FormatDatePipe,
     HighlightPipe,

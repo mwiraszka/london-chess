@@ -2,6 +2,7 @@ import {
   DataTableColumn,
   DataTableLayout,
   DataTableSortState,
+  MenuComponent,
   PaginatorComponent,
 } from '@eagami/ui';
 
@@ -10,7 +11,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { AdminControlsConfig } from '@app/models';
-import { AdminControlsService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
 import { DataTableComponent } from './data-table.component';
@@ -112,10 +112,7 @@ describe('DataTableComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
-      providers: [
-        provideRouter([]),
-        { provide: AdminControlsService, useValue: { open: vi.fn() } },
-      ],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     // Held so a test can resize the table, which is what the component measures on
@@ -211,17 +208,16 @@ describe('DataTableComponent', () => {
   });
 
   it('should offer a row its controls on a right click', () => {
-    const openSpy = vi.mocked(TestBed.inject(AdminControlsService).open);
+    const openSpy = vi.spyOn(MenuComponent.prototype, 'openAsContextMenu');
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
 
     query(bodyRows()[1], '.name').nativeElement.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
     expect(openSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ itemName: 'Bob' }),
       bodyRows()[1].nativeElement,
-      undefined,
-      'center',
+      expect.anything(),
+      expect.objectContaining({ itemName: 'Bob' }),
     );
   });
 

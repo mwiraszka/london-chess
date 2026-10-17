@@ -9,7 +9,11 @@ import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
-import { MetaAndTitleService, StoreRequestService } from '@app/services';
+import {
+  AdminActionsService,
+  MetaAndTitleService,
+  StoreRequestService,
+} from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
@@ -180,7 +184,6 @@ describe('ArticlesPageComponent', () => {
     describe('when viewModel$ is undefined', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-article-grid')).toBeFalsy();
       });
@@ -228,16 +231,12 @@ describe('ArticlesPageComponent', () => {
         );
       });
 
-      it('should render admin toolbar when admin', () => {
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeTruthy();
-      });
+      it('should list its actions in the admin actions menu', () => {
+        const labels = TestBed.inject(AdminActionsService)
+          .actions()
+          .map(action => ('text' in action ? action.text : action.tooltip));
 
-      it('should not render admin toolbar when not admin', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        store.refreshState();
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
+        expect(labels).toEqual(['Create an article']);
       });
     });
 

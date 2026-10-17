@@ -1,5 +1,6 @@
 import {
   BookmarkIconComponent,
+  ContextMenuTriggerDirective,
   DialogService,
   DividerComponent,
   SkeletonComponent,
@@ -16,10 +17,10 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ImageComponent } from '@app/components/image/image.component';
 import { PAGE_SIZES } from '@app/constants/filters';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import {
   AdminControlsConfig,
   Article,
@@ -49,8 +50,9 @@ interface ArticleRow {
   styleUrl: './article-grid.component.scss',
   host: { '[class.is-home-page]': '!!isHomePage()' },
   imports: [
-    AdminControlsDirective,
+    AdminMenuComponent,
     BookmarkIconComponent,
+    ContextMenuTriggerDirective,
     DividerComponent,
     FormatDatePipe,
     HighlightPipe,

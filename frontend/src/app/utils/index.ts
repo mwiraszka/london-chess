@@ -117,9 +117,11 @@ export { refreshedFormData } from './store/refreshed-form-data.util';
 
 export { closedDialogRef } from './test/closed-dialog-ref.util';
 export { query, queryAll, queryTextContent } from './test/debug-element-queries.util';
+export { lastAdminMenuControls } from './test/last-admin-menu-controls.util';
 export { lastOpenedDialog } from './test/last-opened-dialog.util';
 
 export { isAccountSection } from './type-guards/is-account-section.util';
+export { isAdminControlsConfig } from './type-guards/is-admin-controls-config.util';
 export { isBrand } from './type-guards/is-brand.util';
 export { isCollectionId } from './type-guards/is-collection-id.util';
 export { isDefined } from './type-guards/is-defined.util';

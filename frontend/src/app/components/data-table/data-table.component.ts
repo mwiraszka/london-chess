@@ -26,8 +26,8 @@ import {
   viewChildren,
 } from '@angular/core';
 
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { AdminControlsConfig } from '@app/models';
-import { AdminControlsService } from '@app/services';
 
 export const NO_SORT: DataTableSortState = { column: '', direction: null };
 
@@ -58,6 +58,7 @@ export class DataTableCellDirective<T> {
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
   imports: [
+    AdminMenuComponent,
     DataTableCellDirective,
     EaDataTableComponent,
     NgTemplateOutlet,
@@ -97,7 +98,7 @@ export class DataTableComponent<T extends { id: string }> {
   private readonly table = viewChild(EaDataTableComponent, { read: ElementRef });
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly adminControls = inject(AdminControlsService);
+  private readonly adminMenu = viewChild(AdminMenuComponent);
   private readonly destroyRef = inject(DestroyRef);
   private readonly renderer = inject(Renderer2);
 
@@ -174,13 +175,15 @@ export class DataTableComponent<T extends { id: string }> {
   protected onRowContextMenu({
     row,
     rowElement,
+    point,
     event,
   }: DataTableRowContextMenuEvent<T>): void {
+    const menu = this.adminMenu()?.menu();
     const config = this.rowControls()?.(row);
-    if (!config || window.getSelection()?.toString().trim()) {
+    if (!menu || !config) {
       return;
     }
     event.preventDefault();
-    this.adminControls.open(config, rowElement, undefined, 'center');
+    menu.openAsContextMenu(rowElement, point, config);
   }
 }

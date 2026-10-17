@@ -1,4 +1,4 @@
-export { AdminControlsService } from './admin-controls.service';
+export { AdminActionsService } from './admin-actions.service';
 export { ApiError, ApiService } from './api.service';
 export { ArticlesApiService } from './api/articles-api.service';
 export { AuthDrawerService } from './auth-drawer.service';
@@ -10,7 +10,6 @@ export { EventsApiService } from './api/events-api.service';
 export { GamesApiService } from './api/games-api.service';
 export { ImageFileService } from './image-file.service';
 export { ImagesApiService } from './api/images-api.service';
-export { KeyStateService } from './key-state.service';
 export { LoadedImagesService } from './loaded-images.service';
 export { MemberProfilesService } from './member-profiles.service';
 export { MembersApiService } from './api/members-api.service';

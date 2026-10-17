@@ -102,7 +102,7 @@ test.describe('managing images', () => {
     // An album opens in its editor in a new tab
     const [editor] = await Promise.all([
       page.waitForEvent('popup'),
-      controls.getByRole('link', { name: /^Edit / }).click(),
+      controls.getByRole('menuitem', { name: 'Edit' }).click(),
     ]);
     await expect(editor).toHaveURL(
       new RegExp(`/album/edit/${encodeURIComponent(ALBUMS.picnic)}$`),

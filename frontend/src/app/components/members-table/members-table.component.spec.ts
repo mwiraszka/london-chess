@@ -1,4 +1,4 @@
-import { DialogService } from '@eagami/ui';
+import { DialogService, MenuComponent } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { DebugElement } from '@angular/core';
@@ -8,13 +8,15 @@ import { Router, provideRouter } from '@angular/router';
 import { PAGE_SIZES } from '@app/constants/filters';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
-import {
-  AdminControlsService,
-  DeletionService,
-  StoreRequestService,
-} from '@app/services';
+import { DeletionService, StoreRequestService } from '@app/services';
 import { initialState as membersInitialState } from '@app/store/members';
-import { CITY_CHAMPION, closedDialogRef, query, queryAll } from '@app/utils';
+import {
+  CITY_CHAMPION,
+  closedDialogRef,
+  lastAdminMenuControls,
+  query,
+  queryAll,
+} from '@app/utils';
 
 import { MemberRow, MembersTableComponent } from './members-table.component';
 
@@ -23,7 +25,7 @@ describe('MembersTableComponent', () => {
   let component: MembersTableComponent;
   let router: Router;
 
-  let openSpy: Mock;
+  let openSpy: MockInstance<MenuComponent['openAsContextMenu']>;
   let optionsChangeSpy: MockInstance;
 
   // In the order the server sends them for these options
@@ -55,12 +57,12 @@ describe('MembersTableComponent', () => {
   const cellTexts = (row: DebugElement) =>
     queryAll(row, '.ea-data-table__cell').map(textOf);
 
-  // The controls a right click on the row hands to the service
+  // The controls a right click on the row hands to the admin menu
   const controlsOf = (row: DebugElement): AdminControlsConfig => {
     query(row, '.members__name').nativeElement.dispatchEvent(
       new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
     );
-    return openSpy.mock.calls.at(-1)?.[0] as AdminControlsConfig;
+    return lastAdminMenuControls(openSpy);
   };
 
   const render = (inputs: Partial<Record<string, unknown>> = {}) => {
@@ -85,7 +87,6 @@ describe('MembersTableComponent', () => {
       providers: [
         provideMockStore({ initialState: { membersState: membersInitialState } }),
         provideRouter([]),
-        { provide: AdminControlsService, useValue: { open: vi.fn() } },
         { provide: DialogService, useValue: { open: vi.fn(() => closedDialogRef()) } },
         {
           provide: StoreRequestService,
@@ -98,7 +99,7 @@ describe('MembersTableComponent', () => {
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
 
-    openSpy = vi.mocked(TestBed.inject(AdminControlsService).open);
+    openSpy = vi.spyOn(MenuComponent.prototype, 'openAsContextMenu');
     optionsChangeSpy = vi.spyOn(component.optionsChange, 'emit');
     TestBed.inject(MockStore);
   });
@@ -256,13 +257,12 @@ describe('MembersTableComponent', () => {
 
       expect(event.defaultPrevented).toBe(true);
       expect(openSpy).toHaveBeenCalledWith(
+        bodyRows()[0].nativeElement,
+        expect.anything(),
         expect.objectContaining({
           editPath: ['member', 'edit', members[0].id],
           itemName: `${members[0].firstName} ${members[0].lastName}`,
         }),
-        bodyRows()[0].nativeElement,
-        undefined,
-        'center',
       );
     });
 

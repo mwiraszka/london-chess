@@ -3,7 +3,12 @@ import { ARTICLES, PROFILE_MEMBER, UPCOMING_EVENTS } from '../seed';
 import { setSwitch } from '../switches';
 import { bodyRows } from '../tables';
 import { fieldLabel } from './fields';
-import { logIn, openAdminControls, requireAdminCredentials } from './session';
+import {
+  logIn,
+  openAdminActions,
+  openAdminControls,
+  requireAdminCredentials,
+} from './session';
 
 test.describe('admin controls', () => {
   test.beforeEach(requireAdminCredentials);
@@ -19,13 +24,9 @@ test.describe('admin controls', () => {
       page.getByRole('link', { name: new RegExp(ARTICLES[1].title) }),
     );
 
-    // Delete only appears while Ctrl is held, so it is hard to hit by accident
-    await expect(controls.getByRole('button', { name: /^Delete / })).toHaveCount(0);
-    await page.keyboard.down('Control');
-    await expect(controls.getByRole('button', { name: /^Delete / })).toBeEnabled();
-    await page.keyboard.up('Control');
-    await expect(controls.getByRole('button', { name: /bookmark/i })).toBeVisible();
-    await controls.getByRole('link', { name: /^Edit / }).click();
+    await expect(controls.getByRole('menuitem', { name: 'Delete' })).toBeEnabled();
+    await expect(controls.getByRole('menuitem', { name: /bookmark/i })).toBeVisible();
+    await controls.getByRole('menuitem', { name: 'Edit' }).click();
     await expect(page).toHaveURL(new RegExp(`/article/edit/${ARTICLES[1].id}$`));
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(ARTICLES[1].title);
   });
@@ -40,7 +41,7 @@ test.describe('admin controls', () => {
         .getByRole('heading', { name: UPCOMING_EVENTS[0].title, exact: true }),
     );
 
-    await controls.getByRole('link', { name: /^Edit / }).click();
+    await controls.getByRole('menuitem', { name: 'Edit' }).click();
     await expect(page).toHaveURL(new RegExp(`/event/edit/${UPCOMING_EVENTS[0].id}$`));
   });
 
@@ -52,15 +53,17 @@ test.describe('admin controls', () => {
 
     const controls = await openAdminControls(row);
 
-    await controls.getByRole('link', { name: /^Edit / }).click();
+    await controls.getByRole('menuitem', { name: 'Edit' }).click();
     await expect(page).toHaveURL(/\/member\/edit\/[0-9a-f]{24}$/);
     await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(
       PROFILE_MEMBER.lastName,
     );
   });
 
-  test('show the admin toolbar on each managed page', async ({ page }) => {
-    for (const [path, link] of [
+  test("offer each managed page's actions from the admin actions button", async ({
+    page,
+  }) => {
+    for (const [path, action] of [
       ['/articles', 'Create an article'],
       ['/schedule', 'Add an event'],
       ['/members', 'Add a member'],
@@ -69,35 +72,34 @@ test.describe('admin controls', () => {
     ]) {
       await page.goto(path);
 
-      await expect(
-        page.locator('lcc-admin-toolbar').getByRole('link', { name: link }),
-      ).toBeVisible();
+      const actions = await openAdminActions(page);
+
+      await expect(actions.getByRole('menuitem', { name: action })).toBeVisible();
+      await page.keyboard.press('Escape');
     }
   });
 
   test('leave the app as any other member sees it while switched off', async ({
     page,
   }) => {
-    const toolbarLink = page
-      .locator('lcc-admin-toolbar')
-      .getByRole('link', { name: 'Add an event' });
+    const adminActions = page.getByRole('button', { name: 'Admin actions', exact: true });
     const setAdminControls = async (on: boolean): Promise<void> => {
       await page.getByRole('button', { name: 'Menu' }).click();
       await setSwitch(page, 'Admin controls', on);
       await page.keyboard.press('Escape');
     };
     await page.goto('/schedule');
-    await expect(toolbarLink).toBeVisible();
+    await expect(adminActions).toBeVisible();
 
     await setAdminControls(false);
 
-    await expect(toolbarLink).toHaveCount(0);
+    await expect(adminActions).toHaveCount(0);
     await page.goto('/event/add');
     await expect(page).not.toHaveURL(/\/event\/add$/);
 
     await setAdminControls(true);
     await page.goto('/schedule');
 
-    await expect(toolbarLink).toBeVisible();
+    await expect(adminActions).toBeVisible();
   });
 });

@@ -3,8 +3,6 @@
 
   <div class="image-explorer">
     @if (viewModel$ | async; as vm) {
-      <lcc-admin-toolbar [adminLinks]="[addImageLink]"></lcc-admin-toolbar>
-
       <div class="filters">
         <ea-input
           class="filters__search"
@@ -12,6 +10,13 @@
           placeholder="Search by caption, file or album"
           [formControl]="searchControl"
           [icon]="searchIcon" />
+        <a
+          eaButtonLink
+          variant="secondary"
+          [icon]="addImageLink.icon"
+          [routerLink]="addImageLink.internalPath | routerLink">
+          {{ addImageLink.text }}
+        </a>
       </div>
 
       @if (vm.status === 'failed') {
@@ -80,7 +85,8 @@
                 <div
                   class="image-card"
                   [class.selectable]="selectable()"
-                  [adminControls]="getAdminControlsConfig(image)"
+                  [eaContextMenuTrigger]="adminMenu.menu()"
+                  [contextMenuData]="getAdminControlsConfig(image)"
                   (click)="selectable() ? dialogRef.close(image.id) : null">
                   <div class="image-container">
                     <lcc-image [image]="image" />
@@ -163,3 +169,5 @@
     }
   </div>
 </ea-dialog>
+
+<lcc-admin-menu #adminMenu />

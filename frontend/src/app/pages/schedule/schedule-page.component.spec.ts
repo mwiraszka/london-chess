@@ -13,6 +13,7 @@ import { SEARCH_DEBOUNCE } from '@app/constants/filters';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { CalendarPage, DataPaginationOptions, Event } from '@app/models';
 import {
+  AdminActionsService,
   CsvExportService,
   MetaAndTitleService,
   StoreRequestService,
@@ -219,7 +220,6 @@ describe('SchedulePageComponent', () => {
     describe('when viewModel$ is undefined', () => {
       it('should not render any content', () => {
         expect(query(fixture.debugElement, 'lcc-page-header')).toBeFalsy();
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, '.filters')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeFalsy();
         expect(query(fixture.debugElement, 'lcc-events-table')).toBeFalsy();
@@ -236,18 +236,14 @@ describe('SchedulePageComponent', () => {
         expect(query(fixture.debugElement, 'lcc-schedule-toolbar')).toBeTruthy();
       });
 
-      it('should render admin toolbar for admins', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, true);
+      it('should list its actions in the admin actions menu', () => {
         fixture.detectChanges();
 
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeTruthy();
-      });
+        const labels = TestBed.inject(AdminActionsService)
+          .actions()
+          .map(action => ('text' in action ? action.text : action.tooltip));
 
-      it('should not render admin toolbar for non-admins', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        fixture.detectChanges();
-
-        expect(query(fixture.debugElement, 'lcc-admin-toolbar')).toBeFalsy();
+        expect(labels).toEqual(['Add an event', 'Export to CSV']);
       });
 
       it('should render only the list in list view', () => {

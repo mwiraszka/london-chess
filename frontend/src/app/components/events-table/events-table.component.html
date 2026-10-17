@@ -82,7 +82,8 @@
       <div class="events__entry">
         <div
           class="events__main"
-          [adminControls]="isAdmin() ? getAdminControlsConfig(event) : null">
+          [eaContextMenuTrigger]="isAdmin() ? adminMenu.menu() : null"
+          [contextMenuData]="isAdmin() ? getAdminControlsConfig(event) : null">
           <div class="events__heading">
             <h3 class="events__title">
               @if (event.articleId) {
@@ -123,3 +124,5 @@
     }
   </div>
 </ng-template>
+
+<lcc-admin-menu #adminMenu />

@@ -9,7 +9,8 @@
       [class.article--entering]="entering()"
       [style.animation-delay.s]="entering() ? $index * 0.1 : null"
       [attr.aria-hidden]="isLoading() || null"
-      [adminControls]="
+      [eaContextMenuTrigger]="!isLoading() && isAdmin() ? adminMenu.menu() : null"
+      [contextMenuData]="
         !isLoading() && isAdmin() ? getAdminControlsConfig(row.article) : null
       "
       [routerLink]="
@@ -83,3 +84,5 @@
     </a>
   }
 </div>
+
+<lcc-admin-menu #adminMenu />

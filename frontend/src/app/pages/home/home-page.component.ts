@@ -14,7 +14,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { ArticleGridComponent } from '@app/components/article-grid/article-grid.component';
 import { ClubLinksComponent } from '@app/components/club-links/club-links.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
@@ -31,7 +30,11 @@ import {
   LoadStatus,
   TournamentSummary,
 } from '@app/models';
-import { CsvExportService, MetaAndTitleService } from '@app/services';
+import {
+  AdminActionsService,
+  CsvExportService,
+  MetaAndTitleService,
+} from '@app/services';
 import { ArticlesActions, ArticlesSelectors } from '@app/store/articles';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
@@ -44,7 +47,6 @@ import { combinedLoadStatus } from '@app/utils';
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ArticleGridComponent,
     ClubLinksComponent,
     CommonModule,
@@ -112,6 +114,14 @@ export class HomePageComponent implements OnInit {
     icon: DownloadIconComponent,
     action: () => this.csvExport.exportEvents(),
   };
+
+  constructor() {
+    inject(AdminActionsService).register(() => [
+      this.addEventLink,
+      this.exportToCsvButton,
+      this.createArticleLink,
+    ]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('London Chess Club');

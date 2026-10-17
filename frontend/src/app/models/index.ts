@@ -1,9 +1,7 @@
 export type { AccountSection, SessionInfo } from './account.model';
 export type { Brand, BrandDefinition } from './brand.model';
-export type {
-  AdminControlsConfig,
-  AdminControlsPlacement,
-} from './admin-controls-config.model';
+export type { AdminControlsConfig } from './admin-controls-config.model';
+export type { AdminAction } from './admin-action.model';
 export type { AdminButton } from './admin-button.model';
 export type { ApiScope, ApiResponse, PaginatedItems } from './api.model';
 export type { Article, ArticleFormData, ArticleFormGroup } from './article.model';

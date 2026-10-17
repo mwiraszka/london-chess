@@ -4,7 +4,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { Article, DataPaginationOptions } from '@app/models';
@@ -40,7 +39,7 @@ describe('ArticleGridComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminControlsDirective, ArticleGridComponent],
+      imports: [ArticleGridComponent],
       providers: [
         {
           provide: DialogService,

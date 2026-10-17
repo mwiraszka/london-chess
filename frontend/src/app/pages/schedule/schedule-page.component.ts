@@ -24,7 +24,6 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { EventsCalendarGridComponent } from '@app/components/events-calendar-grid/events-calendar-grid.component';
 import { EventsTableComponent } from '@app/components/events-table/events-table.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
@@ -38,7 +37,12 @@ import {
   InternalLink,
   LoadStatus,
 } from '@app/models';
-import { CsvExportService, EventsApiService, MetaAndTitleService } from '@app/services';
+import {
+  AdminActionsService,
+  CsvExportService,
+  EventsApiService,
+  MetaAndTitleService,
+} from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsActions, EventsSelectors } from '@app/store/events';
 import { bindSearchControl, widestRows } from '@app/utils';
@@ -51,13 +55,6 @@ import { bindSearchControl, widestRows } from '@app/utils';
         heading="Schedule"
         [icon]="pageIcon">
       </lcc-page-header>
-
-      @if (vm.isAdmin) {
-        <lcc-admin-toolbar
-          [adminLinks]="[addEventLink]"
-          [adminButtons]="[exportToCsvButton]">
-        </lcc-admin-toolbar>
-      }
 
       <div class="filters">
         <ea-input
@@ -130,7 +127,6 @@ import { bindSearchControl, widestRows } from '@app/utils';
   `,
   styleUrl: './schedule-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ButtonComponent,
     CommonModule,
     EmptyStateComponent,
@@ -185,6 +181,13 @@ export class SchedulePageComponent implements OnInit {
     status: LoadStatus;
     totalCount: number;
   }>;
+
+  constructor() {
+    inject(AdminActionsService).register(() => [
+      this.addEventLink,
+      this.exportToCsvButton,
+    ]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Schedule');

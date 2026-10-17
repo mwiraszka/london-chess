@@ -10,6 +10,7 @@ import {
   clickDelete,
   confirm,
   logIn,
+  openAdminActions,
   openAdminControls,
   requireAdminCredentials,
   uniqueName,
@@ -56,7 +57,7 @@ test.describe('managing events', () => {
     await expect(listed).toBeVisible();
 
     let controls = await openAdminControls(listed);
-    await controls.getByRole('link', { name: /^Edit / }).click();
+    await controls.getByRole('menuitem', { name: 'Edit' }).click();
     await expect(page).toHaveURL(/\/event\/edit\/[0-9a-f]{24}$/);
     await expect(page.getByLabel(fieldLabel('Title'))).toHaveValue(title);
     await page
@@ -115,10 +116,8 @@ test.describe('managing events', () => {
   test('exports every event to a CSV file', async ({ page }) => {
     await logIn(page);
     await page.goto('/schedule');
-    await page
-      .locator('lcc-admin-toolbar')
-      .getByRole('button', { name: 'Export to CSV' })
-      .click();
+    const actions = await openAdminActions(page);
+    await actions.getByRole('menuitem', { name: 'Export to CSV' }).click();
     await expect(page.locator('lcc-basic-dialog')).toContainText(
       `Export all ${EVENTS.length} events to a CSV file?`,
     );

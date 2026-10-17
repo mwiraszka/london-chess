@@ -2,12 +2,10 @@ import {
   ButtonComponent,
   DialogService,
   DownloadIconComponent,
-  FileUploaderComponent,
   InputComponent,
   PlusCircleIconComponent,
   SearchIconComponent,
   SwitchComponent,
-  TooltipDirective,
   UploadIconComponent,
   UsersIconComponent,
 } from '@eagami/ui';
@@ -20,13 +18,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   OnInit,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MembersTableComponent } from '@app/components/members-table/members-table.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
@@ -40,6 +39,7 @@ import {
   MemberWithNewRatings,
 } from '@app/models';
 import {
+  AdminActionsService,
   CsvExportService,
   MembersApiService,
   MetaAndTitleService,
@@ -60,25 +60,15 @@ import { bindSearchControl, isLccError, widestRows } from '@app/utils';
         [icon]="pageIcon">
       </lcc-page-header>
 
-      @if (vm.isAdmin) {
-        <lcc-admin-toolbar
-          [adminLinks]="[addMemberLink]"
-          [adminButtons]="[exportToCsvButton]">
-          <ea-file-uploader
-            class="ratings-upload"
-            accept=".csv"
-            aria-label="Update member ratings from CSV"
-            buttonLabel=""
-            eaTooltip="Update member ratings from CSV"
-            variant="button"
-            [buttonIcon]="uploadIcon"
-            [disabled]="isPreparingRatingChanges()"
-            [multiple]="false"
-            [showConstraints]="false"
-            [showFileList]="false"
-            (valueChange)="onRatingsFileChosen($event)" />
-        </lcc-admin-toolbar>
-      }
+      <!-- Opened from the admin actions menu -->
+      <input
+        #ratingsInput
+        class="lcc-visually-hidden"
+        type="file"
+        accept=".csv"
+        aria-hidden="true"
+        tabindex="-1"
+        (change)="onRatingsInputChange(ratingsInput)" />
 
       <div class="filters">
         <ea-input
@@ -122,17 +112,14 @@ import { bindSearchControl, isLccError, widestRows } from '@app/utils';
   `,
   styleUrl: './members-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ButtonComponent,
     CommonModule,
-    FileUploaderComponent,
     InputComponent,
     LoadFailedComponent,
     MembersTableComponent,
     PageHeaderComponent,
     ReactiveFormsModule,
     SwitchComponent,
-    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -164,7 +151,14 @@ export class MembersPageComponent implements OnInit {
   };
 
   protected readonly isPreparingRatingChanges = signal(false);
-  protected readonly uploadIcon = UploadIconComponent;
+  private readonly ratingsInput = viewChild<ElementRef<HTMLInputElement>>('ratingsInput');
+  public readonly updateRatingsButton: AdminButton = {
+    id: 'update-ratings',
+    tooltip: 'Update member ratings from CSV',
+    icon: UploadIconComponent,
+    action: () => this.ratingsInput()?.nativeElement.click(),
+    isLoading: this.isPreparingRatingChanges,
+  };
 
   public readonly exportToCsvButton: AdminButton = {
     id: 'export-to-csv',
@@ -186,6 +180,14 @@ export class MembersPageComponent implements OnInit {
 
   private readonly parseCsv = inject(PARSE_CSV);
   private readonly storeRequests = inject(StoreRequestService);
+
+  constructor() {
+    inject(AdminActionsService).register(() => [
+      this.addMemberLink,
+      this.exportToCsvButton,
+      this.updateRatingsButton,
+    ]);
+  }
 
   public ngOnInit(): void {
     this.metaAndTitleService.updateTitle('Members');
@@ -271,6 +273,13 @@ export class MembersPageComponent implements OnInit {
 
   public onRetry(): void {
     this.store.dispatch(MembersActions.fetchFilteredMembersRequested());
+  }
+
+  protected onRatingsInputChange(input: HTMLInputElement): void {
+    const files = Array.from(input.files ?? []);
+    // Cleared so choosing the same file again still reports a change
+    input.value = '';
+    void this.onRatingsFileChosen(files);
   }
 
   public async onRatingsFileChosen([file]: readonly File[]): Promise<void> {

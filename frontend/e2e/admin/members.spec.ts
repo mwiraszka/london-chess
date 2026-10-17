@@ -10,6 +10,7 @@ import {
   clickDelete,
   confirm,
   logIn,
+  openAdminActions,
   openAdminControls,
   requireAdminCredentials,
   uniqueName,
@@ -58,7 +59,7 @@ test.describe('managing members', () => {
     await expect(row).toContainText('Strathroy');
 
     let controls = await openAdminControls(row);
-    await controls.getByRole('link', { name: /^Edit / }).click();
+    await controls.getByRole('menuitem', { name: 'Edit' }).click();
     await expect(page).toHaveURL(/\/member\/edit\/[0-9a-f]{24}$/);
     await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(lastName);
     // Opening a member is not an edit, so there is nothing to save or discard yet
@@ -149,10 +150,8 @@ test.describe('managing members', () => {
   test('exports every member to a CSV file', async ({ page }) => {
     await logIn(page);
     await page.goto('/members');
-    await page
-      .locator('lcc-admin-toolbar')
-      .getByRole('button', { name: 'Export to CSV' })
-      .click();
+    const actions = await openAdminActions(page);
+    await actions.getByRole('menuitem', { name: 'Export to CSV' }).click();
     await expect(page.locator('lcc-basic-dialog')).toContainText(
       /Export all \d+ members to a CSV file\?/,
     );

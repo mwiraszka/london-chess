@@ -19,6 +19,7 @@ import { MOCK_IMAGES } from '@app/mocks/images.mock';
 import { MOCK_UPCOMING_SUMMARY } from '@app/mocks/tournaments.mock';
 import { Image } from '@app/models';
 import {
+  AdminActionsService,
   CsvExportService,
   MetaAndTitleService,
   StoreRequestService,
@@ -293,20 +294,16 @@ describe('HomePageComponent', () => {
         expect(query(fixture.debugElement, '.photos-section lcc-link-list')).toBeTruthy();
       });
 
-      it('should render articles section admin toolbar in when admin', () => {
-        expect(
-          query(fixture.debugElement, '.articles-section lcc-admin-toolbar'),
-        ).toBeTruthy();
-      });
+      it('should list the events and articles actions first in the admin actions menu', () => {
+        const labels = TestBed.inject(AdminActionsService)
+          .actions()
+          .map(action => ('text' in action ? action.text : action.tooltip));
 
-      it('should not render articles section admin toolbar when not admin', () => {
-        store.overrideSelector(AuthSelectors.selectIsAdmin, false);
-        store.refreshState();
-        fixture.detectChanges();
-
-        expect(
-          query(fixture.debugElement, '.articles-section lcc-admin-toolbar'),
-        ).toBeFalsy();
+        expect(labels.slice(0, 3)).toEqual([
+          'Add an event',
+          'Export to CSV',
+          'Create an article',
+        ]);
       });
     });
 

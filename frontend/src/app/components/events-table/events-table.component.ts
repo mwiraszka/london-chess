@@ -1,4 +1,5 @@
 import {
+  ContextMenuTriggerDirective,
   DataTableColumn,
   PaginatorComponent,
   PaginatorState,
@@ -17,6 +18,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import {
   DataTableCellContext,
   DataTableComponent,
@@ -24,7 +26,6 @@ import {
 import { EventTypeTagComponent } from '@app/components/event-type-tag/event-type-tag.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { PAGE_SIZES } from '@app/constants/filters';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { AdminControlsConfig, DataPaginationOptions, Event } from '@app/models';
 import { FormatDatePipe, HighlightPipe } from '@app/pipes';
 import { DeletionService } from '@app/services';
@@ -65,7 +66,8 @@ type PlaceholderTemplate = TemplateRef<{
   templateUrl: './events-table.component.html',
   styleUrl: './events-table.component.scss',
   imports: [
-    AdminControlsDirective,
+    AdminMenuComponent,
+    ContextMenuTriggerDirective,
     DataTableComponent,
     EventTypeTagComponent,
     FormatDatePipe,

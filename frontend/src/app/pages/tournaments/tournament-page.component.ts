@@ -29,7 +29,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
@@ -53,6 +52,7 @@ import {
   TournamentSummary,
 } from '@app/models';
 import {
+  AdminActionsService,
   AuthDrawerService,
   DeletionService,
   MetaAndTitleService,
@@ -235,7 +235,6 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   templateUrl: './tournament-page.component.html',
   styleUrl: './tournament-page.component.scss',
   imports: [
-    AdminToolbarComponent,
     ButtonComponent,
     CardComponent,
     DataTableComponent,
@@ -439,6 +438,12 @@ export class TournamentPageComponent implements OnInit {
 
   protected readonly gameHref = ({ game }: GameRow): string =>
     `/game-archives/${game.id}`;
+
+  constructor() {
+    inject(AdminActionsService).register(() =>
+      this.viewModel()?.tournament ? [this.editLink(), this.deleteButton] : [],
+    );
+  }
 
   public ngOnInit(): void {
     this.tournamentNumber$

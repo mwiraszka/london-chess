@@ -1,4 +1,5 @@
 import {
+  ContextMenuTriggerDirective,
   DialogService,
   ImageSearchIconComponent,
   PlusCircleIconComponent,
@@ -14,13 +15,12 @@ import {
   input,
 } from '@angular/core';
 
-import { AdminToolbarComponent } from '@app/components/admin-toolbar/admin-toolbar.component';
+import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
 import { ImageExplorerComponent } from '@app/components/image-explorer/image-explorer.component';
 import { ImageViewerComponent } from '@app/components/image-viewer/image-viewer.component';
 import { ImageComponent } from '@app/components/image/image.component';
-import { AdminControlsDirective } from '@app/directives/admin-controls.directive';
 import { AdminButton, AdminControlsConfig, Image, InternalLink } from '@app/models';
-import { DeletionService } from '@app/services';
+import { AdminActionsService, DeletionService } from '@app/services';
 import { customSort } from '@app/utils';
 
 @Component({
@@ -28,8 +28,8 @@ import { customSort } from '@app/utils';
   templateUrl: './photo-grid.component.html',
   styleUrl: './photo-grid.component.scss',
   imports: [
-    AdminControlsDirective,
-    AdminToolbarComponent,
+    AdminMenuComponent,
+    ContextMenuTriggerDirective,
     ImageComponent,
     SkeletonComponent,
     UpperCasePipe,
@@ -88,6 +88,14 @@ export class PhotoGridComponent {
   public readonly displayCovers = computed<Image[]>(() =>
     this.isLoading() ? this.defaultSkeletonCovers : this.visibleAlbumCovers(),
   );
+
+  constructor() {
+    inject(AdminActionsService).register(() => [
+      this.addImageLink,
+      this.createAlbumLink,
+      this.openImageExplorerButton,
+    ]);
+  }
 
   public async onClickAlbumCover(album: string): Promise<void> {
     await this.dialogService.open(ImageViewerComponent, {

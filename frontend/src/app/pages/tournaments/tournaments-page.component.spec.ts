@@ -16,6 +16,7 @@ import {
   MOCK_UPCOMING_SUMMARY,
 } from '@app/mocks/tournaments.mock';
 import {
+  AdminActionsService,
   DeletionService,
   KEEP_SCROLL,
   MetaAndTitleService,
@@ -458,12 +459,9 @@ describe('TournamentsPageComponent', () => {
     });
 
     it('should offer to add a tournament', () => {
-      expect(
-        query(
-          fixture.debugElement,
-          'lcc-admin-toolbar lcc-link-list',
-        ).componentInstance.links(),
-      ).toEqual([expect.objectContaining({ internalPath: ['tournament', 'add'] })]);
+      expect(TestBed.inject(AdminActionsService).actions()).toEqual([
+        expect.objectContaining({ internalPath: ['tournament', 'add'] }),
+      ]);
     });
 
     it('should edit and delete a tournament from its controls', () => {
