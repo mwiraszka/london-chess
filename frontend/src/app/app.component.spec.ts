@@ -45,7 +45,9 @@ describe('AppComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideMockStore(),
+        provideMockStore({
+          selectors: [{ selector: AuthSelectors.selectIsAdmin, value: false }],
+        }),
         provideRouter([]),
         {
           provide: RoutingService,
@@ -69,7 +71,6 @@ describe('AppComponent', () => {
     setThemeSpy = vi.spyOn(document.documentElement, 'setAttribute');
 
     store.overrideSelector(AuthSelectors.selectUser, null);
-    store.overrideSelector(AuthSelectors.selectIsAdmin, false);
     store.overrideSelector(AppSelectors.selectBannerLastCleared, null);
     store.overrideSelector(AppSelectors.selectIsDarkMode, false);
     store.overrideSelector(AppSelectors.selectIsDesktopView, false);
