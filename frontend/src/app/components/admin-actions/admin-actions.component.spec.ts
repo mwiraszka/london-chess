@@ -84,11 +84,13 @@ describe('AdminActionsComponent', () => {
     }).compileComponents();
 
     store = TestBed.inject(MockStore);
+    store.overrideSelector(AuthSelectors.selectIsAdmin, false);
     fixture = TestBed.createComponent(AdminActionsComponent);
   });
 
   afterEach(() => {
     fixture.destroy();
+    store.resetSelectors();
   });
 
   it('should stay hidden from anyone but an admin', () => {
