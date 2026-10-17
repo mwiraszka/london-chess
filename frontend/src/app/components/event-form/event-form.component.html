@@ -92,7 +92,7 @@
       <lcc-form-actions
         entity="event"
         [hasUnsavedChanges]="hasUnsavedChanges()"
-        [submitDisabled]="form.invalid || !hasUnsavedChanges()"
+        [submitDisabled]="!hasUnsavedChanges()"
         [submitLabel]="originalEvent() ? 'Update event' : 'Add event'"
         (cancel)="onCancel()"
         (restore)="onRestore()" />

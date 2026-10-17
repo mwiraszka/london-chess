@@ -601,10 +601,10 @@ describe('MemberFormComponent', () => {
       expect(button('.submit-button').disabled()).toBe(false);
     });
 
-    it('should disable the save button while the form is invalid', () => {
+    it('should keep the save button enabled while the form is invalid', () => {
       render({ ...formData, lastName: '' }, true);
 
-      expect(button('.submit-button').disabled()).toBe(true);
+      expect(button('.submit-button').disabled()).toBe(false);
     });
 
     it('should cancel from the cancel button', () => {
