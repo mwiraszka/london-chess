@@ -37,7 +37,7 @@
     "@angular/platform-browser": "22.2.3",
     "@angular/router": "22.2.3",
     "@clerk/clerk-js": "6.39.1",
-    "@eagami/ui": "5.71.0",
+    "@eagami/ui": "5.72.0",
     "@googlemaps/js-api-loader": "2.1.3",
     "@ngrx/effects": "22.0.1",
     "@ngrx/entity": "22.0.1",
