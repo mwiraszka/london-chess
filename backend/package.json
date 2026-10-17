@@ -1,6 +1,6 @@
 {
   "name": "lcc-server",
-  "version": "6.5.4",
+  "version": "6.5.5",
   "description": "REST API for the London Chess Club website, built with Node and Express",
   "author": "Michal Wiraszka",
   "repository": {
@@ -24,16 +24,16 @@
     "format:check": "prettier --check 'src/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1149.0",
-    "@aws-sdk/s3-request-presigner": "3.1149.0",
-    "@clerk/backend": "3.23.2",
-    "@sentry/node": "11.6.0",
-    "@vercel/functions": "3.9.11",
+    "@aws-sdk/client-s3": "3.1152.0",
+    "@aws-sdk/s3-request-presigner": "3.1152.0",
+    "@clerk/backend": "3.25.0",
+    "@sentry/node": "11.8.0",
+    "@vercel/functions": "3.10.1",
     "cors": "2.8.6",
     "express": "5.3.0",
-    "mongoose": "9.11.1",
+    "mongoose": "9.11.2",
     "multer": "2.4.0",
-    "nodemailer": "10.1.0",
+    "nodemailer": "10.1.2",
     "sharp": "0.35.5"
   },
   "devDependencies": {
@@ -45,16 +45,16 @@
     "@types/node": "26.6.5",
     "@types/nodemailer": "8.0.2",
     "@types/supertest": "7.2.1",
-    "@vitest/coverage-v8": "5.0.4",
+    "@vitest/coverage-v8": "5.0.5",
     "esbuild": "0.28.2",
-    "eslint": "10.12.0",
+    "eslint": "10.13.0",
     "mongodb-memory-server": "11.3.0",
     "prettier": "3.9.10",
     "supertest": "7.3.1",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.1",
-    "vitest": "5.0.4"
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

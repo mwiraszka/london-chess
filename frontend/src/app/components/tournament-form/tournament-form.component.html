@@ -324,9 +324,7 @@
       <lcc-form-actions
         entity="tournament"
         [hasUnsavedChanges]="hasUnsavedChanges()"
-        [submitDisabled]="
-          form.invalid || !hasUnsavedChanges() || importing() || checking()
-        "
+        [submitDisabled]="!hasUnsavedChanges() || importing() || checking()"
         [submitLabel]="originalTournament() ? 'Update tournament' : 'Add tournament'"
         (cancel)="onCancel()"
         (restore)="onRestore()" />

@@ -137,18 +137,26 @@ test.describe('managing images', () => {
     await logIn(page);
     const writes = watchWrites(page, `${APP_API}/images`);
     const addImage = page.getByRole('button', { name: 'Add image' });
+    const album = uniqueName('Blitz night');
 
     await page.goto('/image/add');
     await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
-    await page
-      .getByRole('textbox', { name: 'New album name' })
-      .fill(uniqueName('Blitz night'));
-    await expect(addImage).toBeDisabled();
+    await page.getByRole('textbox', { name: 'New album name' }).fill(album);
+    await addImage.click();
+
+    await expect(page.getByText('Choose an image to upload')).toBeVisible();
+    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
 
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
       .setInputFiles(png('blitz-night.png'));
-    await expect(addImage).toBeEnabled();
+    await expect(page.getByText('Choose an image to upload')).toHaveCount(0);
+    await addImage.click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText(`to ${album}?`);
+    await page
+      .locator('lcc-basic-dialog')
+      .getByRole('button', { name: 'Cancel' })
+      .click();
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
