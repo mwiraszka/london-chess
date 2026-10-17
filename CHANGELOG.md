@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.5.5] - 2026-10-17
 
+### Changed
+
+- Update third-party packages
+
 ### Fixed
 
 - Sharpen the logos in the ring on the Website Changelog page, and keep a highlighted logo clear of its neighbours with its glow showing straight away
