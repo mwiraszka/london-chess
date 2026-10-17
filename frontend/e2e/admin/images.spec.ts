@@ -5,6 +5,7 @@ import { png } from './files';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   clickDelete,
   confirm,
   logIn,
@@ -42,7 +43,7 @@ test.describe('managing images', () => {
     await logIn(page);
 
     await page.goto('/photo-gallery');
-    await page.getByRole('link', { name: 'Add an image' }).click();
+    await chooseAdminAction(page, 'Add image');
     await expect(page).toHaveURL(/\/image\/add$/);
     await page
       .locator('lcc-image-form ea-file-uploader input[type="file"]')
@@ -69,7 +70,7 @@ test.describe('managing images', () => {
     await logIn(page);
 
     await page.goto('/photo-gallery');
-    await page.getByRole('link', { name: 'Create an album' }).click();
+    await chooseAdminAction(page, 'Add album');
     await expect(page).toHaveURL(/\/album\/add$/);
     await page.getByLabel(fieldLabel('Album title')).fill(album);
     await page

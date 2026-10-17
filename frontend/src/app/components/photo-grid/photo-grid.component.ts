@@ -19,7 +19,12 @@ import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.compon
 import { ImageExplorerComponent } from '@app/components/image-explorer/image-explorer.component';
 import { ImageViewerComponent } from '@app/components/image-viewer/image-viewer.component';
 import { ImageComponent } from '@app/components/image/image.component';
-import { AdminButton, AdminControlsConfig, Image, InternalLink } from '@app/models';
+import {
+  AdminCommandAction,
+  AdminControlsConfig,
+  AdminLinkAction,
+  Image,
+} from '@app/models';
 import { AdminActionsService, DeletionService } from '@app/services';
 import { customSort } from '@app/utils';
 
@@ -52,23 +57,25 @@ export class PhotoGridComponent {
     album: '',
   }));
 
-  public readonly openImageExplorerButton: AdminButton = {
-    id: 'open-image-explorer',
-    tooltip: 'Open image explorer',
+  public readonly addImageAction: AdminLinkAction = {
+    label: 'Add image',
+    icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['image', 'add'],
+  };
+
+  public readonly addAlbumAction: AdminLinkAction = {
+    label: 'Add album',
+    icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['album', 'add'],
+  };
+
+  public readonly browseImagesAction: AdminCommandAction = {
+    label: 'Browse images',
     icon: ImageSearchIconComponent,
-    action: () => this.onOpenImageExplorer(),
-  };
-
-  public readonly addImageLink: InternalLink = {
-    internalPath: ['image', 'add'],
-    text: 'Add an image',
-    icon: PlusCircleIconComponent,
-  };
-
-  public readonly createAlbumLink: InternalLink = {
-    internalPath: ['album', 'add'],
-    text: 'Create an album',
-    icon: PlusCircleIconComponent,
+    group: 'manage',
+    run: () => this.onOpenImageExplorer(),
   };
 
   public readonly visibleAlbumCovers = computed<Image[]>(() => {
@@ -91,9 +98,9 @@ export class PhotoGridComponent {
 
   constructor() {
     inject(AdminActionsService).register(() => [
-      this.addImageLink,
-      this.createAlbumLink,
-      this.openImageExplorerButton,
+      this.addImageAction,
+      this.addAlbumAction,
+      this.browseImagesAction,
     ]);
   }
 

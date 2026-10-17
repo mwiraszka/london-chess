@@ -80,6 +80,18 @@ describe('AdminMenuComponent', () => {
     expect(labels()).toEqual(['Bookmark', 'Edit', 'Delete']);
   });
 
+  it('should set deleting apart from the other actions', () => {
+    openFor({ editPath: ['event', 'edit', '1'] });
+
+    const entries = Array.from(
+      document.querySelectorAll(
+        '[role="menu"] [role="menuitem"], [role="menu"] [role="separator"]',
+      ),
+    ).map(entry => entry.getAttribute('role'));
+
+    expect(entries).toEqual(['menuitem', 'separator', 'menuitem']);
+  });
+
   it('should offer to remove a bookmark the item already has', () => {
     openFor({ bookmarkCb: vi.fn(), bookmarked: true });
 

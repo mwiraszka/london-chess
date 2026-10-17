@@ -170,12 +170,13 @@ describe('ArticlesPageComponent', () => {
     });
   });
 
-  describe('createArticleLink', () => {
+  describe('addArticleAction', () => {
     it('should have correct properties', () => {
-      expect(component.createArticleLink).toEqual({
-        internalPath: ['article', 'add'],
-        text: 'Create an article',
+      expect(component.addArticleAction).toEqual({
+        label: 'Add article',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['article', 'add'],
       });
     });
   });
@@ -234,9 +235,9 @@ describe('ArticlesPageComponent', () => {
       it('should list its actions in the admin actions menu', () => {
         const labels = TestBed.inject(AdminActionsService)
           .actions()
-          .map(action => ('text' in action ? action.text : action.tooltip));
+          .map(action => action.label);
 
-        expect(labels).toEqual(['Create an article']);
+        expect(labels).toEqual(['Add article']);
       });
     });
 

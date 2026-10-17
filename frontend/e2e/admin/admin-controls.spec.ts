@@ -64,11 +64,11 @@ test.describe('admin controls', () => {
     page,
   }) => {
     for (const [path, action] of [
-      ['/articles', 'Create an article'],
-      ['/schedule', 'Add an event'],
-      ['/members', 'Add a member'],
-      ['/photo-gallery', 'Create an album'],
-      ['/tournaments', 'Add a tournament'],
+      ['/articles', 'Add article'],
+      ['/schedule', 'Add event'],
+      ['/members', 'Add member'],
+      ['/photo-gallery', 'Add album'],
+      ['/tournaments', 'Add tournament'],
     ]) {
       await page.goto(path);
 

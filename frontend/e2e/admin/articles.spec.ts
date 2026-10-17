@@ -5,6 +5,7 @@ import {
   API,
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   clickDelete,
   confirm,
   logIn,
@@ -15,7 +16,7 @@ import {
 
 async function openNewArticleForm(page: Page): Promise<void> {
   await page.goto('/articles');
-  await page.getByRole('link', { name: 'Create an article' }).click();
+  await chooseAdminAction(page, 'Add article');
   await expect(page).toHaveURL(/\/article\/add$/);
 }
 

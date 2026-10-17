@@ -174,9 +174,9 @@ describe('PhotoGridComponent', () => {
     it('should list its actions in the admin actions menu', () => {
       const labels = TestBed.inject(AdminActionsService)
         .actions()
-        .map(action => ('text' in action ? action.text : action.tooltip));
+        .map(action => action.label);
 
-      expect(labels).toEqual(['Add an image', 'Create an album', 'Open image explorer']);
+      expect(labels).toEqual(['Add image', 'Add album', 'Browse images']);
     });
 
     describe('when loading', () => {

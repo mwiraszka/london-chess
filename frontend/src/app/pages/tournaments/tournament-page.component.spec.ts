@@ -696,11 +696,8 @@ describe('TournamentPageComponent', () => {
 
       const deleteAction = TestBed.inject(AdminActionsService)
         .actions()
-        .find(action => 'id' in action && action.id === 'delete-tournament');
-      if (!deleteAction || !('action' in deleteAction)) {
-        throw new Error('No delete action was offered.');
-      }
-      deleteAction.action();
+        .find(action => action.label === 'Delete tournament');
+      deleteAction?.run?.();
 
       expect(deleteTournament).toHaveBeenCalledExactlyOnceWith(MOCK_UPCOMING_TOURNAMENT);
     });
@@ -712,7 +709,7 @@ describe('TournamentPageComponent', () => {
 
       expect(TestBed.inject(AdminActionsService).actions()).toContainEqual(
         expect.objectContaining({
-          internalPath: ['tournament', 'edit', String(MOCK_UPCOMING_TOURNAMENT.number)],
+          path: ['tournament', 'edit', String(MOCK_UPCOMING_TOURNAMENT.number)],
         }),
       );
     });

@@ -192,25 +192,26 @@ describe('SchedulePageComponent', () => {
   });
 
   describe('component properties', () => {
-    it('should have correct addEventLink configuration', () => {
-      expect(component.addEventLink).toStrictEqual({
-        internalPath: ['event', 'add'],
-        text: 'Add an event',
+    it('should have correct addEventAction configuration', () => {
+      expect(component.addEventAction).toStrictEqual({
+        label: 'Add event',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['event', 'add'],
       });
     });
 
-    it('should have correct exportToCsvButton configuration', () => {
-      expect(component.exportToCsvButton).toEqual({
-        id: 'export-to-csv',
-        tooltip: 'Export to CSV',
+    it('should have correct exportEventsAction configuration', () => {
+      expect(component.exportEventsAction).toEqual({
+        label: 'Export events to CSV',
         icon: DownloadIconComponent,
-        action: expect.any(Function),
+        group: 'data',
+        run: expect.any(Function),
       });
     });
 
     it('should export the events from the export button', () => {
-      component.exportToCsvButton.action();
+      component.exportEventsAction.run();
 
       expect(TestBed.inject(CsvExportService).exportEvents).toHaveBeenCalledOnce();
     });
@@ -241,9 +242,9 @@ describe('SchedulePageComponent', () => {
 
         const labels = TestBed.inject(AdminActionsService)
           .actions()
-          .map(action => ('text' in action ? action.text : action.tooltip));
+          .map(action => action.label);
 
-        expect(labels).toEqual(['Add an event', 'Export to CSV']);
+        expect(labels).toEqual(['Add event', 'Export events to CSV']);
       });
 
       it('should render only the list in list view', () => {

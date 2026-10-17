@@ -1,19 +1,24 @@
 import { Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { AdminButton, InternalLink } from '@app/models';
+import { AdminCommandAction, AdminLinkAction } from '@app/models';
 
 import { AdminActionsService } from './admin-actions.service';
 
 @Component({ selector: 'lcc-test-icon', template: '' })
 class IconComponent {}
 
-const addEvent: InternalLink = { text: 'Add an event', internalPath: ['event', 'add'] };
-const exportEvents: AdminButton = {
-  id: 'export-to-csv',
-  tooltip: 'Export to CSV',
+const addEvent: AdminLinkAction = {
+  label: 'Add event',
   icon: IconComponent,
-  action: vi.fn(),
+  group: 'add',
+  path: ['event', 'add'],
+};
+const exportEvents: AdminCommandAction = {
+  label: 'Export events to CSV',
+  icon: IconComponent,
+  group: 'data',
+  run: vi.fn(),
 };
 
 @Component({ selector: 'lcc-test-events', template: '' })

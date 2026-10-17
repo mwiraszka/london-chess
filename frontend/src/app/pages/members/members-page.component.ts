@@ -31,9 +31,9 @@ import { MembersTableComponent } from '@app/components/members-table/members-tab
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingChangesComponent } from '@app/components/rating-changes/rating-changes.component';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   DataPaginationOptions,
-  InternalLink,
   LoadStatus,
   Member,
   MemberWithNewRatings,
@@ -144,27 +144,28 @@ export class MembersPageComponent implements OnInit {
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  public readonly addMemberLink: InternalLink = {
-    internalPath: ['member', 'add'],
-    text: 'Add a member',
+  public readonly addMemberAction: AdminLinkAction = {
+    label: 'Add member',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['member', 'add'],
   };
 
   protected readonly isPreparingRatingChanges = signal(false);
   private readonly ratingsInput = viewChild<ElementRef<HTMLInputElement>>('ratingsInput');
-  public readonly updateRatingsButton: AdminButton = {
-    id: 'update-ratings',
-    tooltip: 'Update member ratings from CSV',
+  public readonly importRatingsAction: AdminCommandAction = {
+    label: 'Import ratings from CSV',
     icon: UploadIconComponent,
-    action: () => this.ratingsInput()?.nativeElement.click(),
+    group: 'data',
+    run: () => this.ratingsInput()?.nativeElement.click(),
     isLoading: this.isPreparingRatingChanges,
   };
 
-  public readonly exportToCsvButton: AdminButton = {
-    id: 'export-to-csv',
-    tooltip: 'Export to CSV',
+  public readonly exportMembersAction: AdminCommandAction = {
+    label: 'Export members to CSV',
     icon: DownloadIconComponent,
-    action: () => this.csvExport.exportMembers(),
+    group: 'data',
+    run: () => this.csvExport.exportMembers(),
   };
 
   public viewModel$?: Observable<{
@@ -183,9 +184,9 @@ export class MembersPageComponent implements OnInit {
 
   constructor() {
     inject(AdminActionsService).register(() => [
-      this.addMemberLink,
-      this.exportToCsvButton,
-      this.updateRatingsButton,
+      this.addMemberAction,
+      this.exportMembersAction,
+      this.importRatingsAction,
     ]);
   }
 

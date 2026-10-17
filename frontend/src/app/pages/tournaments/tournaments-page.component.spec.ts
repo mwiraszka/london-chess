@@ -460,7 +460,7 @@ describe('TournamentsPageComponent', () => {
 
     it('should offer to add a tournament', () => {
       expect(TestBed.inject(AdminActionsService).actions()).toEqual([
-        expect.objectContaining({ internalPath: ['tournament', 'add'] }),
+        expect.objectContaining({ path: ['tournament', 'add'] }),
       ]);
     });
 

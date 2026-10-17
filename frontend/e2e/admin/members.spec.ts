@@ -7,10 +7,10 @@ import { fieldError, fieldLabel, watchWrites } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   clickDelete,
   confirm,
   logIn,
-  openAdminActions,
   openAdminControls,
   requireAdminCredentials,
   uniqueName,
@@ -26,7 +26,7 @@ async function findMember(page: Page, lastName: string) {
 
 async function openNewMemberForm(page: Page): Promise<void> {
   await page.goto('/members');
-  await page.getByRole('link', { name: 'Add a member' }).click();
+  await chooseAdminAction(page, 'Add member');
   await expect(page).toHaveURL(/\/member\/add$/);
 }
 
@@ -150,8 +150,7 @@ test.describe('managing members', () => {
   test('exports every member to a CSV file', async ({ page }) => {
     await logIn(page);
     await page.goto('/members');
-    const actions = await openAdminActions(page);
-    await actions.getByRole('menuitem', { name: 'Export to CSV' }).click();
+    await chooseAdminAction(page, 'Export members to CSV');
     await expect(page.locator('lcc-basic-dialog')).toContainText(
       /Export all \d+ members to a CSV file\?/,
     );

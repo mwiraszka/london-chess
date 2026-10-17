@@ -38,7 +38,8 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import { TOURNAMENT_FORMAT_LABELS } from '@app/constants/tournaments';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   Dialog,
   InternalLink,
   RegistrationStatus,
@@ -284,11 +285,11 @@ export class TournamentPageComponent implements OnInit {
   protected readonly user = this.store.selectSignal(AuthSelectors.selectUser);
   protected readonly registering = signal(false);
 
-  protected readonly deleteButton: AdminButton = {
-    id: 'delete-tournament',
-    tooltip: 'Delete this tournament',
+  protected readonly deleteAction: AdminCommandAction = {
+    label: 'Delete tournament',
     icon: TrashIconComponent,
-    action: () => {
+    group: 'delete',
+    run: () => {
       const tournament = this.viewModel()?.tournament;
       if (tournament) {
         void this.deletion.deleteTournament(tournament);
@@ -352,14 +353,11 @@ export class TournamentPageComponent implements OnInit {
       : [];
   });
 
-  protected readonly editLink = computed<InternalLink>(() => ({
-    text: 'Edit this tournament',
-    internalPath: [
-      'tournament',
-      'edit',
-      String(this.viewModel()?.tournamentNumber ?? ''),
-    ],
+  protected readonly editAction = computed<AdminLinkAction>(() => ({
+    label: 'Edit tournament',
     icon: EditIconComponent,
+    group: 'manage',
+    path: ['tournament', 'edit', String(this.viewModel()?.tournamentNumber ?? '')],
   }));
 
   protected readonly hasResults = computed(() => !!this.summary()?.playerCount);
@@ -441,7 +439,7 @@ export class TournamentPageComponent implements OnInit {
 
   constructor() {
     inject(AdminActionsService).register(() =>
-      this.viewModel()?.tournament ? [this.editLink(), this.deleteButton] : [],
+      this.viewModel()?.tournament ? [this.editAction(), this.deleteAction] : [],
     );
   }
 

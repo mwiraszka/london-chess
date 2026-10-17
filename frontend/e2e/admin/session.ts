@@ -79,6 +79,11 @@ export async function openAdminActions(page: Page): Promise<Locator> {
   return menu;
 }
 
+export async function chooseAdminAction(page: Page, action: string): Promise<void> {
+  const menu = await openAdminActions(page);
+  await menu.getByRole('menuitem', { name: action, exact: true }).click();
+}
+
 export async function confirm(page: Page, button: string): Promise<void> {
   const dialog = page.locator('lcc-basic-dialog');
   await dialog.getByRole('button', { name: button, exact: true }).click();

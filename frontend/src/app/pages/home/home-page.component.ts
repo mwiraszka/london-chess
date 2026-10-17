@@ -22,7 +22,8 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { PhotoGridComponent } from '@app/components/photo-grid/photo-grid.component';
 import { TournamentRegistrationsComponent } from '@app/components/tournament-registrations/tournament-registrations.component';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   Article,
   Event,
   Image,
@@ -82,15 +83,17 @@ export class HomePageComponent implements OnInit {
     internalPath: 'faq',
     icon: InfoIconComponent,
   };
-  public readonly addEventLink: InternalLink = {
-    text: 'Add an event',
-    internalPath: ['event', 'add'],
+  public readonly addEventAction: AdminLinkAction = {
+    label: 'Add event',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['event', 'add'],
   };
-  public createArticleLink: InternalLink = {
-    text: 'Create an article',
-    internalPath: ['article', 'add'],
+  public readonly addArticleAction: AdminLinkAction = {
+    label: 'Add article',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['article', 'add'],
   };
   public articlesPageLink: InternalLink = {
     text: 'More articles',
@@ -108,18 +111,18 @@ export class HomePageComponent implements OnInit {
     icon: CalendarDaysIconComponent,
   };
 
-  public exportToCsvButton: AdminButton = {
-    id: 'export-to-csv',
-    tooltip: 'Export to CSV',
+  public readonly exportEventsAction: AdminCommandAction = {
+    label: 'Export events to CSV',
     icon: DownloadIconComponent,
-    action: () => this.csvExport.exportEvents(),
+    group: 'data',
+    run: () => this.csvExport.exportEvents(),
   };
 
   constructor() {
     inject(AdminActionsService).register(() => [
-      this.addEventLink,
-      this.exportToCsvButton,
-      this.createArticleLink,
+      this.addEventAction,
+      this.exportEventsAction,
+      this.addArticleAction,
     ]);
   }
 

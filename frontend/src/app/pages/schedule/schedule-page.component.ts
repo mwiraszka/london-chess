@@ -30,11 +30,11 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { ScheduleToolbarComponent } from '@app/components/schedule-toolbar/schedule-toolbar.component';
 import {
-  AdminButton,
+  AdminCommandAction,
+  AdminLinkAction,
   CalendarPage,
   DataPaginationOptions,
   Event,
-  InternalLink,
   LoadStatus,
 } from '@app/models';
 import {
@@ -157,17 +157,18 @@ export class SchedulePageComponent implements OnInit {
   protected readonly searchIcon = SearchIconComponent;
   protected readonly searchControl = new FormControl('', { nonNullable: true });
 
-  public readonly addEventLink: InternalLink = {
-    text: 'Add an event',
-    internalPath: ['event', 'add'],
+  public readonly addEventAction: AdminLinkAction = {
+    label: 'Add event',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['event', 'add'],
   };
 
-  public readonly exportToCsvButton: AdminButton = {
-    id: 'export-to-csv',
-    tooltip: 'Export to CSV',
+  public readonly exportEventsAction: AdminCommandAction = {
+    label: 'Export events to CSV',
     icon: DownloadIconComponent,
-    action: () => this.csvExport.exportEvents(),
+    group: 'data',
+    run: () => this.csvExport.exportEvents(),
   };
 
   public viewModel$?: Observable<{
@@ -184,8 +185,8 @@ export class SchedulePageComponent implements OnInit {
 
   constructor() {
     inject(AdminActionsService).register(() => [
-      this.addEventLink,
-      this.exportToCsvButton,
+      this.addEventAction,
+      this.exportEventsAction,
     ]);
   }
 

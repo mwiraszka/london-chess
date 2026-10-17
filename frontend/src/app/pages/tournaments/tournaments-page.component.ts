@@ -47,7 +47,7 @@ import {
 } from '@app/constants/tournaments';
 import {
   AdminControlsConfig,
-  InternalLink,
+  AdminLinkAction,
   TournamentFormat,
   TournamentSummary,
 } from '@app/models';
@@ -173,10 +173,11 @@ export class TournamentsPageComponent implements OnInit {
   protected readonly pageSizes = TOURNAMENTS_PAGE_SIZES;
   protected readonly trophies = TROPHIES;
 
-  protected readonly addTournamentLink: InternalLink = {
-    text: 'Add a tournament',
-    internalPath: ['tournament', 'add'],
+  protected readonly addTournamentAction: AdminLinkAction = {
+    label: 'Add tournament',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['tournament', 'add'],
   };
 
   protected readonly isAdmin = this.store.selectSignal(AuthSelectors.selectIsAdmin);
@@ -327,7 +328,7 @@ export class TournamentsPageComponent implements OnInit {
   });
 
   constructor() {
-    inject(AdminActionsService).register(() => [this.addTournamentLink]);
+    inject(AdminActionsService).register(() => [this.addTournamentAction]);
   }
 
   public ngOnInit(): void {

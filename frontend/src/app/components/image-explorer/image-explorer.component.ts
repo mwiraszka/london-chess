@@ -99,7 +99,7 @@ export class ImageExplorerComponent implements OnInit {
 
   public readonly addImageLink: InternalLink = {
     internalPath: ['image', 'add'],
-    text: 'Add an image',
+    text: 'Add image',
     icon: PlusCircleIconComponent,
   };
 

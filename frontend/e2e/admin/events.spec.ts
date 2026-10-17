@@ -7,10 +7,10 @@ import { fieldLabel, fillField, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   clickDelete,
   confirm,
   logIn,
-  openAdminActions,
   openAdminControls,
   requireAdminCredentials,
   uniqueName,
@@ -35,7 +35,7 @@ test.describe('managing events', () => {
     await logIn(page);
 
     await page.goto('/schedule');
-    await page.getByRole('link', { name: 'Add an event' }).click();
+    await chooseAdminAction(page, 'Add event');
     await expect(page).toHaveURL(/\/event\/add$/);
     await fillField(page, 'Event date', nextMonthOn(15));
     await fillField(page, 'Event time', '7:00 PM');
@@ -90,7 +90,7 @@ test.describe('managing events', () => {
     const title = 'An event that is never saved';
     await logIn(page);
     await page.goto('/schedule');
-    await page.getByRole('link', { name: 'Add an event' }).click();
+    await chooseAdminAction(page, 'Add event');
     await page.getByLabel(fieldLabel('Title')).fill(title);
     // The form reports edits a moment after typing stops, which enables Revert
     await expect(page.getByRole('button', { name: 'Revert', exact: true })).toBeEnabled();
@@ -116,8 +116,7 @@ test.describe('managing events', () => {
   test('exports every event to a CSV file', async ({ page }) => {
     await logIn(page);
     await page.goto('/schedule');
-    const actions = await openAdminActions(page);
-    await actions.getByRole('menuitem', { name: 'Export to CSV' }).click();
+    await chooseAdminAction(page, 'Export events to CSV');
     await expect(page.locator('lcc-basic-dialog')).toContainText(
       `Export all ${EVENTS.length} events to a CSV file?`,
     );

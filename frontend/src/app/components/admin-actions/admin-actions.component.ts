@@ -1,5 +1,6 @@
 import {
   ButtonComponent,
+  DividerComponent,
   MenuComponent,
   MenuItemComponent,
   MenuTriggerDirective,
@@ -9,24 +10,25 @@ import {
 import { Store } from '@ngrx/store';
 
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
-import { AdminAction, InternalLink } from '@app/models';
+import { ADMIN_ACTION_GROUPS } from '@app/constants/admin-actions';
+import { AdminAction } from '@app/models';
 import { RouterLinkPipe } from '@app/pipes';
 import { AdminActionsService } from '@app/services';
 import { AuthSelectors } from '@app/store/auth';
 
 /**
- * The admin's way into whatever the views on screen let them add or export: one
- * button fixed over the page, so showing it moves nothing, opening a menu of
- * those views' actions.
+ * The admin's way into whatever the views on screen let them add, export or manage: one
+ * button fixed over the page, so showing it moves nothing, opening a menu of those
+ * views' actions with like actions grouped together.
  */
 @Component({
   selector: 'lcc-admin-actions',
   template: `
-    @if (isAdmin() && actions().length) {
+    @if (isAdmin() && groups().length) {
       <ea-button
         class="admin-actions-button"
         aria-label="Admin actions"
@@ -38,24 +40,19 @@ import { AuthSelectors } from '@app/store/auth';
         #menu
         aria-label="Admin actions"
         placement="top-end">
-        @for (action of actions(); track $index) {
-          @if (isLink(action)) {
-            <ea-menu-item (clicked)="onNavigate(action)">
-              @if (action.icon) {
-                <span slot="icon">
-                  <ng-container *ngComponentOutlet="action.icon" />
-                </span>
-              }
-              {{ action.text }}
-            </ea-menu-item>
-          } @else {
+        @for (group of groups(); track group[0].group) {
+          @if (!$first) {
+            <ea-divider class="menu-divider" />
+          }
+          @for (action of group; track action.label) {
             <ea-menu-item
               [disabled]="action.isLoading?.() ?? false"
-              (clicked)="action.action()">
-              <span slot="icon">
+              [variant]="action.group === 'delete' ? 'danger' : 'default'"
+              (clicked)="onSelect(action)">
+              <ng-container ngProjectAs="[slot=icon]">
                 <ng-container *ngComponentOutlet="action.icon" />
-              </span>
-              {{ action.tooltip }}
+              </ng-container>
+              {{ action.label }}
             </ea-menu-item>
           }
         }
@@ -65,6 +62,7 @@ import { AuthSelectors } from '@app/store/auth';
   styleUrl: './admin-actions.component.scss',
   imports: [
     ButtonComponent,
+    DividerComponent,
     MenuComponent,
     MenuItemComponent,
     MenuTriggerDirective,
@@ -74,10 +72,15 @@ import { AuthSelectors } from '@app/store/auth';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminActionsComponent {
+  private readonly actions = inject(AdminActionsService).actions;
   private readonly router = inject(Router);
   private readonly routerLink = new RouterLinkPipe();
 
-  protected readonly actions = inject(AdminActionsService).actions;
+  protected readonly groups = computed(() =>
+    ADMIN_ACTION_GROUPS.map(group =>
+      this.actions().filter(action => action.group === group),
+    ).filter(actions => actions.length > 0),
+  );
   protected readonly isAdmin = toSignal(
     inject(Store).select(AuthSelectors.selectIsAdmin),
     {
@@ -86,13 +89,11 @@ export class AdminActionsComponent {
   );
   protected readonly shieldIcon = ShieldCheckIconComponent;
 
-  protected isLink(action: AdminAction): action is InternalLink {
-    return 'internalPath' in action;
-  }
-
-  protected onNavigate(link: InternalLink): void {
-    void this.router.navigate([this.routerLink.transform(link.internalPath)], {
-      queryParams: link.queryParams,
-    });
+  protected onSelect(action: AdminAction): void {
+    if (action.run) {
+      action.run();
+    } else {
+      void this.router.navigate([this.routerLink.transform(action.path)]);
+    }
   }
 }

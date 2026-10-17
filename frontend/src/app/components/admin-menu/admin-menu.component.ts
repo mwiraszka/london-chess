@@ -1,5 +1,6 @@
 import {
   BookmarkIconComponent,
+  DividerComponent,
   EditIconComponent,
   MenuComponent,
   MenuItemComponent,
@@ -51,6 +52,11 @@ import { isAdminControlsConfig } from '@app/utils';
             }
           </ea-menu-item>
         }
+        @if (
+          controls.editPath || (controls.bookmarkCb && controls.bookmarked !== undefined)
+        ) {
+          <ea-divider class="menu-divider" />
+        }
         <ea-menu-item
           class="delete-item"
           variant="danger"
@@ -68,6 +74,7 @@ import { isAdminControlsConfig } from '@app/utils';
   styleUrl: './admin-menu.component.scss',
   imports: [
     BookmarkIconComponent,
+    DividerComponent,
     EditIconComponent,
     MenuComponent,
     MenuItemComponent,

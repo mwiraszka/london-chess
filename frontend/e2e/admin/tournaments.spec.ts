@@ -4,6 +4,7 @@ import { fieldError, fieldLabel, fillField, nextMonthOn } from './fields';
 import {
   APP_API,
   RESPONSE_TIMEOUT,
+  chooseAdminAction,
   confirm,
   logIn,
   requireAdminCredentials,
@@ -49,7 +50,7 @@ test.describe('managing tournaments', () => {
     await logIn(page);
 
     await page.goto('/tournaments');
-    await page.getByRole('link', { name: 'Add a tournament' }).click();
+    await chooseAdminAction(page, 'Add tournament');
     await expect(page).toHaveURL(/\/tournament\/add$/);
     await page.getByLabel(fieldLabel('Name')).fill(name);
     await fillField(page, 'Start date', nextMonthOn(10));

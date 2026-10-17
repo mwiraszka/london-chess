@@ -209,16 +209,18 @@ describe('HomePageComponent', () => {
         icon: InfoIconComponent,
       });
 
-      expect(component.addEventLink).toStrictEqual({
-        text: 'Add an event',
-        internalPath: ['event', 'add'],
+      expect(component.addEventAction).toStrictEqual({
+        label: 'Add event',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['event', 'add'],
       });
 
-      expect(component.createArticleLink).toStrictEqual({
-        text: 'Create an article',
-        internalPath: ['article', 'add'],
+      expect(component.addArticleAction).toStrictEqual({
+        label: 'Add article',
         icon: PlusCircleIconComponent,
+        group: 'add',
+        path: ['article', 'add'],
       });
 
       expect(component.articlesPageLink).toStrictEqual({
@@ -240,17 +242,17 @@ describe('HomePageComponent', () => {
       });
     });
 
-    it('should have correct exportToCsvButton configuration', () => {
-      expect(component.exportToCsvButton).toEqual({
-        id: 'export-to-csv',
-        tooltip: 'Export to CSV',
+    it('should have correct exportEventsAction configuration', () => {
+      expect(component.exportEventsAction).toEqual({
+        label: 'Export events to CSV',
         icon: DownloadIconComponent,
-        action: expect.any(Function),
+        group: 'data',
+        run: expect.any(Function),
       });
     });
 
     it('should export the events from the export button', () => {
-      component.exportToCsvButton.action();
+      component.exportEventsAction.run();
 
       expect(TestBed.inject(CsvExportService).exportEvents).toHaveBeenCalledOnce();
     });
@@ -297,12 +299,12 @@ describe('HomePageComponent', () => {
       it('should list the events and articles actions first in the admin actions menu', () => {
         const labels = TestBed.inject(AdminActionsService)
           .actions()
-          .map(action => ('text' in action ? action.text : action.tooltip));
+          .map(action => action.label);
 
         expect(labels.slice(0, 3)).toEqual([
-          'Add an event',
-          'Export to CSV',
-          'Create an article',
+          'Add event',
+          'Export events to CSV',
+          'Add article',
         ]);
       });
     });

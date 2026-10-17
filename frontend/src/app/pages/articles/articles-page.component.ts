@@ -27,10 +27,10 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { PAGE_SIZES } from '@app/constants/filters';
 import {
+  AdminLinkAction,
   Article,
   DataPaginationOptions,
   Image,
-  InternalLink,
   LoadStatus,
 } from '@app/models';
 import { AdminActionsService, MetaAndTitleService } from '@app/services';
@@ -118,10 +118,11 @@ export class ArticlesPageComponent implements OnInit {
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly pageSizes = PAGE_SIZES;
 
-  public createArticleLink: InternalLink = {
-    internalPath: ['article', 'add'],
-    text: 'Create an article',
+  public readonly addArticleAction: AdminLinkAction = {
+    label: 'Add article',
     icon: PlusCircleIconComponent,
+    group: 'add',
+    path: ['article', 'add'],
   };
 
   public viewModel$?: Observable<{
@@ -135,7 +136,7 @@ export class ArticlesPageComponent implements OnInit {
   }>;
 
   constructor() {
-    inject(AdminActionsService).register(() => [this.createArticleLink]);
+    inject(AdminActionsService).register(() => [this.addArticleAction]);
   }
 
   public ngOnInit(): void {
