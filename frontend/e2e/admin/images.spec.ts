@@ -137,12 +137,11 @@ test.describe('managing images', () => {
     await logIn(page);
     const writes = watchWrites(page, `${APP_API}/images`);
     const addImage = page.getByRole('button', { name: 'Add image' });
+    const album = uniqueName('Blitz night');
 
     await page.goto('/image/add');
     await page.getByLabel(fieldLabel('Caption')).fill('Clocks ticking');
-    await page
-      .getByRole('textbox', { name: 'New album name' })
-      .fill(uniqueName('Blitz night'));
+    await page.getByRole('textbox', { name: 'New album name' }).fill(album);
     await addImage.click();
 
     await expect(page.getByText('Choose an image to upload')).toBeVisible();
@@ -153,7 +152,7 @@ test.describe('managing images', () => {
       .setInputFiles(png('blitz-night.png'));
     await expect(page.getByText('Choose an image to upload')).toHaveCount(0);
     await addImage.click();
-    await expect(page.locator('lcc-basic-dialog')).toBeVisible();
+    await expect(page.locator('lcc-basic-dialog')).toContainText(`to ${album}?`);
     await page
       .locator('lcc-basic-dialog')
       .getByRole('button', { name: 'Cancel' })
