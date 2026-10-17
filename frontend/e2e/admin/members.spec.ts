@@ -103,12 +103,8 @@ test.describe('managing members', () => {
     await expect(fieldError(page, 'LCC rating')).toHaveText(
       'Enter a rating such as 1500, or 1500/7 for a provisional rating',
     );
-    await expect(fieldError(page, 'Last name')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Add member' }).click();
-
     await expect(fieldError(page, 'Last name')).toHaveText('This field is required');
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add member' })).toBeDisabled();
 
     await page.getByLabel(fieldLabel('LCC rating')).fill('1500/7');
     await page.getByLabel(fieldLabel('Last name')).fill('Pemberly');

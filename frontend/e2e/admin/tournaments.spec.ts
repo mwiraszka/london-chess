@@ -137,12 +137,9 @@ test.describe('managing tournaments', () => {
     await page.goto('/tournament/add');
     await page.getByLabel(fieldLabel('Name')).focus();
     await page.getByLabel(fieldLabel('Time control')).fill('G10');
-    await expect(fieldError(page, 'Name')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Add tournament' }).click();
 
     await expect(fieldError(page, 'Name')).toHaveText('This field is required');
-    await expect(page.locator('lcc-basic-dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add tournament' })).toBeDisabled();
   });
 });
 
