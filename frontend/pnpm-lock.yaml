@@ -26,6 +26,11 @@ overrides:
   katex@>=0.11.0 <0.18.2: '>=0.18.2'
   source-map-js@>=1.0.0 <1.2.2: '>=1.2.2'
 
+patchedDependencies:
+  ng2-pdf-viewer@10.4.0:
+    hash: c44a073479e13e0c481947d8b0daf0526b589fa5a795c2ca244daa04d7bb9651
+    path: patches/ng2-pdf-viewer@10.4.0.patch
+
 importers:
   .:
     dependencies:
@@ -94,7 +99,7 @@ importers:
         version: 0.6.5
       ng2-pdf-viewer:
         specifier: 10.4.0
-        version: 10.4.0
+        version: 10.4.0(patch_hash=c44a073479e13e0c481947d8b0daf0526b589fa5a795c2ca244daa04d7bb9651)
       ngrx-store-localstorage:
         specifier: 20.1.0
         version: 20.1.0(@angular/common@22.2.3(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2)(zone.js@0.16.3))(@ngrx/store@22.0.1(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2)(zone.js@0.16.3))(rxjs@7.8.2))
@@ -8093,7 +8098,7 @@ snapshots:
 
   natural-orderby@5.0.0: {}
 
-  ng2-pdf-viewer@10.4.0:
+  ng2-pdf-viewer@10.4.0(patch_hash=c44a073479e13e0c481947d8b0daf0526b589fa5a795c2ca244daa04d7bb9651):
     dependencies:
       pdfjs-dist: 4.8.69
       tslib: 2.8.1
