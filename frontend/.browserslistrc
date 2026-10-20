@@ -1,8 +1,9 @@
-# The oldest browsers the site supports, set from its own visitor analytics to keep
-# roughly 98% of visits, and no lower than Angular's floor for the version in use,
-# which the build warns about when a browser here falls outside it
-Chrome >= 119
-Edge >= 119
-Firefox >= 119
-Safari >= 17
-iOS >= 17
+# The oldest browsers the site supports: the last Chrome, Edge and Firefox releases for
+# Windows 7 and 8.1, and the first Safari with the container queries and regex lookbehind
+# the site relies on. These sit below Angular's own floor, so the build warns about them,
+# and any newer colour or stylesheet feature needs a fallback that works in them
+Chrome >= 109
+Edge >= 109
+Firefox >= 115
+Safari >= 16.4
+iOS >= 16.4

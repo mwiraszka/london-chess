@@ -1,0 +1,17 @@
+diff --git a/fesm2022/ng2-pdf-viewer.mjs b/fesm2022/ng2-pdf-viewer.mjs
+index 623f382c47f2f6fba2db332df0644cdb92ed8b5e..aa602f334bc561dbb2f68141e203e4ad25d81efd 100644
+--- a/fesm2022/ng2-pdf-viewer.mjs
++++ b/fesm2022/ng2-pdf-viewer.mjs
+@@ -2,9 +2,9 @@ import * as i0 from '@angular/core';
+ import { EventEmitter, Component, ViewChild, Output, Input, NgModule } from '@angular/core';
+ import { fromEvent, Subject, from } from 'rxjs';
+ import { takeUntil, debounceTime, filter } from 'rxjs/operators';
+-import * as PDFJS from 'pdfjs-dist';
+-import { VerbosityLevel, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+-import * as PDFJSViewer from 'pdfjs-dist/web/pdf_viewer.mjs';
++import * as PDFJS from 'pdfjs-dist/legacy/build/pdf.mjs';
++import { VerbosityLevel, GlobalWorkerOptions, getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
++import * as PDFJSViewer from 'pdfjs-dist/legacy/web/pdf_viewer.mjs';
+ 
+ // interface EventBus {
+ //   on(eventName: string, listener: Function): void;
