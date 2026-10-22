@@ -17,6 +17,7 @@ export { MetaAndTitleService } from './meta-and-title.service';
 export { PendingRequestsService } from './pending-requests.service';
 export { RefreshService } from './refresh.service';
 export { KEEP_SCROLL, RoutingService } from './routing.service';
+export { StaleBuildReloadService, isReloadedError } from './stale-build-reload.service';
 export { StandingsFileService } from './standings-file.service';
 export { StoreRequestService } from './store-request.service';
 export { TouchEventsService } from './touch-events.service';

@@ -67,6 +67,7 @@ export { isValidIsoDate } from './datetime/is-valid-iso-date.util';
 
 export { isMac } from './device/is-mac.util';
 export { isTouchDevice } from './device/is-touch-device.util';
+export { loadPage } from './device/load-page.util';
 export { reloadPage } from './device/reload-page.util';
 export { scrollBehavior } from './device/scroll-behavior.util';
 
