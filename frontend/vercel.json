@@ -1,6 +1,15 @@
 {
   "headers": [
     {
+      "source": "/((?!.*\\.\\w+$).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/:file((?:main|chunk|polyfills|styles)-[A-Za-z0-9_-]+\\.(?:js|css))",
       "headers": [
         {
