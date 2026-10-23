@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.5.9] - 2026-10-23
+
+### Changed
+
+- Show members who have not played a rated game yet as unrated, listed below every rated member
+
+### Fixed
+
+- Link a member's tournament results and games to their profile automatically, whether the member or the results were added to the site first
+- Open the latest version of the site after an update on iPhones, iPads and in Safari too, so links in a tab left open from an earlier visit no longer stop working
+
 ## [v6.5.8] - 2026-10-22
 
 ### Fixed
@@ -2128,6 +2139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.5.9]: https://github.com/mwiraszka/london-chess/compare/v6.5.8...v6.5.9
 [v6.5.8]: https://github.com/mwiraszka/london-chess/compare/v6.5.7...v6.5.8
 [v6.5.7]: https://github.com/mwiraszka/london-chess/compare/v6.5.6...v6.5.7
 [v6.5.6]: https://github.com/mwiraszka/london-chess/compare/v6.5.5...v6.5.6
