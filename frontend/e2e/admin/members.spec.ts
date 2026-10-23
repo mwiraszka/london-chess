@@ -102,7 +102,7 @@ test.describe('managing members', () => {
     await page.getByLabel(fieldLabel('LCC rating')).fill('15OO');
     await page.getByLabel(fieldLabel('City')).focus();
     await expect(fieldError(page, 'LCC rating')).toHaveText(
-      'Enter a rating such as 1500, or 1500/7 for a provisional rating',
+      'Enter a rating such as 1500, 1500/7 for a provisional rating, or unrated',
     );
     await expect(fieldError(page, 'Last name')).toHaveText('This field is required');
     await expect(page.getByRole('button', { name: 'Add member' })).toBeDisabled();
