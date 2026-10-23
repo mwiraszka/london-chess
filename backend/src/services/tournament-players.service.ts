@@ -1,7 +1,7 @@
-import { Types } from 'mongoose';
+import { ClientSession, Types } from 'mongoose';
 
 import { Id } from '../models/core.model';
-import { MemberModel, MemberName } from '../models/member.model';
+import { MemberModel, MemberName, MemberRecord } from '../models/member.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
 import { PlayerNameMatch, TournamentModel } from '../models/tournament.model';
 import { isCollectionId } from '../util/is-collection-id.util';
@@ -16,6 +16,11 @@ interface Candidates {
   players: PlayerRecord[];
   membersById: Map<Id, MemberName>;
   membersByName: Map<string, MemberName[]>;
+}
+
+interface PlayerLink {
+  player: PlayerRecord;
+  member: MemberName;
 }
 
 export const fold = (value: string): string =>
@@ -44,21 +49,31 @@ export function parsePlayerName(raw: string): ParsedPlayerName {
     : { firstName: rest, lastName, suffix: '' };
 }
 
-async function loadCandidates(): Promise<Candidates> {
-  const [players, members] = await Promise.all([
-    PlayerModel.find({}).lean<PlayerRecord[]>(),
-    MemberModel.find({}, { firstName: 1, lastName: 1, number: 1 }).lean<MemberName[]>(),
-  ]);
+function loadMembers(session?: ClientSession): Promise<MemberName[]> {
+  return MemberModel.find({}, { firstName: 1, lastName: 1, number: 1 }, { session }).lean<
+    MemberName[]
+  >();
+}
 
+function groupByName(members: MemberName[]): Map<string, MemberName[]> {
   const membersByName = new Map<string, MemberName[]>();
   for (const member of members) {
     const key = foldedKey(member);
     membersByName.set(key, [...(membersByName.get(key) ?? []), member]);
   }
+  return membersByName;
+}
+
+async function loadCandidates(): Promise<Candidates> {
+  const [players, members] = await Promise.all([
+    PlayerModel.find({}).lean<PlayerRecord[]>(),
+    loadMembers(),
+  ]);
+
   return {
     players,
     membersById: new Map(members.map(member => [member._id.toString(), member])),
-    membersByName,
+    membersByName: groupByName(members),
   };
 }
 
@@ -96,21 +111,42 @@ function findPlayer(
   );
 }
 
-// Only an unambiguous full name links a new player to a member
-function findMember(name: ParsedPlayerName, candidates: Candidates): MemberName | null {
+// Only an unambiguous full name links a player to a member
+function findMember(
+  name: Omit<ParsedPlayerName, 'suffix'>,
+  membersByName: Map<string, MemberName[]>,
+): MemberName | null {
   if (!name.firstName || name.firstName.endsWith('.')) {
     return null;
   }
-  const matches = candidates.membersByName.get(foldedKey(name)) ?? [];
+  const matches = membersByName.get(foldedKey(name)) ?? [];
   return matches.length === 1 ? matches[0] : null;
+}
+
+async function savePlayerLinks(
+  links: PlayerLink[],
+  session?: ClientSession,
+): Promise<void> {
+  if (!links.length) {
+    return;
+  }
+  await PlayerModel.bulkWrite(
+    links.map(({ player, member }) => ({
+      updateOne: {
+        filter: { _id: player._id, memberId: null },
+        update: { $set: { memberId: member._id.toString() } },
+      },
+    })),
+    { session },
+  );
 }
 
 function matchName(raw: string, candidates: Candidates): PlayerNameMatch {
   const name = parsePlayerName(raw);
   const player = findPlayer(name, candidates.players);
-  const member = player
-    ? (player.memberId && candidates.membersById.get(player.memberId)) || null
-    : findMember(name, candidates);
+  const member = player?.memberId
+    ? (candidates.membersById.get(player.memberId) ?? null)
+    : findMember(player ?? name, candidates.membersByName);
   return {
     name: raw,
     playerId: player?._id.toString() ?? null,
@@ -125,10 +161,12 @@ export async function matchPlayerNames(names: string[]): Promise<PlayerNameMatch
   );
 }
 
-// Adds any player the archive does not know yet, linked to their member when one matches
+// Adds any player the archive does not know yet, and links each player to their member
+// when one matches
 export async function resolvePlayerIds(names: string[]): Promise<Map<string, Id>> {
   const candidates = await loadCandidates();
   const ids = new Map<string, Id>();
+  const links: PlayerLink[] = [];
   const additions: { raw: string; player: Omit<PlayerRecord, '_id'> }[] = [];
 
   for (const raw of new Set(names.map(name => name.trim()))) {
@@ -136,23 +174,84 @@ export async function resolvePlayerIds(names: string[]): Promise<Map<string, Id>
     const player = findPlayer(name, candidates.players);
     if (player) {
       ids.set(raw, player._id.toString());
+      const member = player.memberId
+        ? null
+        : findMember(player, candidates.membersByName);
+      if (member) {
+        links.push({ player, member });
+      }
       continue;
     }
     additions.push({
       raw,
       player: {
         ...name,
-        memberId: findMember(name, candidates)?._id.toString() ?? null,
+        memberId: findMember(name, candidates.membersByName)?._id.toString() ?? null,
         gameCount: 0,
       },
     });
   }
 
+  await savePlayerLinks(links);
   if (additions.length) {
     const created = await PlayerModel.insertMany(additions.map(({ player }) => player));
     additions.forEach(({ raw }, index) => ids.set(raw, created[index]._id.toString()));
   }
   return ids;
+}
+
+// Links each player not yet linked to a member to whichever of these members their full
+// name matches, returning the players it linked
+export async function linkPlayersToMembers(
+  memberIds: Id[],
+  session?: ClientSession,
+): Promise<Id[]> {
+  const ids = new Set(memberIds);
+  const players = await PlayerModel.find({ memberId: null }, null, { session }).lean<
+    PlayerRecord[]
+  >();
+  const membersByName = groupByName(await loadMembers(session));
+
+  const links = players.flatMap(player => {
+    const member = findMember(player, membersByName);
+    return member && ids.has(member._id.toString()) ? [{ player, member }] : [];
+  });
+  await savePlayerLinks(links, session);
+  return links.map(({ player }) => player._id.toString());
+}
+
+export async function unlinkPlayers(playerIds: Id[]): Promise<void> {
+  if (!playerIds.length) {
+    return;
+  }
+  await PlayerModel.updateMany(
+    { _id: { $in: playerIds.map(id => new Types.ObjectId(id)) } },
+    { $set: { memberId: null } },
+  );
+}
+
+// Frees the players of a deleted member, then links them, and any players that the name
+// being shared kept unlinked, to a member left carrying that name alone
+export async function releasePlayers(
+  member: Pick<MemberRecord, '_id' | 'firstName' | 'lastName'>,
+  session?: ClientSession,
+): Promise<void> {
+  await PlayerModel.updateMany(
+    { memberId: member._id.toString() },
+    { $set: { memberId: null } },
+    { session },
+  );
+
+  const key = foldedKey(member);
+  const namesakes = (await loadMembers(session)).filter(
+    other => foldedKey(other) === key,
+  );
+  if (namesakes.length) {
+    await linkPlayersToMembers(
+      namesakes.map(({ _id }) => _id.toString()),
+      session,
+    );
+  }
 }
 
 // The IDs among these that name no player in the archive

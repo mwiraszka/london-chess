@@ -3,9 +3,11 @@ import { useTestDatabase } from '../testing/database';
 import { createMember } from '../testing/fixtures';
 import {
   fold,
+  linkPlayersToMembers,
   matchPlayerNames,
   parsePlayerName,
   resolvePlayerIds,
+  unlinkPlayers,
 } from './tournament-players.service';
 
 describe('tournament players', () => {
@@ -83,6 +85,19 @@ describe('tournament players', () => {
       expect(matches.map(({ memberNumber }) => memberNumber)).toEqual([null, null, null]);
     });
 
+    it('should match a known player without a member to the member carrying their name', async () => {
+      await createMember({ firstName: 'Nia', lastName: 'New', number: 9 });
+      const known = await PlayerModel.create({ firstName: 'Nia', lastName: 'New' });
+
+      const [match] = await matchPlayerNames(['New, Nia']);
+
+      expect(match).toEqual({
+        name: 'New, Nia',
+        playerId: known._id.toString(),
+        memberNumber: 9,
+      });
+    });
+
     it('should not treat a player with a different suffix as the same person', async () => {
       await PlayerModel.create({ firstName: 'John', lastName: 'Smith', suffix: 'Sr' });
 
@@ -133,6 +148,76 @@ describe('tournament players', () => {
 
       expect(ids).toEqual(new Map([['Doe, Jane', known._id.toString()]]));
       expect(await PlayerModel.countDocuments()).toBe(1);
+    });
+
+    it('should link a known player to the member who joined after them', async () => {
+      const known = await PlayerModel.create({ firstName: 'Nia', lastName: 'New' });
+      const member = await createMember({ firstName: 'Nia', lastName: 'New' });
+
+      const ids = await resolvePlayerIds(['New, Nia']);
+
+      expect(ids.get('New, Nia')).toBe(known._id.toString());
+      expect((await PlayerModel.findById(known._id).lean())?.memberId).toBe(
+        member._id.toString(),
+      );
+    });
+  });
+
+  describe('linkPlayersToMembers', () => {
+    it("should link the players without a member who carry the member's full name", async () => {
+      const member = await createMember({ firstName: 'Zoë', lastName: "O'Brien" });
+      const other = await createMember({ firstName: 'Rick', lastName: 'Roe' });
+      const spelled = await PlayerModel.create({ firstName: 'Zoe', lastName: 'OBrien' });
+      const accented = await PlayerModel.create({
+        firstName: 'Zoë',
+        lastName: "O'Brien",
+      });
+      await PlayerModel.create({ firstName: 'Z.', lastName: "O'Brien" });
+      await PlayerModel.create({
+        firstName: 'Zoë',
+        lastName: "O'Brien",
+        memberId: other._id.toString(),
+      });
+      await PlayerModel.create({ firstName: 'Rick', lastName: 'Roe' });
+
+      const linked = await linkPlayersToMembers([member._id.toString()]);
+
+      expect(linked).toEqual(
+        expect.arrayContaining([spelled._id.toString(), accented._id.toString()]),
+      );
+      expect(linked).toHaveLength(2);
+      expect(await PlayerModel.countDocuments({ memberId: member._id.toString() })).toBe(
+        2,
+      );
+      expect(await PlayerModel.countDocuments({ memberId: null })).toBe(2);
+    });
+
+    it('should leave a name that several members share unlinked', async () => {
+      const member = await createMember({ firstName: 'Sam', lastName: 'Twin' });
+      await createMember({ firstName: 'Sam', lastName: 'Twin' });
+      await PlayerModel.create({ firstName: 'Sam', lastName: 'Twin' });
+
+      const linked = await linkPlayersToMembers([member._id.toString()]);
+
+      expect(linked).toEqual([]);
+      expect(await PlayerModel.countDocuments({ memberId: null })).toBe(1);
+    });
+  });
+
+  describe('unlinkPlayers', () => {
+    it('should unlink only the players it is given', async () => {
+      const member = await createMember();
+      const [first, second] = await PlayerModel.create([
+        { firstName: 'Jane', lastName: 'Doe', memberId: member._id.toString() },
+        { firstName: 'Jane', lastName: 'Doe', memberId: member._id.toString() },
+      ]);
+
+      await unlinkPlayers([first._id.toString()]);
+
+      expect((await PlayerModel.findById(first._id).lean())?.memberId).toBeNull();
+      expect((await PlayerModel.findById(second._id).lean())?.memberId).toBe(
+        member._id.toString(),
+      );
     });
   });
 });

@@ -19,6 +19,11 @@ import { clerkClient } from '../services/clerk.service';
 import { sendEmail } from '../services/email.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
+import {
+  linkPlayersToMembers,
+  releasePlayers,
+  unlinkPlayers,
+} from '../services/tournament-players.service';
 import { widestMemberIds } from '../services/widest.service';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
@@ -287,6 +292,7 @@ export async function addMember(
 
     if (req.query['notify'] !== 'true') {
       const created = await MemberModel.create(member);
+      await linkPlayersToMembers([created._id.toString()]);
       res.status(201).json({ data: toAdminMember(await readMember(created._id)) });
       return;
     }
@@ -389,6 +395,7 @@ export async function updateMember(
       });
     } else {
       await MemberModel.updateOne({ _id: existing._id }, { $set: member });
+      await linkPlayersToMembers([existing._id.toString()]);
       res.status(200).json({ data: toAdminMember(await readMember(existing._id)) });
     }
   } catch (error) {
@@ -467,6 +474,10 @@ export async function updateMembers(
           }
           updatedIds.push(id);
         }
+        await linkPlayersToMembers(
+          members.map(({ id }) => id),
+          session,
+        );
       });
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('NOT_FOUND:')) {
@@ -501,7 +512,11 @@ export async function deleteMember(
     const { id } = req.params;
 
     const existing = isCollectionId(id)
-      ? await MemberModel.findById(id, { account: 1 }).lean<MemberRecord>()
+      ? await MemberModel.findById(id, {
+          account: 1,
+          firstName: 1,
+          lastName: 1,
+        }).lean<MemberRecord>()
       : null;
     if (!existing) {
       res.status(404).json({
@@ -516,7 +531,15 @@ export async function deleteMember(
       return;
     }
 
-    await MemberModel.deleteOne({ _id: id });
+    const session = await MemberModel.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await MemberModel.deleteOne({ _id: id }, { session });
+        await releasePlayers(existing, session);
+      });
+    } finally {
+      await session.endSession();
+    }
 
     res.status(200).json({ data: id });
   } catch (error) {
@@ -604,6 +627,13 @@ async function saveWithNewAccount({
     );
     undoSteps.push(undoSave);
 
+    failedStep = 'link the member to their games and results';
+    const linkedPlayerIds = await linkPlayersToMembers([memberId.toString()]);
+    undoSteps.push([
+      'unlink the member from their games and results',
+      () => unlinkPlayers(linkedPlayerIds),
+    ]);
+
     failedStep = 'assign a member number';
     await assignMemberNumber(memberId.toString());
     const record = await readMember(memberId);
@@ -660,6 +690,13 @@ async function saveForAccountHolder(
       () => MemberModel.replaceOne({ _id: existing._id }, existing),
     ]);
     const record = await readMember(existing._id);
+
+    failedStep = 'link the member to their games and results';
+    const linkedPlayerIds = await linkPlayersToMembers([existing._id.toString()]);
+    undoSteps.push([
+      'unlink the member from their games and results',
+      () => unlinkPlayers(linkedPlayerIds),
+    ]);
 
     const changes = describeMemberChanges(
       existing,
