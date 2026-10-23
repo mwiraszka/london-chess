@@ -105,7 +105,7 @@ export function getMembers(scope: Scope) {
       let filteredCount: number;
 
       if (isRatingSort) {
-        const sortOrder = query.sort[sortField];
+        const { [sortField]: sortOrder, ...tiebreakers } = query.sort;
         const numericField = `${sortField}Numeric`;
         const pipeline: PipelineStage[] = [
           { $match: query.filter },
@@ -150,7 +150,7 @@ export function getMembers(scope: Scope) {
               },
             },
           },
-          { $sort: { [numericField]: sortOrder } },
+          { $sort: { [numericField]: sortOrder, ...tiebreakers } },
           {
             $project:
               scope === 'public' ? PUBLIC_MEMBER_PROJECTION : { [numericField]: 0 },

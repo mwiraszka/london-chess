@@ -6,6 +6,7 @@ import { Article, ArticleModel } from '../models/article.model';
 import { bearer } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import { MODIFICATION_INFO, createAdmin } from '../testing/fixtures';
+import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
@@ -63,6 +64,19 @@ describe('articles routes', () => {
       expect(response.body.data.items[0]).not.toHaveProperty('_id');
       expect(response.body.data.filteredCount).toBe(2);
       expect(response.body.data.totalCount).toBe(3);
+    });
+
+    it('should page through articles that tie on every sorted field once each, in one order', async () => {
+      const { id, ...article } = articlePayload({
+        bookmarkDate: '2026-10-01T12:00:00.000Z',
+      });
+      for (const _id of INSERTION_ORDER) {
+        await ArticleModel.create({ ...article, _id });
+      }
+
+      const ids = await idsPageByPage('/v1/articles?sortBy=bookmarkDate&sortOrder=desc');
+
+      expect(ids).toEqual([...TIED_IDS].reverse().map(String));
     });
 
     it('should respond with a server error when the database fails', async () => {

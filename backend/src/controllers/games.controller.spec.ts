@@ -6,6 +6,7 @@ import { Game, GameModel, GameResponse, MemberOpenings } from '../models/game.mo
 import { Player, PlayerModel } from '../models/player.model';
 import { useTestDatabase } from '../testing/database';
 import { MODIFICATION_INFO, createMember, memberAccount } from '../testing/fixtures';
+import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
 import { ArchivePlayer } from './games.controller';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
@@ -26,7 +27,7 @@ async function createPlayer(
 async function createGame(
   whitePlayerId: string,
   blackPlayerId: string,
-  overrides: Partial<Omit<Game, 'id'>> = {},
+  overrides: Partial<Omit<Game, 'id'>> & { _id?: Types.ObjectId } = {},
 ): Promise<string> {
   const game = await GameModel.create({
     tournament: 'Club Championship',
@@ -125,6 +126,30 @@ describe('games routes', () => {
       const [game]: GameResponse[] = response.body.data.items;
       expect(game.white).toMatchObject({ id: missing, lastName: 'Unknown' });
       expect(game.black).toMatchObject({ id: 'not-an-id', lastName: 'Unknown' });
+    });
+
+    it('should page through games that tie on every sorted field once each, in one order', async () => {
+      const ann = await createPlayer({ firstName: 'Ann', lastName: 'Archer' });
+      const bob = await createPlayer({ firstName: 'Bob', lastName: 'Baker' });
+      for (const _id of INSERTION_ORDER) {
+        await createGame(ann, bob, { _id });
+      }
+
+      const ids = await idsPageByPage('/v1/games?sortBy=date&sortOrder=desc');
+
+      expect(ids).toEqual([...TIED_IDS].reverse().map(String));
+    });
+
+    it("should page through one player's games on the same day once each, in one order", async () => {
+      const ann = await createPlayer({ firstName: 'Ann', lastName: 'Archer' });
+      const bob = await createPlayer({ firstName: 'Bob', lastName: 'Baker' });
+      for (const _id of INSERTION_ORDER) {
+        await createGame(ann, bob, { _id });
+      }
+
+      const ids = await idsPageByPage('/v1/games?sortBy=white&sortOrder=asc');
+
+      expect(ids).toEqual([...TIED_IDS].reverse().map(String));
     });
 
     it('should respond with a server error when the database fails', async () => {

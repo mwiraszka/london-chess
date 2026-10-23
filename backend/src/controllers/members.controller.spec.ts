@@ -19,6 +19,7 @@ import {
   readMember,
   startMemberNumbers,
 } from '../testing/fixtures';
+import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
 import { AdminMember, PublicMember } from '../util/member-responses.util';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
@@ -89,6 +90,26 @@ describe('members routes', () => {
         response.body.data.items.map((member: PublicMember) => member.lastName),
       ).toEqual(['Provisional', 'Established']);
       expect(response.body.data.filteredCount).toBe(4);
+    });
+
+    it('should page through members who share a rating once each, in one order', async () => {
+      for (const _id of INSERTION_ORDER) {
+        await createMember({ _id, rating: '1622' });
+      }
+
+      const ids = await idsPageByPage('/v1/public/members?sortBy=rating&sortOrder=desc');
+
+      expect(ids).toEqual([...TIED_IDS].reverse().map(String));
+    });
+
+    it('should page through members who share a city once each, in one order', async () => {
+      for (const _id of INSERTION_ORDER) {
+        await createMember({ _id, city: 'London' });
+      }
+
+      const ids = await idsPageByPage('/v1/public/members?sortBy=city&sortOrder=asc');
+
+      expect(ids).toEqual(TIED_IDS.map(String));
     });
 
     it('should leave out inactive members when asked', async () => {

@@ -12,6 +12,7 @@ import {
   createMember,
   memberAccount,
 } from '../testing/fixtures';
+import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
 import { EMAILS_FROM_SITE_ONLY } from '../util/site-url.util';
 
 const { dangerouslyDeleteByTag } = vi.hoisted(() => ({
@@ -95,6 +96,17 @@ describe('events routes', () => {
         'Second',
       ]);
       expect(response.body.data.filteredCount).toBe(2);
+    });
+
+    it('should page through events that tie on every sorted field once each, in one order', async () => {
+      const { id, ...event } = eventPayload();
+      for (const _id of INSERTION_ORDER) {
+        await EventModel.create({ ...event, _id });
+      }
+
+      const ids = await idsPageByPage('/v1/events?sortBy=type&sortOrder=asc');
+
+      expect(ids).toEqual(TIED_IDS.map(String));
     });
 
     it('should respond with a server error when the database fails', async () => {

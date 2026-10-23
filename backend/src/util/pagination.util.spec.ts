@@ -141,7 +141,30 @@ describe('buildPaginationQuery', () => {
       expect(result.limit).toBeUndefined();
     });
 
-    it('should sort by the mapped field and then by its secondary field', () => {
+    it('should end every sort on the id, in the same direction', () => {
+      const params: PaginationParams = {
+        page: 1,
+        pageSize: 20,
+        sortBy: 'city',
+        sortOrder: 'asc',
+        search: '',
+        filters: {},
+      };
+
+      const ascending = buildPaginationQuery(params);
+      const descending = buildPaginationQuery({ ...params, sortOrder: 'desc' });
+
+      expect(Object.entries(ascending.sort)).toEqual([
+        ['city', 1],
+        ['_id', 1],
+      ]);
+      expect(Object.entries(descending.sort)).toEqual([
+        ['city', -1],
+        ['_id', -1],
+      ]);
+    });
+
+    it('should sort by the mapped field, then by its secondary field, then by the id', () => {
       const params: PaginationParams = {
         page: 1,
         pageSize: 20,
@@ -158,7 +181,11 @@ describe('buildPaginationQuery', () => {
 
       const result = buildPaginationQuery(params, config);
 
-      expect(result.sort).toEqual({ lastName: -1, firstName: -1 });
+      expect(Object.entries(result.sort)).toEqual([
+        ['lastName', -1],
+        ['firstName', -1],
+        ['_id', -1],
+      ]);
     });
 
     it('should order games by event as shown, tournament and then section', () => {
@@ -178,6 +205,7 @@ describe('buildPaginationQuery', () => {
         ['section', 1],
         ['date', 1],
         ['round', 1],
+        ['_id', 1],
       ]);
     });
   });

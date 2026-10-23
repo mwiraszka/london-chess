@@ -114,7 +114,8 @@ export function buildPlayerNameSortPipeline(
         },
       },
     },
-    { $sort: { playerSortName: sortOrder, date: -1 } },
+    // Ends on a unique field, so games that tie keep one order from page to page
+    { $sort: { playerSortName: sortOrder, date: -1, _id: -1 } },
     ...(skip ? [{ $skip: skip }] : []),
     ...(limit === undefined ? [] : [{ $limit: limit }]),
     { $project: { player: 0, member: 0, playerSortName: 0 } },
