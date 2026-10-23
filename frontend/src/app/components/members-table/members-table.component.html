@@ -111,13 +111,13 @@
 <ng-template
   #ratingCell
   let-row>
-  {{ row.member.rating }}
+  {{ row.member.rating | ratingLabel }}
 </ng-template>
 
 <ng-template
   #peakRatingCell
   let-row>
-  {{ row.member.peakRating }}
+  {{ row.member.peakRating | ratingLabel }}
 </ng-template>
 
 <ng-template

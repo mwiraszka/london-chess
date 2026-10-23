@@ -27,6 +27,7 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
 import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
 import { LoadStatus, Member } from '@app/models';
+import { RatingLabelPipe } from '@app/pipes';
 import { MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { MembersActions, MembersSelectors } from '@app/store/members';
@@ -49,6 +50,7 @@ import { isCityChampion } from '@app/utils';
     MemberOpeningsComponent,
     MemberTournamentsComponent,
     PageHeaderComponent,
+    RatingLabelPipe,
     RatingProgressionComponent,
     RouterLink,
     ShieldCheckIconComponent,

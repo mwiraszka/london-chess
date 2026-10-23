@@ -13,4 +13,10 @@ describe('ratingSortValue', () => {
   it('ranks provisional ratings of the same value by their game count', () => {
     expect(ratingSortValue('1800/5')).toBeLessThan(ratingSortValue('1800/12'));
   });
+
+  it('ranks an unrated member below every rated one', () => {
+    expect(ratingSortValue('unrated')).toBeLessThan(ratingSortValue('100/1'));
+    expect(ratingSortValue('1000/0')).toBeLessThan(ratingSortValue('100/1'));
+    expect(ratingSortValue('1000/0')).toBeLessThan(ratingSortValue('100'));
+  });
 });

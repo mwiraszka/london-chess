@@ -48,6 +48,18 @@ describe('describeMemberChanges', () => {
     ]);
   });
 
+  it('should show an unrated member and a rating from no rated games as Unrated', () => {
+    const changes = describeMemberChanges(
+      { ...DETAILS, rating: 'unrated', peakRating: '1000/0' },
+      { ...DETAILS, rating: '1150/3', peakRating: '1150/3' },
+    );
+
+    expect(changes).toEqual([
+      { field: 'rating', label: 'Rating', before: 'Unrated', after: '1150/3' },
+      { field: 'peakRating', label: 'Peak rating', before: 'Unrated', after: '1150/3' },
+    ]);
+  });
+
   it('should read a field missing from an older record as empty', () => {
     const olderRecord = { ...DETAILS, lichessUsername: undefined };
 

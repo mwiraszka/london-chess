@@ -1,3 +1,5 @@
+@use '../../../styles/abstracts/mixins' as *;
+
 // As wide as the page allows, up to a readable width unless the wide view is on
 :host {
   display: block;
@@ -72,6 +74,14 @@
 
 .events__type {
   margin: 2px 0;
+
+  // A pixel under the library's small tag, so the longest event type fits the narrowest
+  // screens without the table scrolling sideways
+  @include respond-to('lt-xs') {
+    ::ng-deep .ea-tag {
+      font-size: calc(var(--font-size-sm) - 1px);
+    }
+  }
 }
 
 // Keeps the heading line's height while holding the placeholder for the whole line

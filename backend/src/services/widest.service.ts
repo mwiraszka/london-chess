@@ -4,6 +4,7 @@ import { EventModel } from '../models/event.model';
 import { GameModel, GameRecord } from '../models/game.model';
 import { MemberModel } from '../models/member.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
+import { isUnratedExpression } from '../util/rating.util';
 import { resolvePlayers } from './games.service';
 
 // A few candidates per column, since text is only as wide as its font renders it
@@ -48,6 +49,11 @@ const members: Aggregator = pipeline => MemberModel.aggregate(pipeline).exec();
 
 // Month names differ in width, so a full date from each month stands in for every date
 const monthOf = (field: string) => ({ $substrCP: [field, 5, 2] });
+
+// Rating columns show an unrated member as Unrated
+const shownRating = (field: string) => ({
+  $cond: [isUnratedExpression(field), 'Unrated', field],
+});
 
 async function playerGames(): Promise<Types.ObjectId[]> {
   const players = await PlayerModel.find({}, { _id: 1 }).lean<
@@ -117,8 +123,8 @@ export async function widestMemberIds(
     longest(members, { $concat: ['$firstName', ' ', '$lastName'] }),
     longest(members, '$firstName'),
     longest(members, '$lastName'),
-    longest(members, '$rating'),
-    longest(members, '$peakRating'),
+    longest(members, shownRating('$rating')),
+    longest(members, shownRating('$peakRating')),
     longest(members, '$city'),
     longest(members, '$chessComUsername'),
     longest(members, '$lichessUsername'),

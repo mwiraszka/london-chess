@@ -48,13 +48,17 @@ export function buildPaginationQuery<T = unknown>(
   const skip = pageSize === -1 ? 0 : (page - 1) * pageSize;
 
   const sort: Record<string, 1 | -1> = {};
+  const direction = sortOrder === 'asc' ? 1 : -1;
 
   const actualSortField = config?.fieldMappings?.[sortBy] || sortBy;
-  sort[actualSortField] = sortOrder === 'asc' ? 1 : -1;
+  sort[actualSortField] = direction;
 
   for (const field of config?.secondarySort?.[sortBy] ?? []) {
-    sort[field] = sortOrder === 'asc' ? 1 : -1;
+    sort[field] = direction;
   }
+
+  // Ends on a unique field, so records that tie keep one order from page to page
+  sort['_id'] = direction;
 
   const filter: QueryFilter<T> = {};
 

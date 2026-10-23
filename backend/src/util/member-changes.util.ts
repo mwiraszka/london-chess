@@ -1,5 +1,6 @@
 import { EditableMemberFields } from '../models/member.model';
 import { CLUB_TIME_ZONE } from './club-date.util';
+import { isUnrated } from './rating.util';
 
 type ChangeableField = Exclude<keyof EditableMemberFields, 'modificationInfo'>;
 
@@ -59,6 +60,9 @@ function formatValue(
   }
   if (!value?.trim()) {
     return 'None';
+  }
+  if (RATING_FIELDS.includes(field) && isUnrated(value.trim())) {
+    return 'Unrated';
   }
   return field === 'dateJoined' ? formatDate(value) : value.trim();
 }

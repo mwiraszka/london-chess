@@ -11,7 +11,8 @@ export const FORM_ERROR_MESSAGES: EaErrorMessages = {
   invalidText: 'This contains characters that cannot be saved',
   invalidId: 'Enter a valid 24-character ID',
   invalidOrdinal: 'Enter a whole number from 1 to 99',
-  invalidRating: 'Enter a rating such as 1500, or 1500/7 for a provisional rating',
+  invalidRating:
+    'Enter a rating such as 1500, 1500/7 for a provisional rating, or unrated',
   invalidYearOfBirth: 'Enter a valid year',
   invalidTimeControl: 'Enter a valid time control such as G25, G25+5 or 3 hours',
   invalidRoundCount: 'Enter a whole number of rounds from 1 to 30',

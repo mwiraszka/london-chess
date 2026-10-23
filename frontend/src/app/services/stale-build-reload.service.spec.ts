@@ -90,6 +90,7 @@ describe('StaleBuildReloadService', () => {
       'Failed to fetch dynamically imported module: https://londonchess.ca/chunk-OLD.js',
       'error loading dynamically imported module: https://londonchess.ca/chunk-OLD.js',
       'Importing a module script failed.',
+      "'text/html' is not a valid JavaScript MIME type.",
     ])('should recognise the failure as worded "%s"', async message => {
       importError = new TypeError(message);
       start();

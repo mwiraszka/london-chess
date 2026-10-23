@@ -80,7 +80,7 @@ describe('buildPlayerNameSortPipeline', () => {
     const order = pipeline().map(stage => Object.keys(stage)[0]);
 
     expect(pipeline().find(stage => '$sort' in stage)).toEqual({
-      $sort: { playerSortName: 1, date: -1 },
+      $sort: { playerSortName: 1, date: -1, _id: -1 },
     });
     expect(order.indexOf('$sort')).toBeLessThan(order.indexOf('$limit'));
     expect(order).toContain('$project');
@@ -91,7 +91,7 @@ describe('buildPlayerNameSortPipeline', () => {
       buildPlayerNameSortPipeline({}, 'blackPlayerId', -1, 0, 25).find(
         stage => '$sort' in stage,
       ),
-    ).toEqual({ $sort: { playerSortName: -1, date: -1 } });
+    ).toEqual({ $sort: { playerSortName: -1, date: -1, _id: -1 } });
   });
 
   it('should skip only when a page has been left behind, and take every game without a limit', () => {

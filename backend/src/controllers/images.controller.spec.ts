@@ -9,6 +9,7 @@ import { CombinedImage, Image, ImageModel } from '../models/image.model';
 import { bearer } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import { MODIFICATION_INFO, createAdmin } from '../testing/fixtures';
+import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
 import { StorageCommand, getSignedUrl, send, sentKeys } from '../testing/storage.mock';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
@@ -141,6 +142,17 @@ describe('images routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.items).toHaveLength(1);
       expect(response.body.message).toBe('[IM-2.2] 1 image(s) failed to load');
+    });
+
+    it('should page through images that tie on every sorted field once each, in one order', async () => {
+      const { id, ...image } = imagePayload();
+      for (const _id of INSERTION_ORDER) {
+        await ImageModel.create({ ...image, _id });
+      }
+
+      const ids = await idsPageByPage('/v1/images/thumbnails?sortBy=album&sortOrder=asc');
+
+      expect(ids).toEqual(TIED_IDS.map(String));
     });
 
     it('should respond with a server error when the database fails', async () => {

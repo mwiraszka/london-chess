@@ -31,6 +31,34 @@ test.describe('API', () => {
     expect(data.map(({ id }: { id: string }) => id)).toContain(CHAMPIONSHIP_IMAGES[0].id);
   });
 
+  // Sorts on which several seeded records tie, read a few at a time so ties cross pages
+  for (const path of [
+    '/public/members?sortBy=rating&sortOrder=desc&filter_showInactiveMembers=false',
+    '/public/members?sortBy=city&sortOrder=asc&filter_showInactiveMembers=false',
+    '/games?sortBy=tournament&sortOrder=asc',
+    '/games?sortBy=result&sortOrder=asc',
+    '/games?sortBy=white&sortOrder=asc',
+    '/events?sortBy=type&sortOrder=asc',
+    '/articles?sortBy=bookmarkDate&sortOrder=desc',
+  ]) {
+    test(`lists each record once when paging through ${path}`, async ({ request }) => {
+      const ids: string[] = [];
+      let filteredCount = Infinity;
+      for (let page = 1; ids.length < filteredCount; page++) {
+        const response = await request.get(`${API}${path}&page=${page}&pageSize=3`);
+        const { data } = await response.json();
+        if (!data.items.length) {
+          break;
+        }
+        ids.push(...data.items.map(({ id }: { id: string }) => id));
+        filteredCount = data.filteredCount;
+      }
+
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids).toHaveLength(filteredCount);
+    });
+  }
+
   for (const [method, path] of [
     ['put', '/events/000000000000000000000000'],
     ['put', '/articles/000000000000000000000000'],

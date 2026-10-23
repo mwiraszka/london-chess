@@ -19,6 +19,11 @@ import { clerkClient } from '../services/clerk.service';
 import { sendEmail } from '../services/email.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
+import {
+  linkPlayersToMembers,
+  releasePlayers,
+  unlinkPlayers,
+} from '../services/tournament-players.service';
 import { widestMemberIds } from '../services/widest.service';
 import { clerkErrorCode, clerkErrorMessage } from '../util/clerk-error.util';
 import { buildMemberChangesEmail, buildWelcomeEmail } from '../util/emails.util';
@@ -48,6 +53,7 @@ import {
 import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
+import { isUnratedExpression } from '../util/rating.util';
 import { EMAILS_FROM_SITE_ONLY, siteUrlFor } from '../util/site-url.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
@@ -99,7 +105,7 @@ export function getMembers(scope: Scope) {
       let filteredCount: number;
 
       if (isRatingSort) {
-        const sortOrder = query.sort[sortField];
+        const { [sortField]: sortOrder, ...tiebreakers } = query.sort;
         const numericField = `${sortField}Numeric`;
         const pipeline: PipelineStage[] = [
           { $match: query.filter },
@@ -111,33 +117,40 @@ export function getMembers(scope: Scope) {
                     parts: { $split: [`$${sortField}`, '/'] },
                   },
                   in: {
-                    $add: [
-                      // Base rating as a number
-                      { $toDouble: { $arrayElemAt: ['$$parts', 0] } },
-                      // Add offset based on whether it's provisional and game count
-                      {
-                        $cond: {
-                          if: { $eq: [{ $size: '$$parts' }, 1] },
-                          // Non-provisional: add 0.1 to make it higher than any provisional
-                          // e.g. "1800" -> 1800 + 0.1 = 1800.1
-                          then: 0.1,
-                          // Provisional: add gameCount/1000 (max 999 games = +0.999)
-                          // e.g. "1800/12" -> 1800 + 0.012 = 1800.012
-                          else: {
-                            $divide: [
-                              { $toDouble: { $arrayElemAt: ['$$parts', 1] } },
-                              1000,
-                            ],
+                    $cond: {
+                      // An unrated member sorts below every rated one
+                      if: isUnratedExpression(`$${sortField}`),
+                      then: 0,
+                      else: {
+                        $add: [
+                          // Base rating as a number
+                          { $toDouble: { $arrayElemAt: ['$$parts', 0] } },
+                          // Add offset based on whether it's provisional and game count
+                          {
+                            $cond: {
+                              if: { $eq: [{ $size: '$$parts' }, 1] },
+                              // Non-provisional: add 0.1 to make it higher than any provisional
+                              // e.g. "1800" -> 1800 + 0.1 = 1800.1
+                              then: 0.1,
+                              // Provisional: add gameCount/1000 (max 999 games = +0.999)
+                              // e.g. "1800/12" -> 1800 + 0.012 = 1800.012
+                              else: {
+                                $divide: [
+                                  { $toDouble: { $arrayElemAt: ['$$parts', 1] } },
+                                  1000,
+                                ],
+                              },
+                            },
                           },
-                        },
+                        ],
                       },
-                    ],
+                    },
                   },
                 },
               },
             },
           },
-          { $sort: { [numericField]: sortOrder } },
+          { $sort: { [numericField]: sortOrder, ...tiebreakers } },
           {
             $project:
               scope === 'public' ? PUBLIC_MEMBER_PROJECTION : { [numericField]: 0 },
@@ -287,6 +300,7 @@ export async function addMember(
 
     if (req.query['notify'] !== 'true') {
       const created = await MemberModel.create(member);
+      await linkPlayersToMembers([created._id.toString()]);
       res.status(201).json({ data: toAdminMember(await readMember(created._id)) });
       return;
     }
@@ -389,6 +403,7 @@ export async function updateMember(
       });
     } else {
       await MemberModel.updateOne({ _id: existing._id }, { $set: member });
+      await linkPlayersToMembers([existing._id.toString()]);
       res.status(200).json({ data: toAdminMember(await readMember(existing._id)) });
     }
   } catch (error) {
@@ -467,6 +482,10 @@ export async function updateMembers(
           }
           updatedIds.push(id);
         }
+        await linkPlayersToMembers(
+          members.map(({ id }) => id),
+          session,
+        );
       });
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('NOT_FOUND:')) {
@@ -501,7 +520,11 @@ export async function deleteMember(
     const { id } = req.params;
 
     const existing = isCollectionId(id)
-      ? await MemberModel.findById(id, { account: 1 }).lean<MemberRecord>()
+      ? await MemberModel.findById(id, {
+          account: 1,
+          firstName: 1,
+          lastName: 1,
+        }).lean<MemberRecord>()
       : null;
     if (!existing) {
       res.status(404).json({
@@ -516,7 +539,15 @@ export async function deleteMember(
       return;
     }
 
-    await MemberModel.deleteOne({ _id: id });
+    const session = await MemberModel.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await MemberModel.deleteOne({ _id: id }, { session });
+        await releasePlayers(existing, session);
+      });
+    } finally {
+      await session.endSession();
+    }
 
     res.status(200).json({ data: id });
   } catch (error) {
@@ -604,6 +635,13 @@ async function saveWithNewAccount({
     );
     undoSteps.push(undoSave);
 
+    failedStep = 'link the member to their games and results';
+    const linkedPlayerIds = await linkPlayersToMembers([memberId.toString()]);
+    undoSteps.push([
+      'unlink the member from their games and results',
+      () => unlinkPlayers(linkedPlayerIds),
+    ]);
+
     failedStep = 'assign a member number';
     await assignMemberNumber(memberId.toString());
     const record = await readMember(memberId);
@@ -660,6 +698,13 @@ async function saveForAccountHolder(
       () => MemberModel.replaceOne({ _id: existing._id }, existing),
     ]);
     const record = await readMember(existing._id);
+
+    failedStep = 'link the member to their games and results';
+    const linkedPlayerIds = await linkPlayersToMembers([existing._id.toString()]);
+    undoSteps.push([
+      'unlink the member from their games and results',
+      () => unlinkPlayers(linkedPlayerIds),
+    ]);
 
     const changes = describeMemberChanges(
       existing,

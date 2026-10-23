@@ -22,6 +22,7 @@ const CHUNK_LOAD_FAILURES = [
   'Failed to fetch dynamically imported module', // Chromium
   'error loading dynamically imported module', // Firefox
   'Importing a module script failed', // WebKit
+  'is not a valid JavaScript MIME type', // WebKit, when the site answers a removed file with its page
 ];
 
 const reloadedErrors = new WeakSet<Error>();

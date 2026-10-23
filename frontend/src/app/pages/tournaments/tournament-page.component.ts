@@ -52,6 +52,7 @@ import {
   TournamentSectionSummary,
   TournamentSummary,
 } from '@app/models';
+import { RatingLabelPipe } from '@app/pipes';
 import {
   AdminActionsService,
   AuthDrawerService,
@@ -244,6 +245,7 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
     LoadFailedComponent,
     MemberLinkComponent,
     PageHeaderComponent,
+    RatingLabelPipe,
     RouterLink,
     TextSkeletonComponent,
     TooltipDirective,

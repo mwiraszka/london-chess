@@ -33,7 +33,7 @@ import {
   FORM_ERROR_MESSAGES,
   WEEK_STARTS_ON,
 } from '@app/constants/forms';
-import { MEMBER_DETAIL_RULES } from '@app/constants/member-details';
+import { MEMBER_DETAIL_RULES, UNRATED } from '@app/constants/member-details';
 import {
   Dialog,
   Id,
@@ -139,6 +139,10 @@ export class MemberFormComponent implements OnInit {
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.syncNotifyMember());
+
+    this.form.controls.rating.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.normalizeRatingField());
 
     if (this.hasUnsavedChanges()) {
       this.form.markAllAsTouched();
@@ -306,6 +310,13 @@ export class MemberFormComponent implements OnInit {
       instant => !!instant && toDayString(toClubDateTime(instant).day) === pickedDay,
     );
     return savedInstant ?? fromClubDateTime(day, '00:00');
+  }
+
+  private normalizeRatingField(): void {
+    const { rating } = this.form.controls;
+    if (rating.value !== UNRATED && rating.value.toLowerCase() === UNRATED) {
+      rating.setValue(UNRATED);
+    }
   }
 
   private normalizePhoneNumberField(): void {

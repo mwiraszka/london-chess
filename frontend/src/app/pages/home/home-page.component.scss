@@ -68,8 +68,15 @@
         max-height: 410px;
         padding-right: 4px;
 
+        // Phones show the next three dates in full rather than scrolling within the card
         @include respond-to('lt-md') {
-          max-height: 250px;
+          overflow-y: visible;
+          max-height: none;
+          padding-right: 0;
+
+          ::ng-deep .ea-data-table__body > .ea-data-table__row:nth-child(n + 4) {
+            display: none;
+          }
         }
 
         // Beside the welcome card the row takes that card's height, and the table fills

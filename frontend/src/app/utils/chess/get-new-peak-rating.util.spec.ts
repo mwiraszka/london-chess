@@ -14,4 +14,10 @@ describe('getNewPeakRating', () => {
     expect(getNewPeakRating('1000/5', '1200/5')).toBe('1200/5');
     expect(getNewPeakRating('1000/5', '800/5')).toBe('1000/5');
   });
+
+  it('takes any rating over an unrated peak, and keeps the peak while unrated', () => {
+    expect(getNewPeakRating('1150/3', 'unrated')).toBe('1150/3');
+    expect(getNewPeakRating('900/3', '1000/0')).toBe('900/3');
+    expect(getNewPeakRating('unrated', '1500')).toBe('1500');
+  });
 });

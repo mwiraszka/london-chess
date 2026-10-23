@@ -3,8 +3,10 @@ import { Types } from 'mongoose';
 import request from 'supertest';
 
 import { app } from '../app';
+import { Id } from '../models/core.model';
 import { CounterModel } from '../models/counter.model';
 import { MemberModel } from '../models/member.model';
+import { PlayerModel } from '../models/player.model';
 import { sendEmail } from '../services/email.service';
 import { bearer, clerkClient } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
@@ -17,6 +19,7 @@ import {
   readMember,
   startMemberNumbers,
 } from '../testing/fixtures';
+import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
 import { AdminMember, PublicMember } from '../util/member-responses.util';
 
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
@@ -34,6 +37,10 @@ function clerkError(code: string, longMessage: string): ClerkAPIResponseError {
     status: 422,
     data: [{ code, message: longMessage, long_message: longMessage, meta: {} }],
   });
+}
+
+async function linkedMemberId(player: { _id: Types.ObjectId }): Promise<Id | null> {
+  return (await PlayerModel.findById(player._id).lean())?.memberId ?? null;
 }
 
 describe('members routes', () => {
@@ -67,6 +74,42 @@ describe('members routes', () => {
       ).toEqual(['Higher', 'Established', 'Provisional']);
       expect(response.body.data.items[0]).not.toHaveProperty('email');
       expect(response.body.data.filteredCount).toBe(4);
+    });
+
+    it('should sort unrated members below every rated one', async () => {
+      await createMember({ lastName: 'Unrated', rating: 'unrated' });
+      await createMember({ lastName: 'Unplayed', rating: '1000/0' });
+      await createMember({ lastName: 'Provisional', rating: '800/1' });
+      await createMember({ lastName: 'Established', rating: '700' });
+
+      const response = await request(app).get(
+        '/v1/public/members?sortBy=rating&sortOrder=desc&page=1&pageSize=2',
+      );
+
+      expect(
+        response.body.data.items.map((member: PublicMember) => member.lastName),
+      ).toEqual(['Provisional', 'Established']);
+      expect(response.body.data.filteredCount).toBe(4);
+    });
+
+    it('should page through members who share a rating once each, in one order', async () => {
+      for (const _id of INSERTION_ORDER) {
+        await createMember({ _id, rating: '1622' });
+      }
+
+      const ids = await idsPageByPage('/v1/public/members?sortBy=rating&sortOrder=desc');
+
+      expect(ids).toEqual([...TIED_IDS].reverse().map(String));
+    });
+
+    it('should page through members who share a city once each, in one order', async () => {
+      for (const _id of INSERTION_ORDER) {
+        await createMember({ _id, city: 'London' });
+      }
+
+      const ids = await idsPageByPage('/v1/public/members?sortBy=city&sortOrder=asc');
+
+      expect(ids).toEqual(TIED_IDS.map(String));
     });
 
     it('should leave out inactive members when asked', async () => {
@@ -277,6 +320,19 @@ describe('members routes', () => {
       expect(clerkClient.users.createUser).not.toHaveBeenCalled();
     });
 
+    it('should link the new member to the players carrying their name', async () => {
+      await createAdmin(ADMIN);
+      const player = await PlayerModel.create({ firstName: 'Jane', lastName: 'Doe' });
+
+      const response = await request(app)
+        .post('/v1/admin/members')
+        .set('Authorization', bearer(ADMIN))
+        .send(memberFields());
+
+      expect(response.status).toBe(201);
+      expect(await linkedMemberId(player)).toBe(response.body.data.id);
+    });
+
     it('should reject an invalid member', async () => {
       await createAdmin(ADMIN);
 
@@ -305,6 +361,7 @@ describe('members routes', () => {
     it('should create an account, number the member and email their login details', async () => {
       await createAdmin(ADMIN);
       await startMemberNumbers(120);
+      const player = await PlayerModel.create({ firstName: 'Jane', lastName: 'Doe' });
 
       const response = await request(app)
         .post('/v1/admin/members?notify=true')
@@ -314,6 +371,7 @@ describe('members routes', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.data).toMatchObject({ number: 120, hasAccount: true });
+      expect(await linkedMemberId(player)).toBe(response.body.data.id);
       const saved = await readMember(response.body.data.id);
       expect(saved.account?.clerkUserId).toBe('user_new');
       expect(saved.account?.temporaryPasswordHash).toMatch(/^[a-f\d]{64}$/);
@@ -380,6 +438,7 @@ describe('members routes', () => {
     it('should undo the account and the record when the welcome email fails', async () => {
       await createAdmin(ADMIN);
       await startMemberNumbers(12);
+      const player = await PlayerModel.create({ firstName: 'Jane', lastName: 'Doe' });
       vi.mocked(sendEmail).mockRejectedValue(new Error('SMTP down'));
 
       const response = await request(app)
@@ -394,6 +453,7 @@ describe('members routes', () => {
       );
       expect(clerkClient.users.deleteUser).toHaveBeenCalledWith('user_new');
       expect(await MemberModel.countDocuments()).toBe(1);
+      expect(await linkedMemberId(player)).toBeNull();
     });
 
     it('should name what could not be undone when a number cannot be assigned', async () => {
@@ -432,6 +492,20 @@ describe('members routes', () => {
         lastEditedBy: 'Ada Admin',
       });
       expect(sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('should link a renamed member to the players carrying their new name', async () => {
+      await createAdmin(ADMIN);
+      const member = await createMember();
+      const player = await PlayerModel.create({ firstName: 'Janet', lastName: 'Doe' });
+
+      const response = await request(app)
+        .put(`/v1/admin/members/${member._id}`)
+        .set('Authorization', bearer(ADMIN))
+        .send(memberFields({ firstName: 'Janet' }));
+
+      expect(response.status).toBe(200);
+      expect(await linkedMemberId(player)).toBe(member._id.toString());
     });
 
     it('should reject an invalid member or an unknown id', async () => {
@@ -483,6 +557,7 @@ describe('members routes', () => {
     it('should rename an account holder in Clerk and email them the changes', async () => {
       await createAdmin(ADMIN);
       const member = await createMember({ number: 5, account: memberAccount() });
+      const player = await PlayerModel.create({ firstName: 'Janet', lastName: 'Doe' });
 
       const response = await request(app)
         .put(`/v1/admin/members/${member._id}?notify=true`)
@@ -496,6 +571,7 @@ describe('members routes', () => {
         lastName: 'Doe',
       });
       expect((await readMember(member._id)).firstName).toBe('Janet');
+      expect(await linkedMemberId(player)).toBe(member._id.toString());
       expect(sendEmail).toHaveBeenCalledWith(
         'jane@example.com',
         expect.objectContaining({ text: expect.stringContaining(`${SITE}/members/5`) }),
@@ -553,6 +629,7 @@ describe('members routes', () => {
     it("should put back the account holder's record and Clerk name when the email fails", async () => {
       await createAdmin(ADMIN);
       const member = await createMember({ number: 5, account: memberAccount() });
+      const player = await PlayerModel.create({ firstName: 'Janet', lastName: 'Doe' });
       vi.mocked(sendEmail).mockRejectedValue(new Error('SMTP down'));
 
       const response = await request(app)
@@ -570,6 +647,7 @@ describe('members routes', () => {
         firstName: 'Jane',
         lastName: 'Doe',
       });
+      expect(await linkedMemberId(player)).toBeNull();
     });
 
     it('should give a member without an account one when notified', async () => {
@@ -701,6 +779,20 @@ describe('members routes', () => {
       );
     });
 
+    it('should link renamed members to the players carrying their new name', async () => {
+      await createAdmin(ADMIN);
+      const member = await createMember();
+      const player = await PlayerModel.create({ firstName: 'Janet', lastName: 'Doe' });
+
+      const response = await request(app)
+        .put('/v1/admin/members')
+        .set('Authorization', bearer(ADMIN))
+        .send([{ ...memberFields({ firstName: 'Janet' }), id: member._id.toString() }]);
+
+      expect(response.status).toBe(200);
+      expect(await linkedMemberId(player)).toBe(member._id.toString());
+    });
+
     it('should not email account holders who turned off rating emails', async () => {
       await createAdmin(ADMIN);
       const holder = await createMember({
@@ -809,6 +901,43 @@ describe('members routes', () => {
 
       expect(response.status).toBe(200);
       expect(await MemberModel.exists({ _id: member._id })).toBeNull();
+    });
+
+    it('should unlink the players of a deleted member', async () => {
+      await createAdmin(ADMIN);
+      const member = await createMember();
+      const player = await PlayerModel.create({
+        firstName: 'Jane',
+        lastName: 'Doe',
+        memberId: member._id.toString(),
+      });
+
+      const response = await request(app)
+        .delete(`/v1/admin/members/${member._id}`)
+        .set('Authorization', bearer(ADMIN));
+
+      expect(response.status).toBe(200);
+      expect(await linkedMemberId(player)).toBeNull();
+    });
+
+    it('should link the players of a deleted member to the one left with their name', async () => {
+      await createAdmin(ADMIN);
+      const removed = await createMember();
+      const kept = await createMember();
+      const linked = await PlayerModel.create({
+        firstName: 'Jane',
+        lastName: 'Doe',
+        memberId: removed._id.toString(),
+      });
+      const shared = await PlayerModel.create({ firstName: 'Jane', lastName: 'Doe' });
+
+      const response = await request(app)
+        .delete(`/v1/admin/members/${removed._id}`)
+        .set('Authorization', bearer(ADMIN));
+
+      expect(response.status).toBe(200);
+      expect(await linkedMemberId(linked)).toBe(kept._id.toString());
+      expect(await linkedMemberId(shared)).toBe(kept._id.toString());
     });
 
     it('should keep a member with an account', async () => {
