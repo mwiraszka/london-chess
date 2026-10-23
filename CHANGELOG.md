@@ -10,12 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Show members who have not played a rated game yet as unrated, listed below every rated member
+- Update third-party packages
 
 ### Fixed
 
 - Link a member's tournament results and games to their profile automatically, whether the member or the results were added to the site first
 - Open the latest version of the site after an update on iPhones, iPads and in Safari too, so links in a tab left open from an earlier visit no longer stop working
 - List every member and game once when paging through the site's tables, where two that shared a rating or date could appear on both pages while another was skipped (thanks Ethan!)
+- Fit the home page's upcoming events on phones, showing the next three in full instead of a small box that scrolled both ways
 
 ## [v6.5.8] - 2026-10-22
 
