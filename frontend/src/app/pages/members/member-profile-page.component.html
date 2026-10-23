@@ -67,7 +67,7 @@
 
               <div class="rating">
                 <span class="rating__label">London &amp; Region chess rating</span>
-                <span class="rating__value">{{ member.rating }}</span>
+                <span class="rating__value">{{ member.rating | ratingLabel }}</span>
               </div>
             </div>
 
@@ -76,7 +76,7 @@
                 <dl class="stats__pair">
                   <div class="stat">
                     <dt class="stat__label">Peak rating</dt>
-                    <dd class="stat__value">{{ member.peakRating }}</dd>
+                    <dd class="stat__value">{{ member.peakRating | ratingLabel }}</dd>
                   </div>
                   @if (member.city) {
                     <div class="stat">

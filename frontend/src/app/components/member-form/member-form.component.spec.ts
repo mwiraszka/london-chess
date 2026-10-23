@@ -279,6 +279,17 @@ describe('MemberFormComponent', () => {
       expect(component.form.controls.rating.hasError('invalidRating')).toBe(true);
     });
 
+    it('should turn unrated typed in any case into unrated', () => {
+      component.form.controls.rating.setValue('UNRATED');
+      const shouted = component.form.controls.rating.value;
+
+      component.form.controls.rating.setValue('Unrated');
+
+      expect(shouted).toBe('unrated');
+      expect(component.form.controls.rating.value).toBe('unrated');
+      expect(component.form.controls.rating.valid).toBe(true);
+    });
+
     it('should accept the phone numbers and usernames members can save on their account', () => {
       component.form.patchValue({
         phoneNumber: '(519) 555-1234',

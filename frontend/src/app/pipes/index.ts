@@ -4,6 +4,7 @@ export { HighlightPipe } from './highlight.pipe';
 export { IsDefinedPipe } from './is-defined.pipe';
 export { KebabCasePipe } from './kebab-case.pipe';
 export { RangePipe } from './range.pipe';
+export { RatingLabelPipe } from './rating-label.pipe';
 export { RouterLinkPipe } from './router-link.pipe';
 export { SummarizeArticlePipe } from './summarize-article.pipe';
 export { TruncateByCharsPipe } from './truncate-by-chars.pipe';

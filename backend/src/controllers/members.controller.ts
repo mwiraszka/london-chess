@@ -53,6 +53,7 @@ import {
 import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
+import { isUnratedExpression } from '../util/rating.util';
 import { EMAILS_FROM_SITE_ONLY, siteUrlFor } from '../util/site-url.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
@@ -116,27 +117,34 @@ export function getMembers(scope: Scope) {
                     parts: { $split: [`$${sortField}`, '/'] },
                   },
                   in: {
-                    $add: [
-                      // Base rating as a number
-                      { $toDouble: { $arrayElemAt: ['$$parts', 0] } },
-                      // Add offset based on whether it's provisional and game count
-                      {
-                        $cond: {
-                          if: { $eq: [{ $size: '$$parts' }, 1] },
-                          // Non-provisional: add 0.1 to make it higher than any provisional
-                          // e.g. "1800" -> 1800 + 0.1 = 1800.1
-                          then: 0.1,
-                          // Provisional: add gameCount/1000 (max 999 games = +0.999)
-                          // e.g. "1800/12" -> 1800 + 0.012 = 1800.012
-                          else: {
-                            $divide: [
-                              { $toDouble: { $arrayElemAt: ['$$parts', 1] } },
-                              1000,
-                            ],
+                    $cond: {
+                      // An unrated member sorts below every rated one
+                      if: isUnratedExpression(`$${sortField}`),
+                      then: 0,
+                      else: {
+                        $add: [
+                          // Base rating as a number
+                          { $toDouble: { $arrayElemAt: ['$$parts', 0] } },
+                          // Add offset based on whether it's provisional and game count
+                          {
+                            $cond: {
+                              if: { $eq: [{ $size: '$$parts' }, 1] },
+                              // Non-provisional: add 0.1 to make it higher than any provisional
+                              // e.g. "1800" -> 1800 + 0.1 = 1800.1
+                              then: 0.1,
+                              // Provisional: add gameCount/1000 (max 999 games = +0.999)
+                              // e.g. "1800/12" -> 1800 + 0.012 = 1800.012
+                              else: {
+                                $divide: [
+                                  { $toDouble: { $arrayElemAt: ['$$parts', 1] } },
+                                  1000,
+                                ],
+                              },
+                            },
                           },
-                        },
+                        ],
                       },
-                    ],
+                    },
                   },
                 },
               },

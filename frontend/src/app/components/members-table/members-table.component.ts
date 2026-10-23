@@ -27,7 +27,7 @@ import { DataTableComponent } from '@app/components/data-table/data-table.compon
 import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
 import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
-import { FormatDatePipe, HighlightPipe } from '@app/pipes';
+import { FormatDatePipe, HighlightPipe, RatingLabelPipe } from '@app/pipes';
 import { DeletionService } from '@app/services';
 import { isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
 
@@ -88,6 +88,7 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
     HighlightPipe,
     NgTemplateOutlet,
     PaginatorComponent,
+    RatingLabelPipe,
     RouterLink,
     SafeModeNoticeComponent,
     TooltipDirective,

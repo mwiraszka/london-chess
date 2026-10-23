@@ -98,7 +98,9 @@
                   <lcc-member-link
                     [memberNumber]="registrant.memberNumber"
                     [name]="registrant.firstName + ' ' + registrant.lastName" />
-                  <span class="registration__rating">{{ registrant.rating }}</span>
+                  <span class="registration__rating">
+                    {{ registrant.rating | ratingLabel }}
+                  </span>
                 </li>
               }
             </ol>

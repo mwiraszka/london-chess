@@ -10,6 +10,9 @@ describe('ratingValidator', () => {
   it('returns `null` if valid', () => {
     expect(getErrorForValue('1')).toBeFalsy();
     expect(getErrorForValue('9999')).toBeFalsy();
+    expect(getErrorForValue('1500/7')).toBeFalsy();
+    expect(getErrorForValue('1000/0')).toBeFalsy();
+    expect(getErrorForValue('unrated')).toBeFalsy();
   });
 
   it('returns `invalidRating` error if invalid', () => {
@@ -17,6 +20,7 @@ describe('ratingValidator', () => {
 
     expect(getErrorForValue('0')).toEqual(error);
     expect(getErrorForValue('10000')).toEqual(error);
+    expect(getErrorForValue('Unrated')).toEqual(error);
   });
 });
 

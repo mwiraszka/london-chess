@@ -1,7 +1,16 @@
+import { isUnrated } from './is-unrated.util';
+
 /**
  * Return new peak Elo rating based on current rating and current peak rating.
  */
 export function getNewPeakRating(rating: string, peakRating: string): string {
+  if (isUnrated(rating)) {
+    return peakRating;
+  }
+  if (isUnrated(peakRating)) {
+    return rating;
+  }
+
   const [_rating, provisionalRatingCount] = rating.split('/');
   const [_peakRating, provisionalPeakRatingCount] = peakRating.split('/');
 

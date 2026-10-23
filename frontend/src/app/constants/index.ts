@@ -8,6 +8,7 @@ import {
 import moment from '@app/utils/datetime/moment';
 
 import { CLUB_TIME_ZONE } from './clubs';
+import { UNRATED } from './member-details';
 
 export const ARTICLE_FORM_DATA_PROPERTIES = ['title', 'body', 'bannerImageId'] as const;
 
@@ -105,7 +106,7 @@ export function initialMemberFormData(): MemberFormData {
     firstName: '',
     lastName: '',
     city: 'London',
-    rating: '1000/0',
+    rating: UNRATED,
     peakRating: '',
     dateJoined: moment().toISOString(),
     isActive: true,

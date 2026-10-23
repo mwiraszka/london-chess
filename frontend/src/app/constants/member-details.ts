@@ -1,5 +1,8 @@
 export const MIN_YEAR_OF_BIRTH = 1900;
 
+// Must match UNRATED in the backend's rating util
+export const UNRATED = 'unrated';
+
 // Must match MEMBER_DETAIL_RULES in the backend's users controller
 export const MEMBER_DETAIL_RULES = {
   phoneNumber: {

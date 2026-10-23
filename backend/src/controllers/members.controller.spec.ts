@@ -75,6 +75,22 @@ describe('members routes', () => {
       expect(response.body.data.filteredCount).toBe(4);
     });
 
+    it('should sort unrated members below every rated one', async () => {
+      await createMember({ lastName: 'Unrated', rating: 'unrated' });
+      await createMember({ lastName: 'Unplayed', rating: '1000/0' });
+      await createMember({ lastName: 'Provisional', rating: '800/1' });
+      await createMember({ lastName: 'Established', rating: '700' });
+
+      const response = await request(app).get(
+        '/v1/public/members?sortBy=rating&sortOrder=desc&page=1&pageSize=2',
+      );
+
+      expect(
+        response.body.data.items.map((member: PublicMember) => member.lastName),
+      ).toEqual(['Provisional', 'Established']);
+      expect(response.body.data.filteredCount).toBe(4);
+    });
+
     it('should leave out inactive members when asked', async () => {
       await createMember({ lastName: 'Active' });
       await createMember({ lastName: 'Inactive', isActive: false });
