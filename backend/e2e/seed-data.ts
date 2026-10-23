@@ -182,7 +182,12 @@ const OTHER_MEMBER_NAMES: [string, string, string, boolean][] = [
   ['Ulla', 'Varga', '1250', false],
   ['Wendell', 'Yarrow', '1709', true],
   ['Zora', 'Abernathy', '1441', true],
+  // Tied with Bram Okafor at 10th to 12th by rating, across the break after the first ten
+  ['Tobias', 'Wren', '1655', true],
+  ['Vera', 'Ostrand', '1655', true],
 ];
+
+export const TIED_RATING = '1655';
 
 export const OTHER_MEMBERS: SeedMember[] = OTHER_MEMBER_NAMES.map(
   ([firstName, lastName, rating, isActive]) => ({

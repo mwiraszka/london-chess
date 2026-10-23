@@ -6,6 +6,7 @@ import {
   OTHER_MEMBERS,
   PROFILE_MEMBER,
   RIVAL_MEMBER,
+  TIED_RATING,
 } from './seed';
 import { flipSwitch } from './switches';
 import { bodyRows } from './tables';
@@ -45,6 +46,45 @@ test.describe('members', () => {
 
     await expect(page.locator('ea-paginator')).toContainText(/11–\d+ of \d+/);
     await expect(memberRows(page).first()).not.toHaveText(firstPage[0]);
+  });
+
+  test('lists members who share a rating once each across pages', async ({ page }) => {
+    const tied = OTHER_MEMBERS.filter(member => member.rating === TIED_RATING).map(
+      member => `${member.firstName} ${member.lastName}`,
+    );
+    const tiedRows = (rows: string[]) =>
+      rows.filter(row => tied.some(name => row.includes(name)));
+    const placeholders = page
+      .getByRole('table', { name: 'Members' })
+      .locator('.ea-data-table__row--placeholder');
+    const membersPage = (number: number) =>
+      page.waitForResponse(
+        response =>
+          response.url().includes('/public/members?') &&
+          response.url().includes(`page=${number}&pageSize=10`),
+      );
+    await page.goto('/members');
+    const firstResponse = membersPage(1);
+    await page.getByRole('combobox', { name: 'Rows per page:' }).selectOption('10');
+    await firstResponse;
+    await expect(placeholders).toHaveCount(0);
+    await expect(memberRows(page)).toHaveCount(10);
+    const firstPage = await memberRows(page).allTextContents();
+    const secondResponse = membersPage(2);
+
+    await page.getByRole('button', { name: 'Go to page 2' }).click();
+
+    await secondResponse;
+    await expect(placeholders).toHaveCount(0);
+    await expect(memberRows(page).first()).not.toHaveText(firstPage[0]);
+    const secondPage = await memberRows(page).allTextContents();
+    expect(tiedRows(firstPage)).not.toHaveLength(0);
+    expect(tiedRows(secondPage)).not.toHaveLength(0);
+    for (const name of tied) {
+      expect(
+        [...firstPage, ...secondPage].filter(row => row.includes(name)),
+      ).toHaveLength(1);
+    }
   });
 
   test('finds members by name and city', async ({ page }) => {

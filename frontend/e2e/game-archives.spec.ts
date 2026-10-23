@@ -122,6 +122,41 @@ test.describe('game archives', () => {
     expect(descending).toEqual([...descending].sort((a, b) => b - a));
   });
 
+  // Games of one round share their event, day and round, and the seed puts such a tie
+  // across the break after the first 25 in either order
+  for (const order of ['asc', 'desc'] as const) {
+    test(`lists each game once across pages when sorted by event, ${order}`, async ({
+      page,
+    }) => {
+      const placeholders = page.locator('.games .ea-data-table__row--placeholder');
+      const gameLinks = () =>
+        rows(page).evaluateAll(cells =>
+          cells.map(row => row.querySelector('a')?.getAttribute('href') ?? ''),
+        );
+      await page.goto(`/game-archives?sort=tournament&order=${order}`);
+      await expect(placeholders).toHaveCount(0);
+      await expect(rows(page)).toHaveCount(25);
+      const firstPage = await gameLinks();
+      const nextPage = page.waitForResponse(
+        response => GAMES_PAGE.test(response.url()) && response.url().includes('page=2&'),
+      );
+
+      await page.getByRole('button', { name: 'Go to page 2' }).click();
+
+      await nextPage;
+      await expect(placeholders).toHaveCount(0);
+      await expect(page.locator('.games .ea-paginator__range')).toContainText(/26–\d+/);
+      await expect(rows(page).first().locator('a').first()).not.toHaveAttribute(
+        'href',
+        firstPage[0],
+      );
+      const secondPage = await gameLinks();
+      expect(new Set([...firstPage, ...secondPage]).size).toBe(
+        firstPage.length + secondPage.length,
+      );
+    });
+  }
+
   test('opens on the filter and order a link asks for', async ({ page }) => {
     await page.goto('/game-archives?result=0-1&sort=moves&order=asc');
 
