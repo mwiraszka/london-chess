@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.5.10] - 2026-10-23
+
+### Changed
+
+- Open a tournament from the details card under a member's trophy as well as from its name, and light up a chosen trophy straight away
+
 ## [v6.5.9] - 2026-10-23
 
 ### Changed
@@ -2142,6 +2148,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.5.10]: https://github.com/mwiraszka/london-chess/compare/v6.5.9...v6.5.10
 [v6.5.9]: https://github.com/mwiraszka/london-chess/compare/v6.5.8...v6.5.9
 [v6.5.8]: https://github.com/mwiraszka/london-chess/compare/v6.5.7...v6.5.8
 [v6.5.7]: https://github.com/mwiraszka/london-chess/compare/v6.5.6...v6.5.7
