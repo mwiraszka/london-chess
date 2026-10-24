@@ -128,6 +128,12 @@ $narrow-scale: 0.75;
   }
 }
 
+// Tinted and lifted like the article cards, since it leads to the tournament too
+.details__card:hover .details__facts {
+  box-shadow: var(--shadow-md);
+  background-color: var(--lcc-card-hover);
+}
+
 .fact {
   display: flex;
   flex-direction: column;

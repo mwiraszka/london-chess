@@ -37,24 +37,30 @@
             {{ entry.tournament }}
           </a>
         </p>
-        <dl class="details__facts">
-          <div class="fact">
-            <dt class="fact__label">Date(s)</dt>
-            <dd class="fact__value">{{ entry.dateLabel }}</dd>
-          </div>
-          <div class="fact">
-            <dt class="fact__label">Format</dt>
-            <dd class="fact__value">{{ entry.format }}</dd>
-          </div>
-          <div class="fact">
-            <dt class="fact__label">Time control</dt>
-            <dd class="fact__value">{{ entry.timeControl }}</dd>
-          </div>
-          <div class="fact">
-            <dt class="fact__label">Score</dt>
-            <dd class="fact__value">{{ entry.scoreLabel }}</dd>
-          </div>
-        </dl>
+        <!-- The tournament's name above is the keyboard's way there, so the card takes no tab stop -->
+        <a
+          class="details__card"
+          tabindex="-1"
+          [routerLink]="['/tournaments', entry.result.tournament.number]">
+          <dl class="details__facts">
+            <div class="fact">
+              <dt class="fact__label">Date(s)</dt>
+              <dd class="fact__value">{{ entry.dateLabel }}</dd>
+            </div>
+            <div class="fact">
+              <dt class="fact__label">Format</dt>
+              <dd class="fact__value">{{ entry.format }}</dd>
+            </div>
+            <div class="fact">
+              <dt class="fact__label">Time control</dt>
+              <dd class="fact__value">{{ entry.timeControl }}</dd>
+            </div>
+            <div class="fact">
+              <dt class="fact__label">Score</dt>
+              <dd class="fact__value">{{ entry.scoreLabel }}</dd>
+            </div>
+          </dl>
+        </a>
       }
     </div>
   </section>

@@ -79,6 +79,15 @@ describe('MemberHighlightsComponent', () => {
       ]);
     });
 
+    it('should lead from the facts card to the tournament, leaving the tab stop to its name', () => {
+      trophies()[1].triggerEventHandler('click');
+      fixture.detectChanges();
+
+      const card = query(fixture.debugElement, '.details__card');
+      expect(card.attributes['href']).toBe('/tournaments/90');
+      expect(card.attributes['tabindex']).toBe('-1');
+    });
+
     it('should move the light to the next trophy selected', () => {
       trophies()[1].triggerEventHandler('click');
       fixture.detectChanges();

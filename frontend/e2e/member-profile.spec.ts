@@ -93,6 +93,15 @@ test.describe('member profile', () => {
     await expect(page).toHaveURL(new RegExp(`/tournaments/${BLITZ.number}$`));
   });
 
+  test("opens the tournament from a selected trophy's card", async ({ page }) => {
+    const highlights = page.getByRole('region', { name: 'Highlights' });
+    await highlights.getByRole('button', { name: /^Gold chalice trophy/ }).click();
+
+    await highlights.getByRole('term').filter({ hasText: 'Score' }).click();
+
+    await expect(page).toHaveURL(new RegExp(`/tournaments/${BLITZ.number}$`));
+  });
+
   test('lists every tournament played, including a match', async ({ page }) => {
     const table = page.getByRole('table', { name: 'Tournaments played' });
     const rows = bodyRows(table);
