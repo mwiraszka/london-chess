@@ -39,10 +39,8 @@ $narrow-scale: 0.75;
   border-radius: var(--radius-sm);
   background: none;
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    filter 0.2s ease,
-    border-color 0.2s ease;
+  // Only the size eases, so a selected trophy lights up at once
+  transition: transform 0.2s ease;
 
   &:hover {
     transform: scale(1.04);
