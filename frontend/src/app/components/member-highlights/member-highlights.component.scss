@@ -39,10 +39,8 @@ $narrow-scale: 0.75;
   border-radius: var(--radius-sm);
   background: none;
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    filter 0.2s ease,
-    border-color 0.2s ease;
+  // Only the size eases, so a selected trophy lights up at once
+  transition: transform 0.2s ease;
 
   &:hover {
     transform: scale(1.04);
@@ -126,6 +124,12 @@ $narrow-scale: 0.75;
     padding: 12px 16px;
     text-align: start;
   }
+}
+
+// Tinted and lifted like the article cards, since it leads to the tournament too
+.details__card:hover .details__facts {
+  box-shadow: var(--shadow-md);
+  background-color: var(--lcc-card-hover);
 }
 
 .fact {
