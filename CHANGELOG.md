@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Open a tournament from the details card under a member's trophy as well as from its name, and light up a chosen trophy straight away
+- Light up a chosen trophy on a member's profile straight away, and open its tournament from the details card below it as well as from its name (thanks, Nick!)
 
 ## [v6.5.9] - 2026-10-23
 
@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Link a member's tournament results and games to their profile automatically, whether the member or the results were added to the site first
 - Open the latest version of the site after an update on iPhones, iPads and in Safari too, so links in a tab left open from an earlier visit no longer stop working
-- List every member and game once when paging through the site's tables, where two that shared a rating or date could appear on both pages while another was skipped (thanks Ethan!)
+- List every member and game once when paging through the site's tables, where two that shared a rating or date could appear on both pages while another was skipped (thanks, Ethan!)
 - Fit the home page's upcoming events on phones, showing the next three in full instead of a small box that scrolled both ways
 
 ## [v6.5.8] - 2026-10-22
