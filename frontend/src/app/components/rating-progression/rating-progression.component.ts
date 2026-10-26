@@ -83,8 +83,10 @@ export class RatingProgressionComponent {
         byTournament.set(result.tournament.number, result);
       }
     }
-    return [...byTournament.values()].sort((a, b) =>
-      a.tournament.date.localeCompare(b.tournament.date),
+    return [...byTournament.values()].sort(
+      (a, b) =>
+        a.tournament.date.localeCompare(b.tournament.date) ||
+        a.tournament.number - b.tournament.number,
     );
   });
 
