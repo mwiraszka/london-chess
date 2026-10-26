@@ -1,4 +1,5 @@
 import { provideEagamiUi } from '@eagami/ui';
+import { isStaleBuildReloadError, provideStaleBuildReload } from '@eagami/ui/router';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreRouterConnectingModule } from '@ngrx/router-store';
 import { Action, StoreModule } from '@ngrx/store';
@@ -26,13 +27,7 @@ import {
   PendingRequestsInterceptorProvider,
   TimeoutInterceptorProvider,
 } from '@app/interceptors';
-import {
-  BrandService,
-  ClerkService,
-  StaleBuildReloadService,
-  UserService,
-  isReloadedError,
-} from '@app/services';
+import { BrandService, ClerkService, UserService } from '@app/services';
 import { AppStoreModule } from '@app/store/app';
 import { ArticlesStoreModule } from '@app/store/articles';
 import { AuthStoreModule } from '@app/store/auth';
@@ -47,6 +42,7 @@ import { TournamentsStoreModule } from '@app/store/tournaments';
 
 import { environment } from '@env';
 
+import { version } from '../package.json';
 import { AppComponent } from './app/app.component';
 
 if (environment.production) {
@@ -61,7 +57,8 @@ Sentry.init({
   // Raised by browser extensions running on the page, not by the app
   ignoreErrors: [/runtime\.sendMessage/, /Extension context invalidated/],
   // Taken care of by loading the current build, and reported once settled as a log
-  beforeSend: (event, hint) => (isReloadedError(hint.originalException) ? null : event),
+  beforeSend: (event, hint) =>
+    isStaleBuildReloadError(hint.originalException) ? null : event,
   denyUrls: [
     /^chrome-extension:\/\//,
     /^moz-extension:\/\//,
@@ -101,14 +98,22 @@ bootstrapApplication(AppComponent, {
       withComponentInputBinding(),
       withRouterConfig({ onSameUrlNavigation: 'reload' }),
     ),
+    provideStaleBuildReload({
+      version,
+      onReport: ({ outcome, route, fromVersion, toVersion }) =>
+        Sentry.logger.info('Stale build reload', {
+          outcome,
+          route,
+          from_version: fromVersion,
+          to_version: toVersion,
+        }),
+    }),
     provideHttpClient(withXhr(), withInterceptorsFromDi()),
     provideEagamiUi({ forms: { showErrorsOn: 'blur' } }),
     provideAppInitializer(() => {
       // Instantiate UserService so its login effect starts and the user record
       // is available app-wide once Clerk reports the session.
       inject(UserService);
-      // Created ahead of the first navigation, which a tab restored on an old build can fail
-      inject(StaleBuildReloadService);
       // Not awaited, so the first page renders while Clerk loads behind it
       inject(ClerkService)
         .load()
