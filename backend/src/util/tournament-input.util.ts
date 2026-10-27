@@ -75,6 +75,9 @@ const MAX_RATING = 3500;
 const SCORES = [0, 0.5, 1];
 const ID_PATTERN = /^[a-fA-F0-9]{24}$/;
 const TIME_CONTROL_PATTERN = /^(?:G[1-9]\d{0,2}(?:\+\d{1,2})?|[1-9]\d? hours?)$/;
+// A move in algebraic notation, such as e4, exd5, Nbd7, e8=Q+ or O-O-O
+const SAN_MOVE =
+  /^(?:[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|[a-h](?:x[a-h])?[1-8](?:=?[QRBN])?|O-O(?:-O)?)[+#]?[!?]*$/;
 
 // A day that does not exist, such as February 30, parses as a later one or not at all
 function isDay(value: string): boolean {
@@ -91,6 +94,12 @@ const isInstant = (value: string): boolean =>
 
 const isWholeNumber = (value: number, min: number, max: number): boolean =>
   Number.isInteger(value) && value >= min && value <= max;
+
+const hasMove = (moves: string): boolean =>
+  moves
+    .replace(/\{[^}]*\}/g, ' ')
+    .split(/[\s.()]+/)
+    .some(token => SAN_MOVE.test(token));
 
 const isHalfPoints = (value: number): boolean =>
   value >= 0 && Number.isInteger(value * 2);
@@ -250,7 +259,7 @@ function gameError(game: unknown, index: number): string | null {
   if (eco !== '' && !/^[A-E]\d{2}$/.test(eco)) {
     return `${where} has an invalid ECO code`;
   }
-  if (!isWholeNumber(plyCount, 0, 2000) || !moves.trim()) {
+  if (!isWholeNumber(plyCount, 1, 2000) || !hasMove(moves)) {
     return `${where} has no moves`;
   }
   return null;

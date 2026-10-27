@@ -305,6 +305,9 @@ describe('games from a pgn', () => {
   it('should accept games that come with the results they belong to', () => {
     expect(messageOf(input({ games: [game()] }))).toBeNull();
     expect(gamesError([game()])).toBeNull();
+    expect(
+      gamesError([withField('moves', '1.d4 Nf6 2.c4 e6 3.Nc3 Bb4 4.e3 O-O 1/2-1/2')]),
+    ).toBeNull();
   });
 
   it('should refuse games without results, and games it cannot store', () => {
@@ -325,6 +328,11 @@ describe('games from a pgn', () => {
     );
     expect(gamesError([withField('eco', 'Z1')])).toBe('game 1 has an invalid ECO code');
     expect(gamesError([withField('moves', ' ')])).toBe('game 1 has no moves');
+    expect(gamesError([withField('moves', '1-0')])).toBe('game 1 has no moves');
+    expect(gamesError([withField('moves', '{Won by forfeit} 1-0')])).toBe(
+      'game 1 has no moves',
+    );
+    expect(gamesError([withField('plyCount', 0)])).toBe('game 1 has no moves');
     expect(gamesError([{ section: 'A' }])).toMatch(/^game 1: /);
   });
 
