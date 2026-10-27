@@ -196,9 +196,9 @@ export async function getWidestGames(
   }
 }
 
-// Variations fold into their family, the part of the name before any comma or colon
+// Variations fold into their family, the part of the name before the colon
 function openingFamily(opening: string): string {
-  return opening.split(/[,:]/)[0].trim();
+  return opening.split(':')[0].trim();
 }
 
 function toOpeningCounts(openings: string[]): OpeningCount[] {
