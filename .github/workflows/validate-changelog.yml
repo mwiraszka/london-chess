@@ -20,6 +20,15 @@ jobs:
             exit 1
           fi
 
+      - name: Check Root Version Matches
+        run: |
+          version="${GITHUB_HEAD_REF}"
+          root_version="v$(node -p "require('./package.json').version")"
+          if [ "$root_version" != "$version" ]; then
+            echo "::error::The root package.json version is ${root_version#v}. Set it to ${version#v}, the version the site shows for this release."
+            exit 1
+          fi
+
       - name: Check Changelog Date Is Current
         run: |
           version="${GITHUB_HEAD_REF}"

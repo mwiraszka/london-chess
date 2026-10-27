@@ -4,10 +4,10 @@ import { BehaviorSubject } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 
+import { RELEASE_VERSION } from '@app/constants/release';
 import { MetaAndTitleService, RoutingService } from '@app/services';
 import { queryAll, queryTextContent } from '@app/utils';
 
-import packageJson from '../../../../package.json';
 import { CHANGELOG_RELEASES } from './changelog.generated';
 import { WebsiteChangelogPageComponent } from './website-changelog-page.component';
 
@@ -81,7 +81,7 @@ describe('WebsiteChangelogPageComponent', () => {
 
     expect(badged.length).toBe(1);
     expect(queryTextContent(badged[0], '.release-version')).toBe(
-      `Version ${packageJson.version}`,
+      `Version ${RELEASE_VERSION}`,
     );
   });
 
