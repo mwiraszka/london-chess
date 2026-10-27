@@ -418,6 +418,54 @@ describe('mergePgnGames', () => {
     expect(result.games[0].section).toBe('');
   });
 
+  it('should record a game whose moves went unrecorded without archiving it', () => {
+    const result = mergePgnGames(tournament(), [
+      pgnGame({ ForfeitType: 'Rated' }, '1-0', 0),
+    ]);
+
+    expect(result.problems).toEqual([]);
+    expect(result.sections[0].entries[2].rounds).toEqual([
+      {
+        round: 2,
+        outcome: 'game',
+        scores: [0],
+        points: 0,
+        opponentRank: 1,
+        color: 'black',
+      },
+    ]);
+    expect(result.games).toEqual([]);
+  });
+
+  it('should record a forfeit for both players without archiving a game', () => {
+    const result = mergePgnGames(tournament(), [
+      pgnGame({ ForfeitType: 'Unrated' }, '1-0', 0),
+    ]);
+
+    expect(result.problems).toEqual([]);
+    const [anna, , jeffrey] = result.sections[0].entries;
+    expect(anna.rounds[1]).toEqual({
+      round: 2,
+      outcome: 'forfeit',
+      scores: [],
+      points: 1,
+      opponentRank: 3,
+      color: null,
+    });
+    expect(anna.score).toBe(2);
+    expect(jeffrey.rounds).toEqual([
+      {
+        round: 2,
+        outcome: 'forfeit',
+        scores: [],
+        points: 0,
+        opponentRank: 1,
+        color: null,
+      },
+    ]);
+    expect(result.games).toEqual([]);
+  });
+
   it('should name games that cannot be added', () => {
     const nameless = pgnGame({});
     delete nameless.tags['Black'];
@@ -507,6 +555,16 @@ describe('mergePgnGames', () => {
 
       expect(result.problems).toEqual([
         'The round 6 game between Black, Anna and Bell, Jeffrey is the second game of round 3, whose first game is not recorded.',
+      ]);
+    });
+
+    it('should refuse a forfeit, whose points depend on both games', () => {
+      const result = mergePgnGames(doubleRound(), [
+        pgnGame({ ForfeitType: 'Unrated' }, '1-0', 0),
+      ]);
+
+      expect(result.problems).toEqual([
+        'The round 2 game between Black, Anna and Bell, Jeffrey is a forfeit in a round of two games, which only the standings SwissSys exports can record.',
       ]);
     });
 
