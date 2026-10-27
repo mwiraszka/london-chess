@@ -83,6 +83,12 @@ jobs:
     runs-on: ubuntu-latest
     # The suite takes a few minutes, so anything longer is a hang worth stopping
     timeout-minutes: 20
+    # The one-at-a-time admin tests run beside the public ones on a runner of their own, so
+    # their edits never reach the database the public tests read
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [public, admin]
     defaults:
       run:
         working-directory: frontend
@@ -122,13 +128,13 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run End-to-End Tests
-        run: pnpm e2e
+        run: pnpm e2e --project=${{ matrix.project }}
 
       - name: Upload Playwright Report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: |
             frontend/playwright-report
             frontend/test-results
