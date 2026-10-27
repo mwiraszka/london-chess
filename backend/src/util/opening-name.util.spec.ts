@@ -12,18 +12,24 @@ describe('opening names', () => {
   });
 
   describe('openingName', () => {
-    it('should name the opening of the code that the game follows for longest', () => {
-      const name = openingName('C60', '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1/2-1/2');
+    it('should name the last named position the game reaches', () => {
+      const name = openingName('1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. h4 1/2-1/2');
 
-      expect(name).toMatch(/^Ruy Lopez/);
+      expect(name).toBe('Ruy Lopez: Morphy Defense');
     });
 
-    it("should fall back to the code's first opening, and to nothing without a code", () => {
-      const fallback = openingName('C60', '1. d4 d5 0-1');
+    it('should name a position reached by another move order', () => {
+      const name = openingName('1. Nf3 d5 2. d4 Nf6 3. c4 e6 4. Nc3 1-0');
 
-      expect(fallback).not.toBe('');
-      expect(openingName('', '1. e4 e5 1-0')).toBe('');
-      expect(openingName('Z99', '1. e4 e5 1-0')).toBe('');
+      expect(name).toBe(openingName('1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Nf3 1-0'));
+      expect(name).toMatch(/^Queen's Gambit Declined/);
+    });
+
+    it('should name the line up to a move that cannot be played', () => {
+      expect(openingName('1. d4 d5 2. Bf4 Qxh7 0-1')).toBe(
+        "Queen's Pawn Game: Accelerated London System",
+      );
+      expect(openingName('1-0')).toBe('');
     });
   });
 });

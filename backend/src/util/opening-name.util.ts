@@ -1,4 +1,6 @@
-import { ECO_OPENINGS } from './eco-openings';
+import { Chess } from 'chess.js';
+
+import { OPENING_PLY_LIMIT, OPENING_POSITIONS } from './opening-positions';
 
 // The moves of the main line, without move numbers, comments, variations or the result
 export function movetextTokens(moves: string): string[] {
@@ -18,21 +20,27 @@ export function movetextTokens(moves: string): string[] {
     .map(token => token.replace(/^\d+\.+/, ''));
 }
 
-// The opening of the ECO code that the game follows for longest, or the code's first one
-export function openingName(eco: string, moves: string): string {
-  if (!eco) {
-    return '';
-  }
-  const tokens = movetextTokens(moves);
-  let best: (typeof ECO_OPENINGS)[number] | null = null;
-  for (const opening of ECO_OPENINGS) {
-    const [code, , line] = opening;
-    if (code !== eco) continue;
-    const lineMoves = line.split(' ');
-    const follows = lineMoves.every((move, index) => tokens[index] === move);
-    if (follows && (!best || lineMoves.length > best[2].split(' ').length)) {
-      best = opening;
+let openingsByPosition: Map<string, string> | null = null;
+
+// The board, side to move, castling rights and en passant square, without the move counts
+const positionOf = (chess: Chess): string => chess.fen().split(' ').slice(0, 4).join(' ');
+
+/**
+ * The opening of the last named position the game reaches, so a game that gets there by
+ * another move order still finds it.
+ */
+export function openingName(moves: string): string {
+  openingsByPosition ??= new Map(OPENING_POSITIONS);
+  const chess = new Chess();
+  let name = '';
+  for (const move of movetextTokens(moves).slice(0, OPENING_PLY_LIMIT)) {
+    try {
+      chess.move(move);
+    } catch {
+      // A move that cannot be played ends the line the game is named from
+      break;
     }
+    name = openingsByPosition.get(positionOf(chess)) ?? name;
   }
-  return best?.[1] ?? ECO_OPENINGS.find(([code]) => code === eco)?.[1] ?? '';
+  return name;
 }
