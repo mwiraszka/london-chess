@@ -123,6 +123,23 @@ describe('RatingProgressionComponent', () => {
     expect(chart().series()[0].data).toEqual([1810, championship.rating]);
   });
 
+  it('should plot tournaments that start on the same day in the order they were held', () => {
+    const finals = {
+      ...championship,
+      tournament: {
+        ...championship.tournament,
+        number: 119,
+        name: 'Championship - Finals',
+      },
+      rating: 1900,
+    };
+    store.setState(stateWith({ 2: [finals, championship] }));
+
+    render();
+
+    expect(chart().series()[0].data).toEqual([championship.rating, 1900]);
+  });
+
   it('should plot a single rated tournament as a lone point', () => {
     store.setState(stateWith({ 2: [{ ...championship, rating: 1880 }] }));
 

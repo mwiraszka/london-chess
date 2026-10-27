@@ -1,5 +1,3 @@
-import * as Sentry from '@sentry/angular';
-
 import { InjectionToken } from '@angular/core';
 
 import {
@@ -13,7 +11,6 @@ import {
   isLccError,
   isMac,
   isTouchDevice,
-  loadPage,
   parseCsv,
   parseError,
   reloadPage,
@@ -87,18 +84,9 @@ export const IS_LCC_ERROR = new InjectionToken<typeof isLccError>('IS_LCC_ERROR'
   factory: () => isLccError,
 });
 
-export const LOAD_PAGE = new InjectionToken<typeof loadPage>('LOAD_PAGE', {
-  factory: () => loadPage,
-});
-
 export const RELOAD_PAGE = new InjectionToken<typeof reloadPage>('RELOAD_PAGE', {
   factory: () => reloadPage,
 });
-
-export const SENTRY_LOG_INFO = new InjectionToken<typeof Sentry.logger.info>(
-  'SENTRY_LOG_INFO',
-  { factory: () => Sentry.logger.info },
-);
 
 export const VISIBLE_TIMER = new InjectionToken<typeof visibleTimer>('VISIBLE_TIMER', {
   factory: () => visibleTimer,
