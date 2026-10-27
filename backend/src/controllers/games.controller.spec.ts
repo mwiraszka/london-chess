@@ -327,10 +327,12 @@ describe('games routes', () => {
       });
       const linked = await createPlayer({ memberId: member._id.toString() });
       const other = await createPlayer({ lastName: 'Other' });
-      await createGame(linked, other, { opening: 'Sicilian Defence, Najdorf' });
-      await createGame(linked, other, { opening: 'Sicilian Defence: Dragon' });
+      await createGame(linked, other, {
+        opening: 'Sicilian Defense: Najdorf Variation, English Attack',
+      });
+      await createGame(linked, other, { opening: 'Sicilian Defense: Dragon Variation' });
       await createGame(linked, other, { opening: 'Italian Game' });
-      await createGame(other, linked, { opening: 'French Defence' });
+      await createGame(other, linked, { opening: 'French Defense' });
       await createGame(other, linked, { opening: '' });
       await createGame(other, other, { opening: 'Ruy Lopez' });
 
@@ -340,10 +342,10 @@ describe('games routes', () => {
       const openings: MemberOpenings = response.body.data;
       expect(openings).toEqual({
         white: [
-          { opening: 'Sicilian Defence', gameCount: 2 },
+          { opening: 'Sicilian Defense', gameCount: 2 },
           { opening: 'Italian Game', gameCount: 1 },
         ],
-        black: [{ opening: 'French Defence', gameCount: 1 }],
+        black: [{ opening: 'French Defense', gameCount: 1 }],
       });
     });
 

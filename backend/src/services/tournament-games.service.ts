@@ -162,7 +162,7 @@ export async function archiveGames(
         whiteElo: game.whiteElo,
         blackElo: game.blackElo,
         eco: game.eco,
-        opening: openingName(game.eco, game.moves),
+        opening: openingName(game.moves),
         plyCount: game.plyCount,
         moves: game.moves.trim(),
         annotator: '',
@@ -199,7 +199,7 @@ export async function archiveGames(
               whiteElo: game.whiteElo,
               blackElo: game.blackElo,
               eco: game.eco,
-              opening: openingName(game.eco, game.moves),
+              opening: openingName(game.moves),
               plyCount: game.plyCount,
               moves: game.moves.trim(),
               modificationInfo: {

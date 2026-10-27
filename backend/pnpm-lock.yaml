@@ -35,6 +35,9 @@ importers:
       '@vercel/functions':
         specifier: 3.10.3
         version: 3.10.3(@aws-sdk/credential-provider-web-identity@3.972.83)
+      chess.js:
+        specifier: 1.4.0
+        version: 1.4.0
       cors:
         specifier: 2.8.6
         version: 2.8.6
@@ -1331,6 +1334,9 @@ packages:
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
+
+  chess.js@1.4.0:
+    resolution: {integrity: sha512-BBJgrrtKQOzFLonR0l+k64A98NLemPwNsCskwb+29bRwobUa4iTm51E1kwGPbWXAcfdDa18nad6vpPPKPWarqw==}
 
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
@@ -3586,6 +3592,8 @@ snapshots:
   camelcase@6.3.0: {}
 
   chai@6.3.0: {}
+
+  chess.js@1.4.0: {}
 
   combined-stream@1.0.8:
     dependencies:
