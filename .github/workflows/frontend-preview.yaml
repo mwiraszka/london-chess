@@ -8,8 +8,11 @@ on:
   push:
     branches-ignore:
       - main
+    # The site shows the release version and changelog, both kept at the root
     paths:
       - frontend/**
+      - CHANGELOG.md
+      - package.json
       - .github/workflows/frontend-preview.yaml
 
 jobs:

@@ -6,12 +6,11 @@ env:
 
 on:
   workflow_dispatch:
+  # Every merge to main is a release, which the site shows in its footer and changelog and
+  # which gets its GitHub release below, whichever part of the repo it changed
   push:
     branches:
       - main
-    paths:
-      - frontend/**
-      - .github/workflows/frontend-production.yaml
 
 jobs:
   Deploy-Production:
