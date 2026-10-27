@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.5.12] - 2026-10-26
 
+### Changed
+
+- Mark every release that improves an existing part of the site with an Improvements tag on the Website Changelog page
+
 ### Fixed
 
 - Include forfeits and games whose moves were not recorded in tournament results
