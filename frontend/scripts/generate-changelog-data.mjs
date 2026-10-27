@@ -36,6 +36,11 @@ const TAG_REGISTRY = [
     matches: release => release.added.length > 0,
   },
   {
+    label: 'Improvements',
+    color: '#6e4a9e',
+    matches: release => release.changed.length > 0,
+  },
+  {
     label: 'Styling',
     color: '#583e60',
     pattern:
