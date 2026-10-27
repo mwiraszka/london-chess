@@ -8,7 +8,7 @@ import {
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import packageJson from '../../../../package.json';
+import { RELEASE_VERSION } from '@app/constants/release';
 
 @Component({
   selector: 'lcc-footer',
@@ -25,6 +25,6 @@ import packageJson from '../../../../package.json';
   host: { role: 'contentinfo' },
 })
 export class FooterComponent {
-  public readonly CURRENT_VERSION = packageJson.version;
+  public readonly CURRENT_VERSION = RELEASE_VERSION;
   public readonly CURRENT_YEAR = new Date().getFullYear();
 }

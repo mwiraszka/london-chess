@@ -33,12 +33,12 @@ import { Router } from '@angular/router';
 import { MemberLinkComponent } from '@app/components/member-link/member-link.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { TechRingComponent } from '@app/components/tech-ring/tech-ring.component';
+import { RELEASE_VERSION } from '@app/constants/release';
 import { ChangelogRelease } from '@app/models';
 import { FormatDatePipe } from '@app/pipes';
 import { MetaAndTitleService, RoutingService } from '@app/services';
 import { scrollBehavior } from '@app/utils';
 
-import packageJson from '../../../../package.json';
 import { CHANGELOG_RELEASES } from './changelog.generated';
 
 interface ReleaseSection {
@@ -79,7 +79,7 @@ export class WebsiteChangelogPageComponent implements OnInit {
 
   // The badge follows the version the site is actually running, so a version
   // bump moves it to that release's card on its own
-  private readonly currentVersion = `v${packageJson.version}`;
+  private readonly currentVersion = `v${RELEASE_VERSION}`;
 
   protected readonly pageIcon = LaptopIconComponent;
   protected readonly releases = CHANGELOG_RELEASES;

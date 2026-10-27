@@ -21,6 +21,7 @@ import {
 } from '@angular/router';
 
 import { APP_ROUTES } from '@app/app.routes';
+import { RELEASE_VERSION } from '@app/constants/release';
 import {
   AuthInterceptorProvider,
   LoggingInterceptorProvider,
@@ -42,7 +43,6 @@ import { TournamentsStoreModule } from '@app/store/tournaments';
 
 import { environment } from '@env';
 
-import { version } from '../package.json';
 import { AppComponent } from './app/app.component';
 
 if (environment.production) {
@@ -99,7 +99,7 @@ bootstrapApplication(AppComponent, {
       withRouterConfig({ onSameUrlNavigation: 'reload' }),
     ),
     provideStaleBuildReload({
-      version,
+      version: RELEASE_VERSION,
       onReport: ({ outcome, route, fromVersion, toVersion }) =>
         Sentry.logger.info('Stale build reload', {
           outcome,

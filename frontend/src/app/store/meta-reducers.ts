@@ -2,11 +2,11 @@ import { Action, ActionReducer, INIT, MetaReducer, UPDATE } from '@ngrx/store';
 import { compact, omit, pick } from 'lodash-es';
 import { localStorageSync } from 'ngrx-store-localstorage';
 
+import { RELEASE_VERSION } from '@app/constants/release';
 import { isPresignedUrlExpired } from '@app/utils';
 
 import { environment } from '@env';
 
-import { version as currentVersion } from '../../../package.json';
 import * as AppActions from './app/app.actions';
 import { AppState, initialState as appInitialState } from './app/app.reducer';
 import {
@@ -111,7 +111,7 @@ function isOlderThan(version: string, minimum: number[]): boolean {
 // in, so keys are namespaced to keep the state of later versions out of their reach
 const KEY_PREFIX = 'lcc.';
 
-export function stateStorageKey(stateName: string, version = currentVersion): string {
+export function stateStorageKey(stateName: string, version = RELEASE_VERSION): string {
   return `${KEY_PREFIX}${stateName}.v${version}`;
 }
 
@@ -126,7 +126,7 @@ function parseStateStorageKey(
 
 function currentVersionKeys(): string[] {
   return Object.keys(localStorage).filter(
-    key => key.startsWith(KEY_PREFIX) && key.endsWith(`.v${currentVersion}`),
+    key => key.startsWith(KEY_PREFIX) && key.endsWith(`.v${RELEASE_VERSION}`),
   );
 }
 
@@ -138,7 +138,7 @@ export function updateStateVersionsInLocalStorageMetaReducer(
 ): ActionReducer<MetaState> {
   const keysToUpdate = Object.keys(localStorage).flatMap(key => {
     const parsed = parseStateStorageKey(key);
-    return parsed && (parsed.version !== currentVersion || !key.startsWith(KEY_PREFIX))
+    return parsed && (parsed.version !== RELEASE_VERSION || !key.startsWith(KEY_PREFIX))
       ? [{ key, ...parsed }]
       : [];
   });
@@ -148,7 +148,7 @@ export function updateStateVersionsInLocalStorageMetaReducer(
   return (state, action) => {
     if (!migrated && keysToUpdate.length) {
       migrated = true;
-      console.info(`[LCC] Welcome to version ${currentVersion}`);
+      console.info(`[LCC] Welcome to version ${RELEASE_VERSION}`);
 
       const imagesStateRemoved = keysToUpdate.some(
         ({ stateName }) => stateName === 'imagesState',
@@ -164,7 +164,7 @@ export function updateStateVersionsInLocalStorageMetaReducer(
         // A cached older build may load after a newer one has saved its state
         const isIncompatible =
           (!!firstCompatibleVersion && isOlderThan(version, firstCompatibleVersion)) ||
-          isOlderThan(currentVersion, version.split('.').map(Number));
+          isOlderThan(RELEASE_VERSION, version.split('.').map(Number));
 
         // Remove the old key first to free up space before writing the new one
         localStorage.removeItem(key);
