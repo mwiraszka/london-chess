@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Keep games without any moves out of the game archives
+- Name every game's opening in the game archives from its moves, and keep games without any moves out of them
+- Group the opening charts on member profiles by opening rather than by variation
 
 ## [v6.5.12] - 2026-10-26
 
