@@ -3,6 +3,7 @@ import {
   GameInput,
   GameResult,
   PgnGame,
+  RoundOutcome,
   RoundResultInput,
   SectionInput,
   StandingsImport,
@@ -20,6 +21,13 @@ const TAG_LINE = /^\[(\w+)\s+"((?:[^"\\]|\\.)*)"\]$/;
 const ECO_CODE = /^[A-E]\d{2}$/;
 const PGN_DATE = /^(\d{4})\.(\d{2})\.(\d{2})$/;
 const RESULT_TOKENS = ['1-0', '0-1', '1/2-1/2', '*'];
+
+// SwissSys lists a result without moves as Rated when the game was played but its moves
+// went unrecorded, and as Unrated when it was a forfeit
+const MOVELESS_OUTCOMES = new Map<string, RoundOutcome>([
+  ['Rated', 'game'],
+  ['Unrated', 'forfeit'],
+]);
 
 // The main line's moves, without move numbers, comments, variations or the result
 function countPlies(movetext: string): number {
@@ -165,6 +173,7 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
   );
   const problems: string[] = [];
   const merged = new Map<string, GameInput>();
+  const seen = new Set<string>();
 
   const sectionLabel = (event: string): string | null => {
     const value = event.trim().toLowerCase();
@@ -206,7 +215,10 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       problems.push(`${label} does not name both players.`);
       return;
     }
-    if (!game.plyCount) {
+    const outcome = game.plyCount
+      ? 'game'
+      : MOVELESS_OUTCOMES.get(game.tags['ForfeitType'] ?? '');
+    if (!outcome) {
       problems.push(`${label} has no moves.`);
       return;
     }
@@ -277,6 +289,15 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       return;
     }
     if (
+      outcome === 'forfeit' &&
+      pairing.some(({ entrant }) => sectionOf(entrant).isDoubleRound)
+    ) {
+      problems.push(
+        `${label} is a forfeit in a round of two games, which only the standings SwissSys exports can record.`,
+      );
+      return;
+    }
+    if (
       !isLaterPass &&
       pairing.some(({ entrant }) => round > sectionOf(entrant).roundCount)
     ) {
@@ -303,7 +324,7 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       const recorded = recordedRound(side);
       return (
         !!recorded &&
-        (recorded.outcome !== 'game' ||
+        (recorded.outcome !== outcome ||
           recorded.opponentRank !== (sameSection ? side.opponent.rank : null))
       );
     });
@@ -323,17 +344,28 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
     for (const side of sides) {
       const entry = entryOf(side.entrant);
       const recorded = recordedRound(side);
+      const opponentRank = sameSection ? side.opponent.rank : null;
       const scores = recorded ? [...recorded.scores] : [];
       scores[side.gameIndex] = side.score;
-      const played: RoundResultInput = {
-        round: side.round,
-        outcome: 'game',
-        scores,
-        points: scores.reduce((total, score) => total + score, 0),
-        opponentRank: sameSection ? side.opponent.rank : null,
-        // A round keeps the colour of its first game
-        color: side.gameIndex === 0 ? side.color : (recorded?.color ?? null),
-      };
+      const played: RoundResultInput =
+        outcome === 'forfeit'
+          ? {
+              round: side.round,
+              outcome,
+              scores: [],
+              points: side.score,
+              opponentRank,
+              color: null,
+            }
+          : {
+              round: side.round,
+              outcome,
+              scores,
+              points: scores.reduce((total, score) => total + score, 0),
+              opponentRank,
+              // A round keeps the colour of its first game
+              color: side.gameIndex === 0 ? side.color : (recorded?.color ?? null),
+            };
       entry.rounds = [
         ...entry.rounds.filter(other => other.round !== side.round),
         played,
@@ -344,8 +376,13 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
     const whitePlayerId = entryOf(whiteEntrant).playerId!;
     const blackPlayerId = entryOf(blackEntrant).playerId!;
     const key = `${archiveSection}|${round}|${whitePlayerId}|${blackPlayerId}`;
-    if (merged.has(key)) {
+    if (seen.has(key)) {
       problems.push(`${label} appears more than once.`);
+      return;
+    }
+    seen.add(key);
+    // With no moves to replay, the archive gains no game
+    if (!game.plyCount) {
       return;
     }
     const eco = game.tags['ECO'] ?? '';
