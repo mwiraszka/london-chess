@@ -1,6 +1,6 @@
 {
   "name": "lcc-server",
-  "version": "6.5.11",
+  "version": "6.5.13",
   "description": "REST API for the London Chess Club website, built with Node and Express",
   "author": "Michal Wiraszka",
   "repository": {
