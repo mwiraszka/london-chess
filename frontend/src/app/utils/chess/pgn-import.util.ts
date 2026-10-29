@@ -3,7 +3,6 @@ import {
   GameInput,
   GameResult,
   PgnGame,
-  RoundOutcome,
   RoundResultInput,
   SectionInput,
   StandingsImport,
@@ -22,16 +21,17 @@ const ECO_CODE = /^[A-E]\d{2}$/;
 const PGN_DATE = /^(\d{4})\.(\d{2})\.(\d{2})$/;
 const RESULT_TOKENS = ['1-0', '0-1', '1/2-1/2', '*'];
 
-// SwissSys lists a result without moves as Rated when the game was played but its moves
-// went unrecorded, and as Unrated when it was a forfeit
-const MOVELESS_OUTCOMES = new Map<string, RoundOutcome>([
-  ['Rated', 'game'],
-  ['Unrated', 'forfeit'],
-]);
+// A comment running to the end of its line becomes a braced one, so the moves still read
+// the same once they are joined onto one line
+function braceComments(movetext: string): string {
+  return movetext.replace(/\{[^}]*\}|;([^\n]*)/g, (match, comment: string | undefined) =>
+    comment === undefined ? match : `{${comment.replace(/[{}]/g, '').trim()}}`,
+  );
+}
 
 // The main line's moves, without move numbers, comments, variations or the result
 function countPlies(movetext: string): number {
-  let text = movetext.replace(/\{[^}]*\}/g, ' ').replace(/;[^\n]*/g, ' ');
+  let text = movetext.replace(/\{[^}]*\}/g, ' ');
   while (/\([^()]*\)/.test(text)) {
     text = text.replace(/\([^()]*\)/g, ' ');
   }
@@ -49,8 +49,9 @@ function describe(game: PgnGame): string {
 }
 
 /**
- * Reads every game of a PGN file: its tags and its movetext, with the comments and
- * variations kept as written.
+ * Reads every finished game of a PGN file: its tags and its movetext, with the comments
+ * and variations kept as written. An unfinished game has no result to add yet, so it is
+ * left out.
  */
 export function readPgnGames(
   text: string,
@@ -63,8 +64,8 @@ export function readPgnGames(
     const trimmed = line.trim();
     const tag = trimmed.match(TAG_LINE);
     if (tag) {
-      // A tag after movetext starts the next game
-      if (!current || current.lines.length) {
+      // A tag after movetext, or one the game already has, starts the next game
+      if (!current || current.lines.length || Object.hasOwn(current.tags, tag[1])) {
         current = { tags: {}, lines: [] };
         chunks.push(current);
       }
@@ -83,8 +84,9 @@ export function readPgnGames(
   }
 
   const problems: string[] = [];
-  const games = chunks.map(({ tags, lines }): PgnGame => {
-    const movetext = lines.join('\n');
+  const finished = chunks.filter(({ tags }) => tags['Result'] !== '*');
+  const games = finished.map(({ tags, lines }): PgnGame => {
+    const movetext = braceComments(lines.join('\n'));
     const game = {
       tags,
       moves: movetext.replace(/\s+/g, ' ').trim(),
@@ -118,8 +120,9 @@ function gameDate(tag: string | undefined, fallback: string): string {
   return match ? `${match[1]}-${match[2]}-${match[3]}` : fallback;
 }
 
+// A rating of 0 stands for an unrated player
 function elo(tag: string | undefined): number | null {
-  return tag && /^\d{1,4}$/.test(tag) ? Number(tag) : null;
+  return tag && /^[1-9]\d{0,3}$/.test(tag) ? Number(tag) : null;
 }
 
 /**
@@ -215,13 +218,9 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       problems.push(`${label} does not name both players.`);
       return;
     }
-    const outcome = game.plyCount
-      ? 'game'
-      : MOVELESS_OUTCOMES.get(game.tags['ForfeitType'] ?? '');
-    if (!outcome) {
-      problems.push(`${label} has no moves.`);
-      return;
-    }
+    // SwissSys tags every forfeit, rated or not, while a game without moves and without
+    // the tag was played but not recorded
+    const outcome = !game.plyCount && game.tags['ForfeitType'] ? 'forfeit' : 'game';
     if (!GAME_RESULTS.includes(result as GameResult) || result === '*') {
       problems.push(`${label} has no result.`);
       return;
@@ -262,6 +261,10 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
 
     const [whiteEntrant, blackEntrant] = players.map(({ matches }) => matches[0]);
     const sameSection = whiteEntrant.sectionIndex === blackEntrant.sectionIndex;
+    if (sameSection && whiteEntrant.rank === blackEntrant.rank) {
+      problems.push(`${label} matches both names to the same player.`);
+      return;
+    }
     const whiteScore = result === '1-0' ? 1 : result === '0-1' ? 0 : 0.5;
     const pairing = [
       {
@@ -375,7 +378,9 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
 
     const whitePlayerId = entryOf(whiteEntrant).playerId!;
     const blackPlayerId = entryOf(blackEntrant).playerId!;
-    const key = `${archiveSection}|${round}|${whitePlayerId}|${blackPlayerId}`;
+    // A pairing meets once a round, whichever colours a second listing gives it
+    const pair = [whitePlayerId, blackPlayerId].sort().join('|');
+    const key = `${archiveSection}|${round}|${pair}`;
     if (seen.has(key)) {
       problems.push(`${label} appears more than once.`);
       return;

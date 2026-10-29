@@ -163,6 +163,64 @@ describe('readPgnGames', () => {
     ]);
   });
 
+  it('should start a new game at a tag the game already has', () => {
+    const text = [
+      '[Round "2"]',
+      '[White "Black, Anna"]',
+      '[Result "1-0"]',
+      '[Round "2"]',
+      '[White "Bell, Jeffrey"]',
+      '[Result "0-1"]',
+      '',
+      '1. e4 0-1',
+    ].join('\n');
+
+    const { games, problems } = readPgnGames(text, 'round-2.pgn');
+
+    expect(problems).toEqual([]);
+    expect(games).toEqual([
+      {
+        tags: { Round: '2', White: 'Black, Anna', Result: '1-0' },
+        moves: '',
+        plyCount: 0,
+      },
+      {
+        tags: { Round: '2', White: 'Bell, Jeffrey', Result: '0-1' },
+        moves: '1. e4 0-1',
+        plyCount: 1,
+      },
+    ]);
+  });
+
+  it('should keep a comment that runs to the end of its line once the moves are joined', () => {
+    const text = '[Result "1-0"]\n\n1. e4 ; best {by} test\n1... e5 {a;b} 2. Nf3 1-0';
+
+    const { games } = readPgnGames(text, 'round-2.pgn');
+
+    expect(games[0].moves).toBe('1. e4 {best by test} 1... e5 {a;b} 2. Nf3 1-0');
+    expect(games[0].plyCount).toBe(3);
+  });
+
+  it('should leave out a game that is not finished', () => {
+    const text = [
+      '[Round "2"]',
+      '[Result "*"]',
+      '[PlyCount "9"]',
+      '',
+      '1. e4 *',
+      '',
+      '[Round "3"]',
+      '[Result "1-0"]',
+      '',
+      '1. d4 1-0',
+    ].join('\n');
+
+    const { games, problems } = readPgnGames(text, 'round-2.pgn');
+
+    expect(problems).toEqual([]);
+    expect(games.map(({ tags }) => tags['Round'])).toEqual(['3']);
+  });
+
   it('should name a file that holds no games', () => {
     const { games, problems } = readPgnGames('\n  \n', 'empty.pgn');
 
@@ -419,9 +477,7 @@ describe('mergePgnGames', () => {
   });
 
   it('should record a game whose moves went unrecorded without archiving it', () => {
-    const result = mergePgnGames(tournament(), [
-      pgnGame({ ForfeitType: 'Rated' }, '1-0', 0),
-    ]);
+    const result = mergePgnGames(tournament(), [pgnGame({}, '1-0', 0)]);
 
     expect(result.problems).toEqual([]);
     expect(result.sections[0].entries[2].rounds).toEqual([
@@ -437,34 +493,37 @@ describe('mergePgnGames', () => {
     expect(result.games).toEqual([]);
   });
 
-  it('should record a forfeit for both players without archiving a game', () => {
-    const result = mergePgnGames(tournament(), [
-      pgnGame({ ForfeitType: 'Unrated' }, '1-0', 0),
-    ]);
+  it.each(['Rated', 'Unrated'])(
+    'should record a %s forfeit for both players without archiving a game',
+    forfeitType => {
+      const result = mergePgnGames(tournament(), [
+        pgnGame({ ForfeitType: forfeitType }, '1-0', 0),
+      ]);
 
-    expect(result.problems).toEqual([]);
-    const [anna, , jeffrey] = result.sections[0].entries;
-    expect(anna.rounds[1]).toEqual({
-      round: 2,
-      outcome: 'forfeit',
-      scores: [],
-      points: 1,
-      opponentRank: 3,
-      color: null,
-    });
-    expect(anna.score).toBe(2);
-    expect(jeffrey.rounds).toEqual([
-      {
+      expect(result.problems).toEqual([]);
+      const [anna, , jeffrey] = result.sections[0].entries;
+      expect(anna.rounds[1]).toEqual({
         round: 2,
         outcome: 'forfeit',
         scores: [],
-        points: 0,
-        opponentRank: 1,
+        points: 1,
+        opponentRank: 3,
         color: null,
-      },
-    ]);
-    expect(result.games).toEqual([]);
-  });
+      });
+      expect(anna.score).toBe(2);
+      expect(jeffrey.rounds).toEqual([
+        {
+          round: 2,
+          outcome: 'forfeit',
+          scores: [],
+          points: 0,
+          opponentRank: 1,
+          color: null,
+        },
+      ]);
+      expect(result.games).toEqual([]);
+    },
+  );
 
   it('should name games that cannot be added', () => {
     const nameless = pgnGame({});
@@ -472,7 +531,6 @@ describe('mergePgnGames', () => {
 
     const result = mergePgnGames(tournament(), [
       nameless,
-      pgnGame({}, '', 0),
       pgnGame({ Result: '*' }),
       pgnGame({ Round: '?' }),
       pgnGame({ Round: '4' }),
@@ -480,7 +538,6 @@ describe('mergePgnGames', () => {
 
     expect(result.problems).toEqual([
       'The round 2 game between Black, Anna and ? does not name both players.',
-      'The round 2 game between Black, Anna and Bell, Jeffrey has no moves.',
       'The round 2 game between Black, Anna and Bell, Jeffrey has no result.',
       'The round ? game between Black, Anna and Bell, Jeffrey has no round number.',
       "The round 4 game between Black, Anna and Bell, Jeffrey is from a round past the section's last.",
@@ -585,9 +642,34 @@ describe('mergePgnGames', () => {
     ]);
   });
 
+  it('should name a game listed again with the colours swapped', () => {
+    const result = mergePgnGames(tournament(), [
+      pgnGame({}),
+      pgnGame({ White: 'Bell, Jeffrey', Black: 'Black, Anna', Result: '0-1' }),
+    ]);
+
+    expect(result.problems).toEqual([
+      'The round 2 game between Bell, Jeffrey and Black, Anna appears more than once.',
+    ]);
+  });
+
+  it('should name a game whose two names match the same player', () => {
+    const result = mergePgnGames(tournament(), [pgnGame({ Black: 'Black, A' })]);
+
+    expect(result.problems).toEqual([
+      'The round 2 game between Black, Anna and Black, A matches both names to the same player.',
+    ]);
+  });
+
   it("should fall back to the tournament's date and drop tags it cannot read", () => {
     const result = mergePgnGames(tournament(), [
-      pgnGame({ Date: '2026.??.??', WhiteElo: 'unrated', ECO: 'Z99', Round: '2.1' }),
+      pgnGame({
+        Date: '2026.??.??',
+        WhiteElo: 'unrated',
+        BlackElo: '0',
+        ECO: 'Z99',
+        Round: '2.1',
+      }),
     ]);
 
     expect(result.games[0]).toEqual(
@@ -595,6 +677,7 @@ describe('mergePgnGames', () => {
         date: '2026-09-24',
         round: '2',
         whiteElo: null,
+        blackElo: null,
         eco: '',
       }),
     );
