@@ -58,7 +58,7 @@ export const initialState: MembersState = membersAdapter.getInitialState({
   externalRatings: {},
   options: {
     page: 1,
-    pageSize: 20,
+    pageSize: 50,
     sortBy: 'rating',
     sortOrder: 'desc',
     filters: {

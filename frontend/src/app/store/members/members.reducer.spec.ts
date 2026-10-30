@@ -23,6 +23,7 @@ describe('Members Reducer', () => {
     fide: null,
     cfc: null,
     fideWorldRank: null,
+    fideNationalRank: null,
   };
   // The public API leaves out a member's private details
   const publicOtherMember: Member = {
@@ -66,9 +67,10 @@ describe('Members Reducer', () => {
         lastFullFetch: null,
         lastFilteredFetch: null,
         filteredMembers: [],
+        externalRatings: {},
         options: {
           page: 1,
-          pageSize: 20,
+          pageSize: 50,
           sortBy: 'rating',
           sortOrder: 'desc',
           filters: {

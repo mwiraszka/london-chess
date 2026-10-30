@@ -1,4 +1,5 @@
 import {
+  AvatarComponent,
   DataTableColumn,
   DataTableSortState,
   EmptyStateComponent,
@@ -29,7 +30,7 @@ import { PAGE_SIZES } from '@app/constants/filters';
 import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
 import { FormatDatePipe, HighlightPipe, RatingLabelPipe } from '@app/pipes';
 import { DeletionService } from '@app/services';
-import { isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
+import { getInitials, isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
 
 // The sort keys hold what the server sorts by, so a page keeps the order it came in
 export interface MemberRow {
@@ -84,6 +85,7 @@ type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
   templateUrl: './members-table.component.html',
   styleUrl: './members-table.component.scss',
   imports: [
+    AvatarComponent,
     DataTableComponent,
     EmptyStateComponent,
     FormatDatePipe,
@@ -123,6 +125,7 @@ export class MembersTableComponent {
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
 
   protected readonly emptyIcon = FilterXIconComponent;
+  protected readonly getInitials = getInitials;
   protected readonly isCityChampion = isCityChampion;
   protected readonly pageSizes = PAGE_SIZES;
 
