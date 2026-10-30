@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Show members' Chess.com, Lichess, FIDE and CFC ratings on their profile pages, along with their FIDE world and national ranks, and let members add their FIDE and CFC IDs from their account page
+- Show members' Chess.com, Lichess, FIDE and CFC ratings on their profile pages, along with their FIDE world rank, and let members add their FIDE and CFC IDs from their account page
+
+### Changed
+
+- Show the details on member profiles as rows, each label beside its value
 
 ### Fixed
 
