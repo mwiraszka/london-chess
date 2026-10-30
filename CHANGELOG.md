@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Show members' Chess.com, Lichess, FIDE and CFC ratings on their profile pages, along with their FIDE world rank, and let members add their FIDE and CFC IDs from their account page
+- Show members' Chess.com, Lichess, FIDE and CFC ratings on their profile pages, along with their FIDE world and national ranks, and let members add their FIDE and CFC IDs from their account page
 
 ### Changed
 
-- Show the details on member profiles as rows, each label beside its value
+- Rearrange member profiles, keeping the club rating and peak rating together, the other details under the member's name, and ratings from other sites in cards of their own
+- Show members' profile pictures beside their names in the members list, and list 50 members per page to start with
+- Replace the Clear filters button on the Members and Schedule pages with a clear button inside the search box, which the Articles page now has too
 
 ### Fixed
 
