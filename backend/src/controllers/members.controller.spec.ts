@@ -307,7 +307,7 @@ describe('members routes', () => {
         lichess: null,
         fide: null,
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       });
       expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=86400');
       expect(refreshExternalRatings).not.toHaveBeenCalled();

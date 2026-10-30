@@ -26,7 +26,7 @@ const EXTERNAL_RATINGS: ExternalRatings = {
   lichess: null,
   fide: null,
   cfc: [],
-  fideRanks: null,
+  fideWorldRank: null,
 };
 
 const ACCOUNT: MemberAccount = {

@@ -80,7 +80,7 @@ function storedExternalRatings(member: SeedMember): StoredExternalRatings | null
     lookups: {
       chessCom: lookup(member.chessComUsername, ratings.chessCom),
       lichess: lookup(member.lichessUsername, ratings.lichess),
-      fide: { ...lookup(member.fideId, ratings.fide), ranks: ratings.fideRanks },
+      fide: { ...lookup(member.fideId, ratings.fide), worldRank: ratings.fideWorldRank },
       cfc: lookup(member.cfcId, ratings.cfc),
     },
     checkedAt: new Date().toISOString(),

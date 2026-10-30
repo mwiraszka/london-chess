@@ -129,11 +129,7 @@ describe('external ratings service', () => {
             { timeControl: 'standard', rating: 1745, provisional: false },
             { timeControl: 'rapid', rating: 1690, provisional: false },
           ],
-          ranks: {
-            federation: 'CAN',
-            world: { rank: 129807, amongActive: false },
-            national: { rank: 812, amongActive: true },
-          },
+          worldRank: { rank: 129807, amongActive: false },
         },
         cfc: {
           handle: '150123',
@@ -171,7 +167,7 @@ describe('external ratings service', () => {
       const { lookups } = (await readMember(member._id)).externalRatings ?? {};
       expect(lookups?.chessCom?.ratings).toBeNull();
       expect(lookups?.lichess?.ratings).toBeNull();
-      expect(lookups?.fide).toMatchObject({ ratings: [], ranks: null });
+      expect(lookups?.fide).toMatchObject({ ratings: [], worldRank: null });
       expect(lookups?.cfc?.ratings).toBeNull();
     });
 
@@ -209,11 +205,7 @@ describe('external ratings service', () => {
       await refreshExternalRatings(member);
 
       const { lookups } = (await readMember(member._id)).externalRatings ?? {};
-      expect(lookups?.fide?.ranks).toEqual({
-        federation: '',
-        world: { rank: 9120, amongActive: true },
-        national: null,
-      });
+      expect(lookups?.fide?.worldRank).toEqual({ rank: 9120, amongActive: true });
     });
 
     it('should look up only the handles the member has', async () => {
@@ -317,24 +309,23 @@ describe('external ratings service', () => {
         lichess: null,
         fide: null,
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       });
     });
 
-    it("should give FIDE's ranks along with its ratings", async () => {
-      const ranks = {
-        federation: 'CAN',
-        world: { rank: 129807, amongActive: false },
-        national: null,
-      };
+    it("should give FIDE's world rank along with its ratings", async () => {
+      const worldRank = { rank: 129807, amongActive: false };
       const member = await memberWithHandles({
         externalRatings: {
-          lookups: { fide: { handle: '2600123', ratings: [], ranks } },
+          lookups: { fide: { handle: '2600123', ratings: [], worldRank } },
           checkedAt: CHECKED_AT,
         },
       });
 
-      expect(externalRatingsOf(member)).toMatchObject({ fide: [], fideRanks: ranks });
+      expect(externalRatingsOf(member)).toMatchObject({
+        fide: [],
+        fideWorldRank: worldRank,
+      });
     });
 
     it('should give nothing for a member never looked up', async () => {
@@ -345,7 +336,7 @@ describe('external ratings service', () => {
         lichess: null,
         fide: null,
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       });
     });
   });

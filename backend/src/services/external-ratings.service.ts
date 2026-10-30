@@ -4,7 +4,6 @@ import {
   ExternalRating,
   ExternalRatings,
   FideRank,
-  FideRanks,
   PlatformLookup,
   RATING_PLATFORMS,
   RatingPlatform,
@@ -47,7 +46,7 @@ const CFC_TIME_CONTROLS: [string, TimeControl][] = [
   ['quick_rating', 'quick'],
 ];
 
-type LookupResult = Pick<PlatformLookup, 'ratings' | 'ranks'>;
+type LookupResult = Pick<PlatformLookup, 'ratings' | 'worldRank'>;
 
 type Lookup = (handle: string) => Promise<LookupResult>;
 
@@ -65,7 +64,7 @@ export function externalRatingsOf(record: MemberRecord): ExternalRatings {
     lichess: currentLookup(record, 'lichess')?.ratings ?? null,
     fide: currentLookup(record, 'fide')?.ratings ?? null,
     cfc: currentLookup(record, 'cfc')?.ratings ?? null,
-    fideRanks: currentLookup(record, 'fide')?.ranks ?? null,
+    fideWorldRank: currentLookup(record, 'fide')?.worldRank ?? null,
   };
 }
 
@@ -184,7 +183,7 @@ async function lookUpLichess(username: string): Promise<LookupResult> {
 }
 
 // FIDE has no API, so this reads the player's profile page, the only place it gives
-// their ranks
+// their world rank
 async function lookUpFide(id: string): Promise<LookupResult> {
   const page = await fetchText(
     `https://ratings.fide.com/profile/${encodeURIComponent(id)}`,
@@ -198,7 +197,7 @@ async function lookUpFide(id: string): Promise<LookupResult> {
     ratings: FIDE_TIME_CONTROLS.flatMap(([className, timeControl]) =>
       rated(timeControl, fideRating(page, className)),
     ),
-    ranks: fideRanks(page),
+    worldRank: fideWorldRank(page),
   };
 }
 
@@ -210,24 +209,11 @@ function fideRating(page: string, className: string): number {
   return Number(page.match(box)?.[1]);
 }
 
-// Absent for a player without a standard rating
-function fideRanks(page: string): FideRanks | null {
-  const world = page.match(/<h5>World Rank<\/h5>([\s\S]*?)<!--profile-rank-->/);
-  const national = page.match(
-    /<h5>National Rank (\w+)<\/h5>([\s\S]*?)<!--profile-rank-->/,
-  );
-  if (!world && !national) {
-    return null;
-  }
-  return {
-    federation: national?.[1] ?? '',
-    world: fideRank(world?.[1]),
-    national: fideRank(national?.[2]),
-  };
-}
-
-// FIDE ranks an inactive player as zero among active players
-function fideRank(block = ''): FideRank | null {
+// Absent for a player without a standard rating. FIDE ranks an inactive player as zero
+// among active players
+function fideWorldRank(page: string): FideRank | null {
+  const block =
+    page.match(/<h5>World Rank<\/h5>([\s\S]*?)<!--profile-rank-->/)?.[1] ?? '';
   const active = Number(block.match(/Active players<\/h6>\s*<p>(\d+)/)?.[1]);
   const all = Number(block.match(/All players<\/h6>\s*<p>(\d+)/)?.[1]);
   if (active > 0) {

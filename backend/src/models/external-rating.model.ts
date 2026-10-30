@@ -28,20 +28,13 @@ export interface FideRank {
   amongActive: boolean;
 }
 
-export interface FideRanks {
-  // The player's national federation, such as CAN
-  federation: string;
-  world: FideRank | null;
-  national: FideRank | null;
-}
-
 // Null when the platform knows no such player or has not been reached
 export interface ExternalRatings {
   chessCom: ExternalRating[] | null;
   lichess: ExternalRating[] | null;
   fide: ExternalRating[] | null;
   cfc: ExternalRating[] | null;
-  fideRanks: FideRanks | null;
+  fideWorldRank: FideRank | null;
 }
 
 // Kept with the handle it was looked up by, so a changed handle never shows another
@@ -50,7 +43,7 @@ export interface PlatformLookup {
   handle: string;
   ratings: ExternalRating[] | null;
   // Only FIDE ranks its players
-  ranks?: FideRanks | null;
+  worldRank?: FideRank | null;
 }
 
 export interface StoredExternalRatings {
@@ -75,20 +68,11 @@ const fideRankSchema = new Schema<FideRank>(
   { _id: false },
 );
 
-const fideRanksSchema = new Schema<FideRanks>(
-  {
-    federation: { type: String, default: '' },
-    world: { type: fideRankSchema, default: null },
-    national: { type: fideRankSchema, default: null },
-  },
-  { _id: false },
-);
-
 const platformLookupSchema = new Schema<PlatformLookup>(
   {
     handle: { type: String, required: true },
     ratings: { type: [externalRatingSchema], default: null },
-    ranks: { type: fideRanksSchema, default: undefined },
+    worldRank: { type: fideRankSchema, default: undefined },
   },
   { _id: false },
 );

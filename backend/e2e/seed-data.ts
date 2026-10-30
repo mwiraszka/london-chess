@@ -20,11 +20,7 @@ export interface SeedExternalRatings {
   lichess: SeedRating[];
   fide: SeedRating[];
   cfc: SeedRating[];
-  fideRanks: {
-    federation: string;
-    world: SeedFideRank | null;
-    national: SeedFideRank | null;
-  };
+  fideWorldRank: SeedFideRank | null;
 }
 
 export interface SeedMember {
@@ -177,11 +173,7 @@ export const PROFILE_MEMBER: SeedMember = {
       { timeControl: 'regular', rating: 1826, provisional: false },
       { timeControl: 'quick', rating: 1797, provisional: false },
     ],
-    fideRanks: {
-      federation: 'CAN',
-      world: { rank: 48213, amongActive: false },
-      national: { rank: 402, amongActive: false },
-    },
+    fideWorldRank: { rank: 48213, amongActive: false },
   },
   dateJoined: '2019-09-05T22:00:00.000Z',
   number: 3,
