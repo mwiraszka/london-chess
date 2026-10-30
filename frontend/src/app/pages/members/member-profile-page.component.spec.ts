@@ -17,7 +17,7 @@ import { RatingProgressionComponent } from '@app/components/rating-progression/r
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
 import { ExternalRatings, Member } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { AdminActionsService, MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import { GamesActions, initialState as gamesInitialState } from '@app/store/games';
 import {
@@ -488,6 +488,27 @@ describe('MemberProfilePageComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         MembersActions.fetchMemberByNumberRequested({ memberNumber: member.number! }),
       );
+    });
+  });
+
+  describe('admin actions', () => {
+    it('should offer to edit the member once they have loaded', () => {
+      createComponent();
+
+      expect(TestBed.inject(AdminActionsService).actions()).toEqual([
+        expect.objectContaining({
+          label: 'Edit member',
+          path: ['member', 'edit', member.id],
+        }),
+      ]);
+    });
+
+    it('should offer nothing while the member loads', () => {
+      store.overrideSelector(MembersSelectors.selectAllMembers, []);
+
+      createComponent();
+
+      expect(TestBed.inject(AdminActionsService).actions()).toEqual([]);
     });
   });
 });

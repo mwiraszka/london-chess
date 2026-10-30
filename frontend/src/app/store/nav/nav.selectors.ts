@@ -12,3 +12,7 @@ export const selectPathHistory = createSelector(
 export const selectCurrentPath = createSelector(selectPathHistory, pathHistory =>
   pathHistory.length ? pathHistory[pathHistory.length - 1] : null,
 );
+
+export const selectPreviousPath = createSelector(selectPathHistory, pathHistory =>
+  pathHistory.length > 1 ? pathHistory[pathHistory.length - 2] : null,
+);

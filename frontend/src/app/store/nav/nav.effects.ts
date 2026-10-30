@@ -92,14 +92,21 @@ export class NavEffects {
     { dispatch: false },
   );
 
-  navigateToMembers$ = createEffect(() =>
+  // Back to the members list or the member's profile, whichever the editor was opened from
+  leaveMemberEditor$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
         MembersActions.cancelSelected,
         MembersActions.addMemberSucceeded,
         MembersActions.updateMemberSucceeded,
       ),
-      map(() => NavActions.navigationRequested({ path: 'members' })),
+      concatLatestFrom(() => this.store.select(NavSelectors.selectPreviousPath)),
+      map(([, previousPath]) => {
+        const path = previousPath?.split(/[?#]/)[0];
+        return NavActions.navigationRequested({
+          path: path && /^\/members(\/\d+)?$/.test(path) ? path : 'members',
+        });
+      }),
     ),
   );
 

@@ -4,6 +4,7 @@ import {
   AvatarComponent,
   BadgeComponent,
   CardComponent,
+  EditIconComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
   SkeletonComponent,
@@ -17,7 +18,7 @@ import { map, switchMap, take } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
@@ -30,9 +31,9 @@ import {
   PLACEHOLDER_PROFILE_MEMBER,
   PLACEHOLDER_PROFILE_RATINGS,
 } from '@app/constants/member-profile';
-import { ExternalRatings, LoadStatus, Member } from '@app/models';
+import { AdminLinkAction, ExternalRatings, LoadStatus, Member } from '@app/models';
 import { RatingLabelPipe } from '@app/pipes';
-import { MetaAndTitleService } from '@app/services';
+import { AdminActionsService, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
@@ -87,7 +88,22 @@ export class MemberProfilePageComponent implements OnInit {
     ratingsPending: boolean;
   }>;
 
+  private readonly member = toSignal(
+    this.route.paramMap.pipe(
+      map(params => Number(params.get('number'))),
+      switchMap(memberNumber =>
+        this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
+      ),
+    ),
+    { initialValue: null },
+  );
+
   constructor() {
+    inject(AdminActionsService).register(() => {
+      const member = this.member();
+      return member ? [this.editAction(member)] : [];
+    });
+
     // Fetched once a visit for the rating, tournaments and openings cards, as tournaments
     // and games only change by import
     this.route.paramMap
@@ -145,6 +161,15 @@ export class MemberProfilePageComponent implements OnInit {
 
   public onRetry(memberNumber: number): void {
     this.store.dispatch(MembersActions.fetchMemberByNumberRequested({ memberNumber }));
+  }
+
+  private editAction(member: Member): AdminLinkAction {
+    return {
+      label: 'Edit member',
+      icon: EditIconComponent,
+      group: 'manage',
+      path: ['member', 'edit', member.id],
+    };
   }
 
   protected fullName(member: Member): string {

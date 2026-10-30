@@ -186,37 +186,51 @@ describe('NavEffects', () => {
     });
   });
 
-  describe('navigateToMembers$', () => {
-    it('should navigate to members on cancelSelected', async () => {
-      actions$.next(MembersActions.cancelSelected());
-      const action = await firstValueFrom(effects.navigateToMembers$);
+  describe('leaveMemberEditor$', () => {
+    const updated = MembersActions.updateMemberSucceeded({
+      member: MOCK_MEMBERS[0],
+      originalMemberName: 'John Doe',
+      emailSent: null,
+    });
+
+    it.each([
+      ['the profile', '/members/7', '/members/7'],
+      ['the members list', '/members', '/members'],
+      ['the members list, leaving its query behind', '/members?page=2', '/members'],
+    ])('should go back to %s the editor was opened from', async (_, previous, path) => {
+      store.overrideSelector(NavSelectors.selectPreviousPath, previous);
+      actions$.next(updated);
+
+      const action = await firstValueFrom(effects.leaveMemberEditor$);
+
+      expect(action).toEqual(NavActions.navigationRequested({ path }));
+    });
+
+    it.each([
+      ['another page', '/schedule'],
+      ['no page at all', null],
+    ])('should go to the members list from %s', async (_, previous) => {
+      store.overrideSelector(NavSelectors.selectPreviousPath, previous);
+      actions$.next(updated);
+
+      const action = await firstValueFrom(effects.leaveMemberEditor$);
 
       expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
     });
 
-    it('should navigate to members on addMemberSucceeded', async () => {
-      actions$.next(
-        MembersActions.addMemberSucceeded({
-          member: MOCK_MEMBERS[0],
-          emailSent: null,
-        }),
-      );
-      const action = await firstValueFrom(effects.navigateToMembers$);
+    it.each([
+      ['cancelling', MembersActions.cancelSelected()],
+      [
+        'adding a member',
+        MembersActions.addMemberSucceeded({ member: MOCK_MEMBERS[0], emailSent: null }),
+      ],
+    ])('should leave the same way after %s', async (_, leaving) => {
+      store.overrideSelector(NavSelectors.selectPreviousPath, '/members/7');
+      actions$.next(leaving);
 
-      expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
-    });
+      const action = await firstValueFrom(effects.leaveMemberEditor$);
 
-    it('should navigate to members on updateMemberSucceeded', async () => {
-      actions$.next(
-        MembersActions.updateMemberSucceeded({
-          member: MOCK_MEMBERS[0],
-          originalMemberName: 'John Doe',
-          emailSent: null,
-        }),
-      );
-      const action = await firstValueFrom(effects.navigateToMembers$);
-
-      expect(action).toEqual(NavActions.navigationRequested({ path: 'members' }));
+      expect(action).toEqual(NavActions.navigationRequested({ path: '/members/7' }));
     });
   });
 

@@ -61,4 +61,22 @@ describe('Nav Selectors', () => {
       expect(result).toBe('/home');
     });
   });
+
+  describe('selectPreviousPath', () => {
+    it('should select the path before the current one', () => {
+      const result = NavSelectors.selectPreviousPath.projector([
+        '/home',
+        '/members/7',
+        '/member/edit/a1',
+      ]);
+
+      expect(result).toBe('/members/7');
+    });
+
+    it('should return null without a page before the current one', () => {
+      const result = NavSelectors.selectPreviousPath.projector(['/member/edit/a1']);
+
+      expect(result).toBeNull();
+    });
+  });
 });
