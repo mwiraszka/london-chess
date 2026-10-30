@@ -129,5 +129,7 @@
 <ng-template
   #dateCell
   let-value="value">
-  {{ value | formatDate: 'short no-time' }}
+  @if (value) {
+    {{ value | formatDate: 'short no-time' }}
+  }
 </ng-template>

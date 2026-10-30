@@ -39,6 +39,7 @@ const ACCOUNT: MemberAccount = {
   avatarCropState: { zoom: 1, offsetX: 0, offsetY: 0 },
   avatarUpdatedAt: '2024-01-01T00:00:00.000Z',
   temporaryPasswordHash: 'temporary-password-hash',
+  createdAt: '2023-05-01T12:00:00.000Z',
 };
 
 function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
@@ -249,6 +250,17 @@ describe('toAdminMember', () => {
     const member = toAdminMember(buildRecord({ account: null }));
 
     expect(member.hasAccount).toBe(false);
+    expect(member.accountOpened).toBeNull();
+  });
+
+  it('should give when the account was opened, if that is known', () => {
+    const member = toAdminMember(buildRecord());
+    const unknown = toAdminMember(
+      buildRecord({ account: { ...ACCOUNT, createdAt: null } }),
+    );
+
+    expect(member.accountOpened).toBe('2023-05-01T12:00:00.000Z');
+    expect(unknown.accountOpened).toBeNull();
   });
 
   it('should give the federation IDs, empty for a record saved before members could give them', () => {

@@ -31,8 +31,9 @@ export interface Member {
   showYearOfBirth?: boolean;
   modificationInfo: ModificationInfo;
   avatarUrl: Url | null;
-  // Only admins learn whether a member has an account
+  // Only admins learn whether a member has an account, and when it was opened
   hasAccount?: boolean;
+  accountOpened?: IsoDate | null;
 }
 
 // A profile page lookup also brings the member's ratings on other chess sites

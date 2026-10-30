@@ -49,6 +49,7 @@ export interface MemberRow {
   email: string;
   phoneNumber: string;
   dateJoined: string;
+  accountOpened: string;
 }
 
 function toMemberRow(member: Member, number: number): MemberRow {
@@ -69,6 +70,7 @@ function toMemberRow(member: Member, number: number): MemberRow {
     email: member.email,
     phoneNumber: member.phoneNumber,
     dateJoined: member.dateJoined,
+    accountOpened: member.accountOpened ?? '',
   };
 }
 
@@ -226,6 +228,13 @@ export class MembersTableComponent {
           {
             key: 'dateJoined',
             label: 'Date joined',
+            sortable: true,
+            align: 'right',
+            cellTemplate: this.dateCell(),
+          },
+          {
+            key: 'accountOpened',
+            label: 'Account opened',
             sortable: true,
             align: 'right',
             cellTemplate: this.dateCell(),

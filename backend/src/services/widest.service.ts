@@ -116,6 +116,7 @@ export async function widestMemberIds(
           longest(members, '$phoneNumber'),
           oneOfEach(members, monthOf('$dateJoined')),
           oneOfEach(members, monthOf('$modificationInfo.dateLastEdited')),
+          oneOfEach(members, monthOf('$account.createdAt')),
         ]
       : [];
   const ids = await Promise.all([

@@ -27,6 +27,9 @@ export interface MemberAccount {
   avatarUpdatedAt: IsoDate | null;
   // Set while the member still uses the password the site emailed them
   temporaryPasswordHash: string | null;
+  // When the account was opened, null until copied over for accounts opened before it
+  // was kept
+  createdAt: IsoDate | null;
 }
 
 // An account just made, with no photo yet
@@ -46,6 +49,7 @@ export function newMemberAccount(
     avatarCropState: null,
     avatarUpdatedAt: null,
     temporaryPasswordHash: null,
+    createdAt: new Date().toISOString(),
     ...details,
   };
 }
@@ -121,6 +125,7 @@ const accountSchema = new Schema<MemberAccount>(
     },
     avatarUpdatedAt: { type: String, default: null },
     temporaryPasswordHash: { type: String, default: null },
+    createdAt: { type: String, default: null },
   },
   { _id: false },
 );
@@ -199,6 +204,7 @@ export const memberSortingConfig: SortingConfig = {
     name: 'lastName',
     born: 'yearOfBirth',
     lastUpdated: 'modificationInfo.dateLastEdited',
+    accountOpened: 'account.createdAt',
   },
   secondarySort: {
     name: ['firstName'],

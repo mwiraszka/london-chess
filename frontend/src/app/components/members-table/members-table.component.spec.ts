@@ -235,6 +235,7 @@ describe('MembersTableComponent', () => {
         'Email',
         'Phone number',
         'Date joined',
+        'Account opened',
       ]);
       expect(cellTexts(bodyRows()[0]).slice(1, 4)).toEqual(['Magnus', 'Carlsen', '2850']);
       expect(cellTexts(bodyRows()[0]).slice(9)).toEqual([
@@ -242,7 +243,12 @@ describe('MembersTableComponent', () => {
         'magnus.carlsen@example.com',
         '555-123-4567',
         'Thu, May 10, 2018',
+        'Sat, Mar 2, 2024',
       ]);
+    });
+
+    it('should leave the account opened blank for a member whose account date is not known', () => {
+      expect(cellTexts(bodyRows()[1]).at(-1)).toBe('');
     });
 
     it('should link a member with a profile to it by row, as for the public', () => {

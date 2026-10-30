@@ -353,6 +353,33 @@ describe('members routes', () => {
       expect(members[0]).not.toHaveProperty('ratingNumeric');
     });
 
+    it('should give admins the day each member opened their account, sorting by it', async () => {
+      await createAdmin(ADMIN);
+      await MemberModel.updateOne(
+        { number: 100 },
+        { $set: { 'account.createdAt': '2025-03-01T12:00:00.000Z' } },
+      );
+      await createMember({
+        number: 7,
+        account: memberAccount({
+          clerkUserId: 'user_early',
+          createdAt: '2024-06-01T12:00:00.000Z',
+        }),
+      });
+      await createMember({ firstName: 'Noah', email: 'noah@example.com' });
+
+      const response = await request(app)
+        .get('/v1/admin/members?sortBy=accountOpened&sortOrder=asc')
+        .set('Authorization', bearer(ADMIN));
+
+      const members: AdminMember[] = response.body.data.items;
+      expect(members.map(member => member.accountOpened)).toEqual([
+        null,
+        '2024-06-01T12:00:00.000Z',
+        '2025-03-01T12:00:00.000Z',
+      ]);
+    });
+
     it('should return the widest members with their private details', async () => {
       await createAdmin(ADMIN);
 

@@ -24,6 +24,7 @@ export const MOCK_MEMBERS: Member[] = [
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
     avatarUrl: null,
     hasAccount: true,
+    accountOpened: moment('2024-03-02T15:00:00').toISOString(),
   },
   {
     id: 'b2c3d4e5f6a7b8c9',

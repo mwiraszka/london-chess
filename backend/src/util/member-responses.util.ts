@@ -34,6 +34,7 @@ export interface AdminMember extends PublicMember {
   dateJoined: IsoDate;
   yearJoined: string;
   hasAccount: boolean;
+  accountOpened: IsoDate | null;
 }
 
 // A profile page is public, so it shows years rather than full dates
@@ -186,6 +187,7 @@ export function toAdminMember(record: MemberRecord): AdminMember {
     dateJoined: record.dateJoined,
     yearJoined: yearOf(record.dateJoined),
     hasAccount: !!record.account,
+    accountOpened: record.account?.createdAt ?? null,
   };
 }
 
