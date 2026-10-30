@@ -62,10 +62,10 @@ test.describe('member profile', () => {
     const accounts = page.locator('main').locator('.account');
 
     await expect(accounts).toHaveText([
-      /FIDE[\s\S]*Standard\s*1781\s*Rapid\s*–[\s\S]*World rank\s*#48,213\s*Canada rank\s*#402/,
+      /FIDE[\s\S]*Standard\s*1781\s*Rapid\s*Unrated\s*Blitz\s*Unrated\s*World rank\s*🌍\s*#48,213/,
       /CFC[\s\S]*Regular\s*1826\s*Quick\s*1797/,
-      /Chess\.com[\s\S]*Rapid\s*1612\s*Blitz\s*1544\s*Bullet\s*–/,
-      /Lichess[\s\S]*Rapid\s*–[\s\S]*Blitz\s*1733\s*Bullet\s*1689\?/,
+      /Chess\.com[\s\S]*Rapid\s*1612\s*Blitz\s*1544\s*Bullet\s*Unrated/,
+      /Lichess[\s\S]*Rapid\s*Unrated\s*Blitz\s*1733\s*Bullet\s*1689\?/,
     ]);
   });
 

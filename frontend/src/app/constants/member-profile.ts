@@ -45,7 +45,7 @@ export const PLACEHOLDER_PROFILE_RATINGS: ExternalRatings = {
   ],
   fide: null,
   cfc: null,
-  fideRanks: null,
+  fideWorldRank: null,
 };
 
 // Club ratings top out near 2200, so the rating chart never needs to reach past this

@@ -1,19 +1,15 @@
 import {
-  FEDERATION_NAMES,
   PLATFORM_TIME_CONTROLS,
   TIME_CONTROL_LABELS,
 } from '@app/constants/external-ratings';
 import {
   ChessAccount,
-  ChessAccountRank,
   ChessAccountRating,
   ExternalRating,
   ExternalRatings,
-  FideRanks,
   Member,
   RatingPlatform,
 } from '@app/models';
-import { isDefined } from '@app/utils/type-guards/is-defined.util';
 
 // The member's accounts on other chess sites, in the order their profile lists them
 export function getChessAccounts(
@@ -29,7 +25,7 @@ export function getChessAccounts(
       url: `https://ratings.fide.com/profile/${member.fideId}`,
       slots: slots('fide', ratings?.fide),
       isFound: !!ratings?.fide,
-      ranks: fideRanks(ratings?.fideRanks ?? null),
+      worldRank: ratings?.fideWorldRank ?? null,
     },
     {
       platform: 'cfc',
@@ -39,7 +35,7 @@ export function getChessAccounts(
       url: `https://www.chess.ca/en/ratings/p/?id=${member.cfcId}`,
       slots: slots('cfc', ratings?.cfc),
       isFound: !!ratings?.cfc,
-      ranks: [],
+      worldRank: null,
     },
     {
       platform: 'chessCom',
@@ -49,7 +45,7 @@ export function getChessAccounts(
       url: `https://www.chess.com/member/${member.chessComUsername}`,
       slots: slots('chessCom', ratings?.chessCom),
       isFound: !!ratings?.chessCom,
-      ranks: [],
+      worldRank: null,
     },
     {
       platform: 'lichess',
@@ -59,7 +55,7 @@ export function getChessAccounts(
       url: `https://lichess.org/@/${member.lichessUsername}`,
       slots: slots('lichess', ratings?.lichess),
       isFound: !!ratings?.lichess,
-      ranks: [],
+      worldRank: null,
     },
   ];
   return accounts.filter(account => account.handle);
@@ -79,15 +75,4 @@ function slots(
       provisional: found?.provisional ?? false,
     };
   });
-}
-
-function fideRanks(ranks: FideRanks | null): ChessAccountRank[] {
-  if (!ranks) {
-    return [];
-  }
-  const national = FEDERATION_NAMES[ranks.federation] ?? ranks.federation;
-  return [
-    ranks.world ? { ...ranks.world, label: 'World rank' } : null,
-    ranks.national ? { ...ranks.national, label: `${national} rank` } : null,
-  ].filter(isDefined);
 }

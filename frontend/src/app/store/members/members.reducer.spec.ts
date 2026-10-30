@@ -22,7 +22,7 @@ describe('Members Reducer', () => {
     lichess: null,
     fide: null,
     cfc: null,
-    fideRanks: null,
+    fideWorldRank: null,
   };
   // The public API leaves out a member's private details
   const publicOtherMember: Member = {

@@ -72,38 +72,30 @@
             </div>
 
             <div class="facts">
-              <div class="stats">
-                <dl class="stats__pair">
+              <dl class="stats">
+                <div class="stat">
+                  <dt class="stat__label">Peak rating</dt>
+                  <dd class="stat__value">{{ member.peakRating | ratingLabel }}</dd>
+                </div>
+                @if (member.city) {
                   <div class="stat">
-                    <dt class="stat__label">Peak rating</dt>
-                    <dd class="stat__value">{{ member.peakRating | ratingLabel }}</dd>
+                    <dt class="stat__label">City</dt>
+                    <dd class="stat__value">{{ member.city }}</dd>
                   </div>
-                  @if (member.city) {
-                    <div class="stat">
-                      <dt class="stat__label">City</dt>
-                      <dd class="stat__value">{{ member.city }}</dd>
-                    </div>
-                  }
-                </dl>
-                @if (
-                  member.yearJoined || (member.showYearOfBirth && member.yearOfBirth)
-                ) {
-                  <dl class="stats__pair">
-                    @if (member.yearJoined; as year) {
-                      <div class="stat">
-                        <dt class="stat__label">Member since</dt>
-                        <dd class="stat__value">{{ year }}</dd>
-                      </div>
-                    }
-                    @if (member.showYearOfBirth && member.yearOfBirth) {
-                      <div class="stat">
-                        <dt class="stat__label">Year of birth</dt>
-                        <dd class="stat__value">{{ member.yearOfBirth }}</dd>
-                      </div>
-                    }
-                  </dl>
                 }
-              </div>
+                @if (member.yearJoined; as year) {
+                  <div class="stat">
+                    <dt class="stat__label">Member since</dt>
+                    <dd class="stat__value">{{ year }}</dd>
+                  </div>
+                }
+                @if (member.showYearOfBirth && member.yearOfBirth) {
+                  <div class="stat">
+                    <dt class="stat__label">Year of birth</dt>
+                    <dd class="stat__value">{{ member.yearOfBirth }}</dd>
+                  </div>
+                }
+              </dl>
 
               @let accounts =
                 getChessAccounts(
@@ -153,11 +145,9 @@
                             </span>
                           } @else if (rating.rating === null) {
                             <span
-                              class="account__stat-value"
-                              aria-hidden="true">
-                              –
+                              class="account__stat-value account__stat-value--unrated">
+                              Unrated
                             </span>
-                            <span class="lcc-visually-hidden">Unrated</span>
                           } @else {
                             <span
                               class="account__stat-value"
@@ -169,22 +159,19 @@
                           }
                         </dd>
                       }
-                      @if (account.ranks.length) {
-                        <dd class="account__ranks">
-                          @for (rank of account.ranks; track rank.label) {
-                            <span class="account__stat">
-                              <span class="account__stat-label">{{ rank.label }}</span>
-                              <span
-                                class="account__stat-value"
-                                [eaTooltip]="
-                                  rank.amongActive
-                                    ? ''
-                                    : 'Among all players, as FIDE lists this member as inactive'
-                                ">
-                                #{{ rank.rank | number }}
-                              </span>
-                            </span>
-                          }
+                      @if (account.worldRank; as worldRank) {
+                        <dd class="account__rank">
+                          <span class="account__stat-label">World rank</span>
+                          <span
+                            class="account__stat-value"
+                            [eaTooltip]="
+                              worldRank.amongActive
+                                ? ''
+                                : 'Among all players, as FIDE lists this member as inactive'
+                            ">
+                            <span aria-hidden="true">🌍</span>
+                            #{{ worldRank.rank | number }}
+                          </span>
                         </dd>
                       }
                     </div>

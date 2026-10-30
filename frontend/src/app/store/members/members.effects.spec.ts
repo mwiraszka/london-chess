@@ -452,7 +452,7 @@ describe('MembersEffects', () => {
         lichess: null,
         fide: [{ timeControl: 'standard', rating: 1781, provisional: false }],
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       };
       const mockResponse: ApiResponse<MemberProfileRecord> = {
         data: { ...MOCK_MEMBERS[0], externalRatings },

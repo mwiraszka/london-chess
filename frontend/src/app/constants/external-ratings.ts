@@ -16,8 +16,3 @@ export const TIME_CONTROL_LABELS: Record<TimeControl, string> = {
   blitz: 'Blitz',
   bullet: 'Bullet',
 };
-
-// FIDE names a national federation by its code
-export const FEDERATION_NAMES: Record<string, string> = {
-  CAN: 'Canada',
-};

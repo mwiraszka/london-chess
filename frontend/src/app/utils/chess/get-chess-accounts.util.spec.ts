@@ -12,11 +12,7 @@ describe('getChessAccounts', () => {
     lichess: null,
     fide: [],
     cfc: [{ timeControl: 'regular', rating: 1802, provisional: false }],
-    fideRanks: {
-      federation: 'CAN',
-      world: { rank: 129807, amongActive: false },
-      national: { rank: 812, amongActive: true },
-    },
+    fideWorldRank: { rank: 129807, amongActive: false },
   };
   const member: Member = {
     ...MOCK_MEMBERS[0],
@@ -74,27 +70,11 @@ describe('getChessAccounts', () => {
     ]);
   });
 
-  it('should rank the member in the world and in their own federation, by name', () => {
+  it("should give FIDE's world rank alone", () => {
     const [fide, ...others] = getChessAccounts(member, externalRatings);
 
-    expect(fide.ranks).toEqual([
-      { label: 'World rank', rank: 129807, amongActive: false },
-      { label: 'Canada rank', rank: 812, amongActive: true },
-    ]);
-    expect(others.every(account => !account.ranks.length)).toBe(true);
-  });
-
-  it("should name a federation other than Canada's by its code", () => {
-    const [fide] = getChessAccounts(member, {
-      ...externalRatings,
-      fideRanks: {
-        federation: 'NOR',
-        world: null,
-        national: { rank: 3, amongActive: true },
-      },
-    });
-
-    expect(fide.ranks).toEqual([{ label: 'NOR rank', rank: 3, amongActive: true }]);
+    expect(fide.worldRank).toEqual({ rank: 129807, amongActive: false });
+    expect(others.every(account => account.worldRank === null)).toBe(true);
   });
 
   it('should list only the accounts the member has', () => {

@@ -17,20 +17,13 @@ export interface FideRank {
   amongActive: boolean;
 }
 
-export interface FideRanks {
-  // The player's national federation, such as CAN
-  federation: string;
-  world: FideRank | null;
-  national: FideRank | null;
-}
-
 // Null when the platform knows no such player or has not been reached
 export interface ExternalRatings {
   chessCom: ExternalRating[] | null;
   lichess: ExternalRating[] | null;
   fide: ExternalRating[] | null;
   cfc: ExternalRating[] | null;
-  fideRanks: FideRanks | null;
+  fideWorldRank: FideRank | null;
 }
 
 // Null when the member has no rating in the time control
@@ -39,10 +32,6 @@ export interface ChessAccountRating {
   label: string;
   rating: number | null;
   provisional: boolean;
-}
-
-export interface ChessAccountRank extends FideRank {
-  label: string;
 }
 
 // One of the member's accounts elsewhere, as their profile lists it
@@ -56,5 +45,6 @@ export interface ChessAccount {
   slots: ChessAccountRating[];
   // Whether the platform has been reached and knows the member
   isFound: boolean;
-  ranks: ChessAccountRank[];
+  // Only FIDE ranks its players
+  worldRank: FideRank | null;
 }

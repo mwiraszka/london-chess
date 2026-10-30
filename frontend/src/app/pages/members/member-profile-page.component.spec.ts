@@ -249,7 +249,6 @@ describe('MemberProfilePageComponent', () => {
       showMember({ showYearOfBirth: false });
 
       expect(statValues()).toEqual([member.peakRating, member.city]);
-      expect(queryAll(fixture.debugElement, '.stats__pair')).toHaveLength(1);
     });
 
     it('should show the year the member joined', () => {
@@ -333,38 +332,32 @@ describe('MemberProfilePageComponent', () => {
         lichess: [{ timeControl: 'bullet', rating: 1610, provisional: true }],
         fide: [{ timeControl: 'standard', rating: 1781, provisional: false }],
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       });
 
       const stats = queryAll(fixture.debugElement, '.account').map(account =>
         queryAll(account, '.account__stat').map(textOf),
       );
       expect(stats).toEqual([
-        ['Standard 1781', 'Rapid – Unrated', 'Blitz – Unrated'],
-        ['Rapid 1520', 'Blitz 1430', 'Bullet – Unrated'],
-        ['Rapid – Unrated', 'Blitz – Unrated', 'Bullet 1610?'],
+        ['Standard 1781', 'Rapid Unrated', 'Blitz Unrated'],
+        ['Rapid 1520', 'Blitz 1430', 'Bullet Unrated'],
+        ['Rapid Unrated', 'Blitz Unrated', 'Bullet 1610?'],
       ]);
     });
 
-    it("should set FIDE apart on a card of its own, with the member's world and national ranks", () => {
+    it("should set FIDE apart on a card of its own, with the member's world rank", () => {
       showRatings({
         chessCom: null,
         lichess: null,
         fide: [],
         cfc: null,
-        fideRanks: {
-          federation: 'CAN',
-          world: { rank: 48213, amongActive: false },
-          national: { rank: 402, amongActive: true },
-        },
+        fideWorldRank: { rank: 48213, amongActive: false },
       });
 
       const featured = queryAll(fixture.debugElement, '.account--featured');
       expect(featured).toHaveLength(1);
       expect(queryTextContent(featured[0], '.platform')).toBe('FIDE');
-      expect(queryAll(featured[0], '.account__ranks .account__stat').map(textOf)).toEqual(
-        ['World rank #48,213', 'Canada rank #402'],
-      );
+      expect(textOf(query(featured[0], '.account__rank'))).toBe('World rank 🌍 #48,213');
     });
 
     it('should show no ratings for an account whose ratings were not found', () => {
@@ -373,7 +366,7 @@ describe('MemberProfilePageComponent', () => {
         lichess: null,
         fide: null,
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       });
 
       expect(queryAll(fixture.debugElement, '.chess-accounts a')).toHaveLength(3);

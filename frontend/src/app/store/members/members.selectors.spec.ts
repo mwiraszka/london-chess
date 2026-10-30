@@ -101,7 +101,7 @@ describe('Members Selectors', () => {
         lichess: null,
         fide: [],
         cfc: null,
-        fideRanks: null,
+        fideWorldRank: null,
       };
 
       expect(
