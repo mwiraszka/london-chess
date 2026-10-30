@@ -1,4 +1,5 @@
 import { IsoDate } from '../models/core.model';
+import { ExternalRatings } from '../models/external-rating.model';
 import {
   AvatarCropState,
   Brand,
@@ -26,6 +27,8 @@ export interface PublicMember {
 export interface AdminMember extends PublicMember {
   email: string;
   phoneNumber: string;
+  fideId: string;
+  cfcId: string;
   yearOfBirth: string;
   showYearOfBirth: boolean;
   dateJoined: IsoDate;
@@ -38,7 +41,12 @@ export interface PublicProfile extends PublicMember {
   yearOfBirth: string;
   showYearOfBirth: boolean;
   yearJoined: string;
+  fideId: string;
+  cfcId: string;
+  externalRatings: ExternalRatings;
 }
+
+export type AdminProfile = AdminMember & Pick<PublicProfile, 'externalRatings'>;
 
 export interface AccountRecord {
   id: string;
@@ -92,6 +100,9 @@ export const PUBLIC_PROFILE_PROJECTION = {
   yearOfBirth: 1,
   dateJoined: 1,
   preferences: 1,
+  fideId: 1,
+  cfcId: 1,
+  externalRatings: 1,
 } as const;
 
 export const MEMBER_PROFILE_PROJECTION = {
@@ -145,7 +156,10 @@ export function toPublicMember(record: MemberRecord): PublicMember {
   };
 }
 
-export function toPublicProfile(record: MemberRecord): PublicProfile {
+export function toPublicProfile(
+  record: MemberRecord,
+  externalRatings: ExternalRatings,
+): PublicProfile {
   const showYearOfBirth = showsYearOfBirth(record);
 
   return {
@@ -154,6 +168,9 @@ export function toPublicProfile(record: MemberRecord): PublicProfile {
     yearOfBirth: showYearOfBirth ? record.yearOfBirth : '',
     showYearOfBirth,
     yearJoined: yearOf(record.dateJoined),
+    fideId: record.fideId ?? '',
+    cfcId: record.cfcId ?? '',
+    externalRatings,
   };
 }
 
@@ -162,6 +179,8 @@ export function toAdminMember(record: MemberRecord): AdminMember {
     ...toPublicMember(record),
     email: record.email,
     phoneNumber: record.phoneNumber,
+    fideId: record.fideId ?? '',
+    cfcId: record.cfcId ?? '',
     yearOfBirth: record.yearOfBirth,
     showYearOfBirth: showsYearOfBirth(record),
     dateJoined: record.dateJoined,

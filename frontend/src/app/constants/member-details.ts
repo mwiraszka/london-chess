@@ -18,4 +18,12 @@ export const MEMBER_DETAIL_RULES = {
     message:
       'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores',
   },
+  fideId: {
+    pattern: /^\d{1,10}$/,
+    message: 'FIDE ID must be a number of up to 10 digits',
+  },
+  cfcId: {
+    pattern: /^\d{1,7}$/,
+    message: 'CFC ID must be a number of up to 7 digits',
+  },
 } as const;

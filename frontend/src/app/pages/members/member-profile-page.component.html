@@ -105,47 +105,89 @@
                 }
               </div>
 
-              @if (member.chessComUsername || member.lichessUsername) {
+              @let accounts =
+                getChessAccounts(
+                  member,
+                  vm.member ? vm.externalRatings : placeholderRatings
+                );
+              @if (accounts.length) {
                 <dl class="chess-accounts">
-                  @if (member.chessComUsername) {
-                    <dt class="platform">
-                      <img
-                        class="platform-logo"
-                        src="assets/club-link-icons/chesscom.svg"
-                        alt=""
-                        aria-hidden="true" />
-                      Chess.com
-                    </dt>
-                    <dd>
-                      <a
-                        class="lcc-link"
-                        [href]="chessComUrl(member)"
-                        rel="noopener noreferrer"
-                        target="_blank">
-                        <span>{{ member.chessComUsername }}</span>
-                        <ea-icon-external-link class="external-link-icon" />
-                      </a>
-                    </dd>
-                  }
-                  @if (member.lichessUsername) {
-                    <dt class="platform">
-                      <img
-                        class="platform-logo platform-logo--lichess"
-                        src="assets/club-link-icons/lichess.svg"
-                        alt=""
-                        aria-hidden="true" />
-                      Lichess
-                    </dt>
-                    <dd>
-                      <a
-                        class="lcc-link"
-                        [href]="lichessUrl(member)"
-                        rel="noopener noreferrer"
-                        target="_blank">
-                        <span>{{ member.lichessUsername }}</span>
-                        <ea-icon-external-link class="external-link-icon" />
-                      </a>
-                    </dd>
+                  @for (account of accounts; track account.platform) {
+                    <div
+                      class="account"
+                      [class.account--featured]="account.platform === 'fide'">
+                      <dt class="account__name">
+                        <span class="platform">
+                          @if (account.logoSrc) {
+                            <img
+                              class="platform-logo"
+                              alt=""
+                              aria-hidden="true"
+                              [class.platform-logo--lichess]="
+                                account.platform === 'lichess'
+                              "
+                              [src]="account.logoSrc" />
+                          }
+                          {{ account.label }}
+                        </span>
+                        <a
+                          class="lcc-link"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          [href]="account.url">
+                          <span>{{ account.handle }}</span>
+                          <ea-icon-external-link class="external-link-icon" />
+                        </a>
+                      </dt>
+                      @for (
+                        rating of vm.ratingsPending || account.isFound
+                          ? account.slots
+                          : [];
+                        track rating.timeControl
+                      ) {
+                        <dd class="account__stat">
+                          <span class="account__stat-label">{{ rating.label }}</span>
+                          @if (vm.ratingsPending) {
+                            <span class="account__stat-value">
+                              <lcc-text-skeleton width="40px" />
+                            </span>
+                          } @else if (rating.rating === null) {
+                            <span
+                              class="account__stat-value"
+                              aria-hidden="true">
+                              –
+                            </span>
+                            <span class="lcc-visually-hidden">Unrated</span>
+                          } @else {
+                            <span
+                              class="account__stat-value"
+                              [eaTooltip]="
+                                rating.provisional ? 'Provisional rating' : ''
+                              ">
+                              {{ rating.rating }}{{ rating.provisional ? '?' : '' }}
+                            </span>
+                          }
+                        </dd>
+                      }
+                      @if (account.ranks.length) {
+                        <dd class="account__ranks">
+                          @for (rank of account.ranks; track rank.label) {
+                            <span class="account__stat">
+                              <span class="account__stat-label">{{ rank.label }}</span>
+                              <span
+                                class="account__stat-value"
+                                [eaTooltip]="
+                                  rank.amongActive
+                                    ? ''
+                                    : 'Among all players, as FIDE lists this member as inactive'
+                                ">
+                                #{{ rank.rank | number }}
+                              </span>
+                            </span>
+                          }
+                        </dd>
+                      }
+                    </div>
                   }
                 </dl>
               }

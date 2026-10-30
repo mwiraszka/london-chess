@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 
+import { ExternalRatings } from '../models/external-rating.model';
 import { MemberAccount, MemberRecord } from '../models/member.model';
 import {
   PUBLIC_MEMBER_PROJECTION,
@@ -19,6 +20,14 @@ const PRIVATE_MEMBER_FIELDS = [
   'account',
   'hasAccount',
 ];
+
+const EXTERNAL_RATINGS: ExternalRatings = {
+  chessCom: [{ timeControl: 'blitz', rating: 1450, provisional: false }],
+  lichess: null,
+  fide: null,
+  cfc: [],
+  fideRanks: null,
+};
 
 const ACCOUNT: MemberAccount = {
   clerkUserId: 'user_123',
@@ -46,6 +55,8 @@ function buildRecord(overrides: Partial<MemberRecord> = {}): MemberRecord {
     yearOfBirth: '1990',
     chessComUsername: 'janedoe',
     lichessUsername: 'jane_doe',
+    fideId: '2600123',
+    cfcId: '150123',
     isActive: true,
     dateJoined: '2022-08-18T04:00:00.000Z',
     modificationInfo: {
@@ -84,18 +95,25 @@ describe('PUBLIC_MEMBER_PROJECTION', () => {
 });
 
 describe('PUBLIC_PROFILE_PROJECTION', () => {
-  it('should read only the year of birth, join date and preferences beyond the public member fields', () => {
+  it('should read only the year of birth, join date, preferences, federation IDs and external ratings beyond the public member fields', () => {
     const extraFields = Object.keys(PUBLIC_PROFILE_PROJECTION).filter(
       field => !(field in PUBLIC_MEMBER_PROJECTION),
     );
 
-    expect(extraFields.sort()).toEqual(['dateJoined', 'preferences', 'yearOfBirth']);
+    expect(extraFields.sort()).toEqual([
+      'cfcId',
+      'dateJoined',
+      'externalRatings',
+      'fideId',
+      'preferences',
+      'yearOfBirth',
+    ]);
   });
 });
 
 describe('toPublicProfile', () => {
   it('should withhold the year of birth until the member opts in', () => {
-    const profile = toPublicProfile(buildRecord());
+    const profile = toPublicProfile(buildRecord(), EXTERNAL_RATINGS);
 
     expect(profile.yearOfBirth).toBe('');
     expect(profile.showYearOfBirth).toBe(false);
@@ -115,11 +133,30 @@ describe('toPublicProfile', () => {
           notifyScheduleChanges: true,
         },
       }),
+      EXTERNAL_RATINGS,
     );
 
     expect(profile.yearOfBirth).toBe('1990');
     expect(profile.showYearOfBirth).toBe(true);
     expect(profile.yearJoined).toBe('2022');
+  });
+
+  it('should add the federation IDs and the external ratings it is given', () => {
+    const profile = toPublicProfile(buildRecord(), EXTERNAL_RATINGS);
+
+    expect(profile.fideId).toBe('2600123');
+    expect(profile.cfcId).toBe('150123');
+    expect(profile.externalRatings).toEqual(EXTERNAL_RATINGS);
+  });
+
+  it('should give empty federation IDs for a record saved before members could give them', () => {
+    const profile = toPublicProfile(
+      buildRecord({ fideId: undefined, cfcId: undefined }),
+      EXTERNAL_RATINGS,
+    );
+
+    expect(profile.fideId).toBe('');
+    expect(profile.cfcId).toBe('');
   });
 });
 
@@ -212,6 +249,14 @@ describe('toAdminMember', () => {
     const member = toAdminMember(buildRecord({ account: null }));
 
     expect(member.hasAccount).toBe(false);
+  });
+
+  it('should give the federation IDs, empty for a record saved before members could give them', () => {
+    const member = toAdminMember(buildRecord());
+    const older = toAdminMember(buildRecord({ fideId: undefined, cfcId: undefined }));
+
+    expect(member).toMatchObject({ fideId: '2600123', cfcId: '150123' });
+    expect(older).toMatchObject({ fideId: '', cfcId: '' });
   });
 
   it('should keep the year of birth and report whether the member shows it on their profile', () => {

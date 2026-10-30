@@ -74,6 +74,21 @@ export const selectFilteredMembersStatus = createSelector(
     loadStatus(lastFetch !== null, failedLoads.includes('filtered')),
 );
 
+const selectExternalRatings = createSelector(
+  selectMembersState,
+  state => state.externalRatings,
+);
+
+export const selectMemberExternalRatings = (number: number) =>
+  createSelector(
+    selectExternalRatings,
+    externalRatings => externalRatings[number] ?? null,
+  );
+
+export const selectMemberLoadFailed = createSelector(selectFailedLoads, failedLoads =>
+  failedLoads.includes('member'),
+);
+
 export const selectMemberProfileStatus = (number: number) =>
   createSelector(selectMemberByNumber(number), selectFailedLoads, (member, failedLoads) =>
     loadStatus(!!member, failedLoads.includes('member')),

@@ -166,6 +166,7 @@ $stats-inset: 12px;
 .facts {
   display: flex;
   flex-flow: row wrap;
+  align-items: flex-start;
   justify-content: space-between;
   gap: (16px - $stats-inset) 48px;
   margin-top: 16px;
@@ -215,13 +216,43 @@ $stats-inset: 12px;
   }
 }
 
+// Every account's ratings line up in columns down the list, under its name once the card
+// is narrow. Each row is inset like the stats, so the first one's text lines up with theirs
 .chess-accounts {
   display: grid;
-  align-items: center;
   align-content: start;
-  gap: 8px 12px;
-  grid-template-columns: auto auto;
-  padding-top: $stats-inset;
+  gap: 0 24px;
+  grid-template-columns: auto repeat(3, auto);
+
+  @container (width < 560px) {
+    grid-template-columns: repeat(3, auto);
+  }
+
+  .account {
+    display: grid;
+    align-items: end;
+    row-gap: 12px;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    padding: $stats-inset 16px;
+  }
+
+  .account--featured {
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1px 3px 0 var(--lcc-shadow-soft);
+    background-color: var(--lcc-surface);
+  }
+
+  .account__name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    @container (width < 560px) {
+      grid-column: 1 / -1;
+    }
+  }
 
   .platform {
     display: inline-flex;
@@ -243,6 +274,36 @@ $stats-inset: 12px;
     .external-link-icon {
       @include icon-size(14px);
       @include link-icon-lift;
+    }
+  }
+
+  .account__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .account__stat-label {
+    @include stat-label;
+
+    white-space: nowrap;
+  }
+
+  .account__stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--color-text-primary);
+  }
+
+  .account__ranks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    grid-column: 2 / -1;
+
+    @container (width < 560px) {
+      grid-column: 1 / -1;
     }
   }
 }

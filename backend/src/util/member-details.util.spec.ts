@@ -41,4 +41,11 @@ describe('validateDetailField', () => {
     );
     expect(validateDetailField('lichessUsername', 'jane_doe-1')).toBeNull();
   });
+
+  it('should take only digits for the federation IDs', () => {
+    expect(validateDetailField('fideId', '2600123')).toBeNull();
+    expect(validateDetailField('fideId', '26OO123')).toMatch(/^FIDE ID must be/);
+    expect(validateDetailField('cfcId', '150123')).toBeNull();
+    expect(validateDetailField('cfcId', '12345678')).toMatch(/^CFC ID must be/);
+  });
 });

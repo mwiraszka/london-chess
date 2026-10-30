@@ -1,6 +1,10 @@
 import { Schema, Types, model } from 'mongoose';
 
 import { Id, IsoDate } from './core.model';
+import {
+  StoredExternalRatings,
+  storedExternalRatingsSchema,
+} from './external-rating.model';
 import { ModificationInfo } from './modification-info.model';
 import { SortingConfig } from './pagination.model';
 
@@ -71,12 +75,17 @@ export interface Member {
   yearOfBirth: string;
   chessComUsername: string;
   lichessUsername: string;
+  // Absent on records saved before members could give them
+  fideId?: string;
+  cfcId?: string;
   isActive: boolean;
   dateJoined: IsoDate;
   modificationInfo: ModificationInfo;
   account: MemberAccount | null;
   // Absent on records saved before the member had anything to choose
   preferences?: MemberPreferences;
+  // Absent until a profile view first looks the member up on other sites
+  externalRatings?: StoredExternalRatings | null;
 }
 
 export type MemberRecord = Omit<Member, 'id'> & { _id: Types.ObjectId };
@@ -90,10 +99,11 @@ export const profileMemberFilter = (number: number) => ({
 // Enough of a member to name them and link to their profile
 export type MemberName = Pick<MemberRecord, '_id' | 'firstName' | 'lastName' | 'number'>;
 
-// The number, account and preferences belong to the member, so admins never write them
+// The number, account and preferences belong to the member, and the external ratings to
+// the sites they come from, so admins never write them
 export type EditableMemberFields = Omit<
   Member,
-  'id' | 'number' | 'account' | 'preferences'
+  'id' | 'number' | 'account' | 'preferences' | 'externalRatings'
 >;
 
 const accountSchema = new Schema<MemberAccount>(
@@ -138,11 +148,14 @@ const memberSchema = new Schema<Member>(
     yearOfBirth: { type: String, default: '' },
     chessComUsername: { type: String, default: '' },
     lichessUsername: { type: String, default: '' },
+    fideId: { type: String, default: '' },
+    cfcId: { type: String, default: '' },
     isActive: { type: Boolean, required: true },
     dateJoined: { type: String, required: true },
     modificationInfo: { type: Object, required: true },
     account: { type: accountSchema, default: null },
     preferences: { type: preferencesSchema, default: () => ({}) },
+    externalRatings: { type: storedExternalRatingsSchema, default: null },
   },
   { versionKey: false },
 );
@@ -174,6 +187,8 @@ export const editableMemberTypes: Record<keyof EditableMemberFields, string | st
     yearOfBirth: 'string',
     chessComUsername: 'string',
     lichessUsername: 'string',
+    fideId: 'string',
+    cfcId: 'string',
     isActive: 'boolean',
     dateJoined: 'string',
     modificationInfo: 'object',

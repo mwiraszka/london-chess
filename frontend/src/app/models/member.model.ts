@@ -3,6 +3,7 @@ import { FormControl } from '@angular/forms';
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 
 import { Id, IsoDate, Url } from './core.model';
+import { ExternalRatings } from './external-rating.model';
 import { ModificationInfo } from './modification-info.model';
 
 export interface Member {
@@ -19,6 +20,9 @@ export interface Member {
   yearOfBirth: string;
   chessComUsername: string;
   lichessUsername: string;
+  // Sent only with a profile page lookup or to admins
+  fideId: string;
+  cfcId: string;
   isActive: boolean;
   isAdmin?: boolean;
   dateJoined: IsoDate;
@@ -30,6 +34,9 @@ export interface Member {
   // Only admins learn whether a member has an account
   hasAccount?: boolean;
 }
+
+// A profile page lookup also brings the member's ratings on other chess sites
+export type MemberProfileRecord = Member & { externalRatings: ExternalRatings };
 
 // The number, avatar and account belong to the server, so admins never write them
 export type EditableMember = MemberFormData & Pick<Member, 'modificationInfo'>;
@@ -69,6 +76,17 @@ export type MemberDetailsFormGroup = {
 export type MemberAccountFormGroup = MemberDetailsFormGroup & {
   email: FormControl<string>;
 };
+
+export interface FederationIdsFormData {
+  fideId: string;
+  cfcId: string;
+}
+
+export type FederationIdsFormGroup = {
+  [Property in keyof FederationIdsFormData]: FormControl<FederationIdsFormData[Property]>;
+};
+
+export type ProfileDetailsFormData = MemberDetailsFormData & FederationIdsFormData;
 
 export type MemberFormData = Pick<Member, (typeof MEMBER_FORM_DATA_PROPERTIES)[number]>;
 

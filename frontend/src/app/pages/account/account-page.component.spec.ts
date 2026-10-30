@@ -66,13 +66,21 @@ describe('AccountPageComponent', () => {
 
   const member: Pick<
     Member,
-    'yearOfBirth' | 'city' | 'phoneNumber' | 'lichessUsername' | 'chessComUsername'
+    | 'yearOfBirth'
+    | 'city'
+    | 'phoneNumber'
+    | 'lichessUsername'
+    | 'chessComUsername'
+    | 'fideId'
+    | 'cfcId'
   > = {
     yearOfBirth: '1990',
     city: 'London',
     phoneNumber: '519-555-0123',
     lichessUsername: 'janesmith',
     chessComUsername: '',
+    fideId: '2600123',
+    cfcId: '',
   };
 
   const record: UserRecord = {
@@ -218,8 +226,23 @@ describe('AccountPageComponent', () => {
       phoneNumber: '519-555-0123',
       lichessUsername: 'janesmith',
       chessComUsername: '',
+      fideId: '2600123',
+      cfcId: '',
     });
     expect(component['hasDetailChanges']()).toBe(false);
+  });
+
+  it('should set the federation IDs apart from the personal details', async () => {
+    await render();
+
+    const form: HTMLElement = fixture.nativeElement.querySelector('.details-form');
+    const sections = [...form.children].map(child => child.tagName.toLowerCase());
+
+    expect(sections.slice(-3)).toEqual([
+      'lcc-chess-username-fields',
+      'ea-divider',
+      'lcc-federation-id-fields',
+    ]);
   });
 
   it('should send a section it does not know to the profile', async () => {
@@ -236,6 +259,7 @@ describe('AccountPageComponent', () => {
       component['detailsForm'].patchValue({
         city: '  Komoka ',
         phoneNumber: '(519) 555 0199',
+        cfcId: '150123',
       });
 
       await component['onRequestChanges']();
@@ -248,6 +272,8 @@ describe('AccountPageComponent', () => {
         phoneNumber: '519-555-0199',
         lichessUsername: 'janesmith',
         chessComUsername: '',
+        fideId: '2600123',
+        cfcId: '150123',
       });
       expect(toast.show).toHaveBeenCalledWith(
         'An admin will email you once your changes are made.',

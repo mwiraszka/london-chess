@@ -3,6 +3,7 @@ import { createAction, props } from '@ngrx/store';
 import {
   ApiScope,
   DataPaginationOptions,
+  ExternalRatings,
   Id,
   LccError,
   Member,
@@ -46,7 +47,8 @@ export const fetchMemberRequested = createAction(
 );
 export const fetchMemberSucceeded = createAction(
   '[Members] Fetch member succeeded',
-  props<{ member: Member; scope: ApiScope }>(),
+  // Only a profile lookup brings the ratings
+  props<{ member: Member; scope: ApiScope; externalRatings?: ExternalRatings }>(),
 );
 export const fetchMemberFailed = createAction(
   '[Members] Fetch member failed',

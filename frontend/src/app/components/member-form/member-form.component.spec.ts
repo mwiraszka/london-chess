@@ -242,6 +242,8 @@ describe('MemberFormComponent', () => {
         yearOfBirth: '',
         chessComUsername: '',
         lichessUsername: '',
+        fideId: '',
+        cfcId: '',
       });
 
       const { controls } = component.form;
@@ -255,6 +257,8 @@ describe('MemberFormComponent', () => {
       expect(controls.yearOfBirth.valid).toBe(true);
       expect(controls.chessComUsername.valid).toBe(true);
       expect(controls.lichessUsername.valid).toBe(true);
+      expect(controls.fideId.valid).toBe(true);
+      expect(controls.cfcId.valid).toBe(true);
     });
 
     it('should accept any text a person might type, emoji included', () => {
@@ -290,28 +294,36 @@ describe('MemberFormComponent', () => {
       expect(component.form.controls.rating.valid).toBe(true);
     });
 
-    it('should accept the phone numbers and usernames members can save on their account', () => {
+    it('should accept the phone numbers, usernames and IDs members can save on their account', () => {
       component.form.patchValue({
         phoneNumber: '(519) 555-1234',
         chessComUsername: 'Magnus_Carlsen',
         lichessUsername: 'DrNykterstein',
+        fideId: '1503014',
+        cfcId: '105938',
       });
 
       expect(component.form.controls.phoneNumber.valid).toBe(true);
       expect(component.form.controls.chessComUsername.valid).toBe(true);
       expect(component.form.controls.lichessUsername.valid).toBe(true);
+      expect(component.form.controls.fideId.valid).toBe(true);
+      expect(component.form.controls.cfcId.valid).toBe(true);
     });
 
-    it('should reject the phone numbers and usernames members could not save either', () => {
+    it('should reject the phone numbers, usernames and IDs members could not save either', () => {
       component.form.patchValue({
         phoneNumber: 'call after 6',
         chessComUsername: 'magnus carlsen',
         lichessUsername: 'x',
+        fideId: 'FIDE 1503014',
+        cfcId: '12345678',
       });
 
       expect(component.form.controls.phoneNumber.hasError('pattern')).toBe(true);
       expect(component.form.controls.chessComUsername.hasError('pattern')).toBe(true);
       expect(component.form.controls.lichessUsername.hasError('pattern')).toBe(true);
+      expect(component.form.controls.fideId.hasError('pattern')).toBe(true);
+      expect(component.form.controls.cfcId.hasError('pattern')).toBe(true);
     });
 
     it('should reject a malformed email address or an impossible year of birth', () => {

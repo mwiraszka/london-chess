@@ -10,8 +10,10 @@ import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   ApiResponse,
   ApiScope,
+  ExternalRatings,
   LccError,
   Member,
+  MemberProfileRecord,
   MemberRatingsUpdate,
   PaginatedItems,
   User,
@@ -442,10 +444,19 @@ describe('MembersEffects', () => {
   });
 
   describe('fetchMemberByNumber$', () => {
-    it('should fetch a member by number in the viewer scope', async () => {
+    it('should fetch a member by number in the viewer scope, their ratings apart', async () => {
       store.overrideSelector(AuthSelectors.selectApiScope, 'admin');
       store.refreshState();
-      const mockResponse: ApiResponse<Member> = { data: MOCK_MEMBERS[0] };
+      const externalRatings: ExternalRatings = {
+        chessCom: null,
+        lichess: null,
+        fide: [{ timeControl: 'standard', rating: 1781, provisional: false }],
+        cfc: null,
+        fideRanks: null,
+      };
+      const mockResponse: ApiResponse<MemberProfileRecord> = {
+        data: { ...MOCK_MEMBERS[0], externalRatings },
+      };
       membersApiService.getMemberByNumber.mockReturnValue(of(mockResponse));
 
       actions$.next(MembersActions.fetchMemberByNumberRequested({ memberNumber: 0 }));
@@ -455,6 +466,7 @@ describe('MembersEffects', () => {
         MembersActions.fetchMemberSucceeded({
           member: MOCK_MEMBERS[0],
           scope: 'admin',
+          externalRatings,
         }),
       );
       expect(membersApiService.getMemberByNumber).toHaveBeenCalledWith(0, 'admin');

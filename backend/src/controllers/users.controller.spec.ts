@@ -348,6 +348,21 @@ describe('users routes', () => {
       expect(email.text).not.toContain('Last name');
     });
 
+    it('should send requested federation IDs, even for a record saved before members could give them', async () => {
+      const { _id } = await createAccountHolder();
+      await MemberModel.updateOne({ _id }, { $unset: { fideId: 1, cfcId: 1 } });
+
+      const response = await request(app)
+        .post('/v1/users/me/member/change-request')
+        .set('Authorization', bearer(USER))
+        .send({ fideId: '2600123', cfcId: '' });
+
+      expect(response.status).toBe(200);
+      const [email] = vi.mocked(sendAdminEmail).mock.calls[0];
+      expect(email.text).toContain('FIDE ID: current (empty), requested 2600123');
+      expect(email.text).not.toContain('CFC ID');
+    });
+
     it('should reject details that are not text or are invalid', async () => {
       await createAccountHolder();
 

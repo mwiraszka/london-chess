@@ -1,4 +1,4 @@
-import { Member } from '@app/models';
+import { ExternalRatings, Member } from '@app/models';
 
 // Shaped like a typical profile, so a loading skeleton sized by it matches the real card
 export const PLACEHOLDER_PROFILE_MEMBER: Member = {
@@ -15,6 +15,8 @@ export const PLACEHOLDER_PROFILE_MEMBER: Member = {
   showYearOfBirth: false,
   chessComUsername: 'username',
   lichessUsername: 'username',
+  fideId: '',
+  cfcId: '',
   isActive: true,
   isAdmin: false,
   dateJoined: '',
@@ -28,6 +30,22 @@ export const PLACEHOLDER_PROFILE_MEMBER: Member = {
     lastEditedByNumber: null,
   },
   avatarUrl: null,
+};
+
+export const PLACEHOLDER_PROFILE_RATINGS: ExternalRatings = {
+  chessCom: [
+    { timeControl: 'rapid', rating: 1500, provisional: false },
+    { timeControl: 'blitz', rating: 1500, provisional: false },
+    { timeControl: 'bullet', rating: 1500, provisional: false },
+  ],
+  lichess: [
+    { timeControl: 'rapid', rating: 1500, provisional: false },
+    { timeControl: 'blitz', rating: 1500, provisional: false },
+    { timeControl: 'bullet', rating: 1500, provisional: false },
+  ],
+  fide: null,
+  cfc: null,
+  fideRanks: null,
 };
 
 // Club ratings top out near 2200, so the rating chart never needs to reach past this

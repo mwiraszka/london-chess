@@ -6,6 +6,7 @@ import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constan
 import {
   ApiScope,
   DataPaginationOptions,
+  ExternalRatings,
   Id,
   IsoDate,
   Member,
@@ -38,6 +39,8 @@ export interface MembersState extends EntityState<MemberEntity> {
   options: DataPaginationOptions<Member>;
   filteredCount: number | null;
   totalCount: number;
+  // By member number, kept apart from the records so a list fetch never drops them
+  externalRatings: Record<number, ExternalRatings>;
 }
 
 export const membersAdapter = createEntityAdapter<MemberEntity>({
@@ -52,6 +55,7 @@ export const initialState: MembersState = membersAdapter.getInitialState({
   lastFullFetch: null,
   lastFilteredFetch: null,
   filteredMembers: [],
+  externalRatings: {},
   options: {
     page: 1,
     pageSize: 20,
@@ -120,6 +124,15 @@ function withRecordsScope(state: MembersState, scope: ApiScope): MembersState {
     filteredMembers: [],
     filteredCount: null,
   });
+}
+
+function withoutExternalRatings(
+  externalRatings: Record<number, ExternalRatings>,
+  memberNumber: number | null,
+): Record<number, ExternalRatings> {
+  return Object.fromEntries(
+    Object.entries(externalRatings).filter(([number]) => Number(number) !== memberNumber),
+  );
 }
 
 function withUpdatedMembers(members: Member[], updates: Member[]): Member[] {
@@ -200,14 +213,25 @@ export const membersReducer = createReducer(
     isFetchingFiltered: true,
   })),
 
-  on(MembersActions.fetchMemberSucceeded, (state, { member, scope }): MembersState => {
-    const scopedState = withRecordsScope(state, scope);
+  on(
+    MembersActions.fetchMemberSucceeded,
+    (state, { member, scope, externalRatings }): MembersState => {
+      const scopedState = withRecordsScope(state, scope);
 
-    return membersAdapter.upsertOne(
-      { member, formData: draftWithEdits(scopedState.entities[member.id]) },
-      scopedState,
-    );
-  }),
+      return membersAdapter.upsertOne(
+        { member, formData: draftWithEdits(scopedState.entities[member.id]) },
+        externalRatings && member.number !== null
+          ? {
+              ...scopedState,
+              externalRatings: {
+                ...scopedState.externalRatings,
+                [member.number]: externalRatings,
+              },
+            }
+          : scopedState,
+      );
+    },
+  ),
 
   on(MembersActions.addMemberSucceeded, (state, { member }): MembersState =>
     membersAdapter.upsertOne(
@@ -219,12 +243,14 @@ export const membersReducer = createReducer(
     ),
   ),
 
+  // The member's usernames or IDs may have changed, so their ratings wait for the profile
   on(MembersActions.updateMemberSucceeded, (state, { member }): MembersState =>
     membersAdapter.upsertOne(
       { member, formData: null },
       {
         ...state,
         filteredMembers: withUpdatedMembers(state.filteredMembers, [member]),
+        externalRatings: withoutExternalRatings(state.externalRatings, member.number),
       },
     ),
   ),

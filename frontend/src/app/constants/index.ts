@@ -96,6 +96,8 @@ export const MEMBER_FORM_DATA_PROPERTIES = [
   'yearOfBirth',
   'chessComUsername',
   'lichessUsername',
+  'fideId',
+  'cfcId',
   'isActive',
   'dateJoined',
 ] as const;
@@ -112,6 +114,8 @@ export function initialMemberFormData(): MemberFormData {
     isActive: true,
     chessComUsername: '',
     lichessUsername: '',
+    fideId: '',
+    cfcId: '',
     yearOfBirth: '',
     email: '',
     phoneNumber: '',

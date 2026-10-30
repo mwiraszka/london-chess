@@ -93,10 +93,16 @@ export class MemberFormComponent implements OnInit {
   }>();
   readonly restore = output<Id | null>();
 
+  protected readonly cfcIdErrorMessages = {
+    pattern: MEMBER_DETAIL_RULES.cfcId.message,
+  };
   protected readonly chessComUsernameErrorMessages = {
     pattern: MEMBER_DETAIL_RULES.chessComUsername.message,
   };
   protected readonly errorMessages = FORM_ERROR_MESSAGES;
+  protected readonly fideIdErrorMessages = {
+    pattern: MEMBER_DETAIL_RULES.fideId.message,
+  };
   protected readonly lichessUsernameErrorMessages = {
     pattern: MEMBER_DETAIL_RULES.lichessUsername.message,
   };
@@ -273,6 +279,14 @@ export class MemberFormComponent implements OnInit {
       lichessUsername: new FormControl(value.lichessUsername, {
         nonNullable: true,
         validators: Validators.pattern(MEMBER_DETAIL_RULES.lichessUsername.pattern),
+      }),
+      fideId: new FormControl(value.fideId, {
+        nonNullable: true,
+        validators: Validators.pattern(MEMBER_DETAIL_RULES.fideId.pattern),
+      }),
+      cfcId: new FormControl(value.cfcId, {
+        nonNullable: true,
+        validators: Validators.pattern(MEMBER_DETAIL_RULES.cfcId.pattern),
       }),
       isActive: new FormControl(value.isActive, { nonNullable: true }),
       peakRating: new FormControl(value.peakRating, { nonNullable: true }),

@@ -35,6 +35,8 @@ export function memberFields(
     yearOfBirth: '1990',
     chessComUsername: '',
     lichessUsername: '',
+    fideId: '',
+    cfcId: '',
     isActive: true,
     dateJoined: '2022-08-18T04:00:00.000Z',
     modificationInfo: MODIFICATION_INFO,

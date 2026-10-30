@@ -142,6 +142,20 @@
                     </div>
                   }
                 </div>
+                <ea-divider />
+                <div class="lcc-form-row">
+                  @for (i of [1, 2]; track i) {
+                    <div class="field-skeleton">
+                      <ea-skeleton
+                        variant="text"
+                        width="72px"
+                        height="17.5px" />
+                      <ea-skeleton
+                        variant="rect"
+                        height="42px" />
+                    </div>
+                  }
+                </div>
               </div>
             } @else {
               <div
@@ -189,6 +203,12 @@
                 <lcc-chess-username-fields
                   [chessComUsername]="detailsForm.controls.chessComUsername"
                   [lichessUsername]="detailsForm.controls.lichessUsername" />
+
+                <ea-divider />
+
+                <lcc-federation-id-fields
+                  [cfcId]="detailsForm.controls.cfcId"
+                  [fideId]="detailsForm.controls.fideId" />
               </div>
             }
 

@@ -25,14 +25,18 @@ import { MemberOpeningsComponent } from '@app/components/member-openings/member-
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
-import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
-import { LoadStatus, Member } from '@app/models';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import {
+  PLACEHOLDER_PROFILE_MEMBER,
+  PLACEHOLDER_PROFILE_RATINGS,
+} from '@app/constants/member-profile';
+import { ExternalRatings, LoadStatus, Member } from '@app/models';
 import { RatingLabelPipe } from '@app/pipes';
 import { MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
-import { isCityChampion } from '@app/utils';
+import { getChessAccounts, isCityChampion } from '@app/utils';
 
 @Component({
   selector: 'lcc-member-profile-page',
@@ -55,6 +59,7 @@ import { isCityChampion } from '@app/utils';
     RouterLink,
     ShieldCheckIconComponent,
     SkeletonComponent,
+    TextSkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -62,6 +67,7 @@ import { isCityChampion } from '@app/utils';
   host: { class: 'lcc-page--reading' },
 })
 export class MemberProfilePageComponent implements OnInit {
+  protected readonly getChessAccounts = getChessAccounts;
   protected readonly isCityChampion = isCityChampion;
 
   private readonly metaAndTitleService = inject(MetaAndTitleService);
@@ -70,11 +76,15 @@ export class MemberProfilePageComponent implements OnInit {
 
   protected readonly pageIcon = UserIconComponent;
   protected readonly placeholderMember = PLACEHOLDER_PROFILE_MEMBER;
+  protected readonly placeholderRatings = PLACEHOLDER_PROFILE_RATINGS;
 
   public viewModel$?: Observable<{
     member: Member | null;
     memberNumber: number;
     status: LoadStatus;
+    externalRatings: ExternalRatings | null;
+    // A member shown from an earlier record waits for the profile to bring their ratings
+    ratingsPending: boolean;
   }>;
 
   constructor() {
@@ -118,7 +128,17 @@ export class MemberProfilePageComponent implements OnInit {
         combineLatest([
           this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
           this.store.select(MembersSelectors.selectMemberProfileStatus(memberNumber)),
-        ]).pipe(map(([member, status]) => ({ member, memberNumber, status }))),
+          this.store.select(MembersSelectors.selectMemberExternalRatings(memberNumber)),
+          this.store.select(MembersSelectors.selectMemberLoadFailed),
+        ]).pipe(
+          map(([member, status, externalRatings, loadFailed]) => ({
+            member,
+            memberNumber,
+            status,
+            externalRatings,
+            ratingsPending: !!member && !externalRatings && !loadFailed,
+          })),
+        ),
       ),
     );
   }
@@ -133,13 +153,5 @@ export class MemberProfilePageComponent implements OnInit {
 
   protected initials(member: Member): string {
     return `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`.toUpperCase();
-  }
-
-  protected chessComUrl(member: Member): string {
-    return `https://www.chess.com/member/${member.chessComUsername}`;
-  }
-
-  protected lichessUrl(member: Member): string {
-    return `https://lichess.org/@/${member.lichessUsername}`;
   }
 }

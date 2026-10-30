@@ -87,7 +87,11 @@ const UNPERSISTED_FIELDS: Partial<Record<string, object>> = {
     'pendingThumbnailIds',
     'uploadProgress',
   ]),
-  membersState: pick(membersInitialState, ['failedLoads', 'isFetchingFiltered']),
+  membersState: pick(membersInitialState, [
+    'failedLoads',
+    'isFetchingFiltered',
+    'externalRatings',
+  ]),
   // The list of tournaments and unsaved edits are kept, crosstables being fetched as opened
   tournamentsState: omit(tournamentsInitialState, [
     'summaries',
