@@ -6,32 +6,27 @@
 $details-gap: 24px;
 
 // As wide as its one line when that fits, and centred by its margins; wider than
-// that it wraps, clipping the dot that would otherwise open a line
+// that it wraps, with every line centred
 .details {
-  overflow: hidden;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 $details-gap;
   width: max-content;
   max-width: 100%;
   margin: 0 auto;
   font-size: 16px;
+  text-align: center;
   color: var(--color-text-primary);
 }
 
 .details__item {
-  position: relative;
   white-space: nowrap;
 }
 
-// The dot hangs in the gap before its item, outside the line when the item opens one
-.details__item + .details__item::before {
-  position: absolute;
-  left: -$details-gap;
-  width: $details-gap;
-  text-align: center;
-  color: var(--color-text-secondary);
-  content: '·';
+// The dot is drawn on a widened space, the only place a line can break between items,
+// so a line ending there drops the space and its dot along with it
+.details__item:not(:last-child)::after {
+  white-space: normal;
+  word-spacing: calc(#{$details-gap} - 0.25em);
+  background: radial-gradient(circle, var(--color-text-secondary) 1.5px, transparent 2px);
+  content: ' ';
 }
 
 // Free text that can run long, so it alone may break across lines
@@ -42,10 +37,6 @@ $details-gap: 24px;
 .details__extra,
 .details__separator {
   color: var(--color-text-secondary);
-}
-
-.details--loading {
-  display: block;
 }
 
 // The page centres blocks at their own width, so the block is capped for its table to scroll
