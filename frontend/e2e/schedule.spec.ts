@@ -50,9 +50,8 @@ test.describe('schedule', () => {
         eventsTable(page).getByRole('heading', { name: event.title, exact: true }),
       ).toBeVisible();
     }
-    await expect(page.getByRole('button', { name: 'Clear filters' })).toBeEnabled();
 
-    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await flipSwitch(page, 'Show past events');
 
     await expect(
       page.getByRole('switch', { name: 'Show past events' }),

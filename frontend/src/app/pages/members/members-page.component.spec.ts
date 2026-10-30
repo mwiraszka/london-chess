@@ -555,48 +555,11 @@ describe('MembersPageComponent', () => {
       );
     });
 
-    it('should clear every filter at once', () => {
-      store.overrideSelector(MembersSelectors.selectOptions, {
-        ...mockOptions,
-        search: 'polgar',
-      });
-      store.refreshState();
-      fixture.detectChanges();
-
-      query(fixture.debugElement, '.filters__clear').triggerEventHandler('clicked');
-
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        MembersActions.paginationOptionsChanged({
-          options: {
-            ...mockOptions,
-            page: 1,
-            search: '',
-            filters: {
-              showInactiveMembers: {
-                ...mockOptions.filters.showInactiveMembers,
-                value: false,
-              },
-            },
-          },
-        }),
-      );
-    });
-
-    it('should have nothing to clear without a search or inactive members shown', () => {
-      store.overrideSelector(MembersSelectors.selectOptions, {
-        ...mockOptions,
-        filters: {
-          showInactiveMembers: {
-            ...mockOptions.filters.showInactiveMembers,
-            value: false,
-          },
-        },
-      });
-      store.refreshState();
+    it('should offer to clear the search from within its field', () => {
       fixture.detectChanges();
 
       expect(
-        query(fixture.debugElement, '.filters__clear').componentInstance.disabled(),
+        query(fixture.debugElement, '.filters__search').componentInstance.clearable(),
       ).toBe(true);
     });
   });

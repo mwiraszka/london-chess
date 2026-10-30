@@ -53,6 +53,7 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
           class="filters__search"
           label="Search"
           placeholder="Search by author, title or content"
+          [clearable]="true"
           [formControl]="searchControl"
           [icon]="searchIcon" />
       </div>

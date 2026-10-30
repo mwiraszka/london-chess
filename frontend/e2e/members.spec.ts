@@ -112,7 +112,8 @@ test.describe('members', () => {
       memberRow(page, INACTIVE_MEMBER.firstName, INACTIVE_MEMBER.lastName),
     ).toHaveCount(1);
 
-    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await flipSwitch(page, 'Show inactive members');
 
     await expect(page.getByRole('textbox', { name: 'Search' })).toHaveValue('');
     await expect(

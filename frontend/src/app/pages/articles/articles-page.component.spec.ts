@@ -219,6 +219,12 @@ describe('ArticlesPageComponent', () => {
         );
       });
 
+      it('should offer to clear the search from within its field', () => {
+        expect(
+          query(fixture.debugElement, '.filters__search').componentInstance.clearable(),
+        ).toBe(true);
+      });
+
       it('should turn the pages', () => {
         query(fixture.debugElement, 'ea-paginator').triggerEventHandler('changed', {
           page: 2,

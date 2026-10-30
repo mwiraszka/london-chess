@@ -413,28 +413,11 @@ describe('SchedulePageComponent', () => {
       );
     });
 
-    it('should clear every filter at once', () => {
-      store.overrideSelector(EventsSelectors.selectOptions, {
-        ...mockOptions,
-        search: 'lecture',
-      });
-      store.refreshState();
-      fixture.detectChanges();
-
-      query(fixture.debugElement, '.filters__clear').triggerEventHandler('clicked');
-
-      expect(dispatchSpy).toHaveBeenCalledWith(
-        EventsActions.paginationOptionsChanged({
-          options: { ...mockOptions, page: 1, search: '' },
-        }),
-      );
-    });
-
-    it('should offer to clear the filters only while some are in force', () => {
+    it('should offer to clear the search from within its field', () => {
       fixture.detectChanges();
 
       expect(
-        query(fixture.debugElement, '.filters__clear').componentInstance.disabled(),
+        query(fixture.debugElement, '.filters__search').componentInstance.clearable(),
       ).toBe(true);
     });
   });

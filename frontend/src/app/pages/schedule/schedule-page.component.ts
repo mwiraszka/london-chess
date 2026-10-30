@@ -1,5 +1,4 @@
 import {
-  ButtonComponent,
   CalendarDaysIconComponent,
   DownloadIconComponent,
   EmptyStateComponent,
@@ -61,6 +60,7 @@ import { bindSearchControl, widestRows } from '@app/utils';
           class="filters__search"
           label="Search"
           placeholder="Search by event type or name"
+          [clearable]="true"
           [formControl]="searchControl"
           [icon]="searchIcon" />
         <ea-switch
@@ -68,14 +68,6 @@ import { bindSearchControl, widestRows } from '@app/utils';
           label="Show past events"
           [checked]="vm.options.filters.showPastEvents.value"
           (changed)="onTogglePastEvents($event, vm.options)" />
-        <ea-button
-          class="filters__clear"
-          variant="ghost"
-          size="md"
-          [disabled]="!hasFilters(vm.options)"
-          (clicked)="onClearFilters(vm.options)">
-          Clear filters
-        </ea-button>
       </div>
 
       <lcc-schedule-toolbar
@@ -127,7 +119,6 @@ import { bindSearchControl, widestRows } from '@app/utils';
   `,
   styleUrl: './schedule-page.component.scss',
   imports: [
-    ButtonComponent,
     CommonModule,
     EmptyStateComponent,
     EventsCalendarGridComponent,
@@ -261,19 +252,6 @@ export class SchedulePageComponent implements OnInit {
         showPastEvents: { ...options.filters.showPastEvents, value: showPastEvents },
       },
     });
-  }
-
-  public onClearFilters(options: DataPaginationOptions<Event>): void {
-    this.onOptionsChange({
-      ...options,
-      page: 1,
-      search: '',
-      filters: { showPastEvents: { ...options.filters.showPastEvents, value: false } },
-    });
-  }
-
-  public hasFilters({ search, filters }: DataPaginationOptions<Event>): boolean {
-    return search !== '' || filters.showPastEvents.value;
   }
 
   public onRetry(): void {
