@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rearrange member profiles, keeping the club rating and peak rating together, the other details under the member's name, and ratings from other sites in cards of their own
 - Show members' profile pictures beside their names in the members list, and list 50 members per page to start with
-- Replace the Clear filters button on the Members and Schedule pages with a clear button inside the search box, which the Articles page now has too
+- Replace the Clear filters button on the Members and Schedule pages with a clear button inside the search box, which the Articles page's search box and the Game Archives page's player box now have too
+- Update third-party packages
 
 ### Fixed
 
