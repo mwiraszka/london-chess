@@ -73,6 +73,7 @@ export type {
 } from './external-rating.model';
 export type { ExternalLink, InternalLink, InternalPath } from './link.model';
 export type {
+  DetailsChangeResult,
   EditableMember,
   FederationIdsFormData,
   FederationIdsFormGroup,
@@ -89,6 +90,7 @@ export type {
   MemberRatingsUpdate,
   MemberWithNewRatings,
   NameOrder,
+  OptionalDetail,
   ProfileDetailsFormData,
 } from './member.model';
 export type { ModificationInfo } from './modification-info.model';

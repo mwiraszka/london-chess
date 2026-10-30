@@ -234,6 +234,8 @@ describe('AccountPageComponent', () => {
 
   it('should set the federation IDs apart from the personal details', async () => {
     await render();
+    component['loading'].set(false);
+    fixture.detectChanges();
 
     const form: HTMLElement = fixture.nativeElement.querySelector('.details-form');
     const sections = [...form.children].map(child => child.tagName.toLowerCase());
@@ -256,6 +258,10 @@ describe('AccountPageComponent', () => {
   describe('requesting changes to member details', () => {
     it('should send the details trimmed, with the phone number in its stored format', async () => {
       await render();
+      api.post.mockResolvedValue({
+        removed: [],
+        requested: ['city', 'phoneNumber', 'cfcId'],
+      });
       component['detailsForm'].patchValue({
         city: '  Komoka ',
         phoneNumber: '(519) 555 0199',
@@ -277,6 +283,40 @@ describe('AccountPageComponent', () => {
       });
       expect(toast.show).toHaveBeenCalledWith(
         'An admin will email you once your changes are made.',
+        { title: 'Request sent', variant: 'success' },
+      );
+    });
+
+    it('should keep removed details as saved, needing no admin', async () => {
+      await render();
+      api.post.mockResolvedValue({
+        removed: ['lichessUsername', 'fideId'],
+        requested: [],
+      });
+      component['detailsForm'].patchValue({ lichessUsername: '', fideId: '' });
+
+      await component['onRequestChanges']();
+
+      expect(component['hasDetailChanges']()).toBe(false);
+      expect(toast.show).toHaveBeenCalledWith(
+        'The details you removed are gone from your member record.',
+        { title: 'Details removed', variant: 'success' },
+      );
+    });
+
+    it('should keep removed details as saved while the other changes wait for an admin', async () => {
+      await render();
+      api.post.mockResolvedValue({ removed: ['lichessUsername'], requested: ['city'] });
+      component['detailsForm'].patchValue({ lichessUsername: '', city: 'Komoka' });
+
+      await component['onRequestChanges']();
+
+      expect(component['savedDetails']()).toMatchObject({
+        lichessUsername: '',
+        city: 'London',
+      });
+      expect(toast.show).toHaveBeenCalledWith(
+        'The details you removed are gone, and an admin will email you once your other changes are made.',
         { title: 'Request sent', variant: 'success' },
       );
     });

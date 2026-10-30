@@ -50,6 +50,10 @@ const REQUIRED_DETAIL_FIELDS: readonly DetailField[] = [
   'city',
 ];
 
+export function isOptionalDetailField(field: DetailField): boolean {
+  return !REQUIRED_DETAIL_FIELDS.includes(field);
+}
+
 export function validateDetailField(field: DetailField, value: string): string | null {
   if (!value) {
     return REQUIRED_DETAIL_FIELDS.includes(field)

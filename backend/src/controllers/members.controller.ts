@@ -63,7 +63,7 @@ import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
 import { isUnratedExpression } from '../util/rating.util';
-import { EMAILS_FROM_SITE_ONLY, siteUrlFor } from '../util/site-url.util';
+import { EMAILS_FROM_SITE_ONLY, profileUrlFor, siteUrlFor } from '../util/site-url.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -817,11 +817,4 @@ async function readMember(id: Types.ObjectId): Promise<MemberRecord> {
     throw new Error('The saved member could not be read back.');
   }
   return record;
-}
-
-function profileUrlFor(siteUrl: string, record: MemberRecord): string {
-  if (typeof record.number !== 'number') {
-    throw new Error('The member has no member number.');
-  }
-  return `${siteUrl}/members/${record.number}`;
 }

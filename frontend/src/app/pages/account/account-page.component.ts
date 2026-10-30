@@ -57,6 +57,7 @@ import { BRAND_OPTIONS } from '@app/constants/brands';
 import { UPLOAD_TIMEOUT_MS } from '@app/constants/http';
 import {
   AccountSection,
+  DetailsChangeResult,
   Dialog,
   InternalLink,
   Member,
@@ -85,6 +86,15 @@ import {
   normalizePhoneNumber,
 } from '@app/utils';
 import { asSentence } from '@app/utils/sentence.util';
+
+function detailsChangeMessage(isRemoved: boolean, isRequested: boolean): string {
+  if (!isRequested) {
+    return 'The details you removed are gone from your member record.';
+  }
+  return isRemoved
+    ? 'The details you removed are gone, and an admin will email you once your other changes are made.'
+    : 'An admin will email you once your changes are made.';
+}
 
 @Component({
   selector: 'lcc-account-page',
@@ -446,19 +456,27 @@ export class AccountPageComponent implements OnInit {
     this.requestingChanges.set(true);
 
     try {
-      await this.api.post('/users/me/member/change-request', {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
-        city: city.trim(),
-        phoneNumber: normalizePhoneNumber(phoneNumber),
-        lichessUsername: lichessUsername.trim(),
-        chessComUsername: chessComUsername.trim(),
-        fideId: fideId.trim(),
-        cfcId: cfcId.trim(),
-      });
-      this.toast.show('An admin will email you once your changes are made.', {
-        title: 'Request sent',
+      const { removed, requested } = await this.api.post<DetailsChangeResult>(
+        '/users/me/member/change-request',
+        {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
+          city: city.trim(),
+          phoneNumber: normalizePhoneNumber(phoneNumber),
+          lichessUsername: lichessUsername.trim(),
+          chessComUsername: chessComUsername.trim(),
+          fideId: fideId.trim(),
+          cfcId: cfcId.trim(),
+        },
+      );
+      const cleared: Partial<ProfileDetailsFormData> = {};
+      for (const field of removed) {
+        cleared[field] = '';
+      }
+      this.applySavedDetails(cleared);
+      this.toast.show(detailsChangeMessage(removed.length > 0, requested.length > 0), {
+        title: requested.length ? 'Request sent' : 'Details removed',
         variant: 'success',
       });
     } catch (e: unknown) {

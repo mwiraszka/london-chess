@@ -363,6 +363,95 @@ describe('users routes', () => {
       expect(email.text).not.toContain('CFC ID');
     });
 
+    describe('emptying optional details', () => {
+      const SITE = 'https://londonchess.ca';
+
+      beforeEach(async () => {
+        await createAccountHolder(
+          {},
+          { lichessUsername: 'janedoe', phoneNumber: '519-555-0100' },
+        );
+      });
+
+      it('should remove them at once and email the member, asking no admin', async () => {
+        vi.stubEnv('VERCEL_ENV', 'production');
+
+        const response = await request(app)
+          .post('/v1/users/me/member/change-request')
+          .set('Authorization', bearer(USER))
+          .set('Origin', SITE)
+          .send({ lichessUsername: '', phoneNumber: ' ', city: 'London' });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toEqual({
+          removed: ['phoneNumber', 'lichessUsername'],
+          requested: [],
+        });
+        const member = await MemberModel.findOne({ 'account.clerkUserId': USER }).lean();
+        expect(member).toMatchObject({
+          lichessUsername: '',
+          phoneNumber: '',
+          modificationInfo: { lastEditedBy: 'Jane Doe', lastEditedByNumber: 1 },
+        });
+        const [to, email] = vi.mocked(sendEmail).mock.calls[0];
+        expect(to).toBe('jane@example.com');
+        expect(email.subject).toBe('Your London Chess member details have been updated');
+        expect(email.text).toContain('Lichess username: previous janedoe, new None');
+        expect(email.text).toContain(`${SITE}/members/1`);
+        expect(sendAdminEmail).not.toHaveBeenCalled();
+        expect(dangerouslyDeleteByTag).toHaveBeenCalledExactlyOnceWith('public-data');
+      });
+
+      it('should still ask an admin for the other changes', async () => {
+        const response = await request(app)
+          .post('/v1/users/me/member/change-request')
+          .set('Authorization', bearer(USER))
+          .set('Origin', SITE)
+          .send({ lichessUsername: '', city: 'Toronto' });
+
+        expect(response.body.data).toEqual({
+          removed: ['lichessUsername'],
+          requested: ['city'],
+        });
+        const [adminEmail] = vi.mocked(sendAdminEmail).mock.calls[0];
+        expect(adminEmail.text).toContain('City: current London, requested Toronto');
+        expect(adminEmail.text).not.toContain('Lichess');
+        const member = await MemberModel.findOne({ 'account.clerkUserId': USER }).lean();
+        expect(member).toMatchObject({ lichessUsername: '', city: 'London' });
+      });
+
+      it('should put them back when the member cannot be emailed', async () => {
+        vi.mocked(sendEmail).mockRejectedValue(new Error('SMTP down'));
+
+        const response = await request(app)
+          .post('/v1/users/me/member/change-request')
+          .set('Authorization', bearer(USER))
+          .set('Origin', SITE)
+          .send({ lichessUsername: '' });
+
+        expect(response.status).toBe(500);
+        const member = await MemberModel.findOne({ 'account.clerkUserId': USER }).lean();
+        expect(member).toMatchObject({
+          lichessUsername: 'janedoe',
+          modificationInfo: { lastEditedBy: 'Someone Else' },
+        });
+      });
+
+      it('should only remove them for a request from the site', async () => {
+        const response = await request(app)
+          .post('/v1/users/me/member/change-request')
+          .set('Authorization', bearer(USER))
+          .send({ lichessUsername: '' });
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe(
+          'Member emails can only be sent from the London Chess website.',
+        );
+        const member = await MemberModel.findOne({ 'account.clerkUserId': USER }).lean();
+        expect(member?.lichessUsername).toBe('janedoe');
+      });
+    });
+
     it('should reject details that are not text or are invalid', async () => {
       await createAccountHolder();
 

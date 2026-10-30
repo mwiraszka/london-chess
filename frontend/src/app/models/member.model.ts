@@ -89,6 +89,16 @@ export type FederationIdsFormGroup = {
 
 export type ProfileDetailsFormData = MemberDetailsFormData & FederationIdsFormData;
 
+// The details a member may leave empty, which they can remove without an admin
+export type OptionalDetail =
+  'phoneNumber' | 'lichessUsername' | 'chessComUsername' | 'fideId' | 'cfcId';
+
+export interface DetailsChangeResult {
+  removed: OptionalDetail[];
+  // Waiting for an admin to make them
+  requested: (keyof ProfileDetailsFormData)[];
+}
+
 export type MemberFormData = Pick<Member, (typeof MEMBER_FORM_DATA_PROPERTIES)[number]>;
 
 // The day joined is picked as a day and saved as an instant
