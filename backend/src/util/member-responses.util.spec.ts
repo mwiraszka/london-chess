@@ -27,6 +27,7 @@ const EXTERNAL_RATINGS: ExternalRatings = {
   fide: null,
   cfc: [],
   fideWorldRank: null,
+  fideNationalRank: null,
 };
 
 const ACCOUNT: MemberAccount = {

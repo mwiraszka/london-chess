@@ -30,7 +30,7 @@ const json =
 
 const html = (body: string) => () => new Response(body);
 
-// Shaped like the boxes and rank tables of a FIDE profile page
+// Shaped like the federation, boxes and rank tables of a FIDE profile page
 const fideGame = (className: string, rating: string) => `
   <div class="${className} profile-game ">
     <img src="/img/logo.svg" alt="" height=25>
@@ -45,7 +45,15 @@ const fideRankBlock = (title: string, active: number, all: number) => `
   </div>
   <!--profile-rank-->`;
 
-const fidePage = (ratings: [string, string, string], ranks = '') => `
+const fidePage = (
+  ratings: [string, string, string],
+  ranks = '',
+  [flag, country] = ['ca', 'Canada'],
+) => `
+  <div class="profile-info-country ">
+    <img src="/images/flags/${flag}.svg" height=30>
+    ${country}
+  </div>
   <div class="profile-games ">
     ${fideGame('profile-standart', ratings[0])}
     ${fideGame('profile-rapid', ratings[1])}
@@ -130,6 +138,7 @@ describe('external ratings service', () => {
             { timeControl: 'rapid', rating: 1690, provisional: false },
           ],
           worldRank: { rank: 129807, amongActive: false },
+          nationalRank: { rank: 812, amongActive: true, flag: 'ca', country: 'Canada' },
         },
         cfc: {
           handle: '150123',
@@ -167,7 +176,11 @@ describe('external ratings service', () => {
       const { lookups } = (await readMember(member._id)).externalRatings ?? {};
       expect(lookups?.chessCom?.ratings).toBeNull();
       expect(lookups?.lichess?.ratings).toBeNull();
-      expect(lookups?.fide).toMatchObject({ ratings: [], worldRank: null });
+      expect(lookups?.fide).toMatchObject({
+        ratings: [],
+        worldRank: null,
+        nationalRank: null,
+      });
       expect(lookups?.cfc?.ratings).toBeNull();
     });
 
@@ -206,6 +219,33 @@ describe('external ratings service', () => {
 
       const { lookups } = (await readMember(member._id)).externalRatings ?? {};
       expect(lookups?.fide?.worldRank).toEqual({ rank: 9120, amongActive: true });
+    });
+
+    it("should mark the national rank with the flag of the player's federation, a region's included", async () => {
+      answerWith({
+        [FIDE_PROFILE]: html(
+          fidePage(
+            ['2210', 'Not rated', 'Not rated'],
+            fideRankBlock('National Rank ENG', 0, 412),
+            ['gb-eng', 'England'],
+          ),
+        ),
+      });
+      const member = await memberWithHandles({
+        chessComUsername: '',
+        lichessUsername: '',
+        cfcId: '',
+      });
+
+      await refreshExternalRatings(member);
+
+      const { lookups } = (await readMember(member._id)).externalRatings ?? {};
+      expect(lookups?.fide?.nationalRank).toEqual({
+        rank: 412,
+        amongActive: false,
+        flag: 'gb-eng',
+        country: 'England',
+      });
     });
 
     it('should look up only the handles the member has', async () => {
@@ -310,14 +350,21 @@ describe('external ratings service', () => {
         fide: null,
         cfc: null,
         fideWorldRank: null,
+        fideNationalRank: null,
       });
     });
 
-    it("should give FIDE's world rank along with its ratings", async () => {
+    it("should give FIDE's ranks along with its ratings", async () => {
       const worldRank = { rank: 129807, amongActive: false };
+      const nationalRank = {
+        rank: 1096,
+        amongActive: false,
+        flag: 'ca',
+        country: 'Canada',
+      };
       const member = await memberWithHandles({
         externalRatings: {
-          lookups: { fide: { handle: '2600123', ratings: [], worldRank } },
+          lookups: { fide: { handle: '2600123', ratings: [], worldRank, nationalRank } },
           checkedAt: CHECKED_AT,
         },
       });
@@ -325,6 +372,7 @@ describe('external ratings service', () => {
       expect(externalRatingsOf(member)).toMatchObject({
         fide: [],
         fideWorldRank: worldRank,
+        fideNationalRank: nationalRank,
       });
     });
 
@@ -337,6 +385,7 @@ describe('external ratings service', () => {
         fide: null,
         cfc: null,
         fideWorldRank: null,
+        fideNationalRank: null,
       });
     });
   });

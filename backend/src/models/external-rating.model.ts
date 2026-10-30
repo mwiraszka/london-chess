@@ -28,6 +28,13 @@ export interface FideRank {
   amongActive: boolean;
 }
 
+// A place among the players of the player's federation, which FIDE marks with the flag of
+// its country or region, by ISO code (such as ca, or gb-eng for England)
+export interface FideNationalRank extends FideRank {
+  flag: string;
+  country: string;
+}
+
 // Null when the platform knows no such player or has not been reached
 export interface ExternalRatings {
   chessCom: ExternalRating[] | null;
@@ -35,6 +42,7 @@ export interface ExternalRatings {
   fide: ExternalRating[] | null;
   cfc: ExternalRating[] | null;
   fideWorldRank: FideRank | null;
+  fideNationalRank: FideNationalRank | null;
 }
 
 // Kept with the handle it was looked up by, so a changed handle never shows another
@@ -44,6 +52,7 @@ export interface PlatformLookup {
   ratings: ExternalRating[] | null;
   // Only FIDE ranks its players
   worldRank?: FideRank | null;
+  nationalRank?: FideNationalRank | null;
 }
 
 export interface StoredExternalRatings {
@@ -68,11 +77,22 @@ const fideRankSchema = new Schema<FideRank>(
   { _id: false },
 );
 
+const fideNationalRankSchema = new Schema<FideNationalRank>(
+  {
+    rank: { type: Number, required: true },
+    amongActive: { type: Boolean, required: true },
+    flag: { type: String, required: true },
+    country: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const platformLookupSchema = new Schema<PlatformLookup>(
   {
     handle: { type: String, required: true },
     ratings: { type: [externalRatingSchema], default: null },
     worldRank: { type: fideRankSchema, default: undefined },
+    nationalRank: { type: fideNationalRankSchema, default: undefined },
   },
   { _id: false },
 );

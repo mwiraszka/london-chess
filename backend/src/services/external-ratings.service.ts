@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/node';
 import {
   ExternalRating,
   ExternalRatings,
+  FideNationalRank,
   FideRank,
   PlatformLookup,
   RATING_PLATFORMS,
@@ -46,7 +47,7 @@ const CFC_TIME_CONTROLS: [string, TimeControl][] = [
   ['quick_rating', 'quick'],
 ];
 
-type LookupResult = Pick<PlatformLookup, 'ratings' | 'worldRank'>;
+type LookupResult = Pick<PlatformLookup, 'ratings' | 'worldRank' | 'nationalRank'>;
 
 type Lookup = (handle: string) => Promise<LookupResult>;
 
@@ -65,6 +66,7 @@ export function externalRatingsOf(record: MemberRecord): ExternalRatings {
     fide: currentLookup(record, 'fide')?.ratings ?? null,
     cfc: currentLookup(record, 'cfc')?.ratings ?? null,
     fideWorldRank: currentLookup(record, 'fide')?.worldRank ?? null,
+    fideNationalRank: currentLookup(record, 'fide')?.nationalRank ?? null,
   };
 }
 
@@ -183,7 +185,7 @@ async function lookUpLichess(username: string): Promise<LookupResult> {
 }
 
 // FIDE has no API, so this reads the player's profile page, the only place it gives
-// their world rank
+// their ranks
 async function lookUpFide(id: string): Promise<LookupResult> {
   const page = await fetchText(
     `https://ratings.fide.com/profile/${encodeURIComponent(id)}`,
@@ -197,7 +199,8 @@ async function lookUpFide(id: string): Promise<LookupResult> {
     ratings: FIDE_TIME_CONTROLS.flatMap(([className, timeControl]) =>
       rated(timeControl, fideRating(page, className)),
     ),
-    worldRank: fideWorldRank(page),
+    worldRank: fideRank(rankBlock(page, 'World Rank')),
+    nationalRank: fideNationalRank(page),
   };
 }
 
@@ -209,17 +212,33 @@ function fideRating(page: string, className: string): number {
   return Number(page.match(box)?.[1]);
 }
 
-// Absent for a player without a standard rating. FIDE ranks an inactive player as zero
-// among active players
-function fideWorldRank(page: string): FideRank | null {
-  const block =
-    page.match(/<h5>World Rank<\/h5>([\s\S]*?)<!--profile-rank-->/)?.[1] ?? '';
+// Absent for a player without a standard rating
+function rankBlock(page: string, title: string): string {
+  return (
+    page.match(new RegExp(`<h5>${title}</h5>([\\s\\S]*?)<!--profile-rank-->`))?.[1] ?? ''
+  );
+}
+
+// FIDE ranks an inactive player as zero among active players
+function fideRank(block: string): FideRank | null {
   const active = Number(block.match(/Active players<\/h6>\s*<p>(\d+)/)?.[1]);
   const all = Number(block.match(/All players<\/h6>\s*<p>(\d+)/)?.[1]);
   if (active > 0) {
     return { rank: active, amongActive: true };
   }
   return all > 0 ? { rank: all, amongActive: false } : null;
+}
+
+// The federation's flag and name sit beside the player's name, and its rank table is
+// titled with its FIDE code
+function fideNationalRank(page: string): FideNationalRank | null {
+  const rank = fideRank(rankBlock(page, 'National Rank \\w+'));
+  const federation = page.match(
+    /class="profile-info-country[^"]*">\s*<img src="\/images\/flags\/([a-z]{2}(?:-[a-z\d]+)?)\.svg"[^>]*>\s*([^<]*?)\s*<\/div>/,
+  );
+  return rank && federation
+    ? { ...rank, flag: federation[1], country: federation[2] }
+    : null;
 }
 
 async function lookUpCfc(id: string): Promise<LookupResult> {

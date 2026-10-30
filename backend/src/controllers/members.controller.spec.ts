@@ -308,6 +308,7 @@ describe('members routes', () => {
         fide: null,
         cfc: null,
         fideWorldRank: null,
+        fideNationalRank: null,
       });
       expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=86400');
       expect(refreshExternalRatings).not.toHaveBeenCalled();

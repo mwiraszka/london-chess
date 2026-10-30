@@ -15,12 +15,18 @@ export interface SeedFideRank {
   amongActive: boolean;
 }
 
+export interface SeedFideNationalRank extends SeedFideRank {
+  flag: string;
+  country: string;
+}
+
 export interface SeedExternalRatings {
   chessCom: SeedRating[];
   lichess: SeedRating[];
   fide: SeedRating[];
   cfc: SeedRating[];
   fideWorldRank: SeedFideRank | null;
+  fideNationalRank: SeedFideNationalRank | null;
 }
 
 export interface SeedMember {
@@ -174,6 +180,7 @@ export const PROFILE_MEMBER: SeedMember = {
       { timeControl: 'quick', rating: 1797, provisional: false },
     ],
     fideWorldRank: { rank: 48213, amongActive: false },
+    fideNationalRank: { rank: 312, amongActive: false, flag: 'ca', country: 'Canada' },
   },
   dateJoined: '2019-09-05T22:00:00.000Z',
   number: 3,
