@@ -1,5 +1,5 @@
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { ChessAccount, ExternalRatings, Member } from '@app/models';
+import { ChessAccount, ChessAccountGroups, ExternalRatings, Member } from '@app/models';
 
 import { getChessAccounts } from './get-chess-accounts.util';
 
@@ -27,6 +27,11 @@ describe('getChessAccounts', () => {
     fideId: '2600123',
     cfcId: '150123',
   };
+
+  const allOf = ({ overTheBoard, online }: ChessAccountGroups): ChessAccount[] => [
+    ...overTheBoard,
+    ...online,
+  ];
 
   const linksOf = (accounts: ChessAccount[]) =>
     accounts.map(({ label, url }) => ({ label, url }));
@@ -67,9 +72,8 @@ describe('getChessAccounts', () => {
   });
 
   it('should tell which platforms were reached and know the member', () => {
-    const { overTheBoard, online } = getChessAccounts(member, externalRatings);
-    const accounts = [...overTheBoard, ...online];
-    const beforeAny = Object.values(getChessAccounts(member, null)).flat();
+    const accounts = allOf(getChessAccounts(member, externalRatings));
+    const beforeAny = allOf(getChessAccounts(member, null));
 
     expect(accounts.map(account => [account.label, account.isFound])).toEqual([
       ['FIDE', true],

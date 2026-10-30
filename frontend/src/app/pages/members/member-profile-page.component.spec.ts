@@ -370,8 +370,8 @@ describe('MemberProfilePageComponent', () => {
       const [fide, ...others] = accountRows();
       expect(queryTextContent(fide, '.platform')).toBe('FIDE');
       expect(queryAll(fide, '.rank').map(textOf)).toEqual([
-        'World rank 🌍 #48,213',
-        'National rank in Canada 🇨🇦 #312',
+        'World rank🌍 #48,213',
+        'National rank in Canada🇨🇦 #312',
       ]);
       expect(others.every(row => !query(row, '.rank'))).toBe(true);
     });
@@ -412,7 +412,7 @@ describe('MemberProfilePageComponent', () => {
       setMembersState({ failedLoads: ['member'] });
 
       expect(query(fixture.debugElement, RATING)).toBeFalsy();
-      expect(query(fixture.debugElement, 'lcc-text-skeleton')).toBeFalsy();
+      expect(query(fixture.debugElement, '.ratings-table lcc-text-skeleton')).toBeFalsy();
     });
 
     it('should not render skeletons', () => {
