@@ -17,6 +17,13 @@ export interface FideRank {
   amongActive: boolean;
 }
 
+// A place among the players of the player's federation, which FIDE marks with the flag of
+// its country or region, by ISO code (such as ca, or gb-eng for England)
+export interface FideNationalRank extends FideRank {
+  flag: string;
+  country: string;
+}
+
 // Null when the platform knows no such player or has not been reached
 export interface ExternalRatings {
   chessCom: ExternalRating[] | null;
@@ -24,6 +31,7 @@ export interface ExternalRatings {
   fide: ExternalRating[] | null;
   cfc: ExternalRating[] | null;
   fideWorldRank: FideRank | null;
+  fideNationalRank: FideNationalRank | null;
 }
 
 // Null when the member has no rating in the time control
@@ -32,6 +40,13 @@ export interface ChessAccountRating {
   label: string;
   rating: number | null;
   provisional: boolean;
+}
+
+export interface ChessAccountRank {
+  label: string;
+  emoji: string;
+  rank: number;
+  tooltip: string;
 }
 
 // One of the member's accounts elsewhere, as their profile lists it
@@ -46,5 +61,10 @@ export interface ChessAccount {
   // Whether the platform has been reached and knows the member
   isFound: boolean;
   // Only FIDE ranks its players
-  worldRank: FideRank | null;
+  ranks: ChessAccountRank[];
+}
+
+export interface ChessAccountGroups {
+  overTheBoard: ChessAccount[];
+  online: ChessAccount[];
 }

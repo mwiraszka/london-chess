@@ -28,9 +28,10 @@ import { PageHeaderComponent } from '@app/components/page-header/page-header.com
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
 import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
 import {
-  PLACEHOLDER_PROFILE_MEMBER,
-  PLACEHOLDER_PROFILE_RATINGS,
-} from '@app/constants/member-profile';
+  ONLINE_TIME_CONTROLS,
+  TIME_CONTROL_LABELS,
+} from '@app/constants/external-ratings';
+import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
 import { AdminLinkAction, ExternalRatings, LoadStatus, Member } from '@app/models';
 import { RatingLabelPipe } from '@app/pipes';
 import { AdminActionsService, MetaAndTitleService } from '@app/services';
@@ -77,7 +78,9 @@ export class MemberProfilePageComponent implements OnInit {
 
   protected readonly pageIcon = UserIconComponent;
   protected readonly placeholderMember = PLACEHOLDER_PROFILE_MEMBER;
-  protected readonly placeholderRatings = PLACEHOLDER_PROFILE_RATINGS;
+  protected readonly onlineTimeControlLabels = ONLINE_TIME_CONTROLS.map(
+    timeControl => TIME_CONTROL_LABELS[timeControl],
+  );
 
   public viewModel$?: Observable<{
     member: Member | null;

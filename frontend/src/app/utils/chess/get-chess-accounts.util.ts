@@ -4,19 +4,25 @@ import {
 } from '@app/constants/external-ratings';
 import {
   ChessAccount,
+  ChessAccountGroups,
+  ChessAccountRank,
   ChessAccountRating,
   ExternalRating,
   ExternalRatings,
+  FideRank,
   Member,
   RatingPlatform,
 } from '@app/models';
 
-// The member's accounts on other chess sites, in the order their profile lists them
+import { flagEmoji } from '../common/flag-emoji.util';
+
+// The member's accounts on other chess sites, those for over the board play apart from
+// those online, in the order their profile lists them
 export function getChessAccounts(
   member: Member,
   ratings: ExternalRatings | null,
-): ChessAccount[] {
-  const accounts: ChessAccount[] = [
+): ChessAccountGroups {
+  const overTheBoard: ChessAccount[] = [
     {
       platform: 'fide',
       label: 'FIDE',
@@ -25,7 +31,7 @@ export function getChessAccounts(
       url: `https://ratings.fide.com/profile/${member.fideId}`,
       slots: slots('fide', ratings?.fide),
       isFound: !!ratings?.fide,
-      worldRank: ratings?.fideWorldRank ?? null,
+      ranks: fideRanks(ratings),
     },
     {
       platform: 'cfc',
@@ -35,8 +41,10 @@ export function getChessAccounts(
       url: `https://www.chess.ca/en/ratings/p/?id=${member.cfcId}`,
       slots: slots('cfc', ratings?.cfc),
       isFound: !!ratings?.cfc,
-      worldRank: null,
+      ranks: [],
     },
+  ];
+  const online: ChessAccount[] = [
     {
       platform: 'chessCom',
       label: 'Chess.com',
@@ -45,7 +53,7 @@ export function getChessAccounts(
       url: `https://www.chess.com/member/${member.chessComUsername}`,
       slots: slots('chessCom', ratings?.chessCom),
       isFound: !!ratings?.chessCom,
-      worldRank: null,
+      ranks: [],
     },
     {
       platform: 'lichess',
@@ -55,10 +63,13 @@ export function getChessAccounts(
       url: `https://lichess.org/@/${member.lichessUsername}`,
       slots: slots('lichess', ratings?.lichess),
       isFound: !!ratings?.lichess,
-      worldRank: null,
+      ranks: [],
     },
   ];
-  return accounts.filter(account => account.handle);
+  return {
+    overTheBoard: overTheBoard.filter(account => account.handle),
+    online: online.filter(account => account.handle),
+  };
 }
 
 // Every time control the platform is shown with, rated or not, so they line up down the list
@@ -75,4 +86,36 @@ function slots(
       provisional: found?.provisional ?? false,
     };
   });
+}
+
+function fideRanks(ratings: ExternalRatings | null): ChessAccountRank[] {
+  const world = ratings?.fideWorldRank;
+  const national = ratings?.fideNationalRank;
+  return [
+    ...(world ? [rankOf('World rank', '🌍', world)] : []),
+    ...(national
+      ? [
+          rankOf(
+            `National rank in ${national.country}`,
+            flagEmoji(national.flag),
+            national,
+          ),
+        ]
+      : []),
+  ];
+}
+
+function rankOf(
+  label: string,
+  emoji: string,
+  { rank, amongActive }: FideRank,
+): ChessAccountRank {
+  return {
+    label,
+    emoji,
+    rank,
+    tooltip: amongActive
+      ? `${label} among active players`
+      : `${label} among all players, as FIDE lists this member as inactive`,
+  };
 }

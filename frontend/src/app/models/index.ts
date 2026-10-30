@@ -61,9 +61,12 @@ export type {
 } from './image.model';
 export type {
   ChessAccount,
+  ChessAccountGroups,
+  ChessAccountRank,
   ChessAccountRating,
   ExternalRating,
   ExternalRatings,
+  FideNationalRank,
   FideRank,
   RatingPlatform,
   TimeControl,

@@ -1,5 +1,5 @@
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { ExternalRatings, Member } from '@app/models';
+import { ChessAccount, ExternalRatings, Member } from '@app/models';
 
 import { getChessAccounts } from './get-chess-accounts.util';
 
@@ -13,6 +13,12 @@ describe('getChessAccounts', () => {
     fide: [],
     cfc: [{ timeControl: 'regular', rating: 1802, provisional: false }],
     fideWorldRank: { rank: 129807, amongActive: false },
+    fideNationalRank: {
+      rank: 412,
+      amongActive: true,
+      flag: 'gb-eng',
+      country: 'England',
+    },
   };
   const member: Member = {
     ...MOCK_MEMBERS[0],
@@ -22,19 +28,27 @@ describe('getChessAccounts', () => {
     cfcId: '150123',
   };
 
-  it('should link to FIDE and the CFC first, then the online accounts', () => {
-    const accounts = getChessAccounts(member, externalRatings);
+  const linksOf = (accounts: ChessAccount[]) =>
+    accounts.map(({ label, url }) => ({ label, url }));
 
-    expect(accounts.map(({ label, url }) => ({ label, url }))).toEqual([
+  it('should link to FIDE and the CFC apart from the online accounts', () => {
+    const { overTheBoard, online } = getChessAccounts(member, externalRatings);
+
+    expect(linksOf(overTheBoard)).toEqual([
       { label: 'FIDE', url: 'https://ratings.fide.com/profile/2600123' },
       { label: 'CFC', url: 'https://www.chess.ca/en/ratings/p/?id=150123' },
+    ]);
+    expect(linksOf(online)).toEqual([
       { label: 'Chess.com', url: 'https://www.chess.com/member/jane' },
       { label: 'Lichess', url: 'https://lichess.org/@/jane_doe' },
     ]);
   });
 
   it("should give every one of a platform's time controls in its order, rated or not", () => {
-    const [fide, cfc, chessCom] = getChessAccounts(member, externalRatings);
+    const {
+      overTheBoard: [fide, cfc],
+      online: [chessCom],
+    } = getChessAccounts(member, externalRatings);
 
     expect(chessCom.slots).toEqual([
       { timeControl: 'rapid', label: 'Rapid', rating: 1610, provisional: true },
@@ -53,8 +67,9 @@ describe('getChessAccounts', () => {
   });
 
   it('should tell which platforms were reached and know the member', () => {
-    const accounts = getChessAccounts(member, externalRatings);
-    const beforeAny = getChessAccounts(member, null);
+    const { overTheBoard, online } = getChessAccounts(member, externalRatings);
+    const accounts = [...overTheBoard, ...online];
+    const beforeAny = Object.values(getChessAccounts(member, null)).flat();
 
     expect(accounts.map(account => [account.label, account.isFound])).toEqual([
       ['FIDE', true],
@@ -70,19 +85,36 @@ describe('getChessAccounts', () => {
     ]);
   });
 
-  it("should give FIDE's world rank alone", () => {
-    const [fide, ...others] = getChessAccounts(member, externalRatings);
+  it('should rank the member on FIDE alone, the world first and then their federation', () => {
+    const {
+      overTheBoard: [fide, ...others],
+      online,
+    } = getChessAccounts(member, externalRatings);
 
-    expect(fide.worldRank).toEqual({ rank: 129807, amongActive: false });
-    expect(others.every(account => account.worldRank === null)).toBe(true);
+    expect(fide.ranks).toEqual([
+      {
+        label: 'World rank',
+        emoji: '🌍',
+        rank: 129807,
+        tooltip: 'World rank among all players, as FIDE lists this member as inactive',
+      },
+      {
+        label: 'National rank in England',
+        emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+        rank: 412,
+        tooltip: 'National rank in England among active players',
+      },
+    ]);
+    expect([...others, ...online].every(account => !account.ranks.length)).toBe(true);
   });
 
   it('should list only the accounts the member has', () => {
-    const accounts = getChessAccounts(
+    const { overTheBoard, online } = getChessAccounts(
       { ...member, lichessUsername: '', cfcId: '' },
       externalRatings,
     );
 
-    expect(accounts.map(account => account.platform)).toEqual(['fide', 'chessCom']);
+    expect(overTheBoard.map(account => account.platform)).toEqual(['fide']);
+    expect(online.map(account => account.platform)).toEqual(['chessCom']);
   });
 });

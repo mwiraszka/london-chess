@@ -453,6 +453,7 @@ describe('MembersEffects', () => {
         fide: [{ timeControl: 'standard', rating: 1781, provisional: false }],
         cfc: null,
         fideWorldRank: null,
+        fideNationalRank: null,
       };
       const mockResponse: ApiResponse<MemberProfileRecord> = {
         data: { ...MOCK_MEMBERS[0], externalRatings },

@@ -59,10 +59,12 @@ test.describe('member profile', () => {
   test("shows the member's ratings beside each of their chess accounts", async ({
     page,
   }) => {
-    const accounts = page.locator('main').locator('.account');
+    const accounts = page
+      .locator('main')
+      .locator('.ratings-row--otb, .ratings-row--online');
 
     await expect(accounts).toHaveText([
-      /FIDE[\s\S]*Standard\s*1781\s*Rapid\s*Unrated\s*Blitz\s*Unrated\s*World rank\s*🌍\s*#48,213/,
+      /FIDE[\s\S]*World rank\s*🌍\s*#48,213\s*National rank in Canada\s*🇨🇦\s*#312\s*Standard\s*1781\s*Rapid\s*Unrated\s*Blitz\s*Unrated/,
       /CFC[\s\S]*Regular\s*1826\s*Quick\s*1797/,
       /Chess\.com[\s\S]*Rapid\s*1612\s*Blitz\s*1544\s*Bullet\s*Unrated/,
       /Lichess[\s\S]*Rapid\s*Unrated\s*Blitz\s*1733\s*Bullet\s*1689\?/,

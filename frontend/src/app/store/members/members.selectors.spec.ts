@@ -102,6 +102,7 @@ describe('Members Selectors', () => {
         fide: [],
         cfc: null,
         fideWorldRank: null,
+        fideNationalRank: null,
       };
 
       expect(

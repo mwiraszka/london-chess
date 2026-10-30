@@ -47,6 +47,7 @@ export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.ut
 export { compareCells } from './common/compare-cells.util';
 export { creditEditor } from './common/credit-editor.util';
 export { customSort } from './common/custom-sort.util';
+export { flagEmoji } from './common/flag-emoji.util';
 export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';
 
