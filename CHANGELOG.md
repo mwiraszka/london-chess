@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.6.1] - 2026-10-31
+
+### Changed
+
+- Show members' FIDE, CFC, Lichess and Chess.com accounts at the end of the members list, each linking to their page on that site, and fit more of the list on a phone screen
+- Tidy up the search areas on the members, schedule and articles pages
+
+### Fixed
+
+- Stop a slow response from FIDE, CFC, Chess.com or Lichess hiding a member's ratings from that site for hours
+- Restore the dots between the details under a tournament's name
+- Open the City Championship page from the trophy in the members list, rather than the member's profile
+
 ## [v6.6.0] - 2026-10-30
 
 ### Added
@@ -2201,6 +2214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.6.1]: https://github.com/mwiraszka/london-chess/compare/v6.6.0...v6.6.1
 [v6.6.0]: https://github.com/mwiraszka/london-chess/compare/v6.5.14...v6.6.0
 [v6.5.14]: https://github.com/mwiraszka/london-chess/compare/v6.5.13...v6.5.14
 [v6.5.13]: https://github.com/mwiraszka/london-chess/compare/v6.5.12...v6.5.13
