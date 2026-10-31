@@ -114,8 +114,10 @@ describe('MembersTableComponent', () => {
         'Rating',
         'Peak rating',
         'City',
-        'Chess.com username',
-        'Lichess username',
+        'FIDE',
+        'CFC',
+        'Lichess',
+        'Chess.com',
       ]);
     });
 
@@ -138,7 +140,27 @@ describe('MembersTableComponent', () => {
         'London',
         '',
         '',
+        '',
+        '',
       ]);
+    });
+
+    it("should link each of a member's accounts to its site", () => {
+      const links = queryAll(bodyRows()[0], 'a.members__account-link');
+
+      expect(links.map(link => link.attributes['href'])).toEqual([
+        'https://ratings.fide.com/profile/1503014',
+        'https://lichess.org/@/DrNykterstein',
+        'https://www.chess.com/member/magnuscarlsen',
+      ]);
+      expect(links.every(link => link.attributes['target'] === '_blank')).toBe(true);
+    });
+
+    it("should keep the name and account links out of the row's own link", () => {
+      const row = bodyRows()[0];
+
+      expect(query(row, 'a.members__profile-link')).toBeTruthy();
+      expect(query(row, '.ea-data-table__row-link a')).toBeFalsy();
     });
 
     it('should link a member with a profile to it, by name and by row', () => {
@@ -236,17 +258,25 @@ describe('MembersTableComponent', () => {
         'Rating',
         'Peak rating',
         'City',
-        'Chess.com username',
-        'Lichess username',
         'Last updated',
         'Born',
         'Email',
         'Phone number',
         'Date joined',
         'Account opened',
+        'FIDE',
+        'CFC',
+        'Lichess',
+        'Chess.com',
       ]);
       expect(cellTexts(bodyRows()[0]).slice(1, 4)).toEqual(['Magnus', 'Carlsen', '2850']);
-      expect(cellTexts(bodyRows()[0]).slice(9)).toEqual([
+      expect(cellTexts(bodyRows()[0]).slice(12)).toEqual([
+        '1503014',
+        '',
+        'DrNykterstein',
+        'magnuscarlsen',
+      ]);
+      expect(cellTexts(bodyRows()[0]).slice(7, 12)).toEqual([
         '1990',
         'magnus.carlsen@example.com',
         '555-123-4567',
@@ -260,7 +290,7 @@ describe('MembersTableComponent', () => {
     });
 
     it('should leave the account opened blank for a member whose account date is not known', () => {
-      expect(cellTexts(bodyRows()[1]).at(-1)).toBe('');
+      expect(cellTexts(bodyRows()[1])[11]).toBe('');
     });
 
     it('should link a member with a profile to it by row, as for the public', () => {
@@ -300,7 +330,7 @@ describe('MembersTableComponent', () => {
       render({ isAdmin: true, isSafeMode: true });
 
       const notice = query(fixture.debugElement, 'lcc-safe-mode-notice');
-      expect(headers()).toHaveLength(7);
+      expect(headers()).toHaveLength(9);
       expect(notice).toBeTruthy();
     });
 

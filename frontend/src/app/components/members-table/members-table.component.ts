@@ -27,10 +27,22 @@ import { Router, RouterLink } from '@angular/router';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
 import { PAGE_SIZES } from '@app/constants/filters';
-import { AdminControlsConfig, DataPaginationOptions, Member } from '@app/models';
+import { ADMIN_MEMBER_COLUMNS } from '@app/constants/member-details';
+import {
+  AdminControlsConfig,
+  DataPaginationOptions,
+  Member,
+  RatingPlatform,
+} from '@app/models';
 import { FormatDatePipe, HighlightPipe, RatingLabelPipe } from '@app/pipes';
 import { DeletionService } from '@app/services';
-import { getInitials, isCityChampion, pageRowCount, ratingSortValue } from '@app/utils';
+import {
+  chessAccountUrl,
+  getInitials,
+  isCityChampion,
+  pageRowCount,
+  ratingSortValue,
+} from '@app/utils';
 
 // The sort keys hold what the server sorts by, so a page keeps the order it came in
 export interface MemberRow {
@@ -45,6 +57,8 @@ export interface MemberRow {
   city: string;
   chessComUsername: string;
   lichessUsername: string;
+  fideId: string;
+  cfcId: string;
   lastUpdated: string;
   born: string;
   email: string;
@@ -66,6 +80,8 @@ function toMemberRow(member: Member, number: number): MemberRow {
     city: member.city,
     chessComUsername: member.chessComUsername,
     lichessUsername: member.lichessUsername,
+    fideId: member.fideId,
+    cfcId: member.cfcId,
     lastUpdated: member.modificationInfo.dateLastEdited,
     born: member.yearOfBirth,
     email: member.email,
@@ -77,6 +93,14 @@ function toMemberRow(member: Member, number: number): MemberRow {
 
 // The columns whose highest value comes first when they are first sorted
 const DESCENDING_FIRST: string[] = ['rating', 'peakRating'];
+
+// The site each account column links to, by the field it shows
+const ACCOUNT_PLATFORMS: Partial<Record<string, RatingPlatform>> = {
+  fideId: 'fide',
+  cfcId: 'cfc',
+  lichessUsername: 'lichess',
+  chessComUsername: 'chessCom',
+};
 
 type CellTemplate = TemplateRef<{ $implicit: MemberRow; value: unknown }>;
 
@@ -123,6 +147,7 @@ export class MembersTableComponent {
   private readonly peakRatingCell = viewChild.required<CellTemplate>('peakRatingCell');
   private readonly highlightCell = viewChild.required<CellTemplate>('highlightCell');
   private readonly dateCell = viewChild.required<CellTemplate>('dateCell');
+  private readonly accountCell = viewChild.required<CellTemplate>('accountCell');
 
   protected readonly emptyIcon = FilterXIconComponent;
   protected readonly getInitials = getInitials;
@@ -166,28 +191,29 @@ export class MembersTableComponent {
   );
 
   protected readonly columns = computed<DataTableColumn<MemberRow>[]>(() => {
-    const number: DataTableColumn<MemberRow> = {
-      key: 'number',
-      label: '#',
-      align: 'right',
-    };
-    const names: DataTableColumn<MemberRow>[] = this.showsDetails()
-      ? [
-          {
-            key: 'firstName',
-            label: 'First name',
-            sortable: true,
-            cellTemplate: this.firstNameCell(),
-          },
-          {
-            key: 'lastName',
-            label: 'Last name',
-            sortable: true,
-            cellTemplate: this.lastNameCell(),
-          },
-        ]
-      : [{ key: 'name', label: 'Name', sortable: true, cellTemplate: this.nameCell() }];
-    const ratings: DataTableColumn<MemberRow>[] = [
+    const columns: DataTableColumn<MemberRow>[] = [
+      { key: 'number', label: '#', align: 'right' },
+      {
+        key: 'name',
+        label: 'Name',
+        sortable: true,
+        cellTemplate: this.nameCell(),
+        rowLink: false,
+      },
+      {
+        key: 'firstName',
+        label: 'First name',
+        sortable: true,
+        cellTemplate: this.firstNameCell(),
+        rowLink: false,
+      },
+      {
+        key: 'lastName',
+        label: 'Last name',
+        sortable: true,
+        cellTemplate: this.lastNameCell(),
+        rowLink: false,
+      },
       {
         key: 'rating',
         label: 'Rating',
@@ -204,47 +230,62 @@ export class MembersTableComponent {
       },
       { key: 'city', label: 'City', sortable: true, cellTemplate: this.highlightCell() },
       {
-        key: 'chessComUsername',
-        label: 'Chess.com username',
+        key: 'lastUpdated',
+        label: 'Last updated',
         sortable: true,
-        cellTemplate: this.highlightCell(),
+        align: 'right',
+        cellTemplate: this.dateCell(),
+      },
+      { key: 'born', label: 'Born', sortable: true, align: 'right' },
+      { key: 'email', label: 'Email', sortable: true },
+      { key: 'phoneNumber', label: 'Phone number', sortable: true },
+      {
+        key: 'dateJoined',
+        label: 'Date joined',
+        sortable: true,
+        align: 'right',
+        cellTemplate: this.dateCell(),
+      },
+      {
+        key: 'accountOpened',
+        label: 'Account opened',
+        sortable: true,
+        align: 'right',
+        cellTemplate: this.dateCell(),
+      },
+      {
+        key: 'fideId',
+        label: 'FIDE',
+        sortable: true,
+        cellTemplate: this.accountCell(),
+        rowLink: false,
+      },
+      {
+        key: 'cfcId',
+        label: 'CFC',
+        sortable: true,
+        cellTemplate: this.accountCell(),
+        rowLink: false,
       },
       {
         key: 'lichessUsername',
-        label: 'Lichess username',
+        label: 'Lichess',
         sortable: true,
-        cellTemplate: this.highlightCell(),
+        cellTemplate: this.accountCell(),
+        rowLink: false,
+      },
+      {
+        key: 'chessComUsername',
+        label: 'Chess.com',
+        sortable: true,
+        cellTemplate: this.accountCell(),
+        rowLink: false,
       },
     ];
-    const details: DataTableColumn<MemberRow>[] = this.showsDetails()
-      ? [
-          {
-            key: 'lastUpdated',
-            label: 'Last updated',
-            sortable: true,
-            align: 'right',
-            cellTemplate: this.dateCell(),
-          },
-          { key: 'born', label: 'Born', sortable: true, align: 'right' },
-          { key: 'email', label: 'Email', sortable: true },
-          { key: 'phoneNumber', label: 'Phone number', sortable: true },
-          {
-            key: 'dateJoined',
-            label: 'Date joined',
-            sortable: true,
-            align: 'right',
-            cellTemplate: this.dateCell(),
-          },
-          {
-            key: 'accountOpened',
-            label: 'Account opened',
-            sortable: true,
-            align: 'right',
-            cellTemplate: this.dateCell(),
-          },
-        ]
-      : [];
-    return [number, ...names, ...ratings, ...details];
+    // Admins see first and last names apart, in place of the one name everyone else sees
+    return this.showsDetails()
+      ? columns.filter(({ key }) => key !== 'name')
+      : columns.filter(({ key }) => !ADMIN_MEMBER_COLUMNS.includes(key));
   });
 
   protected readonly sortState = computed<DataTableSortState>(() => ({
@@ -261,6 +302,12 @@ export class MembersTableComponent {
 
   protected readonly rowHref = ({ member }: MemberRow): string | null =>
     member.number === null ? null : `/members/${member.number}`;
+
+  // Null for a member without a handle on the column's site
+  protected accountUrl(columnKey: string, handle: string): string | null {
+    const platform = ACCOUNT_PLATFORMS[columnKey];
+    return platform && handle ? chessAccountUrl(platform, handle) : null;
+  }
 
   public onSorted({ column }: DataTableSortState): void {
     const options = this.options();

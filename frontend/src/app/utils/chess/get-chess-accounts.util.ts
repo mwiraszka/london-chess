@@ -15,6 +15,7 @@ import {
 } from '@app/models';
 
 import { flagEmoji } from '../common/flag-emoji.util';
+import { chessAccountUrl } from './chess-account-url.util';
 
 // The member's accounts on other chess sites, those for over the board play apart from
 // those online, in the order their profile lists them
@@ -28,7 +29,7 @@ export function getChessAccounts(
       label: 'FIDE',
       logoSrc: null,
       handle: member.fideId,
-      url: `https://ratings.fide.com/profile/${member.fideId}`,
+      url: chessAccountUrl('fide', member.fideId),
       slots: slots('fide', ratings?.fide),
       isFound: !!ratings?.fide,
       ranks: fideRanks(ratings),
@@ -38,7 +39,7 @@ export function getChessAccounts(
       label: 'CFC',
       logoSrc: null,
       handle: member.cfcId,
-      url: `https://www.chess.ca/en/ratings/p/?id=${member.cfcId}`,
+      url: chessAccountUrl('cfc', member.cfcId),
       slots: slots('cfc', ratings?.cfc),
       isFound: !!ratings?.cfc,
       ranks: [],
@@ -50,7 +51,7 @@ export function getChessAccounts(
       label: 'Chess.com',
       logoSrc: 'assets/club-link-icons/chesscom.svg',
       handle: member.chessComUsername,
-      url: `https://www.chess.com/member/${member.chessComUsername}`,
+      url: chessAccountUrl('chessCom', member.chessComUsername),
       slots: slots('chessCom', ratings?.chessCom),
       isFound: !!ratings?.chessCom,
       ranks: [],
@@ -60,7 +61,7 @@ export function getChessAccounts(
       label: 'Lichess',
       logoSrc: 'assets/club-link-icons/lichess.svg',
       handle: member.lichessUsername,
-      url: `https://lichess.org/@/${member.lichessUsername}`,
+      url: chessAccountUrl('lichess', member.lichessUsername),
       slots: slots('lichess', ratings?.lichess),
       isFound: !!ratings?.lichess,
       ranks: [],

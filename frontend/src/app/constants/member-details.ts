@@ -27,3 +27,15 @@ export const MEMBER_DETAIL_RULES = {
     message: 'CFC ID must be a number of up to 7 digits',
   },
 } as const;
+
+// The members table columns only admins see, which safe mode hides with every other detail
+export const ADMIN_MEMBER_COLUMNS: readonly string[] = [
+  'firstName',
+  'lastName',
+  'lastUpdated',
+  'born',
+  'email',
+  'phoneNumber',
+  'dateJoined',
+  'accountOpened',
+];
