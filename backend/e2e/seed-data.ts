@@ -489,7 +489,9 @@ export const EVENTS: SeedEvent[] = [
     title: 'Club Night Blitz',
     details: 'Ten-minute games, all welcome.',
     type: 'blitz tournament (10 mins)',
-    daysFromNow: -30,
+    // Far enough back to fall in an earlier month than today's on any date, so showing past
+    // events always adds a month above today's in the calendar
+    daysFromNow: -45,
   },
   {
     id: hexId(6, 2),
