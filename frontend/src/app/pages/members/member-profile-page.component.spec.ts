@@ -344,7 +344,11 @@ describe('MemberProfilePageComponent', () => {
         fideNationalRank: null,
       });
 
-      const stats = accountRows().map(row => queryAll(row, RATING).map(textOf));
+      const stats = accountRows().map(row =>
+        queryAll(row, RATING).map(
+          rating => `${queryTextContent(rating, 'dt')} ${queryTextContent(rating, 'dd')}`,
+        ),
+      );
       expect(stats).toEqual([
         ['Standard 1781', 'Rapid Unrated', 'Blitz Unrated'],
         ['Rapid 1520', 'Blitz 1430', 'Bullet Unrated'],
