@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Show members' FIDE, CFC, Lichess and Chess.com accounts at the end of the members list, each linking to their page on that site, and fit more of the list on a phone screen
 - Tidy up the search areas on the members, schedule and articles pages
+- Update third-party packages
 
 ### Fixed
 
