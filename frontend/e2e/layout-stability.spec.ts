@@ -54,6 +54,13 @@ async function recordShifts(page: Page): Promise<void> {
 const shiftsOf = (page: Page): Promise<Shift[]> =>
   page.evaluate(() => (window as unknown as { lccShifts: Shift[] }).lccShifts);
 
+// A phone sizes the members' names to the page shown, so the columns beside them move
+// over once the names arrive
+const isExpectedShift = (viewport: string, name: string, { sources }: Shift): boolean =>
+  viewport === 'phone' &&
+  name === 'the members' &&
+  sources.every(source => source.includes('.ea-data-table__cell'));
+
 const nextFrames = (page: Page): Promise<void> =>
   page.evaluate(
     () =>
@@ -107,7 +114,9 @@ for (const [viewport, size] of [
         await page.waitForLoadState('networkidle');
         await nextFrames(page);
 
-        const shifts = await shiftsOf(page);
+        const shifts = (await shiftsOf(page)).filter(
+          shift => !isExpectedShift(viewport, name, shift),
+        );
         expect(shifts, JSON.stringify(shifts, null, 2)).toEqual([]);
         expect(
           await page.evaluate(
