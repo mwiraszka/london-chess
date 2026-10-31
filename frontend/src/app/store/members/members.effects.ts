@@ -18,9 +18,11 @@ import {
 import { Injectable, inject } from '@angular/core';
 
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
+import { ADMIN_MEMBER_COLUMNS } from '@app/constants/member-details';
 import { EditableMember, Member, MemberEmail } from '@app/models';
 import { MemberProfilesService, MembersApiService } from '@app/services';
 import * as AppActions from '@app/store/app/app.actions';
+import * as AppSelectors from '@app/store/app/app.selectors';
 import * as AuthSelectors from '@app/store/auth/auth.selectors';
 import * as NavSelectors from '@app/store/nav/nav.selectors';
 import {
@@ -33,6 +35,7 @@ import {
 import { creditEditor, isDefined } from '@app/utils';
 
 import * as MembersActions from './members.actions';
+import { initialState } from './members.reducer';
 import * as MembersSelectors from './members.selectors';
 
 @Injectable()
@@ -71,6 +74,32 @@ export class MembersEffects {
       concatLatestFrom(() => this.store.select(MembersSelectors.selectRecordsScope)),
       filter(([scope, recordsScope]) => recordsScope !== null && recordsScope !== scope),
       map(() => MembersActions.fetchAllMembersRequested()),
+    );
+  });
+
+  // Safe mode hides the columns only admins see, so a sort by one of them gives way to the
+  // default
+  resetSortOnSafeMode$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(AppActions.safeModeToggled),
+      concatLatestFrom(() => [
+        this.store.select(AppSelectors.selectIsSafeMode),
+        this.store.select(MembersSelectors.selectOptions),
+      ]),
+      filter(
+        ([, isSafeMode, { sortBy }]) =>
+          isSafeMode && ADMIN_MEMBER_COLUMNS.includes(sortBy),
+      ),
+      map(([, , options]) =>
+        MembersActions.paginationOptionsChanged({
+          options: {
+            ...options,
+            sortBy: initialState.options.sortBy,
+            sortOrder: initialState.options.sortOrder,
+            page: 1,
+          },
+        }),
+      ),
     );
   });
 

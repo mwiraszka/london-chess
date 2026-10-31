@@ -10,6 +10,7 @@ export {
   simulScore,
   timeControlMinutes,
 } from './chess/crosstable.util';
+export { chessAccountUrl } from './chess/chess-account-url.util';
 export { getChessAccounts } from './chess/get-chess-accounts.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';

@@ -381,6 +381,24 @@ describe('members routes', () => {
       ]);
     });
 
+    it('should sort FIDE and CFC IDs as numbers, whatever their length', async () => {
+      await createAdmin(ADMIN);
+      await createMember({ fideId: '21008949', cfcId: '150123' });
+      await createMember({ fideId: '4100018', cfcId: '99001' });
+
+      const byFideId = await request(app)
+        .get('/v1/admin/members?sortBy=fideId&sortOrder=asc')
+        .set('Authorization', bearer(ADMIN));
+      const byCfcId = await request(app)
+        .get('/v1/admin/members?sortBy=cfcId&sortOrder=desc')
+        .set('Authorization', bearer(ADMIN));
+
+      const fideOrder: AdminMember[] = byFideId.body.data.items;
+      const cfcOrder: AdminMember[] = byCfcId.body.data.items;
+      expect(fideOrder.map(member => member.fideId)).toEqual(['', '4100018', '21008949']);
+      expect(cfcOrder.map(member => member.cfcId)).toEqual(['150123', '99001', '']);
+    });
+
     it('should return the widest members with their private details', async () => {
       await createAdmin(ADMIN);
 

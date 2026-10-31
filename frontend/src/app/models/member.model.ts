@@ -20,7 +20,6 @@ export interface Member {
   yearOfBirth: string;
   chessComUsername: string;
   lichessUsername: string;
-  // Sent only with a profile page lookup or to admins
   fideId: string;
   cfcId: string;
   isActive: boolean;

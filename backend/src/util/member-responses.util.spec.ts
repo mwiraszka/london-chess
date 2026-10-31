@@ -97,16 +97,14 @@ describe('PUBLIC_MEMBER_PROJECTION', () => {
 });
 
 describe('PUBLIC_PROFILE_PROJECTION', () => {
-  it('should read only the year of birth, join date, preferences, federation IDs and external ratings beyond the public member fields', () => {
+  it('should read only the year of birth, join date, preferences and external ratings beyond the public member fields', () => {
     const extraFields = Object.keys(PUBLIC_PROFILE_PROJECTION).filter(
       field => !(field in PUBLIC_MEMBER_PROJECTION),
     );
 
     expect(extraFields.sort()).toEqual([
-      'cfcId',
       'dateJoined',
       'externalRatings',
-      'fideId',
       'preferences',
       'yearOfBirth',
     ]);
@@ -169,8 +167,10 @@ describe('toPublicMember', () => {
     expect(Object.keys(member).sort()).toEqual(
       [
         'avatarUrl',
+        'cfcId',
         'chessComUsername',
         'city',
+        'fideId',
         'firstName',
         'id',
         'isActive',

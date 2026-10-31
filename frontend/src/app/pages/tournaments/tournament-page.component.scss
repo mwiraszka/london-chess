@@ -20,6 +20,12 @@ $details-gap: 24px;
   white-space: nowrap;
 }
 
+// A box of its own, as a space at the edge of a value would collapse the dot's space
+.details__value {
+  display: inline-block;
+  max-width: 100%;
+}
+
 // The dot is drawn on a widened space, the only place a line can break between items,
 // so a line ending there drops the space and its dot along with it
 .details__item:not(:last-child)::after {
