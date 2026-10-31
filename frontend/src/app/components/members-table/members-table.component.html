@@ -43,6 +43,19 @@
     class="members__name"
     [class.members__name--inactive]="!row.member.isActive"
     [eaTooltip]="row.member.isActive ? '' : 'Inactive member'">
+    @if (row.member.number !== null) {
+      <ea-avatar
+        class="members__avatar"
+        aria-hidden="true"
+        size="xs"
+        [initials]="getInitials(row.firstName + ' ' + row.lastName)"
+        [src]="row.member.avatarUrl ?? undefined" />
+    } @else {
+      <span
+        class="members__avatar members__avatar--placeholder"
+        aria-hidden="true">
+      </span>
+    }
     <ng-container
       *ngTemplateOutlet="
         memberName;
@@ -129,5 +142,7 @@
 <ng-template
   #dateCell
   let-value="value">
-  {{ value | formatDate: 'short no-time' }}
+  @if (value) {
+    {{ value | formatDate: 'short no-time' }}
+  }
 </ng-template>

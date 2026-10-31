@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { ArticleModel } from '../src/models/article.model';
 import { CounterModel, MEMBER_NUMBER_COUNTER_ID } from '../src/models/counter.model';
 import { EventModel } from '../src/models/event.model';
+import { StoredExternalRatings } from '../src/models/external-rating.model';
 import { GameModel } from '../src/models/game.model';
 import { ImageModel } from '../src/models/image.model';
 import { MemberModel } from '../src/models/member.model';
@@ -28,6 +29,7 @@ import {
   RIVAL_MEMBER,
   SeedGame,
   SeedMember,
+  SeedRating,
   SeedTournament,
   TOURNAMENTS,
   UPCOMING,
@@ -64,6 +66,31 @@ function modificationInfo(date: Date): ModificationInfo {
 }
 
 // An evening in London, Ontario, on the day the given number of days away
+// Checked as the suite starts, so no profile view looks the member up again
+function storedExternalRatings(member: SeedMember): StoredExternalRatings | null {
+  const { externalRatings: ratings } = member;
+  if (!ratings) {
+    return null;
+  }
+  const lookup = (handle = '', platformRatings: SeedRating[]) => ({
+    handle,
+    ratings: platformRatings,
+  });
+  return {
+    lookups: {
+      chessCom: lookup(member.chessComUsername, ratings.chessCom),
+      lichess: lookup(member.lichessUsername, ratings.lichess),
+      fide: {
+        ...lookup(member.fideId, ratings.fide),
+        worldRank: ratings.fideWorldRank,
+        nationalRank: ratings.fideNationalRank,
+      },
+      cfc: lookup(member.cfcId, ratings.cfc),
+    },
+    checkedAt: new Date().toISOString(),
+  };
+}
+
 function clubEvening(daysFromNow: number): Date {
   const date = new Date(Date.now() + daysFromNow * DAY_MS);
   date.setUTCHours(22, 0, 0, 0);
@@ -97,6 +124,9 @@ async function seedMembers(
         yearOfBirth: member.yearOfBirth ?? '',
         chessComUsername: member.chessComUsername ?? '',
         lichessUsername: member.lichessUsername ?? '',
+        fideId: member.fideId ?? '',
+        cfcId: member.cfcId ?? '',
+        externalRatings: storedExternalRatings(member),
         isActive: member.isActive,
         dateJoined: member.dateJoined ?? '2022-09-01T22:00:00.000Z',
         modificationInfo: modificationInfo(created),

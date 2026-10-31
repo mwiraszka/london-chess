@@ -2,7 +2,7 @@ import { pick } from 'lodash-es';
 
 import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
-import { LccError, Member, MemberFormData } from '@app/models';
+import { ExternalRatings, LccError, Member, MemberFormData } from '@app/models';
 
 import * as MembersActions from './members.actions';
 import {
@@ -17,6 +17,14 @@ import {
 describe('Members Reducer', () => {
   const mockMember = MOCK_MEMBERS[0];
   const otherMember = MOCK_MEMBERS[1];
+  const EXTERNAL_RATINGS: ExternalRatings = {
+    chessCom: [{ timeControl: 'blitz', rating: 1580, provisional: false }],
+    lichess: null,
+    fide: null,
+    cfc: null,
+    fideWorldRank: null,
+    fideNationalRank: null,
+  };
   // The public API leaves out a member's private details
   const publicOtherMember: Member = {
     ...otherMember,
@@ -59,9 +67,10 @@ describe('Members Reducer', () => {
         lastFullFetch: null,
         lastFilteredFetch: null,
         filteredMembers: [],
+        externalRatings: {},
         options: {
           page: 1,
-          pageSize: 20,
+          pageSize: 50,
           sortBy: 'rating',
           sortOrder: 'desc',
           filters: {
@@ -314,6 +323,41 @@ describe('Members Reducer', () => {
       expect(state.entities[otherMember.id]?.formData).toEqual(draft);
     });
 
+    it("should keep a profile's ratings by member number, apart from the record", () => {
+      const action = MembersActions.fetchMemberSucceeded({
+        member: mockMember,
+        scope: 'public',
+        externalRatings: EXTERNAL_RATINGS,
+      });
+
+      const state = membersReducer(initialState, action);
+
+      expect(state.externalRatings).toEqual({
+        [Number(mockMember.number)]: EXTERNAL_RATINGS,
+      });
+      expect(state.entities[mockMember.id]?.member).toEqual(mockMember);
+    });
+
+    it("should keep a profile's ratings when the admin's list replaces the public records", () => {
+      const profileState = membersReducer(
+        initialState,
+        MembersActions.fetchMemberSucceeded({
+          member: mockMember,
+          scope: 'public',
+          externalRatings: EXTERNAL_RATINGS,
+        }),
+      );
+      const action = MembersActions.fetchAllMembersSucceeded({
+        members: [mockMember, otherMember],
+        totalCount: 2,
+        scope: 'admin',
+      });
+
+      const state = membersReducer(profileState, action);
+
+      expect(state.externalRatings[Number(mockMember.number)]).toEqual(EXTERNAL_RATINGS);
+    });
+
     it('should build form data from the admin record once public records are replaced', () => {
       const publicState = membersReducer(
         initialState,
@@ -379,6 +423,23 @@ describe('Members Reducer', () => {
         member: updatedMember,
         formData: null,
       });
+    });
+
+    it("should drop the saved member's ratings, as their usernames or IDs may have changed", () => {
+      const savedNumber = Number(mockMember.number);
+      const previousState: MembersState = {
+        ...adminStateWith({ member: mockMember, formData: null }),
+        externalRatings: { [savedNumber]: EXTERNAL_RATINGS, 99: EXTERNAL_RATINGS },
+      };
+      const action = MembersActions.updateMemberSucceeded({
+        member: mockMember,
+        originalMemberName: 'John Doe',
+        emailSent: null,
+      });
+
+      const state = membersReducer(previousState, action);
+
+      expect(state.externalRatings).toEqual({ 99: EXTERNAL_RATINGS });
     });
 
     it('should show the saved member in the page shown straight away', () => {

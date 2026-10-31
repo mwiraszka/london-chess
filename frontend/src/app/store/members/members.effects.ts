@@ -192,8 +192,8 @@ export class MembersEffects {
       concatLatestFrom(() => this.store.select(AuthSelectors.selectApiScope)),
       switchMap(([{ memberNumber }, scope]) =>
         this.membersApiService.getMemberByNumber(memberNumber, scope).pipe(
-          map(response =>
-            MembersActions.fetchMemberSucceeded({ member: response.data, scope }),
+          map(({ data: { externalRatings, ...member } }) =>
+            MembersActions.fetchMemberSucceeded({ member, scope, externalRatings }),
           ),
           catchError(error =>
             of(MembersActions.fetchMemberFailed({ error: this.parseError(error) })),

@@ -36,6 +36,8 @@ describe('Members Selectors', () => {
     isActive: true,
     chessComUsername: 'testuser',
     lichessUsername: 'testuser',
+    fideId: '',
+    cfcId: '',
   };
 
   const mockMembersState: MembersState = {
@@ -50,6 +52,7 @@ describe('Members Selectors', () => {
       options: mockOptions,
       filteredCount: 8,
       totalCount: 15,
+      externalRatings: {},
     }),
     entities: {
       [MOCK_MEMBERS[0].id]: {
@@ -88,6 +91,33 @@ describe('Members Selectors', () => {
       );
 
       expect(result).toBe('loaded');
+    });
+  });
+
+  describe('selectMemberExternalRatings', () => {
+    it("should select a member's ratings by number, or null before they arrive", () => {
+      const ratings = {
+        chessCom: null,
+        lichess: null,
+        fide: [],
+        cfc: null,
+        fideWorldRank: null,
+        fideNationalRank: null,
+      };
+
+      expect(
+        MembersSelectors.selectMemberExternalRatings(7).projector({ 7: ratings }),
+      ).toBe(ratings);
+      expect(
+        MembersSelectors.selectMemberExternalRatings(8).projector({ 7: ratings }),
+      ).toBeNull();
+    });
+  });
+
+  describe('selectMemberLoadFailed', () => {
+    it('should tell whether the last member load failed', () => {
+      expect(MembersSelectors.selectMemberLoadFailed.projector(['member'])).toBe(true);
+      expect(MembersSelectors.selectMemberLoadFailed.projector(['filtered'])).toBe(false);
     });
   });
 
@@ -301,6 +331,8 @@ describe('Members Selectors', () => {
         isActive: member.isActive,
         chessComUsername: member.chessComUsername,
         lichessUsername: member.lichessUsername,
+        fideId: member.fideId,
+        cfcId: member.cfcId,
       };
       const selector = MembersSelectors.selectHasUnsavedChanges(member.id);
       const result = selector.projector(member, formData);
@@ -341,6 +373,8 @@ describe('Members Selectors', () => {
         isActive: member.isActive,
         chessComUsername: member.chessComUsername,
         lichessUsername: member.lichessUsername,
+        fideId: member.fideId,
+        cfcId: member.cfcId,
       };
       const selector = MembersSelectors.selectHasUnsavedChanges(member.id);
       const result = selector.projector(member, formData);

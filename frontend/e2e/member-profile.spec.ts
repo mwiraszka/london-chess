@@ -46,6 +46,29 @@ test.describe('member profile', () => {
       'href',
       `https://www.chess.com/member/${PROFILE_MEMBER.chessComUsername}`,
     );
+    await expect(main.getByRole('link', { name: PROFILE_MEMBER.fideId })).toHaveAttribute(
+      'href',
+      `https://ratings.fide.com/profile/${PROFILE_MEMBER.fideId}`,
+    );
+    await expect(main.getByRole('link', { name: PROFILE_MEMBER.cfcId })).toHaveAttribute(
+      'href',
+      `https://www.chess.ca/en/ratings/p/?id=${PROFILE_MEMBER.cfcId}`,
+    );
+  });
+
+  test("shows the member's ratings beside each of their chess accounts", async ({
+    page,
+  }) => {
+    const accounts = page
+      .locator('main')
+      .locator('.ratings-row--otb, .ratings-row--online');
+
+    await expect(accounts).toHaveText([
+      /FIDE[\s\S]*World rank\s*🌍\s*#48,213\s*National rank in Canada\s*🇨🇦\s*#312\s*Standard\s*1781\s*Rapid\s*Unrated\s*Blitz\s*Unrated/,
+      /CFC[\s\S]*Regular\s*1826\s*Quick\s*1797/,
+      /Chess\.com[\s\S]*Rapid\s*1612\s*Blitz\s*1544\s*Bullet\s*Unrated/,
+      /Lichess[\s\S]*Rapid\s*Unrated\s*Blitz\s*1733\s*Bullet\s*1689\?/,
+    ]);
   });
 
   test('shows a trophy for each podium finish, newest selected', async ({ page }) => {

@@ -138,6 +138,8 @@ describe('exportDataToCsv', () => {
       yearOfBirth: `${1980 + (i % 40)}`,
       chessComUsername: `user${i + 1}`,
       lichessUsername: `user${i + 1}lich`,
+      fideId: '',
+      cfcId: '',
       isActive: i % 3 !== 0,
       dateJoined: new Date(2020, i % 12, (i % 28) + 1).toISOString(),
       modificationInfo: {

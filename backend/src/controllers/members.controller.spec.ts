@@ -5,9 +5,10 @@ import request from 'supertest';
 import { app } from '../app';
 import { Id } from '../models/core.model';
 import { CounterModel } from '../models/counter.model';
-import { MemberModel } from '../models/member.model';
+import { MemberModel, MemberRecord } from '../models/member.model';
 import { PlayerModel } from '../models/player.model';
 import { sendEmail } from '../services/email.service';
+import { refreshExternalRatings } from '../services/external-ratings.service';
 import { bearer, clerkClient } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import {
@@ -28,9 +29,17 @@ vi.mock('../services/email.service', () => ({
   sendEmail: vi.fn(),
   sendAdminEmail: vi.fn(),
 }));
+vi.mock('../services/external-ratings.service', async importOriginal => ({
+  ...(await importOriginal<typeof import('../services/external-ratings.service')>()),
+  refreshExternalRatings: vi.fn(async (record: MemberRecord) => record),
+}));
 
 const ADMIN = 'user_admin';
 const SITE = 'https://londonchess.ca';
+const RATINGS_CHECKED_AT = '2026-10-30T12:00:00.000Z';
+const BLITZ_RATINGS = [
+  { timeControl: 'blitz' as const, rating: 1450, provisional: false },
+];
 
 function clerkError(code: string, longMessage: string): ClerkAPIResponseError {
   return new ClerkAPIResponseError(longMessage, {
@@ -209,6 +218,102 @@ describe('members routes', () => {
       expect(response.body.data).not.toHaveProperty('email');
     });
 
+    it("should show the stored ratings of the member's handles, kept on the CDN only until they age out", async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-30T13:00:00.000Z'));
+      await createMember({
+        number: 7,
+        account: memberAccount(),
+        lichessUsername: 'jane_doe',
+        fideId: '2600123',
+        externalRatings: {
+          lookups: {
+            lichess: { handle: 'jane_doe', ratings: BLITZ_RATINGS },
+            fide: { handle: '2600123', ratings: [] },
+          },
+          checkedAt: RATINGS_CHECKED_AT,
+        },
+      });
+
+      const response = await request(app).get('/v1/public/members/7');
+
+      expect(response.body.data).toMatchObject({
+        fideId: '2600123',
+        cfcId: '',
+        externalRatings: { chessCom: null, lichess: BLITZ_RATINGS, fide: [], cfc: null },
+      });
+      expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=18000');
+      expect(refreshExternalRatings).not.toHaveBeenCalled();
+    });
+
+    it('should show aged ratings while they are looked up again for the next visitor', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-30T19:00:00.000Z'));
+      await createMember({
+        number: 7,
+        account: memberAccount(),
+        lichessUsername: 'jane_doe',
+        externalRatings: {
+          lookups: { lichess: { handle: 'jane_doe', ratings: BLITZ_RATINGS } },
+          checkedAt: RATINGS_CHECKED_AT,
+        },
+      });
+
+      const response = await request(app).get('/v1/public/members/7');
+
+      expect(response.body.data.externalRatings.lichess).toEqual(BLITZ_RATINGS);
+      expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=1');
+      expect(refreshExternalRatings).toHaveBeenCalledOnce();
+    });
+
+    it('should look up a handle just given before answering, so its ratings show at once', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-30T13:00:00.000Z'));
+      await createMember({
+        number: 8,
+        account: memberAccount({ clerkUserId: 'user_renamed' }),
+        lichessUsername: 'renamed',
+        externalRatings: {
+          lookups: { lichess: { handle: 'jane_doe', ratings: BLITZ_RATINGS } },
+          checkedAt: RATINGS_CHECKED_AT,
+        },
+      });
+      vi.mocked(refreshExternalRatings).mockImplementation(async record => ({
+        ...record,
+        externalRatings: {
+          lookups: { lichess: { handle: 'renamed', ratings: BLITZ_RATINGS } },
+          checkedAt: '2026-10-30T13:00:00.000Z',
+        },
+      }));
+
+      const response = await request(app).get('/v1/public/members/8');
+
+      expect(response.body.data.externalRatings.lichess).toEqual(BLITZ_RATINGS);
+      expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=21600');
+      expect(refreshExternalRatings).toHaveBeenCalledOnce();
+    });
+
+    it('should never look up or cache the ratings of a member with no handles for less than a day', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      await createMember({ number: 7, account: memberAccount() });
+
+      const response = await request(app).get('/v1/public/members/7');
+
+      expect(response.body.data.externalRatings).toEqual({
+        chessCom: null,
+        lichess: null,
+        fide: null,
+        cfc: null,
+        fideWorldRank: null,
+        fideNationalRank: null,
+      });
+      expect(response.headers['vercel-cdn-cache-control']).toBe('s-maxage=86400');
+      expect(refreshExternalRatings).not.toHaveBeenCalled();
+    });
+
     it('should respond with not found for a member without an account or a malformed number', async () => {
       await createMember({ number: 8 });
 
@@ -249,6 +354,33 @@ describe('members routes', () => {
       expect(members[0]).not.toHaveProperty('ratingNumeric');
     });
 
+    it('should give admins the day each member opened their account, sorting by it', async () => {
+      await createAdmin(ADMIN);
+      await MemberModel.updateOne(
+        { number: 100 },
+        { $set: { 'account.createdAt': '2025-03-01T12:00:00.000Z' } },
+      );
+      await createMember({
+        number: 7,
+        account: memberAccount({
+          clerkUserId: 'user_early',
+          createdAt: '2024-06-01T12:00:00.000Z',
+        }),
+      });
+      await createMember({ firstName: 'Noah', email: 'noah@example.com' });
+
+      const response = await request(app)
+        .get('/v1/admin/members?sortBy=accountOpened&sortOrder=asc')
+        .set('Authorization', bearer(ADMIN));
+
+      const members: AdminMember[] = response.body.data.items;
+      expect(members.map(member => member.accountOpened)).toEqual([
+        null,
+        '2024-06-01T12:00:00.000Z',
+        '2025-03-01T12:00:00.000Z',
+      ]);
+    });
+
     it('should return the widest members with their private details', async () => {
       await createAdmin(ADMIN);
 
@@ -269,6 +401,28 @@ describe('members routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({ email: 'admin@example.com' });
+    });
+
+    it('should give a member found by number their external ratings, never kept on the CDN', async () => {
+      vi.stubEnv('VERCEL_ENV', 'production');
+      await createAdmin(ADMIN);
+      await createMember({
+        number: 7,
+        account: memberAccount({ clerkUserId: 'user_rated' }),
+        lichessUsername: 'jane_doe',
+      });
+
+      const response = await request(app)
+        .get('/v1/admin/members/number/7')
+        .set('Authorization', bearer(ADMIN));
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toMatchObject({
+        email: 'jane@example.com',
+        externalRatings: { lichess: null },
+      });
+      expect(response.headers['vercel-cdn-cache-control']).toBeUndefined();
+      expect(refreshExternalRatings).toHaveBeenCalledOnce();
     });
 
     it('should find a member by id', async () => {

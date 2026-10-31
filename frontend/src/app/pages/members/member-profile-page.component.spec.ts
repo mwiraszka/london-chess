@@ -3,6 +3,7 @@ import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { isEqual } from 'lodash-es';
 import { BehaviorSubject } from 'rxjs';
 
+import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ActivatedRoute,
@@ -15,13 +16,14 @@ import { MemberTournamentsComponent } from '@app/components/member-tournaments/m
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
-import { Member } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { ExternalRatings, Member } from '@app/models';
+import { AdminActionsService, MetaAndTitleService } from '@app/services';
 import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import { GamesActions, initialState as gamesInitialState } from '@app/store/games';
 import {
   MembersActions,
   MembersSelectors,
+  MembersState,
   initialState as membersInitialState,
 } from '@app/store/members';
 import {
@@ -49,10 +51,25 @@ describe('MemberProfilePageComponent', () => {
     yearJoined: undefined,
   };
 
-  const statValues = (): string[] =>
-    queryAll(fixture.debugElement, '.stat__value').map(el =>
+  const detailValues = (): string[] =>
+    queryAll(fixture.debugElement, '.detail__value').map(el =>
       el.nativeElement.textContent.trim(),
     );
+
+  function setMembersState(membersState: Partial<MembersState>): void {
+    store.setState({
+      authState: authInitialState,
+      gamesState: gamesInitialState,
+      membersState: { ...membersInitialState, ...membersState },
+      tournamentsState: tournamentsInitialState,
+    });
+    store.refreshState();
+    fixture.detectChanges();
+  }
+
+  function showRatings(externalRatings: ExternalRatings): void {
+    setMembersState({ externalRatings: { [Number(member.number)]: externalRatings } });
+  }
 
   function showMember(overrides: Partial<Member>): void {
     store.overrideSelector(MembersSelectors.selectAllMembers, [
@@ -214,7 +231,10 @@ describe('MemberProfilePageComponent', () => {
       expect(queryTextContent(fixture.debugElement, '.rating__value')).toBe(
         member.rating,
       );
-      expect(statValues()).toEqual([member.peakRating, member.city, member.yearOfBirth]);
+      expect(queryTextContent(fixture.debugElement, '.rating__peak-value')).toBe(
+        member.peakRating,
+      );
+      expect(detailValues()).toEqual([member.city, member.yearOfBirth]);
     });
 
     it('should show the uploaded avatar when there is one', () => {
@@ -231,14 +251,13 @@ describe('MemberProfilePageComponent', () => {
     it('should hide the year of birth when the member has not chosen to show it', () => {
       showMember({ showYearOfBirth: false });
 
-      expect(statValues()).toEqual([member.peakRating, member.city]);
-      expect(queryAll(fixture.debugElement, '.stats__pair')).toHaveLength(1);
+      expect(detailValues()).toEqual([member.city]);
     });
 
     it('should show the year the member joined', () => {
       showMember({ yearJoined: '2015', city: '' });
 
-      expect(statValues()).toEqual([member.peakRating, '2015', member.yearOfBirth]);
+      expect(detailValues()).toEqual(['2015', member.yearOfBirth]);
     });
 
     it.each([true, false])(
@@ -272,29 +291,132 @@ describe('MemberProfilePageComponent', () => {
       expect(query(fixture.debugElement, '.status-badge.inactive')).toBeTruthy();
     });
 
-    it('should link to both online chess accounts', () => {
-      const links = queryAll(fixture.debugElement, '.chess-accounts a').map(
-        link => link.attributes['href'],
+    const textOf = (element: DebugElement): string =>
+      element.nativeElement.textContent.replace(/\s+/g, ' ').trim();
+
+    const accountLinks = (): string[] =>
+      queryAll(fixture.debugElement, '.ratings-table a').map(
+        link => link.attributes['href'] ?? '',
       );
 
-      expect(links).toEqual([
+    const accountRows = (): DebugElement[] =>
+      queryAll(fixture.debugElement, '.ratings-row--otb, .ratings-row--online');
+
+    const RATING = '.otb-ratings__pair, .online-ratings__cell';
+
+    it("should link to each of the member's chess accounts, FIDE first", () => {
+      expect(accountLinks()).toEqual([
+        `https://ratings.fide.com/profile/${member.fideId}`,
         `https://www.chess.com/member/${member.chessComUsername}`,
         `https://lichess.org/@/${member.lichessUsername}`,
       ]);
     });
 
-    it('should only list the online chess accounts the member has', () => {
-      showMember({ chessComUsername: '' });
+    it('should only list the chess accounts the member has', () => {
+      showMember({ chessComUsername: '', fideId: '' });
 
-      expect(queryAll(fixture.debugElement, '.chess-accounts a')).toHaveLength(1);
+      expect(accountLinks()).toEqual([`https://lichess.org/@/${member.lichessUsername}`]);
 
-      showMember({ chessComUsername: 'someone', lichessUsername: '' });
+      showMember({
+        chessComUsername: '',
+        lichessUsername: '',
+        fideId: '',
+        cfcId: '150123',
+      });
 
-      expect(queryAll(fixture.debugElement, '.chess-accounts a')).toHaveLength(1);
+      expect(accountLinks()).toEqual(['https://www.chess.ca/en/ratings/p/?id=150123']);
 
-      showMember({ chessComUsername: '', lichessUsername: '' });
+      showMember({ chessComUsername: '', lichessUsername: '', fideId: '', cfcId: '' });
 
-      expect(query(fixture.debugElement, '.chess-accounts')).toBeFalsy();
+      expect(query(fixture.debugElement, '.ratings-table')).toBeFalsy();
+    });
+
+    it("should label every account's ratings with their time controls, Unrated where unrated", () => {
+      showRatings({
+        chessCom: [
+          { timeControl: 'rapid', rating: 1520, provisional: false },
+          { timeControl: 'blitz', rating: 1430, provisional: false },
+        ],
+        lichess: [{ timeControl: 'bullet', rating: 1610, provisional: true }],
+        fide: [{ timeControl: 'standard', rating: 1781, provisional: false }],
+        cfc: null,
+        fideWorldRank: null,
+        fideNationalRank: null,
+      });
+
+      const stats = accountRows().map(row =>
+        queryAll(row, RATING).map(
+          rating => `${queryTextContent(rating, 'dt')} ${queryTextContent(rating, 'dd')}`,
+        ),
+      );
+      expect(stats).toEqual([
+        ['Standard 1781', 'Rapid Unrated', 'Blitz Unrated'],
+        ['Rapid 1520', 'Blitz 1430', 'Bullet Unrated'],
+        ['Rapid Unrated', 'Blitz Unrated', 'Bullet 1610?'],
+      ]);
+    });
+
+    it("should show the member's world and national ranks on the FIDE row", () => {
+      showRatings({
+        chessCom: null,
+        lichess: null,
+        fide: [],
+        cfc: null,
+        fideWorldRank: { rank: 48213, amongActive: false },
+        fideNationalRank: {
+          rank: 312,
+          amongActive: false,
+          flag: 'ca',
+          country: 'Canada',
+        },
+      });
+
+      const [fide, ...others] = accountRows();
+      expect(queryTextContent(fide, '.platform')).toBe('FIDE');
+      expect(queryAll(fide, '.rank').map(textOf)).toEqual([
+        'World rank🌍 #48,213',
+        'National rank in Canada🇨🇦 #312',
+      ]);
+      expect(others.every(row => !query(row, '.rank'))).toBe(true);
+    });
+
+    it('should show no ratings for an account whose ratings were not found', () => {
+      showRatings({
+        chessCom: null,
+        lichess: null,
+        fide: null,
+        cfc: null,
+        fideWorldRank: null,
+        fideNationalRank: null,
+      });
+
+      expect(accountLinks()).toHaveLength(3);
+      expect(query(fixture.debugElement, RATING)).toBeFalsy();
+    });
+
+    it("should hold each account's ratings with skeletons until they arrive", () => {
+      const stats = queryAll(fixture.debugElement, RATING);
+      expect(stats.map(textOf)).toEqual([
+        'Standard',
+        'Rapid',
+        'Blitz',
+        'Rapid',
+        'Blitz',
+        'Bullet',
+        'Rapid',
+        'Blitz',
+        'Bullet',
+      ]);
+      expect(stats.every(stat => !!query(stat, '.rating-value lcc-text-skeleton'))).toBe(
+        true,
+      );
+    });
+
+    it('should drop the rating skeletons when the profile fails to arrive', () => {
+      setMembersState({ failedLoads: ['member'] });
+
+      expect(query(fixture.debugElement, RATING)).toBeFalsy();
+      expect(query(fixture.debugElement, '.ratings-table lcc-text-skeleton')).toBeFalsy();
     });
 
     it('should not render skeletons', () => {
@@ -380,6 +502,27 @@ describe('MemberProfilePageComponent', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(
         MembersActions.fetchMemberByNumberRequested({ memberNumber: member.number! }),
       );
+    });
+  });
+
+  describe('admin actions', () => {
+    it('should offer to edit the member once they have loaded', () => {
+      createComponent();
+
+      expect(TestBed.inject(AdminActionsService).actions()).toEqual([
+        expect.objectContaining({
+          label: 'Edit member',
+          path: ['member', 'edit', member.id],
+        }),
+      ]);
+    });
+
+    it('should offer nothing while the member loads', () => {
+      store.overrideSelector(MembersSelectors.selectAllMembers, []);
+
+      createComponent();
+
+      expect(TestBed.inject(AdminActionsService).actions()).toEqual([]);
     });
   });
 });

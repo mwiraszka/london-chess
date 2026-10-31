@@ -41,9 +41,16 @@ $event-colours: (
   --lcc-row: var(--color-neutral-50);
   --lcc-row-alt: var(--color-neutral-100);
   --lcc-row-hover: var(--color-neutral-200);
+  // A tint over whatever row it sits on, so it reads the same on either stripe
+  --lcc-avatar-placeholder: var(--color-neutral-200);
 
   @include with-color-mix {
     --lcc-page-translucent: color-mix(in srgb, var(--lcc-page) 75%, transparent);
+    --lcc-avatar-placeholder: color-mix(
+      in srgb,
+      var(--color-neutral-900) 6%,
+      transparent
+    );
     --lcc-shadow: color-mix(in srgb, var(--color-neutral-800) 70%, transparent);
     --lcc-shadow-soft: color-mix(in srgb, var(--color-neutral-300) 70%, transparent);
     --lcc-indicator-border: color-mix(in srgb, var(--color-neutral-200) 50%, transparent);
@@ -140,9 +147,11 @@ $event-colours: (
   --lcc-row: var(--color-neutral-700);
   --lcc-row-alt: var(--color-neutral-700);
   --lcc-row-hover: var(--color-neutral-800);
+  --lcc-avatar-placeholder: var(--color-neutral-600);
 
   @include with-color-mix {
     --lcc-shadow-soft: color-mix(in srgb, var(--color-neutral-900) 70%, transparent);
+    --lcc-avatar-placeholder: color-mix(in srgb, var(--color-neutral-50) 6%, transparent);
     --lcc-indicator-border: color-mix(in srgb, var(--color-neutral-800) 50%, transparent);
     --lcc-row-alt: color-mix(
       in srgb,

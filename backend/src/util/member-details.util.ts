@@ -17,6 +17,14 @@ const MEMBER_DETAIL_RULES = {
     message:
       'Chess.com username must be 3 to 25 letters, numbers, hyphens, or underscores.',
   },
+  fideId: {
+    pattern: /^\d{1,10}$/,
+    message: 'FIDE ID must be a number of up to 10 digits.',
+  },
+  cfcId: {
+    pattern: /^\d{1,7}$/,
+    message: 'CFC ID must be a number of up to 7 digits.',
+  },
 } as const;
 
 type MemberDetailField = keyof typeof MEMBER_DETAIL_RULES;
@@ -29,6 +37,8 @@ export const DETAIL_FIELDS = {
   phoneNumber: 'Phone number',
   lichessUsername: 'Lichess username',
   chessComUsername: 'Chess.com username',
+  fideId: 'FIDE ID',
+  cfcId: 'CFC ID',
 } as const;
 
 export type DetailField = keyof typeof DETAIL_FIELDS;
@@ -39,6 +49,10 @@ const REQUIRED_DETAIL_FIELDS: readonly DetailField[] = [
   'yearOfBirth',
   'city',
 ];
+
+export function isOptionalDetailField(field: DetailField): boolean {
+  return !REQUIRED_DETAIL_FIELDS.includes(field);
+}
 
 export function validateDetailField(field: DetailField, value: string): string | null {
   if (!value) {

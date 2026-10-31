@@ -143,8 +143,6 @@ export class MemberTournamentsComponent {
 
   protected readonly status = computed(() => this.state()?.status ?? 'loading');
 
-  protected readonly loading = computed(() => this.status() === 'loading');
-
   protected readonly results = computed(() => this.state()?.results ?? []);
 
   protected readonly sortState = signal<DataTableSortState>(INITIAL_SORT);

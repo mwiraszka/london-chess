@@ -1,0 +1,27 @@
+<ea-input
+  id="fide-id-input"
+  label="FIDE ID"
+  [errorMessages]="fideIdErrorMessages"
+  [formControl]="fideId()"
+  [labelHelp]="fideIdHelp"
+  [maxLength]="10" />
+
+<ea-input
+  id="cfc-id-input"
+  label="CFC ID"
+  [errorMessages]="cfcIdErrorMessages"
+  [formControl]="cfcId()"
+  [labelHelp]="cfcIdHelp"
+  [maxLength]="7" />
+
+<ng-template #fideIdHelp>
+  <em>Optional.</em>
+  Your ID is used to link to your FIDE profile and to show your FIDE ratings on your
+  profile page.
+</ng-template>
+
+<ng-template #cfcIdHelp>
+  <em>Optional.</em>
+  Your ID is used to link to your Chess Federation of Canada profile and to show your CFC
+  ratings on your profile page.
+</ng-template>

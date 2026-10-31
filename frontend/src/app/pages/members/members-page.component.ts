@@ -1,5 +1,4 @@
 import {
-  ButtonComponent,
   DialogService,
   DownloadIconComponent,
   InputComponent,
@@ -75,6 +74,7 @@ import { bindSearchControl, isLccError, widestRows } from '@app/utils';
           class="filters__search"
           label="Search"
           placeholder="Search by name, city or username"
+          [clearable]="true"
           [formControl]="searchControl"
           [icon]="searchIcon" />
         <ea-switch
@@ -82,14 +82,6 @@ import { bindSearchControl, isLccError, widestRows } from '@app/utils';
           label="Show inactive members"
           [checked]="vm.options.filters.showInactiveMembers.value"
           (changed)="onToggleInactiveMembers($event, vm.options)" />
-        <ea-button
-          class="filters__clear"
-          variant="ghost"
-          size="md"
-          [disabled]="!hasFilters(vm.options)"
-          (clicked)="onClearFilters(vm.options)">
-          Clear filters
-        </ea-button>
       </div>
 
       @if (vm.status === 'failed') {
@@ -112,7 +104,6 @@ import { bindSearchControl, isLccError, widestRows } from '@app/utils';
   `,
   styleUrl: './members-page.component.scss',
   imports: [
-    ButtonComponent,
     CommonModule,
     InputComponent,
     LoadFailedComponent,
@@ -255,21 +246,6 @@ export class MembersPageComponent implements OnInit {
         },
       },
     });
-  }
-
-  public onClearFilters(options: DataPaginationOptions<Member>): void {
-    this.onOptionsChange({
-      ...options,
-      page: 1,
-      search: '',
-      filters: {
-        showInactiveMembers: { ...options.filters.showInactiveMembers, value: false },
-      },
-    });
-  }
-
-  protected hasFilters({ search, filters }: DataPaginationOptions<Member>): boolean {
-    return search !== '' || filters.showInactiveMembers.value;
   }
 
   public onRetry(): void {

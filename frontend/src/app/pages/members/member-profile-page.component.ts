@@ -4,6 +4,7 @@ import {
   AvatarComponent,
   BadgeComponent,
   CardComponent,
+  EditIconComponent,
   ExternalLinkIconComponent,
   ShieldCheckIconComponent,
   SkeletonComponent,
@@ -17,7 +18,7 @@ import { map, switchMap, take } from 'rxjs/operators';
 
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
@@ -25,14 +26,19 @@ import { MemberOpeningsComponent } from '@app/components/member-openings/member-
 import { MemberTournamentsComponent } from '@app/components/member-tournaments/member-tournaments.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingProgressionComponent } from '@app/components/rating-progression/rating-progression.component';
+import { TextSkeletonComponent } from '@app/components/text-skeleton/text-skeleton.component';
+import {
+  ONLINE_TIME_CONTROLS,
+  TIME_CONTROL_LABELS,
+} from '@app/constants/external-ratings';
 import { PLACEHOLDER_PROFILE_MEMBER } from '@app/constants/member-profile';
-import { LoadStatus, Member } from '@app/models';
+import { AdminLinkAction, ExternalRatings, LoadStatus, Member } from '@app/models';
 import { RatingLabelPipe } from '@app/pipes';
-import { MetaAndTitleService } from '@app/services';
+import { AdminActionsService, MetaAndTitleService } from '@app/services';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
-import { isCityChampion } from '@app/utils';
+import { getChessAccounts, isCityChampion } from '@app/utils';
 
 @Component({
   selector: 'lcc-member-profile-page',
@@ -55,6 +61,7 @@ import { isCityChampion } from '@app/utils';
     RouterLink,
     ShieldCheckIconComponent,
     SkeletonComponent,
+    TextSkeletonComponent,
     TooltipDirective,
     TrophyIconComponent,
   ],
@@ -62,6 +69,7 @@ import { isCityChampion } from '@app/utils';
   host: { class: 'lcc-page--reading' },
 })
 export class MemberProfilePageComponent implements OnInit {
+  protected readonly getChessAccounts = getChessAccounts;
   protected readonly isCityChampion = isCityChampion;
 
   private readonly metaAndTitleService = inject(MetaAndTitleService);
@@ -70,14 +78,35 @@ export class MemberProfilePageComponent implements OnInit {
 
   protected readonly pageIcon = UserIconComponent;
   protected readonly placeholderMember = PLACEHOLDER_PROFILE_MEMBER;
+  protected readonly onlineTimeControlLabels = ONLINE_TIME_CONTROLS.map(
+    timeControl => TIME_CONTROL_LABELS[timeControl],
+  );
 
   public viewModel$?: Observable<{
     member: Member | null;
     memberNumber: number;
     status: LoadStatus;
+    externalRatings: ExternalRatings | null;
+    // A member shown from an earlier record waits for the profile to bring their ratings
+    ratingsPending: boolean;
   }>;
 
+  private readonly member = toSignal(
+    this.route.paramMap.pipe(
+      map(params => Number(params.get('number'))),
+      switchMap(memberNumber =>
+        this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
+      ),
+    ),
+    { initialValue: null },
+  );
+
   constructor() {
+    inject(AdminActionsService).register(() => {
+      const member = this.member();
+      return member ? [this.editAction(member)] : [];
+    });
+
     // Fetched once a visit for the rating, tournaments and openings cards, as tournaments
     // and games only change by import
     this.route.paramMap
@@ -118,7 +147,17 @@ export class MemberProfilePageComponent implements OnInit {
         combineLatest([
           this.store.select(MembersSelectors.selectMemberByNumber(memberNumber)),
           this.store.select(MembersSelectors.selectMemberProfileStatus(memberNumber)),
-        ]).pipe(map(([member, status]) => ({ member, memberNumber, status }))),
+          this.store.select(MembersSelectors.selectMemberExternalRatings(memberNumber)),
+          this.store.select(MembersSelectors.selectMemberLoadFailed),
+        ]).pipe(
+          map(([member, status, externalRatings, loadFailed]) => ({
+            member,
+            memberNumber,
+            status,
+            externalRatings,
+            ratingsPending: !!member && !externalRatings && !loadFailed,
+          })),
+        ),
       ),
     );
   }
@@ -127,19 +166,20 @@ export class MemberProfilePageComponent implements OnInit {
     this.store.dispatch(MembersActions.fetchMemberByNumberRequested({ memberNumber }));
   }
 
+  private editAction(member: Member): AdminLinkAction {
+    return {
+      label: 'Edit member',
+      icon: EditIconComponent,
+      group: 'manage',
+      path: ['member', 'edit', member.id],
+    };
+  }
+
   protected fullName(member: Member): string {
     return `${member.firstName} ${member.lastName}`;
   }
 
   protected initials(member: Member): string {
     return `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`.toUpperCase();
-  }
-
-  protected chessComUrl(member: Member): string {
-    return `https://www.chess.com/member/${member.chessComUsername}`;
-  }
-
-  protected lichessUrl(member: Member): string {
-    return `https://lichess.org/@/${member.lichessUsername}`;
   }
 }

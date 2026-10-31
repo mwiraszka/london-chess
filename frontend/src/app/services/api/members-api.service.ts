@@ -12,6 +12,7 @@ import {
   EditableMember,
   Id,
   Member,
+  MemberProfileRecord,
   MemberRatingsUpdate,
   PaginatedItems,
 } from '@app/models';
@@ -57,13 +58,13 @@ export class MembersApiService {
   public getMemberByNumber(
     number: number,
     scope: ApiScope,
-  ): Observable<ApiResponse<Member>> {
+  ): Observable<ApiResponse<MemberProfileRecord>> {
     const url =
       scope === 'admin'
         ? `${this.API_BASE_URL}/admin/${this.COLLECTION}/number/${number}`
         : `${this.API_BASE_URL}/public/${this.COLLECTION}/${number}`;
 
-    return this.http.get<ApiResponse<Member>>(url);
+    return this.http.get<ApiResponse<MemberProfileRecord>>(url);
   }
 
   public addMember(

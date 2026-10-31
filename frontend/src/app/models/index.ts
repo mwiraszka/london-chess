@@ -59,9 +59,24 @@ export type {
   ImageFormGroup,
   NewImageFile,
 } from './image.model';
+export type {
+  ChessAccount,
+  ChessAccountGroups,
+  ChessAccountRank,
+  ChessAccountRating,
+  ExternalRating,
+  ExternalRatings,
+  FideNationalRank,
+  FideRank,
+  RatingPlatform,
+  TimeControl,
+} from './external-rating.model';
 export type { ExternalLink, InternalLink, InternalPath } from './link.model';
 export type {
+  DetailsChangeResult,
   EditableMember,
+  FederationIdsFormData,
+  FederationIdsFormGroup,
   Member,
   MemberAccountFormGroup,
   MemberDetailsFormData,
@@ -71,9 +86,12 @@ export type {
   MemberFormGroup,
   MemberFormValue,
   MemberProfile,
+  MemberProfileRecord,
   MemberRatingsUpdate,
   MemberWithNewRatings,
   NameOrder,
+  OptionalDetail,
+  ProfileDetailsFormData,
 } from './member.model';
 export type { ModificationInfo } from './modification-info.model';
 export type { NavPath } from './nav-path.model';

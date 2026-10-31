@@ -226,6 +226,12 @@ describe('GameArchivesPageComponent', () => {
       });
     });
 
+    it('should offer to clear the player box from within it', () => {
+      expect(
+        query(fixture.debugElement, '.filters__player').componentInstance.clearable(),
+      ).toBe(true);
+    });
+
     it('should not touch the URL while a name is being typed', () => {
       trigger('.filters__player', 'changed', 'Lit');
 

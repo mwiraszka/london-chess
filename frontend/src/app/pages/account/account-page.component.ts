@@ -41,6 +41,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { ChessUsernameFieldsComponent } from '@app/components/chess-username-fields/chess-username-fields.component';
+import { FederationIdFieldsComponent } from '@app/components/federation-id-fields/federation-id-fields.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { NewPasswordFieldsComponent } from '@app/components/new-password-fields/new-password-fields.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
@@ -56,10 +57,11 @@ import { BRAND_OPTIONS } from '@app/constants/brands';
 import { UPLOAD_TIMEOUT_MS } from '@app/constants/http';
 import {
   AccountSection,
+  DetailsChangeResult,
   Dialog,
   InternalLink,
   Member,
-  MemberDetailsFormData,
+  ProfileDetailsFormData,
   SessionInfo,
   UserRecord,
   UserSessionRecord,
@@ -75,6 +77,7 @@ import {
 } from '@app/services';
 import {
   createEmailControl,
+  createFederationIdControls,
   createMemberDetailsControls,
   createNewPasswordGroup,
   isAccountSection,
@@ -83,6 +86,15 @@ import {
   normalizePhoneNumber,
 } from '@app/utils';
 import { asSentence } from '@app/utils/sentence.util';
+
+function detailsChangeMessage(isRemoved: boolean, isRequested: boolean): string {
+  if (!isRequested) {
+    return 'The details you removed are gone from your member record.';
+  }
+  return isRemoved
+    ? 'The details you removed are gone, and an admin will email you once your other changes are made.'
+    : 'An admin will email you once your changes are made.';
+}
 
 @Component({
   selector: 'lcc-account-page',
@@ -98,6 +110,7 @@ import { asSentence } from '@app/utils/sentence.util';
     CheckboxComponent,
     ChessUsernameFieldsComponent,
     DividerComponent,
+    FederationIdFieldsComponent,
     InputComponent,
     LinkListComponent,
     MonitorIconComponent,
@@ -208,7 +221,10 @@ export class AccountPageComponent implements OnInit {
 
   protected readonly hasPhotoChanges = computed(() => this.pendingPhotoChange() !== null);
 
-  protected readonly detailsForm = new FormGroup(createMemberDetailsControls());
+  protected readonly detailsForm = new FormGroup({
+    ...createMemberDetailsControls(),
+    ...createFederationIdControls(),
+  });
 
   protected readonly savingYearOfBirth = signal(false);
   protected readonly showYearOfBirth = computed(
@@ -219,7 +235,7 @@ export class AccountPageComponent implements OnInit {
     this.detailsForm.valueChanges.pipe(map(() => this.detailsForm.getRawValue())),
     { initialValue: this.detailsForm.getRawValue() },
   );
-  private readonly savedDetails = signal<MemberDetailsFormData>(
+  private readonly savedDetails = signal<ProfileDetailsFormData>(
     this.detailsForm.getRawValue(),
   );
 
@@ -233,7 +249,9 @@ export class AccountPageComponent implements OnInit {
       current.city.trim() !== saved.city ||
       normalizePhoneNumber(current.phoneNumber) !== saved.phoneNumber ||
       current.lichessUsername.trim() !== saved.lichessUsername ||
-      current.chessComUsername.trim() !== saved.chessComUsername
+      current.chessComUsername.trim() !== saved.chessComUsername ||
+      current.fideId.trim() !== saved.fideId ||
+      current.cfcId.trim() !== saved.cfcId
     );
   });
 
@@ -431,22 +449,34 @@ export class AccountPageComponent implements OnInit {
       phoneNumber,
       lichessUsername,
       chessComUsername,
+      fideId,
+      cfcId,
     } = this.detailsForm.getRawValue();
 
     this.requestingChanges.set(true);
 
     try {
-      await this.api.post('/users/me/member/change-request', {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
-        city: city.trim(),
-        phoneNumber: normalizePhoneNumber(phoneNumber),
-        lichessUsername: lichessUsername.trim(),
-        chessComUsername: chessComUsername.trim(),
-      });
-      this.toast.show('An admin will email you once your changes are made.', {
-        title: 'Request sent',
+      const { removed, requested } = await this.api.post<DetailsChangeResult>(
+        '/users/me/member/change-request',
+        {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
+          city: city.trim(),
+          phoneNumber: normalizePhoneNumber(phoneNumber),
+          lichessUsername: lichessUsername.trim(),
+          chessComUsername: chessComUsername.trim(),
+          fideId: fideId.trim(),
+          cfcId: cfcId.trim(),
+        },
+      );
+      const cleared: Partial<ProfileDetailsFormData> = {};
+      for (const field of removed) {
+        cleared[field] = '';
+      }
+      this.applySavedDetails(cleared);
+      this.toast.show(detailsChangeMessage(removed.length > 0, requested.length > 0), {
+        title: requested.length ? 'Request sent' : 'Details removed',
         variant: 'success',
       });
     } catch (e: unknown) {
@@ -673,7 +703,7 @@ export class AccountPageComponent implements OnInit {
     await this.router.navigate(['/']);
   }
 
-  private applySavedDetails(details: Partial<MemberDetailsFormData>): void {
+  private applySavedDetails(details: Partial<ProfileDetailsFormData>): void {
     this.detailsForm.patchValue(details);
     this.savedDetails.update(saved => ({ ...saved, ...details }));
   }
@@ -689,6 +719,8 @@ export class AccountPageComponent implements OnInit {
         phoneNumber: member.phoneNumber,
         lichessUsername: member.lichessUsername,
         chessComUsername: member.chessComUsername,
+        fideId: member.fideId,
+        cfcId: member.cfcId,
       });
     } catch {
       // Not every account is linked to a club member record

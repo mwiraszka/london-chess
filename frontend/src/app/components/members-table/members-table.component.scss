@@ -12,6 +12,22 @@
   white-space: nowrap;
 }
 
+// As tall as the line of text and set on its top, so a row is no taller for it
+.members__avatar {
+  vertical-align: top;
+  margin-right: 8px;
+}
+
+// Sized like an xs avatar, so every name starts at the same place
+.members__avatar--placeholder {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--lcc-avatar-placeholder);
+  border-radius: var(--radius-full);
+}
+
 .members__safe-mode {
   max-width: var(--lcc-width--narrow);
 }

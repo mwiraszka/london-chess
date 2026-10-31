@@ -4,6 +4,31 @@
 export type SeedTournamentFormat = 'swiss' | 'round-robin' | 'match';
 export type SeedGameResult = '1-0' | '0-1' | '1/2-1/2';
 
+export interface SeedRating {
+  timeControl: 'standard' | 'regular' | 'rapid' | 'quick' | 'blitz' | 'bullet';
+  rating: number;
+  provisional: boolean;
+}
+
+export interface SeedFideRank {
+  rank: number;
+  amongActive: boolean;
+}
+
+export interface SeedFideNationalRank extends SeedFideRank {
+  flag: string;
+  country: string;
+}
+
+export interface SeedExternalRatings {
+  chessCom: SeedRating[];
+  lichess: SeedRating[];
+  fide: SeedRating[];
+  cfc: SeedRating[];
+  fideWorldRank: SeedFideRank | null;
+  fideNationalRank: SeedFideNationalRank | null;
+}
+
 export interface SeedMember {
   key: string;
   firstName: string;
@@ -16,6 +41,10 @@ export interface SeedMember {
   showYearOfBirth?: boolean;
   chessComUsername?: string;
   lichessUsername?: string;
+  fideId?: string;
+  cfcId?: string;
+  // Stored as if just looked up, so the suite never asks the other sites
+  externalRatings?: SeedExternalRatings;
   dateJoined?: string;
   // Members with a number have an account and so a public profile page
   number?: number;
@@ -134,6 +163,25 @@ export const PROFILE_MEMBER: SeedMember = {
   showYearOfBirth: true,
   chessComUsername: 'tmarlowe',
   lichessUsername: 'tessamarlowe',
+  fideId: '2600123',
+  cfcId: '150123',
+  externalRatings: {
+    chessCom: [
+      { timeControl: 'rapid', rating: 1612, provisional: false },
+      { timeControl: 'blitz', rating: 1544, provisional: false },
+    ],
+    lichess: [
+      { timeControl: 'blitz', rating: 1733, provisional: false },
+      { timeControl: 'bullet', rating: 1689, provisional: true },
+    ],
+    fide: [{ timeControl: 'standard', rating: 1781, provisional: false }],
+    cfc: [
+      { timeControl: 'regular', rating: 1826, provisional: false },
+      { timeControl: 'quick', rating: 1797, provisional: false },
+    ],
+    fideWorldRank: { rank: 48213, amongActive: false },
+    fideNationalRank: { rank: 312, amongActive: false, flag: 'ca', country: 'Canada' },
+  },
   dateJoined: '2019-09-05T22:00:00.000Z',
   number: 3,
 };
@@ -441,7 +489,9 @@ export const EVENTS: SeedEvent[] = [
     title: 'Club Night Blitz',
     details: 'Ten-minute games, all welcome.',
     type: 'blitz tournament (10 mins)',
-    daysFromNow: -30,
+    // Far enough back to fall in an earlier month than today's on any date, so showing past
+    // events always adds a month above today's in the calendar
+    daysFromNow: -45,
   },
   {
     id: hexId(6, 2),

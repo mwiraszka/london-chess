@@ -3,6 +3,7 @@ import { FormControl } from '@angular/forms';
 import { MEMBER_FORM_DATA_PROPERTIES } from '@app/constants';
 
 import { Id, IsoDate, Url } from './core.model';
+import { ExternalRatings } from './external-rating.model';
 import { ModificationInfo } from './modification-info.model';
 
 export interface Member {
@@ -19,6 +20,9 @@ export interface Member {
   yearOfBirth: string;
   chessComUsername: string;
   lichessUsername: string;
+  // Sent only with a profile page lookup or to admins
+  fideId: string;
+  cfcId: string;
   isActive: boolean;
   isAdmin?: boolean;
   dateJoined: IsoDate;
@@ -27,9 +31,13 @@ export interface Member {
   showYearOfBirth?: boolean;
   modificationInfo: ModificationInfo;
   avatarUrl: Url | null;
-  // Only admins learn whether a member has an account
+  // Only admins learn whether a member has an account, and when it was opened
   hasAccount?: boolean;
+  accountOpened?: IsoDate | null;
 }
+
+// A profile page lookup also brings the member's ratings on other chess sites
+export type MemberProfileRecord = Member & { externalRatings: ExternalRatings };
 
 // The number, avatar and account belong to the server, so admins never write them
 export type EditableMember = MemberFormData & Pick<Member, 'modificationInfo'>;
@@ -69,6 +77,27 @@ export type MemberDetailsFormGroup = {
 export type MemberAccountFormGroup = MemberDetailsFormGroup & {
   email: FormControl<string>;
 };
+
+export interface FederationIdsFormData {
+  fideId: string;
+  cfcId: string;
+}
+
+export type FederationIdsFormGroup = {
+  [Property in keyof FederationIdsFormData]: FormControl<FederationIdsFormData[Property]>;
+};
+
+export type ProfileDetailsFormData = MemberDetailsFormData & FederationIdsFormData;
+
+// The details a member may leave empty, which they can remove without an admin
+export type OptionalDetail =
+  'phoneNumber' | 'lichessUsername' | 'chessComUsername' | 'fideId' | 'cfcId';
+
+export interface DetailsChangeResult {
+  removed: OptionalDetail[];
+  // Waiting for an admin to make them
+  requested: (keyof ProfileDetailsFormData)[];
+}
 
 export type MemberFormData = Pick<Member, (typeof MEMBER_FORM_DATA_PROPERTIES)[number]>;
 

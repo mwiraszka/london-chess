@@ -10,6 +10,7 @@ export {
   simulScore,
   timeControlMinutes,
 } from './chess/crosstable.util';
+export { getChessAccounts } from './chess/get-chess-accounts.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
 export { CITY_CHAMPION, isCityChampion } from './chess/is-city-champion.util';
@@ -46,6 +47,7 @@ export { camelCaseToSentenceCase } from './common/camel-case-to-sentence-case.ut
 export { compareCells } from './common/compare-cells.util';
 export { creditEditor } from './common/credit-editor.util';
 export { customSort } from './common/custom-sort.util';
+export { flagEmoji } from './common/flag-emoji.util';
 export { getInitials } from './common/get-initials.util';
 export { generateUuid } from './common/generate-uuid.util';
 
@@ -81,6 +83,7 @@ export { parseCsv } from './file/parse-csv.util';
 
 export { bindSearchControl } from './forms/bind-search-control.util';
 export { createEmailControl } from './forms/create-email-control.util';
+export { createFederationIdControls } from './forms/create-federation-id-controls.util';
 export { createMemberAccountGroup } from './forms/create-member-account-group.util';
 export { createMemberDetailsControls } from './forms/create-member-details-controls.util';
 export { createNewPasswordGroup } from './forms/create-new-password-group.util';

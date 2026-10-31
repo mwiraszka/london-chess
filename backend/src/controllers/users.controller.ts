@@ -21,21 +21,27 @@ import {
   ChangeRow,
   buildAccountRequestEmail,
   buildDetailsChangeRequestEmail,
+  buildMemberChangesEmail,
   buildVerificationCodeEmail,
 } from '../util/emails.util';
 import { hashSecret } from '../util/hash-secret.util';
+import { describeMemberChanges } from '../util/member-changes.util';
 import {
   DETAIL_FIELDS,
   DetailField,
   EMAIL_PATTERN,
+  isOptionalDetailField,
   validateDetailField,
 } from '../util/member-details.util';
 import {
   AccountRecord,
   AdminMember,
+  LinkedMemberRecord,
   toAccountRecord,
   toAdminMember,
 } from '../util/member-responses.util';
+import { creditEditor } from '../util/modification-info.util';
+import { EMAILS_FROM_SITE_ONLY, profileUrlFor, siteUrlFor } from '../util/site-url.util';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -139,9 +145,16 @@ export async function getMyMember(
   }
 }
 
+// Details a member emptied, which are saved at once, and the ones they asked to change,
+// which wait for an admin
+interface DetailsChangeResult {
+  removed: DetailField[];
+  requested: DetailField[];
+}
+
 export async function requestMemberDetailsChange(
   req: Request,
-  res: Response<ApiResponse<'success'>>,
+  res: Response<ApiResponse<DetailsChangeResult>>,
 ): Promise<void> {
   try {
     const requested: Partial<Record<DetailField, string>> = {};
@@ -169,11 +182,19 @@ export async function requestMemberDetailsChange(
       return;
     }
 
+    // Emptying an optional detail can never be wrong, so only other changes need an admin
+    const result: DetailsChangeResult = { removed: [], requested: [] };
     const changes: ChangeRow[] = [];
     for (const field of Object.keys(requested) as DetailField[]) {
       const before = String(current[field] ?? '');
       const after = requested[field] ?? '';
-      if (before !== after) {
+      if (before === after) {
+        continue;
+      }
+      if (!after && isOptionalDetailField(field)) {
+        result.removed.push(field);
+      } else {
+        result.requested.push(field);
         changes.push({
           label: DETAIL_FIELDS[field],
           before: before || '(empty)',
@@ -181,17 +202,72 @@ export async function requestMemberDetailsChange(
         });
       }
     }
-    if (!changes.length) {
+    if (!result.removed.length && !result.requested.length) {
       res.status(400).json({ message: 'No changes were requested.' });
       return;
     }
 
-    const name = `${current.firstName} ${current.lastName}`.trim();
-    await sendAdminEmail(buildDetailsChangeRequestEmail(name, changes));
+    const siteUrl = siteUrlFor(req);
+    if (result.removed.length && !siteUrl) {
+      res.status(400).json({ message: EMAILS_FROM_SITE_ONLY });
+      return;
+    }
 
-    res.status(200).json({ data: 'success' });
+    if (changes.length) {
+      const name = `${current.firstName} ${current.lastName}`.trim();
+      await sendAdminEmail(buildDetailsChangeRequestEmail(name, changes));
+    }
+    if (siteUrl && result.removed.length) {
+      await removeDetails(current, result.removed, siteUrl);
+    }
+
+    res.status(200).json({ data: result });
   } catch (error) {
     res.status(500).json({ message: `Unable to submit change request: ${error}` });
+  }
+}
+
+// Saved as the member's own edit and emailed to them, as an admin's change would be. A
+// failed email puts the details back, so the record never changes without them hearing
+async function removeDetails(
+  member: LinkedMemberRecord,
+  fields: DetailField[],
+  siteUrl: string,
+): Promise<void> {
+  const cleared: Partial<Record<DetailField, string>> = {};
+  const previous: Partial<Record<DetailField, string>> = {};
+  for (const field of fields) {
+    cleared[field] = '';
+    previous[field] = String(member[field] ?? '');
+  }
+  const { clerkUserId } = member.account;
+  const editor = {
+    name: `${member.firstName} ${member.lastName}`,
+    number: member.number ?? null,
+  };
+
+  const record = await updateLinkedMember(clerkUserId, {
+    ...cleared,
+    modificationInfo: creditEditor(editor, member.modificationInfo),
+  });
+  if (!record) {
+    throw new Error('The member record could not be updated.');
+  }
+
+  try {
+    const email = buildMemberChangesEmail(
+      record,
+      describeMemberChanges(member, record, fields),
+      profileUrlFor(siteUrl, record),
+      `${siteUrl}/account/preferences`,
+    );
+    await sendEmail(record.email, email);
+  } catch (error) {
+    await updateLinkedMember(clerkUserId, {
+      ...previous,
+      modificationInfo: member.modificationInfo,
+    });
+    throw error;
   }
 }
 

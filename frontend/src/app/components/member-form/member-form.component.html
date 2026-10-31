@@ -111,6 +111,20 @@
           [id]="'lichess-username-input'"
           [maxLength]="20" />
 
+        <label for="fide-id-input">FIDE ID:</label>
+        <ea-input
+          formControlName="fideId"
+          [errorMessages]="fideIdErrorMessages"
+          [id]="'fide-id-input'"
+          [maxLength]="10" />
+
+        <label for="cfc-id-input">CFC ID:</label>
+        <ea-input
+          formControlName="cfcId"
+          [errorMessages]="cfcIdErrorMessages"
+          [id]="'cfc-id-input'"
+          [maxLength]="7" />
+
         @if (originalMember()) {
           <label for="is-active-input">Active:</label>
           <ea-checkbox

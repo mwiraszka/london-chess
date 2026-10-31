@@ -1,6 +1,8 @@
+import { waitUntil } from '@vercel/functions';
 import { Request, Response } from 'express';
 import { PipelineStage, Types } from 'mongoose';
 
+import { limitCdnCache } from '../middlewares/cdn-cache.middleware';
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
 import { Id } from '../models/core.model';
 import {
@@ -17,6 +19,12 @@ import {
 import { ModificationInfo } from '../models/modification-info.model';
 import { clerkClient } from '../services/clerk.service';
 import { sendEmail } from '../services/email.service';
+import {
+  externalRatingsFreshFor,
+  externalRatingsOf,
+  hasUnlookedHandles,
+  refreshExternalRatings,
+} from '../services/external-ratings.service';
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
 import {
@@ -38,6 +46,7 @@ import {
 import { EMAIL_PATTERN, validateDetailField } from '../util/member-details.util';
 import {
   AdminMember,
+  AdminProfile,
   LinkedMemberRecord,
   MEMBER_PROFILE_PROJECTION,
   MemberProfile,
@@ -54,7 +63,7 @@ import { creditEditor } from '../util/modification-info.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
 import { isUnratedExpression } from '../util/rating.util';
-import { EMAILS_FROM_SITE_ONLY, siteUrlFor } from '../util/site-url.util';
+import { EMAILS_FROM_SITE_ONLY, profileUrlFor, siteUrlFor } from '../util/site-url.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
@@ -217,7 +226,7 @@ export function getWidestMembers(scope: Scope) {
 export function getMemberByNumber(scope: Scope) {
   return async (
     req: Request<{ number: string }>,
-    res: Response<ApiResponse<PublicProfile | AdminMember>>,
+    res: Response<ApiResponse<PublicProfile | AdminProfile>>,
   ): Promise<void> => {
     try {
       const { number } = req.params;
@@ -235,8 +244,24 @@ export function getMemberByNumber(scope: Scope) {
         return;
       }
 
+      // A handle never looked up is looked up before answering, while aged ratings are
+      // shown as they are looked up again for the next visitor
+      const unlooked = hasUnlookedHandles(record);
+      const current = unlooked ? await refreshExternalRatings(record) : record;
+      const freshFor = externalRatingsFreshFor(current);
+      if (!unlooked && freshFor === 0) {
+        waitUntil(refreshExternalRatings(record));
+      }
+      const externalRatings = externalRatingsOf(current);
+
+      if (scope === 'public') {
+        limitCdnCache(res, freshFor / 1000);
+      }
       res.status(200).json({
-        data: scope === 'public' ? toPublicProfile(record) : toAdminMember(record),
+        data:
+          scope === 'public'
+            ? toPublicProfile(record, externalRatings)
+            : { ...toAdminMember(record), externalRatings },
       });
     } catch (error) {
       res.status(500).json({ message: `Unknown error: ${error}` });
@@ -568,10 +593,12 @@ function prepareMemberForDB(
   modificationInfo: ModificationInfo,
 ): EditableMemberFields {
   return {
+    cfcId: member.cfcId,
     chessComUsername: member.chessComUsername,
     city: member.city,
     dateJoined: member.dateJoined,
     email: member.email,
+    fideId: member.fideId,
     firstName: member.firstName,
     isActive: member.isActive,
     lastName: member.lastName,
@@ -790,11 +817,4 @@ async function readMember(id: Types.ObjectId): Promise<MemberRecord> {
     throw new Error('The saved member could not be read back.');
   }
   return record;
-}
-
-function profileUrlFor(siteUrl: string, record: MemberRecord): string {
-  if (typeof record.number !== 'number') {
-    throw new Error('The member has no member number.');
-  }
-  return `${siteUrl}/members/${record.number}`;
 }

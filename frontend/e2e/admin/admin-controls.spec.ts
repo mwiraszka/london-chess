@@ -60,6 +60,32 @@ test.describe('admin controls', () => {
     );
   });
 
+  test('offer editing a member from their profile, leaving the editor back to it', async ({
+    page,
+  }) => {
+    await page.goto(`/members/${PROFILE_MEMBER.number}`);
+    await expect(
+      page.getByRole('heading', {
+        name: `${PROFILE_MEMBER.firstName} ${PROFILE_MEMBER.lastName}`,
+      }),
+    ).toBeVisible();
+
+    const actions = await openAdminActions(page);
+    await actions.getByRole('menuitem', { name: 'Edit member' }).click();
+
+    await expect(page).toHaveURL(/\/member\/edit\/[0-9a-f]{24}$/);
+    await expect(page.getByLabel(fieldLabel('Last name'))).toHaveValue(
+      PROFILE_MEMBER.lastName,
+    );
+
+    await page
+      .locator('lcc-form-actions')
+      .getByRole('button', { name: 'Cancel' })
+      .click();
+
+    await expect(page).toHaveURL(new RegExp(`/members/${PROFILE_MEMBER.number}$`));
+  });
+
   test("offer each managed page's actions from the admin actions button", async ({
     page,
   }) => {

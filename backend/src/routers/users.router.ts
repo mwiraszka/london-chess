@@ -26,7 +26,12 @@ export const usersRouter = Router()
   .post('/account-requests/verification', requestAccountVerification)
   .get('/me', authenticate, getMe)
   .get('/me/member', authenticate, getMyMember)
-  .post('/me/member/change-request', authenticate, requestMemberDetailsChange)
+  .post(
+    '/me/member/change-request',
+    authenticate,
+    clearCacheAfterWrite,
+    requestMemberDetailsChange,
+  )
   .get('/me/sessions', authenticate, listMySessions)
   .post('/me/sessions/revoke-others', authenticate, revokeOtherSessions)
   .patch('/me', authenticate, clearCacheAfterWrite, updateMe)

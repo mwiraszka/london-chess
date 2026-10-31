@@ -62,93 +62,42 @@
                       {{ member.isActive ? 'Active member' : 'Inactive member' }}
                     </ea-badge>
                   </div>
+                  @let showYearOfBirth = member.showYearOfBirth && !!member.yearOfBirth;
+                  @if (member.city || member.yearJoined || showYearOfBirth) {
+                    <dl class="details">
+                      @if (member.city) {
+                        <div class="detail">
+                          <dt class="detail__label">City</dt>
+                          <dd class="detail__value">{{ member.city }}</dd>
+                        </div>
+                      }
+                      @if (member.yearJoined; as year) {
+                        <div class="detail">
+                          <dt class="detail__label">Member since</dt>
+                          <dd class="detail__value">{{ year }}</dd>
+                        </div>
+                      }
+                      @if (showYearOfBirth) {
+                        <div class="detail">
+                          <dt class="detail__label">Year of birth</dt>
+                          <dd class="detail__value">{{ member.yearOfBirth }}</dd>
+                        </div>
+                      }
+                    </dl>
+                  }
                 </div>
               </div>
 
               <div class="rating">
                 <span class="rating__label">London &amp; Region chess rating</span>
                 <span class="rating__value">{{ member.rating | ratingLabel }}</span>
-              </div>
-            </div>
-
-            <div class="facts">
-              <div class="stats">
-                <dl class="stats__pair">
-                  <div class="stat">
-                    <dt class="stat__label">Peak rating</dt>
-                    <dd class="stat__value">{{ member.peakRating | ratingLabel }}</dd>
-                  </div>
-                  @if (member.city) {
-                    <div class="stat">
-                      <dt class="stat__label">City</dt>
-                      <dd class="stat__value">{{ member.city }}</dd>
-                    </div>
-                  }
+                <dl class="rating__peak">
+                  <dt class="rating__peak-label">Peak rating</dt>
+                  <dd class="rating__peak-value">
+                    {{ member.peakRating | ratingLabel }}
+                  </dd>
                 </dl>
-                @if (
-                  member.yearJoined || (member.showYearOfBirth && member.yearOfBirth)
-                ) {
-                  <dl class="stats__pair">
-                    @if (member.yearJoined; as year) {
-                      <div class="stat">
-                        <dt class="stat__label">Member since</dt>
-                        <dd class="stat__value">{{ year }}</dd>
-                      </div>
-                    }
-                    @if (member.showYearOfBirth && member.yearOfBirth) {
-                      <div class="stat">
-                        <dt class="stat__label">Year of birth</dt>
-                        <dd class="stat__value">{{ member.yearOfBirth }}</dd>
-                      </div>
-                    }
-                  </dl>
-                }
               </div>
-
-              @if (member.chessComUsername || member.lichessUsername) {
-                <dl class="chess-accounts">
-                  @if (member.chessComUsername) {
-                    <dt class="platform">
-                      <img
-                        class="platform-logo"
-                        src="assets/club-link-icons/chesscom.svg"
-                        alt=""
-                        aria-hidden="true" />
-                      Chess.com
-                    </dt>
-                    <dd>
-                      <a
-                        class="lcc-link"
-                        [href]="chessComUrl(member)"
-                        rel="noopener noreferrer"
-                        target="_blank">
-                        <span>{{ member.chessComUsername }}</span>
-                        <ea-icon-external-link class="external-link-icon" />
-                      </a>
-                    </dd>
-                  }
-                  @if (member.lichessUsername) {
-                    <dt class="platform">
-                      <img
-                        class="platform-logo platform-logo--lichess"
-                        src="assets/club-link-icons/lichess.svg"
-                        alt=""
-                        aria-hidden="true" />
-                      Lichess
-                    </dt>
-                    <dd>
-                      <a
-                        class="lcc-link"
-                        [href]="lichessUrl(member)"
-                        rel="noopener noreferrer"
-                        target="_blank">
-                        <span>{{ member.lichessUsername }}</span>
-                        <ea-icon-external-link class="external-link-icon" />
-                      </a>
-                    </dd>
-                  }
-                </dl>
-              }
             </div>
           </div>
         </ea-card>
@@ -192,7 +141,154 @@
             <lcc-member-openings [memberNumber]="vm.memberNumber" />
           </ea-accordion-item>
         </ea-accordion>
+
+        @let accounts = getChessAccounts(member, vm.externalRatings);
+        @if (accounts.overTheBoard.length) {
+          <ea-accordion
+            class="profile-section"
+            [expandedValues]="['over-the-board-play']">
+            <ea-accordion-item
+              label="Over-the-board play"
+              value="over-the-board-play">
+              <div class="external-ratings">
+                <div class="ratings-table ratings-table--over-the-board">
+                  @for (account of accounts.overTheBoard; track account.platform) {
+                    <div class="ratings-row ratings-row--otb">
+                      <span class="platform">{{ account.label }}</span>
+                      <div class="otb-details">
+                        <div class="otb-details__id">
+                          <span class="pair">
+                            <span class="pair__label">ID</span>
+                            <a
+                              class="lcc-link"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                              [href]="account.url">
+                              <span>{{ account.handle }}</span>
+                              <ea-icon-external-link class="external-link-icon" />
+                            </a>
+                          </span>
+                          @for (rank of account.ranks; track rank.label) {
+                            <span
+                              class="rank"
+                              [eaTooltip]="rank.tooltip">
+                              <span class="lcc-visually-hidden">{{ rank.label }}</span>
+                              <span aria-hidden="true">{{ rank.emoji }}</span>
+                              #{{ rank.rank | number }}
+                            </span>
+                          }
+                        </div>
+                        @if (vm.ratingsPending || account.isFound) {
+                          <dl class="otb-ratings">
+                            @for (rating of account.slots; track rating.timeControl) {
+                              <div class="pair otb-ratings__pair">
+                                <dt class="pair__label">{{ rating.label }}</dt>
+                                <ng-container
+                                  *ngTemplateOutlet="
+                                    ratingValue;
+                                    context: {
+                                      $implicit: rating,
+                                      pending: vm.ratingsPending,
+                                    }
+                                  " />
+                              </div>
+                            }
+                          </dl>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            </ea-accordion-item>
+          </ea-accordion>
+        }
+
+        @if (accounts.online.length) {
+          <ea-accordion
+            class="profile-section"
+            [expandedValues]="['online-play']">
+            <ea-accordion-item
+              label="Online play"
+              value="online-play">
+              <div class="external-ratings">
+                <div class="ratings-table ratings-table--online">
+                  <div class="ratings-row ratings-row--heading">
+                    @for (label of onlineTimeControlLabels; track label) {
+                      <span
+                        class="online-time-control"
+                        aria-hidden="true">
+                        {{ label }}
+                      </span>
+                    }
+                  </div>
+                  @for (account of accounts.online; track account.platform) {
+                    <div class="ratings-row ratings-row--online">
+                      <span class="platform">
+                        @if (account.logoSrc) {
+                          <img
+                            class="platform-logo"
+                            alt=""
+                            aria-hidden="true"
+                            [class.platform-logo--lichess]="
+                              account.platform === 'lichess'
+                            "
+                            [src]="account.logoSrc" />
+                        }
+                        {{ account.label }}
+                      </span>
+                      <a
+                        class="lcc-link online-handle"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        [href]="account.url">
+                        <span>{{ account.handle }}</span>
+                        <ea-icon-external-link class="external-link-icon" />
+                      </a>
+                      @if (vm.ratingsPending || account.isFound) {
+                        <dl class="online-ratings">
+                          @for (rating of account.slots; track rating.timeControl) {
+                            <div class="online-ratings__cell">
+                              <dt class="lcc-visually-hidden">{{ rating.label }}</dt>
+                              <ng-container
+                                *ngTemplateOutlet="
+                                  ratingValue;
+                                  context: {
+                                    $implicit: rating,
+                                    pending: vm.ratingsPending,
+                                  }
+                                " />
+                            </div>
+                          }
+                        </dl>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </ea-accordion-item>
+          </ea-accordion>
+        }
       }
     </div>
   }
 }
+
+<ng-template
+  #ratingValue
+  let-rating
+  let-pending="pending">
+  @if (pending) {
+    <dd class="rating-value">
+      <lcc-text-skeleton width="40px" />
+    </dd>
+  } @else if (rating.rating === null) {
+    <dd class="rating-value rating-value--unrated">Unrated</dd>
+  } @else {
+    <dd
+      class="rating-value"
+      [eaTooltip]="rating.provisional ? 'Provisional rating' : ''">
+      {{ rating.rating }}{{ rating.provisional ? '?' : '' }}
+    </dd>
+  }
+</ng-template>

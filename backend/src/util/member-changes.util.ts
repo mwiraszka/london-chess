@@ -24,6 +24,8 @@ const FIELD_LABELS: Record<ChangeableField, string> = {
   yearOfBirth: 'Year of birth',
   chessComUsername: 'Chess.com username',
   lichessUsername: 'Lichess username',
+  fideId: 'FIDE ID',
+  cfcId: 'CFC ID',
   isActive: 'Active member',
 };
 

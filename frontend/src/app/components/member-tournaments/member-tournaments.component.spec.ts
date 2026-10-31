@@ -301,6 +301,10 @@ describe('MemberTournamentsComponent', () => {
       ).toBeTruthy();
     });
 
+    it('should hold back the highlights until the results arrive with them', () => {
+      expect(query(fixture.debugElement, 'lcc-member-highlights')).toBeFalsy();
+    });
+
     it('should not open skeleton rows', () => {
       const navigateSpy = vi
         .spyOn(TestBed.inject(Router), 'navigate')
