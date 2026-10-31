@@ -51,7 +51,7 @@ import { bindSearchControl, combinedLoadStatus } from '@app/utils';
       <div class="filters">
         <ea-input
           class="filters__search"
-          label="Search"
+          ariaLabel="Search articles"
           placeholder="Search by author, title or content"
           [clearable]="true"
           [formControl]="searchControl"
