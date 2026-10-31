@@ -408,7 +408,7 @@ describe('MembersTableComponent', () => {
       render({ members: [], isLoading: true });
 
       expect(bodyRows()).toHaveLength(10);
-      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(7);
+      expect(queryAll(bodyRows()[0], '.ea-data-table__placeholder')).toHaveLength(9);
     });
 
     it('should show placeholders in place of the members already loaded', () => {
