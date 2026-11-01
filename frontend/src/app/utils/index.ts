@@ -30,7 +30,7 @@ export {
   parseScore,
   parseStandings,
 } from './chess/standings-import.util';
-export { mergePgnGames, readPgnGames } from './chess/pgn-import.util';
+export { checkPgnGames, readPgnGames } from './chess/pgn-import.util';
 export {
   canWithdraw,
   clubToday,

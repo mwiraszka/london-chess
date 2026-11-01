@@ -173,7 +173,12 @@ describe('TournamentFormComponent', () => {
             matchPlayers: vi.fn().mockReturnValue(of({ data: [] })),
             // Every imported section changes, as the server would find of new results
             checkImport: vi.fn(
-              (_number: number, sections: SectionInput[], games: GameInput[]) =>
+              (
+                _number: number,
+                _date: string,
+                sections: SectionInput[],
+                games: GameInput[],
+              ) =>
                 of({
                   data: {
                     sectionChanges: sections.map(() => true),
@@ -471,10 +476,23 @@ describe('TournamentFormComponent', () => {
       await importFile();
 
       const alert = fixture.nativeElement.querySelector('.results__problems');
+      expect(alert.textContent).toContain('These standings could not be imported:');
       expect(alert.querySelectorAll('li')).toHaveLength(10);
       expect(alert.textContent).toContain('2 more problems were found.');
       expect(component.form.valid).toBe(true);
       expect(lastDraft()?.sections).toBeNull();
+    });
+
+    it('should head what stopped a PGN as games that could not be added', async () => {
+      render();
+      importStandingsSpy.mockResolvedValue(imported([], ['A game does not match.']));
+
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.txt')]);
+      fixture.detectChanges();
+
+      const alert = fixture.nativeElement.querySelector('.results__problems');
+      expect(alert.textContent).toContain('These games could not be added:');
+      expect(alert.textContent).not.toContain('These standings could not be imported:');
     });
 
     it('should ignore an import overtaken by a later one', async () => {
@@ -773,7 +791,44 @@ describe('TournamentFormComponent', () => {
     it('should ask the server what the imported sections and games would change', async () => {
       await importPgn(['new', 'new', 'new']);
 
-      expect(checkImportSpy()).toHaveBeenCalledWith(recorded.number, [section()], games);
+      expect(checkImportSpy()).toHaveBeenCalledWith(
+        recorded.number,
+        recorded.date,
+        [section()],
+        games,
+      );
+    });
+
+    it('should check the import under the recorded date while the start date is cleared', async () => {
+      checkImportSpy().mockReturnValue(
+        of({ data: { sectionChanges: [true], removedSections: [], games: [] } }),
+      );
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games,
+        problems: [],
+      });
+      render({ ...tournamentFormData(recorded), date: '' }, false, recorded);
+
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      await settle();
+
+      expect(checkImportSpy()).toHaveBeenCalledWith(
+        recorded.number,
+        recorded.date,
+        [section()],
+        games,
+      );
+    });
+
+    it("should say on saving that a PGN's games go to the game archive", async () => {
+      await importPgn(['new', 'new', 'new']);
+
+      await component.onSubmit();
+
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        `Update ${recorded.name}? The games from the PGN will be added to the game archive.`,
+      );
     });
 
     it('should keep for saving only the games the server finds new or different', async () => {

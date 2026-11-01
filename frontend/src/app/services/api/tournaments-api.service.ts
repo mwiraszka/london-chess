@@ -71,14 +71,16 @@ export class TournamentsApiService {
     );
   }
 
+  // The date is the one the tournament would be saved under, which files its games by year
   public checkImport(
     tournamentNumber: number,
+    date: string,
     sections: SectionInput[],
     games: GameInput[],
   ): Observable<ApiResponse<ImportChanges>> {
     return this.http.post<ApiResponse<ImportChanges>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}/import-changes`,
-      { sections, games },
+      { date, sections, games },
     );
   }
 

@@ -80,7 +80,7 @@ const SAN_MOVE =
   /^(?:[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|[a-h](?:x[a-h])?[1-8](?:=?[QRBN])?|O-O(?:-O)?)[+#]?[!?]*$/;
 
 // A day that does not exist, such as February 30, parses as a later one or not at all
-function isDay(value: string): boolean {
+export function isDay(value: string): boolean {
   const time = Date.parse(`${value}T00:00:00Z`);
   return (
     /^\d{4}-\d{2}-\d{2}$/.test(value) &&

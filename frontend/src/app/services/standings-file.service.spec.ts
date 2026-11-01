@@ -12,15 +12,45 @@ vi.mock('read-excel-file/browser', () => ({ default: readXlsxFile }));
 const HEADER = ['#', 'Name', 'Rating', 'Rd 1', 'Total'];
 
 // One section of two players with no rounds recorded yet
+const [FIRST, SECOND] = MOCK_TOURNAMENTS[0].sections[0].entries;
+
+// The two players met in the one round, the first winning with white
 const TOURNAMENT: Tournament = {
   ...MOCK_TOURNAMENTS[0],
   sections: [
     {
       ...MOCK_TOURNAMENTS[0].sections[0],
       roundCount: 1,
-      entries: MOCK_TOURNAMENTS[0].sections[0].entries
-        .slice(0, 2)
-        .map(entry => ({ ...entry, rounds: [] })),
+      entries: [
+        {
+          ...FIRST,
+          rounds: [
+            {
+              round: 1,
+              outcome: 'game',
+              scores: [1],
+              points: 1,
+              opponentRank: SECOND.rank,
+              color: 'white',
+              gameId: null,
+            },
+          ],
+        },
+        {
+          ...SECOND,
+          rounds: [
+            {
+              round: 1,
+              outcome: 'game',
+              scores: [0],
+              points: 0,
+              opponentRank: FIRST.rank,
+              color: 'black',
+              gameId: null,
+            },
+          ],
+        },
+      ],
       games: [],
     },
   ],
@@ -61,6 +91,10 @@ describe('StandingsFileService', () => {
         sheet: 'B',
         data: [HEADER, ['1', 'Poe, Pat', '1200', 'B---', '1']],
       },
+      {
+        sheet: 'C',
+        data: [HEADER, ['1', new Date('2026-09-24T00:00:00.000Z'), '1200', 'B---', '1']],
+      },
     ]);
 
     const { sections, problems } = await service.importStandings(
@@ -69,10 +103,11 @@ describe('StandingsFileService', () => {
     );
 
     expect(problems).toEqual([]);
-    expect(sections.map(({ name }) => name)).toEqual(['A', 'B']);
+    expect(sections.map(({ name }) => name)).toEqual(['A', 'B', 'C']);
     expect(sections[0].entries[1]).toEqual(
       expect.objectContaining({ name: 'Roe, Rick', rating: null, score: 0 }),
     );
+    expect(sections[2].entries[0].name).toBe('2026-09-24');
   });
 
   it('should read a CSV file, quoted names and all, as one section', async () => {
@@ -123,7 +158,7 @@ describe('StandingsFileService', () => {
     ]);
   });
 
-  it('should add the games of a PGN file, even one named .txt, to the tournament', async () => {
+  it('should check the games of a PGN file, even one named .txt, against the tournament', async () => {
     const { sections, games, problems } = await service.importStandings(
       [new File([PGN], 'Round 1.txt')],
       TOURNAMENT,
@@ -134,8 +169,26 @@ describe('StandingsFileService', () => {
       expect.objectContaining({ round: '1', result: '1-0', plyCount: 2 }),
     ]);
     expect(sections[0].entries[0].rounds).toEqual([
-      expect.objectContaining({ round: 1, scores: [1], opponentRank: 2, color: 'white' }),
+      expect.objectContaining({
+        round: 1,
+        scores: [1],
+        opponentRank: SECOND.rank,
+        color: 'white',
+      }),
     ]);
+  });
+
+  it('should add nothing from a PGN the standings disagree with', async () => {
+    const { sections, games, problems } = await service.importStandings(
+      [new File([PGN.replaceAll('1-0', '0-1')], 'Round 1.pgn')],
+      TOURNAMENT,
+    );
+
+    expect(problems).toEqual([
+      'The round 1 game between Doe, John and Smith, Jane: the standings give Doe, John 1 in round 1, but the game gives 0.',
+    ]);
+    expect(sections).toEqual([]);
+    expect(games).toEqual([]);
   });
 
   it('should add nothing while any PGN file has a problem', async () => {

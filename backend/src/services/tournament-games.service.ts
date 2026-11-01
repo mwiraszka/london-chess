@@ -10,7 +10,6 @@ import { openingName } from '../util/opening-name.util';
 type StoredGame = Pick<
   GameRecord,
   | '_id'
-  | 'year'
   | 'section'
   | 'round'
   | 'date'
@@ -25,21 +24,12 @@ type StoredGame = Pick<
   | 'modificationInfo'
 >;
 
-type GameKey = Pick<
-  GameRecord,
-  'year' | 'section' | 'round' | 'whitePlayerId' | 'blackPlayerId'
->;
+type GameKey = Pick<GameRecord, 'section' | 'round' | 'whitePlayerId' | 'blackPlayerId'>;
 
-const gameKey = ({
-  year,
-  section,
-  round,
-  whitePlayerId,
-  blackPlayerId,
-}: GameKey): string =>
-  [year, section, round.trim(), whitePlayerId, blackPlayerId].join('|');
-
-const yearOf = (game: GameInput): number => Number(game.date.slice(0, 4));
+// A pairing meets once a round, so a game keeps its place in the archive when a corrected
+// PGN gives it the other colours
+const gameKey = ({ section, round, whitePlayerId, blackPlayerId }: GameKey): string =>
+  [section, round.trim(), ...[whitePlayerId, blackPlayerId].sort()].join('|');
 
 const sameMoves = (a: string, b: string): boolean =>
   a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim();
@@ -47,6 +37,7 @@ const sameMoves = (a: string, b: string): boolean =>
 // A game is told apart from its archived copy by anything the PGN records about it
 function hasChanged(stored: StoredGame, game: GameInput): boolean {
   return (
+    stored.whitePlayerId !== game.whitePlayerId ||
     stored.result !== game.result ||
     stored.date !== game.date ||
     stored.whiteElo !== game.whiteElo ||
@@ -59,6 +50,7 @@ function hasChanged(stored: StoredGame, game: GameInput): boolean {
 
 async function storedGames(
   tournament: string,
+  year: number,
   games: GameInput[],
 ): Promise<Map<string, StoredGame>> {
   if (!games.length) {
@@ -67,11 +59,10 @@ async function storedGames(
   const stored = await GameModel.find(
     {
       tournament,
-      year: { $in: [...new Set(games.map(yearOf))] },
+      year,
       section: { $in: [...new Set(games.map(({ section }) => section))] },
     },
     {
-      year: 1,
       section: 1,
       round: 1,
       date: 1,
@@ -92,11 +83,12 @@ async function storedGames(
 // How each game compares with the archive: one it lacks, one it holds differently, or the same
 export async function classifyGames(
   tournament: string,
+  year: number,
   games: GameInput[],
 ): Promise<GameChange[]> {
-  const stored = await storedGames(tournament, games);
+  const stored = await storedGames(tournament, year, games);
   return games.map(game => {
-    const match = stored.get(gameKey({ ...game, year: yearOf(game) }));
+    const match = stored.get(gameKey(game));
     return !match ? 'new' : hasChanged(match, game) ? 'changed' : 'unchanged';
   });
 }
@@ -121,22 +113,43 @@ export function withGameSections(
   });
 }
 
+// A section also shows the games the archive files under its own name, such as a final's
+// games archived before its section joined the tournament
+export async function withNamedGameSections(
+  sections: TournamentSection[],
+  tournament: string,
+  year: number,
+): Promise<TournamentSection[]> {
+  const labels: string[] = await GameModel.distinct('section', { tournament, year });
+  return sections.map(section => {
+    const name = section.name.trim().toLowerCase();
+    const named = labels.filter(label => label.trim().toLowerCase() === name);
+    return named.length
+      ? {
+          ...section,
+          gameArchiveSections: [...new Set([...section.gameArchiveSections, ...named])],
+        }
+      : section;
+  });
+}
+
 /**
- * Brings the archive in line with the games: adds the ones it lacks, counting each for both
- * its players, and rewrites the ones it holds differently. Games it already holds as they
- * are stay untouched.
+ * Brings the archive in line with the games, filing them under the tournament's year: adds
+ * the ones it lacks, counting each for both its players, and rewrites the ones it holds
+ * differently. Games it already holds as they are stay untouched.
  */
 export async function archiveGames(
   tournament: string,
+  year: number,
   games: GameInput[],
   modificationInfo: ModificationInfo,
 ): Promise<void> {
-  const stored = await storedGames(tournament, games);
+  const stored = await storedGames(tournament, year, games);
   const additions: GameInput[] = [];
   const updates: { stored: StoredGame; game: GameInput }[] = [];
   const seen = new Set<string>();
   for (const game of games) {
-    const key = gameKey({ ...game, year: yearOf(game) });
+    const key = gameKey(game);
     if (seen.has(key)) continue;
     seen.add(key);
     const match = stored.get(key);
@@ -153,7 +166,7 @@ export async function archiveGames(
         tournament,
         section: game.section,
         location: 'London',
-        year: yearOf(game),
+        year,
         date: game.date,
         round: game.round.trim(),
         whitePlayerId: game.whitePlayerId,
@@ -193,7 +206,8 @@ export async function archiveGames(
           filter: { _id: match._id },
           update: {
             $set: {
-              year: yearOf(game),
+              whitePlayerId: game.whitePlayerId,
+              blackPlayerId: game.blackPlayerId,
               date: game.date,
               result: game.result,
               whiteElo: game.whiteElo,

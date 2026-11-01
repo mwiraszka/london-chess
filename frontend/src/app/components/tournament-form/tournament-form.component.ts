@@ -89,6 +89,8 @@ import {
   timeControlValidator,
 } from '@app/validators';
 
+const PGN_FILE = /\.(pgn|txt)$/i;
+
 @Component({
   selector: 'lcc-tournament-form',
   templateUrl: './tournament-form.component.html',
@@ -191,6 +193,10 @@ export class TournamentFormComponent implements OnInit {
       changes.games.every(change => change === 'unchanged')
     );
   });
+
+  protected readonly isPgnImport = computed(() =>
+    this.standingsFiles().some(file => PGN_FILE.test(file.name)),
+  );
 
   protected readonly listedProblems = computed(() =>
     this.importProblems().slice(0, MAX_LISTED_IMPORT_PROBLEMS),
@@ -375,9 +381,8 @@ export class TournamentFormComponent implements OnInit {
     if (problems.length) {
       return;
     }
-    const fromPgn = files.some(file => /\.(pgn|txt)$/i.test(file.name));
-    this.pgnGames.set(fromPgn ? games : []);
-    this.importedGames.set(fromPgn ? games : null);
+    this.pgnGames.set(this.isPgnImport() ? games : []);
+    this.importedGames.set(this.isPgnImport() ? games : null);
 
     const known = [
       ...(this.importedSections() ?? []),
@@ -447,7 +452,7 @@ export class TournamentFormComponent implements OnInit {
     const dialog: Dialog = {
       title: 'Confirm',
       body: originalTournament
-        ? `Update ${originalTournament.name}?${this.importedGames() ? ' The results and games from the PGN will be added to those already recorded.' : this.importedSections() ? ' The imported results will replace the recorded ones.' : ''}`
+        ? `Update ${originalTournament.name}?${this.importedGames() ? ' The games from the PGN will be added to the game archive.' : this.importedSections() ? ' The imported results will replace the recorded ones.' : ''}`
         : `Add ${this.form.controls.name.value} to the tournaments?`,
       confirmButtonText: originalTournament ? 'Update' : 'Add',
       confirmAction: () => this.save(),
@@ -535,6 +540,13 @@ export class TournamentFormComponent implements OnInit {
     this.pgnGames.set([]);
   }
 
+  // The day saving would give the tournament; a start date still being typed leaves it as
+  // recorded, since the form cannot be saved without one
+  private savedDate(tournament: Tournament): string {
+    const date = this.form.controls.date.value;
+    return date ? toDayString(date) : tournament.date;
+  }
+
   /**
    * Asks the server what saving the import would change, which is exactly what the save
    * itself will do: only the sections it names as changed are shown, and only the games it
@@ -553,7 +565,12 @@ export class TournamentFormComponent implements OnInit {
     this.checking.set(true);
     try {
       const { data } = await firstValueFrom(
-        this.tournamentsApiService.checkImport(tournament.number, sections, games),
+        this.tournamentsApiService.checkImport(
+          tournament.number,
+          this.savedDate(tournament),
+          sections,
+          games,
+        ),
       );
       if (attempt !== this.checkAttempt) {
         return;
