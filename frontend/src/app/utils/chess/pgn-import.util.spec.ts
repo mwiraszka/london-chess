@@ -537,6 +537,36 @@ describe('checkPgnGames', () => {
       ]);
     });
 
+    it('should check it only in a section of its own, when the standings give it one', () => {
+      const withYs = tournament();
+      withYs.sections.push({
+        name: 'YS',
+        ratingBand: '',
+        roundCount: 3,
+        isDoubleRound: false,
+        entries: [
+          entry(1, ANNA, [played(3, 1, 2, 'black')]),
+          entry(2, CLARA, [played(3, 0, 1, 'white')]),
+        ],
+        games: [],
+      });
+
+      const result = checkPgnGames(withYs, [across()]);
+      const refused = checkPgnGames(withYs, [across({ Result: '1-0' })]);
+
+      expect(result.problems).toEqual([]);
+      expect(result.games).toEqual([
+        expect.objectContaining({
+          section: 'YS',
+          whitePlayerId: 'c1',
+          blackPlayerId: 'a1',
+        }),
+      ]);
+      expect(refused.problems).toEqual([
+        'The round 3 game between Green, Clara and Black, Anna: the standings give Green, Clara 0 in round 3, but the game gives 1.',
+      ]);
+    });
+
     it('should refuse it when either section records another result', () => {
       const result = checkPgnGames(tournament(), [across({ Result: '1/2-1/2' })]);
 
