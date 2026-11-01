@@ -277,6 +277,18 @@ describe('TournamentFormComponent', () => {
       expect(lastDraft()).toEqual(expect.objectContaining({ name: 'Fall Rapid Open' }));
     });
 
+    it('should send no later draft once the form is submitted', async () => {
+      render();
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.name.setValue('Fall Rapid Open');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
+    });
+
     it('should drop the registration window once registration is switched off', () => {
       render();
 

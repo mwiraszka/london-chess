@@ -12,7 +12,7 @@ import {
   TooltipDirective,
 } from '@eagami/ui';
 import { pick } from 'lodash-es';
-import { debounceTime } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 import {
   ChangeDetectionStrategy,
@@ -40,7 +40,7 @@ import {
   INITIAL_ARTICLE_FORM_DATA,
   MAX_ARTICLE_BODY_IMAGES,
 } from '@app/constants';
-import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
+import { FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import {
   Article,
   ArticleFormData,
@@ -51,7 +51,7 @@ import {
 } from '@app/models';
 import { StoreRequestService } from '@app/services';
 import { ArticlesActions } from '@app/store/articles';
-import { isCollectionId } from '@app/utils';
+import { draftDebounce, isCollectionId } from '@app/utils';
 import { textValidator } from '@app/validators';
 
 @Component({
@@ -77,6 +77,7 @@ import { textValidator } from '@app/validators';
 export class ArticleFormComponent implements OnInit {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly saved = new Subject<void>();
   private readonly dialogService = inject(DialogService);
   private readonly storeRequests = inject(StoreRequestService);
 
@@ -148,7 +149,7 @@ export class ArticleFormComponent implements OnInit {
       .subscribe(() => this.changeDetectorRef.markForCheck());
 
     this.form.valueChanges
-      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
     this.emitChange();
 
@@ -217,6 +218,7 @@ export class ArticleFormComponent implements OnInit {
     }
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.saved.next();
     this.emitChange();
 
     const originalArticle = this.originalArticle();

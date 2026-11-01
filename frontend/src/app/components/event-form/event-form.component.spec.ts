@@ -172,6 +172,17 @@ describe('EventFormComponent', () => {
       expect(lastDraft()).toEqual(expect.objectContaining({ details: 'Bring a clock.' }));
     });
 
+    it('should send no later draft once the form is submitted', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.details.setValue('Bring a clock.');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
+    });
+
     it('should pass the draft on at once when focus leaves a field', () => {
       component.form.controls.title.setValue('Quick exit');
 

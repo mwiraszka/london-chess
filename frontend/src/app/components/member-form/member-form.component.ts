@@ -8,8 +8,7 @@ import {
   TooltipDirective,
 } from '@eagami/ui';
 import { pick } from 'lodash-es';
-import { merge } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { Subject, merge } from 'rxjs';
 
 import {
   ChangeDetectionStrategy,
@@ -28,11 +27,7 @@ import { FormActionsComponent } from '@app/components/form-actions/form-actions.
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { SafeModeNoticeComponent } from '@app/components/safe-mode-notice/safe-mode-notice.component';
 import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
-import {
-  FORM_CHANGE_DEBOUNCE,
-  FORM_ERROR_MESSAGES,
-  WEEK_STARTS_ON,
-} from '@app/constants/forms';
+import { FORM_ERROR_MESSAGES, WEEK_STARTS_ON } from '@app/constants/forms';
 import { MEMBER_DETAIL_RULES, UNRATED } from '@app/constants/member-details';
 import {
   Dialog,
@@ -46,6 +41,7 @@ import {
 import { StoreRequestService } from '@app/services';
 import { MembersActions } from '@app/store/members';
 import {
+  draftDebounce,
   fromClubDateTime,
   normalizePhoneNumber,
   toClubDateTime,
@@ -78,6 +74,7 @@ import {
 })
 export class MemberFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly saved = new Subject<void>();
   private readonly dialogService = inject(DialogService);
   private readonly storeRequests = inject(StoreRequestService);
 
@@ -136,7 +133,7 @@ export class MemberFormComponent implements OnInit {
     this.syncNotifyMember();
 
     this.form.valueChanges
-      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
 
     merge(
@@ -185,6 +182,7 @@ export class MemberFormComponent implements OnInit {
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
     this.normalizePhoneNumberField();
+    this.saved.next();
     this.emitChange();
 
     const notifyMember = this.notifyMember.value;

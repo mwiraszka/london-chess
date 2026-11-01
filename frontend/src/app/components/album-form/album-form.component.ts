@@ -13,7 +13,7 @@ import {
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { omit, pick } from 'lodash-es';
-import { debounceTime } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 import {
   ChangeDetectionStrategy,
@@ -40,7 +40,7 @@ import { FormActionsComponent } from '@app/components/form-actions/form-actions.
 import { ImageComponent } from '@app/components/image/image.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
-import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
+import { FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { MAX_NEW_IMAGES } from '@app/constants/images';
 import {
   AlbumFormGroup,
@@ -57,7 +57,7 @@ import {
 import { ImageFileService, StoreRequestService } from '@app/services';
 import { ImagesActions, ImagesSelectors } from '@app/store/images';
 import { GENERATE_UUID } from '@app/tokens';
-import { isLccError } from '@app/utils';
+import { draftDebounce, isLccError } from '@app/utils';
 import { ordinalityValidator, textValidator } from '@app/validators';
 
 @Component({
@@ -83,6 +83,7 @@ import { ordinalityValidator, textValidator } from '@app/validators';
 export class AlbumFormComponent implements OnInit {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly saved = new Subject<void>();
   private readonly dialogService = inject(DialogService);
   private readonly generateUuid = inject(GENERATE_UUID);
   private readonly imageFileService = inject(ImageFileService);
@@ -157,7 +158,7 @@ export class AlbumFormComponent implements OnInit {
       .subscribe(() => this.changeDetectorRef.markForCheck());
 
     this.form.valueChanges
-      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
     this.emitChange();
 
@@ -298,6 +299,7 @@ export class AlbumFormComponent implements OnInit {
     }
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.saved.next();
     this.emitChange();
 
     const newImagesCount = this.form.controls.newImages.length;

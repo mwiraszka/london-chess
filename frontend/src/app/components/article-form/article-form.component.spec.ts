@@ -198,6 +198,17 @@ describe('ArticleFormComponent', () => {
       expect(lastDraft()).toEqual(expect.objectContaining({ body: 'Doors open at 7.' }));
     });
 
+    it('should send no later draft once the form is submitted', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.body.setValue('Doors open at 7.');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
+    });
+
     it('should pass the draft on at once when focus leaves a field', () => {
       component.form.controls.title.setValue('Club closure');
 

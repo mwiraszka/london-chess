@@ -68,6 +68,7 @@ import {
 } from '@app/services';
 import { TournamentsActions } from '@app/store/tournaments';
 import {
+  draftDebounce,
   formatScore,
   fromClubDateTime,
   fromDayString,
@@ -113,6 +114,7 @@ import {
 })
 export class TournamentFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly saved = new Subject<void>();
   private readonly dialogService = inject(DialogService);
   private readonly standingsFileService = inject(StandingsFileService);
   private readonly storeRequests = inject(StoreRequestService);
@@ -324,7 +326,7 @@ export class TournamentFormComponent implements OnInit {
       );
 
     merge(this.form.valueChanges, this.sectionEdits)
-      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
     // A renamed section or rating band changes what saving would do, so it is checked again
     this.sectionEdits
@@ -429,6 +431,7 @@ export class TournamentFormComponent implements OnInit {
     }
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.saved.next();
     this.emitChange();
 
     const originalTournament = this.originalTournament();

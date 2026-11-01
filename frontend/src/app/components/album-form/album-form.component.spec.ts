@@ -301,6 +301,17 @@ describe('AlbumFormComponent', () => {
       expect(lastDraft()[0]).toEqual(expect.objectContaining({ caption: 'Round one' }));
     });
 
+    it('should send no later draft once the form is submitted', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.existingImages.at(0).controls.caption.setValue('Round one');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
+    });
+
     it('should pass the draft on at once when focus leaves a field', () => {
       component.form.controls.album.setValue('John');
 

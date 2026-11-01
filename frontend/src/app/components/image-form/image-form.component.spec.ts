@@ -253,6 +253,17 @@ describe('ImageFormComponent', () => {
       expect(lastDraft()).toEqual(expect.objectContaining({ album: 'Tournaments' }));
     });
 
+    it('should send no later draft once the form is submitted', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.album.setValue('Tournaments');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
+    });
+
     it('should pass the draft on at once when focus leaves a field', () => {
       component.form.controls.caption.setValue('Clocks ticking');
 

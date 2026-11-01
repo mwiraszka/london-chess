@@ -9,7 +9,7 @@ import {
   TextareaComponent,
   TimePickerComponent,
 } from '@eagami/ui';
-import { debounceTime } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 import {
   ChangeDetectionStrategy,
@@ -27,11 +27,7 @@ import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.
 import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { EVENT_TYPE_OPTIONS, initialEventFormData } from '@app/constants';
-import {
-  FORM_CHANGE_DEBOUNCE,
-  FORM_ERROR_MESSAGES,
-  WEEK_STARTS_ON,
-} from '@app/constants/forms';
+import { FORM_ERROR_MESSAGES, WEEK_STARTS_ON } from '@app/constants/forms';
 import {
   Dialog,
   Event,
@@ -42,7 +38,7 @@ import {
 } from '@app/models';
 import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
-import { fromClubDateTime, toClubDateTime } from '@app/utils';
+import { draftDebounce, fromClubDateTime, toClubDateTime } from '@app/utils';
 import { idValidator, textValidator } from '@app/validators';
 
 @Component({
@@ -66,6 +62,7 @@ import { idValidator, textValidator } from '@app/validators';
 })
 export class EventFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly saved = new Subject<void>();
   private readonly dialogService = inject(DialogService);
   private readonly storeRequests = inject(StoreRequestService);
 
@@ -90,7 +87,7 @@ export class EventFormComponent implements OnInit {
     this.form = this.buildForm(this.formData());
 
     this.form.valueChanges
-      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
 
     if (this.hasUnsavedChanges()) {
@@ -120,6 +117,7 @@ export class EventFormComponent implements OnInit {
     }
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.saved.next();
     this.emitChange();
 
     const originalEvent = this.originalEvent();
