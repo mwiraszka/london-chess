@@ -572,6 +572,43 @@ describe('Meta Reducers', () => {
       });
     });
 
+    it('should merge saved objects into the current state key by key, taking arrays whole', () => {
+      versionedStorage.setItem(
+        'gamesState',
+        JSON.stringify({ query: { filters: { year: 1994 } } }),
+      );
+      versionedStorage.setItem('membersState', JSON.stringify({ ids: ['b'] }));
+      const wrappedReducer = hydrationMetaReducer(
+        state =>
+          state ?? {
+            gamesState: gamesInitialState,
+            membersState: { ...membersInitialState, ids: ['a', 'c'] },
+          },
+      );
+
+      const result = wrappedReducer(undefined, { type: '@ngrx/store/init' });
+
+      expect(result.gamesState?.query).toEqual(rememberedQuery);
+      expect(result.membersState?.ids).toEqual(['b']);
+    });
+
+    it('should not let a saved "__proto__" key change what the state inherits', () => {
+      versionedStorage.setItem(
+        'gamesState',
+        '{"__proto__": {"polluted": true}, "query": {"__proto__": {"polluted": true}}}',
+      );
+      const wrappedReducer = hydrationMetaReducer(
+        state => state ?? { gamesState: gamesInitialState },
+      );
+
+      const result = wrappedReducer(undefined, { type: '@ngrx/store/init' });
+
+      expect(Object.getPrototypeOf(result.gamesState)).toBe(Object.prototype);
+      expect(Object.getPrototypeOf(result.gamesState?.query)).toBe(Object.prototype);
+      expect(result.gamesState?.query).toEqual(INITIAL_GAMES_QUERY);
+      expect('polluted' in {}).toBe(false);
+    });
+
     describe('when a visit starts from saved state', () => {
       let store: Store<MetaState>;
 
