@@ -628,7 +628,7 @@ describe('AlbumFormComponent', () => {
       expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, expect.anything());
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual(
         expect.objectContaining({
-          body: 'Create new album with this 1 new image?',
+          body: `Create the ${MOCK_IMAGES[3].album} album with 1 new image?`,
           confirmButtonText: 'Create',
         }),
       );
@@ -663,7 +663,7 @@ describe('AlbumFormComponent', () => {
       await component.onSubmit();
 
       expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
-        `Update ${album} and upload these 2 new images?`,
+        `Update ${album} and upload 2 new images?`,
       );
     });
 

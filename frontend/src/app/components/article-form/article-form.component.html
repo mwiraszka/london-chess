@@ -101,6 +101,7 @@
       <lcc-form-actions
         entity="article"
         [hasUnsavedChanges]="hasUnsavedChanges()"
+        [isNew]="!originalArticle()"
         [submitDisabled]="form.invalid || !hasUnsavedChanges()"
         [submitLabel]="originalArticle() ? 'Update article' : 'Publish article'"
         (cancel)="onCancel()"

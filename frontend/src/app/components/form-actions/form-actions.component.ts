@@ -47,6 +47,7 @@ export class FormActionsComponent {
 
   public readonly entity = input.required<string>();
   public readonly hasUnsavedChanges = input.required<boolean>();
+  public readonly isNew = input.required<boolean>();
   public readonly submitDisabled = input.required<boolean>();
   public readonly submitLabel = input.required<string>();
 
@@ -56,10 +57,13 @@ export class FormActionsComponent {
   protected readonly restoreIcon = HistoryIconComponent;
 
   public async onRevert(): Promise<void> {
+    const entity = this.entity();
     const dialog: Dialog = {
       title: 'Confirm',
-      body: `Revert to the original ${this.entity()} data? All changes will be lost.`,
-      confirmButtonText: 'Revert',
+      body: this.isNew()
+        ? `Clear this new ${entity}? Everything entered will be lost.`
+        : `Revert to the saved ${entity}? Your changes will be lost.`,
+      confirmButtonText: this.isNew() ? 'Clear' : 'Revert',
       confirmButtonType: 'warning',
     };
 

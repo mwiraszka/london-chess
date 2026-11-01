@@ -261,7 +261,7 @@ test.describe('managing tournaments', () => {
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue(name);
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
 
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue('');
   });

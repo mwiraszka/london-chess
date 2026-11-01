@@ -224,9 +224,11 @@ export class ImageFormComponent implements OnInit {
     const { id, filename, album } = this.form.getRawValue();
     const dialog: Dialog = {
       title: 'Confirm',
-      body: imageEntity
-        ? `Update ${imageEntity.image.filename}?`
-        : `Add ${filename} to ${album}?`,
+      body: !imageEntity
+        ? `Add ${filename} to ${album}?`
+        : album === imageEntity.image.album
+          ? `Update ${imageEntity.image.filename}?`
+          : `Update ${imageEntity.image.filename} and move it to ${album}?`,
       confirmButtonText: imageEntity ? 'Update' : 'Add',
       confirmAction: () => this.save(id),
     };

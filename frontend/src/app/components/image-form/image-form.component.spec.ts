@@ -448,6 +448,20 @@ describe('ImageFormComponent', () => {
       );
     });
 
+    it('should say when an update moves the image to another album', async () => {
+      render(
+        { ...entity, formData: { ...entity.formData, album: 'Exhibitions' } },
+        null,
+        true,
+      );
+
+      await component.onSubmit();
+
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        `Update ${entity.image.filename} and move it to Exhibitions?`,
+      );
+    });
+
     it('should save nothing until the dialog is confirmed', async () => {
       render(null, newImageData, true);
       dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));

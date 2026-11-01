@@ -184,6 +184,7 @@
       <lcc-form-actions
         entity="album"
         [hasUnsavedChanges]="hasUnsavedChanges()"
+        [isNew]="!album()"
         [submitDisabled]="form.invalid || !hasUnsavedChanges()"
         [submitLabel]="album() ? 'Update album' : 'Create album'"
         (cancel)="onCancel()"

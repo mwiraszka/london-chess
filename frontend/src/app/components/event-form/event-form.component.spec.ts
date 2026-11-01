@@ -293,7 +293,7 @@ describe('EventFormComponent', () => {
 
       expect(lastOpenedDialog(dialogOpenSpy)).toEqual(
         expect.objectContaining({
-          body: `Add ${formData.title} to schedule?`,
+          body: `Add ${formData.title} to the schedule?`,
           confirmButtonText: 'Add',
         }),
       );

@@ -302,17 +302,14 @@ export class AlbumFormComponent implements OnInit {
     this.saved.next();
     this.emitChange();
 
-    const newImagesCount = this.form.controls.newImages.length;
-    const thisOrThese = newImagesCount === 1 ? 'this' : 'these';
-    const imageOrImages = newImagesCount === 1 ? 'image' : 'images';
-
+    const count = this.form.controls.newImages.length;
+    const newImages = `${count} new ${count === 1 ? 'image' : 'images'}`;
     const album = this.album();
-    const body =
-      album && newImagesCount
-        ? `Update ${album} and upload ${thisOrThese} ${newImagesCount} new ${imageOrImages}?`
-        : album
-          ? `Update ${album}?`
-          : `Create new album with ${thisOrThese} ${newImagesCount} new ${imageOrImages}?`;
+    const body = album
+      ? count
+        ? `Update ${album} and upload ${newImages}?`
+        : `Update ${album}?`
+      : `Create the ${this.form.controls.album.value} album with ${newImages}?`;
 
     const dialog: Dialog = {
       title: 'Confirm',

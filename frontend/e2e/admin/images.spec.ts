@@ -153,7 +153,7 @@ test.describe('managing images', () => {
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
   });
 
   test('offers to create an album only once it has an image', async ({ page }) => {
@@ -170,7 +170,7 @@ test.describe('managing images', () => {
     await expect(page.getByRole('button', { name: 'Create album' })).toBeEnabled();
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
     await expect(page.getByAltText('New image preview')).toHaveCount(0);
   });
 });

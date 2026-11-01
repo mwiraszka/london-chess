@@ -330,6 +330,7 @@
       <lcc-form-actions
         entity="tournament"
         [hasUnsavedChanges]="hasUnsavedChanges()"
+        [isNew]="!originalTournament()"
         [submitDisabled]="
           form.invalid || !hasUnsavedChanges() || importing() || checking()
         "

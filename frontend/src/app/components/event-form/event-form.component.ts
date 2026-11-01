@@ -125,7 +125,7 @@ export class EventFormComponent implements OnInit {
       title: 'Confirm',
       body: originalEvent
         ? `Update ${originalEvent.title} event?`
-        : `Add ${this.form.controls.title.value} to schedule?`,
+        : `Add ${this.form.controls.title.value} to the schedule?`,
       confirmButtonText: originalEvent ? 'Update' : 'Add',
       confirmAction: () => this.save(),
     };
