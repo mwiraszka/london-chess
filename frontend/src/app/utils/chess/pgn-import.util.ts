@@ -292,12 +292,19 @@ export function checkPgnGames(tournament: Tournament, games: PgnGame[]): Standin
     if (label === null && crossLabel === null) {
       return unknownEvent;
     }
+    // A section named as the event is where its games are checked, even when other
+    // sections also show games archived under that name
+    const namedIndexes = sections.flatMap(({ name }, index) =>
+      label !== null && name.toLowerCase() === label.toLowerCase() ? [index] : [],
+    );
     const sectionIndexes =
       sections.length === 1
         ? [0]
-        : label !== null
-          ? labels.flatMap((set, index) => (set.has(label) ? [index] : []))
-          : sections.flatMap((_, index) => (holdsPlaceholder(index) ? [index] : []));
+        : namedIndexes.length
+          ? namedIndexes
+          : label !== null
+            ? labels.flatMap((set, index) => (set.has(label) ? [index] : []))
+            : sections.flatMap((_, index) => (holdsPlaceholder(index) ? [index] : []));
 
     const players = [white, black].map(name => ({
       name,

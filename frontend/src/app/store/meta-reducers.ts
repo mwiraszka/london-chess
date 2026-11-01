@@ -1,6 +1,5 @@
 import { Action, ActionReducer, INIT, MetaReducer, UPDATE } from '@ngrx/store';
 import { compact, omit, pick } from 'lodash-es';
-import { localStorageSync } from 'ngrx-store-localstorage';
 
 import { RELEASE_VERSION } from '@app/constants/release';
 import { isPresignedUrlExpired } from '@app/utils';
@@ -247,36 +246,63 @@ export const versionedStorage = {
   },
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// Saved values laid over the store's, nested objects key by key so fields added since the
+// save keep their initial values, and anything else taken whole. A saved "__proto__" key is
+// skipped, as assigning it would replace the merged object's prototype
+function withSaved<T extends object>(current: T, saved: object): T {
+  const merged: Record<string, unknown> = Object.fromEntries(Object.entries(current));
+  for (const [key, value] of Object.entries(saved)) {
+    if (key === '__proto__') {
+      continue;
+    }
+    const existing = Object.hasOwn(merged, key) ? merged[key] : undefined;
+    merged[key] =
+      isRecord(existing) && isRecord(value) ? withSaved(existing, value) : value;
+  }
+  return merged as T;
+}
+
+function savedState(): MetaState {
+  const saved: MetaState = {};
+  for (const stateKey of hydratedStates) {
+    const stored = versionedStorage.getItem(stateKey);
+    if (!stored) {
+      continue;
+    }
+    const restored = {
+      ...INITIAL_STATES[stateKey],
+      ...JSON.parse(stored),
+      ...UNPERSISTED_FIELDS[stateKey],
+    };
+    saved[stateKey] =
+      stateKey === 'imagesState' ? stripExpiredImageUrls(restored) : restored;
+  }
+  return saved;
+}
+
 /**
- * Re-hydrates state from local storage. Writing it back is left to
+ * Re-hydrates state from local storage, read once as the store starts and laid over the
+ * state each time reducers are registered. Writing it back is left to
  * persistStateMetaReducer.
  */
 export function hydrationMetaReducer(
   reducer: ActionReducer<MetaState>,
 ): ActionReducer<MetaState> {
-  return localStorageSync({
-    keys: hydratedStates.map(stateKey => {
-      const unpersistedFields = UNPERSISTED_FIELDS[stateKey] ?? {};
-      const restore = <T extends object>(stateSlice: T): T => ({
-        ...INITIAL_STATES[stateKey],
-        ...stateSlice,
-        ...unpersistedFields,
-      });
-
-      return {
-        [stateKey]: {
-          deserialize:
-            stateKey === 'imagesState'
-              ? (stateSlice: ImagesState) => stripExpiredImageUrls(restore(stateSlice))
-              : restore,
-        },
-      };
-    }),
-    rehydrate: true,
-    restoreDates: false,
-    storage: versionedStorage,
-    syncCondition: () => false,
-  })(reducer);
+  const saved = savedState();
+  return (state, action) => {
+    // A store starting without state takes its initial one from the reducer first
+    const current =
+      action.type === INIT && !state ? reducer(state, action) : { ...state };
+    const hydrated =
+      action.type === INIT || action.type === UPDATE
+        ? withSaved(current, saved)
+        : current;
+    return reducer(hydrated, action);
+  };
 }
 
 function onlyUnpersistedFieldsChanged(
