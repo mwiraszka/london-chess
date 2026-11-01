@@ -107,20 +107,20 @@ describe('RatingProgressionComponent', () => {
     expect(chart().series()[0].data).toHaveLength(2);
   });
 
-  it('should keep only the section a member played most of a tournament in', () => {
+  it('should chart a tournament at the rating of the first section a member appears in', () => {
     store.setState(
       stateWith({
         2: [
           championship,
-          { ...fallActive, section: 'A', roundsPlayed: 1, rating: 1700 },
-          { ...fallActive, section: 'B', roundsPlayed: 2, rating: 1810 },
+          { ...fallActive, section: 'A1', roundsPlayed: 3, rating: 1700 },
+          { ...fallActive, section: 'A Match', roundsPlayed: 4, rating: 1810 },
         ],
       }),
     );
 
     render();
 
-    expect(chart().series()[0].data).toEqual([1810, championship.rating]);
+    expect(chart().series()[0].data).toEqual([1700, championship.rating]);
   });
 
   it('should plot tournaments that start on the same day in the order they were held', () => {
