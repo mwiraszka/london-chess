@@ -91,20 +91,24 @@ test.describe('tournaments', () => {
     );
   });
 
-  test('shows each section of a tournament with its games', async ({ page }) => {
+  test('shows each section of a tournament, every round linked to its game', async ({
+    page,
+  }) => {
     await page.goto(`/tournaments/${RAPID.number}`);
 
     for (const section of RAPID.sections) {
       await expect(
         page.getByRole('heading', { name: section.ratingBand, level: 3 }),
       ).toBeVisible();
-      await expect(
-        bodyRows(page.getByRole('table', { name: `Standings, ${section.ratingBand}` })),
-      ).toHaveCount(section.playerKeys.length);
-      await expect(
-        bodyRows(page.getByRole('table', { name: `Games, ${section.ratingBand}` })),
-      ).toHaveCount(9);
+      const standings = page.getByRole('table', {
+        name: `Standings, ${section.ratingBand}`,
+      });
+      await expect(bodyRows(standings)).toHaveCount(section.playerKeys.length);
+      await expect(standings.getByRole('link', { name: / against / })).toHaveCount(
+        section.playerKeys.length * section.roundCount,
+      );
     }
+    await expect(page.getByRole('table', { name: /^Games/ })).toHaveCount(0);
   });
 
   test("links a player's name to their profile", async ({ page }) => {

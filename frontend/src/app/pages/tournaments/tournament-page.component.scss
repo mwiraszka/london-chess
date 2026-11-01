@@ -64,15 +64,10 @@ $details-gap: 24px;
   gap: 8px;
 }
 
-.section__heading,
-.section__games-heading {
+.section__heading {
   margin: 0;
   text-align: left;
   color: var(--color-text-primary);
-}
-
-.section__games-heading {
-  margin-top: 8px;
 }
 
 .section__rule {
@@ -86,11 +81,10 @@ $details-gap: 24px;
   color: var(--color-text-secondary);
 }
 
-// The tables hold each column at its set width whatever the players are called, so a
+// The table holds each column at its set width whatever the players are called, so a
 // placeholder takes the same shape; a name too long for its column is cut short, in
 // full in a tooltip
-.crosstable__player,
-.games__player {
+.crosstable__player {
   overflow: hidden;
   display: block;
   white-space: nowrap;
@@ -106,8 +100,7 @@ $details-gap: 24px;
   font-variant-numeric: tabular-nums;
 }
 
-.crosstable__score,
-.games__result--decisive {
+.crosstable__score {
   font-weight: bold;
 }
 
