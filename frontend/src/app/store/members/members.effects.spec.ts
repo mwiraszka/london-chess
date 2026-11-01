@@ -10,6 +10,7 @@ import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import {
   ApiResponse,
   ApiScope,
+  DataPaginationOptions,
   ExternalRatings,
   LccError,
   Member,
@@ -19,6 +20,7 @@ import {
   User,
 } from '@app/models';
 import { MemberProfilesService, MembersApiService } from '@app/services';
+import { AppSelectors } from '@app/store/app';
 import * as AppActions from '@app/store/app/app.actions';
 import { AuthSelectors } from '@app/store/auth';
 import { NavSelectors } from '@app/store/nav';
@@ -198,6 +200,47 @@ describe('MembersEffects', () => {
 
     it('should not fetch before any records are stored', () => {
       expect(emittedFor('admin', null)).toEqual([]);
+    });
+  });
+
+  describe('resetSortOnSafeMode$', () => {
+    const options: DataPaginationOptions<Member> = {
+      page: 3,
+      pageSize: 10,
+      sortBy: 'email',
+      sortOrder: 'asc',
+      filters: {
+        showInactiveMembers: { label: 'Show inactive members', value: false },
+      },
+      search: 'london',
+    };
+
+    const emittedFor = (isSafeMode: boolean, sortBy: keyof Member): Action[] => {
+      store.overrideSelector(AppSelectors.selectIsSafeMode, isSafeMode);
+      store.overrideSelector(MembersSelectors.selectOptions, { ...options, sortBy });
+      store.refreshState();
+      const emitted: Action[] = [];
+      effects.resetSortOnSafeMode$.subscribe(action => emitted.push(action));
+
+      actions$.next(AppActions.safeModeToggled());
+
+      return emitted;
+    };
+
+    it('should sort by the default from the first page once safe mode hides the sorted column', () => {
+      expect(emittedFor(true, 'email')).toEqual([
+        MembersActions.paginationOptionsChanged({
+          options: { ...options, sortBy: 'rating', sortOrder: 'desc', page: 1 },
+        }),
+      ]);
+    });
+
+    it('should keep a sort by a column safe mode still shows', () => {
+      expect(emittedFor(true, 'city')).toEqual([]);
+    });
+
+    it('should keep the sort when safe mode is switched off', () => {
+      expect(emittedFor(false, 'email')).toEqual([]);
     });
   });
 

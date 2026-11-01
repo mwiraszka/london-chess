@@ -105,6 +105,7 @@
       <lcc-form-actions
         entity="image"
         [hasUnsavedChanges]="hasUnsavedChanges()"
+        [isNew]="!imageEntity()"
         [submitDisabled]="form.invalid || !hasUnsavedChanges()"
         [submitLabel]="imageEntity() ? 'Update image' : 'Add image'"
         (cancel)="onCancel()"

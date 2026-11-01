@@ -259,7 +259,7 @@ describe('external ratings service', () => {
       expect(Object.keys(lookups ?? {}).sort()).toEqual(['fide', 'lichess']);
     });
 
-    it('should keep what an unreachable site last gave for the same handle, and nothing for a new one', async () => {
+    it('should keep what an unreachable site last gave for the same handle, and leave a new one to be looked up again', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => undefined);
       answerWith({
         ...ANSWERS,
@@ -281,9 +281,13 @@ describe('external ratings service', () => {
 
       await refreshExternalRatings(member);
 
-      const { lookups } = (await readMember(member._id)).externalRatings ?? {};
-      expect(lookups?.lichess).toEqual({ handle: 'jane_doe', ratings: previous });
-      expect(lookups?.fide).toEqual({ handle: '2600123', ratings: null });
+      const saved = await readMember(member._id);
+      expect(saved.externalRatings?.lookups.lichess).toEqual({
+        handle: 'jane_doe',
+        ratings: previous,
+      });
+      expect(saved.externalRatings?.lookups.fide).toBeUndefined();
+      expect(hasUnlookedHandles(saved)).toBe(true);
       expect(console.error).toHaveBeenCalledTimes(2);
     });
 

@@ -1,16 +1,18 @@
 import { Injectable } from '@angular/core';
 
 import { PgnGame, StandingsFileRead, StandingsImport, Tournament } from '@app/models';
-import { mergePgnGames, parseStandings, readPgnGames } from '@app/utils';
+import { checkPgnGames, parseStandings, readPgnGames } from '@app/utils';
 
 const SPREADSHEET_EXTENSIONS = ['xlsx', 'csv'];
 const PGN_EXTENSIONS = ['pgn', 'txt'];
 
-const extensionOf = (file: File): string =>
-  file.name.split('.').pop()?.toLowerCase() ?? '';
+const extensionOf = (file: File): string => {
+  const parts = file.name.split('.');
+  return parts[parts.length - 1].toLowerCase();
+};
 
-// Reads the standings files SwissSys exports, or a PGN of games to add to the recorded
-// results; the spreadsheet parsers load only when needed
+// Reads the standings files SwissSys exports, or a PGN of games to check against the
+// recorded results and add to the archive; the spreadsheet parsers load only when needed
 @Injectable({ providedIn: 'root' })
 export class StandingsFileService {
   public async importStandings(
@@ -50,16 +52,14 @@ export class StandingsFileService {
         problems.push(`${file.name} could not be read as a PGN file.`);
       }
     }
-    return problems.length ? this.failed(problems) : mergePgnGames(tournament, games);
+    return problems.length ? this.failed(problems) : checkPgnGames(tournament, games);
   }
 
   private async importSpreadsheets(files: readonly File[]): Promise<StandingsImport> {
     const reads = await Promise.all(files.map(file => this.readFile(file)));
     const problems = reads.flatMap(read => ('problem' in read ? [read.problem] : []));
-    if (problems.length) {
-      return this.failed(problems);
-    }
-    return parseStandings(reads.flatMap(read => ('sheets' in read ? read.sheets : [])));
+    const sheets = reads.flatMap(read => ('sheets' in read ? read.sheets : []));
+    return problems.length ? this.failed(problems) : parseStandings(sheets);
   }
 
   private failed(problems: string[]): StandingsImport {

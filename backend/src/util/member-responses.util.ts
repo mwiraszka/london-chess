@@ -18,6 +18,8 @@ export interface PublicMember {
   city: string;
   chessComUsername: string;
   lichessUsername: string;
+  fideId: string;
+  cfcId: string;
   isActive: boolean;
   modificationInfo: ModificationInfo;
   isAdmin: boolean;
@@ -27,8 +29,6 @@ export interface PublicMember {
 export interface AdminMember extends PublicMember {
   email: string;
   phoneNumber: string;
-  fideId: string;
-  cfcId: string;
   yearOfBirth: string;
   showYearOfBirth: boolean;
   dateJoined: IsoDate;
@@ -42,8 +42,6 @@ export interface PublicProfile extends PublicMember {
   yearOfBirth: string;
   showYearOfBirth: boolean;
   yearJoined: string;
-  fideId: string;
-  cfcId: string;
   externalRatings: ExternalRatings;
 }
 
@@ -89,6 +87,8 @@ export const PUBLIC_MEMBER_PROJECTION = {
   city: 1,
   chessComUsername: 1,
   lichessUsername: 1,
+  fideId: 1,
+  cfcId: 1,
   isActive: 1,
   modificationInfo: 1,
   'account.isAdmin': 1,
@@ -101,8 +101,6 @@ export const PUBLIC_PROFILE_PROJECTION = {
   yearOfBirth: 1,
   dateJoined: 1,
   preferences: 1,
-  fideId: 1,
-  cfcId: 1,
   externalRatings: 1,
 } as const;
 
@@ -143,6 +141,8 @@ export function toPublicMember(record: MemberRecord): PublicMember {
     city: record.city,
     chessComUsername: record.chessComUsername,
     lichessUsername: record.lichessUsername,
+    fideId: record.fideId ?? '',
+    cfcId: record.cfcId ?? '',
     isActive: record.isActive,
     modificationInfo: {
       createdBy: record.modificationInfo.createdBy,
@@ -169,8 +169,6 @@ export function toPublicProfile(
     yearOfBirth: showYearOfBirth ? record.yearOfBirth : '',
     showYearOfBirth,
     yearJoined: yearOf(record.dateJoined),
-    fideId: record.fideId ?? '',
-    cfcId: record.cfcId ?? '',
     externalRatings,
   };
 }
@@ -180,8 +178,6 @@ export function toAdminMember(record: MemberRecord): AdminMember {
     ...toPublicMember(record),
     email: record.email,
     phoneNumber: record.phoneNumber,
-    fideId: record.fideId ?? '',
-    cfcId: record.cfcId ?? '',
     yearOfBirth: record.yearOfBirth,
     showYearOfBirth: showsYearOfBirth(record),
     dateJoined: record.dateJoined,

@@ -70,16 +70,16 @@ export class RatingProgressionComponent {
 
   protected readonly status = computed(() => this.state()?.status ?? 'loading');
 
-  // A member who moved sections mid-tournament has a result in each, so only the
-  // section where they played the most rounds stands for that tournament
+  // A member with a result in more than one section, such as a championship's round robin
+  // and its final, is charted at the rating they started the tournament with: that of the
+  // first section they appear in, as the results list a tournament's sections in order
   private readonly ratedResults = computed(() => {
     const byTournament = new Map<number, MemberTournamentResult>();
     for (const result of this.state()?.results ?? []) {
       if (!result.tournament.isRated || result.rating === null) {
         continue;
       }
-      const kept = byTournament.get(result.tournament.number);
-      if (!kept || result.roundsPlayed > kept.roundsPlayed) {
+      if (!byTournament.has(result.tournament.number)) {
         byTournament.set(result.tournament.number, result);
       }
     }

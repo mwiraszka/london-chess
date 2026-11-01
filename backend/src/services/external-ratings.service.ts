@@ -109,8 +109,9 @@ export async function refreshExternalRatings(
     await Promise.all(
       RATING_PLATFORMS.map(async platform => {
         const handle = handleOf(record, platform);
-        if (handle) {
-          lookups[platform] = { ...(await lookUp(record, platform, handle)), handle };
+        const lookup = handle ? await lookUp(record, platform, handle) : null;
+        if (lookup) {
+          lookups[platform] = lookup;
         }
       }),
     );
@@ -137,17 +138,18 @@ function currentLookup(
   return handle && lookup?.handle === handle ? lookup : null;
 }
 
-// A site that cannot be reached leaves what it last gave for the same handle
+// A site that cannot be reached leaves what it last gave for the same handle, and a new
+// handle unlooked so that the next visit tries it again
 async function lookUp(
   record: MemberRecord,
   platform: RatingPlatform,
   handle: string,
-): Promise<LookupResult> {
+): Promise<PlatformLookup | null> {
   try {
-    return await LOOKUPS[platform](handle);
+    return { ...(await LOOKUPS[platform](handle)), handle };
   } catch (error) {
-    report(`Unable to look up the ${platform} ratings of ${handle}`, error);
-    return currentLookup(record, platform) ?? { ratings: null };
+    report(`Unable to look up the ${platform} ratings of ${handle}`, error, { platform });
+    return currentLookup(record, platform);
   }
 }
 
@@ -296,7 +298,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function report(message: string, error: unknown): void {
+function report(
+  message: string,
+  error: unknown,
+  tags: Record<string, string> = {},
+): void {
   console.error(`[LCC] ${message}: ${error}`);
-  Sentry.captureException(error);
+  Sentry.captureException(error, { tags, extra: { message } });
 }

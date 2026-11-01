@@ -253,6 +253,17 @@ describe('ImageFormComponent', () => {
       expect(lastDraft()).toEqual(expect.objectContaining({ album: 'Tournaments' }));
     });
 
+    it('should send no later draft once the form is submitted', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.album.setValue('Tournaments');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
+    });
+
     it('should pass the draft on at once when focus leaves a field', () => {
       component.form.controls.caption.setValue('Clocks ticking');
 
@@ -434,6 +445,20 @@ describe('ImageFormComponent', () => {
       expect(storeRequestSpy).toHaveBeenCalledWith(
         ImagesActions.updateImageRequested({ imageId: entity.image.id }),
         [ImagesActions.updateImageSucceeded, ImagesActions.updateImageFailed],
+      );
+    });
+
+    it('should say when an update moves the image to another album', async () => {
+      render(
+        { ...entity, formData: { ...entity.formData, album: 'Exhibitions' } },
+        null,
+        true,
+      );
+
+      await component.onSubmit();
+
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        `Update ${entity.image.filename} and move it to Exhibitions?`,
       );
     });
 

@@ -1,7 +1,9 @@
 import { Page, expect, test } from '../fixtures';
 import { ADMIN, PROFILE_MEMBER, RIVAL_MEMBER, UPCOMING } from '../seed';
+import { bodyRows } from '../tables';
 import { fieldError, fieldLabel, fillField, nextMonthOn } from './fields';
 import {
+  API,
   APP_API,
   RESPONSE_TIMEOUT,
   chooseAdminAction,
@@ -21,14 +23,95 @@ const STANDINGS_CSV = [
   `3,"${NEWCOMER}",unr.,H---,L1 (w),0.5`,
 ].join('\n');
 
-function standingsFile(content: string) {
-  return { name: 'Standings.csv', mimeType: 'text/csv', buffer: Buffer.from(content) };
+const PROFILE = `${PROFILE_MEMBER.lastName}, ${PROFILE_MEMBER.firstName}`;
+const RIVAL = `${RIVAL_MEMBER.lastName}, ${RIVAL_MEMBER.firstName}`;
+
+// Round 1 of the standings above, as a scoresheet transcribes it
+function roundOnePgn(result: '1-0' | '0-1'): string {
+  return [
+    '[Event "Autumn Rapid"]',
+    '[Round "1"]',
+    `[White "${PROFILE}"]`,
+    `[Black "${RIVAL}"]`,
+    `[Result "${result}"]`,
+    '[WhiteElo "1850"]',
+    '[BlackElo "1790"]',
+    '',
+    `1. e4 e5 2. Nf3 Nc6 ${result}`,
+  ].join('\n');
+}
+
+async function importFile(
+  page: Page,
+  name: string,
+  mimeType: string,
+  content: string,
+): Promise<void> {
+  await page
+    .locator('lcc-tournament-form ea-file-uploader input[type="file"]')
+    .setInputFiles({ name, mimeType, buffer: Buffer.from(content) });
 }
 
 async function importStandings(page: Page, content: string): Promise<void> {
-  await page
-    .locator('lcc-tournament-form ea-file-uploader input[type="file"]')
-    .setInputFiles(standingsFile(content));
+  await importFile(page, 'Standings.csv', 'text/csv', content);
+}
+
+async function importPgn(page: Page, content: string): Promise<void> {
+  await importFile(page, 'Round 1.pgn', 'application/x-chess-pgn', content);
+}
+
+// One round between the two members, sent straight to the API so the test starts on a
+// tournament with recorded results; its time control is one no seeded tournament has
+function roundOneTournament(name: string) {
+  const entry = (
+    rank: number,
+    entrant: string,
+    rating: number,
+    points: number,
+    color: 'white' | 'black',
+  ) => ({
+    rank,
+    name: entrant,
+    playerId: null,
+    rating,
+    provisionalGames: null,
+    score: points,
+    tiebreak: null,
+    rounds: [
+      {
+        round: 1,
+        outcome: 'game',
+        scores: [points],
+        points,
+        opponentRank: 3 - rank,
+        color,
+      },
+    ],
+  });
+  return {
+    name,
+    subtitle: '',
+    date: nextMonthOn(10),
+    endDate: null,
+    format: 'swiss',
+    timeControl: 'G45',
+    roundCount: null,
+    isRated: true,
+    articleId: null,
+    registrationOpens: null,
+    registrationCloses: null,
+    sections: [
+      {
+        name: '',
+        ratingBand: '',
+        roundCount: 1,
+        isDoubleRound: false,
+        entries: [entry(1, PROFILE, 1850, 1, 'white'), entry(2, RIVAL, 1790, 0, 'black')],
+      },
+    ],
+    games: null,
+    modificationInfo: {},
+  };
 }
 
 function waitForSave(page: Page, method: 'POST' | 'PUT' | 'DELETE') {
@@ -101,6 +184,58 @@ test.describe('managing tournaments', () => {
     );
   });
 
+  test('checks a PGN against the recorded results before adding its games', async ({
+    page,
+    request,
+  }) => {
+    const authorization = await logIn(page);
+    const created = await request.post(`${API}/tournaments`, {
+      headers: { authorization },
+      data: roundOneTournament(uniqueName('Autumn Rapid')),
+    });
+    expect(created.status()).toBe(201);
+    const { data: number } = await created.json();
+
+    await page.goto(`/tournament/edit/${number}`);
+    await importPgn(page, roundOnePgn('0-1'));
+
+    const problems = page.locator('.results__problems');
+    await expect(problems).toContainText('These games could not be added:');
+    await expect(problems).toContainText(
+      `the standings give ${PROFILE} 1 in round 1, but the game gives 0.`,
+    );
+
+    // A corrected file chosen under the same name takes the rejected one's place
+    await importPgn(page, roundOnePgn('1-0'));
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      'Replace Round 1.pgn with the file just chosen?',
+    );
+    await confirm(page, 'Replace');
+
+    await expect(problems).toHaveCount(0);
+    await expect(
+      page.getByText('1 new game will be added to the game archive.'),
+    ).toBeVisible();
+    const updated = waitForSave(page, 'PUT');
+    await page.getByRole('button', { name: 'Update tournament' }).click();
+    await expect(page.locator('lcc-basic-dialog')).toContainText(
+      'The games from the PGN will be added to the game archive.',
+    );
+    await confirm(page, 'Update');
+
+    expect((await updated).status()).toBe(200);
+    const standings = page.getByRole('table', { name: 'Standings' });
+    await expect(bodyRows(standings).first()).toContainText(PROFILE);
+    await expect(
+      standings.getByRole('link', { name: /^Won with white against/ }),
+    ).toHaveAttribute('href', /\/game-archives\/[0-9a-f]{24}$/);
+
+    const deleted = await request.delete(`${API}/tournaments/${number}`, {
+      headers: { authorization },
+    });
+    expect(deleted.status()).toBe(200);
+  });
+
   test('names every problem in standings it cannot import', async ({ page }) => {
     await logIn(page);
     await page.goto('/tournament/add');
@@ -126,7 +261,7 @@ test.describe('managing tournaments', () => {
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue(name);
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
 
     await expect(page.getByLabel(fieldLabel('Name'))).toHaveValue('');
   });

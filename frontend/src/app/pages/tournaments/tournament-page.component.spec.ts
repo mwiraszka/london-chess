@@ -7,7 +7,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ActivatedRoute,
   ParamMap,
-  Router,
   RouterLink,
   convertToParamMap,
   provideRouter,
@@ -44,7 +43,6 @@ import { CrosstableRow, TournamentPageComponent } from './tournament-page.compon
 
 describe('TournamentPageComponent', () => {
   let fixture: ComponentFixture<TournamentPageComponent>;
-  let router: Router;
   let store: MockStore;
 
   let dispatchSpy: MockInstance;
@@ -112,7 +110,6 @@ describe('TournamentPageComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TournamentPageComponent);
-    router = TestBed.inject(Router);
     store = TestBed.inject(MockStore);
     store.setState(stateWith([...MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT]));
 
@@ -214,21 +211,6 @@ describe('TournamentPageComponent', () => {
       expect(gameLinks[0].injector.get(RouterLink).urlTree?.toString()).toBe(
         '/game-archives/64b7f0c2a1d3e4f5a6b7c8d2',
       );
-    });
-
-    it('should list the games in the archive, each linked to its game', () => {
-      const table = query(fixture.debugElement, '.games');
-      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-
-      query(table, '.ea-data-table__body .ea-data-table__row').triggerEventHandler(
-        'click',
-      );
-
-      expect(tableRows(table)).toEqual([['1', 'John Doe', '1-0', 'Jane Smith']]);
-      expect(navigateSpy).toHaveBeenCalledWith([
-        '/game-archives',
-        '64b7f0c2a1d3e4f5a6b7c8d2',
-      ]);
     });
 
     it('should offer the article on the site and the way back', () => {
@@ -337,10 +319,6 @@ describe('TournamentPageComponent', () => {
       expect(headers(tables[0])).toEqual(['#', 'Player', 'Rating', 'Total']);
       expect(tableRows(tables[1])).toEqual([['1', 'Bloggs, Joe', '1320', '4']]);
     });
-
-    it("should list only the sections' own games", () => {
-      expect(queryAll(fixture.debugElement, '.games')).toHaveLength(1);
-    });
   });
 
   describe('when neither the tournament nor its summary is in the store', () => {
@@ -385,16 +363,14 @@ describe('TournamentPageComponent', () => {
       expect(links()).toEqual([{ text: 'Back to tournaments', path: '/tournaments' }]);
     });
 
-    it('should hold a place for every player and archived game', () => {
+    it('should hold a place for every player', () => {
       const tables = queryAll(fixture.debugElement, '.crosstable');
-      const games = queryAll(fixture.debugElement, '.games');
 
       expect(query(fixture.debugElement, '.sections').attributes['aria-busy']).toBe(
         'true',
       );
       expect(headers(tables[0])).toEqual(['#', 'Player', 'Rating', 'Total']);
       expect(tables.map(table => bodyRows(table).length)).toEqual([2, 1]);
-      expect(games.map(table => bodyRows(table).length)).toEqual([1]);
     });
   });
 

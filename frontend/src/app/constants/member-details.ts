@@ -1,3 +1,5 @@
+import { OptionalDetail } from '@app/models';
+
 export const MIN_YEAR_OF_BIRTH = 1900;
 
 // Must match UNRATED in the backend's rating util
@@ -27,3 +29,24 @@ export const MEMBER_DETAIL_RULES = {
     message: 'CFC ID must be a number of up to 7 digits',
   },
 } as const;
+
+// The details members may remove themselves, named as a confirmation names them
+export const OPTIONAL_DETAILS: readonly { field: OptionalDetail; label: string }[] = [
+  { field: 'phoneNumber', label: 'phone number' },
+  { field: 'lichessUsername', label: 'Lichess username' },
+  { field: 'chessComUsername', label: 'Chess.com username' },
+  { field: 'fideId', label: 'FIDE ID' },
+  { field: 'cfcId', label: 'CFC ID' },
+];
+
+// The members table columns only admins see, which safe mode hides with every other detail
+export const ADMIN_MEMBER_COLUMNS: readonly string[] = [
+  'firstName',
+  'lastName',
+  'lastUpdated',
+  'born',
+  'email',
+  'phoneNumber',
+  'dateJoined',
+  'accountOpened',
+];

@@ -270,6 +270,7 @@ describe('AccountPageComponent', () => {
 
       await component['onRequestChanges']();
 
+      expect(dialogOpen).not.toHaveBeenCalled();
       expect(api.post).toHaveBeenCalledWith('/users/me/member/change-request', {
         firstName: 'Jane',
         lastName: 'Smith',
@@ -287,8 +288,9 @@ describe('AccountPageComponent', () => {
       );
     });
 
-    it('should keep removed details as saved, needing no admin', async () => {
+    it('should ask before removing details, then keep them removed, needing no admin', async () => {
       await render();
+      dialogOpen.mockReturnValue(closedDialogRef('confirm'));
       api.post.mockResolvedValue({
         removed: ['lichessUsername', 'fideId'],
         requested: [],
@@ -297,6 +299,12 @@ describe('AccountPageComponent', () => {
 
       await component['onRequestChanges']();
 
+      expect(lastOpenedDialog(dialogOpen)).toEqual({
+        title: 'Confirm',
+        body: 'Remove your Lichess username and FIDE ID? This happens at once, and adding them back later needs an admin.',
+        confirmButtonText: 'Remove',
+        confirmButtonType: 'warning',
+      });
       expect(component['hasDetailChanges']()).toBe(false);
       expect(toast.show).toHaveBeenCalledWith(
         'The details you removed are gone from your member record.',
@@ -306,11 +314,15 @@ describe('AccountPageComponent', () => {
 
     it('should keep removed details as saved while the other changes wait for an admin', async () => {
       await render();
+      dialogOpen.mockReturnValue(closedDialogRef('confirm'));
       api.post.mockResolvedValue({ removed: ['lichessUsername'], requested: ['city'] });
       component['detailsForm'].patchValue({ lichessUsername: '', city: 'Komoka' });
 
       await component['onRequestChanges']();
 
+      expect(lastOpenedDialog(dialogOpen).body).toBe(
+        'Remove your Lichess username? This happens at once, and adding it back later needs an admin.',
+      );
       expect(component['savedDetails']()).toMatchObject({
         lichessUsername: '',
         city: 'London',
@@ -319,6 +331,17 @@ describe('AccountPageComponent', () => {
         'The details you removed are gone, and an admin will email you once your other changes are made.',
         { title: 'Request sent', variant: 'success' },
       );
+    });
+
+    it('should send nothing when the removal is declined', async () => {
+      await render();
+      dialogOpen.mockReturnValue(closedDialogRef('cancel'));
+      component['detailsForm'].patchValue({ phoneNumber: '' });
+
+      await component['onRequestChanges']();
+
+      expect(api.post).not.toHaveBeenCalled();
+      expect(component['hasDetailChanges']()).toBe(true);
     });
 
     it('should explain a request the server refuses', async () => {
@@ -556,6 +579,52 @@ describe('AccountPageComponent', () => {
     });
   });
 
+  describe('counting unsaved changes', () => {
+    it('should count nothing on opening the page', async () => {
+      await render();
+
+      expect(component.hasUnsavedChanges()).toBe(false);
+    });
+
+    it('should count a new photo', async () => {
+      await render();
+
+      component['onFileSelected'](new File(['photo'], 'me.png', { type: 'image/png' }));
+
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should count edited details', async () => {
+      await render();
+
+      component['detailsForm'].patchValue({ city: 'Komoka' });
+
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should count a new email address, typed or waiting for its code', async () => {
+      await render();
+      component['newEmail'].setValue('jane@new.example.com');
+      const typed = component.hasUnsavedChanges();
+      component['newEmail'].setValue('jane@example.com');
+
+      component['emailStep'].set('verify');
+
+      expect(typed).toBe(true);
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('should count a password being typed', async () => {
+      await render();
+
+      component['passwordForm'].controls.passwords.controls.newPassword.setValue(
+        'N3w-pass',
+      );
+
+      expect(component.hasUnsavedChanges()).toBe(true);
+    });
+  });
+
   describe('deleting the account', () => {
     it('should ask first, then delete it, log out and go home', async () => {
       const navigate = vi
@@ -568,8 +637,9 @@ describe('AccountPageComponent', () => {
       await dialog.confirmAction?.();
 
       expect(dialog).toMatchObject({
-        title: 'Delete account',
-        confirmButtonText: 'Confirm',
+        title: 'Confirm',
+        body: 'Delete your account? This cannot be undone.',
+        confirmButtonText: 'Delete',
         confirmButtonType: 'warning',
       });
       expect(clerk.expectSessionEnd).toHaveBeenCalled();

@@ -8,6 +8,11 @@ $side-padding: 8px;
 
 @include filters-search-switch;
 
+// Its search keeps a label, so the button beside it lines up with the field below that
+.filters {
+  align-items: end;
+}
+
 // The paginator's own top line would double the edge of the grid above it
 .paginator ea-paginator ::ng-deep .ea-paginator {
   border-top: none;

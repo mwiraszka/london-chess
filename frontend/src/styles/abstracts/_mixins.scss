@@ -110,20 +110,16 @@ $breakpoints: (
   min-height: calc(2.5 * var(--font-size-md) + 2 * var(--border-width-thin));
 }
 
-// A search box, a switch and a clear button above a table, centred and wrapping as
-// the width allows
+// A search box, and a switch where the list has one, above a list: centred, wrapping as
+// the width allows, and set as far from the list as from the header above
 @mixin filters-search-switch {
   .filters {
     display: flex;
     flex-wrap: wrap;
-    align-items: end;
+    align-items: center;
     justify-content: center;
-    gap: 12px;
-    margin: 12px 0;
-
-    @include respond-to('lt-md') {
-      gap: 4px 12px;
-    }
+    gap: 8px 12px;
+    margin: 4px 0;
   }
 
   // Wide enough for its whole placeholder
@@ -133,10 +129,6 @@ $breakpoints: (
 
   :host-context(:root[data-theme='dark']) .filters__search {
     --color-bg-base: var(--lcc-input);
-  }
-
-  .filters__switch {
-    @include switch-beside-field;
   }
 }
 

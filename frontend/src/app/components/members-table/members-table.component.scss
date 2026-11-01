@@ -12,6 +12,14 @@
   white-space: nowrap;
 }
 
+// On a phone the names take only the width of the page shown, rather than the widest
+// name of every member the sizing rows hold
+@include respond-to('lt-sm') {
+  :host ::ng-deep .ea-data-table__sizing .members__name {
+    display: none;
+  }
+}
+
 // As tall as the line of text and set on its top, so a row is no taller for it
 .members__avatar {
   vertical-align: top;
@@ -42,9 +50,10 @@
   }
 }
 
-// Names read as plain text, so a profile link shows only through the pointer and
+// Names and accounts read as plain text, so a link shows only through the pointer and
 // the underline it brings up
-.members__profile-link {
+.members__profile-link,
+.members__account-link {
   @include lcc-link-underline;
 
   color: inherit;

@@ -109,6 +109,8 @@ export function getMembers(scope: Scope) {
       // Check if we're sorting by rating or peakRating - use aggregation for proper numeric sorting
       const sortField = Object.keys(query.sort)[0];
       const isRatingSort = ['rating', 'peakRating'].includes(sortField);
+      // IDs vary in length, so they only order correctly compared as numbers
+      const isIdSort = ['fideId', 'cfcId'].includes(sortField);
 
       let records: MemberRecord[];
       let filteredCount: number;
@@ -180,6 +182,9 @@ export function getMembers(scope: Scope) {
         const find = MemberModel.find(query.filter, projection)
           .sort(query.sort)
           .skip(query.skip);
+        if (isIdSort) {
+          find.collation({ locale: 'en', numericOrdering: true });
+        }
 
         [records, filteredCount] = await Promise.all([
           (query.limit !== undefined ? find.limit(query.limit) : find).lean<

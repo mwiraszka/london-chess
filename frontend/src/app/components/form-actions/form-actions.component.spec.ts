@@ -14,9 +14,10 @@ describe('FormActionsComponent', () => {
   let cancelSpy: MockInstance;
   let restoreSpy: MockInstance;
 
-  const render = (hasUnsavedChanges = true, submitDisabled = false) => {
+  const render = (hasUnsavedChanges = true, submitDisabled = false, isNew = false) => {
     fixture.componentRef.setInput('entity', 'event');
     fixture.componentRef.setInput('hasUnsavedChanges', hasUnsavedChanges);
+    fixture.componentRef.setInput('isNew', isNew);
     fixture.componentRef.setInput('submitDisabled', submitDisabled);
     fixture.componentRef.setInput('submitLabel', 'Update event');
     fixture.detectChanges();
@@ -75,7 +76,7 @@ describe('FormActionsComponent', () => {
     expect(cancelSpy).toHaveBeenCalledOnce();
   });
 
-  it('should revert once the record named in the dialog is confirmed', async () => {
+  it('should revert a saved record once the dialog is confirmed', async () => {
     render();
     dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
 
@@ -85,8 +86,27 @@ describe('FormActionsComponent', () => {
       inputs: {
         dialog: {
           title: 'Confirm',
-          body: 'Revert to the original event data? All changes will be lost.',
+          body: 'Revert to the saved event? Your changes will be lost.',
           confirmButtonText: 'Revert',
+          confirmButtonType: 'warning',
+        },
+      },
+    });
+    expect(restoreSpy).toHaveBeenCalledOnce();
+  });
+
+  it('should offer to clear a record that was never saved', async () => {
+    render(true, false, true);
+    dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+    await component.onRevert();
+
+    expect(dialogOpenSpy).toHaveBeenCalledExactlyOnceWith(BasicDialogComponent, {
+      inputs: {
+        dialog: {
+          title: 'Confirm',
+          body: 'Clear this new event? Everything entered will be lost.',
+          confirmButtonText: 'Clear',
           confirmButtonType: 'warning',
         },
       },

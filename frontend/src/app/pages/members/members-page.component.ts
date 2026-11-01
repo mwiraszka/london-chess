@@ -72,7 +72,7 @@ import { bindSearchControl, isLccError, widestRows } from '@app/utils';
       <div class="filters">
         <ea-input
           class="filters__search"
-          label="Search"
+          ariaLabel="Search members"
           placeholder="Search by name, city or username"
           [clearable]="true"
           [formControl]="searchControl"

@@ -161,6 +161,7 @@
       <lcc-form-actions
         entity="member"
         [hasUnsavedChanges]="hasUnsavedChanges()"
+        [isNew]="!originalMember()"
         [submitDisabled]="form.invalid || !hasUnsavedChanges()"
         [submitLabel]="originalMember() ? 'Update member' : 'Add member'"
         (cancel)="onCancel()"

@@ -127,8 +127,10 @@ export async function widestMemberIds(
     longest(members, shownRating('$rating')),
     longest(members, shownRating('$peakRating')),
     longest(members, '$city'),
-    longest(members, '$chessComUsername'),
+    longest(members, '$fideId'),
+    longest(members, '$cfcId'),
     longest(members, '$lichessUsername'),
+    longest(members, '$chessComUsername'),
   ]);
   return unique(ids.flat());
 }

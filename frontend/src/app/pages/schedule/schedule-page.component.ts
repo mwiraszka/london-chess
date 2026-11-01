@@ -58,7 +58,7 @@ import { bindSearchControl, widestRows } from '@app/utils';
       <div class="filters">
         <ea-input
           class="filters__search"
-          label="Search"
+          ariaLabel="Search events"
           placeholder="Search by event type or name"
           [clearable]="true"
           [formControl]="searchControl"

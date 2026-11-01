@@ -21,6 +21,7 @@ import {
   archiveGames,
   classifyGames,
   withGameSections,
+  withNamedGameSections,
 } from '../services/tournament-games.service';
 import { takeNextTournamentNumber } from '../services/tournament-numbers.service';
 import {
@@ -42,6 +43,7 @@ import { creditEditor } from '../util/modification-info.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
 import {
   gamesError,
+  isDay,
   sectionsError,
   validateTournamentInput,
 } from '../util/tournament-input.util';
@@ -247,15 +249,21 @@ export async function updateTournament(
 
     const editor = await findEditor(req.user.id);
     const games = input.games ?? [];
+    // The year the tournament is saved under, whose games its page shows
+    const year = Number(input.date.slice(0, 4));
     const stored = input.sections
       ? await toStoredSections(input.sections, record.sections, input.format)
       : null;
-    const sections = stored && games.length ? withGameSections(stored, games) : stored;
+    const named =
+      stored && record.gameArchiveTournament
+        ? await withNamedGameSections(stored, record.gameArchiveTournament, year)
+        : stored;
+    const sections = named && games.length ? withGameSections(named, games) : named;
     // A tournament first given games through the site files them under its own name
     const gameArchiveTournament = record.gameArchiveTournament ?? input.name.trim();
     if (games.length) {
       // Games go in first, so saving again after a failure adds none of them twice
-      await archiveGames(gameArchiveTournament, games, creditEditor(editor, null));
+      await archiveGames(gameArchiveTournament, year, games, creditEditor(editor, null));
     }
     await TournamentModel.updateOne(
       { number },
@@ -344,9 +352,16 @@ export async function checkTournamentImport(
       return;
     }
 
+    // The day the form would save the tournament under, whose year its games are filed in
+    const date: unknown = req.body?.date;
     const sections: unknown = req.body?.sections;
     const games: unknown = req.body?.games;
-    const problem = sectionsError(sections) ?? gamesError(games);
+    const problem =
+      (typeof date === 'string' && isDay(date)
+        ? null
+        : 'date must be a day written as YYYY-MM-DD') ??
+      sectionsError(sections) ??
+      gamesError(games);
     if (problem) {
       res.status(400).json({
         message: `Unable to check the import because ${withoutFullStop(problem)}.`,
@@ -362,6 +377,7 @@ export async function checkTournamentImport(
         removedSections: removed,
         games: await classifyGames(
           record.gameArchiveTournament ?? record.name,
+          Number((date as string).slice(0, 4)),
           games as GameInput[],
         ),
       },

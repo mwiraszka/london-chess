@@ -140,6 +140,21 @@
 </ng-template>
 
 <ng-template
+  #accountCell
+  let-column="column"
+  let-value="value">
+  @if (accountUrl(column.key, value); as url) {
+    <a
+      class="members__account-link"
+      rel="noopener noreferrer"
+      target="_blank"
+      [href]="url"
+      [innerHTML]="value | highlight: options().search">
+    </a>
+  }
+</ng-template>
+
+<ng-template
   #dateCell
   let-value="value">
   @if (value) {

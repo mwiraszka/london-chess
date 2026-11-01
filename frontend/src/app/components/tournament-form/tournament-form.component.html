@@ -189,7 +189,7 @@
         <ea-file-uploader
           accept=".xlsx,.csv,.pgn,.txt"
           aria-label="Import standings"
-          hint="An .xlsx workbook with one sheet per section, or one .csv file per section, as SwissSys exports them, or a PGN file (.pgn or .txt) of games to add to the recorded results."
+          hint="An .xlsx workbook with one sheet per section, or one .csv file per section, as SwissSys exports them, or a PGN file (.pgn or .txt) of games, checked against the recorded results and added to the game archive."
           [maxSize]="5242880"
           [multiple]="true"
           [value]="standingsFiles()"
@@ -257,7 +257,13 @@
           <ea-alert
             class="results__problems"
             variant="error">
-            <p>These standings could not be imported:</p>
+            <p>
+              {{
+                isPgnImport()
+                  ? 'These games could not be added:'
+                  : 'These standings could not be imported:'
+              }}
+            </p>
             <ul>
               @for (problem of listedProblems(); track $index) {
                 <li>{{ problem }}</li>
@@ -324,6 +330,7 @@
       <lcc-form-actions
         entity="tournament"
         [hasUnsavedChanges]="hasUnsavedChanges()"
+        [isNew]="!originalTournament()"
         [submitDisabled]="
           form.invalid || !hasUnsavedChanges() || importing() || checking()
         "

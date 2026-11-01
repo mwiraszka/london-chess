@@ -118,7 +118,7 @@ test.describe('managing articles', () => {
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
   });
 
   test('keeps an article draft, with its errors, through a reload', async ({ page }) => {
@@ -136,7 +136,7 @@ test.describe('managing articles', () => {
     await expect(page.getByText('Choose a banner image')).toBeVisible();
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
 
     await expect(page.getByLabel(fieldLabel('Content'))).toHaveValue('');
     await expect(page.locator('lcc-markdown-renderer')).toHaveCount(0);
@@ -160,6 +160,6 @@ test.describe('managing articles', () => {
     );
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
   });
 });

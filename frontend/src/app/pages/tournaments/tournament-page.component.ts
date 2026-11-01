@@ -27,7 +27,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
@@ -47,7 +47,6 @@ import {
   Tournament,
   TournamentEntry,
   TournamentFormat,
-  TournamentGame,
   TournamentSection,
   TournamentSectionSummary,
   TournamentSummary,
@@ -68,7 +67,6 @@ import {
   formatDateRange,
   formatScore,
   parseSubtitlePeople,
-  playerName,
   playerNameLastFirst,
   registrationStatus,
   roundResultDescription,
@@ -95,15 +93,6 @@ export interface CrosstableRow {
   [round: `round-${number}`]: RoundCell | null;
 }
 
-export interface GameRow {
-  id: string;
-  game: TournamentGame;
-  round: string;
-  white: string;
-  result: string;
-  black: string;
-}
-
 export interface SectionHeading {
   text: string;
   extra: string;
@@ -116,9 +105,7 @@ export interface SectionView {
   roundCount: number;
   // Empty while the tournament loads, its counts holding their places
   rows: CrosstableRow[];
-  games: GameRow[];
   entryCount: number;
-  gameCount: number;
 }
 
 const roundKey = (round: number): `round-${number}` => `round-${round}`;
@@ -176,7 +163,6 @@ function toSectionView(
     ),
     roundCount,
     entryCount: section.entries.length,
-    gameCount: section.games.length,
     rows: section.entries.map((entry, entryIndex) => {
       const row: CrosstableRow = {
         id: `${entryIndex}-${entry.player.id}`,
@@ -202,14 +188,6 @@ function toSectionView(
       }
       return row;
     }),
-    games: section.games.map(game => ({
-      id: game.id,
-      game,
-      round: game.round,
-      white: playerName(game.white),
-      result: game.result,
-      black: playerName(game.black),
-    })),
   };
 }
 
@@ -224,9 +202,7 @@ function toLoadingSectionView(
     kind: sectionKind(summary.format, section.hasRounds),
     roundCount: section.roundCount,
     entryCount: section.entryCount,
-    gameCount: section.gameCount,
     rows: [],
-    games: [],
   };
 }
 
@@ -259,7 +235,6 @@ export class TournamentPageComponent implements OnInit {
   private readonly dialogService = inject(DialogService);
   private readonly metaAndTitleService = inject(MetaAndTitleService);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly store = inject(Store);
   private readonly storeRequests = inject(StoreRequestService);
 
@@ -269,9 +244,6 @@ export class TournamentPageComponent implements OnInit {
   private readonly roundCell = viewChild<CellTemplate<CrosstableRow>>('roundCell');
   private readonly scoreCell = viewChild<CellTemplate<CrosstableRow>>('scoreCell');
   private readonly noteCell = viewChild<CellTemplate<CrosstableRow>>('noteCell');
-  private readonly whiteCell = viewChild<CellTemplate<GameRow>>('whiteCell');
-  private readonly blackCell = viewChild<CellTemplate<GameRow>>('blackCell');
-  private readonly resultCell = viewChild<CellTemplate<GameRow>>('resultCell');
 
   protected readonly pageIcon = AwardIconComponent;
   protected readonly formatLabels = TOURNAMENT_FORMAT_LABELS;
@@ -415,30 +387,6 @@ export class TournamentPageComponent implements OnInit {
       ),
   );
 
-  protected readonly gameColumns = computed<DataTableColumn<GameRow>[]>(() => {
-    const white = this.whiteCell();
-    const black = this.blackCell();
-    const result = this.resultCell();
-    if (!white || !black || !result) {
-      return [];
-    }
-    return [
-      { key: 'round', label: 'Round', align: 'right', width: '16%' },
-      { key: 'white', label: 'White player', width: '34%', cellTemplate: white },
-      {
-        key: 'result',
-        label: 'Result',
-        align: 'center',
-        width: '16%',
-        cellTemplate: result,
-      },
-      { key: 'black', label: 'Black player', width: '34%', cellTemplate: black },
-    ];
-  });
-
-  protected readonly gameHref = ({ game }: GameRow): string =>
-    `/game-archives/${game.id}`;
-
   constructor() {
     inject(AdminActionsService).register(() =>
       this.viewModel()?.tournament ? [this.editAction(), this.deleteAction] : [],
@@ -468,10 +416,6 @@ export class TournamentPageComponent implements OnInit {
             : 'A tournament from the London Chess Club archives.',
         );
       });
-  }
-
-  public onOpenGame({ game }: GameRow): void {
-    this.router.navigate(['/game-archives', game.id]);
   }
 
   public onLogIn(): void {

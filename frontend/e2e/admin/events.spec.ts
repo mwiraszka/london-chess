@@ -53,6 +53,7 @@ test.describe('managing events', () => {
     await confirm(page, 'Add');
 
     expect((await added).status()).toBe(201);
+    await expect(page).toHaveURL(/\/schedule$/);
     const listed = await findInList(page, title);
     await expect(listed).toBeVisible();
 
@@ -73,6 +74,7 @@ test.describe('managing events', () => {
     await confirm(page, 'Update');
 
     expect((await updated).status()).toBe(200);
+    await expect(page).toHaveURL(/\/schedule$/);
     const edited = await findInList(page, title);
     await expect(page.locator('lcc-events-table')).toContainText('Rook and pawn endings');
 
@@ -100,7 +102,7 @@ test.describe('managing events', () => {
 
     await articles.click();
     await expect(page.locator('lcc-basic-dialog')).toContainText(
-      'Any unsaved changes to the event will be lost.',
+      'Your changes to the event are kept as a draft until you save or revert them.',
     );
     await confirm(page, 'Cancel');
 

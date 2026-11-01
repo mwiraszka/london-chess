@@ -14,9 +14,11 @@ import {
   archiveGames,
   classifyGames,
   withGameSections,
+  withNamedGameSections,
 } from './tournament-games.service';
 
 const TOURNAMENT = 'Club Championship';
+const YEAR = 2026;
 
 const EDIT: ModificationInfo = {
   dateCreated: '2026-10-05T12:00:00.000Z',
@@ -114,17 +116,18 @@ describe('tournament games', () => {
       await archive(game(anna, boris));
       await archive(game(anna, clara, { round: '2' }));
 
-      const changes = await classifyGames(TOURNAMENT, [
+      const changes = await classifyGames(TOURNAMENT, YEAR, [
         game(anna, boris, { moves: '1. e4   e5\n2. Nf3 1-0' }),
         game(anna, clara, { round: '2', result: '1/2-1/2' }),
         game(boris, clara, { round: '3' }),
+        game(clara, anna, { round: '2' }),
       ]);
 
-      expect(changes).toEqual(['unchanged', 'changed', 'new']);
+      expect(changes).toEqual(['unchanged', 'changed', 'new', 'changed']);
     });
 
     it('should not look up the archive for no games', async () => {
-      const changes = await classifyGames(TOURNAMENT, []);
+      const changes = await classifyGames(TOURNAMENT, YEAR, []);
 
       expect(changes).toEqual([]);
     });
@@ -144,9 +147,40 @@ describe('tournament games', () => {
     });
   });
 
+  describe('withNamedGameSections', () => {
+    it("should add the archive's games filed under a section's name that year", async () => {
+      await archive(game(anna, boris, { section: 'A Match' }));
+      await GameModel.create({
+        ...game(anna, clara, { section: 'B Match' }),
+        tournament: TOURNAMENT,
+        location: 'London',
+        year: 2025,
+        opening: '',
+        annotator: '',
+        modificationInfo: MODIFICATION_INFO,
+      });
+
+      const result = await withNamedGameSections(
+        [
+          section([anna], ['A1']),
+          { ...section([anna], []), name: 'A MATCH' },
+          { ...section([clara], []), name: 'B Match' },
+        ],
+        TOURNAMENT,
+        YEAR,
+      );
+
+      expect(result.map(({ gameArchiveSections }) => gameArchiveSections)).toEqual([
+        ['A1'],
+        ['A Match'],
+        [],
+      ]);
+    });
+  });
+
   describe('archiveGames', () => {
     it('should add each new game once and count it for both players', async () => {
-      await archiveGames(TOURNAMENT, [game(anna, boris), game(anna, boris)], EDIT);
+      await archiveGames(TOURNAMENT, YEAR, [game(anna, boris), game(anna, boris)], EDIT);
 
       const games = await GameModel.find({ tournament: TOURNAMENT }).lean<GameRecord[]>();
       expect(games).toHaveLength(1);
@@ -168,7 +202,7 @@ describe('tournament games', () => {
     it('should rewrite a changed game, keeping who first archived it', async () => {
       await archive(game(anna, boris));
 
-      await archiveGames(TOURNAMENT, [game(anna, boris, { result: '0-1' })], EDIT);
+      await archiveGames(TOURNAMENT, YEAR, [game(anna, boris, { result: '0-1' })], EDIT);
 
       const [stored] = await GameModel.find({ tournament: TOURNAMENT }).lean<
         GameRecord[]
@@ -183,10 +217,44 @@ describe('tournament games', () => {
       expect(await gameCount(anna)).toBe(3);
     });
 
+    it('should keep a game in its place when a correction gives it the other colours', async () => {
+      await archive(game(anna, boris));
+
+      await archiveGames(
+        TOURNAMENT,
+        YEAR,
+        [game(boris, anna, { result: '0-1', whiteElo: 1750, blackElo: 1800 })],
+        EDIT,
+      );
+
+      const games = await GameModel.find({ tournament: TOURNAMENT }).lean<GameRecord[]>();
+      expect(games).toHaveLength(1);
+      expect(games[0]).toMatchObject({
+        whitePlayerId: boris,
+        blackPlayerId: anna,
+        result: '0-1',
+      });
+      expect(await gameCount(anna)).toBe(3);
+    });
+
+    it("should file a game under the tournament's year, whatever its date", async () => {
+      await archiveGames(
+        TOURNAMENT,
+        2025,
+        [game(anna, boris, { date: '2026-01-15' })],
+        EDIT,
+      );
+
+      const [stored] = await GameModel.find({ tournament: TOURNAMENT }).lean<
+        GameRecord[]
+      >();
+      expect(stored).toMatchObject({ year: 2025, date: '2026-01-15' });
+    });
+
     it('should leave untouched a game the archive already holds as it is', async () => {
       await archive(game(anna, boris));
 
-      await archiveGames(TOURNAMENT, [game(anna, boris)], EDIT);
+      await archiveGames(TOURNAMENT, YEAR, [game(anna, boris)], EDIT);
 
       const [stored] = await GameModel.find({ tournament: TOURNAMENT }).lean<
         GameRecord[]

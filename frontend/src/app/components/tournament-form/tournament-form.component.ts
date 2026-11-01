@@ -49,6 +49,7 @@ import {
   TOURNAMENT_FORMAT_OPTIONS,
 } from '@app/constants/tournaments';
 import {
+  BasicDialogResult,
   Dialog,
   GameInput,
   ImportChanges,
@@ -68,6 +69,7 @@ import {
 } from '@app/services';
 import { TournamentsActions } from '@app/store/tournaments';
 import {
+  draftDebounce,
   formatScore,
   fromClubDateTime,
   fromDayString,
@@ -86,6 +88,8 @@ import {
   textValidator,
   timeControlValidator,
 } from '@app/validators';
+
+const PGN_FILE = /\.(pgn|txt)$/i;
 
 @Component({
   selector: 'lcc-tournament-form',
@@ -113,6 +117,7 @@ import {
 })
 export class TournamentFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly saved = new Subject<void>();
   private readonly dialogService = inject(DialogService);
   private readonly standingsFileService = inject(StandingsFileService);
   private readonly storeRequests = inject(StoreRequestService);
@@ -188,6 +193,10 @@ export class TournamentFormComponent implements OnInit {
       changes.games.every(change => change === 'unchanged')
     );
   });
+
+  protected readonly isPgnImport = computed(() =>
+    this.standingsFiles().some(file => PGN_FILE.test(file.name)),
+  );
 
   protected readonly listedProblems = computed(() =>
     this.importProblems().slice(0, MAX_LISTED_IMPORT_PROBLEMS),
@@ -324,7 +333,7 @@ export class TournamentFormComponent implements OnInit {
       );
 
     merge(this.form.valueChanges, this.sectionEdits)
-      .pipe(debounceTime(FORM_CHANGE_DEBOUNCE), takeUntilDestroyed(this.destroyRef))
+      .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitChange());
     // A renamed section or rating band changes what saving would do, so it is checked again
     this.sectionEdits
@@ -347,12 +356,20 @@ export class TournamentFormComponent implements OnInit {
       this.onClearImport();
       return;
     }
-    this.standingsFiles.set(files);
+    // A file chosen under the name of one already listed, such as a corrected export, takes
+    // its place once confirmed
+    const replaced = this.namesakesOf(files);
+    if (replaced.length && !(await this.confirmReplacing(replaced))) {
+      this.standingsFiles.set([...this.standingsFiles()]);
+      return;
+    }
+    const chosen = files.filter(file => !replaced.includes(file));
+    this.standingsFiles.set(chosen);
     const attempt = ++this.importAttempt;
 
     this.importing.set(true);
     const { sections, games, problems } = await this.standingsFileService.importStandings(
-      files,
+      chosen,
       this.originalTournament(),
     );
     // A later choice of files replaces this one
@@ -364,9 +381,8 @@ export class TournamentFormComponent implements OnInit {
     if (problems.length) {
       return;
     }
-    const fromPgn = files.some(file => /\.(pgn|txt)$/i.test(file.name));
-    this.pgnGames.set(fromPgn ? games : []);
-    this.importedGames.set(fromPgn ? games : null);
+    this.pgnGames.set(this.isPgnImport() ? games : []);
+    this.importedGames.set(this.isPgnImport() ? games : null);
 
     const known = [
       ...(this.importedSections() ?? []),
@@ -429,13 +445,14 @@ export class TournamentFormComponent implements OnInit {
     }
 
     // The draft reaches the store after a pause in typing, and saving reads it from there
+    this.saved.next();
     this.emitChange();
 
     const originalTournament = this.originalTournament();
     const dialog: Dialog = {
       title: 'Confirm',
       body: originalTournament
-        ? `Update ${originalTournament.name}?${this.importedGames() ? ' The results and games from the PGN will be added to those already recorded.' : this.importedSections() ? ' The imported results will replace the recorded ones.' : ''}`
+        ? `Update ${originalTournament.name}?${this.importedGames() ? ' The games from the PGN will be added to the game archive.' : this.importedSections() ? ' The imported results will replace the recorded ones.' : ''}`
         : `Add ${this.form.controls.name.value} to the tournaments?`,
       confirmButtonText: originalTournament ? 'Update' : 'Add',
       confirmAction: () => this.save(),
@@ -460,6 +477,28 @@ export class TournamentFormComponent implements OnInit {
           TournamentsActions.addTournamentSucceeded,
           TournamentsActions.addTournamentFailed,
         ]);
+  }
+
+  private namesakesOf(files: readonly File[]): File[] {
+    const listed = this.standingsFiles();
+    const added = files.filter(file => !listed.includes(file));
+    return listed.filter(file => added.some(({ name }) => name === file.name));
+  }
+
+  private async confirmReplacing(replaced: File[]): Promise<boolean> {
+    const names = new Intl.ListFormat('en').format(replaced.map(({ name }) => name));
+    const dialog: Dialog = {
+      title: 'Confirm',
+      body: `Replace ${names} with the ${replaced.length === 1 ? 'file' : 'files'} just chosen?`,
+      confirmButtonText: 'Replace',
+    };
+    const result = await this.dialogService.open<BasicDialogResult>(
+      BasicDialogComponent,
+      {
+        inputs: { dialog },
+      },
+    ).result;
+    return result === 'confirm';
   }
 
   // Tells which names the archive already knows, so a misspelling shows before it is saved
@@ -501,6 +540,13 @@ export class TournamentFormComponent implements OnInit {
     this.pgnGames.set([]);
   }
 
+  // The day saving would give the tournament; a start date still being typed leaves it as
+  // recorded, since the form cannot be saved without one
+  private savedDate(tournament: Tournament): string {
+    const date = this.form.controls.date.value;
+    return date ? toDayString(date) : tournament.date;
+  }
+
   /**
    * Asks the server what saving the import would change, which is exactly what the save
    * itself will do: only the sections it names as changed are shown, and only the games it
@@ -519,7 +565,12 @@ export class TournamentFormComponent implements OnInit {
     this.checking.set(true);
     try {
       const { data } = await firstValueFrom(
-        this.tournamentsApiService.checkImport(tournament.number, sections, games),
+        this.tournamentsApiService.checkImport(
+          tournament.number,
+          this.savedDate(tournament),
+          sections,
+          games,
+        ),
       );
       if (attempt !== this.checkAttempt) {
         return;

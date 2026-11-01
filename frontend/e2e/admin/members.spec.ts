@@ -120,7 +120,7 @@ test.describe('managing members', () => {
 
     expect(writes).toEqual([]);
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
   });
 
   test('keeps a new member draft, with its errors, through a reload', async ({
@@ -139,7 +139,7 @@ test.describe('managing members', () => {
     await expect(fieldError(page, 'City')).toHaveText('This field is required');
 
     await page.getByRole('button', { name: 'Revert', exact: true }).click();
-    await confirm(page, 'Revert');
+    await confirm(page, 'Clear');
 
     await expect(page.getByLabel(fieldLabel('City'))).toHaveValue('London');
     await expect(

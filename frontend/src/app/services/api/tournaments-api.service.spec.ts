@@ -149,13 +149,19 @@ describe('TournamentsApiService', () => {
         games: ['new'],
       };
       let received: ApiResponse<ImportChanges> | undefined;
-      service.checkImport(184, [], []).subscribe(result => (received = result));
+      service
+        .checkImport(184, '2026-09-24', [], [])
+        .subscribe(result => (received = result));
 
       const request = httpMock.expectOne(`${apiBaseUrl}/184/import-changes`);
       request.flush({ data: changes });
 
       expect(request.request.method).toBe('POST');
-      expect(request.request.body).toEqual({ sections: [], games: [] });
+      expect(request.request.body).toEqual({
+        date: '2026-09-24',
+        sections: [],
+        games: [],
+      });
       expect(received).toEqual({ data: changes });
     });
   });

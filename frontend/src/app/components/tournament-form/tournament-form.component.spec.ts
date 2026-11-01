@@ -1,4 +1,4 @@
-import { ButtonComponent, DialogService } from '@eagami/ui';
+import { ButtonComponent, DialogService, FileUploaderComponent } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
 import { Subject, of, throwError } from 'rxjs';
 
@@ -140,6 +140,22 @@ describe('TournamentFormComponent', () => {
     fixture.detectChanges();
   };
 
+  // Picks files through the uploader, which lists them and passes the whole list on
+  const chooseFiles = async (files: File[]): Promise<void> => {
+    const chosen = vi.spyOn(component, 'onStandingsChosen');
+    query(fixture.debugElement, 'ea-file-uploader')
+      .injector.get(FileUploaderComponent)
+      .value.set(files);
+    await chosen.mock.results.at(-1)?.value;
+    chosen.mockRestore();
+    fixture.detectChanges();
+  };
+
+  const listedFiles = (): string[] =>
+    queryAll(fixture.debugElement, '.ea-file-uploader-field__name').map(
+      ({ nativeElement }) => nativeElement.textContent.trim(),
+    );
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TournamentFormComponent],
@@ -157,7 +173,12 @@ describe('TournamentFormComponent', () => {
             matchPlayers: vi.fn().mockReturnValue(of({ data: [] })),
             // Every imported section changes, as the server would find of new results
             checkImport: vi.fn(
-              (_number: number, sections: SectionInput[], games: GameInput[]) =>
+              (
+                _number: number,
+                _date: string,
+                sections: SectionInput[],
+                games: GameInput[],
+              ) =>
                 of({
                   data: {
                     sectionChanges: sections.map(() => true),
@@ -275,6 +296,18 @@ describe('TournamentFormComponent', () => {
       query(fixture.debugElement, 'form').triggerEventHandler('focusout');
 
       expect(lastDraft()).toEqual(expect.objectContaining({ name: 'Fall Rapid Open' }));
+    });
+
+    it('should send no later draft once the form is submitted', async () => {
+      render();
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+      component.form.controls.name.setValue('Fall Rapid Open');
+
+      await component.onSubmit();
+      const atSubmit = changeSpy.mock.calls.length;
+      vi.advanceTimersByTime(FORM_CHANGE_DEBOUNCE);
+
+      expect(changeSpy).toHaveBeenCalledTimes(atSubmit);
     });
 
     it('should drop the registration window once registration is switched off', () => {
@@ -443,10 +476,23 @@ describe('TournamentFormComponent', () => {
       await importFile();
 
       const alert = fixture.nativeElement.querySelector('.results__problems');
+      expect(alert.textContent).toContain('These standings could not be imported:');
       expect(alert.querySelectorAll('li')).toHaveLength(10);
       expect(alert.textContent).toContain('2 more problems were found.');
       expect(component.form.valid).toBe(true);
       expect(lastDraft()?.sections).toBeNull();
+    });
+
+    it('should head what stopped a PGN as games that could not be added', async () => {
+      render();
+      importStandingsSpy.mockResolvedValue(imported([], ['A game does not match.']));
+
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.txt')]);
+      fixture.detectChanges();
+
+      const alert = fixture.nativeElement.querySelector('.results__problems');
+      expect(alert.textContent).toContain('These games could not be added:');
+      expect(alert.textContent).not.toContain('These standings could not be imported:');
     });
 
     it('should ignore an import overtaken by a later one', async () => {
@@ -507,6 +553,72 @@ describe('TournamentFormComponent', () => {
 
       expect(afterClear).toBeNull();
       expect(lastDraft()?.sections).toBeNull();
+    });
+
+    describe('choosing a file under a listed name', () => {
+      const open = new File(['open'], 'Open.csv');
+      const u1600 = new File(['u1600'], 'U1600.csv');
+
+      beforeEach(async () => {
+        render();
+        importStandingsSpy.mockResolvedValue(imported([section()]));
+        await chooseFiles([open, u1600]);
+      });
+
+      it('should read a file with a new name alongside the listed ones, without asking', async () => {
+        const u1200 = new File(['u1200'], 'U1200.csv');
+
+        await chooseFiles([open, u1600, u1200]);
+
+        expect(dialogOpenSpy).not.toHaveBeenCalled();
+        expect(importStandingsSpy.mock.lastCall?.[0]).toEqual([open, u1600, u1200]);
+        expect(listedFiles()).toEqual(['Open.csv', 'U1600.csv', 'U1200.csv']);
+      });
+
+      it('should ask, then read the new file in place of the listed one', async () => {
+        const corrected = new File(['open, corrected'], 'Open.csv');
+        dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+        await chooseFiles([open, u1600, corrected]);
+
+        expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
+          title: 'Confirm',
+          body: 'Replace Open.csv with the file just chosen?',
+          confirmButtonText: 'Replace',
+        });
+        const read = importStandingsSpy.mock.lastCall?.[0] ?? [];
+        expect(read).toHaveLength(2);
+        expect(read[0]).toBe(u1600);
+        expect(read[1]).toBe(corrected);
+        expect(listedFiles()).toEqual(['U1600.csv', 'Open.csv']);
+      });
+
+      it('should name every file a choice would replace', async () => {
+        dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+        await chooseFiles([
+          open,
+          u1600,
+          new File(['open, corrected'], 'Open.csv'),
+          new File(['u1600, corrected'], 'U1600.csv'),
+        ]);
+
+        expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+          'Replace Open.csv and U1600.csv with the files just chosen?',
+        );
+        expect(listedFiles()).toEqual(['Open.csv', 'U1600.csv']);
+      });
+
+      it('should keep the listed files and their results when the replacement is declined', async () => {
+        const draft = lastDraft();
+        dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+
+        await chooseFiles([open, u1600, new File(['open, corrected'], 'Open.csv')]);
+
+        expect(importStandingsSpy).toHaveBeenCalledTimes(1);
+        expect(listedFiles()).toEqual(['Open.csv', 'U1600.csv']);
+        expect(lastDraft()).toBe(draft);
+      });
     });
 
     it('should hold the save button while the files are read', () => {
@@ -679,7 +791,44 @@ describe('TournamentFormComponent', () => {
     it('should ask the server what the imported sections and games would change', async () => {
       await importPgn(['new', 'new', 'new']);
 
-      expect(checkImportSpy()).toHaveBeenCalledWith(recorded.number, [section()], games);
+      expect(checkImportSpy()).toHaveBeenCalledWith(
+        recorded.number,
+        recorded.date,
+        [section()],
+        games,
+      );
+    });
+
+    it('should check the import under the recorded date while the start date is cleared', async () => {
+      checkImportSpy().mockReturnValue(
+        of({ data: { sectionChanges: [true], removedSections: [], games: [] } }),
+      );
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games,
+        problems: [],
+      });
+      render({ ...tournamentFormData(recorded), date: '' }, false, recorded);
+
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      await settle();
+
+      expect(checkImportSpy()).toHaveBeenCalledWith(
+        recorded.number,
+        recorded.date,
+        [section()],
+        games,
+      );
+    });
+
+    it("should say on saving that a PGN's games go to the game archive", async () => {
+      await importPgn(['new', 'new', 'new']);
+
+      await component.onSubmit();
+
+      expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+        `Update ${recorded.name}? The games from the PGN will be added to the game archive.`,
+      );
     });
 
     it('should keep for saving only the games the server finds new or different', async () => {

@@ -10,6 +10,7 @@ export {
   simulScore,
   timeControlMinutes,
 } from './chess/crosstable.util';
+export { chessAccountUrl } from './chess/chess-account-url.util';
 export { getChessAccounts } from './chess/get-chess-accounts.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
@@ -29,7 +30,7 @@ export {
   parseScore,
   parseStandings,
 } from './chess/standings-import.util';
-export { mergePgnGames, readPgnGames } from './chess/pgn-import.util';
+export { checkPgnGames, readPgnGames } from './chess/pgn-import.util';
 export {
   canWithdraw,
   clubToday,
@@ -88,6 +89,7 @@ export { createMemberAccountGroup } from './forms/create-member-account-group.ut
 export { createMemberDetailsControls } from './forms/create-member-details-controls.util';
 export { createNewPasswordGroup } from './forms/create-new-password-group.util';
 export { createVerificationCodeControl } from './forms/create-verification-code-control.util';
+export { draftDebounce } from './forms/draft-debounce.util';
 export { normalizePhoneNumber } from './forms/normalize-phone-number.util';
 
 export { setPaginationParams } from './http/set-pagination-params.util';

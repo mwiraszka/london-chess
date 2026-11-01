@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { accessGuard } from '@app/guards/auth.guard';
+import { unsavedAccountChangesGuard } from '@app/guards/unsaved-changes.guard';
 import { HomePageComponent } from '@app/pages/home/home-page.component';
 
 export const APP_ROUTES: Routes = [
@@ -19,6 +20,7 @@ export const APP_ROUTES: Routes = [
   {
     path: 'account/:section',
     canActivate: [accessGuard],
+    canDeactivate: [unsavedAccountChangesGuard],
     data: { access: 'member' },
     loadComponent: () =>
       import('./pages/account/account-page.component').then(c => c.AccountPageComponent),

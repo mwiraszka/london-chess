@@ -3,6 +3,7 @@ import {
   GameInput,
   GameResult,
   PgnGame,
+  RoundOutcome,
   RoundResultInput,
   SectionInput,
   StandingsImport,
@@ -99,12 +100,11 @@ export function readPgnGames(
       );
     }
     // The movetext ends on the result too, and the two must agree
-    const ending =
-      movetext
-        .replace(/\{[^}]*\}/g, ' ')
-        .trim()
-        .split(/\s+/)
-        .pop() ?? '';
+    const tokens = movetext
+      .replace(/\{[^}]*\}/g, ' ')
+      .trim()
+      .split(/\s+/);
+    const ending = tokens[tokens.length - 1];
     if (RESULT_TOKENS.includes(ending) && tags['Result'] && ending !== tags['Result']) {
       problems.push(
         `${describe(game)} ends its moves with ${ending}, but its Result tag says ${tags['Result']}.`,
@@ -125,14 +125,31 @@ function elo(tag: string | undefined): number | null {
   return tag && /^[1-9]\d{0,3}$/.test(tag) ? Number(tag) : null;
 }
 
+// Only a number states a rating; a tag left empty or as "?" says nothing about it
+function claimedRating(tag: string | undefined): number | null | undefined {
+  return tag && /^\d+$/.test(tag) ? elo(tag) : undefined;
+}
+
+const scoreText = (score: number): string => (score === 0.5 ? '½' : String(score));
+
+const ratingText = (rating: number | null): string =>
+  rating === null ? 'unrated' : String(rating);
+
+const OUTCOME_TEXT: Record<Exclude<RoundOutcome, 'game'>, string> = {
+  forfeit: 'a forfeit',
+  'full-point-bye': 'a full-point bye',
+  'half-point-bye': 'a half-point bye',
+  unplayed: 'unplayed',
+};
+
 /**
- * Adds a PGN's games to the results a tournament already has. Each game goes to the
- * section its event names and is matched to that section's players, so a name spelt a
- * little differently still finds them. A game sets its round's result for both players,
- * so a corrected result replaces the recorded one, while a game that contradicts the
- * recorded pairing stops the import.
+ * Checks a PGN's games against the results a tournament already has, and gives back the
+ * games to add to the archive. Each game goes to the section its event names, and must match
+ * the standings for both players exactly: round, opponent, colour, result and rating. The
+ * standings are never changed, so any game they disagree with stops the import, for whoever
+ * keeps that file to correct it.
  */
-export function mergePgnGames(tournament: Tournament, games: PgnGame[]): StandingsImport {
+export function checkPgnGames(tournament: Tournament, games: PgnGame[]): StandingsImport {
   const nothing = { sections: [], games: [] };
   if (!tournament.sections.length) {
     return {
@@ -174,11 +191,24 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
     section =>
       new Set([section.name, ...section.games.map(game => game.section)].filter(Boolean)),
   );
-  const problems: string[] = [];
-  const merged = new Map<string, GameInput>();
-  const seen = new Set<string>();
 
-  const sectionLabel = (event: string): string | null => {
+  // Games played across two sections are recorded in each against an entry standing in for
+  // the other section's players, named after that section
+  const placeholderRank = (sectionIndex: number, otherIndex: number): number | null => {
+    const standIn = `${sections[otherIndex].name}, player`.toLowerCase();
+    return (
+      sections[sectionIndex].entries.find(
+        ({ name }) => name.trim().toLowerCase() === standIn,
+      )?.rank ?? null
+    );
+  };
+  const holdsPlaceholder = (sectionIndex: number): boolean =>
+    sections.some(
+      (_, otherIndex) =>
+        otherIndex !== sectionIndex && placeholderRank(sectionIndex, otherIndex) !== null,
+    );
+
+  const knownLabel = (event: string): string | null => {
     const value = event.trim().toLowerCase();
     let best: string | null = null;
     for (const label of labels.flatMap(set => [...set])) {
@@ -191,6 +221,25 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       }
     }
     return best;
+  };
+
+  // The events of the sections already known show what the PGN puts before a section's
+  // name, so an event naming games played across sections can be read the same way
+  const eventPrefixes = new Set(
+    games.flatMap(({ tags }) => {
+      const event = (tags['Event'] ?? '').trim();
+      const label = knownLabel(event);
+      return label && event.length > label.length
+        ? [event.slice(0, event.length - label.length).trim()]
+        : [];
+    }),
+  );
+  const crossSectionLabel = (event: string): string | null => {
+    const value = event.trim();
+    const prefix = [...eventPrefixes].find(known =>
+      value.toLowerCase().startsWith(`${known.toLowerCase()} `),
+    );
+    return prefix === undefined ? null : value.slice(prefix.length).trim();
   };
 
   const findEntrant = (name: string, sectionIndexes: number[]): Entrant[] => {
@@ -207,43 +256,48 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       : candidates.filter(entrant => isSamePlayerName(entrant.name, name, true));
   };
 
-  // A double round's second games wait until every first game is in, so each one finds
-  // the result it joins whatever order the file lists them in
-  const laterGames: PgnGame[] = [];
+  const entryOf = ({ sectionIndex, rank }: Entrant) =>
+    sections[sectionIndex].entries.find(entry => entry.rank === rank)!;
 
-  const mergeGame = (game: PgnGame, isLaterPass: boolean): void => {
-    const label = describe(game);
+  const problems: string[] = [];
+  const archived = new Map<string, GameInput>();
+  const seen = new Set<string>();
+
+  // How the game is described goes on with either the rest of a sentence about it or a
+  // statement after a colon
+  const said = (rest: string): string => ` ${rest}`;
+  const noted = (statement: string): string => `: ${statement}`;
+
+  // The first way the standings disagree with the game, if any
+  const disagreement = (game: PgnGame): string | null => {
     const { White: white, Black: black, Result: result, Round: roundTag } = game.tags;
     if (!white || !black) {
-      problems.push(`${label} does not name both players.`);
-      return;
+      return said('does not name both players.');
     }
-    // SwissSys tags every forfeit, rated or not, while a game without moves and without
-    // the tag was played but not recorded
-    const outcome = !game.plyCount && game.tags['ForfeitType'] ? 'forfeit' : 'game';
     if (!GAME_RESULTS.includes(result as GameResult) || result === '*') {
-      problems.push(`${label} has no result.`);
-      return;
+      return said('has no result.');
     }
     const round = Number(roundTag?.match(/^\d+/)?.[0]);
     if (!Number.isInteger(round) || round < 1) {
-      problems.push(`${label} has no round number.`);
-      return;
+      return said('has no round number.');
     }
 
-    const archiveSection =
-      sectionLabel(game.tags['Event'] ?? '') ??
-      (sections.length === 1 ? ([...labels[0]][0] ?? '') : null);
-    if (archiveSection === null) {
-      problems.push(
-        `${label} is from ${game.tags['Event'] || 'an unnamed event'}, which matches no section of this tournament.`,
-      );
-      return;
+    const event = game.tags['Event'] ?? '';
+    const unknownEvent = said(
+      `is from ${event || 'an unnamed event'}, which matches no section of this tournament.`,
+    );
+    const label =
+      knownLabel(event) ?? (sections.length === 1 ? ([...labels[0]][0] ?? '') : null);
+    const crossLabel = label === null ? crossSectionLabel(event) : null;
+    if (label === null && crossLabel === null) {
+      return unknownEvent;
     }
     const sectionIndexes =
       sections.length === 1
         ? [0]
-        : labels.flatMap((set, index) => (set.has(archiveSection) ? [index] : []));
+        : label !== null
+          ? labels.flatMap((set, index) => (set.has(label) ? [index] : []))
+          : sections.flatMap((_, index) => (holdsPlaceholder(index) ? [index] : []));
 
     const players = [white, black].map(name => ({
       name,
@@ -251,22 +305,28 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
     }));
     const unmatched = players.find(({ matches }) => matches.length !== 1);
     if (unmatched) {
-      problems.push(
+      return noted(
         unmatched.matches.length
-          ? `${label}: ${unmatched.name} could be more than one of the section's players.`
-          : `${label}: ${unmatched.name} is not one of the players in ${archiveSection ? `section ${archiveSection}` : 'the tournament'}.`,
+          ? `${unmatched.name} could be more than one of the section's players.`
+          : `${unmatched.name} is not one of the players in ${label ? `section ${label}` : 'the tournament'}.`,
       );
-      return;
     }
-
     const [whiteEntrant, blackEntrant] = players.map(({ matches }) => matches[0]);
     const sameSection = whiteEntrant.sectionIndex === blackEntrant.sectionIndex;
     if (sameSection && whiteEntrant.rank === blackEntrant.rank) {
-      problems.push(`${label} matches both names to the same player.`);
-      return;
+      return said('matches both names to the same player.');
     }
+    if (
+      label === null &&
+      (sameSection ||
+        placeholderRank(whiteEntrant.sectionIndex, blackEntrant.sectionIndex) === null ||
+        placeholderRank(blackEntrant.sectionIndex, whiteEntrant.sectionIndex) === null)
+    ) {
+      return unknownEvent;
+    }
+
     const whiteScore = result === '1-0' ? 1 : result === '0-1' ? 0 : 0.5;
-    const pairing = [
+    const sides = [
       {
         entrant: whiteEntrant,
         opponent: blackEntrant,
@@ -281,136 +341,112 @@ export function mergePgnGames(tournament: Tournament, games: PgnGame[]): Standin
       },
     ] as const;
 
-    const sectionOf = ({ sectionIndex }: Entrant) => sections[sectionIndex];
     if (
-      pairing.some(({ entrant }) => {
-        const { roundCount, isDoubleRound } = sectionOf(entrant);
+      sides.some(({ entrant }) => {
+        const { roundCount, isDoubleRound } = sections[entrant.sectionIndex];
         return round > roundCount * (isDoubleRound ? 2 : 1);
       })
     ) {
-      problems.push(`${label} is from a round past the section's last.`);
-      return;
-    }
-    if (
-      outcome === 'forfeit' &&
-      pairing.some(({ entrant }) => sectionOf(entrant).isDoubleRound)
-    ) {
-      problems.push(
-        `${label} is a forfeit in a round of two games, which only the standings SwissSys exports can record.`,
-      );
-      return;
-    }
-    if (
-      !isLaterPass &&
-      pairing.some(({ entrant }) => round > sectionOf(entrant).roundCount)
-    ) {
-      laterGames.push(game);
-      return;
-    }
-
-    // A double round's second game is numbered a whole round count on from its first
-    const sides = pairing.map(side => {
-      const { roundCount } = sectionOf(side.entrant);
-      return {
-        ...side,
-        round: ((round - 1) % roundCount) + 1,
-        gameIndex: Math.floor((round - 1) / roundCount),
-      };
-    });
-
-    const entryOf = ({ sectionIndex, rank }: Entrant) =>
-      sections[sectionIndex].entries.find(entry => entry.rank === rank)!;
-    const recordedRound = (side: (typeof sides)[number]) =>
-      entryOf(side.entrant).rounds.find(played => played.round === side.round);
-    // A recorded round can take the game's result only when it pairs the same two players
-    const contradicted = sides.some(side => {
-      const recorded = recordedRound(side);
-      return (
-        !!recorded &&
-        (recorded.outcome !== outcome ||
-          recorded.opponentRank !== (sameSection ? side.opponent.rank : null))
-      );
-    });
-    if (contradicted) {
-      problems.push(
-        `${label} does not match the pairing already recorded for round ${sides[0].round}.`,
-      );
-      return;
-    }
-    if (sides.some(side => side.gameIndex > (recordedRound(side)?.scores.length ?? 0))) {
-      problems.push(
-        `${label} is the second game of round ${sides[0].round}, whose first game is not recorded.`,
-      );
-      return;
+      return said("is from a round past the section's last.");
     }
 
     for (const side of sides) {
+      const section = sections[side.entrant.sectionIndex];
       const entry = entryOf(side.entrant);
-      const recorded = recordedRound(side);
-      const opponentRank = sameSection ? side.opponent.rank : null;
-      const scores = recorded ? [...recorded.scores] : [];
-      scores[side.gameIndex] = side.score;
-      const played: RoundResultInput =
-        outcome === 'forfeit'
-          ? {
-              round: side.round,
-              outcome,
-              scores: [],
-              points: side.score,
-              opponentRank,
-              color: null,
-            }
-          : {
-              round: side.round,
-              outcome,
-              scores,
-              points: scores.reduce((total, score) => total + score, 0),
-              opponentRank,
-              // A round keeps the colour of its first game
-              color: side.gameIndex === 0 ? side.color : (recorded?.color ?? null),
-            };
-      entry.rounds = [
-        ...entry.rounds.filter(other => other.round !== side.round),
-        played,
-      ].sort((a, b) => a.round - b.round);
-      entry.score = entry.rounds.reduce((total, { points }) => total + points, 0);
+      // A double round's second game is numbered a whole round count on from its first
+      const standingsRound = ((round - 1) % section.roundCount) + 1;
+      const gameIndex = Math.floor((round - 1) / section.roundCount);
+      const recorded = entry.rounds.find(played => played.round === standingsRound);
+      const where = `in round ${standingsRound}`;
+
+      if (!recorded) {
+        return noted(`the standings have no result for ${entry.name} ${where}.`);
+      }
+      if (recorded.outcome !== 'game') {
+        return noted(
+          `the standings record ${entry.name}'s round ${standingsRound} as ${OUTCOME_TEXT[recorded.outcome]}.`,
+        );
+      }
+      const expectedRanks = sameSection
+        ? [side.opponent.rank]
+        : [placeholderRank(side.entrant.sectionIndex, side.opponent.sectionIndex), null];
+      if (!expectedRanks.includes(recorded.opponentRank)) {
+        const recordedOpponent =
+          section.entries.find(({ rank }) => rank === recorded.opponentRank)?.name ??
+          'a player from another section';
+        return noted(
+          `the standings pair ${entry.name} with ${recordedOpponent} ${where}, not ${entryOf(side.opponent).name}.`,
+        );
+      }
+      // Each section gives its stand-in's games colours of its own, so only a game within one
+      // section can be held to the colours recorded
+      if (
+        sameSection &&
+        gameIndex === 0 &&
+        recorded.color &&
+        recorded.color !== side.color
+      ) {
+        return noted(
+          `the standings have ${entry.name} playing ${recorded.color} ${where}.`,
+        );
+      }
+      const recordedScore = recorded.scores[gameIndex];
+      if (recordedScore === undefined) {
+        return noted(`the standings record only one game for ${entry.name} ${where}.`);
+      }
+      if (recordedScore !== side.score) {
+        return noted(
+          `the standings give ${entry.name} ${scoreText(recordedScore)} ${where}, but the game gives ${scoreText(side.score)}.`,
+        );
+      }
+      const claimed = claimedRating(
+        game.tags[side.color === 'white' ? 'WhiteElo' : 'BlackElo'],
+      );
+      if (claimed !== undefined && claimed !== entry.rating) {
+        return noted(
+          `${entry.name} is ${ratingText(claimed)} in the PGN but ${ratingText(entry.rating)} in the standings.`,
+        );
+      }
     }
 
+    const archiveSection = (label ?? crossLabel) as string;
     const whitePlayerId = entryOf(whiteEntrant).playerId!;
     const blackPlayerId = entryOf(blackEntrant).playerId!;
     // A pairing meets once a round, whichever colours a second listing gives it
-    const pair = [whitePlayerId, blackPlayerId].sort().join('|');
-    const key = `${archiveSection}|${round}|${pair}`;
+    const key = `${archiveSection}|${round}|${[whitePlayerId, blackPlayerId].sort().join('|')}`;
     if (seen.has(key)) {
-      problems.push(`${label} appears more than once.`);
-      return;
+      return said('appears more than once.');
     }
     seen.add(key);
     // With no moves to replay, the archive gains no game
-    if (!game.plyCount) {
-      return;
+    if (game.plyCount) {
+      const eco = game.tags['ECO'] ?? '';
+      archived.set(key, {
+        section: archiveSection,
+        round: String(round),
+        date: gameDate(game.tags['Date'], tournament.date),
+        whitePlayerId,
+        blackPlayerId,
+        result: result as GameResult,
+        whiteElo: elo(game.tags['WhiteElo']),
+        blackElo: elo(game.tags['BlackElo']),
+        eco: ECO_CODE.test(eco) ? eco : '',
+        plyCount: game.plyCount,
+        moves: game.moves,
+      });
     }
-    const eco = game.tags['ECO'] ?? '';
-    merged.set(key, {
-      section: archiveSection,
-      round: String(round),
-      date: gameDate(game.tags['Date'], tournament.date),
-      whitePlayerId,
-      blackPlayerId,
-      result: result as GameResult,
-      whiteElo: elo(game.tags['WhiteElo']),
-      blackElo: elo(game.tags['BlackElo']),
-      eco: ECO_CODE.test(eco) ? eco : '',
-      plyCount: game.plyCount,
-      moves: game.moves,
-    });
+    return null;
   };
 
-  games.forEach(game => mergeGame(game, false));
-  laterGames.forEach(game => mergeGame(game, true));
+  for (const game of games) {
+    const problem = disagreement(game);
+    if (problem) {
+      problems.push(`${describe(game)}${problem}`);
+    }
+  }
 
   if (problems.length) {
     return { ...nothing, problems };
   }
-  return { sections, games: [...merged.values()], problems: [] };
+  return { sections, games: [...archived.values()], problems: [] };
 }

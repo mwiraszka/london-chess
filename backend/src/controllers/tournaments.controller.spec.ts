@@ -315,6 +315,107 @@ describe('tournaments routes', () => {
       expect(sectionB.games.map(game => game.id)).toEqual([sectionBGame, playoffGame]);
     });
 
+    it("should link a round against another section's stand-in to the game played across them", async () => {
+      const ann = await createPlayer('Ann');
+      const dan = await createPlayer('Dan');
+      const standIn = async (section: string): Promise<string> =>
+        (
+          await PlayerModel.create({
+            firstName: 'Player',
+            lastName: section,
+            memberId: null,
+          })
+        )._id.toString();
+      const forYs2 = await standIn('YS2');
+      const forYs1 = await standIn('YS1');
+      const crossGame = await createGame(ann, dan, 'YS', '1');
+      await createTournament({
+        gameArchiveTournament: 'Club Championship',
+        sections: [
+          {
+            name: 'YS1',
+            ratingBand: '',
+            roundCount: 1,
+            isDoubleRound: false,
+            gameArchiveSections: ['YS1', 'YS'],
+            entries: [
+              entry(1, ann, [played(1, 2, 1)]),
+              entry(2, forYs2, [played(1, 1, 0)]),
+            ],
+          },
+          {
+            name: 'YS2',
+            ratingBand: '',
+            roundCount: 1,
+            isDoubleRound: false,
+            gameArchiveSections: ['YS2', 'YS'],
+            entries: [
+              entry(1, dan, [played(1, 2, 0)]),
+              entry(2, forYs1, [played(1, 1, 1)]),
+            ],
+          },
+        ],
+      });
+
+      const response = await request(app).get('/v1/tournaments/86');
+
+      const [ys1, ys2]: TournamentResponse['sections'] = response.body.data.sections;
+      expect(ys1.entries[0].rounds[0].gameId).toBe(crossGame);
+      expect(ys2.entries[0].rounds[0].gameId).toBe(crossGame);
+      expect(ys1.entries[1].rounds[0].gameId).toBeNull();
+    });
+
+    it("should list a section's games by round, then by board, then by date", async () => {
+      const [ann, bob] = await Promise.all([createPlayer('Ann'), createPlayer('Bob')]);
+      const gameOn = async (round: string, date = '2023-09-14'): Promise<string> =>
+        (
+          await GameModel.create({
+            tournament: 'Club Championship',
+            section: 'A1',
+            year: 2023,
+            date,
+            round,
+            whitePlayerId: ann,
+            blackPlayerId: bob,
+            result: '1-0',
+            plyCount: 1,
+            moves: '1. e4',
+            modificationInfo: MODIFICATION_INFO,
+          })
+        )._id.toString();
+      const unnumbered = await gameOn('');
+      const unnumberedLater = await gameOn('', '2023-09-21');
+      const later = await gameOn('3', '2023-09-28');
+      const earlier = await gameOn('3', '2023-09-21');
+      const secondBoard = await gameOn('1.2');
+      const firstBoard = await gameOn('1.1');
+      await createTournament({
+        gameArchiveTournament: 'Club Championship',
+        sections: [
+          {
+            name: 'A1',
+            ratingBand: '',
+            roundCount: 3,
+            isDoubleRound: false,
+            gameArchiveSections: ['A1'],
+            entries: [entry(1, ann), entry(2, bob)],
+          },
+        ],
+      });
+
+      const response = await request(app).get('/v1/tournaments/86');
+
+      const [section]: TournamentResponse['sections'] = response.body.data.sections;
+      expect(section.games.map(({ id }) => id)).toEqual([
+        firstBoard,
+        secondBoard,
+        earlier,
+        later,
+        unnumbered,
+        unnumberedLater,
+      ]);
+    });
+
     it('should have no games for a tournament that was never archived', async () => {
       const ann = await createPlayer('Ann');
       await createGame(ann, ann, 'A1', '1');
@@ -1079,9 +1180,13 @@ describe('tournaments routes', () => {
       const unknown = await request(app)
         .delete('/v1/tournaments/404/registration')
         .set('Authorization', bearer('user_stranger'));
+      const malformed = await request(app)
+        .delete('/v1/tournaments/abc/registration')
+        .set('Authorization', bearer('user_stranger'));
 
       expect(stranger.status).toBe(403);
       expect(unknown.status).toBe(404);
+      expect(malformed.status).toBe(404);
     });
 
     it('should respond with a server error when the database fails', async () => {
@@ -1179,6 +1284,7 @@ describe('tournaments routes', () => {
         .post('/v1/tournaments/86/import-changes')
         .set('Authorization', bearer(ADMIN))
         .send({
+          date: '2023-09-14',
           sections: [
             sectionInput(white, black),
             { ...sectionInput(white, black), name: 'B' },
@@ -1198,11 +1304,85 @@ describe('tournaments routes', () => {
       });
     });
 
+    it('should count a section naming a player the archive does not know as changed', async () => {
+      const renamed = sectionInput(white, black);
+      renamed.entries[1] = {
+        ...renamed.entries[1],
+        playerId: null,
+        name: 'Stranger, Sam',
+      };
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ date: '2023-09-14', sections: [renamed], games: [] });
+
+      expect(response.body.data.sectionChanges).toEqual([true]);
+    });
+
+    it('should save a section of two games a round as such', async () => {
+      const response = await request(app)
+        .put('/v1/tournaments/86')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            date: '2023-09-14',
+            format: 'round-robin',
+            sections: [{ ...sectionInput(white, black), isDoubleRound: true }],
+          }),
+        );
+
+      expect(response.status).toBe(200);
+      expect((await readTournament(86)).sections[0].isDoubleRound).toBe(true);
+    });
+
+    it('should count a section whose players played more rounds as changed', async () => {
+      const longer = sectionInput(white, black);
+      longer.entries = longer.entries.map(input => ({
+        ...input,
+        rounds: [
+          ...input.rounds,
+          {
+            round: 2,
+            outcome: 'unplayed',
+            scores: [],
+            points: 0,
+            opponentRank: null,
+            color: null,
+          },
+        ],
+      }));
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ date: '2023-09-14', sections: [longer], games: [] });
+
+      expect(response.body.data.sectionChanges).toEqual([true]);
+    });
+
+    it('should respond with a server error when the database fails', async () => {
+      vi.spyOn(TournamentModel, 'findOne').mockImplementation(() => {
+        throw new Error('down');
+      });
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ date: '2023-09-14', sections: [], games: [] });
+
+      expect(response.status).toBe(500);
+    });
+
     it('should name the recorded sections an import leaves out', async () => {
       const response = await request(app)
         .post('/v1/tournaments/86/import-changes')
         .set('Authorization', bearer(ADMIN))
-        .send({ sections: [{ ...sectionInput(white, black), name: 'B' }], games: [] });
+        .send({
+          date: '2023-09-14',
+          sections: [{ ...sectionInput(white, black), name: 'B' }],
+          games: [],
+        });
 
       expect(response.body.data.removedSections).toEqual(['A1']);
     });
@@ -1211,17 +1391,54 @@ describe('tournaments routes', () => {
       const missing = await request(app)
         .post('/v1/tournaments/99/import-changes')
         .set('Authorization', bearer(ADMIN))
-        .send({ sections: [], games: [] });
+        .send({ date: '2023-09-14', sections: [], games: [] });
+      const malformed = await request(app)
+        .post('/v1/tournaments/abc/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ date: '2023-09-14', sections: [], games: [] });
       const unreadable = await request(app)
         .post('/v1/tournaments/86/import-changes')
         .set('Authorization', bearer(ADMIN))
-        .send({ sections: [], games: [gameInput(white, black, { result: 'win' })] });
+        .send({
+          date: '2023-09-14',
+          sections: [],
+          games: [gameInput(white, black, { result: 'win' })],
+        });
+      const undated = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({ date: '2023-02-30', sections: [], games: [] });
 
       expect(missing.status).toBe(404);
+      expect(malformed.status).toBe(404);
       expect(unreadable.status).toBe(400);
       expect(unreadable.body.message).toBe(
         'Unable to check the import because game 1 has an unknown result.',
       );
+      expect(undated.status).toBe(400);
+      expect(undated.body.message).toBe(
+        'Unable to check the import because date must be a day written as YYYY-MM-DD.',
+      );
+    });
+
+    it('should compare the games filed under the year of the date it is given', async () => {
+      await GameModel.create({
+        ...gameInput(white, black),
+        tournament: 'Championship',
+        year: 2023,
+        modificationInfo: MODIFICATION_INFO,
+      });
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({
+          date: '2024-09-12',
+          sections: [sectionInput(white, black)],
+          games: [gameInput(white, black)],
+        });
+
+      expect(response.body.data.games).toEqual(['new']);
     });
 
     it('should keep an unchanged section as recorded and add the new games once', async () => {
@@ -1264,6 +1481,7 @@ describe('tournaments routes', () => {
         .set('Authorization', bearer(ADMIN))
         .send(
           tournamentInput({
+            date: '2023-09-14',
             sections: [sectionInput(white, black)],
             games: [
               gameInput(white, black, {
@@ -1281,6 +1499,33 @@ describe('tournaments routes', () => {
       expect(game?.modificationInfo.lastEditedBy).toBe('Ada Admin');
       const player = await PlayerModel.findById(white).lean();
       expect(player?.gameCount).toBe(0);
+    });
+
+    it("should show the archive's games filed under a section's name", async () => {
+      await TournamentModel.updateOne(
+        { number: 86 },
+        { $set: { gameArchiveTournament: 'Club Championship' } },
+      );
+      await createGame(white, black, 'A Match', '1');
+
+      const response = await request(app)
+        .put('/v1/tournaments/86')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            date: '2023-09-14',
+            sections: [
+              sectionInput(white, black),
+              { ...sectionInput(white, black), name: 'A MATCH' },
+            ],
+          }),
+        );
+
+      expect(response.status).toBe(200);
+      const saved = await readTournament(86);
+      expect(
+        saved.sections.map(({ gameArchiveSections }) => gameArchiveSections),
+      ).toEqual([[], ['A Match']]);
     });
 
     it('should refuse games for a tournament not yet saved, or for unknown players', async () => {
@@ -1302,9 +1547,18 @@ describe('tournaments routes', () => {
             games: [gameInput(white, '6a7f6f69f983bd7b3881d3e6')],
           }),
         );
+      const addingUnknown = await request(app)
+        .post('/v1/tournaments')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            sections: [sectionInput(white, '6a7f6f69f983bd7b3881d3e6')],
+          }),
+        );
 
       expect(adding.status).toBe(400);
       expect(unknown.status).toBe(400);
+      expect(addingUnknown.status).toBe(400);
       expect(unknown.body.message).toBe(
         'Unable to save the tournament because it names a player the archive does not hold.',
       );

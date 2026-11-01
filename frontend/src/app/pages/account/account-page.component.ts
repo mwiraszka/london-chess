@@ -55,8 +55,10 @@ import {
 } from '@app/constants/account';
 import { BRAND_OPTIONS } from '@app/constants/brands';
 import { UPLOAD_TIMEOUT_MS } from '@app/constants/http';
+import { OPTIONAL_DETAILS } from '@app/constants/member-details';
 import {
   AccountSection,
+  BasicDialogResult,
   DetailsChangeResult,
   Dialog,
   InternalLink,
@@ -284,6 +286,23 @@ export class AccountPageComponent implements OnInit {
     passwords: createNewPasswordGroup(),
   });
 
+  private readonly passwordValue = toSignal(this.passwordForm.valueChanges, {
+    initialValue: this.passwordForm.value,
+  });
+
+  public readonly hasUnsavedChanges = computed(() => {
+    const { currentPassword, passwords } = this.passwordValue();
+    return (
+      this.hasPhotoChanges() ||
+      this.hasDetailChanges() ||
+      this.emailStep() === 'verify' ||
+      this.newEmailValue().trim() !== this.email() ||
+      !!currentPassword ||
+      !!passwords?.newPassword ||
+      !!passwords?.confirmPassword
+    );
+  });
+
   protected readonly revokingOthers = signal(false);
   protected readonly sessions = signal<SessionInfo[]>([]);
   protected readonly sessionsLoading = signal(false);
@@ -452,23 +471,35 @@ export class AccountPageComponent implements OnInit {
       fideId,
       cfcId,
     } = this.detailsForm.getRawValue();
+    const details = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
+      city: city.trim(),
+      phoneNumber: normalizePhoneNumber(phoneNumber),
+      lichessUsername: lichessUsername.trim(),
+      chessComUsername: chessComUsername.trim(),
+      fideId: fideId.trim(),
+      cfcId: cfcId.trim(),
+    };
+
+    const saved = this.savedDetails();
+    const removed = OPTIONAL_DETAILS.filter(
+      ({ field }) => saved[field] && !details[field],
+    );
+    if (
+      removed.length &&
+      !(await this.confirmRemoving(removed.map(({ label }) => label)))
+    ) {
+      return;
+    }
 
     this.requestingChanges.set(true);
 
     try {
       const { removed, requested } = await this.api.post<DetailsChangeResult>(
         '/users/me/member/change-request',
-        {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          yearOfBirth: yearOfBirth === null ? '' : String(yearOfBirth),
-          city: city.trim(),
-          phoneNumber: normalizePhoneNumber(phoneNumber),
-          lichessUsername: lichessUsername.trim(),
-          chessComUsername: chessComUsername.trim(),
-          fideId: fideId.trim(),
-          cfcId: cfcId.trim(),
-        },
+        details,
       );
       const cleared: Partial<ProfileDetailsFormData> = {};
       for (const field of removed) {
@@ -675,13 +706,30 @@ export class AccountPageComponent implements OnInit {
 
   protected async onDeleteAccount(): Promise<void> {
     const dialog: Dialog = {
-      title: 'Delete account',
-      body: 'Are you sure you want to delete your account? This action cannot be undone.',
-      confirmButtonText: 'Confirm',
+      title: 'Confirm',
+      body: 'Delete your account? This cannot be undone.',
+      confirmButtonText: 'Delete',
       confirmButtonType: 'warning',
       confirmAction: () => this.deleteAccount(),
     };
     await this.dialogService.open(BasicDialogComponent, { inputs: { dialog } }).result;
+  }
+
+  // Removed details are gone at once, while adding them back is a request for an admin
+  private async confirmRemoving(labels: string[]): Promise<boolean> {
+    const dialog: Dialog = {
+      title: 'Confirm',
+      body: `Remove your ${new Intl.ListFormat('en').format(labels)}? This happens at once, and adding ${labels.length === 1 ? 'it' : 'them'} back later needs an admin.`,
+      confirmButtonText: 'Remove',
+      confirmButtonType: 'warning',
+    };
+    const result = await this.dialogService.open<BasicDialogResult>(
+      BasicDialogComponent,
+      {
+        inputs: { dialog },
+      },
+    ).result;
+    return result === 'confirm';
   }
 
   private async deleteAccount(): Promise<void> {
