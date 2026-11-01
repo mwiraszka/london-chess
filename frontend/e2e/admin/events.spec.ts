@@ -102,7 +102,7 @@ test.describe('managing events', () => {
 
     await articles.click();
     await expect(page.locator('lcc-basic-dialog')).toContainText(
-      'Any unsaved changes to the event will be lost.',
+      'Your changes to the event are kept as a draft until you save or revert them.',
     );
     await confirm(page, 'Cancel');
 

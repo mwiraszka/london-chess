@@ -24,7 +24,7 @@ export type { ClubDateTime, DateFormat, MonthStyle } from './date-format.model';
 export type { BasicDialogResult, Dialog } from './dialog.model';
 export type { Dataset } from './dataset.model';
 export type { DbCollection } from './db-collection.model';
-export type { EditorPage } from './editor-page.model';
+export type { EditorPage, UnsavedChangesPage } from './editor-page.model';
 export type { Entity, EntityType } from './entity.model';
 export type { LccError } from './error.model';
 export type { LoadStatus } from './load-status.model';

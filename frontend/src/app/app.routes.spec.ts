@@ -2,7 +2,10 @@ import { Route, Routes } from '@angular/router';
 
 import { APP_ROUTES } from './app.routes';
 import { accessGuard } from './guards/auth.guard';
-import { unsavedChangesGuard } from './guards/unsaved-changes.guard';
+import {
+  unsavedAccountChangesGuard,
+  unsavedChangesGuard,
+} from './guards/unsaved-changes.guard';
 
 async function childRoutes(route: Route): Promise<Routes> {
   const children = route.loadChildren ? ((await route.loadChildren()) as Routes) : [];
@@ -57,6 +60,7 @@ describe('app routes', () => {
     const account = APP_ROUTES.find(({ path }) => path === 'account/:section');
 
     expect(account?.canActivate).toContain(accessGuard);
+    expect(account?.canDeactivate).toContain(unsavedAccountChangesGuard);
     expect(account?.data).toEqual({ access: 'member' });
   });
 

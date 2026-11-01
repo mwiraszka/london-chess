@@ -2,15 +2,22 @@ import { DialogRef, DialogService } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
-import { BasicDialogResult, Dialog, EditorPage, User } from '@app/models';
+import {
+  BasicDialogResult,
+  Dialog,
+  EditorPage,
+  UnsavedChangesPage,
+  User,
+} from '@app/models';
 import { AuthSelectors } from '@app/store/auth';
 import { closedDialogRef } from '@app/utils';
 
-import { unsavedChangesGuard } from './unsaved-changes.guard';
+import { unsavedAccountChangesGuard, unsavedChangesGuard } from './unsaved-changes.guard';
 
 describe('unsavedChangesGuard', () => {
   let dialogService: DialogService;
@@ -39,6 +46,23 @@ describe('unsavedChangesGuard', () => {
     TestBed.runInInjectionContext(() =>
       unsavedChangesGuard(component, route, state, state),
     );
+
+  const memberRoute = Object.assign(new ActivatedRouteSnapshot(), {
+    data: { access: 'member' },
+  });
+  const urlState = (url: string) => ({ url, root: memberRoute }) as RouterStateSnapshot;
+
+  const runAccountGuard = (hasUnsavedChanges: boolean, nextUrl = '/members') => {
+    const page: UnsavedChangesPage = { hasUnsavedChanges: signal(hasUnsavedChanges) };
+    return TestBed.runInInjectionContext(() =>
+      unsavedAccountChangesGuard(
+        page,
+        memberRoute,
+        urlState('/account/profile'),
+        urlState(nextUrl),
+      ),
+    );
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -117,7 +141,7 @@ describe('unsavedChangesGuard', () => {
       inputs: {
         dialog: {
           title: 'Unsaved changes',
-          body: 'Are you sure you want to leave? Any unsaved changes to the member will be lost.',
+          body: 'Leave without saving? Your changes to the member are kept as a draft until you save or revert them.',
           confirmButtonText: 'Leave',
         } satisfies Dialog,
       },
@@ -190,5 +214,53 @@ describe('unsavedChangesGuard', () => {
     expect(first).toBe(false);
     expect(second).toBe(true);
     expect(dialogOpenSpy).toHaveBeenCalledTimes(2);
+  });
+
+  describe('on the account page', () => {
+    it('should move between the account sections without asking', async () => {
+      const result = await runAccountGuard(true, '/account/security');
+
+      expect(result).toBe(true);
+      expect(dialogOpenSpy).not.toHaveBeenCalled();
+    });
+
+    it('should leave without asking when nothing has changed', async () => {
+      const result = await runAccountGuard(false);
+
+      expect(result).toBe(true);
+      expect(dialogOpenSpy).not.toHaveBeenCalled();
+    });
+
+    it('should ask before leaving changes that no draft keeps', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+
+      const result = await runAccountGuard(true);
+
+      expect(result).toBe(false);
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
+        inputs: {
+          dialog: {
+            title: 'Unsaved changes',
+            body: 'Leave without saving? Your account changes will be lost.',
+            confirmButtonText: 'Leave',
+          } satisfies Dialog,
+        },
+      });
+    });
+
+    it('should leave once the member chooses to', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+      expect(await runAccountGuard(true)).toBe(true);
+    });
+
+    it('should leave without asking once logged out', async () => {
+      TestBed.inject(MockStore).overrideSelector(AuthSelectors.selectUser, null);
+
+      const result = await runAccountGuard(true);
+
+      expect(result).toBe(true);
+      expect(dialogOpenSpy).not.toHaveBeenCalled();
+    });
   });
 });
