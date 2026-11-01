@@ -49,6 +49,7 @@ import {
   TOURNAMENT_FORMAT_OPTIONS,
 } from '@app/constants/tournaments';
 import {
+  BasicDialogResult,
   Dialog,
   GameInput,
   ImportChanges,
@@ -349,12 +350,20 @@ export class TournamentFormComponent implements OnInit {
       this.onClearImport();
       return;
     }
-    this.standingsFiles.set(files);
+    // A file chosen under the name of one already listed, such as a corrected export, takes
+    // its place once confirmed
+    const replaced = this.namesakesOf(files);
+    if (replaced.length && !(await this.confirmReplacing(replaced))) {
+      this.standingsFiles.set([...this.standingsFiles()]);
+      return;
+    }
+    const chosen = files.filter(file => !replaced.includes(file));
+    this.standingsFiles.set(chosen);
     const attempt = ++this.importAttempt;
 
     this.importing.set(true);
     const { sections, games, problems } = await this.standingsFileService.importStandings(
-      files,
+      chosen,
       this.originalTournament(),
     );
     // A later choice of files replaces this one
@@ -463,6 +472,28 @@ export class TournamentFormComponent implements OnInit {
           TournamentsActions.addTournamentSucceeded,
           TournamentsActions.addTournamentFailed,
         ]);
+  }
+
+  private namesakesOf(files: readonly File[]): File[] {
+    const listed = this.standingsFiles();
+    const added = files.filter(file => !listed.includes(file));
+    return listed.filter(file => added.some(({ name }) => name === file.name));
+  }
+
+  private async confirmReplacing(replaced: File[]): Promise<boolean> {
+    const names = new Intl.ListFormat('en').format(replaced.map(({ name }) => name));
+    const dialog: Dialog = {
+      title: 'Confirm',
+      body: `Replace ${names} with the ${replaced.length === 1 ? 'file' : 'files'} just chosen?`,
+      confirmButtonText: 'Replace',
+    };
+    const result = await this.dialogService.open<BasicDialogResult>(
+      BasicDialogComponent,
+      {
+        inputs: { dialog },
+      },
+    ).result;
+    return result === 'confirm';
   }
 
   // Tells which names the archive already knows, so a misspelling shows before it is saved

@@ -1,4 +1,4 @@
-import { ButtonComponent, DialogService } from '@eagami/ui';
+import { ButtonComponent, DialogService, FileUploaderComponent } from '@eagami/ui';
 import { provideMockStore } from '@ngrx/store/testing';
 import { Subject, of, throwError } from 'rxjs';
 
@@ -139,6 +139,22 @@ describe('TournamentFormComponent', () => {
     await component.onStandingsChosen([new File(['xlsx'], 'Standings.xlsx')]);
     fixture.detectChanges();
   };
+
+  // Picks files through the uploader, which lists them and passes the whole list on
+  const chooseFiles = async (files: File[]): Promise<void> => {
+    const chosen = vi.spyOn(component, 'onStandingsChosen');
+    query(fixture.debugElement, 'ea-file-uploader')
+      .injector.get(FileUploaderComponent)
+      .value.set(files);
+    await chosen.mock.results.at(-1)?.value;
+    chosen.mockRestore();
+    fixture.detectChanges();
+  };
+
+  const listedFiles = (): string[] =>
+    queryAll(fixture.debugElement, '.ea-file-uploader-field__name').map(
+      ({ nativeElement }) => nativeElement.textContent.trim(),
+    );
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -519,6 +535,72 @@ describe('TournamentFormComponent', () => {
 
       expect(afterClear).toBeNull();
       expect(lastDraft()?.sections).toBeNull();
+    });
+
+    describe('choosing a file under a listed name', () => {
+      const open = new File(['open'], 'Open.csv');
+      const u1600 = new File(['u1600'], 'U1600.csv');
+
+      beforeEach(async () => {
+        render();
+        importStandingsSpy.mockResolvedValue(imported([section()]));
+        await chooseFiles([open, u1600]);
+      });
+
+      it('should read a file with a new name alongside the listed ones, without asking', async () => {
+        const u1200 = new File(['u1200'], 'U1200.csv');
+
+        await chooseFiles([open, u1600, u1200]);
+
+        expect(dialogOpenSpy).not.toHaveBeenCalled();
+        expect(importStandingsSpy.mock.lastCall?.[0]).toEqual([open, u1600, u1200]);
+        expect(listedFiles()).toEqual(['Open.csv', 'U1600.csv', 'U1200.csv']);
+      });
+
+      it('should ask, then read the new file in place of the listed one', async () => {
+        const corrected = new File(['open, corrected'], 'Open.csv');
+        dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+        await chooseFiles([open, u1600, corrected]);
+
+        expect(lastOpenedDialog(dialogOpenSpy)).toEqual({
+          title: 'Confirm',
+          body: 'Replace Open.csv with the file just chosen?',
+          confirmButtonText: 'Replace',
+        });
+        const read = importStandingsSpy.mock.lastCall?.[0] ?? [];
+        expect(read).toHaveLength(2);
+        expect(read[0]).toBe(u1600);
+        expect(read[1]).toBe(corrected);
+        expect(listedFiles()).toEqual(['U1600.csv', 'Open.csv']);
+      });
+
+      it('should name every file a choice would replace', async () => {
+        dialogOpenSpy.mockReturnValue(closedDialogRef('confirm'));
+
+        await chooseFiles([
+          open,
+          u1600,
+          new File(['open, corrected'], 'Open.csv'),
+          new File(['u1600, corrected'], 'U1600.csv'),
+        ]);
+
+        expect(lastOpenedDialog(dialogOpenSpy).body).toBe(
+          'Replace Open.csv and U1600.csv with the files just chosen?',
+        );
+        expect(listedFiles()).toEqual(['Open.csv', 'U1600.csv']);
+      });
+
+      it('should keep the listed files and their results when the replacement is declined', async () => {
+        const draft = lastDraft();
+        dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+
+        await chooseFiles([open, u1600, new File(['open, corrected'], 'Open.csv')]);
+
+        expect(importStandingsSpy).toHaveBeenCalledTimes(1);
+        expect(listedFiles()).toEqual(['Open.csv', 'U1600.csv']);
+        expect(lastDraft()).toBe(draft);
+      });
     });
 
     it('should hold the save button while the files are read', () => {
