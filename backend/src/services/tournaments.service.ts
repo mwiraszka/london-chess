@@ -135,12 +135,19 @@ const pairKey = (a: Id, b: Id): string => [a, b].sort().join('|');
 
 const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
 
-// A pairing met more than once is told apart by round
+/**
+ * Links each played round to its game. A pairing met more than once is told apart by round.
+ * A game played against a player from another section is recorded against an entry standing
+ * in for that section's players, so it is found by its round and the one player of this
+ * section who played it.
+ */
 export function matchRoundGames(
   entries: TournamentEntry[],
   games: ArchiveGame[],
+  standInRanks: ReadonlySet<number> = new Set(),
 ): Map<string, Id> {
   const byRank = new Map(entries.map(entry => [entry.rank, entry]));
+  const sectionPlayerIds = new Set(entries.map(({ playerId }) => playerId));
   const gamesByPair = new Map<string, ArchiveGame[]>();
   for (const game of games) {
     const key = pairKey(game.whitePlayerId, game.blackPlayerId);
@@ -150,15 +157,34 @@ export function matchRoundGames(
   const gameIds = new Map<string, Id>();
   for (const entry of entries) {
     for (const { round, outcome, opponentRank } of entry.rounds) {
-      const opponent = opponentRank === null ? undefined : byRank.get(opponentRank);
-      if (outcome !== 'game' || !opponent) continue;
+      if (outcome !== 'game') continue;
 
-      const candidates =
-        gamesByPair.get(pairKey(entry.playerId, opponent.playerId)) ?? [];
-      const matches =
-        candidates.length > 1
-          ? candidates.filter(game => roundNumber(game.round) === round)
-          : candidates;
+      const opponent = opponentRank === null ? undefined : byRank.get(opponentRank);
+      let matches: ArchiveGame[];
+      if (opponent && !standInRanks.has(opponent.rank)) {
+        const candidates =
+          gamesByPair.get(pairKey(entry.playerId, opponent.playerId)) ?? [];
+        matches =
+          candidates.length > 1
+            ? candidates.filter(game => roundNumber(game.round) === round)
+            : candidates;
+      } else if (opponentRank === null || opponent) {
+        matches = games.filter(({ round: gameRound, whitePlayerId, blackPlayerId }) => {
+          const otherId =
+            whitePlayerId === entry.playerId
+              ? blackPlayerId
+              : blackPlayerId === entry.playerId
+                ? whitePlayerId
+                : null;
+          return (
+            otherId !== null &&
+            !sectionPlayerIds.has(otherId) &&
+            roundNumber(gameRound) === round
+          );
+        });
+      } else {
+        continue;
+      }
       if (matches.length === 1) {
         gameIds.set(roundKey(entry.rank, round), matches[0]._id.toString());
       }
@@ -377,6 +403,22 @@ export async function toTournamentResponse(
   ]);
   const player = (id: Id): GamePlayer => players.get(id) ?? { id, ...UNKNOWN_PLAYER };
 
+  // An entry named after another section, such as "YS2, Player", stands in for that
+  // section's players in the games the two sections play against each other
+  const sectionNames = new Set(sections.map(({ name }) => name.trim().toLowerCase()));
+  const standInRanks = (entries: TournamentEntry[]): Set<number> =>
+    new Set(
+      entries
+        .filter(({ playerId }) => {
+          const { firstName, lastName } = player(playerId);
+          return (
+            firstName.trim().toLowerCase() === 'player' &&
+            sectionNames.has(lastName.trim().toLowerCase())
+          );
+        })
+        .map(({ rank }) => rank),
+    );
+
   return {
     ...tournament,
     registrationOpens: record.registrationOpens ?? null,
@@ -387,7 +429,7 @@ export async function toTournamentResponse(
       const sectionGames = games
         .filter(game => gameArchiveSections.includes(game.section))
         .sort(byRound);
-      const gameIds = matchRoundGames(entries, sectionGames);
+      const gameIds = matchRoundGames(entries, sectionGames, standInRanks(entries));
 
       return {
         ...section,

@@ -103,13 +103,40 @@ describe('matchRoundGames', () => {
     expect(gameIds.has('1|1')).toBe(false);
   });
 
+  it("should link a game against another section's player to the round played against its stand-in", () => {
+    const DAN = 'd00000000000000000000004';
+    const withStandIn = [
+      entry(1, ANN, [played(1, 2, 1), played(2, 2, 0)]),
+      entry(2, BOB, [played(1, 1, 0), played(2, 1, 1)]),
+    ];
+
+    const gameIds = matchRoundGames(
+      withStandIn,
+      [
+        archiveGame(GAME_ONE, ANN, DAN, '1', 'YS'),
+        archiveGame(GAME_TWO, DAN, ANN, '2', 'YS'),
+        archiveGame('f00000000000000000000003', DAN, CAT, '1', 'YS'),
+      ],
+      new Set([2]),
+    );
+
+    expect(gameIds.get('1|1')).toBe(GAME_ONE);
+    expect(gameIds.get('1|2')).toBe(GAME_TWO);
+    expect(gameIds.has('2|1')).toBe(false);
+  });
+
   it('should skip results without a known opponent', () => {
     const unknown = [
-      entry(1, ANN, [{ ...played(1, 2, 1), opponentRank: null }]),
+      entry(1, ANN, [{ ...played(1, 2, 1), opponentRank: null }, played(2, 9, 1)]),
       entry(2, BOB, [{ ...played(1, 1, 0), outcome: 'forfeit' }]),
     ];
 
-    expect(matchRoundGames(unknown, [archiveGame(GAME_ONE, ANN, BOB)]).size).toBe(0);
+    expect(
+      matchRoundGames(unknown, [
+        archiveGame(GAME_ONE, ANN, BOB),
+        archiveGame(GAME_TWO, ANN, CAT, '2'),
+      ]).size,
+    ).toBe(0);
   });
 });
 
