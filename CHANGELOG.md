@@ -5,12 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.6.1] - 2026-10-31
+## [v6.6.1] - 2026-11-01
 
 ### Changed
 
 - Show members' FIDE, CFC, Lichess and Chess.com accounts at the end of the members list, each linking to their page on that site, and fit more of the list on a phone screen
 - Tidy up the search areas on the members, schedule and articles pages
+- Drop the separate list of games from tournament pages, as each round result links to its game, now including games against players from another section
+- Chart a tournament played in more than one section, such as a championship and its finals, at the rating each member started it with
 - Update third-party packages
 
 ### Fixed
