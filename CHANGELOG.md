@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.6.2] - 2026-11-01
 
-### Fixed
+### Changed
 
-- Fix adding a tournament's games when some were played across sections
+- Update third-party packages
 
 ## [v6.6.1] - 2026-11-01
 
