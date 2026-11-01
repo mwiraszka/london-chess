@@ -254,7 +254,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // save keep their initial values, and anything else taken whole. A saved "__proto__" key is
 // skipped, as assigning it would replace the merged object's prototype
 function withSaved<T extends object>(current: T, saved: object): T {
-  const merged: Record<string, unknown> = { ...current };
+  const merged: Record<string, unknown> = Object.fromEntries(Object.entries(current));
   for (const [key, value] of Object.entries(saved)) {
     if (key === '__proto__') {
       continue;
