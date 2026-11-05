@@ -307,6 +307,8 @@ describe('toMemberProfiles', () => {
         number: 7,
         firstName: 'Jane',
         lastName: 'Doe',
+        rating: '1500',
+        peakRating: '1600',
         avatarUrl: 'https://avatars.example.com/cropped?v=1704067200000',
       },
     ]);

@@ -68,12 +68,12 @@ describe('buildPlayerNameSortPipeline', () => {
     expect(pipeline()[0]).toEqual({ $match: { year: 1994 } });
   });
 
-  it('should join the player and the member whose name stands in for theirs', () => {
+  it('should join only the player, whose recorded name orders the games', () => {
     const lookups = pipeline().flatMap(stage =>
       '$lookup' in stage ? [stage.$lookup.from] : [],
     );
 
-    expect(lookups).toEqual(['players', 'members']);
+    expect(lookups).toEqual(['players']);
   });
 
   it('should order by the joined name and cut the page after sorting', () => {
