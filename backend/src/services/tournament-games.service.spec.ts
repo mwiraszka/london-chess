@@ -56,6 +56,9 @@ const game = (
   eco: 'C60',
   plyCount: 3,
   moves: '1. e4 e5 2. Nf3 1-0',
+  notCounted: false,
+  notCountedReason: '',
+  archivedGameId: null,
   ...overrides,
 });
 
@@ -116,7 +119,7 @@ describe('tournament games', () => {
       await archive(game(anna, boris));
       await archive(game(anna, clara, { round: '2' }));
 
-      const changes = await classifyGames(TOURNAMENT, YEAR, [
+      const { changes } = await classifyGames(TOURNAMENT, YEAR, [
         game(anna, boris, { moves: '1. e4   e5\n2. Nf3 1-0' }),
         game(anna, clara, { round: '2', result: '1/2-1/2' }),
         game(boris, clara, { round: '3' }),
@@ -127,9 +130,20 @@ describe('tournament games', () => {
     });
 
     it('should not look up the archive for no games', async () => {
-      const changes = await classifyGames(TOURNAMENT, YEAR, []);
+      const result = await classifyGames(TOURNAMENT, YEAR, []);
 
-      expect(changes).toEqual([]);
+      expect(result).toEqual({ changes: [], candidates: [] });
+    });
+
+    it('should count a change to whether a game counts, or to its reason', async () => {
+      await archive(game(anna, boris));
+
+      const { changes } = await classifyGames(TOURNAMENT, YEAR, [
+        game(anna, boris, { notCounted: true, notCountedReason: 'Withdrew' }),
+        game(anna, boris, { notCountedReason: 'Ignored while counted' }),
+      ]);
+
+      expect(changes).toEqual(['changed', 'unchanged']);
     });
   });
 
