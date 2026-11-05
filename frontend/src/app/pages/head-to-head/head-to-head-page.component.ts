@@ -32,6 +32,7 @@ import { LoadFailedComponent } from '@app/components/load-failed/load-failed.com
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import { RatingComparisonComponent } from '@app/components/rating-comparison/rating-comparison.component';
 import { SharedTournamentsComponent } from '@app/components/shared-tournaments/shared-tournaments.component';
+import { AUTH_QUERY_PARAM } from '@app/constants/auth';
 import {
   HEAD_TO_HEAD_CHART_HEIGHT,
   HEAD_TO_HEAD_COLORS,
@@ -40,6 +41,7 @@ import {
 import { ChartedMember, HeadToHeadSide, MemberProfile } from '@app/models';
 import { RatingLabelPipe } from '@app/pipes';
 import { MemberProfilesService, MetaAndTitleService } from '@app/services';
+import { AuthSelectors } from '@app/store/auth';
 import { GamesActions, GamesSelectors } from '@app/store/games';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import { combinedLoadStatus, isDefined, isRecordNumber } from '@app/utils';
@@ -92,6 +94,8 @@ export class HeadToHeadPageComponent implements OnInit {
   };
   protected readonly skeletonHeight = `${HEAD_TO_HEAD_CHART_HEIGHT}px`;
   protected readonly profilesStatus = this.memberProfiles.status;
+  protected readonly user = this.store.selectSignal(AuthSelectors.selectUser);
+  protected readonly createAccountParams = { [AUTH_QUERY_PARAM]: 'create-account' };
 
   private readonly queryParams = toSignal(this.route.queryParamMap, {
     requireSync: true,
@@ -221,7 +225,7 @@ export class HeadToHeadPageComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.metaAndTitleService.updateTitle('Head to Head');
+    this.metaAndTitleService.updateTitle('Head-to-Head');
     this.metaAndTitleService.updateDescription(
       'Compare two London Chess Club members: their games against each other, their ratings over time and the tournaments they both played.',
     );

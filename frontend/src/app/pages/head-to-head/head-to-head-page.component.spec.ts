@@ -9,14 +9,17 @@ import {
   ActivatedRoute,
   ParamMap,
   Router,
+  RouterLink,
   convertToParamMap,
   provideRouter,
 } from '@angular/router';
 
 import { MOCK_HEAD_TO_HEAD_GAMES } from '@app/mocks/games.mock';
 import { MOCK_MEMBER_TOURNAMENT_RESULTS } from '@app/mocks/tournaments.mock';
-import { HeadToHeadGame, LoadStatus, MemberProfile } from '@app/models';
+import { HeadToHeadGame, LoadStatus, MemberProfile, User } from '@app/models';
 import { MemberProfilesService, MetaAndTitleService } from '@app/services';
+import { AuthSelectors } from '@app/store/auth';
+import { initialState as authInitialState } from '@app/store/auth/auth.reducer';
 import { GamesActions, initialState as gamesInitialState } from '@app/store/games';
 import { GamesState } from '@app/store/games/games.reducer';
 import {
@@ -42,6 +45,15 @@ describe('HeadToHeadPageComponent', () => {
 
   const profilesStatus = signal<LoadStatus>('loaded');
 
+  const MOCK_USER: User = {
+    id: 'user_jane',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    email: 'jane@example.com',
+    isAdmin: false,
+    memberNumber: 7,
+  };
+
   const PROFILES: MemberProfile[] = [
     {
       number: 2,
@@ -66,6 +78,7 @@ describe('HeadToHeadPageComponent', () => {
     tournaments: Partial<TournamentsState> = {},
   ): void {
     store.setState({
+      authState: authInitialState,
       gamesState: { ...gamesInitialState, ...games },
       tournamentsState: { ...tournamentsInitialState, ...tournaments },
     });
@@ -114,6 +127,7 @@ describe('HeadToHeadPageComponent', () => {
         provideRouter([]),
         provideMockStore({
           initialState: {
+            authState: authInitialState,
             gamesState: gamesInitialState,
             tournamentsState: tournamentsInitialState,
           },
@@ -127,10 +141,12 @@ describe('HeadToHeadPageComponent', () => {
     store = TestBed.inject(MockStore);
   });
 
+  afterEach(() => store.resetSelectors());
+
   it('should set the title and description and load the members', () => {
     createComponent();
 
-    expect(metaAndTitleService.updateTitle).toHaveBeenCalledWith('Head to Head');
+    expect(metaAndTitleService.updateTitle).toHaveBeenCalledWith('Head-to-Head');
     expect(metaAndTitleService.updateDescription).toHaveBeenCalled();
     expect(memberProfiles.load).toHaveBeenCalled();
   });
@@ -144,6 +160,29 @@ describe('HeadToHeadPageComponent', () => {
       'Choose two members',
     );
     expect(query(fixture.debugElement, 'ea-accordion')).toBeFalsy();
+  });
+
+  it('should invite a visitor to create an account through a link into the drawer', () => {
+    createComponent();
+
+    const link = query(fixture.debugElement, '.account-prompt a');
+    expect(
+      query(fixture.debugElement, '.account-prompt').nativeElement.textContent.replace(
+        /\s+/g,
+        ' ',
+      ),
+    ).toContain("Don't have an account? Create one");
+    expect(link.injector.get(RouterLink).urlTree?.queryParams).toEqual({
+      auth: 'create-account',
+    });
+  });
+
+  it('should not invite someone already logged in to create an account', () => {
+    store.overrideSelector(AuthSelectors.selectUser, MOCK_USER);
+
+    createComponent();
+
+    expect(query(fixture.debugElement, '.account-prompt')).toBeFalsy();
   });
 
   it('should offer every member on each side but the one chosen on the other', () => {

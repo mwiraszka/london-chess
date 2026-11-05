@@ -1,5 +1,5 @@
 <lcc-page-header
-  heading="Head to Head"
+  heading="Head-to-Head"
   [icon]="pageIcon">
 </lcc-page-header>
 
@@ -166,10 +166,21 @@
   } @else {
     <ea-empty-state
       class="prompt"
-      description="Pick a member on each side to see their games against each other, their ratings over time and the tournaments they both played."
-      headingLevel="h2"
+      description="Choose two members to compare their head-to-head score and rating performance over time"
       size="sm"
-      title="Choose two members"
       [icon]="pageIcon" />
+
+    @if (!user()) {
+      <aside class="account-prompt">
+        Don't have an account?
+        <a
+          class="lcc-link"
+          queryParamsHandling="merge"
+          [queryParams]="createAccountParams"
+          [routerLink]="[]">
+          Create one
+        </a>
+      </aside>
+    }
   }
 }
