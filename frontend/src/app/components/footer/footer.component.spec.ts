@@ -177,7 +177,7 @@ describe('FooterComponent', () => {
               ['Articles', '/articles'],
               ['Photo Gallery', '/photo-gallery'],
               ['Game Archives', '/game-archives'],
-              ['Head to Head', '/head-to-head'],
+              ['Head-to-Head', '/head-to-head'],
               ['Lifetime Achievement Awards', '/lifetime-achievement-awards'],
             ],
           },

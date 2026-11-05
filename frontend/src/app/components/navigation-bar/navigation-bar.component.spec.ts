@@ -98,7 +98,7 @@ describe('NavigationBarComponent', () => {
       await router.navigateByUrl('/head-to-head?blue=2&red=7');
       fixture.detectChanges();
 
-      expect(linkTo('Head to Head').classList).toContain('link-active');
+      expect(linkTo('Head-to-Head').classList).toContain('link-active');
       expect(linkTo('Home').classList).not.toContain('link-active');
     });
 

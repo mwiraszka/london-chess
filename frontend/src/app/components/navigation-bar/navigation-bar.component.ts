@@ -71,7 +71,7 @@ export class NavigationBarComponent {
       icon: UsersIconComponent,
     },
     {
-      text: 'Head to Head',
+      text: 'Head-to-Head',
       internalPath: 'head-to-head',
       icon: ScaleIconComponent,
     },
