@@ -150,18 +150,18 @@ function matchName(raw: string, candidates: Candidates): PlayerNameMatch {
     ? (candidates.membersById.get(player.memberId) ?? null)
     : findMember(player ?? name, candidates.membersByName);
   const memberId = member?._id.toString() ?? null;
+  const playerId = player?._id.toString() ?? null;
+  const memberPlayerIds = memberId
+    ? candidates.players
+        .filter(other => other.memberId === memberId)
+        .map(({ _id }) => _id.toString())
+    : [];
   return {
     name: raw,
-    playerId: player?._id.toString() ?? null,
+    playerId,
     memberNumber: member?.number ?? null,
     memberId,
-    personPlayerIds: memberId
-      ? candidates.players
-          .filter(other => other.memberId === memberId)
-          .map(({ _id }) => _id.toString())
-      : player
-        ? [player._id.toString()]
-        : [],
+    personPlayerIds: [...new Set([...memberPlayerIds, ...(playerId ? [playerId] : [])])],
   };
 }
 
