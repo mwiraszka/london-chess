@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add a Head to Head page, linked from the menu and the footer, where you pick any two members to see their score against each other with charts of how their games went, every game they played, both their ratings over time on one chart, and the tournaments they played together
+- Add a Head-to-Head page, linked from the menu and the footer, where you pick any two members to see their score against each other with charts of how their games went, every game they played, both their ratings over time on one chart, and the tournaments they played together
+- Let a link to any page open the log-in or create-account panel over it
 
 ### Changed
 
