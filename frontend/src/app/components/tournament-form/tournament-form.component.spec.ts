@@ -1041,15 +1041,18 @@ describe('TournamentFormComponent', () => {
         playerNames: {},
         problems: [],
       });
+      vi.useFakeTimers();
       render(tournamentFormData(recorded), false, recorded);
       await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
-      await settle();
+      fixture.detectChanges();
 
       query(fixture.debugElement, '.results__decisions ea-input').triggerEventHandler(
         'valueChange',
         'Withdrew after round 1',
       );
+      await vi.advanceTimersByTimeAsync(FORM_CHANGE_DEBOUNCE);
       fixture.detectChanges();
+      vi.useRealTimers();
 
       expect(lastDraft().games?.[0]).toEqual({
         ...uncounted,
