@@ -1,0 +1,59 @@
+@let sides = names();
+@let score = points();
+<p class="lcc-visually-hidden">
+  {{ sides.first }} has scored {{ formatScore(score.first) }} and {{ sides.second }}
+  {{ formatScore(score.second) }} in {{ games().length }}
+  {{ games().length === 1 ? 'game' : 'games' }} against each other.
+</p>
+<div
+  class="score"
+  aria-hidden="true">
+  <div class="score__side score__side--first">
+    <span class="score__points">{{ formatScore(score.first) }}</span>
+    <span class="score__name">{{ sides.first }}</span>
+  </div>
+  <span class="score__separator">–</span>
+  <div class="score__side score__side--second">
+    <span class="score__points">{{ formatScore(score.second) }}</span>
+    <span class="score__name">{{ sides.second }}</span>
+  </div>
+</div>
+
+<div class="charts">
+  <section class="chart">
+    <h4 class="chart__title">Results</h4>
+    <ea-pie-chart
+      aria-label="How their games ended"
+      totalLabel="Games"
+      variant="donut"
+      [data]="resultSlices()"
+      [height]="200"
+      [showTotal]="true" />
+  </section>
+
+  @if (hasColors()) {
+    <section class="chart">
+      <h4 class="chart__title">By {{ sides.first }}'s colour</h4>
+      <ea-bar-chart
+        orientation="horizontal"
+        [aria-label]="'How their games ended by the colour ' + sides.first + ' played'"
+        [height]="200"
+        [labels]="colorLabels"
+        [series]="colorSeries()"
+        [stacked]="true" />
+    </section>
+  }
+
+  @if (hasYears()) {
+    <section class="chart chart--wide">
+      <h4 class="chart__title">Points by year</h4>
+      <ea-bar-chart
+        aria-label="Points each scored against the other in each year"
+        xLabelOrientation="auto"
+        [formatValue]="formatScore"
+        [height]="200"
+        [labels]="yearLabels()"
+        [series]="yearSeries()" />
+    </section>
+  }
+</div>

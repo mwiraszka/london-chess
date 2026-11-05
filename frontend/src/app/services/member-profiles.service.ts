@@ -1,6 +1,6 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { MemberProfile, NameOrder } from '@app/models';
+import { LoadStatus, MemberProfile, NameOrder } from '@app/models';
 import { ApiService } from '@app/services/api.service';
 
 /**
@@ -14,18 +14,35 @@ export class MemberProfilesService {
   private readonly api = inject(ApiService);
 
   private readonly profiles = signal<ReadonlyMap<number, MemberProfile>>(new Map());
+  private readonly loadStatus = signal<LoadStatus>('loading');
   private loadPromise: Promise<void> | null = null;
 
+  readonly status = this.loadStatus.asReadonly();
+
+  // By first name, then last
+  readonly all = computed(() =>
+    [...this.profiles().values()].sort(
+      (a, b) =>
+        a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName),
+    ),
+  );
+
+  // Profiles once loaded stay loaded through a failed reload, as they are still shown
   load(): Promise<void> {
-    this.loadPromise ??= this.api
-      .get<MemberProfile[]>('/public/members/profiles')
-      .then(profiles => {
-        this.profiles.set(new Map(profiles.map(profile => [profile.number, profile])));
-      })
-      .catch(() => {
-        // Stored names show unlinked until a later consumer loads the profiles
-        this.loadPromise = null;
-      });
+    if (!this.loadPromise) {
+      this.loadStatus.update(status => (status === 'failed' ? 'loading' : status));
+      this.loadPromise = this.api
+        .get<MemberProfile[]>('/public/members/profiles')
+        .then(profiles => {
+          this.profiles.set(new Map(profiles.map(profile => [profile.number, profile])));
+          this.loadStatus.set('loaded');
+        })
+        .catch(() => {
+          // Stored names show unlinked until a later consumer loads the profiles
+          this.loadPromise = null;
+          this.loadStatus.update(status => (status === 'loaded' ? status : 'failed'));
+        });
+    }
     return this.loadPromise;
   }
 

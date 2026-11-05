@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 
 import { DebugElement, TemplateRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { User } from '@app/models';
 import { ClerkService } from '@app/services';
@@ -85,6 +85,21 @@ describe('NavigationBarComponent', () => {
 
       const renderedLinks = fixture.nativeElement.querySelectorAll('.nav-link');
       expect(renderedLinks.length).toBe(component.links.length);
+    });
+
+    it("should keep a page's tab active whatever its address carries after the path", async () => {
+      const router = TestBed.inject(Router);
+      router.resetConfig([{ path: '**', children: [] }]);
+      const linkTo = (text: string): HTMLElement =>
+        queryAll(fixture.debugElement, '.nav-link').find(
+          link => link.attributes['aria-label'] === text,
+        )!.nativeElement;
+
+      await router.navigateByUrl('/head-to-head?blue=2&red=7');
+      fixture.detectChanges();
+
+      expect(linkTo('Head to Head').classList).toContain('link-active');
+      expect(linkTo('Home').classList).not.toContain('link-active');
     });
 
     it('should list the tournaments between the schedule and the articles', () => {

@@ -118,6 +118,12 @@ describe('GamesApiService', () => {
         .expectOne(`${apiBaseUrl}/members/7/openings`)
         .flush({ data: { white: [], black: [] } });
     });
+
+    it("should request the games between two members, from the first one's side", () => {
+      service.getHeadToHead(7, 2).subscribe();
+
+      httpMock.expectOne(`${apiBaseUrl}/head-to-head/7/2`).flush({ data: [] });
+    });
   });
 
   it('should ask for the widest games once a visit, however often they are wanted', () => {

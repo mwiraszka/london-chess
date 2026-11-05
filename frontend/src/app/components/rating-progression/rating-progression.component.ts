@@ -18,20 +18,20 @@ import {
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
-import { RATING_AXIS_CEILING, RATING_AXIS_MAX_STEP } from '@app/constants/member-profile';
-import { MemberTournamentResult } from '@app/models';
+import {
+  RATING_AXIS_CEILING,
+  RATING_AXIS_MAX_STEP,
+  RATING_CHART_VISIBLE_YEARS,
+} from '@app/constants/member-profile';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
+import {
+  formatRating,
+  quarterlyTicks,
+  ratedResults,
+  ratedTournamentLabel,
+  tournamentTime,
+} from '@app/utils';
 import moment from '@app/utils/datetime/moment';
-
-// The chart opens on the latest five years and scrolls back through the rest
-const VISIBLE_SPAN_MS = moment.duration(5, 'years').asMilliseconds();
-
-// Ticks on the first month of each quarter, whatever days the tournaments fall on
-const TICK_INTERVAL_MONTHS = 3;
-
-function tournamentTime(date: string): number {
-  return moment(date, 'YYYY-MM-DD').valueOf();
-}
 
 /**
  * A member's rating at each rated tournament they played, oldest first. The
@@ -70,25 +70,9 @@ export class RatingProgressionComponent {
 
   protected readonly status = computed(() => this.state()?.status ?? 'loading');
 
-  // A member with a result in more than one section, such as a championship's round robin
-  // and its final, is charted at the rating they started the tournament with: that of the
-  // first section they appear in, as the results list a tournament's sections in order
-  private readonly ratedResults = computed(() => {
-    const byTournament = new Map<number, MemberTournamentResult>();
-    for (const result of this.state()?.results ?? []) {
-      if (!result.tournament.isRated || result.rating === null) {
-        continue;
-      }
-      if (!byTournament.has(result.tournament.number)) {
-        byTournament.set(result.tournament.number, result);
-      }
-    }
-    return [...byTournament.values()].sort(
-      (a, b) =>
-        a.tournament.date.localeCompare(b.tournament.date) ||
-        a.tournament.number - b.tournament.number,
-    );
-  });
+  private readonly ratedResults = computed(() =>
+    ratedResults(this.state()?.results ?? []),
+  );
 
   // A lone rating has no spread to fit, so its axis spans every rating the club sees
   protected readonly yMin = computed(() =>
@@ -101,41 +85,23 @@ export class RatingProgressionComponent {
     return rating === null ? undefined : Math.max(RATING_AXIS_CEILING, rating);
   });
 
-  protected readonly visibleSpan = VISIBLE_SPAN_MS;
+  protected readonly visibleSpan = moment
+    .duration(RATING_CHART_VISIBLE_YEARS, 'years')
+    .asMilliseconds();
 
   protected readonly xValues = computed(() =>
     this.ratedResults().map(({ tournament }) => tournamentTime(tournament.date)),
   );
 
-  // Each point's tooltip names the tournament it was rated at
   protected readonly labels = computed(() =>
-    this.ratedResults().map(({ tournament }) => {
-      const date = moment(tournament.date, 'YYYY-MM-DD').format('MMM D, YYYY');
-      return `${tournament.name} (${date})`;
-    }),
+    this.ratedResults().map(({ tournament }) => ratedTournamentLabel(tournament)),
   );
 
-  protected readonly xTicks = computed<LineChartTick[]>(() => {
-    const times = this.xValues();
-    if (!times.length) {
-      return [];
-    }
-    const first = moment(times[0]).startOf('month');
-    const tick = first
-      .clone()
-      .month(Math.floor(first.month() / TICK_INTERVAL_MONTHS) * TICK_INTERVAL_MONTHS);
-    const last = moment(times[times.length - 1]);
-    const ticks: LineChartTick[] = [];
-    while (tick.isSameOrBefore(last)) {
-      ticks.push({ value: tick.valueOf(), label: tick.format('MMM YYYY') });
-      tick.add(TICK_INTERVAL_MONTHS, 'months');
-    }
-    return ticks;
-  });
+  protected readonly xTicks = computed<LineChartTick[]>(() =>
+    quarterlyTicks(this.xValues()),
+  );
 
-  // Ratings read as plain numbers, never with a thousands separator
-  protected readonly formatRating = (rating: number): string =>
-    String(Math.round(rating));
+  protected readonly formatRating = formatRating;
 
   protected readonly series = computed<ChartSeries[]>(() => [
     { name: 'Rating at start', data: this.ratedResults().map(({ rating }) => rating) },

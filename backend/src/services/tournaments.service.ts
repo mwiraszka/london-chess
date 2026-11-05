@@ -126,7 +126,7 @@ export const TOURNAMENT_SUMMARY_PIPELINE: PipelineStage[] = [
 ];
 
 // A round may also carry a board number
-function roundNumber(round: string): number | null {
+export function roundNumber(round: string): number | null {
   const match = round.match(/^\d+/);
   return match ? Number(match[0]) : null;
 }

@@ -1,0 +1,7 @@
+// Every state keeps at least the chart's height, so nothing below moves as it loads
+:host {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

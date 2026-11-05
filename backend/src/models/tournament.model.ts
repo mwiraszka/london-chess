@@ -23,7 +23,7 @@ export const ROUND_OUTCOMES: RoundOutcome[] = [
   'unplayed',
 ];
 
-type PieceColor = 'white' | 'black';
+export type PieceColor = 'white' | 'black';
 
 export interface RoundResult {
   round: number;
@@ -242,6 +242,24 @@ export interface PlayerNameMatch {
   // Null when saving the results would add the player to the archive
   playerId: Id | null;
   memberNumber: number | null;
+}
+
+// A game between two members, as the first of them played it
+export interface HeadToHeadGame {
+  // Null for a game outside every recorded tournament
+  tournamentNumber: number | null;
+  // The recorded tournament's name, or else the archive's
+  tournament: string;
+  section: string;
+  // As much of the date as was recorded: YYYY, YYYY-MM or YYYY-MM-DD
+  date: string;
+  round: string;
+  // Null when not recorded
+  color: PieceColor | null;
+  // The first member's score: 1, 0.5 or 0
+  score: number;
+  // Null when the game was not archived
+  gameId: Id | null;
 }
 
 export type MemberTournamentResult = Pick<

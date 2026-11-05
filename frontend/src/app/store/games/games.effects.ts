@@ -88,6 +88,26 @@ export class GamesEffects {
     );
   });
 
+  fetchHeadToHead$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(GamesActions.fetchHeadToHeadRequested),
+      switchMap(({ firstNumber, secondNumber }) =>
+        this.gamesApiService.getHeadToHead(firstNumber, secondNumber).pipe(
+          map(response =>
+            GamesActions.fetchHeadToHeadSucceeded({
+              firstNumber,
+              secondNumber,
+              games: response.data,
+            }),
+          ),
+          catchError(error =>
+            of(GamesActions.fetchHeadToHeadFailed({ error: this.parseError(error) })),
+          ),
+        ),
+      ),
+    );
+  });
+
   fetchArchiveReference$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(GamesActions.fetchArchiveReferenceRequested),

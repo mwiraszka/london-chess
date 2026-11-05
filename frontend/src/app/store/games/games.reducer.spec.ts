@@ -4,6 +4,7 @@ import {
   MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
+  MOCK_HEAD_TO_HEAD_GAMES,
 } from '@app/mocks/games.mock';
 import { LccError } from '@app/models';
 
@@ -32,6 +33,7 @@ describe('Games Reducer', () => {
       tournaments: [],
       summary: null,
       memberOpenings: {},
+      headToHead: {},
     });
   });
 
@@ -164,6 +166,36 @@ describe('Games Reducer', () => {
       );
 
       expect(failed.failedLoads).toEqual(['member-openings']);
+      expect(retried.failedLoads).toEqual([]);
+    });
+  });
+
+  describe('head-to-head games', () => {
+    it('should keep the games of each pairing in the order it was asked for', () => {
+      const state = gamesReducer(
+        initialState,
+        GamesActions.fetchHeadToHeadSucceeded({
+          firstNumber: 2,
+          secondNumber: 7,
+          games: MOCK_HEAD_TO_HEAD_GAMES,
+        }),
+      );
+
+      expect(state.headToHead).toEqual({ '2-7': MOCK_HEAD_TO_HEAD_GAMES });
+    });
+
+    it('should record a failed fetch and clear it when fetched again', () => {
+      const failed = gamesReducer(
+        initialState,
+        GamesActions.fetchHeadToHeadFailed({ error: mockError }),
+      );
+
+      const retried = gamesReducer(
+        failed,
+        GamesActions.fetchHeadToHeadRequested({ firstNumber: 2, secondNumber: 7 }),
+      );
+
+      expect(failed.failedLoads).toEqual(['head-to-head']);
       expect(retried.failedLoads).toEqual([]);
     });
   });

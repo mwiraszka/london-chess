@@ -8,6 +8,7 @@ export type NavPath =
   | 'event'
   | 'faq'
   | 'game-archives'
+  | 'head-to-head'
   | 'image'
   | 'lifetime-achievement-awards'
   | 'member'

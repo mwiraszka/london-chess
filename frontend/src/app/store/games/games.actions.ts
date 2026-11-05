@@ -6,6 +6,7 @@ import {
   Game,
   GamesQuery,
   GamesSummary,
+  HeadToHeadGame,
   Id,
   LccError,
   MemberOpenings,
@@ -62,6 +63,19 @@ export const fetchMemberOpeningsSucceeded = createAction(
 );
 export const fetchMemberOpeningsFailed = createAction(
   '[Games] Fetch member openings failed',
+  props<{ error: LccError }>(),
+);
+
+export const fetchHeadToHeadRequested = createAction(
+  '[Games] Fetch head-to-head requested',
+  props<{ firstNumber: number; secondNumber: number }>(),
+);
+export const fetchHeadToHeadSucceeded = createAction(
+  '[Games] Fetch head-to-head succeeded',
+  props<{ firstNumber: number; secondNumber: number; games: HeadToHeadGame[] }>(),
+);
+export const fetchHeadToHeadFailed = createAction(
+  '[Games] Fetch head-to-head failed',
   props<{ error: LccError }>(),
 );
 

@@ -157,7 +157,14 @@ describe('members routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual([
-        { number: 3, firstName: 'Jane', lastName: 'Doe', avatarUrl: null },
+        {
+          number: 3,
+          firstName: 'Jane',
+          lastName: 'Doe',
+          rating: '1500',
+          peakRating: '1600',
+          avatarUrl: null,
+        },
       ]);
     });
 

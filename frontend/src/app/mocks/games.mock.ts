@@ -1,4 +1,10 @@
-import { ArchivePlayer, ArchiveTournament, Game, GamesSummary } from '@app/models';
+import {
+  ArchivePlayer,
+  ArchiveTournament,
+  Game,
+  GamesSummary,
+  HeadToHeadGame,
+} from '@app/models';
 
 import { MOCK_MODIFICATION_INFOS } from './modification-info.mock';
 
@@ -125,3 +131,48 @@ export const MOCK_GAMES_SUMMARY: GamesSummary = {
   firstYear: 1974,
   lastYear: 2026,
 };
+
+// From the first member's side: a win with White, a draw and a loss with Black, and an
+// older win whose colours were not recorded
+export const MOCK_HEAD_TO_HEAD_GAMES: HeadToHeadGame[] = [
+  {
+    tournamentNumber: 118,
+    tournament: 'Championship',
+    section: 'A1',
+    date: '2024-10-03',
+    round: '2',
+    color: 'white',
+    score: 1,
+    gameId: '6a0000000000000000000001',
+  },
+  {
+    tournamentNumber: 118,
+    tournament: 'Championship',
+    section: 'A1',
+    date: '2024-09-12',
+    round: '1',
+    color: 'black',
+    score: 0.5,
+    gameId: null,
+  },
+  {
+    tournamentNumber: 90,
+    tournament: 'Fall Active',
+    section: '',
+    date: '2023-10-19',
+    round: '3',
+    color: 'black',
+    score: 0,
+    gameId: '6a0000000000000000000002',
+  },
+  {
+    tournamentNumber: null,
+    tournament: 'Club Championship',
+    section: 'A',
+    date: '2021',
+    round: '4.2',
+    color: null,
+    score: 1,
+    gameId: '6a0000000000000000000003',
+  },
+];

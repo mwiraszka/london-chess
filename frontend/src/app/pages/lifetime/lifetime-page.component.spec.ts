@@ -20,6 +20,8 @@ describe('LifetimePageComponent', () => {
     number: 2,
     firstName: 'John',
     lastName: 'Doe',
+    rating: '1500',
+    peakRating: '1600',
     avatarUrl: null,
   };
   const memberProfiles: Pick<MemberProfilesService, 'load' | 'profileFor'> = {

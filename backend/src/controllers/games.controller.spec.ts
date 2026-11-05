@@ -4,6 +4,13 @@ import request from 'supertest';
 import { app } from '../app';
 import { Game, GameModel, GameResponse, MemberOpenings } from '../models/game.model';
 import { Player, PlayerModel } from '../models/player.model';
+import {
+  HeadToHeadGame,
+  RoundResult,
+  TournamentEntry,
+  TournamentModel,
+  TournamentSection,
+} from '../models/tournament.model';
 import { useTestDatabase } from '../testing/database';
 import { MODIFICATION_INFO, createMember, memberAccount } from '../testing/fixtures';
 import { INSERTION_ORDER, TIED_IDS, idsPageByPage } from '../testing/paging';
@@ -46,6 +53,48 @@ async function createGame(
     ...overrides,
   });
   return game._id.toString();
+}
+
+function entry(rank: number, playerId: string, rounds: RoundResult[]): TournamentEntry {
+  return {
+    rank,
+    playerId,
+    rating: 1500,
+    provisionalGames: null,
+    performanceRating: null,
+    score: null,
+    tiebreak: null,
+    rounds,
+    resultNote: '',
+  };
+}
+
+function section(
+  entries: TournamentEntry[],
+  overrides: Partial<TournamentSection> = {},
+): TournamentSection {
+  return {
+    name: 'Open',
+    ratingBand: '',
+    roundCount: 3,
+    isDoubleRound: false,
+    gameArchiveSections: ['A'],
+    entries,
+    ...overrides,
+  };
+}
+
+async function createTournament(sections: TournamentSection[]): Promise<void> {
+  await TournamentModel.create({
+    number: 5,
+    name: 'Club Championship 2023',
+    date: '2023-09-14',
+    format: 'round-robin',
+    timeControl: 'G80',
+    isRated: true,
+    gameArchiveTournament: 'Club Championship',
+    sections,
+  });
 }
 
 describe('games routes', () => {
@@ -375,6 +424,211 @@ describe('games routes', () => {
       });
 
       const response = await request(app).get('/v1/games/members/7/openings');
+
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('GET /v1/games/head-to-head/:first/:second', () => {
+    async function linkedPlayers(): Promise<[string, string]> {
+      const first = await createMember({
+        number: 7,
+        account: memberAccount({ clerkUserId: 'user_first' }),
+      });
+      const second = await createMember({
+        number: 8,
+        firstName: 'John',
+        account: memberAccount({ clerkUserId: 'user_second' }),
+      });
+      return [
+        await createPlayer({ lastName: 'First', memberId: first._id.toString() }),
+        await createPlayer({ lastName: 'Second', memberId: second._id.toString() }),
+      ];
+    }
+
+    const game = (
+      round: number,
+      opponentRank: number,
+      scores: number[],
+      color: RoundResult['color'],
+    ): RoundResult => ({
+      round,
+      outcome: 'game',
+      scores,
+      points: scores.reduce((total, score) => total + score, 0),
+      opponentRank,
+      color,
+    });
+
+    it("should count each crosstable pairing as a game from the first member's side, linked to its archived copy", async () => {
+      const [first, second] = await linkedPlayers();
+      const other = await createPlayer({ lastName: 'Other' });
+      const archived = await createGame(first, second, {
+        year: 2023,
+        date: '2023-09-21',
+        round: '2',
+      });
+      await createTournament([
+        section([
+          entry(1, first, [
+            game(1, 3, [1], 'black'),
+            game(2, 2, [1], 'white'),
+            { ...game(3, 2, [], null), outcome: 'forfeit' },
+          ]),
+          entry(2, second, [game(2, 1, [0], 'black')]),
+          entry(3, other, [game(1, 1, [0], 'white')]),
+        ]),
+      ]);
+
+      const response = await request(app).get('/v1/games/head-to-head/7/8');
+
+      expect(response.status).toBe(200);
+      const games: HeadToHeadGame[] = response.body.data;
+      expect(games).toEqual([
+        {
+          tournamentNumber: 5,
+          tournament: 'Club Championship 2023',
+          section: 'Open',
+          date: '2023-09-21',
+          round: '2',
+          color: 'white',
+          score: 1,
+          gameId: archived,
+        },
+      ]);
+    });
+
+    it('should split a double round into its two games, each with its own colour', async () => {
+      const [first, second] = await linkedPlayers();
+      const opening = await createGame(first, second, { year: 2023, round: '1' });
+      const returnGame = await createGame(second, first, {
+        year: 2023,
+        round: '4',
+        result: '1/2-1/2',
+      });
+      await createTournament([
+        section(
+          [
+            entry(1, first, [game(1, 2, [1, 0.5], 'white')]),
+            entry(2, second, [game(1, 1, [0, 0.5], 'black')]),
+          ],
+          { isDoubleRound: true },
+        ),
+      ]);
+
+      const response = await request(app).get('/v1/games/head-to-head/7/8');
+
+      const games: HeadToHeadGame[] = response.body.data;
+      expect(games.map(({ color, score, gameId }) => ({ color, score, gameId }))).toEqual(
+        expect.arrayContaining([
+          { color: 'white', score: 1, gameId: opening },
+          { color: 'black', score: 0.5, gameId: returnGame },
+        ]),
+      );
+      expect(games).toHaveLength(2);
+    });
+
+    it("should add the archive's other games from the first member's side, newest first, leaving out those without a result", async () => {
+      const [first, second] = await linkedPlayers();
+      const older = await createGame(second, first, { date: '1994-03-05' });
+      const newer = await createGame(first, second, {
+        date: '1996',
+        year: 1996,
+        result: '1/2-1/2',
+      });
+      await createGame(first, second, { result: '*' });
+      await createGame(first, await createPlayer({ lastName: 'Other' }));
+
+      const response = await request(app).get('/v1/games/head-to-head/7/8');
+
+      const games: HeadToHeadGame[] = response.body.data;
+      expect(games).toEqual([
+        {
+          tournamentNumber: null,
+          tournament: 'Club Championship',
+          section: 'A',
+          date: '1996',
+          round: '1',
+          color: 'white',
+          score: 0.5,
+          gameId: newer,
+        },
+        {
+          tournamentNumber: null,
+          tournament: 'Club Championship',
+          section: 'A',
+          date: '1994-03-05',
+          round: '1',
+          color: 'black',
+          score: 0,
+          gameId: older,
+        },
+      ]);
+    });
+
+    it('should name the recorded tournament of an archived game its crosstable does not pair', async () => {
+      const [first, second] = await linkedPlayers();
+      const archived = await createGame(first, second, { year: 2023 });
+      await createTournament([
+        section([entry(1, first, []), entry(2, second, [])], { name: 'Final' }),
+      ]);
+
+      const response = await request(app).get('/v1/games/head-to-head/7/8');
+
+      const games: HeadToHeadGame[] = response.body.data;
+      expect(games).toEqual([
+        expect.objectContaining({
+          tournamentNumber: 5,
+          tournament: 'Club Championship 2023',
+          section: 'Final',
+          gameId: archived,
+        }),
+      ]);
+    });
+
+    it('should have no games for a member without archived players', async () => {
+      await createMember({
+        number: 7,
+        account: memberAccount({ clerkUserId: 'user_a' }),
+      });
+      await createMember({
+        number: 8,
+        account: memberAccount({ clerkUserId: 'user_b' }),
+      });
+
+      const response = await request(app).get('/v1/games/head-to-head/7/8');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual([]);
+    });
+
+    it('should turn away the same member on both sides', async () => {
+      await createMember({ number: 7, account: memberAccount() });
+
+      const response = await request(app).get('/v1/games/head-to-head/7/07');
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should respond with not found for a member without an account or a malformed number', async () => {
+      await createMember({ number: 7, account: memberAccount() });
+      await createMember({ number: 8, email: 'other@example.com' });
+
+      const withoutAccount = await request(app).get('/v1/games/head-to-head/7/8');
+      const malformed = await request(app).get('/v1/games/head-to-head/abc/7');
+
+      expect(withoutAccount.status).toBe(404);
+      expect(withoutAccount.body.message).toContain('[8]');
+      expect(malformed.status).toBe(404);
+    });
+
+    it('should report an unexpected failure', async () => {
+      await linkedPlayers();
+      vi.spyOn(TournamentModel, 'find').mockImplementationOnce(() => {
+        throw new Error('boom');
+      });
+
+      const response = await request(app).get('/v1/games/head-to-head/7/8');
 
       expect(response.status).toBe(500);
     });

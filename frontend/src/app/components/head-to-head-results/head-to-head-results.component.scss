@@ -1,0 +1,71 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+// Each side's colour marks its edge, while its figures keep the text's own colour
+.score__side {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 8px;
+  text-align: center;
+  border-top: 4px solid var(--lcc-head-to-head-first);
+}
+
+.score__side--second {
+  border-top-color: var(--lcc-head-to-head-second);
+}
+
+.score__points {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-text-primary);
+}
+
+.score__name {
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+}
+
+.score__separator {
+  font-size: 32px;
+  color: var(--color-text-secondary);
+}
+
+.charts {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chart--wide {
+  grid-column: 1 / -1;
+}
+
+.chart__title {
+  @include stat-label;
+
+  text-align: center;
+}

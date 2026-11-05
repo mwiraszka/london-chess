@@ -49,6 +49,16 @@ export type {
   MemberOpenings,
   OpeningCount,
 } from './game.model';
+export type {
+  ChartedMember,
+  HeadToHeadGame,
+  HeadToHeadGameRow,
+  HeadToHeadSide,
+  HeadToHeadTally,
+  HeadToHeadYear,
+  SharedTournament,
+  SharedTournamentRow,
+} from './head-to-head.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {
   AlbumFormGroup,

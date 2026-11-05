@@ -8,6 +8,7 @@ import {
   Game,
   GamesQuery,
   GamesSummary,
+  HeadToHeadGame,
   IsoDate,
   MemberOpenings,
 } from '@app/models';
@@ -15,7 +16,13 @@ import { withFailedLoad, withLoadAttempt } from '@app/utils';
 
 import * as GamesActions from './games.actions';
 
-export type GamesLoad = 'filtered' | 'game' | 'reference' | 'member-openings';
+export type GamesLoad =
+  'filtered' | 'game' | 'reference' | 'member-openings' | 'head-to-head';
+
+// Each pairing is kept in the order it was asked for, as its games are told from the first
+// member's side
+export const headToHeadKey = (firstNumber: number, secondNumber: number): string =>
+  `${firstNumber}-${secondNumber}`;
 
 export interface GamesState extends EntityState<Game> {
   // Loads whose latest attempt failed
@@ -31,6 +38,7 @@ export interface GamesState extends EntityState<Game> {
   tournaments: ArchiveTournament[];
   summary: GamesSummary | null;
   memberOpenings: Record<number, MemberOpenings>;
+  headToHead: Record<string, HeadToHeadGame[]>;
 }
 
 export const gamesAdapter = createEntityAdapter<Game>();
@@ -47,6 +55,7 @@ export const initialState: GamesState = gamesAdapter.getInitialState({
   tournaments: [],
   summary: null,
   memberOpenings: {},
+  headToHead: {},
 });
 
 export const gamesReducer = createReducer(
@@ -108,6 +117,23 @@ export const gamesReducer = createReducer(
     (state, { memberNumber, openings }): GamesState => ({
       ...state,
       memberOpenings: { ...state.memberOpenings, [memberNumber]: openings },
+    }),
+  ),
+
+  on(GamesActions.fetchHeadToHeadRequested, (state): GamesState =>
+    withLoadAttempt(state, 'head-to-head'),
+  ),
+  on(GamesActions.fetchHeadToHeadFailed, (state): GamesState =>
+    withFailedLoad(state, 'head-to-head'),
+  ),
+  on(
+    GamesActions.fetchHeadToHeadSucceeded,
+    (state, { firstNumber, secondNumber, games }): GamesState => ({
+      ...state,
+      headToHead: {
+        ...state.headToHead,
+        [headToHeadKey(firstNumber, secondNumber)]: games,
+      },
     }),
   ),
 

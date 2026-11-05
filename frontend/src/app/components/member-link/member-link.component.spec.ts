@@ -33,7 +33,14 @@ describe('MemberLinkComponent', () => {
   let host: HostComponent;
 
   const profiles: MemberProfile[] = [
-    { number: 0, firstName: 'Magnus', lastName: 'Carlsen', avatarUrl: null },
+    {
+      number: 0,
+      firstName: 'Magnus',
+      lastName: 'Carlsen',
+      rating: '2800',
+      peakRating: '2882',
+      avatarUrl: null,
+    },
   ];
   const api = { get: vi.fn(() => Promise.resolve(profiles)) };
 

@@ -1,0 +1,175 @@
+<lcc-page-header
+  heading="Head to Head"
+  [icon]="pageIcon">
+</lcc-page-header>
+
+@if (profilesStatus() === 'failed') {
+  <lcc-load-failed
+    title="Unable to load members"
+    (retry)="onRetryProfiles()" />
+} @else {
+  <div class="contenders">
+    @for (side of sides; track side) {
+      @let member = members()[side];
+      <ea-card
+        class="contender"
+        padding="none"
+        [fullWidth]="true">
+        <div
+          class="contender__body"
+          role="group"
+          [attr.aria-label]="sideLabels[side]"
+          [class.contender__body--first]="side === 'first'"
+          [class.contender__body--second]="side === 'second'">
+          <ea-dropdown
+            placeholder="Choose a member"
+            [clearable]="true"
+            [disabled]="profilesStatus() === 'loading'"
+            [options]="options()[side]"
+            [searchable]="true"
+            [value]="valueOf(side)"
+            (changed)="onSelect(side, $event)" />
+          @if (member) {
+            <div class="contender__member">
+              <ea-avatar
+                size="lg"
+                [alt]="fullName(member) + '\'s avatar'"
+                [initials]="initials(member)"
+                [src]="member.avatarUrl ?? undefined" />
+              <div class="contender__details">
+                <a
+                  class="lcc-link contender__name"
+                  [routerLink]="['/members', member.number]">
+                  {{ fullName(member) }}
+                </a>
+                <dl class="contender__ratings">
+                  <div class="contender__rating">
+                    <dt class="contender__rating-label">Rating</dt>
+                    <dd class="contender__rating-value">
+                      {{ member.rating | ratingLabel }}
+                    </dd>
+                  </div>
+                  <div class="contender__rating">
+                    <dt class="contender__rating-label">Peak</dt>
+                    <dd class="contender__rating-value">
+                      {{ member.peakRating | ratingLabel }}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          }
+        </div>
+      </ea-card>
+      @if (side === 'first') {
+        <div class="versus">
+          <span
+            class="versus__text"
+            aria-hidden="true">
+            vs
+          </span>
+          <ea-button
+            class="versus__swap"
+            eaTooltip="Swap the members"
+            size="sm"
+            variant="ghost"
+            [aria-label]="'Swap the members'"
+            [disabled]="numbers().first === null && numbers().second === null"
+            [icon]="swapIcon"
+            (clicked)="onSwap()" />
+        </div>
+      }
+    }
+  </div>
+
+  @let comparing = comparison();
+  @let sideNames = names();
+  @if (pairing() && comparing && sideNames) {
+    <ea-accordion
+      class="section"
+      [expandedValues]="['games']">
+      <ea-accordion-item
+        label="Games against each other"
+        value="games">
+        @switch (comparing.gamesStatus) {
+          @case ('failed') {
+            <lcc-load-failed
+              title="Unable to load their games"
+              (retry)="onRetryGames()" />
+          }
+          @case ('loading') {
+            <ea-skeleton
+              variant="rect"
+              width="100%"
+              aria-busy="true"
+              [height]="skeletonHeight" />
+          }
+          @default {
+            @let games = comparing.games ?? [];
+            @if (games.length) {
+              <div class="section__body">
+                <lcc-head-to-head-results
+                  [games]="games"
+                  [names]="sideNames" />
+                <lcc-head-to-head-games
+                  [games]="games"
+                  [names]="sideNames" />
+              </div>
+            } @else {
+              <p class="section__empty">
+                These members have no recorded games against each other.
+              </p>
+            }
+          }
+        }
+      </ea-accordion-item>
+    </ea-accordion>
+
+    <ea-accordion
+      class="section"
+      [expandedValues]="['rating']">
+      <ea-accordion-item
+        label="Rating progression"
+        value="rating">
+        <lcc-rating-comparison [members]="chartedMembers()" />
+      </ea-accordion-item>
+    </ea-accordion>
+
+    <ea-accordion
+      class="section"
+      [expandedValues]="['tournaments']">
+      <ea-accordion-item
+        label="Tournaments played together"
+        value="tournaments">
+        @switch (comparing.resultsStatus) {
+          @case ('failed') {
+            <lcc-load-failed
+              title="Unable to load their tournaments"
+              (retry)="onRetryResults()" />
+          }
+          @case ('loading') {
+            <ea-skeleton
+              variant="rect"
+              width="100%"
+              aria-busy="true"
+              [height]="skeletonHeight" />
+          }
+          @default {
+            <lcc-shared-tournaments
+              [firstResults]="comparing.firstResults ?? []"
+              [names]="sideNames"
+              [secondResults]="comparing.secondResults ?? []" />
+          }
+        }
+      </ea-accordion-item>
+    </ea-accordion>
+  } @else {
+    <ea-empty-state
+      class="prompt"
+      description="Pick a member on each side to see their games against each other, their ratings over time and the tournaments they both played."
+      headingLevel="h2"
+      size="sm"
+      title="Choose two members"
+      [icon]="pageIcon" />
+  }
+}
