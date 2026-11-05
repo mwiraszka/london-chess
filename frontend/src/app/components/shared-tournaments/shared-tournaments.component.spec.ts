@@ -53,8 +53,8 @@ describe('SharedTournamentsComponent', () => {
     expect(
       bodyRows().map(row => queryAll(row, '.ea-data-table__cell').map(textOf)),
     ).toEqual([
-      ['Sep 12 – Nov 14, 2024', 'Championship', '1 of 2, 3½', '2 of 2, 3½'],
-      ['Oct 19, 2023', 'Fall Active', '1 of 3, 2½', '3 of 3, 1'],
+      ['Sep 12 – Nov 14, 2024', 'Championship', '1 of 2, 3½/6', '2 of 2, 3½/6'],
+      ['Oct 19, 2023', 'Fall Active', '1 of 3, 2½/3', '3 of 3, 1/3'],
     ]);
     expect(query(bodyRows()[0], '.shared__higher')).toBeTruthy();
   });

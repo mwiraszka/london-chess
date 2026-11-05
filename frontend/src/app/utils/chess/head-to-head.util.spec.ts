@@ -143,7 +143,7 @@ describe('head-to-head utils', () => {
   });
 
   describe('sharedTournamentRow', () => {
-    it("should give each member's place and score, and a simul board only its result", () => {
+    it("should give each member's place and score out of the points to win, and a simul board only its result", () => {
       const simul = result(fallActive, {
         tournament: { ...fallActive.tournament, format: 'tandem-simul' },
         resultNote: 'draw',
@@ -165,9 +165,9 @@ describe('head-to-head utils', () => {
         ),
       ];
 
-      expect([row.firstLabel, row.secondLabel]).toEqual(['1 of 8, 5½', '3 of 8, 4']);
+      expect([row.firstLabel, row.secondLabel]).toEqual(['1 of 8, 5½/6', '3 of 8, 4/6']);
       expect(row.firstPlace).toBeLessThan(row.secondPlace ?? 0);
-      expect([simulRow.firstLabel, simulRow.firstPlace]).toEqual(['½', null]);
+      expect([simulRow.firstLabel, simulRow.firstPlace]).toEqual(['½/1', null]);
     });
   });
 });

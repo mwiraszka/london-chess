@@ -139,11 +139,14 @@ function placeOf(result: MemberTournamentResult): number | null {
   return isPlaced(result) ? result.rank * RANK_WEIGHT - result.playerCount : null;
 }
 
-// A simul board has no place, only its result
+// Each score out of the points there were to win; a simul board has no place, only its
+// one game's result
 function finishLabel(result: MemberTournamentResult): string {
-  return isPlaced(result)
-    ? `${result.rank} of ${result.playerCount}, ${formatScore(result.score)}`
-    : formatScore(simulScore(result.resultNote));
+  if (!isPlaced(result)) {
+    return `${formatScore(simulScore(result.resultNote))}/1`;
+  }
+  const pointsOnOffer = result.roundCount * (result.isDoubleRound ? 2 : 1);
+  return `${result.rank} of ${result.playerCount}, ${formatScore(result.score)}/${pointsOnOffer}`;
 }
 
 export function sharedTournamentRow(
