@@ -292,6 +292,9 @@ describe('games from a pgn', () => {
     eco: 'C20',
     plyCount: 3,
     moves: '1. e4 e5 2. Qh5 1-0',
+    notCounted: false,
+    notCountedReason: '',
+    archivedGameId: null,
   });
 
   const withField = (
@@ -334,6 +337,12 @@ describe('games from a pgn', () => {
     );
     expect(gamesError([withField('plyCount', 0)])).toBe('game 1 has no moves');
     expect(gamesError([{ section: 'A' }])).toMatch(/^game 1: /);
+    expect(gamesError([withField('notCountedReason', 'x'.repeat(201))])).toBe(
+      'game 1 gives a reason longer than 200 characters',
+    );
+    expect(gamesError([withField('archivedGameId', 'game-1')])).toBe(
+      'game 1 names an archived game by an invalid ID',
+    );
   });
 
   it('should refuse a section list it cannot read, and an entry with a malformed player', () => {

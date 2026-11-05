@@ -14,6 +14,15 @@ export { chessAccountUrl } from './chess/chess-account-url.util';
 export { getChessAccounts } from './chess/get-chess-accounts.util';
 export { getLichessAnalysisUrl } from './chess/get-lichess-analysis-url.util';
 export { getNewPeakRating } from './chess/get-new-peak-rating.util';
+export {
+  headToHeadGameRow,
+  pointsByYear,
+  sharedTournamentRow,
+  sharedTournaments,
+  tallyByColor,
+  tallyGames,
+  totalPoints,
+} from './chess/head-to-head.util';
 export { CITY_CHAMPION, isCityChampion } from './chess/is-city-champion.util';
 export { isUnrated } from './chess/is-unrated.util';
 export {
@@ -23,6 +32,13 @@ export {
   playerScores,
   resultLabel,
 } from './chess/player-name.util';
+export {
+  formatRating,
+  quarterlyTicks,
+  ratedResults,
+  ratedTournamentLabel,
+  tournamentTime,
+} from './chess/rating-progression.util';
 export { ratingSortValue } from './chess/rating-sort-value.util';
 export {
   parseRating,

@@ -157,6 +157,35 @@
             [loadingRowCount]="section.entryCount" />
         </section>
       }
+
+      @if (uncountedGames().length) {
+        <section
+          class="section"
+          aria-labelledby="uncounted-heading">
+          <div class="section__title">
+            <h3
+              id="uncounted-heading"
+              class="section__heading">
+              Not counted in the results
+            </h3>
+            <ea-divider class="section__rule" />
+          </div>
+          <ul class="uncounted">
+            @for (game of uncountedGames(); track game.id) {
+              <li class="uncounted__game">
+                <a
+                  class="lcc-link"
+                  [routerLink]="['/game-archives', game.id]">
+                  {{ game.label }}
+                </a>
+                @if (game.reason) {
+                  <span class="uncounted__reason">({{ game.reason }})</span>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
     </div>
 
     <lcc-link-list
@@ -189,6 +218,7 @@
   <lcc-member-link
     class="crosstable__player"
     nameOrder="last-first"
+    [asRecorded]="true"
     [eaTooltip]="row.player"
     [memberNumber]="row.entry.player.memberNumber"
     [name]="row.player"

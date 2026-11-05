@@ -40,3 +40,20 @@
   display: block;
   max-width: 100%;
 }
+
+.results__decisions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.results__name-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+
+  ea-dropdown {
+    flex: 1 1 240px;
+  }
+}

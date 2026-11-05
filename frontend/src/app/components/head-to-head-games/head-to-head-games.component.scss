@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.games__note {
+  color: var(--color-text-secondary);
+}
+
+.games__result {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.games__swatch {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--lcc-head-to-head-draw);
+}
+
+.games__swatch--first {
+  background-color: var(--lcc-head-to-head-first);
+}
+
+.games__swatch--second {
+  background-color: var(--lcc-head-to-head-second);
+}

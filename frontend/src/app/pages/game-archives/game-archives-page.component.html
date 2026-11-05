@@ -146,6 +146,7 @@
   #whiteCell
   let-row>
   <lcc-member-link
+    [asRecorded]="true"
     [memberNumber]="row.white.memberNumber"
     [name]="row.whiteName" />
 </ng-template>
@@ -154,6 +155,7 @@
   #blackCell
   let-row>
   <lcc-member-link
+    [asRecorded]="true"
     [memberNumber]="row.black.memberNumber"
     [name]="row.blackName" />
 </ng-template>
@@ -174,6 +176,15 @@
   <span class="games__event">{{ row.game.tournament || 'Unknown event' }}</span>
   @if (row.game.section) {
     <span class="games__section"> ({{ row.game.section }})</span>
+  }
+  @if (row.game.notCounted) {
+    <ea-badge
+      class="games__not-counted"
+      size="sm"
+      variant="warning"
+      [eaTooltip]="row.game.notCountedReason">
+      Not counted
+    </ea-badge>
   }
 </ng-template>
 

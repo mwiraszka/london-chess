@@ -1,0 +1,126 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+.contenders {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  margin-top: 8px;
+
+  @include respond-to('lt-md') {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.contender {
+  align-self: start;
+}
+
+// Each side's colour runs along its card's top edge over a wash of the same colour, so the
+// card reads as that side's even where a browser cannot mix the wash
+.contender__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-top: 4px solid var(--lcc-head-to-head-first);
+  background-color: var(--lcc-head-to-head-first-wash);
+}
+
+.contender__body--second {
+  border-top-color: var(--lcc-head-to-head-second);
+  background-color: var(--lcc-head-to-head-second-wash);
+}
+
+.contender__member {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+
+  ea-avatar {
+    flex-shrink: 0;
+  }
+}
+
+.contender__details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.contender__name {
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.contender__ratings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.contender__rating {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.contender__rating-label {
+  @include stat-label;
+}
+
+.contender__rating-value {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.versus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  @include respond-to('lt-md') {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.versus__text {
+  font-size: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+// The sections sit on the same surface as the cards above them
+.section {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-elevated);
+}
+
+.section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section__empty {
+  padding: 16px 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.prompt {
+  margin-top: 16px;
+}
+
+.account-prompt {
+  font-size: var(--font-size-sm);
+  text-align: center;
+  color: var(--color-text-secondary);
+}

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 
 import { ApiResponse } from '../models/api-response.model';
 import {
+  ArchiveGamesReview,
+  ArchiveGamesUpdate,
   GameInput,
   ImportChanges,
   MemberTournamentResult,
@@ -15,6 +17,11 @@ import {
   TournamentResponse,
   TournamentSummary,
 } from '../models/tournament.model';
+import {
+  applyArchiveUpdate,
+  archiveUpdateProblem,
+  reviewArchiveGames,
+} from '../services/archive-review.service';
 import { findEditor, findLinkedMember } from '../services/member-accounts.service';
 import { findProfilePlayerIds } from '../services/member-players.service';
 import {
@@ -42,6 +49,7 @@ import { clubToday } from '../util/club-date.util';
 import { creditEditor } from '../util/modification-info.util';
 import { parseRecordNumber } from '../util/parse-record-number.util';
 import {
+  archiveUpdateError,
   gamesError,
   isDay,
   sectionsError,
@@ -371,17 +379,86 @@ export async function checkTournamentImport(
 
     const inputs = sections as SectionInput[];
     const { changed, removed } = await compareSections(inputs, record.sections);
+    const { changes, candidates } = await classifyGames(
+      record.gameArchiveTournament ?? record.name,
+      Number((date as string).slice(0, 4)),
+      games as GameInput[],
+    );
     res.status(200).json({
       data: {
         sectionChanges: changed,
         removedSections: removed,
-        games: await classifyGames(
-          record.gameArchiveTournament ?? record.name,
-          Number((date as string).slice(0, 4)),
-          games as GameInput[],
-        ),
+        games: changes,
+        candidates,
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+async function findForArchive(
+  number: string,
+): Promise<Pick<
+  TournamentRecord,
+  'number' | 'date' | 'gameArchiveTournament' | 'sections'
+> | null> {
+  const tournamentNumber = parseRecordNumber(number);
+  return tournamentNumber === null
+    ? null
+    : TournamentModel.findOne(
+        { number: tournamentNumber },
+        { number: 1, date: 1, gameArchiveTournament: 1, sections: 1 },
+      ).lean<
+        Pick<TournamentRecord, 'number' | 'date' | 'gameArchiveTournament' | 'sections'>
+      >();
+}
+
+export async function getArchiveGames(
+  req: Request<{ number: string }>,
+  res: Response<ApiResponse<ArchiveGamesReview>>,
+): Promise<void> {
+  try {
+    const record = await findForArchive(req.params.number);
+    if (!record) {
+      res
+        .status(404)
+        .json({ message: `Unable to find tournament [${req.params.number}]` });
+      return;
+    }
+
+    res.status(200).json({ data: await reviewArchiveGames(record) });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+// Ties archived games to rounds of the results, and leaves games in or out of them
+export async function updateArchiveGames(
+  req: Request<{ number: string }>,
+  res: Response<ApiResponse<ArchiveGamesReview>>,
+): Promise<void> {
+  try {
+    const record = await findForArchive(req.params.number);
+    if (!record) {
+      res.status(404).json({
+        message: `Unable to update the games of tournament [${req.params.number}] because it could not be found.`,
+      });
+      return;
+    }
+
+    const inputProblem = archiveUpdateError(req.body);
+    const update = req.body as ArchiveGamesUpdate;
+    const problem = inputProblem ?? (await archiveUpdateProblem(record, update));
+    if (problem) {
+      res.status(400).json({
+        message: `Unable to update the tournament's games because ${problem}.`,
+      });
+      return;
+    }
+
+    await applyArchiveUpdate(record, update);
+    res.status(200).json({ data: await reviewArchiveGames(record) });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }

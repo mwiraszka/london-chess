@@ -37,3 +37,10 @@ export const RATING_AXIS_CEILING = 2500;
 
 // Wider gaps would leave the rating chart with too few lines to read a rating against
 export const RATING_AXIS_MAX_STEP = 500;
+
+// The rating chart opens on the latest stretch of this many years and scrolls back
+// through the rest
+export const RATING_CHART_VISIBLE_YEARS = 5;
+
+// Ticks on the first month of each quarter, whatever days the tournaments fall on
+export const RATING_CHART_TICK_MONTHS = 3;

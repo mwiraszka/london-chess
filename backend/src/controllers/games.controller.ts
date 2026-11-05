@@ -14,6 +14,7 @@ import {
   gameSortingConfig,
 } from '../models/game.model';
 import { PlayerModel, PlayerRecord } from '../models/player.model';
+import { HeadToHeadGame } from '../models/tournament.model';
 import {
   PLAYER_SORT_SIDES,
   buildGamesFilter,
@@ -22,10 +23,12 @@ import {
   resolvePlayers,
   toGameResponses,
 } from '../services/games.service';
+import { headToHeadGames } from '../services/head-to-head.service';
 import { findProfilePlayerIds } from '../services/member-players.service';
 import { widestGameIds } from '../services/widest.service';
 import { isCollectionId } from '../util/is-collection-id.util';
 import { buildPaginationQuery, parsePaginationParams } from '../util/pagination.util';
+import { parseRecordNumber } from '../util/parse-record-number.util';
 
 export type ArchivePlayer = GamePlayer & { gameCount: number };
 
@@ -248,6 +251,35 @@ export async function getMemberOpenings(
         black: toOpeningCounts(asBlack.map(({ opening }) => opening)),
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+export async function getHeadToHead(
+  req: Request<{ first: string; second: string }>,
+  res: Response<ApiResponse<HeadToHeadGame[]>>,
+): Promise<void> {
+  try {
+    const { first, second } = req.params;
+    const firstNumber = parseRecordNumber(first);
+    if (firstNumber !== null && firstNumber === parseRecordNumber(second)) {
+      res.status(400).json({ message: 'Choose two different members to compare.' });
+      return;
+    }
+
+    const [firstIds, secondIds] = await Promise.all([
+      findProfilePlayerIds(first),
+      findProfilePlayerIds(second),
+    ]);
+    if (!firstIds || !secondIds) {
+      res
+        .status(404)
+        .json({ message: `Unable to find member [${firstIds ? second : first}]` });
+      return;
+    }
+
+    res.status(200).json({ data: await headToHeadGames(firstIds, secondIds) });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }

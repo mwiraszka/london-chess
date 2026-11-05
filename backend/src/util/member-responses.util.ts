@@ -70,6 +70,8 @@ export interface MemberProfile {
   number: number;
   firstName: string;
   lastName: string;
+  rating: string;
+  peakRating: string;
   avatarUrl: string | null;
 }
 
@@ -108,6 +110,8 @@ export const MEMBER_PROFILE_PROJECTION = {
   number: 1,
   firstName: 1,
   lastName: 1,
+  rating: 1,
+  peakRating: 1,
   'account.avatarUrl': 1,
   'account.avatarUpdatedAt': 1,
 } as const;
@@ -120,6 +124,8 @@ export function toMemberProfiles(records: MemberRecord[]): MemberProfile[] {
             number: record.number,
             firstName: record.firstName,
             lastName: record.lastName,
+            rating: record.rating,
+            peakRating: record.peakRating,
             avatarUrl: versionedAvatarUrl(record.account),
           },
         ]

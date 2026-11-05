@@ -101,10 +101,11 @@ export class TournamentsEffects {
     );
   });
 
+  // Merged, as a head-to-head loads both members' results at once
   fetchMemberTournaments$ = createEffect(() => {
     return this.actions$.pipe(
       ofType(TournamentsActions.fetchMemberTournamentsRequested),
-      switchMap(({ memberNumber }) =>
+      mergeMap(({ memberNumber }) =>
         this.tournamentsApiService.getMemberTournaments(memberNumber).pipe(
           map(response =>
             TournamentsActions.fetchMemberTournamentsSucceeded({

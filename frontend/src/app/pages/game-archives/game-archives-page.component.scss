@@ -186,6 +186,10 @@
   color: var(--color-text-secondary);
 }
 
+.games__not-counted {
+  margin-left: 8px;
+}
+
 // Openings get at most this much room; a longer name is cut short and read in full
 // from its tooltip
 .games__opening-cell {

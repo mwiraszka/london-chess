@@ -61,6 +61,8 @@ export const PLACEHOLDER_GAME: Game = {
   plyCount: 2,
   moves: '1. e4 e5 *',
   annotator: '',
+  notCounted: false,
+  notCountedReason: '',
   modificationInfo: {
     dateCreated: '',
     createdBy: '',

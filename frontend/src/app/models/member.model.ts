@@ -47,6 +47,8 @@ export interface MemberProfile {
   number: number;
   firstName: string;
   lastName: string;
+  rating: string;
+  peakRating: string;
   avatarUrl: Url | null;
 }
 

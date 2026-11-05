@@ -1,6 +1,7 @@
 import {
   GamePlayer,
   PgnGame,
+  PlayerNameMatch,
   RoundResult,
   Tournament,
   TournamentEntry,
@@ -95,6 +96,7 @@ const tournament = (): Tournament => ({
   registrationOpens: null,
   registrationCloses: null,
   registrants: [],
+  uncountedGames: [],
   modificationInfo: null,
   sections: [
     {
@@ -302,6 +304,7 @@ describe('checkPgnGames', () => {
     expect(result).toEqual({
       sections: [],
       games: [],
+      playerNames: {},
       problems: [
         'Games from a PGN can only be added to a tournament whose sections are already recorded.',
       ],
@@ -327,7 +330,77 @@ describe('checkPgnGames', () => {
         eco: 'C60',
         plyCount: 3,
         moves: '1. e4 e5 2. Nf3 1-0',
+        notCounted: false,
+        notCountedReason: '',
+        archivedGameId: null,
       },
+    ]);
+    expect(result.playerNames).toEqual({ a1: 'Black, Anna', j1: 'Bell, Jeffrey' });
+  });
+
+  it('should find a player by a name the archive knows them by, and archive the game under it', () => {
+    const jack: PlayerNameMatch = {
+      name: 'Dunford, Jack',
+      playerId: 'x9',
+      memberNumber: null,
+      memberId: 'member-j',
+      personPlayerIds: ['x9', 'j1'],
+    };
+
+    const result = checkPgnGames(
+      tournament(),
+      [pgnGame({ Black: 'Dunford, Jack' })],
+      [jack],
+    );
+
+    expect(result.problems).toEqual([]);
+    expect(result.games[0]).toEqual(
+      expect.objectContaining({ whitePlayerId: 'a1', blackPlayerId: 'x9' }),
+    );
+    expect(result.playerNames).toEqual({ a1: 'Black, Anna', x9: 'Dunford, Jack' });
+  });
+
+  it('should archive a game under the standings player when the name is someone else', () => {
+    const stranger: PlayerNameMatch = {
+      name: 'Bell, Jeff',
+      playerId: 'x8',
+      memberNumber: null,
+      memberId: null,
+      personPlayerIds: ['x8'],
+    };
+
+    const result = checkPgnGames(
+      tournament(),
+      [pgnGame({ Black: 'Bell, Jeff' })],
+      [stranger],
+    );
+
+    expect(result.problems).toEqual([]);
+    expect(result.games[0].blackPlayerId).toBe('j1');
+  });
+
+  it('should archive as not counted a game in a round the standings leave unplayed for both players', () => {
+    const withdrawn = tournament();
+    withdrawn.sections[0].entries[1].rounds.push(unplayed(3));
+    withdrawn.sections[0].entries[2].rounds.push(unplayed(3));
+
+    const result = checkPgnGames(withdrawn, [
+      pgnGame({
+        Round: '3',
+        White: 'White, Boris',
+        Black: 'Bell, Jeffrey',
+        Result: '0-1',
+      }),
+    ]);
+
+    expect(result.problems).toEqual([]);
+    expect(result.games).toEqual([
+      expect.objectContaining({
+        round: '3',
+        whitePlayerId: 'b1',
+        blackPlayerId: 'j1',
+        notCounted: true,
+      }),
     ]);
   });
 
@@ -360,6 +433,7 @@ describe('checkPgnGames', () => {
     expect(result).toEqual({
       sections: [],
       games: [],
+      playerNames: {},
       problems: [
         'The round 1 game between Black, Anna and White, Boris: the standings give Black, Anna 1 in round 1, but the game gives ½.',
       ],

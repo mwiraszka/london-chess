@@ -1,0 +1,34 @@
+@switch (status()) {
+  @case ('failed') {
+    <lcc-load-failed
+      title="Unable to load rating progression"
+      (retry)="onRetry()" />
+  }
+  @case ('loading') {
+    <ea-skeleton
+      variant="rect"
+      width="100%"
+      aria-busy="true"
+      [height]="chartHeight + 'px'" />
+  }
+  @default {
+    <ea-line-chart
+      aria-label="Each member's rating at each rated tournament, oldest first"
+      animation="draw"
+      curve="smooth"
+      xLabelOrientation="auto"
+      [animationDuration]="3000"
+      [connectGaps]="true"
+      [formatValue]="formatRating"
+      [height]="chartHeight"
+      [labels]="labels()"
+      [maxYStep]="maxRatingStep"
+      [series]="series()"
+      [showAxisBreak]="true"
+      [visibleXSpan]="visibleSpan"
+      [xTicks]="xTicks()"
+      [xValues]="xValues()"
+      [yMax]="yMax()"
+      [yMin]="yMin()" />
+  }
+}

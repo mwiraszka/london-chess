@@ -28,7 +28,10 @@ const json =
   () =>
     new Response(JSON.stringify(body), { status });
 
-const html = (body: string) => () => new Response(body);
+const html =
+  (body: string, status = 200): (() => Response) =>
+  () =>
+    new Response(body, { status });
 
 // Shaped like the federation, boxes and rank tables of a FIDE profile page
 const fideGame = (className: string, rating: string) => `
@@ -289,6 +292,30 @@ describe('external ratings service', () => {
       expect(saved.externalRatings?.lookups.fide).toBeUndefined();
       expect(hasUnlookedHandles(saved)).toBe(true);
       expect(console.error).toHaveBeenCalledTimes(2);
+    });
+
+    it("should report the start of a site's refusal, which says why it turned the lookup away", async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      answerWith({
+        ...ANSWERS,
+        'https://lichess.org/api/user/jane_doe': html(
+          `<html>\n  <title>Access denied</title>\n${'x'.repeat(400)}</html>`,
+          403,
+        ),
+      });
+      const member = await memberWithHandles({
+        chessComUsername: '',
+        fideId: '',
+        cfcId: '',
+      });
+
+      await refreshExternalRatings(member);
+
+      const [message] = vi.mocked(console.error).mock.calls[0];
+      expect(message).toContain(
+        'https://lichess.org/api/user/jane_doe answered 403: <html> <title>Access denied</title> x',
+      );
+      expect(String(message).length).toBeLessThan(500);
     });
 
     it('should report rather than reject when the ratings cannot be saved', async () => {

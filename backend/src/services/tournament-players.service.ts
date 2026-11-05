@@ -6,7 +6,7 @@ import { PlayerModel, PlayerRecord } from '../models/player.model';
 import { PlayerNameMatch, TournamentModel } from '../models/tournament.model';
 import { isCollectionId } from '../util/is-collection-id.util';
 
-interface ParsedPlayerName {
+export interface ParsedPlayerName {
   firstName: string;
   lastName: string;
   suffix: string;
@@ -30,8 +30,10 @@ export const fold = (value: string): string =>
     .toLowerCase()
     .replace(/[^a-z]/g, '');
 
-const foldedKey = ({ firstName, lastName }: Omit<ParsedPlayerName, 'suffix'>): string =>
-  `${fold(firstName)}|${fold(lastName)}`;
+export const foldedKey = ({
+  firstName,
+  lastName,
+}: Omit<ParsedPlayerName, 'suffix'>): string => `${fold(firstName)}|${fold(lastName)}`;
 
 // SwissSys writes "Last, First", with any suffix after the first name
 export function parsePlayerName(raw: string): ParsedPlayerName {
@@ -89,7 +91,7 @@ function preferred(players: PlayerRecord[]): PlayerRecord | null {
   );
 }
 
-function findPlayer(
+export function findPlayer(
   name: ParsedPlayerName,
   players: PlayerRecord[],
 ): PlayerRecord | null {
@@ -147,10 +149,19 @@ function matchName(raw: string, candidates: Candidates): PlayerNameMatch {
   const member = player?.memberId
     ? (candidates.membersById.get(player.memberId) ?? null)
     : findMember(player ?? name, candidates.membersByName);
+  const memberId = member?._id.toString() ?? null;
+  const playerId = player?._id.toString() ?? null;
+  const memberPlayerIds = memberId
+    ? candidates.players
+        .filter(other => other.memberId === memberId)
+        .map(({ _id }) => _id.toString())
+    : [];
   return {
     name: raw,
-    playerId: player?._id.toString() ?? null,
+    playerId,
     memberNumber: member?.number ?? null,
+    memberId,
+    personPlayerIds: [...new Set([...memberPlayerIds, ...(playerId ? [playerId] : [])])],
   };
 }
 
@@ -271,8 +282,44 @@ export async function unknownPlayerIds(playerIds: Id[]): Promise<Id[]> {
   return candidates.filter(id => !found.has(id));
 }
 
+// Every archive player recorded for the same person as each of these: the players linked to
+// their member, or just the player itself
+export async function personPlayerIds(playerIds: Id[]): Promise<Map<Id, Set<Id>>> {
+  const ids = [...new Set(playerIds)].filter(isCollectionId);
+  const players = ids.length
+    ? await PlayerModel.find(
+        { _id: { $in: ids.map(id => new Types.ObjectId(id)) } },
+        { memberId: 1 },
+      ).lean<Pick<PlayerRecord, '_id' | 'memberId'>[]>()
+    : [];
+  const memberIds = [
+    ...new Set(players.flatMap(({ memberId }) => (memberId ? [memberId] : []))),
+  ];
+  const linked = memberIds.length
+    ? await PlayerModel.find({ memberId: { $in: memberIds } }, { memberId: 1 }).lean<
+        Pick<PlayerRecord, '_id' | 'memberId'>[]
+      >()
+    : [];
+
+  return new Map(
+    ids.map(id => {
+      const memberId = players.find(({ _id }) => _id.toString() === id)?.memberId;
+      return [
+        id,
+        new Set(
+          memberId
+            ? linked
+                .filter(player => player.memberId === memberId)
+                .map(({ _id }) => _id.toString())
+            : [id],
+        ),
+      ];
+    }),
+  );
+}
+
 // Players only these results ever named go with them, so a corrected spelling leaves no
-// stray record behind
+// stray record behind. A name an admin gave a member stays, so it is still known next time
 export async function removeOrphanedPlayers(playerIds: Id[]): Promise<void> {
   const candidates = [...new Set(playerIds)].filter(isCollectionId);
   if (!candidates.length) {
@@ -291,6 +338,7 @@ export async function removeOrphanedPlayers(playerIds: Id[]): Promise<void> {
     await PlayerModel.deleteMany({
       _id: { $in: orphans.map(id => new Types.ObjectId(id)) },
       gameCount: 0,
+      memberId: null,
     });
   }
 }

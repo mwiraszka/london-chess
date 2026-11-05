@@ -71,7 +71,14 @@ describe('ModificationInfoComponent', () => {
 
     it("should show a credited editor's current name, linked to their profile", async () => {
       api.get.mockResolvedValue([
-        { number: 0, firstName: 'Johnny', lastName: 'Doe', avatarUrl: null },
+        {
+          number: 0,
+          firstName: 'Johnny',
+          lastName: 'Doe',
+          rating: '1500',
+          peakRating: '1600',
+          avatarUrl: null,
+        },
       ]);
 
       await TestBed.inject(MemberProfilesService).reload();

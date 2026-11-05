@@ -133,6 +133,27 @@ $event-colours: (
 
   // The chessboard
   --lcc-board: hsl(34 44% 69%);
+
+  // The two members a head-to-head compares, in the chart palette's blue and red, which
+  // stay apart for colour-blind readers in either theme, and the grey between them
+  --lcc-head-to-head-first: var(--color-chart-1);
+  --lcc-head-to-head-second: var(--color-chart-8);
+  --lcc-head-to-head-draw: var(--color-neutral-500);
+  --lcc-head-to-head-first-wash: transparent;
+  --lcc-head-to-head-second-wash: transparent;
+
+  @include with-color-mix {
+    --lcc-head-to-head-first-wash: color-mix(
+      in srgb,
+      var(--lcc-head-to-head-first) 12%,
+      transparent
+    );
+    --lcc-head-to-head-second-wash: color-mix(
+      in srgb,
+      var(--lcc-head-to-head-second) 12%,
+      transparent
+    );
+  }
 }
 
 :root[data-theme='dark'] {
@@ -186,4 +207,6 @@ $event-colours: (
   }
 
   --lcc-today: hsl(0 44% 47%);
+
+  --lcc-head-to-head-draw: var(--color-neutral-400);
 }

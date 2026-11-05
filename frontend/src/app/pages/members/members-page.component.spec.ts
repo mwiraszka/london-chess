@@ -4,7 +4,7 @@ import {
   PlusCircleIconComponent,
 } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { firstValueFrom, take } from 'rxjs';
+import { firstValueFrom, of, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -20,6 +20,7 @@ import {
 import {
   AdminActionsService,
   CsvExportService,
+  MembersApiService,
   MetaAndTitleService,
   StoreRequestService,
 } from '@app/services';
@@ -174,10 +175,15 @@ describe('MembersPageComponent', () => {
     let parseCsvSpy: MockInstance;
     let mockFile: File;
 
+    let getAllOtherNamesSpy: MockInstance;
+
     beforeEach(() => {
       mockFile = new File(['test,data'], 'test.csv', { type: 'text/csv' });
 
       parseCsvSpy = TestBed.inject(PARSE_CSV) as Mock;
+      getAllOtherNamesSpy = vi
+        .spyOn(TestBed.inject(MembersApiService), 'getAllOtherNames')
+        .mockReturnValue(of({ data: {} }));
     });
 
     afterEach(() => {
@@ -251,6 +257,22 @@ describe('MembersPageComponent', () => {
           MembersActions.updateMemberRatingsFailed,
         ],
       );
+    });
+
+    it('should match a member listed under a name they were recorded under before', async () => {
+      getAllOtherNamesSpy.mockReturnValue(
+        of({ data: { [MOCK_MEMBERS[0].id]: ['Carlsen, Sven Magnus'] } }),
+      );
+      parseCsvSpy.mockResolvedValue([['Sven Magnus', 'Carlsen', '2850', '2860', '2882']]);
+      store.overrideSelector(MembersSelectors.selectAllMembers, MOCK_MEMBERS);
+      store.overrideSelector(MembersSelectors.selectTotalCount, MOCK_MEMBERS.length);
+      store.refreshState();
+
+      await component.onRatingsFileChosen([mockFile]);
+
+      expect(dialogOpenSpy.mock.lastCall?.[1].inputs?.['membersWithNewRatings']).toEqual([
+        { ...MOCK_MEMBERS[0], newRating: '2860', newPeakRating: '2882' },
+      ]);
     });
 
     it('should not update any ratings until the dialog is confirmed', async () => {

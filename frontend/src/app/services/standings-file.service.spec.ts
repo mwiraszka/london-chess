@@ -1,7 +1,10 @@
+import { of, throwError } from 'rxjs';
+
 import { TestBed } from '@angular/core/testing';
 
 import { MOCK_TOURNAMENTS } from '@app/mocks/tournaments.mock';
-import { Tournament } from '@app/models';
+import { PlayerNameMatch, Tournament } from '@app/models';
+import { TournamentsApiService } from '@app/services/api/tournaments-api.service';
 
 import { StandingsFileService } from './standings-file.service';
 
@@ -72,8 +75,29 @@ describe('StandingsFileService', () => {
   const csv = (name: string, content: string): File =>
     new File([content], name, { type: 'text/csv' });
 
+  let matchPlayers: Mock;
+
+  // Each name the archive knows as the player the standings hold
+  const matches = (names: string[]): { data: PlayerNameMatch[] } => ({
+    data: names.map(name => {
+      const entry = [FIRST, SECOND].find(
+        ({ player }) => `${player.lastName}, ${player.firstName}` === name,
+      );
+      return {
+        name,
+        playerId: entry?.player.id ?? null,
+        memberNumber: null,
+        memberId: null,
+        personPlayerIds: entry ? [entry.player.id] : [],
+      };
+    }),
+  });
+
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    matchPlayers = vi.fn((names: string[]) => of(matches(names)));
+    TestBed.configureTestingModule({
+      providers: [{ provide: TournamentsApiService, useValue: { matchPlayers } }],
+    });
     service = TestBed.inject(StandingsFileService);
   });
 
@@ -164,6 +188,7 @@ describe('StandingsFileService', () => {
       TOURNAMENT,
     );
 
+    expect(matchPlayers).toHaveBeenCalledWith(['Doe, John', 'Smith, Jane']);
     expect(problems).toEqual([]);
     expect(games).toEqual([
       expect.objectContaining({ round: '1', result: '1-0', plyCount: 2 }),
@@ -191,6 +216,20 @@ describe('StandingsFileService', () => {
     expect(games).toEqual([]);
   });
 
+  it('should add nothing from a PGN whose names could not be checked', async () => {
+    matchPlayers.mockReturnValue(throwError(() => new Error('offline')));
+
+    const { games, problems } = await service.importStandings(
+      [new File([PGN], 'Round 1.pgn')],
+      TOURNAMENT,
+    );
+
+    expect(problems).toEqual([
+      'The names in the PGN could not be checked against the archive, so its games were not used.',
+    ]);
+    expect(games).toEqual([]);
+  });
+
   it('should add nothing while any PGN file has a problem', async () => {
     const { sections, games, problems } = await service.importStandings(
       [new File([PGN], 'Round 1.pgn'), new File([''], 'Notes.txt')],
@@ -211,6 +250,7 @@ describe('StandingsFileService', () => {
     expect(result).toEqual({
       sections: [],
       games: [],
+      playerNames: {},
       problems: [
         'Choose either the standings SwissSys exports or PGN files of games, not both at once.',
       ],

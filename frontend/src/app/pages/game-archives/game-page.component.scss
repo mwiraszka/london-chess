@@ -89,6 +89,10 @@ $board-width: 432px;
   color: var(--color-text-secondary);
 }
 
+.details__not-counted {
+  margin-left: 8px;
+}
+
 // The game's own link keeps its place, unseen, until the game arrives
 .game__links--loading ::ng-deep li:first-child {
   visibility: hidden;

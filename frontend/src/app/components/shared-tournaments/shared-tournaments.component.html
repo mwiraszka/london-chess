@@ -1,0 +1,65 @@
+@if (hasPlaces()) {
+  <section class="higher">
+    <h4 class="higher__title">Finished higher</h4>
+    <ea-pie-chart
+      aria-label="How often each finished above the other in a section they both played"
+      totalLabel="Tournaments"
+      variant="donut"
+      [data]="higherSlices()"
+      [height]="donutHeight"
+      [showTotal]="true" />
+  </section>
+}
+
+<lcc-data-table
+  aria-label="Tournaments both played"
+  noDataText="These members have not played in the same tournament."
+  [clickable]="true"
+  [columns]="columns()"
+  [data]="rows()"
+  [rowHref]="rowHref"
+  [sizingRows]="sizingRows()"
+  [sort]="sortState()"
+  (rowActivate)="onOpenTournament($event)"
+  (sorted)="onSorted($event)">
+  @if (tournamentCount() > pageSizes[0]) {
+    <ea-paginator
+      align="center"
+      size="sm"
+      [page]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizes"
+      [showAllOption]="true"
+      [showRangeLabel]="true"
+      [totalItems]="tournamentCount()"
+      (changed)="onPageChanged($event)" />
+  }
+</lcc-data-table>
+
+<ng-template
+  #dateCell
+  let-row>
+  {{ row.dateLabel }}
+</ng-template>
+
+<ng-template
+  #tournamentCell
+  let-row>
+  {{ row.tournament }}
+</ng-template>
+
+<ng-template
+  #firstCell
+  let-row>
+  <span [class.shared__higher]="row.shared.higher === 'first'">
+    {{ row.firstLabel }}
+  </span>
+</ng-template>
+
+<ng-template
+  #secondCell
+  let-row>
+  <span [class.shared__higher]="row.shared.higher === 'second'">
+    {{ row.secondLabel }}
+  </span>
+</ng-template>

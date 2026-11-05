@@ -1,7 +1,7 @@
 import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash-es';
-import { BehaviorSubject, EMPTY, firstValueFrom, take } from 'rxjs';
+import { BehaviorSubject, EMPTY, firstValueFrom, of, take } from 'rxjs';
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -9,7 +9,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MEMBER_FORM_DATA_PROPERTIES, initialMemberFormData } from '@app/constants';
 import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { Id, MemberFormData } from '@app/models';
-import { MetaAndTitleService } from '@app/services';
+import { MembersApiService, MetaAndTitleService } from '@app/services';
 import { initialState as appInitialState } from '@app/store/app';
 import {
   MembersActions,
@@ -62,6 +62,10 @@ describe('MemberEditorPageComponent', () => {
             updateDescription: vi.fn(),
           },
         },
+        {
+          provide: MembersApiService,
+          useValue: { getOtherNames: vi.fn().mockReturnValue(of({ data: [] })) },
+        },
         provideMockStore({
           initialState: {
             appState: appInitialState,
@@ -87,6 +91,14 @@ describe('MemberEditorPageComponent', () => {
       beforeEach(() => {
         mockParamsSubject.next({ member_id: MOCK_MEMBERS[0].id });
         component.ngOnInit();
+      });
+
+      it("should offer the member's other names below the form", () => {
+        fixture.detectChanges();
+
+        expect(
+          query(fixture.debugElement, 'lcc-other-names').componentInstance.memberId(),
+        ).toBe(MOCK_MEMBERS[0].id);
       });
 
       it('should set viewModel$ based on member title', async () => {

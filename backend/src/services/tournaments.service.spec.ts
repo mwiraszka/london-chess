@@ -48,12 +48,17 @@ const archiveGame = (
   section = 'A1',
 ): ArchiveGame => ({
   _id: new Types.ObjectId(id),
+  tournament: 'Club Championship',
+  year: 2023,
   section,
   round,
   date: '2023-09-14',
   whitePlayerId: white,
   blackPlayerId: black,
   result: '1-0',
+  notCounted: false,
+  notCountedReason: '',
+  tournamentLink: null,
 });
 
 const GAME_ONE = 'f00000000000000000000001';
@@ -77,6 +82,27 @@ describe('matchRoundGames', () => {
     expect(gameIds.get('1|2')).toBe(GAME_TWO);
     expect(gameIds.get('3|2')).toBe(GAME_TWO);
     expect(gameIds.has('2|2')).toBe(false);
+  });
+
+  it("should link a round to the game an admin tied to it, before its pairing's game", () => {
+    const gameIds = matchRoundGames(entries, [
+      archiveGame(GAME_ONE, BOB, ANN),
+      {
+        ...archiveGame(GAME_TWO, ANN, BOB, '7', 'A Match'),
+        tournamentLink: { number: 86, section: 'A1', round: 1, playerIds: [ANN, BOB] },
+      },
+    ]);
+
+    expect(gameIds.get('1|1')).toBe(GAME_TWO);
+    expect(gameIds.get('2|1')).toBe(GAME_TWO);
+  });
+
+  it('should link no round to a game left out of the results', () => {
+    const gameIds = matchRoundGames(entries, [
+      { ...archiveGame(GAME_ONE, BOB, ANN), notCounted: true },
+    ]);
+
+    expect(gameIds.has('1|1')).toBe(false);
   });
 
   it('should tell a pairing met twice apart by round', () => {

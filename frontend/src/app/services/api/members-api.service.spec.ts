@@ -252,6 +252,33 @@ describe('MembersApiService', () => {
     });
   });
 
+  describe('other names', () => {
+    it("should get a member's other names", () => {
+      service.getOtherNames(mockMember.id).subscribe();
+
+      const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}/other-names`);
+      expect(req.request.method).toBe('GET');
+      req.flush({ data: ['Doe, Jack'] });
+    });
+
+    it("should replace a member's other names", () => {
+      service.updateOtherNames(mockMember.id, ['Doe, Jack']).subscribe();
+
+      const req = httpMock.expectOne(`${apiBaseUrl}/${mockMember.id}/other-names`);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ names: ['Doe, Jack'] });
+      req.flush({ data: ['Doe, Jack'] });
+    });
+
+    it("should get every member's other names", () => {
+      service.getAllOtherNames().subscribe();
+
+      const req = httpMock.expectOne(`${apiBaseUrl}/other-names`);
+      expect(req.request.method).toBe('GET');
+      req.flush({ data: {} });
+    });
+  });
+
   it('should ask once a visit for the widest members each scope may see', () => {
     service.getWidestMembers('admin').subscribe();
     service.getWidestMembers('admin').subscribe();

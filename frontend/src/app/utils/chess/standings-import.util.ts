@@ -327,6 +327,7 @@ export function parseStandings(sheets: StandingsSheet[]): StandingsImport {
     return {
       sections: [],
       games: [],
+      playerNames: {},
       problems: ['The file holds no standings.'],
     };
   }
@@ -343,6 +344,7 @@ export function parseStandings(sheets: StandingsSheet[]): StandingsImport {
       ? []
       : parsed.flatMap(({ section }) => (section ? [section] : [])),
     games: [],
+    playerNames: {},
     problems,
   };
 }

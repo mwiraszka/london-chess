@@ -1,8 +1,10 @@
 import {
   ArchiveIconComponent,
+  BadgeComponent,
   CardComponent,
   MicroscopeIconComponent,
   SkeletonComponent,
+  TooltipDirective,
 } from '@eagami/ui';
 import { Store } from '@ngrx/store';
 import { Observable, combineLatest } from 'rxjs';
@@ -92,6 +94,7 @@ function toGameView(game: Game): GameView {
   styleUrl: './game-page.component.scss',
   imports: [
     AsyncPipe,
+    BadgeComponent,
     CardComponent,
     LinkListComponent,
     LoadFailedComponent,
@@ -100,6 +103,7 @@ function toGameView(game: Game): GameView {
     PageHeaderComponent,
     PgnViewerComponent,
     SkeletonComponent,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

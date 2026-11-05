@@ -11,6 +11,7 @@ import { FormSkeletonComponent } from '@app/components/form-skeleton/form-skelet
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { MemberFormComponent } from '@app/components/member-form/member-form.component';
+import { OtherNamesComponent } from '@app/components/other-names/other-names.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
 import {
   EditorPage,
@@ -45,6 +46,10 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
             (change)="onChange($event.memberId, $event.formData)"
             (restore)="onRestore($event)">
           </lcc-member-form>
+
+          @if (vm.memberId && vm.originalMember) {
+            <lcc-other-names [memberId]="vm.memberId" />
+          }
         }
         @case ('failed') {
           <lcc-load-failed
@@ -65,6 +70,7 @@ import { MembersActions, MembersSelectors } from '@app/store/members';
     LinkListComponent,
     LoadFailedComponent,
     MemberFormComponent,
+    OtherNamesComponent,
     PageHeaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

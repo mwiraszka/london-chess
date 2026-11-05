@@ -1,0 +1,69 @@
+<lcc-data-table
+  aria-label="Games against each other"
+  noDataText="These members have no recorded games against each other."
+  [clickable]="true"
+  [columns]="columns()"
+  [data]="rows()"
+  [rowHref]="rowHref"
+  [sizingRows]="sizingRows()"
+  [sort]="sortState()"
+  (rowActivate)="onOpenGame($event)"
+  (sorted)="onSorted($event)">
+  @if (gameCount() > pageSizes[0]) {
+    <ea-paginator
+      align="center"
+      size="sm"
+      [page]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizes"
+      [showAllOption]="true"
+      [showRangeLabel]="true"
+      [totalItems]="gameCount()"
+      (changed)="onPageChanged($event)" />
+  }
+</lcc-data-table>
+
+<ng-template
+  #dateCell
+  let-row>
+  {{ row.dateLabel }}
+</ng-template>
+
+<ng-template
+  #roundCell
+  let-row>
+  {{ row.roundLabel }}
+</ng-template>
+
+<ng-template
+  #tournamentCell
+  let-row>
+  {{ row.tournament }}
+  @if (row.section) {
+    <span class="games__note">({{ row.section }})</span>
+  }
+</ng-template>
+
+<ng-template
+  #whiteCell
+  let-row>
+  @if (row.white) {
+    {{ row.white }}
+  } @else {
+    <span class="games__note">Not recorded</span>
+  }
+</ng-template>
+
+<ng-template
+  #resultCell
+  let-row>
+  <span class="games__result">
+    <span
+      class="games__swatch"
+      aria-hidden="true"
+      [class.games__swatch--first]="row.winner === 'first'"
+      [class.games__swatch--second]="row.winner === 'second'">
+    </span>
+    {{ row.result }}
+  </span>
+</ng-template>

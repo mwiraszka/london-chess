@@ -6,6 +6,15 @@ import { SortingConfig } from './pagination.model';
 
 export type GameResult = '1-0' | '0-1' | '1/2-1/2' | '*';
 
+// The round of a recorded tournament an admin has tied an archived game to, between the
+// standings players it was tied for
+export interface TournamentLink {
+  number: number;
+  section: string;
+  round: number;
+  playerIds: Id[];
+}
+
 export const GAME_RESULTS: GameResult[] = ['1-0', '0-1', '1/2-1/2', '*'];
 
 export interface Game {
@@ -28,6 +37,12 @@ export interface Game {
   // The moves with their comments and variations, as PGN movetext
   moves: string;
   annotator: string;
+  // A game played but left out of its tournament's results, such as one against a player
+  // who withdrew
+  notCounted: boolean;
+  notCountedReason: string;
+  // Null unless an admin tied the game to a tournament round its filing does not match
+  tournamentLink: TournamentLink | null;
   modificationInfo: ModificationInfo;
 }
 
@@ -41,8 +56,11 @@ export interface GamePlayer {
   memberNumber: number | null;
 }
 
-// A game as sent to clients, with both players resolved to their current names
-export type GameResponse = Omit<Game, 'whitePlayerId' | 'blackPlayerId'> & {
+// A game as sent to clients, with both players named as the game records them
+export type GameResponse = Omit<
+  Game,
+  'whitePlayerId' | 'blackPlayerId' | 'tournamentLink'
+> & {
   white: GamePlayer;
   black: GamePlayer;
 };
@@ -91,6 +109,9 @@ const gameSchema = new Schema<Game>(
     plyCount: { type: Number, required: true },
     moves: { type: String, required: true },
     annotator: { type: String, default: '' },
+    notCounted: { type: Boolean, default: false },
+    notCountedReason: { type: String, default: '' },
+    tournamentLink: { type: Object, default: null },
     modificationInfo: { type: Object, required: true },
   },
   { versionKey: false },
@@ -101,6 +122,7 @@ gameSchema.index({ year: -1 });
 gameSchema.index({ tournament: 1, section: 1 });
 gameSchema.index({ whitePlayerId: 1 });
 gameSchema.index({ blackPlayerId: 1 });
+gameSchema.index({ 'tournamentLink.number': 1 });
 
 export const GameModel = model<Game>('Game', gameSchema);
 

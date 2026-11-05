@@ -11,7 +11,7 @@ import { HeaderComponent } from '@app/components/header/header.component';
 import { NavigationBarComponent } from '@app/components/navigation-bar/navigation-bar.component';
 import { UpcomingEventBannerComponent } from '@app/components/upcoming-event-banner/upcoming-event-banner.component';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
-import { RoutingService, TouchEventsService } from '@app/services';
+import { AuthDrawerService, RoutingService, TouchEventsService } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { EventsSelectors } from '@app/store/events';
@@ -112,6 +112,16 @@ describe('AppComponent', () => {
 
     it('should initialize image change and touch event listeners', () => {
       expect(touchEventsService.listenForTouchEvents).toHaveBeenCalled();
+    });
+
+    it('should open the log-in drawer from links into it', () => {
+      const listening = vi
+        .spyOn(TestBed.inject(AuthDrawerService), 'listenForLinks')
+        .mockImplementation(() => undefined);
+
+      component.ngOnInit();
+
+      expect(listening).toHaveBeenCalledTimes(1);
     });
 
     it('should set viewModel$', async () => {

@@ -96,7 +96,7 @@ export function canWithdraw(
 // The tournament as the list of tournaments summarises it
 export function summarizeTournament(tournament: Tournament): TournamentSummary {
   return {
-    ...omit(tournament, ['sections', 'modificationInfo']),
+    ...omit(tournament, ['sections', 'uncountedGames', 'modificationInfo']),
     sections: tournament.sections.map(
       ({ name, ratingBand, roundCount, entries, games }) => ({
         name,

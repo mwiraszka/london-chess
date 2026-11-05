@@ -15,6 +15,8 @@ import { MemberModel, MemberRecord } from '../models/member.model';
 // Online ratings move a few times a day at most, and federation ratings far less often
 const MAX_AGE_MS = 6 * 3600 * 1000;
 const LOOKUP_TIMEOUT_MS = 5000;
+// Enough of a refusal to tell a block page or rate limit from the site's own error
+const REFUSAL_EXCERPT_LENGTH = 300;
 // Chess.com turns away requests that do not say who is asking
 const USER_AGENT = 'London Chess Club (https://londonchess.ca)';
 
@@ -274,7 +276,11 @@ async function fetchText(url: string, accept: string): Promise<string | null> {
     return null;
   }
   if (!response.ok) {
-    throw new Error(`${url} answered ${response.status}`);
+    const excerpt = (await response.text())
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, REFUSAL_EXCERPT_LENGTH);
+    throw new Error(`${url} answered ${response.status}: ${excerpt}`);
   }
   return response.text();
 }

@@ -12,7 +12,7 @@ import { eventsRouter } from './routers/events.router';
 import { gamesRouter } from './routers/games.router';
 import { imagesRouter } from './routers/images.router';
 import { adminMembersRouter, publicMembersRouter } from './routers/members.router';
-import { tournamentsRouter } from './routers/tournaments.router';
+import { adminTournamentsRouter, tournamentsRouter } from './routers/tournaments.router';
 import { usersRouter } from './routers/users.router';
 import { webhooksRouter } from './routers/webhooks.router';
 import { connectToDatabase } from './services/mongo-db.service';
@@ -37,6 +37,7 @@ const dataRouter = Router()
   .use('/public/members', publicCache, publicMembersRouter)
   .use('/admin/members', clearCacheAfterWrite, adminMembersRouter)
   .use('/tournaments', publicCache, clearCacheAfterWrite, tournamentsRouter)
+  .use('/admin/tournaments', clearCacheAfterWrite, adminTournamentsRouter)
   .use('/users', usersRouter);
 
 const corsOptions: CorsOptions = {

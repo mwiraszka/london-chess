@@ -38,7 +38,12 @@ import { UpcomingEventBannerComponent } from '@app/components/upcoming-event-ban
 import { CLUB_TIME_ZONE } from '@app/constants/clubs';
 import { GIT_BRANCH_NAME } from '@app/constants/git-branch.generated';
 import { Event } from '@app/models';
-import { RefreshService, RoutingService, TouchEventsService } from '@app/services';
+import {
+  AuthDrawerService,
+  RefreshService,
+  RoutingService,
+  TouchEventsService,
+} from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
 import { EventsSelectors } from '@app/store/events';
 import moment from '@app/utils/datetime/moment';
@@ -127,6 +132,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   private readonly routingService = inject(RoutingService);
   private readonly store = inject(Store);
   private readonly touchEventsService = inject(TouchEventsService);
+  private readonly authDrawerService = inject(AuthDrawerService);
 
   protected readonly environment = environment;
   protected readonly gitBranchName = GIT_BRANCH_NAME;
@@ -161,6 +167,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   public ngOnInit(): void {
     this.touchEventsService.listenForTouchEvents();
+    this.authDrawerService.listenForLinks();
 
     this.viewModel$ = combineLatest([
       this.store.select(AppSelectors.selectIsDarkMode),

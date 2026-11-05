@@ -33,6 +33,7 @@ import {
   AdminCommandAction,
   AdminLinkAction,
   DataPaginationOptions,
+  Id,
   LoadStatus,
   Member,
   MemberWithNewRatings,
@@ -48,7 +49,7 @@ import { AppSelectors } from '@app/store/app';
 import { AuthSelectors } from '@app/store/auth';
 import { MembersActions, MembersSelectors } from '@app/store/members';
 import { PARSE_CSV } from '@app/tokens';
-import { bindSearchControl, isLccError, widestRows } from '@app/utils';
+import { bindSearchControl, isLccError, parseError, widestRows } from '@app/utils';
 
 @Component({
   selector: 'lcc-members-page',
@@ -308,17 +309,23 @@ export class MembersPageComponent implements OnInit {
     if (!allMembers) {
       return null;
     }
+    const otherNames = await this.loadOtherNames();
+    if (!otherNames) {
+      return null;
+    }
 
     const membersWithNewRatings: MemberWithNewRatings[] = [];
     const unmatchedMembers: string[] = [];
 
+    // A member may still be listed under a name they were recorded under before
+    const isNamed = (member: Member, firstName: string, lastName: string): boolean =>
+      (member.firstName === firstName && member.lastName === lastName) ||
+      (otherNames[member.id] ?? []).includes(`${lastName}, ${firstName}`);
+
     parsingResult.forEach(row => {
       const [firstName, lastName, rating, newRating, newPeakRating] = row;
       const matchedMember = allMembers.find(
-        member =>
-          member.firstName === firstName &&
-          member.lastName === lastName &&
-          member.rating === rating,
+        member => isNamed(member, firstName, lastName) && member.rating === rating,
       );
 
       if (matchedMember) {
@@ -333,6 +340,17 @@ export class MembersPageComponent implements OnInit {
     });
 
     return { membersWithNewRatings, unmatchedMembers };
+  }
+
+  private async loadOtherNames(): Promise<Record<Id, string[]> | null> {
+    try {
+      return (await firstValueFrom(this.membersApi.getAllOtherNames())).data;
+    } catch (error) {
+      this.store.dispatch(
+        MembersActions.parseMemberRatingsFromCsvFailed({ error: parseError(error) }),
+      );
+      return null;
+    }
   }
 
   // Rating updates save every detail of each member, so only full admin records will do

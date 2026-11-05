@@ -33,6 +33,10 @@ export interface Game {
   // The moves with their comments and variations, as PGN movetext
   moves: string;
   annotator: string;
+  // A game played but left out of its tournament's results, such as one against a player
+  // who withdrew
+  notCounted: boolean;
+  notCountedReason: string;
   modificationInfo: ModificationInfo;
 }
 

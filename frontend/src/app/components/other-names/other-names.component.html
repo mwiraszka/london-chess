@@ -1,0 +1,71 @@
+<ea-card
+  class="other-names"
+  [fullWidth]="true">
+  <h3
+    slot="header"
+    class="other-names__heading">
+    Other names
+  </h3>
+
+  @switch (status()) {
+    @case ('failed') {
+      <lcc-load-failed
+        title="Unable to load the member's other names"
+        (retry)="load()" />
+    }
+    @case ('loading') {
+      <ea-skeleton
+        variant="rect"
+        width="100%"
+        height="80px"
+        aria-busy="true" />
+    }
+    @default {
+      <div class="other-names__body">
+        <p class="other-names__hint">
+          Names the member was recorded under besides their own, such as a name they used
+          before, written Last, First as SwissSys and PGNs write them. Imports find the
+          member by any of them, and old results and games keep the name recorded.
+        </p>
+
+        @if (names().length) {
+          <ul class="other-names__list">
+            @for (name of names(); track name) {
+              <li>
+                <ea-tag
+                  [disabled]="saving()"
+                  [removable]="true"
+                  [removeLabel]="'Remove ' + name"
+                  (removed)="onRemove(name)">
+                  {{ name }}
+                </ea-tag>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="other-names__hint">No other names yet.</p>
+        }
+
+        <div class="other-names__add">
+          <ea-input
+            label="Add a name"
+            placeholder="Last, First"
+            [errorMessages]="errorMessages"
+            [formControl]="newName"
+            [maxLength]="100"
+            (keydown.enter)="onAdd()" />
+          <ea-button
+            variant="secondary"
+            [disabled]="saving()"
+            (clicked)="onAdd()">
+            Add
+          </ea-button>
+        </div>
+
+        @if (problem(); as message) {
+          <ea-alert variant="error">{{ message }}</ea-alert>
+        }
+      </div>
+    }
+  }
+</ea-card>

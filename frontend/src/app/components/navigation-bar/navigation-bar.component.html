@@ -9,8 +9,8 @@
         class="nav-link"
         routerLinkActive="link-active"
         [routerLink]="link.internalPath | routerLink"
-        [routerLinkActiveOptions]="{ exact: true }"
-        [eaTooltip]="screenWidth() > 800 ? '' : link.text">
+        [routerLinkActiveOptions]="activeOptions"
+        [eaTooltip]="screenWidth() > 904 ? '' : link.text">
         <span class="link-text">{{ link.text }}</span>
         @if (link.icon) {
           <span class="link-icon">

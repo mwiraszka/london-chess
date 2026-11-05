@@ -1,6 +1,7 @@
 import {
   ArchiveIconComponent,
   AutocompleteComponent,
+  BadgeComponent,
   ButtonComponent,
   CardComponent,
   DataTableColumn,
@@ -135,6 +136,7 @@ const SORT_COLUMNS: Record<GamesSortBy, string> = {
   styleUrl: './game-archives-page.component.scss',
   imports: [
     AutocompleteComponent,
+    BadgeComponent,
     ButtonComponent,
     CardComponent,
     DataTableComponent,

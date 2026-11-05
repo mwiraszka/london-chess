@@ -3,7 +3,7 @@ import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { Id } from '@app/models';
 import { loadStatus } from '@app/utils';
 
-import { GamesState, gamesAdapter } from './games.reducer';
+import { GamesState, gamesAdapter, headToHeadKey } from './games.reducer';
 
 const selectGamesState = createFeatureSelector<GamesState>('gamesState');
 
@@ -74,6 +74,20 @@ export const selectMemberOpeningsStatus = (memberNumber: number) =>
     selectFailedLoads,
     (openings, failedLoads) =>
       loadStatus(openings !== null, failedLoads.includes('member-openings')),
+  );
+
+export const selectHeadToHead = (firstNumber: number, secondNumber: number) =>
+  createSelector(
+    selectGamesState,
+    state => state.headToHead[headToHeadKey(firstNumber, secondNumber)] ?? null,
+  );
+
+export const selectHeadToHeadStatus = (firstNumber: number, secondNumber: number) =>
+  createSelector(
+    selectHeadToHead(firstNumber, secondNumber),
+    selectFailedLoads,
+    (games, failedLoads) =>
+      loadStatus(games !== null, failedLoads.includes('head-to-head')),
   );
 
 export const selectIsFetchingFiltered = createSelector(

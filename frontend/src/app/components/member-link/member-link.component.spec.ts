@@ -16,6 +16,7 @@ import { MemberLinkComponent } from './member-link.component';
       [name]="name"
       [showAvatar]="showAvatar"
       [appearance]="appearance"
+      [asRecorded]="asRecorded"
       [nameOrder]="nameOrder" />
   `,
   imports: [MemberLinkComponent],
@@ -26,6 +27,7 @@ class HostComponent {
   public showAvatar = false;
   public appearance: 'plain' | 'link' = 'plain';
   public nameOrder: NameOrder = 'first-last';
+  public asRecorded = false;
 }
 
 describe('MemberLinkComponent', () => {
@@ -33,7 +35,14 @@ describe('MemberLinkComponent', () => {
   let host: HostComponent;
 
   const profiles: MemberProfile[] = [
-    { number: 0, firstName: 'Magnus', lastName: 'Carlsen', avatarUrl: null },
+    {
+      number: 0,
+      firstName: 'Magnus',
+      lastName: 'Carlsen',
+      rating: '2800',
+      peakRating: '2882',
+      avatarUrl: null,
+    },
   ];
   const api = { get: vi.fn(() => Promise.resolve(profiles)) };
 
@@ -61,6 +70,18 @@ describe('MemberLinkComponent', () => {
     expect(queryTextContent(fixture.debugElement, 'a.member-link')).toBe(
       'Carlsen, Magnus',
     );
+  });
+
+  it('should keep a name as recorded, still linked to the member', async () => {
+    host.memberNumber = 0;
+    host.name = 'Magnus Øen';
+    host.asRecorded = true;
+
+    fixture.detectChanges();
+    await TestBed.inject(MemberProfilesService).load();
+    fixture.detectChanges();
+
+    expect(queryTextContent(fixture.debugElement, 'a.member-link')).toBe('Magnus Øen');
   });
 
   it("should show a member's current name, linked to their profile, including member 0", async () => {

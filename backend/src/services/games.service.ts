@@ -55,8 +55,8 @@ const asObjectId = (input: unknown) => ({
 });
 
 /**
- * Orders games by the name shown for one side, which is the linked member's name where
- * there is one, so both collections are joined before the page is cut.
+ * Orders games by the name one side was recorded under, so the players are joined before
+ * the page is cut.
  */
 export function buildPlayerNameSortPipeline(
   filter: QueryFilter<Game>,
@@ -73,20 +73,9 @@ export function buildPlayerNameSortPipeline(
         let: { playerId: asObjectId(`$${side}`) },
         pipeline: [
           { $match: { $expr: { $eq: ['$_id', '$$playerId'] } } },
-          { $project: { firstName: 1, lastName: 1, memberId: 1 } },
-        ],
-        as: 'player',
-      },
-    },
-    {
-      $lookup: {
-        from: 'members',
-        let: { memberId: asObjectId({ $first: '$player.memberId' }) },
-        pipeline: [
-          { $match: { $expr: { $eq: ['$_id', '$$memberId'] } } },
           { $project: { firstName: 1, lastName: 1 } },
         ],
-        as: 'member',
+        as: 'player',
       },
     },
     {
@@ -94,21 +83,9 @@ export function buildPlayerNameSortPipeline(
         playerSortName: {
           $toLower: {
             $concat: [
-              {
-                $ifNull: [
-                  { $first: '$member.lastName' },
-                  { $first: '$player.lastName' },
-                  '',
-                ],
-              },
+              { $ifNull: [{ $first: '$player.lastName' }, ''] },
               ' ',
-              {
-                $ifNull: [
-                  { $first: '$member.firstName' },
-                  { $first: '$player.firstName' },
-                  '',
-                ],
-              },
+              { $ifNull: [{ $first: '$player.firstName' }, ''] },
             ],
           },
         },
@@ -118,7 +95,7 @@ export function buildPlayerNameSortPipeline(
     { $sort: { playerSortName: sortOrder, date: -1, _id: -1 } },
     ...(skip ? [{ $skip: skip }] : []),
     ...(limit === undefined ? [] : [{ $limit: limit }]),
-    { $project: { player: 0, member: 0, playerSortName: 0 } },
+    { $project: { player: 0, playerSortName: 0 } },
   ] as PipelineStage[];
 }
 
@@ -138,7 +115,7 @@ export function buildGamesFilter(filters: GameFilters): QueryFilter<Game> {
   return { $and: conditions };
 }
 
-// Every player by id, named after their member record when they have one
+// Every player by id, with the number of the member they are linked to
 export async function resolvePlayers(playerIds: Id[]): Promise<Map<Id, GamePlayer>> {
   const uniqueIds = [...new Set(playerIds)].filter(isCollectionId);
   const players = await PlayerModel.find({
@@ -156,6 +133,7 @@ export async function resolvePlayers(playerIds: Id[]): Promise<Map<Id, GamePlaye
     : [];
   const membersById = new Map(members.map(member => [member._id.toString(), member]));
 
+  // Each keeps the name the records give them, whatever their member is called now
   return new Map(
     players.map(player => {
       const member = player.memberId ? membersById.get(player.memberId) : undefined;
@@ -163,9 +141,9 @@ export async function resolvePlayers(playerIds: Id[]): Promise<Map<Id, GamePlaye
         player._id.toString(),
         {
           id: player._id.toString(),
-          firstName: member?.firstName ?? player.firstName,
-          lastName: member?.lastName ?? player.lastName,
-          suffix: member ? '' : player.suffix,
+          firstName: player.firstName,
+          lastName: player.lastName,
+          suffix: player.suffix,
           memberNumber: member?.number ?? null,
         },
       ];
@@ -186,9 +164,12 @@ export async function toGameResponses(records: GameRecord[]): Promise<GameRespon
   );
 
   return records.map(record => {
-    const { _id, whitePlayerId, blackPlayerId, ...game } = record;
+    const { _id, whitePlayerId, blackPlayerId, tournamentLink, ...game } = record;
     return {
       ...game,
+      // Games archived before a game could be left out of its results have neither field
+      notCounted: game.notCounted ?? false,
+      notCountedReason: game.notCountedReason ?? '',
       id: _id.toString(),
       white: players.get(whitePlayerId) ?? { id: whitePlayerId, ...UNKNOWN_PLAYER },
       black: players.get(blackPlayerId) ?? { id: blackPlayerId, ...UNKNOWN_PLAYER },

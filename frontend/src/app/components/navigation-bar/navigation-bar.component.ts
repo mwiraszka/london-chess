@@ -8,6 +8,7 @@ import {
   InfoIconComponent,
   NewspaperIconComponent,
   PopoverComponent,
+  ScaleIconComponent,
   SettingsIconComponent,
   TooltipDirective,
   TrophyIconComponent,
@@ -23,7 +24,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { IsActiveMatchOptions, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { UserSettingsMenuComponent } from '@app/components/user-settings-menu/user-settings-menu.component';
 import { InternalLink } from '@app/models';
@@ -70,6 +71,11 @@ export class NavigationBarComponent {
       icon: UsersIconComponent,
     },
     {
+      text: 'Head-to-Head',
+      internalPath: 'head-to-head',
+      icon: ScaleIconComponent,
+    },
+    {
       text: 'Schedule',
       internalPath: 'schedule',
       icon: CalendarDaysIconComponent,
@@ -100,6 +106,15 @@ export class NavigationBarComponent {
       icon: ArchiveIconComponent,
     },
   ];
+
+  // A page stays its tab whatever its address carries after the path, such as the members
+  // a head-to-head compares
+  protected readonly activeOptions: IsActiveMatchOptions = {
+    paths: 'exact',
+    queryParams: 'ignored',
+    matrixParams: 'ignored',
+    fragment: 'ignored',
+  };
 
   public readonly user = this.store.selectSignal(AuthSelectors.selectUser);
 

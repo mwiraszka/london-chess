@@ -10,6 +10,7 @@ import { TournamentFormComponent } from '@app/components/tournament-form/tournam
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
 import { MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournaments.mock';
 import {
+  MembersApiService,
   MetaAndTitleService,
   StandingsFileService,
   StoreRequestService,
@@ -62,6 +63,7 @@ describe('TournamentEditorPageComponent', () => {
         { provide: StandingsFileService, useValue: { importStandings: vi.fn() } },
         { provide: StoreRequestService, useValue: { dispatch: vi.fn() } },
         { provide: TournamentsApiService, useValue: { matchPlayers: vi.fn() } },
+        { provide: MembersApiService, useValue: { getAllMembers: vi.fn() } },
       ],
     }).compileComponents();
 

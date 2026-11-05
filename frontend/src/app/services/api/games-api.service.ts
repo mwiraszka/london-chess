@@ -12,6 +12,7 @@ import {
   Game,
   GamesQuery,
   GamesSummary,
+  HeadToHeadGame,
   Id,
   MemberOpenings,
   PaginatedItems,
@@ -64,6 +65,15 @@ export class GamesApiService {
   ): Observable<ApiResponse<MemberOpenings>> {
     return this.http.get<ApiResponse<MemberOpenings>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/members/${memberNumber}/openings`,
+    );
+  }
+
+  public getHeadToHead(
+    firstNumber: number,
+    secondNumber: number,
+  ): Observable<ApiResponse<HeadToHeadGame[]>> {
+    return this.http.get<ApiResponse<HeadToHeadGame[]>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}/head-to-head/${firstNumber}/${secondNumber}`,
     );
   }
 

@@ -4,6 +4,7 @@ import {
   MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
+  MOCK_HEAD_TO_HEAD_GAMES,
 } from '@app/mocks/games.mock';
 
 import { GamesState, gamesAdapter, initialState } from './games.reducer';
@@ -65,6 +66,38 @@ describe('Games Selectors', () => {
         GamesSelectors.selectMemberOpeningsStatus(7)(
           withState({ ...initialState, failedLoads: ['member-openings'] }),
         ),
+      ).toBe('failed');
+    });
+  });
+
+  describe('head-to-head games', () => {
+    it("should select a pairing's games in the order it was asked for, or null before they load", () => {
+      const state = withState({
+        ...initialState,
+        headToHead: { '2-7': MOCK_HEAD_TO_HEAD_GAMES },
+      });
+
+      expect(GamesSelectors.selectHeadToHead(2, 7)(state)).toEqual(
+        MOCK_HEAD_TO_HEAD_GAMES,
+      );
+      expect(GamesSelectors.selectHeadToHead(7, 2)(state)).toBeNull();
+    });
+
+    it("should report whether a pairing's games are loading, loaded or failed", () => {
+      expect(GamesSelectors.selectHeadToHeadStatus(2, 7)(withState(initialState))).toBe(
+        'loading',
+      );
+      expect(
+        GamesSelectors.selectHeadToHeadStatus(
+          2,
+          7,
+        )(withState({ ...initialState, headToHead: { '2-7': [] } })),
+      ).toBe('loaded');
+      expect(
+        GamesSelectors.selectHeadToHeadStatus(
+          2,
+          7,
+        )(withState({ ...initialState, failedLoads: ['head-to-head'] })),
       ).toBe('failed');
     });
   });

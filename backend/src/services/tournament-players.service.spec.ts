@@ -70,8 +70,20 @@ describe('tournament players', () => {
       const matches = await matchPlayerNames(['Doe, Jane', 'Roe, Rick']);
 
       expect(matches).toEqual([
-        { name: 'Doe, Jane', playerId: linked._id.toString(), memberNumber: 3 },
-        { name: 'Roe, Rick', playerId: busier._id.toString(), memberNumber: null },
+        {
+          name: 'Doe, Jane',
+          playerId: linked._id.toString(),
+          memberNumber: 3,
+          memberId: member._id.toString(),
+          personPlayerIds: [linked._id.toString()],
+        },
+        {
+          name: 'Roe, Rick',
+          playerId: busier._id.toString(),
+          memberNumber: null,
+          memberId: null,
+          personPlayerIds: [busier._id.toString()],
+        },
       ]);
     });
 
@@ -86,7 +98,7 @@ describe('tournament players', () => {
     });
 
     it('should match a known player without a member to the member carrying their name', async () => {
-      await createMember({ firstName: 'Nia', lastName: 'New', number: 9 });
+      const member = await createMember({ firstName: 'Nia', lastName: 'New', number: 9 });
       const known = await PlayerModel.create({ firstName: 'Nia', lastName: 'New' });
 
       const [match] = await matchPlayerNames(['New, Nia']);
@@ -95,7 +107,30 @@ describe('tournament players', () => {
         name: 'New, Nia',
         playerId: known._id.toString(),
         memberNumber: 9,
+        memberId: member._id.toString(),
+        personPlayerIds: [known._id.toString()],
       });
+    });
+
+    it("should count a member's other names as the same person", async () => {
+      const member = await createMember({ firstName: 'Katie', lastName: 'Dunford' });
+      const current = await PlayerModel.create({
+        firstName: 'Katie',
+        lastName: 'Dunford',
+        memberId: member._id.toString(),
+      });
+      const earlier = await PlayerModel.create({
+        firstName: 'Jack',
+        lastName: 'Dunford',
+        memberId: member._id.toString(),
+      });
+
+      const [match] = await matchPlayerNames(['Dunford, Jack']);
+
+      expect(match.playerId).toBe(earlier._id.toString());
+      expect(match.personPlayerIds).toEqual(
+        expect.arrayContaining([current._id.toString(), earlier._id.toString()]),
+      );
     });
 
     it('should not treat a player with a different suffix as the same person', async () => {

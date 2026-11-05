@@ -84,6 +84,13 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'head-to-head',
+    loadComponent: () =>
+      import('./pages/head-to-head/head-to-head-page.component').then(
+        c => c.HeadToHeadPageComponent,
+      ),
+  },
+  {
     path: 'image',
     loadChildren: () => import('./pages/image/image.routes').then(m => m.IMAGE_ROUTES),
     canActivate: [accessGuard],

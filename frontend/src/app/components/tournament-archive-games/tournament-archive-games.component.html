@@ -1,0 +1,108 @@
+<ea-card
+  class="archive-games"
+  [fullWidth]="true">
+  <h3
+    slot="header"
+    class="archive-games__heading">
+    Games in the archive
+  </h3>
+
+  @switch (status()) {
+    @case ('failed') {
+      <lcc-load-failed
+        title="Unable to load the tournament's games"
+        (retry)="load()" />
+    }
+    @case ('loading') {
+      <ea-skeleton
+        variant="rect"
+        width="100%"
+        height="120px"
+        aria-busy="true" />
+    }
+    @default {
+      <div class="archive-games__body">
+        @if (!pairings().length && !unplaced().length) {
+          <p class="archive-games__status">
+            Every round the results record is tied to its game wherever the archive holds
+            one, and no archived game of the tournament is left over.
+          </p>
+        }
+
+        @if (pairings().length) {
+          <p class="archive-games__status">
+            The archive files these rounds' games differently from the results. Choose the
+            game each round was to tie them together; the archived games stay as they are.
+          </p>
+          @for (choice of pairings(); track choice.key) {
+            <ea-dropdown
+              placeholder="Leave untied"
+              [clearable]="true"
+              [label]="choice.label"
+              [options]="choice.options"
+              [value]="links().get(choice.key) ?? ''"
+              (changed)="onLinkChosen(choice.key, $event)" />
+          }
+        }
+
+        @if (gamelessCount()) {
+          <p class="archive-games__status">
+            {{
+              gamelessCount() === 1
+                ? 'One round the results record has'
+                : gamelessCount() + ' rounds the results record have'
+            }}
+            no game in the archive between its players.
+          </p>
+        }
+
+        @if (unplaced().length) {
+          <p class="archive-games__status">
+            These archived games of the tournament are tied to no round of its results.
+            Mark any the results leave out, such as games against a player who withdrew,
+            as not counted.
+          </p>
+          @for (game of unplaced(); track game.id) {
+            <div class="archive-games__game">
+              <ea-checkbox
+                label="Not counted"
+                [checked]="game.notCounted"
+                (changed)="onCountChanged(game.id, { notCounted: $event })" />
+              <span class="archive-games__label">{{ game.label }}</span>
+              @if (game.notCounted) {
+                <ea-input
+                  class="archive-games__reason"
+                  placeholder="Why it is not counted, such as a withdrawal"
+                  [aria-label]="'Why ' + game.label + ' is not counted'"
+                  [maxLength]="200"
+                  [value]="game.notCountedReason"
+                  (valueChange)="onCountChanged(game.id, { notCountedReason: $event })" />
+              }
+            </div>
+          }
+        }
+
+        @if (problem(); as message) {
+          <ea-alert variant="error">{{ message }}</ea-alert>
+        }
+        @if (saved()) {
+          <p
+            class="archive-games__status"
+            role="status">
+            The games were saved.
+          </p>
+        }
+
+        @if (pairings().length || unplaced().length) {
+          <div class="archive-games__actions">
+            <ea-button
+              [disabled]="!hasChanges() || saving()"
+              (clicked)="onSave()">
+              Save games
+            </ea-button>
+          </div>
+        }
+      </div>
+    }
+  }
+</ea-card>

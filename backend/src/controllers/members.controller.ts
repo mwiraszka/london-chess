@@ -28,6 +28,11 @@ import {
 import { findEditor, isLinkedMember } from '../services/member-accounts.service';
 import { assignMemberNumber } from '../services/member-numbers.service';
 import {
+  MAX_OTHER_NAMES,
+  otherNamesOf,
+  setOtherNames,
+} from '../services/other-names.service';
+import {
   linkPlayersToMembers,
   releasePlayers,
   unlinkPlayers,
@@ -285,6 +290,83 @@ export async function getMemberProfiles(
     ).lean<MemberRecord[]>();
 
     res.status(200).json({ data: toMemberProfiles(records) });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+// The names every member was recorded under besides their own, by member id
+export async function getAllOtherNames(
+  _req: Request,
+  res: Response<ApiResponse<Record<Id, string[]>>>,
+): Promise<void> {
+  try {
+    const members = await MemberModel.find({}, { _id: 1 }).lean<
+      Pick<MemberRecord, '_id'>[]
+    >();
+    const names = await otherNamesOf(members.map(({ _id }) => _id.toString()));
+    res.status(200).json({
+      data: Object.fromEntries([...names].filter(([, otherNames]) => otherNames.length)),
+    });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+export async function getOtherNames(
+  req: Request<{ id: Id }>,
+  res: Response<ApiResponse<string[]>>,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const exists = isCollectionId(id) && (await MemberModel.exists({ _id: id }));
+    if (!exists) {
+      res.status(404).json({ message: `Unable to find member [${id}]` });
+      return;
+    }
+
+    res.status(200).json({ data: (await otherNamesOf([id])).get(id) ?? [] });
+  } catch (error) {
+    res.status(500).json({ message: `Unknown error: ${error}` });
+  }
+}
+
+export async function updateOtherNames(
+  req: Request<{ id: Id }>,
+  res: Response<ApiResponse<string[]>>,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const names: unknown = req.body?.names;
+    if (
+      !Array.isArray(names) ||
+      names.length > MAX_OTHER_NAMES ||
+      names.some(
+        name => typeof name !== 'string' || !name.trim() || name.trim().length > 100,
+      )
+    ) {
+      res.status(400).json({
+        message: `Other names must be a list of at most ${MAX_OTHER_NAMES} names.`,
+      });
+      return;
+    }
+
+    const member = isCollectionId(id)
+      ? await MemberModel.findById(id, { firstName: 1, lastName: 1 }).lean<
+          Pick<MemberRecord, '_id' | 'firstName' | 'lastName'>
+        >()
+      : null;
+    if (!member) {
+      res.status(404).json({ message: `Unable to find member [${id}]` });
+      return;
+    }
+
+    const result = await setOtherNames(member, names as string[]);
+    if ('problem' in result) {
+      res.status(409).json({ message: result.problem });
+      return;
+    }
+    res.status(200).json({ data: result.otherNames });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }

@@ -3,6 +3,7 @@ import {
   GameInput,
   GameResult,
   PgnGame,
+  PlayerNameMatch,
   RoundOutcome,
   RoundResultInput,
   SectionInput,
@@ -147,10 +148,18 @@ const OUTCOME_TEXT: Record<Exclude<RoundOutcome, 'game'>, string> = {
  * games to add to the archive. Each game goes to the section its event names, and must match
  * the standings for both players exactly: round, opponent, colour, result and rating. The
  * standings are never changed, so any game they disagree with stops the import, for whoever
- * keeps that file to correct it.
+ * keeps that file to correct it. A game in a round the standings leave unplayed for both
+ * players was played but not counted, and is archived as such.
+ *
+ * The archive matches each PGN name to its player, so a name a member was recorded under
+ * before finds them in the standings, and the game is archived under the name the PGN gives.
  */
-export function checkPgnGames(tournament: Tournament, games: PgnGame[]): StandingsImport {
-  const nothing = { sections: [], games: [] };
+export function checkPgnGames(
+  tournament: Tournament,
+  games: PgnGame[],
+  nameMatches: PlayerNameMatch[] = [],
+): StandingsImport {
+  const nothing = { sections: [], games: [], playerNames: {} };
   if (!tournament.sections.length) {
     return {
       ...nothing,
@@ -242,25 +251,45 @@ export function checkPgnGames(tournament: Tournament, games: PgnGame[]): Standin
     return prefix === undefined ? null : value.slice(prefix.length).trim();
   };
 
+  const matchesByName = new Map(nameMatches.map(match => [match.name.trim(), match]));
+  const personOf = (name: string): string[] =>
+    matchesByName.get(name.trim())?.personPlayerIds ?? [];
+
+  // The same name first, then another name of the same person, then a shortened first name
   const findEntrant = (name: string, sectionIndexes: number[]): Entrant[] => {
     const candidates = sectionIndexes.flatMap(sectionIndex =>
       sections[sectionIndex].entries.map(entry => ({
         sectionIndex,
         rank: entry.rank,
         name: entry.name,
+        playerId: entry.playerId,
       })),
     );
-    const exact = candidates.filter(entrant => isSamePlayerName(entrant.name, name));
-    return exact.length
-      ? exact
-      : candidates.filter(entrant => isSamePlayerName(entrant.name, name, true));
+    const person = personOf(name);
+    const tiers = [
+      candidates.filter(entrant => isSamePlayerName(entrant.name, name)),
+      candidates.filter(({ playerId }) => !!playerId && person.includes(playerId)),
+      candidates.filter(entrant => isSamePlayerName(entrant.name, name, true)),
+    ];
+    return (tiers.find(tier => tier.length) ?? []).map(({ sectionIndex, rank }) => ({
+      sectionIndex,
+      rank,
+    }));
   };
 
   const entryOf = ({ sectionIndex, rank }: Entrant) =>
     sections[sectionIndex].entries.find(entry => entry.rank === rank)!;
 
+  // The PGN's own name for the player when the archive knows it as the same person
+  const archivedPlayerId = (name: string, entrant: Entrant): string => {
+    const entryPlayerId = entryOf(entrant).playerId!;
+    const recorded = matchesByName.get(name.trim())?.playerId;
+    return recorded && personOf(name).includes(entryPlayerId) ? recorded : entryPlayerId;
+  };
+
   const problems: string[] = [];
   const archived = new Map<string, GameInput>();
+  const playerNames = new Map<string, string>();
   const seen = new Set<string>();
 
   // How the game is described goes on with either the rest of a sentence about it or a
@@ -357,7 +386,17 @@ export function checkPgnGames(tournament: Tournament, games: PgnGame[]): Standin
       return said("is from a round past the section's last.");
     }
 
-    for (const side of sides) {
+    // A round the standings leave unplayed for both players holds a game they don't count
+    const notCounted = sides.every(({ entrant }) => {
+      const section = sections[entrant.sectionIndex];
+      const standingsRound = ((round - 1) % section.roundCount) + 1;
+      return (
+        entryOf(entrant).rounds.find(played => played.round === standingsRound)
+          ?.outcome === 'unplayed'
+      );
+    });
+
+    for (const side of notCounted ? [] : sides) {
       const section = sections[side.entrant.sectionIndex];
       const entry = entryOf(side.entrant);
       // A double round's second game is numbered a whole round count on from its first
@@ -417,8 +456,10 @@ export function checkPgnGames(tournament: Tournament, games: PgnGame[]): Standin
     }
 
     const archiveSection = (label ?? crossLabel) as string;
-    const whitePlayerId = entryOf(whiteEntrant).playerId!;
-    const blackPlayerId = entryOf(blackEntrant).playerId!;
+    const whitePlayerId = archivedPlayerId(white, whiteEntrant);
+    const blackPlayerId = archivedPlayerId(black, blackEntrant);
+    playerNames.set(whitePlayerId, white.trim());
+    playerNames.set(blackPlayerId, black.trim());
     // A pairing meets once a round, whichever colours a second listing gives it
     const key = `${archiveSection}|${round}|${[whitePlayerId, blackPlayerId].sort().join('|')}`;
     if (seen.has(key)) {
@@ -440,6 +481,9 @@ export function checkPgnGames(tournament: Tournament, games: PgnGame[]): Standin
         eco: ECO_CODE.test(eco) ? eco : '',
         plyCount: game.plyCount,
         moves: game.moves,
+        notCounted,
+        notCountedReason: '',
+        archivedGameId: null,
       });
     }
     return null;
@@ -455,5 +499,10 @@ export function checkPgnGames(tournament: Tournament, games: PgnGame[]): Standin
   if (problems.length) {
     return { ...nothing, problems };
   }
-  return { sections, games: [...archived.values()], problems: [] };
+  return {
+    sections,
+    games: [...archived.values()],
+    playerNames: Object.fromEntries(playerNames),
+    problems: [],
+  };
 }

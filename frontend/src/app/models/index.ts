@@ -49,6 +49,16 @@ export type {
   MemberOpenings,
   OpeningCount,
 } from './game.model';
+export type {
+  ChartedMember,
+  HeadToHeadGame,
+  HeadToHeadGameRow,
+  HeadToHeadSide,
+  HeadToHeadTally,
+  HeadToHeadYear,
+  SharedTournament,
+  SharedTournamentRow,
+} from './head-to-head.model';
 export type { GitHubPullRequest } from './github-pull-request.model';
 export type {
   AlbumFormGroup,
@@ -100,6 +110,11 @@ export type { RouteAccess } from './route-access.model';
 export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
 export type {
+  ArchivedGameSummary,
+  ArchiveGameCount,
+  ArchiveGameLink,
+  ArchiveGamesReview,
+  ArchiveGamesUpdate,
   EntryInput,
   GameChange,
   GameInput,
@@ -135,5 +150,9 @@ export type {
   Trophy,
   TrophyMetal,
   TrophyShape,
+  UncountedGame,
+  UncountedGameView,
+  UnlinkedPairing,
+  UnplacedGame,
 } from './tournament.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';

@@ -13,6 +13,7 @@ import {
   MOCK_ARCHIVE_TOURNAMENTS,
   MOCK_GAMES,
   MOCK_GAMES_SUMMARY,
+  MOCK_HEAD_TO_HEAD_GAMES,
 } from '@app/mocks/games.mock';
 import { LccError } from '@app/models';
 import { GamesApiService } from '@app/services';
@@ -58,6 +59,7 @@ describe('GamesEffects', () => {
             getTournaments: vi.fn(),
             getSummary: vi.fn(),
             getMemberOpenings: vi.fn(),
+            getHeadToHead: vi.fn(),
           },
         },
       ],
@@ -185,6 +187,39 @@ describe('GamesEffects', () => {
       expect(action).toEqual(
         GamesActions.fetchMemberOpeningsFailed({ error: mockError }),
       );
+    });
+  });
+
+  describe('fetchHeadToHead$', () => {
+    it('should fetch the games between the two members', async () => {
+      gamesApiService.getHeadToHead.mockReturnValue(
+        of({ data: MOCK_HEAD_TO_HEAD_GAMES }),
+      );
+
+      actions$.next(
+        GamesActions.fetchHeadToHeadRequested({ firstNumber: 2, secondNumber: 7 }),
+      );
+      const action = await firstValueFrom(effects.fetchHeadToHead$);
+
+      expect(gamesApiService.getHeadToHead).toHaveBeenCalledWith(2, 7);
+      expect(action).toEqual(
+        GamesActions.fetchHeadToHeadSucceeded({
+          firstNumber: 2,
+          secondNumber: 7,
+          games: MOCK_HEAD_TO_HEAD_GAMES,
+        }),
+      );
+    });
+
+    it('should report a failed fetch', async () => {
+      gamesApiService.getHeadToHead.mockReturnValue(throwError(() => mockError));
+
+      actions$.next(
+        GamesActions.fetchHeadToHeadRequested({ firstNumber: 2, secondNumber: 7 }),
+      );
+      const action = await firstValueFrom(effects.fetchHeadToHead$);
+
+      expect(action).toEqual(GamesActions.fetchHeadToHeadFailed({ error: mockError }));
     });
   });
 
