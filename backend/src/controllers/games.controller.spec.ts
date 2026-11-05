@@ -123,7 +123,7 @@ describe('games routes', () => {
       expect(response.body.data.totalCount).toBe(3);
     });
 
-    it('should sort by the name shown for a side, using the linked member name', async () => {
+    it('should name and sort each side as the game records it, linking to the member', async () => {
       const member = await createMember({
         firstName: 'Zed',
         lastName: 'Zulu',
@@ -143,12 +143,41 @@ describe('games routes', () => {
       );
 
       const games: GameResponse[] = response.body.data.items;
-      expect(games.map(game => game.id)).toEqual([linkedGame, plainGame]);
-      expect(games[0].white).toMatchObject({
-        firstName: 'Zed',
-        lastName: 'Zulu',
+      expect(games.map(game => game.id)).toEqual([plainGame, linkedGame]);
+      expect(games[1].white).toMatchObject({
+        firstName: 'Pat',
+        lastName: 'Aardvark',
         memberNumber: 4,
       });
+    });
+
+    it('should mark a game left out of its results, and leave older games counted', async () => {
+      const ann = await createPlayer({ lastName: 'Archer' });
+      const bob = await createPlayer({ lastName: 'Baker' });
+      const uncounted = await createGame(ann, bob, {
+        notCounted: true,
+        notCountedReason: 'Withdrew',
+      });
+      const older = await createGame(ann, bob, { date: '1994-01-01' });
+      await GameModel.updateOne(
+        { _id: older },
+        { $unset: { notCounted: 1, notCountedReason: 1 } },
+      );
+
+      const response = await request(app).get('/v1/games?sortBy=date&sortOrder=desc');
+
+      const games: GameResponse[] = response.body.data.items;
+      expect(
+        games.map(({ id, notCounted, notCountedReason }) => ({
+          id,
+          notCounted,
+          notCountedReason,
+        })),
+      ).toEqual([
+        { id: uncounted, notCounted: true, notCountedReason: 'Withdrew' },
+        { id: older, notCounted: false, notCountedReason: '' },
+      ]);
+      expect(games[0]).not.toHaveProperty('tournamentLink');
     });
 
     it('should page through games in date order', async () => {

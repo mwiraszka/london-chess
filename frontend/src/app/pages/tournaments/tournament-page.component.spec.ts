@@ -221,6 +221,47 @@ describe('TournamentPageComponent', () => {
     });
   });
 
+  describe('a tournament with games left out of its results', () => {
+    it('should list each game marked as not counted, linked to the game, with its reason', () => {
+      const [john, jane] = MOCK_TOURNAMENTS[0].sections[0].entries.map(
+        ({ player }) => player,
+      );
+      store.setState(
+        stateWith([
+          {
+            ...MOCK_TOURNAMENTS[0],
+            uncountedGames: [
+              {
+                id: '6a0000000000000000000002',
+                section: 'A1',
+                round: '3',
+                date: '2023-10-19',
+                result: '1/2-1/2',
+                white: john,
+                black: jane,
+                notCountedReason: 'Withdrew',
+              },
+            ],
+          },
+        ]),
+      );
+
+      open(90);
+
+      const [game] = queryAll(fixture.debugElement, '.uncounted__game');
+      expect(textOf(game)).toBe('A1, round 3: John Doe ½-½ Jane Smith (Withdrew)');
+      expect(query(game, 'a').injector.get(RouterLink).urlTree?.toString()).toBe(
+        '/game-archives/6a0000000000000000000002',
+      );
+    });
+
+    it('should list nothing when every game counts', () => {
+      open(90);
+
+      expect(query(fixture.debugElement, '.uncounted')).toBeFalsy();
+    });
+  });
+
   describe('a tandem simul', () => {
     beforeEach(() => open(111));
 

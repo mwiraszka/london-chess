@@ -6,8 +6,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FORM_CHANGE_DEBOUNCE, FORM_ERROR_MESSAGES } from '@app/constants/forms';
 import { INITIAL_TOURNAMENT_FORM_DATA } from '@app/constants/tournaments';
+import { MOCK_MEMBERS } from '@app/mocks/members.mock';
 import { MOCK_TOURNAMENTS, MOCK_UPCOMING_TOURNAMENT } from '@app/mocks/tournaments.mock';
 import {
+  ArchivedGameSummary,
   GameChange,
   GameInput,
   ImportChanges,
@@ -17,6 +19,7 @@ import {
   TournamentFormData,
 } from '@app/models';
 import {
+  MembersApiService,
   StandingsFileService,
   StoreRequestService,
   TournamentsApiService,
@@ -49,7 +52,7 @@ describe('TournamentFormComponent', () => {
   const imported = (
     sections: SectionInput[],
     problems: string[] = [],
-  ): StandingsImport => ({ sections, games: [], problems });
+  ): StandingsImport => ({ sections, games: [], playerNames: {}, problems });
 
   const section = (overrides: Partial<SectionInput> = {}): SectionInput => ({
     name: 'A',
@@ -184,9 +187,18 @@ describe('TournamentFormComponent', () => {
                     sectionChanges: sections.map(() => true),
                     removedSections: [],
                     games: games.map((): GameChange => 'new'),
+                    candidates: games.map(() => []),
                   },
                 }),
             ),
+          },
+        },
+        {
+          provide: MembersApiService,
+          useValue: {
+            getAllMembers: vi.fn().mockReturnValue(of({ data: { items: [] } })),
+            getOtherNames: vi.fn().mockReturnValue(of({ data: [] })),
+            updateOtherNames: vi.fn().mockReturnValue(of({ data: [] })),
           },
         },
       ],
@@ -440,8 +452,16 @@ describe('TournamentFormComponent', () => {
               name: 'Doe, Jane',
               playerId: '64b7f0c2a1d3e4f5a6b7c8a3',
               memberNumber: null,
+              memberId: null,
+              personPlayerIds: ['64b7f0c2a1d3e4f5a6b7c8a3'],
             },
-            { name: 'Roe, Rick', playerId: null, memberNumber: null },
+            {
+              name: 'Roe, Rick',
+              playerId: null,
+              memberNumber: null,
+              memberId: null,
+              personPlayerIds: [],
+            },
           ],
         }),
       );
@@ -454,6 +474,50 @@ describe('TournamentFormComponent', () => {
       expect(fixture.nativeElement.textContent).toContain(
         'One player is not in the archive yet',
       );
+    });
+
+    it('should give a new name to the member chosen for it, then check the names again', async () => {
+      const membersApi = TestBed.inject(MembersApiService);
+      vi.mocked(membersApi.getAllMembers).mockReturnValue(
+        of({
+          data: {
+            items: [{ ...MOCK_MEMBERS[0], id: 'member-a', firstName: 'Sophie A' }],
+            filteredCount: 1,
+            totalCount: 1,
+          },
+        }),
+      );
+      vi.mocked(membersApi.getOtherNames).mockReturnValue(of({ data: ['Wang, S.'] }));
+      render();
+      importStandingsSpy.mockResolvedValue(imported([section()]));
+      matchPlayersSpy.mockReturnValue(
+        of({
+          data: [
+            {
+              name: 'Roe, Rick',
+              playerId: null,
+              memberNumber: null,
+              memberId: null,
+              personPlayerIds: [],
+            },
+          ],
+        }),
+      );
+      await importFile();
+      await settle();
+
+      query(fixture.debugElement, '.results__name-link ea-dropdown').triggerEventHandler(
+        'changed',
+        'member-a',
+      );
+      fixture.detectChanges();
+      await component.onNameLinked('Roe, Rick');
+
+      expect(membersApi.updateOtherNames).toHaveBeenCalledWith('member-a', [
+        'Wang, S.',
+        'Roe, Rick',
+      ]);
+      expect(matchPlayersSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should say when the names could not be checked', async () => {
@@ -756,6 +820,9 @@ describe('TournamentFormComponent', () => {
       eco: '',
       plyCount: 2,
       moves: '1. e4 e5 1-0',
+      notCounted: false,
+      notCountedReason: '',
+      archivedGameId: null,
     });
     const games = [
       pgnGame(john, jane, '1'),
@@ -769,12 +836,18 @@ describe('TournamentFormComponent', () => {
     ): Promise<void> {
       checkImportSpy().mockReturnValue(
         of({
-          data: { sectionChanges: [sectionChanged], removedSections: [], games: changes },
+          data: {
+            sectionChanges: [sectionChanged],
+            removedSections: [],
+            games: changes,
+            candidates: changes.map(() => []),
+          },
         }),
       );
       importStandingsSpy.mockResolvedValue({
         sections: [section()],
         games,
+        playerNames: {},
         problems: [],
       });
       render(tournamentFormData(recorded), false, recorded);
@@ -801,11 +874,19 @@ describe('TournamentFormComponent', () => {
 
     it('should check the import under the recorded date while the start date is cleared', async () => {
       checkImportSpy().mockReturnValue(
-        of({ data: { sectionChanges: [true], removedSections: [], games: [] } }),
+        of({
+          data: {
+            sectionChanges: [true],
+            removedSections: [],
+            games: [],
+            candidates: [],
+          },
+        }),
       );
       importStandingsSpy.mockResolvedValue({
         sections: [section()],
         games,
+        playerNames: {},
         problems: [],
       });
       render({ ...tournamentFormData(recorded), date: '' }, false, recorded);
@@ -859,6 +940,7 @@ describe('TournamentFormComponent', () => {
       importStandingsSpy.mockResolvedValue({
         sections: [section()],
         games,
+        playerNames: {},
         problems: [],
       });
       render(tournamentFormData(recorded), true, recorded);
@@ -868,7 +950,9 @@ describe('TournamentFormComponent', () => {
       fixture.detectChanges();
 
       expect(button('.submit-button').disabled()).toBe(true);
-      answer.next({ data: { sectionChanges: [true], removedSections: [], games: [] } });
+      answer.next({
+        data: { sectionChanges: [true], removedSections: [], games: [], candidates: [] },
+      });
       answer.complete();
       await choosing;
     });
@@ -878,6 +962,7 @@ describe('TournamentFormComponent', () => {
       importStandingsSpy.mockResolvedValue({
         sections: [section()],
         games,
+        playerNames: {},
         problems: [],
       });
       render(tournamentFormData(recorded), false, recorded);
@@ -895,6 +980,81 @@ describe('TournamentFormComponent', () => {
           ),
         ]),
       );
+    });
+
+    it('should hold saving until each new game an archived one might be is decided', async () => {
+      const archivedCopy: ArchivedGameSummary = {
+        id: '6a0000000000000000000009',
+        tournament: 'Fall Active',
+        section: 'A Match',
+        round: '1.1',
+        date: '2023-10-19',
+        result: '1-0',
+        white: recorded.sections[0].entries[0].player,
+        black: recorded.sections[0].entries[1].player,
+      };
+      checkImportSpy().mockImplementation(
+        (_number: number, _date: string, _sections: SectionInput[], sent: GameInput[]) =>
+          of({
+            data: {
+              sectionChanges: [true],
+              removedSections: [],
+              games: sent.map(({ archivedGameId }) =>
+                archivedGameId ? 'changed' : 'new',
+              ),
+              candidates: sent.map(({ archivedGameId }, index) =>
+                index === 0 && !archivedGameId ? [archivedCopy] : [],
+              ),
+            },
+          }),
+      );
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games,
+        playerNames: {},
+        problems: [],
+      });
+      vi.useFakeTimers();
+      render(tournamentFormData(recorded), true, recorded);
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      fixture.detectChanges();
+      const blocked = button('.submit-button').disabled();
+      const choice = query(fixture.debugElement, '.results__decisions ea-dropdown');
+
+      choice.triggerEventHandler('changed', archivedCopy.id);
+      await vi.advanceTimersByTimeAsync(FORM_CHANGE_DEBOUNCE);
+      fixture.detectChanges();
+      vi.useRealTimers();
+
+      expect(blocked).toBe(true);
+      expect(choice.componentInstance.label()).toBe('round 1: John Doe v Jane Smith');
+      expect(lastDraft().games?.[0].archivedGameId).toBe(archivedCopy.id);
+      expect(checkImportSpy().mock.lastCall?.[3][0].archivedGameId).toBe(archivedCopy.id);
+      expect(button('.submit-button').disabled()).toBe(false);
+    });
+
+    it('should ask why each game the standings leave unplayed is not counted', async () => {
+      const uncounted = { ...games[0], notCounted: true };
+      importStandingsSpy.mockResolvedValue({
+        sections: [section()],
+        games: [uncounted],
+        playerNames: {},
+        problems: [],
+      });
+      render(tournamentFormData(recorded), false, recorded);
+      await component.onStandingsChosen([new File(['pgn'], 'Round 3.pgn')]);
+      await settle();
+
+      query(fixture.debugElement, '.results__decisions ea-input').triggerEventHandler(
+        'valueChange',
+        'Withdrew after round 1',
+      );
+      fixture.detectChanges();
+
+      expect(lastDraft().games?.[0]).toEqual({
+        ...uncounted,
+        notCountedReason: 'Withdrew after round 1',
+      });
     });
 
     it('should not check the results of a tournament that is not saved yet', async () => {

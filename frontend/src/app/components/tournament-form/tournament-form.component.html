@@ -279,6 +279,42 @@
           </ea-alert>
         }
 
+        @if (gameChoices().length && !importing()) {
+          <div class="results__decisions">
+            <p class="results__status">
+              The archive files these games differently from the PGN, but holds games
+              between the same players. Choose the archived game each one is, so it takes
+              the PGN's details, or add it as a new game.
+            </p>
+            @for (choice of gameChoices(); track choice.key) {
+              <ea-dropdown
+                placeholder="Choose a game"
+                [label]="choice.label"
+                [options]="choice.options"
+                [required]="true"
+                [value]="choice.value"
+                (changed)="onGameChosen(choice.key, $event)" />
+            }
+          </div>
+        }
+
+        @if (uncountedGames().length && !importing()) {
+          <div class="results__decisions">
+            <p class="results__status">
+              The standings leave these rounds unplayed, so their games will be added to
+              the game archive marked as not counted in the results.
+            </p>
+            @for (game of uncountedGames(); track game.key) {
+              <ea-input
+                placeholder="Why it is not counted, such as a withdrawal"
+                [label]="game.label"
+                [maxLength]="200"
+                [value]="game.reason"
+                (valueChange)="onUncountedReasonEdited(game.key, $event)" />
+            }
+          </div>
+        }
+
         @if (importedSections() && !importing() && !checking()) {
           @if (newPlayers().length) {
             <ea-alert variant="info">{{ newPlayersNote() }}</ea-alert>
@@ -287,6 +323,37 @@
               The names could not be checked against the archive, so any new players will
               be added when the results are saved.
             </ea-alert>
+          }
+
+          @if (unlinkedNames().length) {
+            <div class="results__decisions">
+              <p class="results__status">
+                If a new name is another name of a member, such as one they used before,
+                choose the member to give it to them, and every import finds them by it.
+              </p>
+              @for (name of unlinkedNames(); track name) {
+                <div class="results__name-link">
+                  <ea-dropdown
+                    placeholder="Choose a member"
+                    [disabled]="linkingName() !== null"
+                    [label]="name"
+                    [options]="memberOptions()"
+                    [searchable]="true"
+                    [value]="chosenMembers().get(name) ?? ''"
+                    (changed)="onMemberChosen(name, $event)" />
+                  <ea-button
+                    size="sm"
+                    variant="secondary"
+                    [disabled]="!chosenMembers().get(name) || linkingName() !== null"
+                    (clicked)="onNameLinked(name)">
+                    Give to member
+                  </ea-button>
+                </div>
+              }
+              @if (linkProblem(); as problem) {
+                <ea-alert variant="error">{{ problem }}</ea-alert>
+              }
+            </div>
           }
 
           @for (preview of previews(); track preview.key) {
@@ -332,7 +399,11 @@
         [hasUnsavedChanges]="hasUnsavedChanges()"
         [isNew]="!originalTournament()"
         [submitDisabled]="
-          form.invalid || !hasUnsavedChanges() || importing() || checking()
+          form.invalid ||
+          !hasUnsavedChanges() ||
+          importing() ||
+          checking() ||
+          undecidedGameCount() > 0
         "
         [submitLabel]="originalTournament() ? 'Update tournament' : 'Add tournament'"
         (cancel)="onCancel()"

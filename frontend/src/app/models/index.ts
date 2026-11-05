@@ -110,6 +110,11 @@ export type { RouteAccess } from './route-access.model';
 export type { Technology } from './technology.model';
 export type { Toast } from './toast.model';
 export type {
+  ArchivedGameSummary,
+  ArchiveGameCount,
+  ArchiveGameLink,
+  ArchiveGamesReview,
+  ArchiveGamesUpdate,
   EntryInput,
   GameChange,
   GameInput,
@@ -145,5 +150,9 @@ export type {
   Trophy,
   TrophyMetal,
   TrophyShape,
+  UncountedGame,
+  UncountedGameView,
+  UnlinkedPairing,
+  UnplacedGame,
 } from './tournament.model';
 export type { User, UserRecord, UserSessionRecord } from './user.model';

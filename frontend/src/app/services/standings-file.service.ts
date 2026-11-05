@@ -1,6 +1,15 @@
-import { Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
-import { PgnGame, StandingsFileRead, StandingsImport, Tournament } from '@app/models';
+import { Injectable, inject } from '@angular/core';
+
+import {
+  PgnGame,
+  PlayerNameMatch,
+  StandingsFileRead,
+  StandingsImport,
+  Tournament,
+} from '@app/models';
+import { TournamentsApiService } from '@app/services/api/tournaments-api.service';
 import { checkPgnGames, parseStandings, readPgnGames } from '@app/utils';
 
 const SPREADSHEET_EXTENSIONS = ['xlsx', 'csv'];
@@ -15,6 +24,8 @@ const extensionOf = (file: File): string => {
 // recorded results and add to the archive; the spreadsheet parsers load only when needed
 @Injectable({ providedIn: 'root' })
 export class StandingsFileService {
+  private readonly tournamentsApiService = inject(TournamentsApiService);
+
   public async importStandings(
     files: readonly File[],
     tournament: Tournament | null,
@@ -52,7 +63,35 @@ export class StandingsFileService {
         problems.push(`${file.name} could not be read as a PGN file.`);
       }
     }
-    return problems.length ? this.failed(problems) : checkPgnGames(tournament, games);
+    if (problems.length) {
+      return this.failed(problems);
+    }
+
+    const nameMatches = await this.matchNames(games);
+    return nameMatches
+      ? checkPgnGames(tournament, games, nameMatches)
+      : this.failed([
+          'The names in the PGN could not be checked against the archive, so its games were not used.',
+        ]);
+  }
+
+  // Which archive player, and so which person, each name the games give is
+  private async matchNames(games: PgnGame[]): Promise<PlayerNameMatch[] | null> {
+    const names = [
+      ...new Set(
+        games.flatMap(({ tags }) =>
+          [tags['White'], tags['Black']].flatMap(name => (name?.trim() ? [name] : [])),
+        ),
+      ),
+    ];
+    if (!names.length) {
+      return [];
+    }
+    try {
+      return (await firstValueFrom(this.tournamentsApiService.matchPlayers(names))).data;
+    } catch {
+      return null;
+    }
   }
 
   private async importSpreadsheets(files: readonly File[]): Promise<StandingsImport> {
@@ -63,7 +102,7 @@ export class StandingsFileService {
   }
 
   private failed(problems: string[]): StandingsImport {
-    return { sections: [], games: [], problems };
+    return { sections: [], games: [], playerNames: {}, problems };
   }
 
   private async readFile(file: File): Promise<StandingsFileRead> {

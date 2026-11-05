@@ -39,6 +39,8 @@ export const MOCK_GAMES: Game[] = [
     plyCount: 5,
     moves: '1. e4 c5 2. c3 { A comment } 2... d5 3. exd5 1-0',
     annotator: 'Doe, J.',
+    notCounted: false,
+    notCountedReason: '',
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
   },
   {
@@ -71,6 +73,8 @@ export const MOCK_GAMES: Game[] = [
     plyCount: 4,
     moves: '1. d4 d5 2. Nf3 Nf6 1/2-1/2',
     annotator: '',
+    notCounted: false,
+    notCountedReason: '',
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
   },
   {
@@ -103,6 +107,8 @@ export const MOCK_GAMES: Game[] = [
     plyCount: 2,
     moves: '1. e4 e5 0-1',
     annotator: '',
+    notCounted: false,
+    notCountedReason: '',
     modificationInfo: MOCK_MODIFICATION_INFOS[0],
   },
 ];

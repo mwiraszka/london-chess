@@ -11,6 +11,7 @@ import { FormSkeletonComponent } from '@app/components/form-skeleton/form-skelet
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { PageHeaderComponent } from '@app/components/page-header/page-header.component';
+import { TournamentArchiveGamesComponent } from '@app/components/tournament-archive-games/tournament-archive-games.component';
 import { TournamentFormComponent } from '@app/components/tournament-form/tournament-form.component';
 import {
   EditorPage,
@@ -42,6 +43,10 @@ import { isRecordNumber } from '@app/utils';
             (cancel)="onCancel(vm.tournamentNumber)"
             (change)="onChange($event.tournamentNumber, $event.formData)"
             (restore)="onRestore($event)" />
+
+          @if (vm.originalTournament?.sections.length && vm.tournamentNumber !== null) {
+            <lcc-tournament-archive-games [tournamentNumber]="vm.tournamentNumber" />
+          }
         }
         @case ('failed') {
           <lcc-load-failed
@@ -62,6 +67,7 @@ import { isRecordNumber } from '@app/utils';
     LinkListComponent,
     LoadFailedComponent,
     PageHeaderComponent,
+    TournamentArchiveGamesComponent,
     TournamentFormComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

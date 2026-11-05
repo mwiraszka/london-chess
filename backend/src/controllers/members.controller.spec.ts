@@ -1069,6 +1069,105 @@ describe('members routes', () => {
     });
   });
 
+  describe('other names', () => {
+    const otherNames = (id: Id, names: string[]) =>
+      request(app)
+        .put(`/v1/admin/members/${id}/other-names`)
+        .set('Authorization', bearer(ADMIN))
+        .send({ names });
+
+    it('should give a member a name the archive holds, and new ones, so imports find them by it', async () => {
+      await createAdmin(ADMIN);
+      const katie = await createMember({ firstName: 'Katie', lastName: 'Dunford' });
+      const jack = await PlayerModel.create({
+        firstName: 'Jack',
+        lastName: 'Dunford',
+        gameCount: 3,
+      });
+
+      const response = await otherNames(katie._id.toString(), [
+        'Dunford, Jack',
+        'Dunford, K.',
+      ]);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual(['Dunford, Jack', 'Dunford, K.']);
+      expect((await PlayerModel.findById(jack._id).lean())?.memberId).toBe(
+        katie._id.toString(),
+      );
+      const matched = await request(app)
+        .post('/v1/tournaments/player-matches')
+        .set('Authorization', bearer(ADMIN))
+        .send({ names: ['Dunford, K.'] });
+      expect(matched.body.data[0].memberId).toBe(katie._id.toString());
+    });
+
+    it('should unlink a dropped name, and remove it when nothing was recorded under it', async () => {
+      await createAdmin(ADMIN);
+      const katie = await createMember({ firstName: 'Katie', lastName: 'Dunford' });
+      const id = katie._id.toString();
+      await PlayerModel.create({ firstName: 'Jack', lastName: 'Dunford', gameCount: 3 });
+      await otherNames(id, ['Dunford, Jack', 'Dunford, K.']);
+
+      const response = await otherNames(id, []);
+
+      expect(response.body.data).toEqual([]);
+      const players = await PlayerModel.find({ lastName: 'Dunford' }).lean();
+      expect(players.map(({ firstName, memberId }) => [firstName, memberId])).toEqual([
+        ['Jack', null],
+      ]);
+    });
+
+    it("should refuse the member's own name and another member's name", async () => {
+      await createAdmin(ADMIN);
+      const katie = await createMember({ firstName: 'Katie', lastName: 'Dunford' });
+      const other = await createMember({ firstName: 'Sam', lastName: 'Stone' });
+      await PlayerModel.create({
+        firstName: 'Sam',
+        lastName: 'Stone',
+        memberId: other._id.toString(),
+      });
+
+      const own = await otherNames(katie._id.toString(), ['Dunford, Katie']);
+      const taken = await otherNames(katie._id.toString(), ['Stone, Sam']);
+
+      expect(own.status).toBe(409);
+      expect(taken.status).toBe(409);
+      expect(taken.body.message).toBe(
+        'Stone, Sam is already recorded for another member.',
+      );
+    });
+
+    it('should refuse anything but a short list of names, and an unknown member', async () => {
+      await createAdmin(ADMIN);
+      const katie = await createMember({ firstName: 'Katie', lastName: 'Dunford' });
+
+      const invalid = await otherNames(katie._id.toString(), ['']);
+      const unknown = await otherNames(new Types.ObjectId().toString(), ['Doe, J.']);
+
+      expect(invalid.status).toBe(400);
+      expect(unknown.status).toBe(404);
+    });
+
+    it("should list a member's other names, and every member's", async () => {
+      await createAdmin(ADMIN);
+      const katie = await createMember({ firstName: 'Katie', lastName: 'Dunford' });
+      const id = katie._id.toString();
+      await PlayerModel.create({ firstName: 'Katie', lastName: 'Dunford', memberId: id });
+      await otherNames(id, ['Dunford, Jack']);
+
+      const one = await request(app)
+        .get(`/v1/admin/members/${id}/other-names`)
+        .set('Authorization', bearer(ADMIN));
+      const all = await request(app)
+        .get('/v1/admin/members/other-names')
+        .set('Authorization', bearer(ADMIN));
+
+      expect(one.body.data).toEqual(['Dunford, Jack']);
+      expect(all.body.data).toEqual({ [id]: ['Dunford, Jack'] });
+    });
+  });
+
   describe('DELETE /v1/admin/members/:id', () => {
     it('should delete a member without an account', async () => {
       await createAdmin(ADMIN);

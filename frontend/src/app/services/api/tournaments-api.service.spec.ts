@@ -13,6 +13,8 @@ import {
 } from '@app/mocks/tournaments.mock';
 import {
   ApiResponse,
+  ArchiveGamesReview,
+  ArchiveGamesUpdate,
   ImportChanges,
   MemberTournamentResult,
   PlayerNameMatch,
@@ -129,7 +131,13 @@ describe('TournamentsApiService', () => {
 
     it('should ask which player names the archive already knows', () => {
       const matches: PlayerNameMatch[] = [
-        { name: 'Doe, John', playerId: '64b7f0c2a1d3e4f5a6b7c8a1', memberNumber: 2 },
+        {
+          name: 'Doe, John',
+          playerId: '64b7f0c2a1d3e4f5a6b7c8a1',
+          memberNumber: 2,
+          memberId: '679ee6771f33be5bf17b6d71',
+          personPlayerIds: ['64b7f0c2a1d3e4f5a6b7c8a1'],
+        },
       ];
       let received: ApiResponse<PlayerNameMatch[]> | undefined;
       service.matchPlayers(['Doe, John']).subscribe(result => (received = result));
@@ -147,6 +155,7 @@ describe('TournamentsApiService', () => {
         sectionChanges: [true],
         removedSections: ['B'],
         games: ['new'],
+        candidates: [[]],
       };
       let received: ApiResponse<ImportChanges> | undefined;
       service
@@ -163,6 +172,49 @@ describe('TournamentsApiService', () => {
         games: [],
       });
       expect(received).toEqual({ data: changes });
+    });
+  });
+
+  describe("a tournament's games in the archive", () => {
+    const review: ArchiveGamesReview = { unlinked: [], unplaced: [] };
+    const adminUrl = `${environment.lccApiBaseUrl}/admin/tournaments/184/archive-games`;
+
+    it('should ask how the results and the archived games line up', () => {
+      let received: ApiResponse<ArchiveGamesReview> | undefined;
+      service.getArchiveGames(184).subscribe(result => (received = result));
+
+      const request = httpMock.expectOne(adminUrl);
+      request.flush({ data: review });
+
+      expect(request.request.method).toBe('GET');
+      expect(received).toEqual({ data: review });
+    });
+
+    it('should save the games tied to rounds and the games left uncounted', () => {
+      const update: ArchiveGamesUpdate = {
+        links: [
+          {
+            gameId: '6a0000000000000000000001',
+            section: 'A1',
+            round: 2,
+            playerIds: ['64b7f0c2a1d3e4f5a6b7c8a1', '64b7f0c2a1d3e4f5a6b7c8a3'],
+          },
+        ],
+        counts: [
+          {
+            gameId: '6a0000000000000000000002',
+            notCounted: true,
+            notCountedReason: 'Withdrew',
+          },
+        ],
+      };
+      service.updateArchiveGames(184, update).subscribe();
+
+      const request = httpMock.expectOne(adminUrl);
+      request.flush({ data: review });
+
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body).toEqual(update);
     });
   });
 

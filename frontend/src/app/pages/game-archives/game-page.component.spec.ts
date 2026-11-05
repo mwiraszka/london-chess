@@ -1,3 +1,4 @@
+import { TooltipDirective } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
 
@@ -109,6 +110,32 @@ describe('GamePageComponent', () => {
       expect(black.componentInstance.name()).toBe('John Doe');
       expect(black.componentInstance.memberNumber()).toBe(2);
       expect(queryAll(fixture.debugElement, '.details dt')).toHaveLength(8);
+    });
+
+    it('should keep the names the game records, linking to the members', () => {
+      const links = queryAll(fixture.debugElement, '.details lcc-member-link');
+
+      expect(links.map(link => link.componentInstance.asRecorded())).toEqual([
+        true,
+        true,
+      ]);
+    });
+
+    it('should mark a game left out of its results, with the reason in its tooltip', () => {
+      store.setState(
+        stateWith(
+          MOCK_GAMES.map(game =>
+            game.id === MOCK_GAMES[1].id
+              ? { ...game, notCounted: true, notCountedReason: 'Withdrew' }
+              : game,
+          ),
+        ),
+      );
+      fixture.detectChanges();
+
+      const badge = query(fixture.debugElement, '.details__not-counted');
+      expect(badge.nativeElement.textContent.trim()).toBe('Not counted');
+      expect(badge.injector.get(TooltipDirective).eaTooltip()).toBe('Withdrew');
     });
 
     it('should hand the game to the board', () => {

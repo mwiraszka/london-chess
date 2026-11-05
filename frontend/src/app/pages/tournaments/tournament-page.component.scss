@@ -81,6 +81,24 @@ $details-gap: 24px;
   color: var(--color-text-secondary);
 }
 
+.uncounted {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+
+.uncounted__game {
+  color: var(--color-text-primary);
+}
+
+.uncounted__reason {
+  margin-left: 4px;
+  color: var(--color-text-secondary);
+}
+
 // The table holds each column at its set width whatever the players are called, so a
 // placeholder takes the same shape; a name too long for its column is cut short, in
 // full in a tooltip

@@ -4,15 +4,22 @@ import {
   addTournament,
   checkTournamentImport,
   deleteTournament,
+  getArchiveGames,
   getMemberTournaments,
   getTournament,
   getTournaments,
   matchTournamentPlayers,
   registerForTournament,
+  updateArchiveGames,
   updateTournament,
   withdrawFromTournament,
 } from '../controllers/tournaments.controller';
 import { adminAuth, authenticate } from '../middlewares/auth.middleware';
+
+// Admin reads stay off the public CDN cache the tournaments router answers through
+export const adminTournamentsRouter = Router()
+  .get('/:number/archive-games', adminAuth, getArchiveGames)
+  .put('/:number/archive-games', adminAuth, updateArchiveGames);
 
 export const tournamentsRouter = Router()
   .get('/', getTournaments)

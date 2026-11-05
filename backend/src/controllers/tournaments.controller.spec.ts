@@ -2,8 +2,11 @@ import request from 'supertest';
 
 import { app } from '../app';
 import { GameModel } from '../models/game.model';
+import { MemberModel } from '../models/member.model';
 import { PlayerModel } from '../models/player.model';
 import {
+  ArchiveGamesReview,
+  ArchiveGamesUpdate,
   EntryInput,
   GameInput,
   MemberTournamentResult,
@@ -966,11 +969,30 @@ describe('tournaments routes', () => {
         });
 
       expect(response.status).toBe(200);
+      const newMember = await MemberModel.findOne({ number: 32 }).lean();
+      const zoe = {
+        playerId: linked._id.toString(),
+        memberNumber: 31,
+        memberId: member._id.toString(),
+        personPlayerIds: [linked._id.toString()],
+      };
       expect(response.body.data).toEqual<PlayerNameMatch[]>([
-        { name: 'Yu, Zoe', playerId: linked._id.toString(), memberNumber: 31 },
-        { name: 'yu,  zoë', playerId: linked._id.toString(), memberNumber: 31 },
-        { name: 'Member, New', playerId: null, memberNumber: 32 },
-        { name: 'Stranger, Sam', playerId: null, memberNumber: null },
+        { name: 'Yu, Zoe', ...zoe },
+        { name: 'yu,  zoë', ...zoe },
+        {
+          name: 'Member, New',
+          playerId: null,
+          memberNumber: 32,
+          memberId: newMember?._id.toString() ?? null,
+          personPlayerIds: [],
+        },
+        {
+          name: 'Stranger, Sam',
+          playerId: null,
+          memberNumber: null,
+          memberId: null,
+          personPlayerIds: [],
+        },
       ]);
     });
 
@@ -1259,6 +1281,9 @@ describe('tournaments routes', () => {
       eco: 'C20',
       plyCount: 3,
       moves: '1. e4 e5 2. Qh5 1-0',
+      notCounted: false,
+      notCountedReason: '',
+      archivedGameId: null,
       ...overrides,
     });
 
@@ -1301,7 +1326,70 @@ describe('tournaments routes', () => {
         sectionChanges: [false, true],
         removedSections: [],
         games: ['unchanged', 'changed', 'new'],
+        candidates: [[], [], []],
       });
+    });
+
+    it('should offer the archived games between the same people for a game it would add', async () => {
+      const archived = await createGame(white, black, 'A Match', '3');
+      await createGame(white, await createPlayer('Other'), 'A Match', '4');
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({
+          date: '2023-09-14',
+          sections: [sectionInput(white, black)],
+          games: [gameInput(white, black)],
+        });
+
+      expect(response.body.data.games).toEqual(['new']);
+      expect(response.body.data.candidates).toEqual([
+        [
+          expect.objectContaining({
+            id: archived,
+            tournament: 'Club Championship',
+            section: 'A Match',
+            round: '3',
+            white: expect.objectContaining({ id: white }),
+            black: expect.objectContaining({ id: black }),
+          }),
+        ],
+      ]);
+    });
+
+    it('should compare a game confirmed to be an archived one against that game', async () => {
+      const archived = await createGame(white, black, 'A Match', '3');
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({
+          date: '2023-09-14',
+          sections: [sectionInput(white, black)],
+          games: [gameInput(white, black, { archivedGameId: archived })],
+        });
+
+      expect(response.body.data.games).toEqual(['changed']);
+      expect(response.body.data.candidates).toEqual([[]]);
+    });
+
+    it('should refuse two games confirmed to be the same archived one', async () => {
+      const archived = await createGame(white, black, 'A Match', '3');
+
+      const response = await request(app)
+        .post('/v1/tournaments/86/import-changes')
+        .set('Authorization', bearer(ADMIN))
+        .send({
+          date: '2023-09-14',
+          sections: [sectionInput(white, black)],
+          games: [
+            gameInput(white, black, { archivedGameId: archived }),
+            gameInput(white, black, { round: '2', archivedGameId: archived }),
+          ],
+        });
+
+      expect(response.status).toBe(400);
     });
 
     it('should count a section naming a player the archive does not know as changed', async () => {
@@ -1499,6 +1587,170 @@ describe('tournaments routes', () => {
       expect(game?.modificationInfo.lastEditedBy).toBe('Ada Admin');
       const player = await PlayerModel.findById(white).lean();
       expect(player?.gameCount).toBe(0);
+    });
+
+    it("should give an archived game the PGN's details once confirmed to be it", async () => {
+      await TournamentModel.updateOne(
+        { number: 86 },
+        { $set: { gameArchiveTournament: 'Club Championship' } },
+      );
+      const recordedAs = await createPlayer('Whyte');
+      const archived = await createGame(black, recordedAs, 'A Match', '3');
+      await PlayerModel.updateMany({}, { $set: { gameCount: 1 } });
+
+      const response = await request(app)
+        .put('/v1/tournaments/86')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            date: '2023-09-14',
+            sections: [sectionInput(white, black)],
+            games: [gameInput(white, black, { archivedGameId: archived })],
+          }),
+        );
+
+      expect(response.status).toBe(200);
+      expect(await GameModel.countDocuments()).toBe(1);
+      const game = await GameModel.findById(archived).lean();
+      expect(game).toMatchObject({
+        tournament: 'Club Championship',
+        year: 2023,
+        section: 'A1',
+        round: '1',
+        whitePlayerId: white,
+        blackPlayerId: black,
+        tournamentLink: null,
+      });
+      const counts = await PlayerModel.find({ _id: { $in: [white, black, recordedAs] } })
+        .sort({ lastName: 1 })
+        .lean();
+      expect(counts.map(({ lastName, gameCount }) => [lastName, gameCount])).toEqual([
+        ['Black', 1],
+        ['White', 2],
+        ['Whyte', 0],
+      ]);
+    });
+
+    it('should archive a game left out of the results with the reason given', async () => {
+      await request(app)
+        .put('/v1/tournaments/86')
+        .set('Authorization', bearer(ADMIN))
+        .send(
+          tournamentInput({
+            date: '2023-09-14',
+            sections: [sectionInput(white, black)],
+            games: [
+              gameInput(white, black, {
+                notCounted: true,
+                notCountedReason: ' Withdrew ',
+              }),
+            ],
+          }),
+        );
+
+      const tournament = await request(app).get('/v1/tournaments/86');
+
+      const [game] = await GameModel.find({}).lean();
+      expect(game).toMatchObject({ notCounted: true, notCountedReason: 'Withdrew' });
+      expect(tournament.body.data.uncountedGames).toEqual([
+        expect.objectContaining({
+          id: game._id.toString(),
+          notCountedReason: 'Withdrew',
+        }),
+      ]);
+      expect(tournament.body.data.sections[0].entries[0].rounds[0].gameId).toBeNull();
+    });
+
+    describe("the tournament's games in the archive", () => {
+      const review = () =>
+        request(app)
+          .get('/v1/admin/tournaments/86/archive-games')
+          .set('Authorization', bearer(ADMIN));
+      const update = (body: ArchiveGamesUpdate) =>
+        request(app)
+          .put('/v1/admin/tournaments/86/archive-games')
+          .set('Authorization', bearer(ADMIN))
+          .send(body);
+
+      it('should offer the archived games a pairing with no game of its own might be', async () => {
+        const archived = await createGame(white, black, 'A Match', '3');
+
+        const response = await review();
+
+        expect(response.status).toBe(200);
+        const data: ArchiveGamesReview = response.body.data;
+        expect(data.unlinked).toEqual([
+          expect.objectContaining({
+            section: 'A1',
+            round: 1,
+            players: [
+              expect.objectContaining({ id: white }),
+              expect.objectContaining({ id: black }),
+            ],
+            candidates: [expect.objectContaining({ id: archived })],
+          }),
+        ]);
+        expect(data.unplaced).toEqual([]);
+      });
+
+      it('should tie a game to the round, which then links to it', async () => {
+        const archived = await createGame(white, black, 'A Match', '3');
+
+        const response = await update({
+          links: [
+            { gameId: archived, section: 'A1', round: 1, playerIds: [white, black] },
+          ],
+          counts: [],
+        });
+        const tournament = await request(app).get('/v1/tournaments/86');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.unlinked).toEqual([]);
+        expect(tournament.body.data.sections[0].entries[0].rounds[0].gameId).toBe(
+          archived,
+        );
+        expect((await GameModel.findById(archived).lean())?.section).toBe('A Match');
+      });
+
+      it('should leave a game of the tournament out of its results', async () => {
+        await TournamentModel.updateOne(
+          { number: 86 },
+          { $set: { gameArchiveTournament: 'Club Championship' } },
+        );
+        const withdrawn = await createGame(white, black, 'A1 Withdrawn', '2');
+        const before = await review();
+
+        await update({
+          links: [],
+          counts: [{ gameId: withdrawn, notCounted: true, notCountedReason: 'Withdrew' }],
+        });
+        const tournament = await request(app).get('/v1/tournaments/86');
+
+        expect(before.body.data.unplaced).toEqual([
+          expect.objectContaining({ id: withdrawn, notCounted: false }),
+        ]);
+        expect(tournament.body.data.uncountedGames).toEqual([
+          expect.objectContaining({ id: withdrawn, notCountedReason: 'Withdrew' }),
+        ]);
+      });
+
+      it('should refuse a link to no pairing of the results, or a count of a game of another', async () => {
+        const archived = await createGame(white, black, 'A Match', '3');
+
+        const unpaired = await update({
+          links: [
+            { gameId: archived, section: 'A1', round: 2, playerIds: [white, black] },
+          ],
+          counts: [],
+        });
+        const foreign = await update({
+          links: [],
+          counts: [{ gameId: archived, notCounted: true, notCountedReason: '' }],
+        });
+        const empty = await update({ links: [], counts: [] });
+
+        expect([unpaired.status, foreign.status, empty.status]).toEqual([400, 400, 400]);
+      });
     });
 
     it("should show the archive's games filed under a section's name", async () => {

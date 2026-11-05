@@ -1,5 +1,8 @@
 import { GAME_RESULTS } from '../models/game.model';
 import {
+  ArchiveGameCount,
+  ArchiveGameLink,
+  ArchiveGamesUpdate,
   EntryInput,
   GameInput,
   ROUND_OUTCOMES,
@@ -67,9 +70,13 @@ const gameInputTypes: Record<keyof GameInput, string | string[]> = {
   eco: 'string',
   plyCount: 'number',
   moves: 'string',
+  notCounted: 'boolean',
+  notCountedReason: 'string',
+  archivedGameId: ['string', 'null'],
 };
 
 const MAX_GAMES = 2000;
+const MAX_REASON_LENGTH = 200;
 const MAX_ROUNDS = 30;
 const MAX_RATING = 3500;
 const SCORES = [0, 0.5, 1];
@@ -234,7 +241,7 @@ function gameError(game: unknown, index: number): string | null {
 
   const { round, date, whitePlayerId, blackPlayerId, result, whiteElo, blackElo, eco } =
     game as GameInput;
-  const { plyCount, moves } = game as GameInput;
+  const { plyCount, moves, notCountedReason, archivedGameId } = game as GameInput;
   if (!/^\d{1,2}(?:\.\d{1,3})?$/.test(round)) {
     return `${where} has an invalid round`;
   }
@@ -262,6 +269,12 @@ function gameError(game: unknown, index: number): string | null {
   if (!isWholeNumber(plyCount, 1, 2000) || !hasMove(moves)) {
     return `${where} has no moves`;
   }
+  if (notCountedReason.length > MAX_REASON_LENGTH) {
+    return `${where} gives a reason longer than ${MAX_REASON_LENGTH} characters`;
+  }
+  if (archivedGameId !== null && !ID_PATTERN.test(archivedGameId)) {
+    return `${where} names an archived game by an invalid ID`;
+  }
   return null;
 }
 
@@ -285,10 +298,18 @@ export function gamesError(games: unknown): string | null {
   if (!Array.isArray(games) || games.length > MAX_GAMES) {
     return `games must be a list of at most ${MAX_GAMES}`;
   }
+  const confirmed = new Set<string>();
   for (const [index, game] of games.entries()) {
     const error = gameError(game, index);
     if (error) {
       return error;
+    }
+    const { archivedGameId } = game as GameInput;
+    if (archivedGameId !== null) {
+      if (confirmed.has(archivedGameId)) {
+        return `game ${index + 1} names an archived game another game already names`;
+      }
+      confirmed.add(archivedGameId);
     }
   }
   return null;
@@ -358,4 +379,72 @@ export function validateTournamentInput(body: unknown): Error | 'valid' {
   }
 
   return 'valid';
+}
+
+const MAX_ARCHIVE_UPDATES = 500;
+
+const archiveGameLinkTypes: Record<keyof ArchiveGameLink, string | string[]> = {
+  gameId: 'string',
+  section: 'string',
+  round: 'number',
+  playerIds: 'object',
+};
+
+const archiveGameCountTypes: Record<keyof ArchiveGameCount, string | string[]> = {
+  gameId: 'string',
+  notCounted: 'boolean',
+  notCountedReason: 'string',
+};
+
+// The first problem with an update of a tournament's archived games, or null when it can be saved
+export function archiveUpdateError(body: unknown): string | null {
+  const typesResult = validateObjectByTypes<ArchiveGamesUpdate>(body, {
+    links: 'object',
+    counts: 'object',
+  });
+  if (typesResult !== 'valid') {
+    return typesResult.message;
+  }
+  const { links, counts } = body as ArchiveGamesUpdate;
+  if (
+    !Array.isArray(links) ||
+    !Array.isArray(counts) ||
+    links.length + counts.length > MAX_ARCHIVE_UPDATES
+  ) {
+    return `links and counts must be lists of at most ${MAX_ARCHIVE_UPDATES} changes`;
+  }
+  for (const link of links) {
+    if (validateObjectByTypes(link, archiveGameLinkTypes) !== 'valid') {
+      return 'each link needs a game, a section, a round and two players';
+    }
+    const { gameId, round, playerIds } = link;
+    if (
+      !ID_PATTERN.test(gameId) ||
+      !isWholeNumber(round, 1, MAX_ROUNDS) ||
+      !Array.isArray(playerIds) ||
+      playerIds.length !== 2 ||
+      playerIds.some(id => typeof id !== 'string' || !ID_PATTERN.test(id))
+    ) {
+      return 'a link names an invalid game, round or player';
+    }
+  }
+  for (const count of counts) {
+    if (validateObjectByTypes(count, archiveGameCountTypes) !== 'valid') {
+      return 'each count needs a game, whether it counts and a reason';
+    }
+    if (!ID_PATTERN.test(count.gameId)) {
+      return 'a count names an invalid game';
+    }
+    if (count.notCountedReason.length > MAX_REASON_LENGTH) {
+      return `a reason is longer than ${MAX_REASON_LENGTH} characters`;
+    }
+  }
+  const ids = [...links, ...counts].map(({ gameId }) => gameId);
+  return new Set(links.map(({ gameId }) => gameId)).size === links.length &&
+    new Set(counts.map(({ gameId }) => gameId)).size === counts.length &&
+    ids.length
+    ? null
+    : ids.length
+      ? 'a game is named twice'
+      : 'nothing to change';
 }

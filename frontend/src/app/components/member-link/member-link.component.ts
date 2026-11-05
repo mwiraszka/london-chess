@@ -16,9 +16,9 @@ import { MemberProfilesService } from '@app/services/member-profiles.service';
 import { getInitials } from '@app/utils';
 
 /**
- * Shows a member's current name, optionally beside their avatar, linked to their
- * profile page when they have one. Falls back to the given name, unlinked, when
- * there is no number or the member has no profile.
+ * Shows a member's current name, or the given name as recorded, optionally beside their
+ * avatar, linked to their profile page when they have one. Falls back to the given name,
+ * unlinked, when there is no number or the member has no profile.
  */
 @Component({
   selector: 'lcc-member-link',
@@ -66,6 +66,9 @@ export class MemberLinkComponent implements OnInit {
   public readonly appearance = input<'plain' | 'link'>('plain');
   // The order the given name is in, followed by the member's current name
   public readonly nameOrder = input<NameOrder>('first-last');
+  // A name from a record of its time, such as a game or a tournament's standings, stays
+  // as it was recorded rather than becoming the member's current name
+  public readonly asRecorded = input(false);
 
   private readonly memberProfiles = inject(MemberProfilesService);
 
@@ -73,7 +76,9 @@ export class MemberLinkComponent implements OnInit {
     this.memberProfiles.profileFor(this.memberNumber()),
   );
   protected readonly displayName = computed(() =>
-    this.memberProfiles.nameFor(this.memberNumber(), this.name(), this.nameOrder()),
+    this.asRecorded()
+      ? this.name()
+      : this.memberProfiles.nameFor(this.memberNumber(), this.name(), this.nameOrder()),
   );
   protected readonly avatarUrl = computed(() =>
     this.memberProfiles.avatarUrlFor(this.memberNumber()),

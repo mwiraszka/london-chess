@@ -25,7 +25,10 @@ const ADMIN_ROUTES: [Method, string][] = [
   ['delete', '/v1/images/album/Picnic'],
   ['get', '/v1/admin/members'],
   ['get', '/v1/admin/members/widest'],
+  ['get', '/v1/admin/members/other-names'],
   ['get', '/v1/admin/members/number/1'],
+  ['get', `/v1/admin/members/${ID}/other-names`],
+  ['put', `/v1/admin/members/${ID}/other-names`],
   ['get', `/v1/admin/members/${ID}`],
   ['post', '/v1/admin/members'],
   ['put', '/v1/admin/members'],
@@ -35,6 +38,8 @@ const ADMIN_ROUTES: [Method, string][] = [
   ['post', '/v1/tournaments/player-matches'],
   ['put', '/v1/tournaments/1'],
   ['post', '/v1/tournaments/1/import-changes'],
+  ['get', '/v1/admin/tournaments/1/archive-games'],
+  ['put', '/v1/admin/tournaments/1/archive-games'],
   ['delete', '/v1/tournaments/1'],
 ];
 

@@ -45,6 +45,15 @@
             {{ view.event.text }}
             <ng-container
               *ngTemplateOutlet="extra; context: { $implicit: view.event.extra }" />
+            @if (view.game.notCounted) {
+              <ea-badge
+                class="details__not-counted"
+                size="sm"
+                variant="warning"
+                [eaTooltip]="view.game.notCountedReason">
+                Not counted
+              </ea-badge>
+            }
           </dd>
 
           <dt>Date</dt>
@@ -62,6 +71,7 @@
           <dt>White</dt>
           <dd>
             <lcc-member-link
+              [asRecorded]="true"
               [memberNumber]="view.game.white.memberNumber"
               [name]="view.whiteName" />&ngsp;<ng-container
               *ngTemplateOutlet="extra; context: { $implicit: view.whiteRating }" />
@@ -70,6 +80,7 @@
           <dt>Black</dt>
           <dd>
             <lcc-member-link
+              [asRecorded]="true"
               [memberNumber]="view.game.black.memberNumber"
               [name]="view.blackName" />&ngsp;<ng-container
               *ngTemplateOutlet="extra; context: { $implicit: view.blackRating }" />

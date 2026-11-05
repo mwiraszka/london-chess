@@ -105,6 +105,27 @@ export class MembersApiService {
     );
   }
 
+  public getOtherNames(id: Id): Observable<ApiResponse<string[]>> {
+    return this.http.get<ApiResponse<string[]>>(
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}/other-names`,
+    );
+  }
+
+  // Replaces the member's other names with these
+  public updateOtherNames(id: Id, names: string[]): Observable<ApiResponse<string[]>> {
+    return this.http.put<ApiResponse<string[]>>(
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${id}/other-names`,
+      { names },
+    );
+  }
+
+  // Every member's other names, by member id; members without any are left out
+  public getAllOtherNames(): Observable<ApiResponse<Record<Id, string[]>>> {
+    return this.http.get<ApiResponse<Record<Id, string[]>>>(
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/other-names`,
+    );
+  }
+
   private notifyParams(notifyMember: boolean): HttpParams {
     return notifyMember ? new HttpParams().set('notify', 'true') : new HttpParams();
   }

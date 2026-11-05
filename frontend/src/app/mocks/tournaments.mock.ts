@@ -33,6 +33,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     registrationOpens: null,
     registrationCloses: null,
     registrants: [],
+    uncountedGames: [],
     modificationInfo: null,
     sections: [
       {
@@ -187,6 +188,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     registrationOpens: null,
     registrationCloses: null,
     registrants: [],
+    uncountedGames: [],
     modificationInfo: null,
     sections: [
       {
@@ -236,6 +238,7 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     registrationOpens: null,
     registrationCloses: null,
     registrants: [],
+    uncountedGames: [],
     modificationInfo: null,
     sections: [
       {
@@ -472,6 +475,7 @@ export const MOCK_UPCOMING_TOURNAMENT: Tournament = {
       registeredAt: '2026-02-02T12:00:00.000Z',
     },
   ],
+  uncountedGames: [],
   modificationInfo: MOCK_MODIFICATION_INFOS[0],
 };
 

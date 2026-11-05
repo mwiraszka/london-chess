@@ -166,7 +166,48 @@ export type TournamentResponse = Omit<
 > & {
   sections: TournamentSectionResponse[];
   registrants: TournamentRegistrant[];
+  // Games played in the tournament but left out of its results
+  uncountedGames: UncountedGame[];
 };
+
+export type UncountedGame = TournamentGame & Pick<Game, 'notCountedReason'>;
+
+// A pairing the standings record as played that no archived game is tied to yet
+export interface UnlinkedPairing {
+  section: string;
+  round: number;
+  players: GamePlayer[];
+  candidates: ArchivedGameSummary[];
+}
+
+// A game filed under the tournament that no round of its results is tied to
+export type UnplacedGame = ArchivedGameSummary &
+  Pick<Game, 'notCounted' | 'notCountedReason'>;
+
+// How a tournament's results and the archive's games of it line up, for an admin to settle
+export interface ArchiveGamesReview {
+  unlinked: UnlinkedPairing[];
+  unplaced: UnplacedGame[];
+}
+
+// Ties an archived game to a round of a section, between the two standings players
+export interface ArchiveGameLink {
+  gameId: Id;
+  section: string;
+  round: number;
+  playerIds: Id[];
+}
+
+export interface ArchiveGameCount {
+  gameId: Id;
+  notCounted: boolean;
+  notCountedReason: string;
+}
+
+export interface ArchiveGamesUpdate {
+  links: ArchiveGameLink[];
+  counts: ArchiveGameCount[];
+}
 
 // A player as SwissSys names them, "Last, First"
 export type EntryInput = Omit<
@@ -189,7 +230,16 @@ export interface ImportChanges {
   removedSections: string[];
   // How each imported game compares with the archive
   games: GameChange[];
+  // For each new game, the archived games between the same two people around the
+  // tournament's year, any of which may be the same game filed differently
+  candidates: ArchivedGameSummary[][];
 }
+
+// An archived game as a list of games to choose from shows it
+export type ArchivedGameSummary = TournamentGame & {
+  // The archive's name for the event
+  tournament: string;
+};
 
 // A game read from a PGN, to be added to the tournament's games in the archive
 export type GameInput = Pick<
@@ -205,7 +255,13 @@ export type GameInput = Pick<
   | 'eco'
   | 'plyCount'
   | 'moves'
->;
+  | 'notCounted'
+  | 'notCountedReason'
+> & {
+  // The archived game an admin confirmed this one to be, which takes its details; null to
+  // find it by its filing
+  archivedGameId: Id | null;
+};
 
 export type SectionInput = Pick<
   TournamentSection,
@@ -242,6 +298,10 @@ export interface PlayerNameMatch {
   // Null when saving the results would add the player to the archive
   playerId: Id | null;
   memberNumber: number | null;
+  // The member the name belongs to, with or without an account
+  memberId: Id | null;
+  // Every archive player recorded for the same person: the member's other names too
+  personPlayerIds: Id[];
 }
 
 // A game between two members, as the first of them played it

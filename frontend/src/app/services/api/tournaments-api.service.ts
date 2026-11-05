@@ -5,6 +5,8 @@ import { Injectable, inject } from '@angular/core';
 
 import {
   ApiResponse,
+  ArchiveGamesReview,
+  ArchiveGamesUpdate,
   DbCollection,
   GameInput,
   ImportChanges,
@@ -81,6 +83,24 @@ export class TournamentsApiService {
     return this.http.post<ApiResponse<ImportChanges>>(
       `${this.API_BASE_URL}/${this.COLLECTION}/${tournamentNumber}/import-changes`,
       { date, sections, games },
+    );
+  }
+
+  public getArchiveGames(
+    tournamentNumber: number,
+  ): Observable<ApiResponse<ArchiveGamesReview>> {
+    return this.http.get<ApiResponse<ArchiveGamesReview>>(
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${tournamentNumber}/archive-games`,
+    );
+  }
+
+  public updateArchiveGames(
+    tournamentNumber: number,
+    update: ArchiveGamesUpdate,
+  ): Observable<ApiResponse<ArchiveGamesReview>> {
+    return this.http.put<ApiResponse<ArchiveGamesReview>>(
+      `${this.API_BASE_URL}/admin/${this.COLLECTION}/${tournamentNumber}/archive-games`,
+      update,
     );
   }
 

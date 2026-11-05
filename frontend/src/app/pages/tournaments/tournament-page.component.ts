@@ -50,6 +50,7 @@ import {
   TournamentSection,
   TournamentSectionSummary,
   TournamentSummary,
+  UncountedGameView,
 } from '@app/models';
 import { RatingLabelPipe } from '@app/pipes';
 import {
@@ -67,6 +68,7 @@ import {
   formatDateRange,
   formatScore,
   parseSubtitlePeople,
+  playerName,
   playerNameLastFirst,
   registrationStatus,
   roundResultDescription,
@@ -326,6 +328,18 @@ export class TournamentPageComponent implements OnInit {
         )
       : [];
   });
+
+  protected readonly uncountedGames = computed<UncountedGameView[]>(() =>
+    (this.viewModel()?.tournament?.uncountedGames ?? []).map(game => {
+      const where = [game.section, `round ${game.round}`].filter(Boolean).join(', ');
+      const score = game.result === '1/2-1/2' ? '½-½' : game.result;
+      return {
+        id: game.id,
+        label: `${where}: ${playerName(game.white)} ${score} ${playerName(game.black)}`,
+        reason: game.notCountedReason,
+      };
+    }),
+  );
 
   protected readonly editAction = computed<AdminLinkAction>(() => ({
     label: 'Edit tournament',

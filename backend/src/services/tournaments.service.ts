@@ -25,8 +25,33 @@ import { matchPlayerNames, resolvePlayerIds } from './tournament-players.service
 
 export type ArchiveGame = Pick<
   GameRecord,
-  '_id' | 'section' | 'round' | 'date' | 'whitePlayerId' | 'blackPlayerId' | 'result'
+  | '_id'
+  | 'tournament'
+  | 'year'
+  | 'section'
+  | 'round'
+  | 'date'
+  | 'whitePlayerId'
+  | 'blackPlayerId'
+  | 'result'
+  | 'notCounted'
+  | 'notCountedReason'
+  | 'tournamentLink'
 >;
+
+export const ARCHIVE_GAME_FIELDS = {
+  tournament: 1,
+  year: 1,
+  section: 1,
+  round: 1,
+  date: 1,
+  whitePlayerId: 1,
+  blackPlayerId: 1,
+  result: 1,
+  notCounted: 1,
+  notCountedReason: 1,
+  tournamentLink: 1,
+};
 
 export type TournamentSummaryRecord = Omit<TournamentSummary, 'registrants'> & {
   registrations: TournamentRegistration[];
@@ -133,13 +158,14 @@ export function roundNumber(round: string): number | null {
 
 const pairKey = (a: Id, b: Id): string => [a, b].sort().join('|');
 
-const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
+export const roundKey = (rank: number, round: number): string => `${rank}|${round}`;
 
 /**
- * Links each played round to its game. A pairing met more than once is told apart by round.
- * A game played against a player from another section is recorded against an entry standing
- * in for that section's players, so it is found by its round and the one player of this
- * section who played it.
+ * Links each played round to its game: first any game an admin tied to the round, then the
+ * pairing's game. A pairing met more than once is told apart by round, and a game left out
+ * of the results links to no round. A game played against a player from another section is
+ * recorded against an entry standing in for that section's players, so it is found by its
+ * round and the one player of this section who played it.
  */
 export function matchRoundGames(
   entries: TournamentEntry[],
@@ -148,8 +174,13 @@ export function matchRoundGames(
 ): Map<string, Id> {
   const byRank = new Map(entries.map(entry => [entry.rank, entry]));
   const sectionPlayerIds = new Set(entries.map(({ playerId }) => playerId));
+  const tied = games.filter(({ tournamentLink }) => tournamentLink);
+  // Games archived before games could be tied to rounds or left uncounted have neither field
+  const filed = games.filter(
+    ({ tournamentLink, notCounted }) => !tournamentLink && !notCounted,
+  );
   const gamesByPair = new Map<string, ArchiveGame[]>();
-  for (const game of games) {
+  for (const game of filed) {
     const key = pairKey(game.whitePlayerId, game.blackPlayerId);
     gamesByPair.set(key, [...(gamesByPair.get(key) ?? []), game]);
   }
@@ -160,6 +191,18 @@ export function matchRoundGames(
       if (outcome !== 'game') continue;
 
       const opponent = opponentRank === null ? undefined : byRank.get(opponentRank);
+      const tiedGame =
+        opponent &&
+        tied.find(
+          ({ tournamentLink }) =>
+            tournamentLink?.round === round &&
+            tournamentLink.playerIds.includes(entry.playerId) &&
+            tournamentLink.playerIds.includes(opponent.playerId),
+        );
+      if (tiedGame) {
+        gameIds.set(roundKey(entry.rank, round), tiedGame._id.toString());
+        continue;
+      }
       let matches: ArchiveGame[];
       if (opponent && !standInRanks.has(opponent.rank)) {
         const candidates =
@@ -169,7 +212,7 @@ export function matchRoundGames(
             ? candidates.filter(game => roundNumber(game.round) === round)
             : candidates;
       } else if (opponentRank === null || opponent) {
-        matches = games.filter(({ round: gameRound, whitePlayerId, blackPlayerId }) => {
+        matches = filed.filter(({ round: gameRound, whitePlayerId, blackPlayerId }) => {
           const otherId =
             whitePlayerId === entry.playerId
               ? blackPlayerId
@@ -370,54 +413,84 @@ export async function toStoredSections(
   });
 }
 
+type GameSource = Pick<TournamentRecord, 'number' | 'date' | 'gameArchiveTournament'>;
+
+// An entry named after another section, such as "YS2, Player", stands in for that section's
+// players in the games the two sections play against each other
+export function standInRanksOf(
+  sections: Pick<TournamentSection, 'name'>[],
+  entries: TournamentEntry[],
+  player: (id: Id) => GamePlayer,
+): Set<number> {
+  const sectionNames = new Set(sections.map(({ name }) => name.trim().toLowerCase()));
+  return new Set(
+    entries
+      .filter(({ playerId }) => {
+        const { firstName, lastName } = player(playerId);
+        return (
+          firstName.trim().toLowerCase() === 'player' &&
+          sectionNames.has(lastName.trim().toLowerCase())
+        );
+      })
+      .map(({ rank }) => rank),
+  );
+}
+
+const recordYear = ({ date }: Pick<TournamentRecord, 'date'>): number =>
+  Number(date.slice(0, 4));
+
+// A tournament's archived games: those filed under its archive name in its year, and any an
+// admin tied to one of its rounds
+export async function tournamentGames(record: GameSource): Promise<ArchiveGame[]> {
+  const filed = record.gameArchiveTournament
+    ? [{ tournament: record.gameArchiveTournament, year: recordYear(record) }]
+    : [];
+  return GameModel.find(
+    { $or: [...filed, { 'tournamentLink.number': record.number }] },
+    ARCHIVE_GAME_FIELDS,
+  ).lean<ArchiveGame[]>();
+}
+
+// A section's games: those filed under its archive sections, unless tied to a round
+// elsewhere, and those tied to its own rounds
+export function gamesOfSection(
+  record: GameSource,
+  section: Pick<TournamentSection, 'name' | 'gameArchiveSections'>,
+  games: ArchiveGame[],
+): ArchiveGame[] {
+  return games.filter(game =>
+    game.tournamentLink
+      ? game.tournamentLink.number === record.number &&
+        game.tournamentLink.section === section.name
+      : game.tournament === record.gameArchiveTournament &&
+        game.year === recordYear(record) &&
+        section.gameArchiveSections.includes(game.section),
+  );
+}
+
 export async function toTournamentResponse(
   record: TournamentRecord,
 ): Promise<TournamentResponse> {
   const { _id, gameArchiveTournament, sections, registrations, ...tournament } = record;
-  const archiveSections = sections.flatMap(
-    ({ gameArchiveSections }) => gameArchiveSections,
-  );
-
-  const games =
-    gameArchiveTournament && archiveSections.length
-      ? await GameModel.find(
-          {
-            tournament: gameArchiveTournament,
-            year: Number(record.date.slice(0, 4)),
-            section: { $in: archiveSections },
-          },
-          {
-            section: 1,
-            round: 1,
-            date: 1,
-            whitePlayerId: 1,
-            blackPlayerId: 1,
-            result: 1,
-          },
-        ).lean<ArchiveGame[]>()
-      : [];
+  const games = await tournamentGames(record);
 
   const players = await resolvePlayers([
     ...sections.flatMap(({ entries }) => entries.map(({ playerId }) => playerId)),
     ...games.flatMap(game => [game.whitePlayerId, game.blackPlayerId]),
   ]);
   const player = (id: Id): GamePlayer => players.get(id) ?? { id, ...UNKNOWN_PLAYER };
+  const toTournamentGame = (game: ArchiveGame): TournamentGame => ({
+    id: game._id.toString(),
+    section: game.section,
+    round: game.round,
+    date: game.date,
+    result: game.result,
+    white: player(game.whitePlayerId),
+    black: player(game.blackPlayerId),
+  });
 
-  // An entry named after another section, such as "YS2, Player", stands in for that
-  // section's players in the games the two sections play against each other
-  const sectionNames = new Set(sections.map(({ name }) => name.trim().toLowerCase()));
   const standInRanks = (entries: TournamentEntry[]): Set<number> =>
-    new Set(
-      entries
-        .filter(({ playerId }) => {
-          const { firstName, lastName } = player(playerId);
-          return (
-            firstName.trim().toLowerCase() === 'player' &&
-            sectionNames.has(lastName.trim().toLowerCase())
-          );
-        })
-        .map(({ rank }) => rank),
-    );
+    standInRanksOf(sections, entries, player);
 
   return {
     ...tournament,
@@ -426,9 +499,11 @@ export async function toTournamentResponse(
     modificationInfo: record.modificationInfo ?? null,
     registrants: await toRegistrants(registrations ?? []),
     sections: sections.map(({ gameArchiveSections, entries, ...section }) => {
-      const sectionGames = games
-        .filter(game => gameArchiveSections.includes(game.section))
-        .sort(byRound);
+      const sectionGames = gamesOfSection(
+        record,
+        { name: section.name, gameArchiveSections },
+        games,
+      ).sort(byRound);
       const gameIds = matchRoundGames(entries, sectionGames, standInRanks(entries));
 
       return {
@@ -441,17 +516,16 @@ export async function toTournamentResponse(
             gameId: gameIds.get(roundKey(entry.rank, result.round)) ?? null,
           })),
         })),
-        games: sectionGames.map((game): TournamentGame => ({
-          id: game._id.toString(),
-          section: game.section,
-          round: game.round,
-          date: game.date,
-          result: game.result,
-          white: player(game.whitePlayerId),
-          black: player(game.blackPlayerId),
-        })),
+        games: sectionGames.map(toTournamentGame),
       };
     }),
+    uncountedGames: games
+      .filter(({ notCounted }) => notCounted)
+      .sort(byRound)
+      .map(game => ({
+        ...toTournamentGame(game),
+        notCountedReason: game.notCountedReason,
+      })),
   };
 }
 

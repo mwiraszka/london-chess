@@ -1,6 +1,7 @@
 import {
   AlertComponent,
   BadgeComponent,
+  ButtonComponent,
   CardComponent,
   CheckboxComponent,
   DataTableColumn,
@@ -49,12 +50,15 @@ import {
   TOURNAMENT_FORMAT_OPTIONS,
 } from '@app/constants/tournaments';
 import {
+  ArchivedGameSummary,
   BasicDialogResult,
   Dialog,
   GameInput,
+  Id,
   ImportChanges,
   ImportPreview,
   ImportPreviewRow,
+  Member,
   PlayerNameMatch,
   SectionInput,
   Tournament,
@@ -63,6 +67,7 @@ import {
   TournamentFormValue,
 } from '@app/models';
 import {
+  MembersApiService,
   StandingsFileService,
   StoreRequestService,
   TournamentsApiService,
@@ -70,9 +75,12 @@ import {
 import { TournamentsActions } from '@app/store/tournaments';
 import {
   draftDebounce,
+  formatPartialDate,
   formatScore,
   fromClubDateTime,
   fromDayString,
+  parseError,
+  playerName,
   playerNameLastFirst,
   roundResultLabel,
   toClubDateTime,
@@ -91,6 +99,13 @@ import {
 
 const PGN_FILE = /\.(pgn|txt)$/i;
 
+// The choice that adds a PGN game as a new game rather than any archived one
+const NEW_GAME = 'new';
+
+// A PGN game keeps one identity while its archived copy is being decided
+const gameKey = ({ section, round, whitePlayerId, blackPlayerId }: GameInput): string =>
+  [section, round, whitePlayerId, blackPlayerId].join('|');
+
 @Component({
   selector: 'lcc-tournament-form',
   templateUrl: './tournament-form.component.html',
@@ -98,6 +113,7 @@ const PGN_FILE = /\.(pgn|txt)$/i;
   imports: [
     AlertComponent,
     BadgeComponent,
+    ButtonComponent,
     CardComponent,
     CheckboxComponent,
     DataTableComponent,
@@ -122,6 +138,7 @@ export class TournamentFormComponent implements OnInit {
   private readonly standingsFileService = inject(StandingsFileService);
   private readonly storeRequests = inject(StoreRequestService);
   private readonly tournamentsApiService = inject(TournamentsApiService);
+  private readonly membersApiService = inject(MembersApiService);
 
   readonly formData = input.required<TournamentFormData>();
   readonly hasUnsavedChanges = input.required<boolean>();
@@ -160,6 +177,100 @@ export class TournamentFormComponent implements OnInit {
   private readonly checkedGames = signal<GameInput[]>([]);
   // Every game a newly read PGN holds, before the check keeps only those that change
   private readonly pgnGames = signal<GameInput[]>([]);
+  // The names the PGN gives its players, by archive player
+  private readonly pgnPlayerNames = signal<Record<Id, string>>({});
+  // The archived games each new game was found to perhaps be, by game, kept once offered so
+  // a choice can still be changed after it is made
+  private readonly offeredCandidates = signal<ReadonlyMap<string, ArchivedGameSummary[]>>(
+    new Map(),
+  );
+  // The games chosen to be added as new rather than taken for any archived game
+  private readonly chosenNew = signal<ReadonlySet<string>>(new Set());
+
+  // Every member, for linking a name the archive cannot place to the member it belongs to
+  protected readonly members = signal<Pick<Member, 'id' | 'firstName' | 'lastName'>[]>(
+    [],
+  );
+  protected readonly linkingName = signal<string | null>(null);
+  protected readonly linkProblem = signal<string | null>(null);
+
+  private readonly playerNames = computed(() => {
+    const names = new Map<string, string>(
+      (this.originalTournament()?.sections ?? []).flatMap(({ entries }) =>
+        entries.map(({ player }) => [player.id, playerName(player)] as const),
+      ),
+    );
+    for (const [id, name] of Object.entries(this.pgnPlayerNames())) {
+      names.set(id, name);
+    }
+    return names;
+  });
+
+  private describeGame(game: GameInput): string {
+    const name = (id: Id) => this.playerNames().get(id) ?? 'a player';
+    const section = game.section ? `${game.section}, ` : '';
+    return `${section}round ${game.round}: ${name(game.whitePlayerId)} v ${name(game.blackPlayerId)}`;
+  }
+
+  // Each new game that could be an archived one, waiting to be told which or that it is new
+  protected readonly gameChoices = computed(() => {
+    const offered = this.offeredCandidates();
+    const chosenNew = this.chosenNew();
+    return (this.importedGames() ?? []).flatMap(game => {
+      const candidates = offered.get(gameKey(game));
+      if (!candidates?.length) {
+        return [];
+      }
+      return [
+        {
+          key: gameKey(game),
+          label: this.describeGame(game),
+          value: game.archivedGameId ?? (chosenNew.has(gameKey(game)) ? NEW_GAME : ''),
+          options: [
+            { value: NEW_GAME, label: 'A new game for the archive' },
+            ...candidates.map(candidate => ({
+              value: candidate.id,
+              label: `${candidate.tournament}${candidate.section ? ` (${candidate.section})` : ''}, round ${candidate.round || '?'}, ${formatPartialDate(candidate.date, 'short')}: ${playerName(candidate.white)} v ${playerName(candidate.black)}, ${candidate.result}`,
+            })),
+          ],
+        },
+      ];
+    });
+  });
+
+  protected readonly undecidedGameCount = computed(
+    () => this.gameChoices().filter(({ value }) => !value).length,
+  );
+
+  // The games the standings leave unplayed, archived as played but not counted
+  protected readonly uncountedGames = computed(() =>
+    (this.importedGames() ?? [])
+      .filter(({ notCounted }) => notCounted)
+      .map(game => ({
+        key: gameKey(game),
+        label: this.describeGame(game),
+        reason: game.notCountedReason,
+      })),
+  );
+
+  // New names that belong to no member, any of which may be another name of one
+  protected readonly unlinkedNames = computed(() =>
+    this.playerMatches()
+      .filter(({ playerId, memberId }) => playerId === null && memberId === null)
+      .map(({ name }) => name),
+  );
+
+  // The member chosen for each name, waiting to be given it
+  protected readonly chosenMembers = signal<ReadonlyMap<string, Id>>(new Map());
+
+  protected readonly memberOptions = computed(() =>
+    this.members()
+      .map(({ id, firstName, lastName }) => ({
+        value: id,
+        label: `${firstName} ${lastName}`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  );
 
   protected readonly gameChanges = computed(() => {
     const changes = this.importChanges();
@@ -368,10 +479,8 @@ export class TournamentFormComponent implements OnInit {
     const attempt = ++this.importAttempt;
 
     this.importing.set(true);
-    const { sections, games, problems } = await this.standingsFileService.importStandings(
-      chosen,
-      this.originalTournament(),
-    );
+    const { sections, games, playerNames, problems } =
+      await this.standingsFileService.importStandings(chosen, this.originalTournament());
     // A later choice of files replaces this one
     if (attempt !== this.importAttempt) {
       return;
@@ -383,6 +492,7 @@ export class TournamentFormComponent implements OnInit {
     }
     this.pgnGames.set(this.isPgnImport() ? games : []);
     this.importedGames.set(this.isPgnImport() ? games : null);
+    this.pgnPlayerNames.set(playerNames);
 
     const known = [
       ...(this.importedSections() ?? []),
@@ -414,6 +524,64 @@ export class TournamentFormComponent implements OnInit {
       this.checking.set(true);
     }
     this.sectionEdits.next();
+  }
+
+  // The archived game a new game was confirmed to be, or that it is a new game
+  public onGameChosen(key: string, choice: string): void {
+    const archivedGameId = choice && choice !== NEW_GAME ? choice : null;
+    const decide = (games: GameInput[]): GameInput[] =>
+      games.map(game => (gameKey(game) === key ? { ...game, archivedGameId } : game));
+    this.chosenNew.update(chosen => {
+      const next = new Set(chosen);
+      if (choice === NEW_GAME) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+    this.pgnGames.update(decide);
+    this.importedGames.update(games => (games ? decide(games) : games));
+    this.recheck();
+  }
+
+  public onUncountedReasonEdited(key: string, notCountedReason: string): void {
+    const edit = (games: GameInput[]): GameInput[] =>
+      games.map(game => (gameKey(game) === key ? { ...game, notCountedReason } : game));
+    this.pgnGames.update(edit);
+    this.importedGames.update(games => (games ? edit(games) : games));
+    this.recheck();
+  }
+
+  public onMemberChosen(name: string, memberId: string): void {
+    this.chosenMembers.update(chosen => new Map(chosen).set(name, memberId));
+  }
+
+  // Gives a new name to the member it belongs to, so this import and every later one find
+  // the member by it
+  public async onNameLinked(name: string): Promise<void> {
+    const memberId = this.chosenMembers().get(name);
+    if (!memberId) {
+      return;
+    }
+    this.linkingName.set(name);
+    this.linkProblem.set(null);
+    try {
+      const { data: otherNames } = await firstValueFrom(
+        this.membersApiService.getOtherNames(memberId),
+      );
+      await firstValueFrom(
+        this.membersApiService.updateOtherNames(memberId, [...otherNames, name]),
+      );
+      const sections = this.importedSections();
+      if (sections) {
+        await this.checkPlayers(sections);
+      }
+    } catch (error) {
+      this.linkProblem.set(parseError(error).message);
+    } finally {
+      this.linkingName.set(null);
+    }
   }
 
   public onClearImport(): void {
@@ -515,12 +683,37 @@ export class TournamentFormComponent implements OnInit {
       );
       if (attempt === this.importAttempt) {
         this.playerMatches.set(response.data);
+        if (response.data.some(({ playerId, memberId }) => !playerId && !memberId)) {
+          void this.loadMembers();
+        }
       }
     } catch {
       if (attempt === this.importAttempt) {
         this.playerMatches.set([]);
         this.playerCheckFailed.set(true);
       }
+    }
+  }
+
+  // Saving waits until the change has been checked
+  private recheck(): void {
+    if (this.originalTournament()) {
+      this.checking.set(true);
+    }
+    this.sectionEdits.next();
+  }
+
+  private async loadMembers(): Promise<void> {
+    if (this.members().length) {
+      return;
+    }
+    try {
+      const { data } = await firstValueFrom(
+        this.membersApiService.getAllMembers('admin'),
+      );
+      this.members.set(data.items);
+    } catch (error) {
+      this.linkProblem.set(parseError(error).message);
     }
   }
 
@@ -538,6 +731,10 @@ export class TournamentFormComponent implements OnInit {
     this.importChanges.set(null);
     this.checkedGames.set([]);
     this.pgnGames.set([]);
+    this.pgnPlayerNames.set({});
+    this.offeredCandidates.set(new Map());
+    this.chosenNew.set(new Set());
+    this.linkProblem.set(null);
   }
 
   // The day saving would give the tournament; a start date still being typed leaves it as
@@ -577,6 +774,15 @@ export class TournamentFormComponent implements OnInit {
       }
       this.checkedGames.set(games);
       this.importChanges.set(data);
+      this.offeredCandidates.update(offered => {
+        const next = new Map(offered);
+        games.forEach((game, index) => {
+          if (data.candidates[index]?.length) {
+            next.set(gameKey(game), data.candidates[index]);
+          }
+        });
+        return next;
+      });
       if (this.importedGames() !== null) {
         this.importedGames.set(
           games.filter((_, index) => data.games[index] !== 'unchanged'),
