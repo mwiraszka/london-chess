@@ -1,13 +1,21 @@
-import { Injectable, signal } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { filter } from 'rxjs/operators';
 
+import { Injectable, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { NavigationEnd, Router } from '@angular/router';
+
+import { AUTH_QUERY_PARAM, LINKABLE_AUTH_MODES } from '@app/constants/auth';
 import { AuthMode } from '@app/models';
+import { ClerkService } from '@app/services/clerk.service';
 import { createEmailControl, createMemberAccountGroup } from '@app/utils';
 
 // Drives the right-side auth drawer so logging in overlays the current page
 // instead of a full-page takeover.
 @Injectable({ providedIn: 'root' })
 export class AuthDrawerService {
+  private readonly clerk = inject(ClerkService);
+  private readonly router = inject(Router);
+
   readonly open = signal(false);
   readonly mode = signal<AuthMode>('login');
   // True while the drawer finishes a log in, which can include replacing the password
@@ -31,6 +39,40 @@ export class AuthDrawerService {
   openLogin(): void {
     this.mode.set('login');
     this.open.set(true);
+  }
+
+  /**
+   * Opens the drawer on the form an address asks for with ?auth=login or
+   * ?auth=create-account, over the page it names, for anyone not logged in. The parameter
+   * is then dropped from the address, so going back or reloading does not open it again.
+   */
+  listenForLinks(): void {
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => void this.openFromAddress());
+  }
+
+  async openFromAddress(): Promise<void> {
+    const address = this.router.parseUrl(this.router.url);
+    if (!(AUTH_QUERY_PARAM in address.queryParams)) {
+      return;
+    }
+    const mode = LINKABLE_AUTH_MODES.find(
+      linkable => linkable === address.queryParams[AUTH_QUERY_PARAM],
+    );
+
+    const queryParams = { ...address.queryParams };
+    delete queryParams[AUTH_QUERY_PARAM];
+    address.queryParams = queryParams;
+    await this.router.navigateByUrl(address, { replaceUrl: true });
+
+    // Whether someone is logged in is known only once Clerk has loaded, and one that fails
+    // to load leaves them logged out
+    await this.clerk.load().catch(() => undefined);
+    if (mode && !this.clerk.isLoggedIn()) {
+      this.mode.set(mode);
+      this.open.set(true);
+    }
   }
 
   setMode(mode: AuthMode): void {
