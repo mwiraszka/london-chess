@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v6.7.1] - 2026-11-06
 
+### Changed
+
+- Update third-party packages
+
 ### Fixed
 
 - Keep your place on a page when you go back or forward, including when you return from another site such as a linked results PDF, instead of starting again from the top (thanks, Nick!)
