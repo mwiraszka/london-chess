@@ -36,6 +36,9 @@ jobs:
       # The thresholds in angular.json fail this step below 90% coverage
       - name: Test With Coverage
         run: pnpm test:coverage
+        env:
+          # Vitest's labels are black on a colour, which GitHub's log viewer leaves unreadable
+          NO_COLOR: '1'
 
       - name: Build
         run: pnpm build:prod
@@ -78,6 +81,9 @@ jobs:
       # The thresholds in vitest.config.ts fail this step below 90% coverage
       - name: Test With Coverage
         run: pnpm test:coverage
+        env:
+          # Vitest's labels are black on a colour, which GitHub's log viewer leaves unreadable
+          NO_COLOR: '1'
 
   E2E-Tests:
     runs-on: ubuntu-latest

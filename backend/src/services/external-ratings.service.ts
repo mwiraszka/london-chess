@@ -150,7 +150,12 @@ async function lookUp(
   try {
     return { ...(await LOOKUPS[platform](handle)), handle };
   } catch (error) {
-    report(`Unable to look up the ${platform} ratings of ${handle}`, error, { platform });
+    const message = `Unable to look up the ${platform} ratings of ${handle}`;
+    if (isTimeout(error)) {
+      logTimeout(message, error, platform);
+    } else {
+      report(message, error, { platform });
+    }
     return currentLookup(record, platform);
   }
 }
@@ -302,6 +307,17 @@ function field(value: unknown, key: string): unknown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isTimeout(error: unknown): boolean {
+  return error instanceof Error && error.name === 'TimeoutError';
+}
+
+// These sites go quiet now and then, and the next refresh tries them again, so a slow
+// answer is a log to read for a trend rather than an issue to act on
+function logTimeout(message: string, error: unknown, platform: RatingPlatform): void {
+  console.warn(`[LCC] ${message}: ${error}`);
+  Sentry.logger.warn(message, { platform });
 }
 
 function report(

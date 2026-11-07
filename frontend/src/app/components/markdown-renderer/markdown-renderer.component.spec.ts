@@ -5,7 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { Image } from '@app/models';
-import { RoutingService } from '@app/services';
+import { RoutingService, ScrollPositionService } from '@app/services';
 import { query, queryAll } from '@app/utils';
 
 import { MarkdownRendererComponent } from './markdown-renderer.component';
@@ -108,6 +108,16 @@ describe('MarkdownRendererComponent', () => {
 
       fragment$.next(null);
       fragment$.next('missing-section');
+
+      expect(scrollSpy).not.toHaveBeenCalled();
+    });
+
+    it('should stay put while a position is being returned to', () => {
+      const [heading] = rendered('#second-part');
+      const scrollSpy = vi.spyOn(heading, 'scrollIntoView');
+      TestBed.inject(ScrollPositionService).isHoldingPosition.set(true);
+
+      fragment$.next('second-part');
 
       expect(scrollSpy).not.toHaveBeenCalled();
     });

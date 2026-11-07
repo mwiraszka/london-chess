@@ -1,4 +1,7 @@
 import { expect, test } from './fixtures';
+import { ARTICLES } from './seed';
+
+const [ARTICLE] = ARTICLES;
 
 const NAV_LINKS: [name: string, path: string, heading: string][] = [
   ['FAQ', '/faq', 'FAQ'],
@@ -60,6 +63,51 @@ test.describe('navigation', () => {
 
     await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Log in' })).toBeDisabled();
+  });
+
+  test('goes back to the same spot on a page after following a link', async ({
+    page,
+  }) => {
+    await page.goto('/faq');
+    await expect(page.getByRole('heading', { name: 'FAQ', level: 2 })).toBeVisible();
+    const scroller = page.locator('.scroller');
+    const spot = await scroller.evaluate(element => {
+      element.scrollTo({ top: 200 });
+      return element.scrollTop;
+    });
+    expect(spot).toBeGreaterThan(0);
+
+    await page
+      .locator('lcc-navigation-bar')
+      .getByRole('link', { name: 'Schedule', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/schedule$/);
+    await expect(scroller).toHaveJSProperty('scrollTop', 0);
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/faq$/);
+    await expect(scroller).toHaveJSProperty('scrollTop', spot);
+  });
+
+  test('goes back to the same spot on a page that has to load after leaving the site', async ({
+    page,
+  }) => {
+    await page.goto(`/article/view/${ARTICLE.id}`);
+    await expect(
+      page.locator('main').getByRole('heading', { name: 'A tense finish', level: 2 }),
+    ).toBeVisible();
+    const scroller = page.locator('.scroller');
+    const spot = await scroller.evaluate(element => {
+      element.scrollTo({ top: element.scrollHeight });
+      return element.scrollTop;
+    });
+    expect(spot).toBeGreaterThan(0);
+
+    await page.goto('about:blank');
+    await page.goBack();
+
+    await expect(page).toHaveURL(new RegExp(`/article/view/${ARTICLE.id}$`));
+    await expect(scroller).toHaveJSProperty('scrollTop', spot);
   });
 
   for (const path of [

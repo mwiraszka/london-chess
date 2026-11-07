@@ -8,6 +8,13 @@ import {
   refreshExternalRatings,
 } from './external-ratings.service';
 
+const { captureException, warn } = vi.hoisted(() => ({
+  captureException: vi.fn<(error: unknown) => string>(() => ''),
+  warn: vi.fn<(message: string, attributes: Record<string, string>) => void>(),
+}));
+
+vi.mock('@sentry/node', () => ({ captureException, logger: { warn } }));
+
 const CHECKED_AT = '2026-10-30T12:00:00.000Z';
 const HOUR_MS = 3600 * 1000;
 
@@ -316,6 +323,42 @@ describe('external ratings service', () => {
         'https://lichess.org/api/user/jane_doe answered 403: <html> <title>Access denied</title> x',
       );
       expect(String(message).length).toBeLessThan(500);
+      expect(captureException).toHaveBeenCalledOnce();
+    });
+
+    it('should log a site that is too slow to answer, without raising an error, and keep what it last gave', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      answerWith({
+        ...ANSWERS,
+        [FIDE_PROFILE]: () => {
+          throw new DOMException(
+            'The operation was aborted due to timeout',
+            'TimeoutError',
+          );
+        },
+      });
+      const previous = [
+        { timeControl: 'standard' as const, rating: 1745, provisional: false },
+      ];
+      const member = await memberWithHandles({
+        externalRatings: {
+          lookups: { fide: { handle: '2600123', ratings: previous } },
+          checkedAt: CHECKED_AT,
+        },
+      });
+
+      await refreshExternalRatings(member);
+
+      const saved = await readMember(member._id);
+      expect(saved.externalRatings?.lookups.fide).toEqual({
+        handle: '2600123',
+        ratings: previous,
+      });
+      expect(console.warn).toHaveBeenCalledOnce();
+      expect(warn).toHaveBeenCalledWith('Unable to look up the fide ratings of 2600123', {
+        platform: 'fide',
+      });
+      expect(captureException).not.toHaveBeenCalled();
     });
 
     it('should report rather than reject when the ratings cannot be saved', async () => {

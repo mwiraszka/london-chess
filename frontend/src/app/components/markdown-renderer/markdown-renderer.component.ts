@@ -20,7 +20,7 @@ import { RouterLink } from '@angular/router';
 import { MarkdownTableComponent } from '@app/components/markdown-table/markdown-table.component';
 import { Image } from '@app/models';
 import { KebabCasePipe } from '@app/pipes';
-import { RoutingService } from '@app/services';
+import { RoutingService, ScrollPositionService } from '@app/services';
 import { MarkdownSegment, isCollectionId, scrollBehavior } from '@app/utils';
 import { markdownHeadings } from '@app/utils/markdown/markdown-headings.util';
 import { splitMarkdownTables } from '@app/utils/markdown/split-markdown-tables.util';
@@ -61,6 +61,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
   private readonly elementRef = inject(ElementRef);
   private readonly renderer = inject(Renderer2);
   private readonly routingService = inject(RoutingService);
+  private readonly scrollPositionService = inject(ScrollPositionService);
 
   public readonly data = input<string>();
   public readonly images = input<Image[]>([]);
@@ -176,7 +177,7 @@ export class MarkdownRendererComponent implements AfterViewInit {
   }
 
   private scrollToAnchor(anchorId?: string | null): void {
-    if (!anchorId) {
+    if (!anchorId || this.scrollPositionService.isHoldingPosition()) {
       return;
     }
 
