@@ -41,7 +41,7 @@ import { Event } from '@app/models';
 import {
   AuthDrawerService,
   RefreshService,
-  RoutingService,
+  ScrollPositionService,
   TouchEventsService,
 } from '@app/services';
 import { AppActions, AppSelectors } from '@app/store/app';
@@ -129,7 +129,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly _document = inject<Document>(DOCUMENT);
   private readonly refreshService = inject(RefreshService);
-  private readonly routingService = inject(RoutingService);
+  private readonly scrollPositionService = inject(ScrollPositionService);
   private readonly store = inject(Store);
   private readonly touchEventsService = inject(TouchEventsService);
   private readonly authDrawerService = inject(AuthDrawerService);
@@ -205,7 +205,10 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   public ngAfterViewInit(): void {
     this.refreshService.initialize(this.scroller().nativeElement);
-    this.initNavigationListenerForScrollingBackToTop();
+    this.scrollPositionService.initialize(
+      this.scroller().nativeElement,
+      this.mainContent().nativeElement,
+    );
     this.measureScrollbarInset();
     fromEvent(window, 'resize')
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -239,15 +242,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   public onClearBanner(): void {
     this.store.dispatch(AppActions.upcomingEventBannerCleared());
-  }
-
-  private initNavigationListenerForScrollingBackToTop(): void {
-    this.routingService.pageNavigated$
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        filter(fragment => !fragment),
-      )
-      .subscribe(() => this.scroller().nativeElement.scrollTo({ top: 0 }));
   }
 
   private updateViewportForDesktopView(isDesktopView: boolean): void {
