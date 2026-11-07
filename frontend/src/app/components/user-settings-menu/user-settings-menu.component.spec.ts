@@ -236,11 +236,13 @@ describe('UserSettingsMenuComponent', () => {
   it('should warn about personal information while safe mode is off', () => {
     store.overrideSelector(AppSelectors.selectIsSafeMode, false);
     create();
-
-    query(
+    const warning: HTMLElement = query(
       fixture.debugElement,
       '.safe-mode-toggle .safe-mode-warning',
-    ).nativeElement.dispatchEvent(new FocusEvent('focusin'));
+    ).nativeElement;
+    warning.tabIndex = 0;
+
+    warning.focus();
 
     expect(
       document.querySelector('.ea-tooltip .safe-mode-warning-tooltip')?.textContent,
