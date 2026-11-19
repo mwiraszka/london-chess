@@ -8,6 +8,7 @@ export { CsvExportService } from './csv-export.service';
 export { DeletionService } from './deletion.service';
 export { EventsApiService } from './api/events-api.service';
 export { GamesApiService } from './api/games-api.service';
+export { GoogleMapsService } from './google-maps.service';
 export { ImageFileService } from './image-file.service';
 export { ImagesApiService } from './api/images-api.service';
 export { LoadedImagesService } from './loaded-images.service';
