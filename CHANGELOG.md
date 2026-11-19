@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.8.0] - 2026-11-19
+
+### Added
+
+- Add the Goderich Chess Club to the regional clubs page, with a link to its website
+
+### Changed
+
+- Update the membership fee in the FAQ to $60 per year
+- Update third-party packages
+
 ## [v6.7.1] - 2026-11-06
 
 ### Changed
@@ -2245,6 +2256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.8.0]: https://github.com/mwiraszka/london-chess/compare/v6.7.1...v6.8.0
 [v6.7.1]: https://github.com/mwiraszka/london-chess/compare/v6.7.0...v6.7.1
 [v6.7.0]: https://github.com/mwiraszka/london-chess/compare/v6.6.2...v6.7.0
 [v6.6.2]: https://github.com/mwiraszka/london-chess/compare/v6.6.1...v6.6.2

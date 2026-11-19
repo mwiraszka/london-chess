@@ -1,18 +1,15 @@
-import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
-
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  OnInit,
+  inject,
   input,
   viewChild,
 } from '@angular/core';
 
 import { Club } from '@app/models';
-
-import { environment } from '@env';
+import { GoogleMapsService } from '@app/services';
 
 @Component({
   selector: 'lcc-club-map',
@@ -63,17 +60,12 @@ import { environment } from '@env';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ClubMapComponent implements OnInit, AfterViewInit {
+export class ClubMapComponent implements AfterViewInit {
+  private readonly googleMaps = inject(GoogleMapsService);
+
   readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
 
   readonly club = input.required<Club>();
-
-  public ngOnInit(): void {
-    setOptions({
-      key: environment.googleMapsApiKey,
-      v: 'weekly',
-    });
-  }
 
   public ngAfterViewInit(): void {
     this.initMap();
@@ -91,14 +83,16 @@ export class ClubMapComponent implements OnInit, AfterViewInit {
       zoom: 15,
     };
 
-    const map = await importLibrary('maps')
+    const map = await this.googleMaps
+      .importLibrary('maps')
       .then(({ Map }) => new Map(this.mapContainer().nativeElement, mapOptions))
       .catch((error: unknown) =>
         console.error(`[LCC] Error creating Google Maps map: ${error}`),
       );
 
     if (map) {
-      importLibrary('marker')
+      this.googleMaps
+        .importLibrary('marker')
         .then(({ AdvancedMarkerElement }) => {
           new AdvancedMarkerElement({
             map,

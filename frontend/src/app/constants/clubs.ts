@@ -71,4 +71,18 @@ export const REGIONAL_CLUBS: Club[] = [
     scheduleText: 'Mondays, 6:30pm–8:30pm',
     email: 'idemeester@splibrary.ca',
   },
+  {
+    id: 'goderich-chess-club',
+    name: 'Goderich Chess Club',
+    mapUrl:
+      'https://www.google.com/maps/search/?api=1&query=Goderich+Library+52+Montreal+Street+Goderich+ON',
+    location: { lat: 43.74199, lng: -81.71302 },
+    addressLine1: 'Goderich Library',
+    addressLine2: '52 Montreal Street',
+    addressLine3: 'Goderich, ON N7A 2G4',
+    scheduleText:
+      'Tuesdays, 6:00pm–8:00pm\nFridays, 6:00pm–9:00pm\n\n(Fridays at the Goderich Legion, 56 Kingston Street)',
+    email: 'goderichchessclub@gmail.com',
+    website: 'goderichchessclub.com',
+  },
 ];

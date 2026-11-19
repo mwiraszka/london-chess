@@ -1,6 +1,6 @@
 {
   "name": "london-chess",
-  "version": "6.7.1",
+  "version": "6.8.0",
   "description": "London Chess Club monorepo: Angular frontend + Node/Express backend",
   "author": "Michal Wiraszka",
   "license": "MIT",
@@ -26,6 +26,6 @@
     "bootstrap": "pnpm install && pnpm -C frontend install && pnpm -C backend install"
   },
   "devDependencies": {
-    "concurrently": "10.0.6"
+    "concurrently": "10.0.7"
   }
 }
