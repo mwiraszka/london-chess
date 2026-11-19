@@ -1,6 +1,6 @@
 {
   "name": "lcc-frontend",
-  "version": "6.7.1",
+  "version": "6.8.0",
   "description": "Frontend for the London Chess Club website, built with Angular",
   "author": "Michal Wiraszka",
   "repository": {
