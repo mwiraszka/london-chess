@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Show the membership fee in the FAQ as $60 per year
+- Update the membership fee in the FAQ to $60 per year
 - Update third-party packages
 
 ## [v6.7.1] - 2026-11-06
