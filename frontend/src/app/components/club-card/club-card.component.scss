@@ -70,6 +70,10 @@
     @include lcc-link-in-text;
   }
 
+  .website-link {
+    white-space: nowrap;
+  }
+
   .external-link-icon {
     @include icon-size(16px);
     @include link-icon-lift;
