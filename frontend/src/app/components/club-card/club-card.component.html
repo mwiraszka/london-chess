@@ -35,6 +35,20 @@
             </a>
           </div>
         }
+
+        @if (club().website) {
+          <div class="website">
+            <ea-icon-globe class="website-icon" />
+            <a
+              [href]="'https://' + club().website"
+              class="website-link lcc-link"
+              rel="noopener noreferrer"
+              target="_blank">
+              <span>{{ club().website }}</span>
+              <ea-icon-external-link class="external-link-icon" />
+            </a>
+          </div>
+        }
       </div>
     </section>
 

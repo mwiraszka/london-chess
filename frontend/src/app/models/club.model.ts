@@ -10,6 +10,7 @@ export interface Club {
   addressLine3: string;
   scheduleText: string; // Supports \n for line breaks
   email?: string;
+  website?: string; // Domain only, served over https
 }
 
 export interface ClubDocument {

@@ -52,18 +52,21 @@
   white-space: pre-line;
 }
 
-.email {
+.email,
+.website {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
   min-width: 200px;
 
-  .email-icon {
+  .email-icon,
+  .website-icon {
     @include icon-size(16px);
   }
 
-  .email-link {
+  .email-link,
+  .website-link {
     @include lcc-link-in-text;
   }
 

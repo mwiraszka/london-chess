@@ -62,6 +62,24 @@ describe('ClubCardComponent', () => {
       expect(emailSection).toBeFalsy();
     });
 
+    it('should render website link when website is provided', () => {
+      const club = REGIONAL_CLUBS.find(club => club.website)!;
+      fixture.componentRef.setInput('club', club);
+      fixture.detectChanges();
+
+      const websiteLink = query(fixture.debugElement, '.website-link');
+
+      expect(websiteLink?.nativeElement.getAttribute('href')).toBe(
+        `https://${club.website}`,
+      );
+      expect(websiteLink?.nativeElement.textContent).toContain(club.website);
+      expect(query(fixture.debugElement, 'ea-icon-globe')).toBeTruthy();
+    });
+
+    it('should not render website section when website is not provided', () => {
+      expect(query(fixture.debugElement, '.website')).toBeFalsy();
+    });
+
     it('should rule off the club name with a thick divider', () => {
       const divider = query(fixture.debugElement, '.club-name + ea-divider');
 
