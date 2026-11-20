@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Let members with an account react to articles with emojis, shown to everyone with the most given first, and hover over an emoji to see who gave it
+- Let members react to articles with emojis
 
 ### Changed
 
