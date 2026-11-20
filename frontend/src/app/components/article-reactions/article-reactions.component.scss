@@ -17,17 +17,17 @@
   display: none;
 }
 
+// Wide enough for a two-digit count to sit between neighbours
 .reactions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
 }
 
-// The count follows the emoji as a raised bare number, with no shape of its own
 .reaction {
+  position: relative;
   display: inline-flex;
-  align-items: flex-start;
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
@@ -56,18 +56,22 @@ button.reaction {
   height: 24px;
   font-size: 17px;
   line-height: 1;
+  border: 1px solid transparent;
   border-radius: 50%;
   transition: transform 0.15s ease;
 }
 
 .reaction--own .emoji {
-  box-shadow: inset 0 0 0 1px var(--lcc-reaction-own-ring);
+  border-color: var(--lcc-reaction-own-ring);
   background-color: var(--lcc-reaction-own);
 }
 
+// A raised bare number with no shape of its own, kept out of the layout so a count
+// coming or going never moves the emojis around it
 .count {
-  position: relative;
-  top: -2px;
+  position: absolute;
+  top: -4px;
+  left: 100%;
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
