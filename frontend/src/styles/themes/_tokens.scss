@@ -154,6 +154,14 @@ $event-colours: (
       transparent
     );
   }
+
+  // The reactions a member has given an article themselves
+  --lcc-reaction-own: var(--color-primary-100);
+  --lcc-reaction-own-ring: var(--color-primary-400);
+
+  @include with-color-mix {
+    --lcc-reaction-own: color-mix(in srgb, var(--color-primary-400) 20%, transparent);
+  }
 }
 
 :root[data-theme='dark'] {
@@ -209,4 +217,11 @@ $event-colours: (
   --lcc-today: hsl(0 44% 47%);
 
   --lcc-head-to-head-draw: var(--color-neutral-400);
+
+  --lcc-reaction-own: var(--color-primary-800);
+  --lcc-reaction-own-ring: var(--color-primary-300);
+
+  @include with-color-mix {
+    --lcc-reaction-own: color-mix(in srgb, var(--color-primary-300) 20%, transparent);
+  }
 }

@@ -1,13 +1,17 @@
 import { ContextMenuTriggerDirective, DialogService } from '@eagami/ui';
+import { provideMockActions } from '@ngrx/effects/testing';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { pick } from 'lodash-es';
 import { provideMarkdown } from 'ngx-markdown';
-import { Observable, Subject, firstValueFrom, of } from 'rxjs';
+import { EMPTY, Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { take } from 'rxjs/operators';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
+import { ArticleReactionsComponent } from '@app/components/article-reactions/article-reactions.component';
 import { ARTICLE_FORM_DATA_PROPERTIES, IMAGE_FORM_DATA_PROPERTIES } from '@app/constants';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_IMAGES } from '@app/mocks/images.mock';
@@ -97,7 +101,10 @@ describe('ArticleViewerPageComponent', () => {
       providers: [
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: RoutingService, useValue: { fragment$: of(null) } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideMarkdown(),
+        provideMockActions(() => EMPTY),
         {
           provide: DialogService,
           useValue: { open: vi.fn(() => closedDialogRef()) },
@@ -254,6 +261,16 @@ describe('ArticleViewerPageComponent', () => {
 
         expect(query(fixture.debugElement, 'lcc-article')).toBeTruthy();
         expect(query(fixture.debugElement, 'lcc-link-list')).toBeTruthy();
+      });
+
+      it("should show the article's reactions", () => {
+        fixture.detectChanges();
+
+        const reactions = query(fixture.debugElement, 'lcc-article-reactions');
+
+        expect(reactions.injector.get(ArticleReactionsComponent).articleId()).toBe(
+          mockArticle.id,
+        );
       });
     });
 

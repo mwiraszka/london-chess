@@ -1,0 +1,107 @@
+@if (status() === 'failed' && !groups().length) {
+  <lcc-load-failed
+    title="Unable to load reactions"
+    (retry)="load(articleId())" />
+} @else {
+  <div class="reactions">
+    @for (reaction of reactions(); track reaction.emoji) {
+      <ng-template #reactors>
+        <ul class="reactors">
+          @for (reactor of reaction.reactors; track reactor.number) {
+            <li class="reactor">
+              <span
+                class="reactor-emoji"
+                aria-hidden="true">
+                {{ reaction.emoji }}
+              </span>
+              <ea-avatar
+                size="xs"
+                alt=""
+                [initials]="reactor.initials"
+                [src]="reactor.avatarUrl" />
+              <span>{{ reactor.name }}</span>
+            </li>
+          }
+        </ul>
+      </ng-template>
+
+      <ng-template #content>
+        <span
+          class="emoji"
+          aria-hidden="true">
+          {{ reaction.emoji }}
+        </span>
+        @if (reaction.count > 1) {
+          <span
+            class="count"
+            aria-hidden="true">
+            {{ reaction.count }}
+          </span>
+        }
+      </ng-template>
+
+      @if (canReact()) {
+        <button
+          class="reaction"
+          type="button"
+          [attr.aria-label]="reaction.label"
+          [attr.aria-pressed]="reaction.isOwn"
+          [class.reaction--own]="reaction.isOwn"
+          [eaTooltip]="reactors"
+          [maxWidth]="undefined"
+          (click)="onToggle(reaction.emoji)">
+          <ng-container [ngTemplateOutlet]="content" />
+        </button>
+      } @else {
+        <span
+          class="reaction"
+          role="img"
+          tabindex="0"
+          [attr.aria-label]="reaction.label"
+          [eaTooltip]="reactors"
+          [maxWidth]="undefined">
+          <ng-container [ngTemplateOutlet]="content" />
+        </span>
+      }
+    }
+
+    @if (canReact()) {
+      <ea-button
+        #pickerTrigger
+        eaTooltip="Add a reaction"
+        size="xs"
+        variant="ghost"
+        [aria-controls]="pickerId"
+        [aria-expanded]="isPickerOpen()"
+        [aria-label]="'Add a reaction'"
+        [icon]="smileIcon"
+        (clicked)="isPickerOpen.set(!isPickerOpen())" />
+      <ea-popover
+        aria-label="Reactions"
+        placement="bottom-start"
+        [anchor]="pickerAnchor()"
+        [closeOnEscape]="true"
+        [closeOnOutsideClick]="true"
+        [open]="isPickerOpen()"
+        [surfaceId]="pickerId"
+        (closeRequested)="isPickerOpen.set(false)">
+        @if (isPickerOpen()) {
+          <div class="picker">
+            @for (option of emojis; track option.emoji) {
+              @let isOwn = ownEmojis().has(option.emoji);
+              <button
+                class="picker-emoji"
+                type="button"
+                [attr.aria-label]="option.name"
+                [attr.aria-pressed]="isOwn"
+                [class.picker-emoji--own]="isOwn"
+                (click)="onPick(option.emoji)">
+                {{ option.emoji }}
+              </button>
+            }
+          </div>
+        }
+      </ea-popover>
+    }
+  </div>
+}

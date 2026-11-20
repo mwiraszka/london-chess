@@ -9,6 +9,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { ActivatedRoute } from '@angular/router';
 
 import { AdminMenuComponent } from '@app/components/admin-menu/admin-menu.component';
+import { ArticleReactionsComponent } from '@app/components/article-reactions/article-reactions.component';
 import { ArticleSkeletonComponent } from '@app/components/article-skeleton/article-skeleton.component';
 import { ArticleComponent } from '@app/components/article/article.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
@@ -39,6 +40,7 @@ import { ImagesSelectors } from '@app/store/images';
           [article]="article"
           [bannerImage]="vm.bannerImage"
           [bodyImages]="vm.bodyImages">
+          <lcc-article-reactions [articleId]="article.id" />
         </lcc-article>
         <lcc-link-list [links]="[articlesPageLink]"></lcc-link-list>
       } @else if (vm.status === 'failed') {
@@ -54,6 +56,7 @@ import { ImagesSelectors } from '@app/store/images';
   imports: [
     AdminMenuComponent,
     ArticleComponent,
+    ArticleReactionsComponent,
     ArticleSkeletonComponent,
     CommonModule,
     ContextMenuTriggerDirective,

@@ -41,6 +41,7 @@ describe('ApiService', () => {
   it.each([
     ['post', (body: unknown) => service.post('/users/me/password', body), 'POST'],
     ['patch', (body: unknown) => service.patch('/users/me', body), 'PATCH'],
+    ['put', (body: unknown) => service.put('/articles/1/reactions/1', body), 'PUT'],
   ])('should %s the body as it is given', async (_, send, method) => {
     const body = { showYearOfBirth: true };
     const form = new FormData();

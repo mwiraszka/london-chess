@@ -8,6 +8,7 @@ export type {
   AdminLinkAction,
 } from './admin-action.model';
 export type { ApiScope, ApiResponse, PaginatedItems } from './api.model';
+export type { ReactionEmojiOption, ReactionGroup } from './article-reaction.model';
 export type { Article, ArticleFormData, ArticleFormGroup } from './article.model';
 export type {
   AuthMode,
