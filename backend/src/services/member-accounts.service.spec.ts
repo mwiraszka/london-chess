@@ -1,6 +1,7 @@
 import { ClerkAPIResponseError } from '@clerk/backend/errors';
 import { Types } from 'mongoose';
 
+import { ArticleReactionModel } from '../models/article-reaction.model';
 import { MemberModel } from '../models/member.model';
 import { clerkClient } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
@@ -306,6 +307,29 @@ describe('member accounts', () => {
       await unlinkClerkUser(new Types.ObjectId().toString());
 
       expect((await readMember(other._id)).account).not.toBeNull();
+    });
+
+    it("should delete the member's article reactions and keep everyone else's", async () => {
+      const member = await createAccountHolder();
+      const other = await createAccountHolder(
+        { clerkUserId: 'user_other' },
+        { number: 2 },
+      );
+      const articleId = new Types.ObjectId().toString();
+      for (const { _id } of [member, other]) {
+        await ArticleReactionModel.create({
+          articleId,
+          memberId: _id.toString(),
+          emoji: '👍',
+          reactedAt: NOW.toISOString(),
+        });
+      }
+
+      await unlinkClerkUser(USER);
+
+      expect(await ArticleReactionModel.find().lean()).toMatchObject([
+        { memberId: other._id.toString() },
+      ]);
     });
   });
 });
