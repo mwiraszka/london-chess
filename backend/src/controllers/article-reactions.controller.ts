@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { ApiResponse } from '../models/api-response.model';
 import {
   ArticleReactionModel,
+  MAX_REACTIONS_PER_MEMBER,
   ReactionEmoji,
   ReactionGroup,
   isReactionEmoji,
@@ -49,6 +50,16 @@ export async function addArticleReaction(
   res: Response<ApiResponse<ReactionGroup[]>>,
 ): Promise<void> {
   await changeOwnReaction(req, res, async reaction => {
+    const others = {
+      articleId: reaction.articleId,
+      memberId: reaction.memberId,
+      emoji: { $ne: reaction.emoji },
+    };
+    // At the limit, one of the member's other emojis makes way for the new one
+    if ((await ArticleReactionModel.countDocuments(others)) >= MAX_REACTIONS_PER_MEMBER) {
+      await ArticleReactionModel.deleteOne(others);
+    }
+
     await ArticleReactionModel.updateOne(
       reaction,
       { $setOnInsert: { reactedAt: new Date().toISOString() } },

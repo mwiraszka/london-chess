@@ -108,6 +108,9 @@ export const REACTION_EMOJIS = [
 
 export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
+// The most emojis one member keeps on one article, any further one replacing one of them
+export const MAX_REACTIONS_PER_MEMBER = 3;
+
 export function isReactionEmoji(value: string): value is ReactionEmoji {
   return (REACTION_EMOJIS as readonly string[]).includes(value);
 }

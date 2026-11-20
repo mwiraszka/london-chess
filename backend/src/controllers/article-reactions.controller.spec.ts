@@ -173,6 +173,57 @@ describe('article reactions routes', () => {
       ]);
     });
 
+    it('should make room for a fourth emoji by taking back one of the other three', async () => {
+      const articleId = await createArticle();
+      const member = await createReactor(7, MEMBER);
+      for (const emoji of ['👍', '🎉', '❤️'] as const) {
+        await react(articleId, member._id, emoji, '2026-11-01T10:00:00.000Z');
+      }
+
+      const response = await request(app)
+        .put(reactionPath(articleId, '🔥'))
+        .set('Authorization', bearer(MEMBER));
+
+      expect(response.status).toBe(200);
+      const kept = (await ArticleReactionModel.find().lean()).map(({ emoji }) => emoji);
+      expect(kept).toHaveLength(3);
+      expect(kept).toContain('🔥');
+      expect(kept.filter(emoji => ['👍', '🎉', '❤️'].includes(emoji))).toHaveLength(2);
+    });
+
+    it('should keep all three when the member gives one of them again', async () => {
+      const articleId = await createArticle();
+      const member = await createReactor(7, MEMBER);
+      for (const emoji of ['👍', '🎉', '❤️'] as const) {
+        await react(articleId, member._id, emoji, '2026-11-01T10:00:00.000Z');
+      }
+
+      const response = await request(app)
+        .put(reactionPath(articleId, '🎉'))
+        .set('Authorization', bearer(MEMBER));
+
+      expect(response.status).toBe(200);
+      expect(await ArticleReactionModel.countDocuments()).toBe(3);
+    });
+
+    it('should count the limit for each article on its own', async () => {
+      const articleId = await createArticle();
+      const otherArticleId = await createArticle();
+      const member = await createReactor(7, MEMBER);
+      for (const emoji of ['👍', '🎉', '❤️'] as const) {
+        await react(otherArticleId, member._id, emoji, '2026-11-01T10:00:00.000Z');
+      }
+
+      const response = await request(app)
+        .put(reactionPath(articleId, '🔥'))
+        .set('Authorization', bearer(MEMBER));
+
+      expect(response.body.data).toEqual([{ emoji: '🔥', memberNumbers: [7] }]);
+      expect(
+        await ArticleReactionModel.countDocuments({ articleId: otherArticleId }),
+      ).toBe(3);
+    });
+
     it('should reject an emoji that is not on offer', async () => {
       const articleId = await createArticle();
       await createReactor(7, MEMBER);
