@@ -1,5 +1,6 @@
 import { provideMarkdown } from 'ngx-markdown';
 
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -9,6 +10,20 @@ import { ApiService } from '@app/services';
 import { query, queryTextContent } from '@app/utils';
 
 import { ArticleComponent } from './article.component';
+
+@Component({
+  template: `
+    <lcc-article
+      [article]="article"
+      [bannerImage]="null">
+      <p class="projected">Reactions</p>
+    </lcc-article>
+  `,
+  imports: [ArticleComponent],
+})
+class HostComponent {
+  protected readonly article = MOCK_ARTICLES[2];
+}
 
 describe('ArticleComponent', () => {
   let fixture: ComponentFixture<ArticleComponent>;
@@ -132,5 +147,30 @@ describe('ArticleComponent', () => {
     ).componentInstance;
     expect(renderer.data()).toBe(MOCK_ARTICLES[2].body);
     expect(renderer.images()).toEqual([MOCK_IMAGES[1]]);
+  });
+
+  it('should show what it is given between the byline and the body', () => {
+    const hostFixture = TestBed.createComponent(HostComponent);
+    hostFixture.detectChanges();
+
+    const projected: HTMLElement = query(
+      hostFixture.debugElement,
+      '.projected',
+    ).nativeElement;
+    const byline: HTMLElement = query(
+      hostFixture.debugElement,
+      '.modification-info-container',
+    ).nativeElement;
+    const body: HTMLElement = query(
+      hostFixture.debugElement,
+      '.markdown-container',
+    ).nativeElement;
+
+    expect(byline.compareDocumentPosition(projected)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(body.compareDocumentPosition(projected)).toBe(
+      Node.DOCUMENT_POSITION_PRECEDING,
+    );
   });
 });

@@ -1,0 +1,148 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+:host {
+  display: block;
+  padding: 0 4px 8px;
+
+  @include respond-to('gt-sm') {
+    padding: 0 8px 8px;
+  }
+
+  @include respond-to('gt-md') {
+    padding: 0 16px 8px;
+  }
+}
+
+:host([hidden]) {
+  display: none;
+}
+
+// Wide enough for a two-digit count to sit between neighbours
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.reaction {
+  position: relative;
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-primary);
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+}
+
+button.reaction {
+  cursor: pointer;
+
+  &:hover .emoji {
+    transform: scale(1.15);
+  }
+}
+
+.emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 17px;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.reaction--own .emoji {
+  border-color: var(--lcc-reaction-own-ring);
+  background-color: var(--lcc-reaction-own);
+}
+
+// A raised bare number with no shape of its own, kept out of the layout so a count
+// coming or going never moves the emojis around it
+.count {
+  position: absolute;
+  top: -4px;
+  left: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.reaction--own .count {
+  color: var(--color-text-primary);
+}
+
+.reactors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.reactor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reactor-emoji {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.picker {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(8, 36px);
+  max-height: min(360px, 50dvh);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  box-shadow: 2px 2px 4px 0 var(--lcc-shadow-soft);
+  background-color: var(--lcc-surface);
+
+  @include respond-to('gt-sm') {
+    grid-template-columns: repeat(10, 36px);
+  }
+}
+
+.picker-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    background-color: var(--color-state-hover);
+    transform: scale(1.15);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: -2px;
+  }
+}
+
+.picker-emoji--own {
+  background-color: var(--lcc-reaction-own);
+}

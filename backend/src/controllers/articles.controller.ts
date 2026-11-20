@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 
 import { ApiPaginatedResponse, ApiResponse } from '../models/api-response.model';
+import { ArticleReactionModel } from '../models/article-reaction.model';
 import {
   Article,
   ArticleModel,
@@ -153,6 +154,7 @@ export async function deleteArticle(
       return;
     }
 
+    await ArticleReactionModel.deleteMany({ articleId: id });
     res.status(200).json({ data: id });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });

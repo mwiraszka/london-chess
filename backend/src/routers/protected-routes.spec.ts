@@ -58,6 +58,8 @@ const MEMBER_ROUTES: [Method, string][] = [
   ['delete', '/v1/users/me/avatar'],
   ['post', '/v1/tournaments/1/registration'],
   ['delete', '/v1/tournaments/1/registration'],
+  ['put', `/v1/articles/${ID}/reactions/${encodeURIComponent('👍')}`],
+  ['delete', `/v1/articles/${ID}/reactions/${encodeURIComponent('👍')}`],
 ];
 
 describe('protected routes', () => {

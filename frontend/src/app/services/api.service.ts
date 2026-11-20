@@ -44,6 +44,10 @@ export class ApiService {
     return this.request<T>('PATCH', path, body, options);
   }
 
+  put<T>(path: string, body: unknown, options?: ApiRequestOptions): Promise<T> {
+    return this.request<T>('PUT', path, body, options);
+  }
+
   delete<T>(path: string): Promise<T> {
     return this.request<T>('DELETE', path);
   }

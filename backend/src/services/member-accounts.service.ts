@@ -2,6 +2,7 @@ import { type User } from '@clerk/backend';
 import { isClerkAPIResponseError } from '@clerk/backend/errors';
 import { Types } from 'mongoose';
 
+import { ArticleReactionModel } from '../models/article-reaction.model';
 import { MemberModel, MemberRecord, newMemberAccount } from '../models/member.model';
 import { LinkedMemberRecord } from '../util/member-responses.util';
 import { Editor } from '../util/modification-info.util';
@@ -232,8 +233,13 @@ export async function unlinkClerkUser(clerkUserId: string): Promise<void> {
     // avatar may not exist in R2
   }
 
-  await MemberModel.updateOne(
+  const member = await MemberModel.findOneAndUpdate(
     { 'account.clerkUserId': clerkUserId },
     { $set: { account: null } },
-  );
+    { projection: { _id: 1 } },
+  ).lean<Pick<MemberRecord, '_id'>>();
+
+  if (member) {
+    await ArticleReactionModel.deleteMany({ memberId: member._id.toString() });
+  }
 }
