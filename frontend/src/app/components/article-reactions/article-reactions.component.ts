@@ -3,7 +3,6 @@ import {
   ButtonComponent,
   PopoverComponent,
   SmileIconComponent,
-  ToastService,
   TooltipDirective,
 } from '@eagami/ui';
 import { Actions, ofType } from '@ngrx/effects';
@@ -27,12 +26,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
 import { REACTION_EMOJIS } from '@app/constants/reactions';
 import { Id, LoadStatus, ReactionGroup } from '@app/models';
-import { ApiError, ApiService } from '@app/services/api.service';
+import { ApiService } from '@app/services/api.service';
 import { MemberProfilesService } from '@app/services/member-profiles.service';
 import { refreshAppRequested } from '@app/store/app/app.actions';
 import { AuthSelectors } from '@app/store/auth';
 import { getInitials } from '@app/utils';
-import { asSentence } from '@app/utils/sentence.util';
 
 /**
  * The emojis members have given an article, most given first, each listing on hover who
@@ -62,7 +60,6 @@ export class ArticleReactionsComponent {
   private readonly api = inject(ApiService);
   private readonly memberProfiles = inject(MemberProfilesService);
   private readonly store = inject(Store);
-  private readonly toast = inject(ToastService);
 
   protected readonly emojis = REACTION_EMOJIS;
   protected readonly pickerId = 'reaction-picker';
@@ -173,13 +170,6 @@ export class ArticleReactionsComponent {
       if (articleId === this.articleId()) {
         this.groups.set(groups);
       }
-    } catch (e: unknown) {
-      this.toast.show(
-        e instanceof ApiError
-          ? asSentence(e.message)
-          : 'Unable to save your reaction. Please try again.',
-        { title: 'Reaction not saved', variant: 'error' },
-      );
     } finally {
       this.isSaving.set(false);
     }

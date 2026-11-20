@@ -1,4 +1,4 @@
-import { PopoverComponent, ToastService, TooltipDirective } from '@eagami/ui';
+import { PopoverComponent, TooltipDirective } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -66,7 +66,6 @@ describe('ArticleReactionsComponent', () => {
   let store: MockStore;
   let api: ApiMock;
   let actions$: Subject<Action>;
-  let toastSpy: Mock;
   let groups: ReactionGroup[];
 
   const reactionElements = () => queryAll(fixture.debugElement, '.reaction');
@@ -121,7 +120,6 @@ describe('ArticleReactionsComponent', () => {
       delete: vi.fn<(path: string) => Promise<ReactionGroup[]>>(),
     };
     actions$ = new Subject<Action>();
-    toastSpy = vi.fn();
 
     await TestBed.configureTestingModule({
       imports: [HostComponent],
@@ -129,7 +127,6 @@ describe('ArticleReactionsComponent', () => {
         provideMockActions(() => actions$),
         provideMockStore({ initialState: { authState: { user: null } } }),
         { provide: ApiService, useValue: api },
-        { provide: ToastService, useValue: { show: toastSpy } },
       ],
     }).compileComponents();
 
@@ -252,18 +249,6 @@ describe('ArticleReactionsComponent', () => {
       );
       expect(popover().open()).toBe(false);
       expect(reactionTexts()).toEqual([['👍', '2'], ['🎉'], ['♟️']]);
-    });
-
-    it('should explain why a reaction could not be saved', async () => {
-      api.put.mockRejectedValue(new ApiError('Articles cannot be given this emoji', 400));
-
-      reactionElements()[1].nativeElement.click();
-      await settle();
-
-      expect(toastSpy).toHaveBeenCalledWith('Articles cannot be given this emoji.', {
-        title: 'Reaction not saved',
-        variant: 'error',
-      });
     });
   });
 
