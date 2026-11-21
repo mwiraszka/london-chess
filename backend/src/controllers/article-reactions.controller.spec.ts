@@ -57,8 +57,8 @@ const reactionPath = (articleId: string, emoji: string) =>
 describe('article reactions routes', () => {
   useTestDatabase();
 
-  it('should offer one hundred different emojis', () => {
-    expect(new Set(REACTION_EMOJIS).size).toBe(100);
+  it('should offer fifty different emojis', () => {
+    expect(new Set(REACTION_EMOJIS).size).toBe(50);
   });
 
   describe('GET /v1/articles/:id/reactions', () => {

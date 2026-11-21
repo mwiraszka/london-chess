@@ -105,25 +105,23 @@ button.reaction {
 .picker {
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(8, 36px);
+  grid-template-columns: repeat(10, minmax(0, 36px));
+  // Ten 36px columns, shrunk on a narrow screen to keep the popover 8px from its edges
+  width: min(376px, 100vw - 16px);
   max-height: min(360px, 50dvh);
   padding: 8px;
   border-radius: var(--radius-sm);
   box-shadow: 2px 2px 4px 0 var(--lcc-shadow-soft);
   background-color: var(--lcc-surface);
-
-  @include respond-to('gt-sm') {
-    grid-template-columns: repeat(10, 36px);
-  }
 }
 
 .picker-emoji {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 100%;
   padding: 0;
+  aspect-ratio: 1;
   font-size: 22px;
   line-height: 1;
   border: 0;
