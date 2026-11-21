@@ -229,7 +229,7 @@ describe('ArticleReactionsComponent', () => {
       fixture.detectChanges();
 
       expect(popover().open()).toBe(true);
-      expect(queryAll(fixture.debugElement, '.picker-emoji')).toHaveLength(100);
+      expect(queryAll(fixture.debugElement, '.picker-emoji')).toHaveLength(50);
     });
 
     it('should add the emoji picked and close the picker', async () => {
