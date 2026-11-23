@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Bring pages left open up to the latest version of the site when you come back to them
 - Update third-party packages
 
 ### Fixed
