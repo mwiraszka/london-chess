@@ -1,4 +1,6 @@
-import { initialEventFormData } from '@app/constants';
+import { pick } from 'lodash-es';
+
+import { EVENT_FORM_DATA_PROPERTIES, initialEventFormData } from '@app/constants';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
 import { LccError } from '@app/models';
 
@@ -262,7 +264,7 @@ describe('Events Reducer', () => {
     it('should add new event to state', () => {
       const action = EventsActions.addEventSucceeded({
         event: MOCK_EVENTS[0],
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       const state = eventsReducer(initialState, action);
 
@@ -283,7 +285,7 @@ describe('Events Reducer', () => {
 
       const action = EventsActions.addEventSucceeded({
         event: MOCK_EVENTS[0],
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -311,7 +313,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.updateEventSucceeded({
         event: updatedEvent,
         originalEventTitle: 'Summer Blitz Tournament',
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -337,7 +339,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.updateEventSucceeded({
         event: updatedEvent,
         originalEventTitle: 'Old Title',
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -364,7 +366,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.deleteEventSucceeded({
         eventId: MOCK_EVENTS[0].id,
         eventTitle: MOCK_EVENTS[0].title,
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       const state = eventsReducer(previousState, action);
 
@@ -382,7 +384,7 @@ describe('Events Reducer', () => {
       const action = EventsActions.deleteEventSucceeded({
         eventId: MOCK_EVENTS[0].id,
         eventTitle: MOCK_EVENTS[0].title,
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
 
       const state = eventsReducer(previousState, action);
@@ -390,6 +392,40 @@ describe('Events Reducer', () => {
       expect(state.homePageEvents).toEqual([MOCK_EVENTS[1]]);
       expect(state.filteredEvents).toEqual([]);
       expect(state.lastHomePageFetch).toBe('2025-01-01T00:00:00.000Z');
+    });
+  });
+
+  describe('scheduleChangesSucceeded', () => {
+    it('should keep the events added and changed, and drop those removed', () => {
+      const previousState: EventsState = {
+        ...eventsAdapter.upsertMany(
+          [MOCK_EVENTS[0], MOCK_EVENTS[1]].map(event => ({
+            event,
+            formData: pick(event, EVENT_FORM_DATA_PROPERTIES),
+          })),
+          initialState,
+        ),
+        homePageEvents: [MOCK_EVENTS[0], MOCK_EVENTS[1]],
+        filteredEvents: [MOCK_EVENTS[1]],
+      };
+      const added = { ...MOCK_EVENTS[2], id: 'added-id' };
+      const updated = { ...MOCK_EVENTS[0], title: 'Renamed' };
+
+      const state = eventsReducer(
+        previousState,
+        EventsActions.scheduleChangesSucceeded({
+          added: [added],
+          updated: [updated],
+          removedIds: [MOCK_EVENTS[1].id],
+          unnotifiedMembers: [],
+        }),
+      );
+
+      expect(state.entities['added-id']?.event).toEqual(added);
+      expect(state.entities[MOCK_EVENTS[0].id]?.formData.title).toBe('Renamed');
+      expect(state.entities[MOCK_EVENTS[1].id]).toBeUndefined();
+      expect(state.homePageEvents).toEqual([MOCK_EVENTS[0]]);
+      expect(state.filteredEvents).toEqual([]);
     });
   });
 

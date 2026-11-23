@@ -12,6 +12,8 @@ import {
   EventSaveResult,
   Id,
   PaginatedItems,
+  ScheduleChanges,
+  ScheduleChangesResult,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
 
@@ -69,6 +71,16 @@ export class EventsApiService {
       `${this.API_BASE_URL}/${this.COLLECTION}/${id}`,
     );
   }
+
+  public changeEvents(
+    changes: ScheduleChanges,
+  ): Observable<ApiResponse<ScheduleChangesResult>> {
+    return this.http.patch<ApiResponse<ScheduleChangesResult>>(
+      `${this.API_BASE_URL}/${this.COLLECTION}`,
+      changes,
+    );
+  }
+
   // Asked for once a visit, as the widest values change only as rarely as the records do
   private readonly widest$ = this.http
     .get<ApiResponse<Event[]>>(`${this.API_BASE_URL}/${this.COLLECTION}/widest`)

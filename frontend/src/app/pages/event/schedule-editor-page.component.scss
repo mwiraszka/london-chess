@@ -1,0 +1,100 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+.schedule-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+}
+
+.schedule-editor__status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+// The add button keeps to the top right, above the events, with the note beside it
+.schedule-editor__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  @include respond-to('lt-sm') {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.schedule-editor__add {
+  flex-shrink: 0;
+
+  @include respond-to('lt-sm') {
+    align-self: flex-end;
+  }
+}
+
+.schedule-editor__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.schedule-editor__title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.schedule-editor__title--changed {
+  @include lcc-unsaved-marker;
+}
+
+.schedule-editor__title--removed {
+  text-decoration: line-through;
+}
+
+// Sits on the header's text line like the title and tag it stands in for
+.schedule-editor__placeholder {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.schedule-editor__invalid-icon {
+  @include icon-size(16px);
+
+  color: var(--color-error-text);
+}
+
+.schedule-editor__event {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// The date, time and type share a row, with the title, article and details below
+.schedule-editor__fields {
+  display: grid;
+  gap: 8px 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include respond-to('lt-sm') {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.schedule-editor__title-field {
+  grid-column: span 2;
+
+  @include respond-to('lt-sm') {
+    grid-column: auto;
+  }
+}
+
+.schedule-editor__details-field {
+  grid-column: 1 / -1;
+}
+
+.schedule-editor__remove {
+  align-self: flex-end;
+}

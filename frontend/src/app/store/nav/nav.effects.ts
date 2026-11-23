@@ -232,7 +232,8 @@ export class NavEffects {
             return NavActions.navigationRequested({ path: 'articles' });
 
           case 'event':
-            if (controlMode === 'add' && !isDefined(id)) {
+            // Without an id, editing means the schedule editor, which loads its own events
+            if (['add', 'edit'].includes(controlMode) && !isDefined(id)) {
               return null;
             } else if (controlMode === 'edit' && isCollectionId(id)) {
               return EventsActions.fetchEventRequested({ eventId: id });

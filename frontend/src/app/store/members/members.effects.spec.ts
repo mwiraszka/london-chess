@@ -359,7 +359,7 @@ describe('MembersEffects', () => {
       actions$.next(
         MembersActions.updateMemberRatingsSucceeded({
           members: [MOCK_MEMBERS[0]],
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchFilteredMembers$);
@@ -764,7 +764,7 @@ describe('MembersEffects', () => {
       const mockUpdateResponse: ApiResponse<MemberRatingsUpdate> = {
         data: {
           updatedIds: [MOCK_MEMBERS[0].id, MOCK_MEMBERS[1].id],
-          unnotifiedMemberNames: ['Magnus Carlsen'],
+          unnotifiedMembers: [{ name: 'Magnus Carlsen', email: 'magnus@example.com' }],
         },
       };
 
@@ -782,7 +782,9 @@ describe('MembersEffects', () => {
       expect(payload.members).toHaveLength(2);
       expect(payload.members[0].rating).toBe('2900');
       expect(payload.members[1].rating).toBe('2800');
-      expect(payload.unnotifiedMemberNames).toEqual(['Magnus Carlsen']);
+      expect(payload.unnotifiedMembers).toEqual([
+        { name: 'Magnus Carlsen', email: 'magnus@example.com' },
+      ]);
       expect(membersApiService.updateMembers).toHaveBeenCalledWith([
         expect.objectContaining({ id: MOCK_MEMBERS[0].id, rating: '2900' }),
         expect.objectContaining({ id: MOCK_MEMBERS[1].id, rating: '2800' }),

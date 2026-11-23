@@ -1,0 +1,182 @@
+<lcc-page-header
+  heading="Edit the schedule"
+  [hasUnsavedChanges]="hasUnsavedChanges()"
+  [icon]="adminIcon">
+</lcc-page-header>
+
+<div class="schedule-editor">
+  <div class="schedule-editor__toolbar">
+    <p class="schedule-editor__status">
+      Change, remove and add upcoming events, then save them together. Members who get
+      schedule emails are sent one email listing every change.
+    </p>
+    <ea-button
+      class="schedule-editor__add"
+      size="sm"
+      [disabled]="status() !== 'loaded'"
+      [icon]="addIcon"
+      (clicked)="onAdd()">
+      Add an event
+    </ea-button>
+  </div>
+
+  @switch (status()) {
+    @case ('failed') {
+      <lcc-load-failed
+        title="Unable to load the schedule"
+        (retry)="load()" />
+    }
+    @case ('loading') {
+      <ea-accordion aria-busy="true">
+        @for (width of placeholderTitleWidths; track $index) {
+          <ea-accordion-item
+            [disabled]="true"
+            [value]="'placeholder-' + $index">
+            <span
+              slot="label"
+              class="schedule-editor__heading">
+              <span class="schedule-editor__title">
+                <ea-skeleton
+                  class="schedule-editor__placeholder"
+                  variant="text"
+                  height="1em"
+                  [width]="width" />
+              </span>
+              <ea-skeleton
+                class="schedule-editor__placeholder"
+                variant="rect"
+                width="9rem"
+                [height]="chipPlaceholderHeight" />
+            </span>
+          </ea-accordion-item>
+        }
+      </ea-accordion>
+    }
+    @default {
+      @if (panels().length) {
+        <ea-accordion
+          [highlightExpanded]="true"
+          [multi]="true"
+          [(expandedValues)]="expandedKeys">
+          @for (panel of panels(); track panel.row.key) {
+            <ea-accordion-item
+              [icon]="panel.state === 'new' ? addIcon : undefined"
+              [value]="panel.row.key">
+              <span
+                slot="label"
+                class="schedule-editor__heading">
+                <span
+                  class="schedule-editor__title"
+                  [class.schedule-editor__title--changed]="panel.state === 'changed'"
+                  [class.schedule-editor__title--removed]="panel.state === 'removed'">
+                  {{ panel.heading }}
+                </span>
+                <lcc-event-type-tag
+                  [struck]="panel.state === 'removed'"
+                  [type]="panel.type" />
+                @if (panel.invalid) {
+                  <ea-icon-alert-circle
+                    class="schedule-editor__invalid-icon"
+                    aria-hidden="true" />
+                }
+                @if (panel.note) {
+                  <span class="lcc-visually-hidden">{{ panel.note }}</span>
+                }
+              </span>
+
+              <div
+                class="schedule-editor__event"
+                [formGroup]="panel.row.form">
+                <div class="schedule-editor__fields">
+                  <ea-date-picker
+                    formControlName="eventDay"
+                    label="Date"
+                    [id]="panel.row.key + '-date'"
+                    [required]="true"
+                    [weekStartsOn]="weekStartsOn" />
+                  <ea-time-picker
+                    format="12h"
+                    formControlName="eventTime"
+                    label="Time"
+                    [id]="panel.row.key + '-time'"
+                    [minuteStep]="5"
+                    [required]="true" />
+                  <ea-dropdown
+                    formControlName="type"
+                    label="Type"
+                    [id]="panel.row.key + '-type'"
+                    [options]="eventTypeOptions"
+                    [required]="true" />
+                  <ea-input
+                    class="schedule-editor__title-field"
+                    formControlName="title"
+                    label="Title"
+                    [errorMessages]="errorMessages"
+                    [id]="panel.row.key + '-title'"
+                    [maxLength]="100"
+                    [required]="true" />
+                  <ea-input
+                    formControlName="articleId"
+                    label="Article ID"
+                    [errorMessages]="errorMessages"
+                    [id]="panel.row.key + '-article'"
+                    [maxLength]="24" />
+                  <ea-input
+                    class="schedule-editor__details-field"
+                    formControlName="details"
+                    label="Details"
+                    [errorMessages]="errorMessages"
+                    [id]="panel.row.key + '-details'"
+                    [maxLength]="200"
+                    [required]="true" />
+                </div>
+                <ea-button
+                  class="schedule-editor__remove"
+                  size="sm"
+                  [ariaLabel]="
+                    (panel.state === 'removed' ? 'Keep ' : 'Remove ') + panel.heading
+                  "
+                  [icon]="panel.state === 'removed' ? keepIcon : removeIcon"
+                  [variant]="panel.state === 'removed' ? 'secondary' : 'danger'"
+                  (clicked)="onRemoveToggled(panel.row)">
+                  {{ panel.state === 'removed' ? 'Keep' : 'Remove' }}
+                </ea-button>
+              </div>
+            </ea-accordion-item>
+          }
+        </ea-accordion>
+      } @else {
+        <p class="schedule-editor__status">No events are coming up.</p>
+      }
+    }
+  }
+
+  <div class="lcc-form-actions">
+    <p
+      class="schedule-editor__status schedule-editor__summary"
+      role="status">
+      {{ hasUnsavedChanges() ? summary() + '.' : '' }}
+    </p>
+    <div class="lcc-form-actions__primary">
+      <ea-button
+        size="sm"
+        variant="secondary"
+        [fullWidth]="true"
+        [uppercase]="true"
+        (clicked)="onCancel()">
+        Cancel
+      </ea-button>
+      <ea-button
+        size="sm"
+        [disabled]="!hasUnsavedChanges() || isInvalid() || saving()"
+        [fullWidth]="true"
+        [loading]="saving()"
+        [uppercase]="true"
+        (clicked)="onSave()">
+        Save changes
+      </ea-button>
+    </div>
+  </div>
+</div>
+
+<lcc-link-list [links]="[schedulePageLink]"></lcc-link-list>

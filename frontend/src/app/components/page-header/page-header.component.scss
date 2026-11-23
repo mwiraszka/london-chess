@@ -27,12 +27,7 @@
     color: var(--color-text-primary);
 
     &.end-with-asterisk {
-      font-style: italic;
-
-      &:after {
-        color: var(--color-text-secondary);
-        content: ' *';
-      }
+      @include lcc-unsaved-marker;
     }
   }
 }

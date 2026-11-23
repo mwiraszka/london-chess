@@ -14,6 +14,7 @@ import {
   EventSaveResult,
   LccError,
   PaginatedItems,
+  ScheduleChangesResult,
   User,
 } from '@app/models';
 import { EventsApiService } from '@app/services';
@@ -65,6 +66,7 @@ describe('EventsEffects', () => {
       addEvent: vi.fn(),
       updateEvent: vi.fn(),
       deleteEvent: vi.fn(),
+      changeEvents: vi.fn(),
     };
 
     const mockEventsState = {
@@ -249,7 +251,7 @@ describe('EventsEffects', () => {
       actions$.next(
         EventsActions.addEventSucceeded({
           event: MOCK_EVENTS[0],
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchHomePageEvents$);
@@ -262,7 +264,7 @@ describe('EventsEffects', () => {
         EventsActions.updateEventSucceeded({
           event: MOCK_EVENTS[0],
           originalEventTitle: 'Old Title',
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchHomePageEvents$);
@@ -275,7 +277,7 @@ describe('EventsEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: MOCK_EVENTS[0].id,
           eventTitle: MOCK_EVENTS[0].title,
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchHomePageEvents$);
@@ -333,7 +335,7 @@ describe('EventsEffects', () => {
       actions$.next(
         EventsActions.addEventSucceeded({
           event: MOCK_EVENTS[0],
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchFilteredEvents$);
@@ -346,7 +348,7 @@ describe('EventsEffects', () => {
         EventsActions.updateEventSucceeded({
           event: MOCK_EVENTS[0],
           originalEventTitle: 'Old Title',
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchFilteredEvents$);
@@ -359,7 +361,7 @@ describe('EventsEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: MOCK_EVENTS[0].id,
           eventTitle: MOCK_EVENTS[0].title,
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.refetchFilteredEvents$);
@@ -477,7 +479,7 @@ describe('EventsEffects', () => {
 
     it('should add event successfully', async () => {
       const mockAddResponse: ApiResponse<EventSaveResult> = {
-        data: { id: 'new-event-id', unnotifiedMemberNames: [] },
+        data: { id: 'new-event-id', unnotifiedMembers: [] },
       };
 
       eventsApiService.addEvent.mockReturnValue(of(mockAddResponse));
@@ -514,7 +516,7 @@ describe('EventsEffects', () => {
     it('should update event successfully', async () => {
       const eventId = MOCK_EVENTS[0].id;
       const mockUpdateResponse: ApiResponse<EventSaveResult> = {
-        data: { id: eventId, unnotifiedMemberNames: [] },
+        data: { id: eventId, unnotifiedMembers: [] },
       };
 
       eventsApiService.updateEvent.mockReturnValue(of(mockUpdateResponse));
@@ -546,7 +548,7 @@ describe('EventsEffects', () => {
   describe('deleteEvent$', () => {
     it('should delete event successfully', async () => {
       const mockDeleteResponse: ApiResponse<EventSaveResult> = {
-        data: { id: MOCK_EVENTS[0].id, unnotifiedMemberNames: [] },
+        data: { id: MOCK_EVENTS[0].id, unnotifiedMembers: [] },
       };
       eventsApiService.deleteEvent.mockReturnValue(of(mockDeleteResponse));
 
@@ -557,7 +559,7 @@ describe('EventsEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: MOCK_EVENTS[0].id,
           eventTitle: MOCK_EVENTS[0].title,
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       expect(eventsApiService.deleteEvent).toHaveBeenCalledWith(MOCK_EVENTS[0].id);
@@ -571,6 +573,77 @@ describe('EventsEffects', () => {
       const action = await firstValueFrom(effects.deleteEvent$);
 
       expect(action).toEqual(EventsActions.deleteEventFailed({ error: mockError }));
+    });
+  });
+
+  describe('changeSchedule$', () => {
+    beforeEach(() => {
+      store.overrideSelector(AuthSelectors.selectUser, mockUser);
+      store.refreshState();
+    });
+
+    it('should save every change together, crediting the admin', async () => {
+      const response: ApiResponse<ScheduleChangesResult> = {
+        data: {
+          addedIds: ['added-id'],
+          unnotifiedMembers: [{ name: 'Jane Doe', email: 'jane@example.com' }],
+        },
+      };
+      eventsApiService.changeEvents.mockReturnValue(of(response));
+      const updated = { ...MOCK_EVENTS[0], title: 'Renamed' };
+
+      actions$.next(
+        EventsActions.scheduleChangesRequested({
+          added: [{ ...initialEventFormData(), title: 'Rapid' }],
+          updated: [updated],
+          removed: [MOCK_EVENTS[1]],
+        }),
+      );
+      const action = await firstValueFrom(effects.changeSchedule$);
+
+      expect(eventsApiService.changeEvents).toHaveBeenCalledWith({
+        added: [
+          expect.objectContaining({
+            id: '',
+            title: 'Rapid',
+            modificationInfo: expect.objectContaining({ createdBy: 'Test User' }),
+          }),
+        ],
+        updated: [
+          expect.objectContaining({
+            id: updated.id,
+            modificationInfo: expect.objectContaining({
+              createdBy: MOCK_EVENTS[0].modificationInfo.createdBy,
+              lastEditedBy: 'Test User',
+            }),
+          }),
+        ],
+        removed: [MOCK_EVENTS[1].id],
+      });
+      expect(action).toEqual(
+        EventsActions.scheduleChangesSucceeded({
+          added: [expect.objectContaining({ id: 'added-id', title: 'Rapid' })],
+          updated: [expect.objectContaining({ id: updated.id, title: 'Renamed' })],
+          removedIds: [MOCK_EVENTS[1].id],
+          unnotifiedMembers: [{ name: 'Jane Doe', email: 'jane@example.com' }],
+        }),
+      );
+    });
+
+    it('should report changes that could not be saved', async () => {
+      eventsApiService.changeEvents.mockReturnValue(throwError(() => mockError));
+      mockParseError.mockReturnValue(mockError);
+
+      actions$.next(
+        EventsActions.scheduleChangesRequested({
+          added: [],
+          updated: [],
+          removed: [MOCK_EVENTS[1]],
+        }),
+      );
+      const action = await firstValueFrom(effects.changeSchedule$);
+
+      expect(action).toEqual(EventsActions.scheduleChangesFailed({ error: mockError }));
     });
   });
 

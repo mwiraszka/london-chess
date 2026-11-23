@@ -480,7 +480,7 @@ describe('Members Reducer', () => {
 
       const action = MembersActions.updateMemberRatingsSucceeded({
         members: [updatedMember1, updatedMember2],
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       const state = membersReducer(previousState, action);
 
@@ -496,7 +496,7 @@ describe('Members Reducer', () => {
       };
       const action = MembersActions.updateMemberRatingsSucceeded({
         members: [updatedMember],
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
 
       const state = membersReducer(previousState, action);

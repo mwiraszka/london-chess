@@ -44,6 +44,17 @@ describe('EventTypeTagComponent', () => {
     expect(query(fixture.debugElement, '.championship-icon')).toBeTruthy();
   });
 
+  it('should cross out its text only when asked', () => {
+    render('lecture');
+    const plain = query(fixture.debugElement, '.event-type--struck');
+
+    fixture.componentRef.setInput('struck', true);
+    fixture.detectChanges();
+
+    expect(plain).toBeFalsy();
+    expect(query(fixture.debugElement, '.event-type--struck')).toBeTruthy();
+  });
+
   it('should highlight what was searched for', () => {
     render('championship', 'champ');
 

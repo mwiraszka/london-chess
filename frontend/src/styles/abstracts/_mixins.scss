@@ -54,6 +54,16 @@ $breakpoints: (
   }
 }
 
+// Text whose changes are not saved yet: italic, followed by an asterisk
+@mixin lcc-unsaved-marker {
+  font-style: italic;
+
+  &::after {
+    color: var(--color-text-secondary);
+    content: ' *';
+  }
+}
+
 // The underline a link shows on hover, for links coloured like their surroundings
 @mixin lcc-link-underline {
   text-decoration: underline;

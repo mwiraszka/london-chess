@@ -7,7 +7,7 @@ import { Id } from '../models/core.model';
 import { CounterModel } from '../models/counter.model';
 import { MemberModel, MemberRecord } from '../models/member.model';
 import { PlayerModel } from '../models/player.model';
-import { sendEmail } from '../services/email.service';
+import { OutgoingEmail, sendEmail, sendEmails } from '../services/email.service';
 import { refreshExternalRatings } from '../services/external-ratings.service';
 import { bearer, clerkClient } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
@@ -27,6 +27,7 @@ vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/email.service', () => ({
   sendEmail: vi.fn(),
+  sendEmails: vi.fn(async (emails: OutgoingEmail[]) => emails.map(() => true)),
   sendAdminEmail: vi.fn(),
 }));
 vi.mock('../services/external-ratings.service', async importOriginal => ({
@@ -944,17 +945,24 @@ describe('members routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual({
         updatedIds: [holder._id.toString(), other._id.toString()],
-        unnotifiedMemberNames: [],
+        unnotifiedMembers: [],
       });
       expect((await readMember(other._id)).rating).toBe('1300');
       expect((await readMember(other._id)).modificationInfo).toMatchObject({
         createdBy: MODIFICATION_INFO.createdBy,
         lastEditedBy: 'Ada Admin',
       });
-      expect(sendEmail).toHaveBeenCalledOnce();
-      expect(sendEmail).toHaveBeenCalledWith(
-        'jane@example.com',
-        expect.objectContaining({ subject: 'Your London Chess rating has been updated' }),
+      expect(sendEmails).toHaveBeenCalledOnce();
+      expect(sendEmails).toHaveBeenCalledWith(
+        [
+          {
+            to: 'jane@example.com',
+            content: expect.objectContaining({
+              subject: 'Your London Chess rating has been updated',
+            }),
+          },
+        ],
+        'rating change',
       );
     });
 
@@ -993,13 +1001,13 @@ describe('members routes', () => {
 
       expect(response.status).toBe(200);
       expect((await readMember(holder._id)).rating).toBe('1550');
-      expect(sendEmail).not.toHaveBeenCalled();
+      expect(vi.mocked(sendEmails).mock.calls.flatMap(([emails]) => emails)).toEqual([]);
     });
 
     it('should report account holders who could not be emailed', async () => {
       await createAdmin(ADMIN);
       const holder = await createMember({ number: 5, account: memberAccount() });
-      vi.mocked(sendEmail).mockRejectedValue(new Error('SMTP down'));
+      vi.mocked(sendEmails).mockResolvedValue([false]);
 
       const response = await request(app)
         .put('/v1/admin/members')
@@ -1008,7 +1016,9 @@ describe('members routes', () => {
         .send([{ ...memberFields({ rating: '1550' }), id: holder._id.toString() }]);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.unnotifiedMemberNames).toEqual(['Jane Doe']);
+      expect(response.body.data.unnotifiedMembers).toEqual([
+        { name: 'Jane Doe', email: 'jane@example.com' },
+      ]);
     });
 
     it('should only update account holders from the site', async () => {

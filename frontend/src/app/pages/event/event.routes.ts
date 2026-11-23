@@ -2,9 +2,13 @@ import { Routes } from '@angular/router';
 
 import { accessGuard } from '@app/guards/auth.guard';
 import { collectionIdGuard } from '@app/guards/collection-id.guard';
-import { unsavedChangesGuard } from '@app/guards/unsaved-changes.guard';
+import {
+  unsavedChangesGuard,
+  unsavedScheduleChangesGuard,
+} from '@app/guards/unsaved-changes.guard';
 
 import { EventEditorPageComponent } from './event-editor-page.component';
+import { ScheduleEditorPageComponent } from './schedule-editor-page.component';
 
 export const EVENT_ROUTES: Routes = [
   {
@@ -12,6 +16,14 @@ export const EVENT_ROUTES: Routes = [
     component: EventEditorPageComponent,
     canActivate: [accessGuard],
     canDeactivate: [unsavedChangesGuard],
+    data: { access: 'admin' },
+  },
+  {
+    path: 'edit',
+    pathMatch: 'full',
+    component: ScheduleEditorPageComponent,
+    canActivate: [accessGuard],
+    canDeactivate: [unsavedScheduleChangesGuard],
     data: { access: 'admin' },
   },
   {

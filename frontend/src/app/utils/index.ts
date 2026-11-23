@@ -100,6 +100,11 @@ export { parseCsv } from './file/parse-csv.util';
 
 export { bindSearchControl } from './forms/bind-search-control.util';
 export { createEmailControl } from './forms/create-email-control.util';
+export {
+  createEventFormGroup,
+  fromEventFormGroup,
+  toEventFormValue,
+} from './forms/create-event-form-group.util';
 export { createFederationIdControls } from './forms/create-federation-id-controls.util';
 export { createMemberAccountGroup } from './forms/create-member-account-group.util';
 export { createMemberDetailsControls } from './forms/create-member-details-controls.util';

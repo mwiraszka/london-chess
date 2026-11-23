@@ -214,6 +214,29 @@ export const eventsReducer = createReducer(
     }),
   ),
 
+  on(
+    EventsActions.scheduleChangesSucceeded,
+    (state, { added, updated, removedIds }): EventsState =>
+      eventsAdapter.removeMany(
+        removedIds,
+        eventsAdapter.upsertMany(
+          [...added, ...updated].map(event => ({
+            event,
+            formData: pick(event, EVENT_FORM_DATA_PROPERTIES),
+          })),
+          {
+            ...state,
+            homePageEvents: state.homePageEvents.filter(
+              ({ id }) => !removedIds.includes(id),
+            ),
+            filteredEvents: state.filteredEvents.filter(
+              ({ id }) => !removedIds.includes(id),
+            ),
+          },
+        ),
+      ),
+  ),
+
   on(EventsActions.formDataChanged, (state, { eventId, formData }): EventsState => {
     const originalEvent = eventId ? state.entities[eventId] : null;
 

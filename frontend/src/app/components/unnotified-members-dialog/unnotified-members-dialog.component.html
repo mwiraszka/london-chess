@@ -1,0 +1,33 @@
+<ea-dialog width="sm">
+  <h3 slot="header">Some members were not emailed</h3>
+
+  <p class="unnotified-members__intro">{{ intro() }}</p>
+
+  <ul class="unnotified-members__list">
+    @for (member of members(); track $index) {
+      <li class="unnotified-members__member">
+        <span class="unnotified-members__name">{{ member.name }}</span>
+        <a
+          class="unnotified-members__email"
+          [href]="'mailto:' + member.email">
+          {{ member.email }}
+        </a>
+      </li>
+    }
+  </ul>
+
+  <div slot="footer">
+    <ea-button
+      class="copy-button"
+      variant="secondary"
+      [icon]="copyIcon()"
+      (clicked)="onCopy()">
+      {{ copyLabel() }}
+    </ea-button>
+    <ea-button
+      class="close-button"
+      (clicked)="dialogRef.close()">
+      Close
+    </ea-button>
+  </div>
+</ea-dialog>

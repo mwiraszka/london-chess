@@ -10,6 +10,7 @@ import {
   MemberEmail,
   MemberFormData,
   MemberWithNewRatings,
+  UnnotifiedMember,
 } from '@app/models';
 
 export const fetchAllMembersRequested = createAction(
@@ -79,7 +80,7 @@ export const updateMemberRatingsRequested = createAction(
 );
 export const updateMemberRatingsSucceeded = createAction(
   '[Members] Update member ratings succeeded',
-  props<{ members: Member[]; unnotifiedMemberNames: string[] }>(),
+  props<{ members: Member[]; unnotifiedMembers: UnnotifiedMember[] }>(),
 );
 export const updateMemberRatingsFailed = createAction(
   '[Members] Update member ratings failed',

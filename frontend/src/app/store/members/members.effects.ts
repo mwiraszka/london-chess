@@ -371,7 +371,7 @@ export class MembersEffects {
           map(response =>
             MembersActions.updateMemberRatingsSucceeded({
               members: updatedMembers,
-              unnotifiedMemberNames: response.data.unnotifiedMemberNames,
+              unnotifiedMembers: response.data.unnotifiedMembers,
             }),
           ),
           catchError(error =>

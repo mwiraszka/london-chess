@@ -14,7 +14,10 @@ import { HighlightPipe } from '@app/pipes';
       [color]="color()"
       [ink]="ink()"
       [size]="size()">
-      <span [innerHTML]="type() | highlight: search()"></span>
+      <span
+        [class.event-type--struck]="struck()"
+        [innerHTML]="type() | highlight: search()">
+      </span>
       @if (type() === 'championship') {
         <ea-icon-trophy
           class="championship-icon"
@@ -31,6 +34,8 @@ export class EventTypeTagComponent {
   public readonly ink = input('var(--color-text-primary)');
   public readonly search = input('');
   public readonly size = input<TagSize>('sm');
+  // Crossed out with the rest of a line, such as an event about to be removed
+  public readonly struck = input(false);
 
   protected readonly color = computed(() => EVENT_TYPE_COLORS[this.type()]);
 }

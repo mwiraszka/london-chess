@@ -1,4 +1,4 @@
-import { ToastService } from '@eagami/ui';
+import { DialogService, ToastService } from '@eagami/ui';
 import { Actions, OnInitEffects, createEffect, ofType } from '@ngrx/effects';
 import { concatLatestFrom } from '@ngrx/operators';
 import { Action, Store } from '@ngrx/store';
@@ -7,6 +7,7 @@ import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
 
 import { Injectable, inject } from '@angular/core';
 
+import { UnnotifiedMembersDialogComponent } from '@app/components/unnotified-members-dialog/unnotified-members-dialog.component';
 import { DATASET_STORAGE_KEY } from '@app/constants/storage';
 import { LccError, MemberEmail, Toast } from '@app/models';
 import { DatasetApiService } from '@app/services/api/dataset-api.service';
@@ -47,6 +48,8 @@ const ACTIONS_TO_NOTIFY = [
   EventsActions.fetchEventFailed,
   EventsActions.fetchFilteredEventsFailed,
   EventsActions.fetchHomePageEventsFailed,
+  EventsActions.scheduleChangesFailed,
+  EventsActions.scheduleChangesSucceeded,
   EventsActions.updateEventFailed,
   EventsActions.updateEventSucceeded,
 
@@ -109,6 +112,7 @@ type NotifyAction = ReturnType<(typeof ACTIONS_TO_NOTIFY)[number]>;
 export class AppEffects implements OnInitEffects {
   private readonly actions$ = inject(Actions);
   private readonly datasetApi = inject(DatasetApiService);
+  private readonly dialogService = inject(DialogService);
   private readonly parseError = inject(PARSE_ERROR);
   private readonly reloadPage = inject(RELOAD_PAGE);
   private readonly store = inject(Store);
@@ -212,6 +216,31 @@ export class AppEffects implements OnInitEffects {
     { dispatch: false },
   );
 
+  // A save stands whether or not its emails went out, so the admin hears who missed them
+  reportUnnotifiedMembers$ = createEffect(
+    () => {
+      return this.actions$.pipe(
+        ofType(
+          EventsActions.addEventSucceeded,
+          EventsActions.deleteEventSucceeded,
+          EventsActions.scheduleChangesSucceeded,
+          EventsActions.updateEventSucceeded,
+          MembersActions.updateMemberRatingsSucceeded,
+        ),
+        filter(({ unnotifiedMembers }) => unnotifiedMembers.length > 0),
+        tap(action =>
+          this.dialogService.open(UnnotifiedMembersDialogComponent, {
+            inputs: {
+              subject: this.emailSubject(action),
+              members: action.unnotifiedMembers,
+            },
+          }),
+        ),
+      );
+    },
+    { dispatch: false },
+  );
+
   reinstateUpcomingEventBanner$ = createEffect(() =>
     this.store.select(AppSelectors.selectBannerLastCleared).pipe(
       filter(
@@ -235,6 +264,28 @@ export class AppEffects implements OnInitEffects {
         actionCreator => actionCreator.type === action.type,
       )
     );
+  }
+
+  private emailSubject(
+    action:
+      | ReturnType<typeof EventsActions.addEventSucceeded>
+      | ReturnType<typeof EventsActions.deleteEventSucceeded>
+      | ReturnType<typeof EventsActions.scheduleChangesSucceeded>
+      | ReturnType<typeof EventsActions.updateEventSucceeded>
+      | ReturnType<typeof MembersActions.updateMemberRatingsSucceeded>,
+  ): string {
+    switch (action.type) {
+      case EventsActions.addEventSucceeded.type:
+        return `the new event ${action.event.title}`;
+      case EventsActions.deleteEventSucceeded.type:
+        return `the removal of ${action.eventTitle}`;
+      case EventsActions.scheduleChangesSucceeded.type:
+        return 'the schedule changes';
+      case EventsActions.updateEventSucceeded.type:
+        return `the change to ${action.originalEventTitle}`;
+      case MembersActions.updateMemberRatingsSucceeded.type:
+        return 'their new rating';
+    }
   }
 
   private getErrorMessage(error: LccError): string {
@@ -315,17 +366,11 @@ export class AppEffects implements OnInitEffects {
           type: 'warning',
         };
       case EventsActions.addEventSucceeded.type:
-        return action.unnotifiedMemberNames.length
-          ? {
-              title: 'New event',
-              message: `Added ${action.event.title}, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about it.`,
-              type: 'warning',
-            }
-          : {
-              title: 'New event',
-              message: `Successfully added ${action.event.title}`,
-              type: 'success',
-            };
+        return {
+          title: 'New event',
+          message: `Successfully added ${action.event.title}`,
+          type: 'success',
+        };
       case EventsActions.deleteEventFailed.type:
         return {
           title: 'Event deletion',
@@ -333,17 +378,11 @@ export class AppEffects implements OnInitEffects {
           type: 'warning',
         };
       case EventsActions.deleteEventSucceeded.type:
-        return action.unnotifiedMemberNames.length
-          ? {
-              title: 'Event deletion',
-              message: `Deleted ${action.eventTitle}, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about it.`,
-              type: 'warning',
-            }
-          : {
-              title: 'Event deletion',
-              message: `Successfully deleted ${action.eventTitle}`,
-              type: 'success',
-            };
+        return {
+          title: 'Event deletion',
+          message: `Successfully deleted ${action.eventTitle}`,
+          type: 'success',
+        };
       case EventsActions.exportEventsToCsvFailed.type:
         return {
           title: 'CSV export',
@@ -374,6 +413,21 @@ export class AppEffects implements OnInitEffects {
           message: this.getErrorMessage(action.error),
           type: 'warning',
         };
+      case EventsActions.scheduleChangesFailed.type:
+        return {
+          title: 'Schedule changes',
+          message: this.getErrorMessage(action.error),
+          type: 'warning',
+        };
+      case EventsActions.scheduleChangesSucceeded.type: {
+        const count =
+          action.added.length + action.updated.length + action.removedIds.length;
+        return {
+          title: 'Schedule changes',
+          message: `Successfully saved ${count === 1 ? 'one change' : `${count} changes`} to the schedule`,
+          type: 'success',
+        };
+      }
       case EventsActions.updateEventFailed.type:
         return {
           title: 'Event update',
@@ -381,17 +435,11 @@ export class AppEffects implements OnInitEffects {
           type: 'warning',
         };
       case EventsActions.updateEventSucceeded.type:
-        return action.unnotifiedMemberNames.length
-          ? {
-              title: 'Event update',
-              message: `Updated ${action.originalEventTitle}, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about the change.`,
-              type: 'warning',
-            }
-          : {
-              title: 'Event update',
-              message: `Successfully updated ${action.originalEventTitle}`,
-              type: 'success',
-            };
+        return {
+          title: 'Event update',
+          message: `Successfully updated ${action.originalEventTitle}`,
+          type: 'success',
+        };
 
       case ImagesActions.addImageFailed.type:
         return {
@@ -605,17 +653,11 @@ export class AppEffects implements OnInitEffects {
           type: 'warning',
         };
       case MembersActions.updateMemberRatingsSucceeded.type:
-        return action.unnotifiedMemberNames.length
-          ? {
-              title: 'Members update',
-              message: `Updated ${action.members.length} members, but ${action.unnotifiedMemberNames.join(', ')} could not be emailed about their new rating.`,
-              type: 'warning',
-            }
-          : {
-              title: 'Members update',
-              message: `Successfully updated ${action.members.length} members.`,
-              type: 'success',
-            };
+        return {
+          title: 'Members update',
+          message: `Successfully updated ${action.members.length} members.`,
+          type: 'success',
+        };
       case MembersActions.updateMemberSucceeded.type:
         return {
           title: 'Member update',

@@ -55,10 +55,16 @@ export interface MemberProfile {
 // The email a member was sent when an admin saved their details
 export type MemberEmail = 'welcome' | 'changes';
 
+// A member an email was sent to but could not reach, for admins to tell another way
+export interface UnnotifiedMember {
+  name: string;
+  email: string;
+}
+
 export interface MemberRatingsUpdate {
   updatedIds: Id[];
   // Members with an account who could not be emailed their new rating
-  unnotifiedMemberNames: string[];
+  unnotifiedMembers: UnnotifiedMember[];
 }
 
 export interface MemberDetailsFormData {

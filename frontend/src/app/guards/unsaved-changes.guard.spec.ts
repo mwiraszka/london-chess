@@ -17,7 +17,11 @@ import {
 import { AuthSelectors } from '@app/store/auth';
 import { closedDialogRef } from '@app/utils';
 
-import { unsavedAccountChangesGuard, unsavedChangesGuard } from './unsaved-changes.guard';
+import {
+  unsavedAccountChangesGuard,
+  unsavedChangesGuard,
+  unsavedScheduleChangesGuard,
+} from './unsaved-changes.guard';
 
 describe('unsavedChangesGuard', () => {
   let dialogService: DialogService;
@@ -261,6 +265,39 @@ describe('unsavedChangesGuard', () => {
 
       expect(result).toBe(true);
       expect(dialogOpenSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('on the schedule editor', () => {
+    const runScheduleGuard = (hasUnsavedChanges: boolean) => {
+      const page: UnsavedChangesPage = { hasUnsavedChanges: signal(hasUnsavedChanges) };
+      return TestBed.runInInjectionContext(() =>
+        unsavedScheduleChangesGuard(page, adminRoute, state, urlState('/schedule')),
+      );
+    };
+
+    it('should leave without asking when nothing has changed', async () => {
+      const result = await runScheduleGuard(false);
+
+      expect(result).toBe(true);
+      expect(dialogOpenSpy).not.toHaveBeenCalled();
+    });
+
+    it('should ask before leaving changes to the schedule', async () => {
+      dialogOpenSpy.mockReturnValue(closedDialogRef('cancel'));
+
+      const result = await runScheduleGuard(true);
+
+      expect(result).toBe(false);
+      expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, {
+        inputs: {
+          dialog: {
+            title: 'Unsaved changes',
+            body: 'Leave without saving? Your changes to the schedule will be lost.',
+            confirmButtonText: 'Leave',
+          } satisfies Dialog,
+        },
+      });
     });
   });
 });

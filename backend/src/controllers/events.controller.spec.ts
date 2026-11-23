@@ -3,7 +3,7 @@ import request from 'supertest';
 
 import { app } from '../app';
 import { Event, EventModel } from '../models/event.model';
-import { sendEmail } from '../services/email.service';
+import { OutgoingEmail, sendEmails } from '../services/email.service';
 import { bearer } from '../testing/clerk.mock';
 import { useTestDatabase } from '../testing/database';
 import {
@@ -23,8 +23,7 @@ vi.mock('@vercel/functions', () => ({ dangerouslyDeleteByTag, waitUntil: vi.fn()
 vi.mock('@clerk/backend', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/clerk.service', () => import('../testing/clerk.mock.js'));
 vi.mock('../services/email.service', () => ({
-  sendEmail: vi.fn(),
-  sendAdminEmail: vi.fn(),
+  sendEmails: vi.fn(async (emails: OutgoingEmail[]) => emails.map(() => true)),
 }));
 
 const ADMIN = 'user_admin';
@@ -48,6 +47,10 @@ async function createEvent(overrides: Partial<Event> = {}): Promise<string> {
   const created = await EventModel.create(event);
   return created._id.toString();
 }
+
+// Every email the schedule changes sent, across every mailing
+const sentEmails = (): OutgoingEmail[] =>
+  vi.mocked(sendEmails).mock.calls.flatMap(([emails]) => emails);
 
 describe('events routes', () => {
   useTestDatabase();
@@ -277,7 +280,7 @@ describe('events routes', () => {
       const response = await save();
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toEqual({ id, unnotifiedMemberNames: [] });
+      expect(response.body.data).toEqual({ id, unnotifiedMembers: [] });
     });
 
     it('should respond with not found for an unknown event', async () => {
@@ -384,14 +387,19 @@ describe('events routes', () => {
         .send(eventPayload());
 
       expect(response.status).toBe(201);
-      expect(response.body.data.unnotifiedMemberNames).toEqual([]);
-      expect(sendEmail).toHaveBeenCalledOnce();
-      expect(sendEmail).toHaveBeenCalledWith(
-        'jane@example.com',
-        expect.objectContaining({
-          subject: 'New on the London Chess schedule: Blitz night',
-          text: expect.stringContaining(`${SITE}/schedule`),
-        }),
+      expect(response.body.data.unnotifiedMembers).toEqual([]);
+      expect(sendEmails).toHaveBeenCalledOnce();
+      expect(sendEmails).toHaveBeenCalledWith(
+        [
+          {
+            to: 'jane@example.com',
+            content: expect.objectContaining({
+              subject: 'New on the London Chess schedule: Blitz night',
+              text: expect.stringContaining(`${SITE}/schedule`),
+            }),
+          },
+        ],
+        'schedule change',
       );
     });
 
@@ -403,7 +411,7 @@ describe('events routes', () => {
         .send(eventPayload({ eventDate: '2026-09-01T23:00:00.000Z' }));
 
       expect(response.status).toBe(201);
-      expect(sendEmail).not.toHaveBeenCalled();
+      expect(sentEmails()).toEqual([]);
     });
 
     it("should email a change to an event's title, but not to its details", async () => {
@@ -416,7 +424,7 @@ describe('events routes', () => {
           .send(eventPayload({ id, ...overrides }));
 
       await save({ details: 'Three minute games' });
-      const emailsAfterDetails = vi.mocked(sendEmail).mock.calls.length;
+      const emailsAfterDetails = sentEmails().length;
       const response = await save({
         details: 'Three minute games',
         title: 'Bullet night',
@@ -424,10 +432,10 @@ describe('events routes', () => {
 
       expect(response.status).toBe(200);
       expect(emailsAfterDetails).toBe(0);
-      expect(sendEmail).toHaveBeenCalledOnce();
-      const [, email] = vi.mocked(sendEmail).mock.calls[0];
-      expect(email.subject).toBe('London Chess schedule change: Bullet night');
-      expect(email.text).toContain('Blitz night');
+      const [{ content }] = sentEmails();
+      expect(sentEmails()).toHaveLength(1);
+      expect(content.subject).toBe('London Chess schedule change: Bullet night');
+      expect(content.text).toContain('Blitz night');
     });
 
     it('should email the removal of an upcoming event', async () => {
@@ -439,12 +447,14 @@ describe('events routes', () => {
         .set('Origin', SITE);
 
       expect(response.status).toBe(200);
-      expect(sendEmail).toHaveBeenCalledWith(
-        'jane@example.com',
-        expect.objectContaining({
-          subject: 'Removed from the London Chess schedule: Blitz night',
-        }),
-      );
+      expect(sentEmails()).toEqual([
+        {
+          to: 'jane@example.com',
+          content: expect.objectContaining({
+            subject: 'Removed from the London Chess schedule: Blitz night',
+          }),
+        },
+      ]);
     });
 
     it('should only save a change members would be emailed about from the site', async () => {
@@ -459,7 +469,7 @@ describe('events routes', () => {
     });
 
     it('should report members who could not be emailed', async () => {
-      vi.mocked(sendEmail).mockRejectedValue(new Error('SMTP down'));
+      vi.mocked(sendEmails).mockResolvedValue([false]);
 
       const response = await request(app)
         .post('/v1/events')
@@ -468,8 +478,141 @@ describe('events routes', () => {
         .send(eventPayload());
 
       expect(response.status).toBe(201);
-      expect(response.body.data.unnotifiedMemberNames).toEqual(['Jane Doe']);
+      expect(response.body.data.unnotifiedMembers).toEqual([
+        { name: 'Jane Doe', email: 'jane@example.com' },
+      ]);
       expect(await EventModel.countDocuments()).toBe(1);
+    });
+
+    it('should not try to email an account holder without an email address', async () => {
+      await createMember({
+        number: 9,
+        firstName: 'Ivan',
+        email: '',
+        account: memberAccount({ clerkUserId: 'user_ivan' }),
+      });
+
+      const response = await request(app)
+        .post('/v1/events')
+        .set('Authorization', bearer(ADMIN))
+        .set('Origin', SITE)
+        .send(eventPayload());
+
+      expect(response.status).toBe(201);
+      expect(sentEmails().map(({ to }) => to)).toEqual(['jane@example.com']);
+    });
+
+    describe('PATCH /v1/events', () => {
+      const change = (body: object, origin: string | null = SITE) => {
+        const patch = request(app)
+          .patch('/v1/events')
+          .set('Authorization', bearer(ADMIN));
+        return (origin ? patch.set('Origin', origin) : patch).send(body);
+      };
+
+      it('should add, update and remove events together, emailing each member once', async () => {
+        const kept = await createEvent();
+        const dropped = await createEvent({
+          title: 'Simul',
+          eventDate: '2026-10-08T23:00:00.000Z',
+        });
+
+        const response = await change({
+          added: [
+            eventPayload({ title: 'Rapid night', eventDate: '2026-10-15T23:00:00.000Z' }),
+          ],
+          updated: [eventPayload({ id: kept, title: 'Bullet night' })],
+          removed: [dropped],
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toEqual({
+          addedIds: [expect.any(String)],
+          unnotifiedMembers: [],
+        });
+        const titles = (await EventModel.find().sort({ eventDate: 1 }).lean()).map(
+          ({ title }) => title,
+        );
+        expect(titles).toEqual(['Bullet night', 'Rapid night']);
+        expect(sendEmails).toHaveBeenCalledOnce();
+        const [email] = sentEmails();
+        expect(sentEmails()).toHaveLength(1);
+        expect(email.to).toBe('jane@example.com');
+        expect(email.content.subject).toBe('London Chess schedule changes');
+        expect(email.content.text).toMatch(/Rapid night[\s\S]*Bullet night[\s\S]*Simul/);
+      });
+
+      it('should email a single change as it always has', async () => {
+        const response = await change({
+          added: [eventPayload()],
+          updated: [],
+          removed: [],
+        });
+
+        expect(response.status).toBe(200);
+        expect(sentEmails()[0].content.subject).toBe(
+          'New on the London Chess schedule: Blitz night',
+        );
+      });
+
+      it('should save none of the changes when one cannot be made', async () => {
+        const dropped = await createEvent();
+        vi.spyOn(EventModel, 'deleteMany').mockRejectedValueOnce(new Error('down'));
+
+        const response = await change({
+          added: [eventPayload({ title: 'Rapid night' })],
+          updated: [],
+          removed: [dropped],
+        });
+
+        expect(response.status).toBe(500);
+        expect((await EventModel.find().lean()).map(({ title }) => title)).toEqual([
+          'Blitz night',
+        ]);
+        expect(sentEmails()).toEqual([]);
+      });
+
+      it('should change nothing when an event to change cannot be found', async () => {
+        const missing = new Types.ObjectId().toString();
+
+        const response = await change({
+          added: [eventPayload()],
+          updated: [],
+          removed: [missing],
+        });
+
+        expect(response.status).toBe(404);
+        expect(await EventModel.countDocuments()).toBe(0);
+      });
+
+      it('should reject a body that is not a set of changes', async () => {
+        const id = await createEvent();
+
+        const responses = await Promise.all([
+          change([]),
+          change({ added: [], updated: [], removed: [] }),
+          change({ added: [{ title: 'Blitz' }], updated: [], removed: [] }),
+          change({ added: [], updated: [eventPayload({ id: 'nope' })], removed: [] }),
+          change({ added: [], updated: [eventPayload({ id })], removed: [id] }),
+        ]);
+
+        expect(responses.map(({ status }) => status)).toEqual([400, 400, 400, 400, 400]);
+        expect(responses[1].body.message).toBe(
+          'Invalid schedule changes: there are no changes.',
+        );
+        expect(await EventModel.countDocuments()).toBe(1);
+      });
+
+      it('should only change the schedule members would be emailed about from the site', async () => {
+        const response = await change(
+          { added: [eventPayload()], updated: [], removed: [] },
+          null,
+        );
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe(EMAILS_FROM_SITE_ONLY);
+        expect(await EventModel.countDocuments()).toBe(0);
+      });
     });
   });
 });

@@ -1,6 +1,7 @@
 import {
   DialogService,
   DownloadIconComponent,
+  ListChecksIconComponent,
   PlusCircleIconComponent,
 } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -198,6 +199,15 @@ describe('SchedulePageComponent', () => {
         icon: PlusCircleIconComponent,
         group: 'add',
         path: ['event', 'add'],
+      });
+    });
+
+    it('should have correct editScheduleAction configuration', () => {
+      expect(component.editScheduleAction).toStrictEqual({
+        label: 'Edit the schedule',
+        icon: ListChecksIconComponent,
+        group: 'add',
+        path: ['event', 'edit'],
       });
     });
 
