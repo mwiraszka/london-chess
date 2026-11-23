@@ -1,6 +1,6 @@
 {
   "name": "lcc-server",
-  "version": "6.9.1",
+  "version": "6.10.0",
   "description": "REST API for the London Chess Club website, built with Node and Express",
   "author": "Michal Wiraszka",
   "repository": {
@@ -24,9 +24,9 @@
     "format:check": "prettier --check 'src/**/*.ts' 'e2e/**/*.ts' 'scripts/**/*.ts'"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1174.0",
-    "@aws-sdk/s3-request-presigner": "3.1174.0",
-    "@clerk/backend": "3.31.3",
+    "@aws-sdk/client-s3": "3.1175.0",
+    "@aws-sdk/s3-request-presigner": "3.1175.0",
+    "@clerk/backend": "3.31.4",
     "@sentry/node": "11.16.0",
     "@vercel/functions": "3.11.3",
     "chess.js": "1.4.0",
