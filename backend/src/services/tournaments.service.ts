@@ -11,6 +11,7 @@ import {
   Tournament,
   TournamentEntry,
   TournamentGame,
+  TournamentModel,
   TournamentRecord,
   TournamentRegistrant,
   TournamentRegistration,
@@ -184,6 +185,16 @@ export function matchRoundGames(
     const key = pairKey(game.whitePlayerId, game.blackPlayerId);
     gamesByPair.set(key, [...(gamesByPair.get(key) ?? []), game]);
   }
+  const meetingsByPair = new Map<string, Set<number>>();
+  for (const entry of entries) {
+    for (const { round, outcome, opponentRank } of entry.rounds) {
+      const opponent = opponentRank === null ? undefined : byRank.get(opponentRank);
+      if (outcome === 'game' && opponent) {
+        const key = pairKey(entry.playerId, opponent.playerId);
+        meetingsByPair.set(key, (meetingsByPair.get(key) ?? new Set()).add(round));
+      }
+    }
+  }
 
   const gameIds = new Map<string, Id>();
   for (const entry of entries) {
@@ -205,10 +216,10 @@ export function matchRoundGames(
       }
       let matches: ArchiveGame[];
       if (opponent && !standInRanks.has(opponent.rank)) {
-        const candidates =
-          gamesByPair.get(pairKey(entry.playerId, opponent.playerId)) ?? [];
+        const key = pairKey(entry.playerId, opponent.playerId);
+        const candidates = gamesByPair.get(key) ?? [];
         matches =
-          candidates.length > 1
+          candidates.length > 1 || (meetingsByPair.get(key)?.size ?? 0) > 1
             ? candidates.filter(game => roundNumber(game.round) === round)
             : candidates;
       } else if (opponentRank === null || opponent) {
@@ -466,6 +477,60 @@ export function gamesOfSection(
         game.year === recordYear(record) &&
         section.gameArchiveSections.includes(game.section),
   );
+}
+
+type LinkSource = GameSource & Pick<TournamentRecord, 'sections'>;
+
+// The games the tournament's results link a round to
+export function linkedGameIds(
+  record: LinkSource,
+  games: ArchiveGame[],
+  player: (id: Id) => GamePlayer,
+): Set<Id> {
+  return new Set(
+    record.sections.flatMap(section => [
+      ...matchRoundGames(
+        section.entries,
+        gamesOfSection(record, section, games),
+        standInRanksOf(record.sections, section.entries, player),
+      ).values(),
+    ]),
+  );
+}
+
+/**
+ * The games filed under the archive name in these years that the results of a tournament
+ * other than the given one link a round to.
+ */
+export async function gamesLinkedElsewhere(
+  tournament: string,
+  years: number[],
+  number: number,
+): Promise<Set<Id>> {
+  const records = await TournamentModel.find(
+    {
+      gameArchiveTournament: tournament,
+      number: { $ne: number },
+      // Days are written YYYY-MM-DD, so a year's days sort from the bare year
+      date: { $gte: String(Math.min(...years)), $lt: String(Math.max(...years) + 1) },
+    },
+    { number: 1, date: 1, gameArchiveTournament: 1, sections: 1 },
+  ).lean<LinkSource[]>();
+  if (!records.length) {
+    return new Set();
+  }
+  const players = await resolvePlayers(
+    records.flatMap(({ sections }) =>
+      sections.flatMap(({ entries }) => entries.map(({ playerId }) => playerId)),
+    ),
+  );
+  const player = (id: Id): GamePlayer => players.get(id) ?? { id, ...UNKNOWN_PLAYER };
+  const linked = await Promise.all(
+    records.map(async record =>
+      linkedGameIds(record, await tournamentGames(record), player),
+    ),
+  );
+  return new Set(linked.flatMap(ids => [...ids]));
 }
 
 export async function toTournamentResponse(
