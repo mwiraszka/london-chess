@@ -1593,7 +1593,7 @@ describe('tournaments routes', () => {
       expect(player?.gameCount).toBe(0);
     });
 
-    it("should give an archived game the PGN's details once confirmed to be it", async () => {
+    it("should give an archived game the PGN's details once confirmed to be it, and drop the name it no longer uses", async () => {
       await TournamentModel.updateOne(
         { number: 86 },
         { $set: { gameArchiveTournament: 'Club Championship' } },
@@ -1631,7 +1631,6 @@ describe('tournaments routes', () => {
       expect(counts.map(({ lastName, gameCount }) => [lastName, gameCount])).toEqual([
         ['Black', 1],
         ['White', 2],
-        ['Whyte', 0],
       ]);
     });
 
