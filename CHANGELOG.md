@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v6.10.0] - 2026-11-23
+
+### Added
+
+- Send members one email listing several schedule changes at once, instead of one email for each change
+
+### Changed
+
+- Update third-party packages
+
+### Fixed
+
+- Stop tournament results from linking both games between the same two players to one recorded game
+
 ## [v6.9.1] - 2026-11-21
 
 ### Changed
@@ -2272,6 +2286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create a responsive grid layout to house photos from club meetings and club-organized events, including the functionality to enlarge photos in an image overlay 'preview' mode
 - Create a responsive grid layout to showcase only the most pertinent information from other screens (such as only the next 4 events from the schedule, and a more limited amount of photos from the photo gallery)
 
+[v6.10.0]: https://github.com/mwiraszka/london-chess/compare/v6.9.1...v6.10.0
 [v6.9.1]: https://github.com/mwiraszka/london-chess/compare/v6.9.0...v6.9.1
 [v6.9.0]: https://github.com/mwiraszka/london-chess/compare/v6.8.0...v6.9.0
 [v6.8.0]: https://github.com/mwiraszka/london-chess/compare/v6.7.1...v6.8.0
