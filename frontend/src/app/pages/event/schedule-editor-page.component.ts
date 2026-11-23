@@ -103,8 +103,8 @@ function countOf(count: number, noun: string): string {
   styleUrl: './schedule-editor-page.component.scss',
   imports: [
     AccordionComponent,
-    AlertCircleIconComponent,
     AccordionItemComponent,
+    AlertCircleIconComponent,
     ButtonComponent,
     DatePickerComponent,
     DropdownComponent,
