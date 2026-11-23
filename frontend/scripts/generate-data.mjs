@@ -2,4 +2,5 @@
 // and test run.
 import './generate-branch-data.mjs';
 import './generate-changelog-data.mjs';
+import './generate-release-data.mjs';
 import './generate-time-zone-data.mjs';

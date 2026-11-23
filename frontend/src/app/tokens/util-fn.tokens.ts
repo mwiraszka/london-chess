@@ -11,6 +11,7 @@ import {
   isLccError,
   isMac,
   isTouchDevice,
+  loadPage,
   parseCsv,
   parseError,
   reloadPage,
@@ -82,6 +83,10 @@ export const DATA_URL_TO_FILE = new InjectionToken<typeof dataUrlToFile>(
 
 export const IS_LCC_ERROR = new InjectionToken<typeof isLccError>('IS_LCC_ERROR', {
   factory: () => isLccError,
+});
+
+export const LOAD_PAGE = new InjectionToken<typeof loadPage>('LOAD_PAGE', {
+  factory: () => loadPage,
 });
 
 export const RELOAD_PAGE = new InjectionToken<typeof reloadPage>('RELOAD_PAGE', {

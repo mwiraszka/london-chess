@@ -21,6 +21,7 @@ out-tsc
 frontend/src/app/pages/website-changelog/changelog.generated.ts
 frontend/src/app/constants/git-branch.generated.ts
 frontend/src/app/constants/time-zone.generated.ts
+frontend/src/assets/release.json
 
 # Test coverage
 coverage
