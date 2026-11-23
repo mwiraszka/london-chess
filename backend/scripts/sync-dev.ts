@@ -41,7 +41,7 @@ if (env('R2_IMAGES_BUCKET_NAME') === env('R2_IMAGES_BUCKET_NAME_PROD')) {
   process.exit(1);
 }
 
-const MEMBERS_WITH_CONTACT_DETAILS = new Set([0, 1, 2, 3]);
+const MEMBERS_WITH_CONTACT_DETAILS = new Set([0]);
 
 // Pending sign-up codes, keyed by email and gone within the hour
 const SKIPPED_COLLECTIONS = new Set(['accountverifications']);
