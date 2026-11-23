@@ -11,7 +11,7 @@ describe('UnnotifiedMembersDialogComponent', () => {
   let fixture: ComponentFixture<UnnotifiedMembersDialogComponent>;
 
   let closeSpy: MockInstance;
-  let writeTextSpy: Mock<(text: string) => Promise<void>>;
+  let writeTextSpy: Mock<Promise<void>, [string]>;
 
   const members: UnnotifiedMember[] = [
     { name: 'Jane Doe', email: 'jane@example.com' },
@@ -27,7 +27,7 @@ describe('UnnotifiedMembersDialogComponent', () => {
   beforeEach(async () => {
     const dialogRef = new DialogRef();
     closeSpy = vi.spyOn(dialogRef, 'close');
-    writeTextSpy = vi.fn(async () => undefined);
+    writeTextSpy = vi.fn<(text: string) => Promise<void>>(async () => undefined);
     // The test browser has no clipboard of its own
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: writeTextSpy },

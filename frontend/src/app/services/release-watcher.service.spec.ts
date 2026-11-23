@@ -17,9 +17,9 @@ class BlankPageComponent {}
 
 describe('ReleaseWatcherService', () => {
   let httpMock: HttpTestingController;
-  let loadPage: Mock<(url: string) => void>;
-  let reloadPage: Mock<() => void>;
-  let onStillOutdated: Mock<StillOutdatedReport>;
+  let loadPage: Mock<void, [string]>;
+  let reloadPage: Mock<void, []>;
+  let onStillOutdated: Mock<void, Parameters<StillOutdatedReport>>;
 
   const NEWER = '99.0.0';
 
@@ -42,9 +42,9 @@ describe('ReleaseWatcherService', () => {
   }
 
   beforeEach(() => {
-    loadPage = vi.fn();
-    reloadPage = vi.fn();
-    onStillOutdated = vi.fn();
+    loadPage = vi.fn<(url: string) => void>();
+    reloadPage = vi.fn<() => void>();
+    onStillOutdated = vi.fn<StillOutdatedReport>();
     sessionStorage.clear();
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
