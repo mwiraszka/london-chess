@@ -254,7 +254,11 @@ describe('SchedulePageComponent', () => {
           .actions()
           .map(action => action.label);
 
-        expect(labels).toEqual(['Add event', 'Export events to CSV']);
+        expect(labels).toEqual([
+          'Add event',
+          'Edit the schedule',
+          'Export events to CSV',
+        ]);
       });
 
       it('should render only the list in list view', () => {
