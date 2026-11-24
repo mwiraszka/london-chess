@@ -8,10 +8,7 @@
         [whenClipped]="true">
         {{ summary.name }}
       </a>
-      <p
-        class="card__details"
-        [eaTooltip]="details().join(' · ')"
-        [whenClipped]="true">
+      <p class="card__details">
         @for (detail of details(); track $index) {
           <span class="card__detail">{{ detail }}</span>
         }
@@ -22,42 +19,10 @@
         <p class="card__label">{{ registration.label }}</p>
         <div class="card__status">
           <div class="card__status-content">
-            @if (registration.countdown.length) {
-              <span
-                class="countdown"
-                role="timer"
-                [attr.aria-label]="registration.description">
-                @for (
-                  part of registration.countdown;
-                  track part.unit;
-                  let first = $first
-                ) {
-                  @if (!first) {
-                    <span
-                      class="countdown__separator"
-                      aria-hidden="true">
-                      :
-                    </span>
-                  }
-                  <span
-                    class="countdown__part"
-                    aria-hidden="true">
-                    @for (digit of part.digits.split(''); track $index) {
-                      <span class="countdown__digit">
-                        @for (glyph of glyphs; track glyph) {
-                          <span
-                            class="countdown__glyph"
-                            [class.countdown__glyph--shown]="glyph === digit">
-                            {{ glyph }}
-                          </span>
-                        }
-                      </span>
-                    }
-                  </span>
-                }
-              </span>
+            @if (registration.until; as until) {
+              <lcc-countdown [until]="until" />
             } @else {
-              <span class="countdown countdown--closed">Closed</span>
+              <span class="card__closed">Closed</span>
             }
             @if (registration.status === 'open') {
               <a
@@ -90,7 +55,7 @@
         <lcc-text-skeleton width="9em" />
       </p>
       <div class="card__status">
-        <span class="card__status-content countdown">
+        <span class="card__status-content card__closed">
           <lcc-text-skeleton width="6em" />
         </span>
         <a

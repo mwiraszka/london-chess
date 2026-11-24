@@ -75,8 +75,8 @@ describe('TournamentCardComponent', () => {
     fixture.detectChanges();
 
     expect(textOf('.card__label')).toBe('Registrationopensin');
-    expect(before).toBe('1:02:03:04');
-    expect(countdownText()).toBe('1:02:03:03');
+    expect(before).toBe('01:02:03:04');
+    expect(countdownText()).toBe('01:02:03:03');
     expect(query(fixture.debugElement, '.countdown').attributes['aria-label']).toBe(
       '1 day, 2 hours, 3 minutes, 3 seconds',
     );
@@ -90,7 +90,7 @@ describe('TournamentCardComponent', () => {
     fixture.detectChanges();
 
     expect(textOf('.card__label')).toBe('Registrationclosesin');
-    expect(countdownText()).toBe('1:23:59:59');
+    expect(countdownText()).toBe('01:23:59:59');
     expect(registerButton().attributes['aria-label']).toBe(
       `Register for ${MOCK_UPCOMING_SUMMARY.name}`,
     );
@@ -100,7 +100,7 @@ describe('TournamentCardComponent', () => {
     render({ registrationOpens: at(-9 * DAY), registrationCloses: at(-DAY) });
 
     expect(textOf('.card__label')).toBe('Registration');
-    expect(textOf('.countdown')).toBe('Closed');
+    expect(textOf('.card__closed')).toBe('Closed');
     expect(registerButton()).toBeNull();
   });
 

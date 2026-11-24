@@ -7,28 +7,27 @@ const UNITS = [
 
 export interface CountdownPart {
   amount: number;
-  // Two digits below the days, so a count holds its width as it ticks down
+  // At least two digits, so a count holds its shape as it ticks down
   digits: string;
   unit: (typeof UNITS)[number]['unit'];
   name: (typeof UNITS)[number]['name'];
 }
 
-// Down to the second, rounded up so it reaches zero on the instant itself, and leaving
-// out the days once none are left
+// Every unit down to the second, rounded up so it reaches zero on the instant itself
 export function countdownParts(milliseconds: number): CountdownPart[] {
   let left = Math.max(0, Math.ceil(milliseconds / 1000));
-  return UNITS.flatMap(({ unit, name, seconds }): CountdownPart[] => {
+  return UNITS.map(({ unit, name, seconds }): CountdownPart => {
     const amount = Math.floor(left / seconds);
     left %= seconds;
-    if (unit === 'd') {
-      return amount ? [{ amount, digits: String(amount), unit, name }] : [];
-    }
-    return [{ amount, digits: String(amount).padStart(2, '0'), unit, name }];
+    return { amount, digits: String(amount).padStart(2, '0'), unit, name };
   });
 }
 
+// Read out from the first unit with any left, as its empty leading units say nothing
 export function describeCountdown(parts: CountdownPart[]): string {
+  const first = parts.findIndex(({ amount }) => amount > 0);
   return parts
+    .slice(first === -1 ? parts.length - 1 : first)
     .map(({ amount, name }) => `${amount} ${name}${amount === 1 ? '' : 's'}`)
     .join(', ');
 }

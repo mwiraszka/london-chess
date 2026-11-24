@@ -1,0 +1,29 @@
+<span
+  class="countdown"
+  role="timer"
+  [attr.aria-label]="description()">
+  @for (part of parts(); track part.unit; let first = $first) {
+    @if (!first) {
+      <span
+        class="countdown__separator"
+        aria-hidden="true">
+        :
+      </span>
+    }
+    <span
+      class="countdown__part"
+      aria-hidden="true">
+      @for (digit of part.digits.split(''); track $index) {
+        <span class="countdown__digit">
+          @for (glyph of glyphs; track glyph) {
+            <span
+              class="countdown__glyph"
+              [class.countdown__glyph--shown]="glyph === digit">
+              {{ glyph }}
+            </span>
+          }
+        </span>
+      }
+    </span>
+  }
+</span>

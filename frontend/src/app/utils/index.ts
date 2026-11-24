@@ -75,6 +75,7 @@ export {
   toDayString,
 } from './datetime/club-date-time.util';
 export { formatDate } from './datetime/format-date.util';
+export { SECOND_TICKS } from './datetime/second-ticks.util';
 export { formatDateRange } from './datetime/format-date-range.util';
 export { formatPartialDate } from './datetime/format-partial-date.util';
 export { isExpired } from './datetime/is-expired.util';

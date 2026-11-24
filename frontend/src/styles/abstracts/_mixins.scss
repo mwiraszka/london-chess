@@ -54,6 +54,24 @@ $breakpoints: (
   }
 }
 
+// An item of a list separated by dots, each dot drawn on a widened space after an item.
+// That space is the only place the line can break, so a line ending there drops the space
+// and its dot along with it, and no line starts or ends with a dot
+@mixin lcc-dot-separated-item($gap) {
+  white-space: nowrap;
+
+  &:not(:last-child)::after {
+    white-space: normal;
+    word-spacing: calc(#{$gap} - 0.25em);
+    background: radial-gradient(
+      circle,
+      var(--color-text-secondary) 1.5px,
+      transparent 2px
+    );
+    content: ' ';
+  }
+}
+
 // Text whose changes are not saved yet: italic, followed by an asterisk
 @mixin lcc-unsaved-marker {
   font-style: italic;
@@ -168,14 +186,4 @@ $breakpoints: (
   --ea-data-table-header-hover-background-color: var(--lcc-band-hover);
   --ea-data-table-header-hover-color: var(--lcc-on-band);
   --ea-data-table-header-sorted-color: var(--lcc-on-band);
-}
-
-// The club's orange, in the library's shades of it that keep white text readable
-@mixin secondary-button-colors {
-  --ea-button-background-color: var(--color-brand-secondary-default);
-  --ea-button-background-color-hover: var(--color-brand-secondary-hover);
-  --ea-button-background-color-active: var(--color-brand-secondary-active);
-  --ea-button-border-color: var(--color-brand-secondary-default);
-  --ea-button-border-color-hover: var(--color-brand-secondary-hover);
-  --ea-button-border-color-active: var(--color-brand-secondary-active);
 }

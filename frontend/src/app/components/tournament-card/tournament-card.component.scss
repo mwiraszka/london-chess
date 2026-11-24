@@ -17,31 +17,25 @@ ea-card {
   text-align: center;
 }
 
-// The name and details each keep to one line, cut short when they run out of room, so
-// every card is as tall as its placeholder whatever they turn out to be
-.card__name,
-.card__details {
+// The name keeps to one line, cut short when it runs out of room
+.card__name {
   overflow: hidden;
   display: block;
   width: 100%;
+  font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.card__name {
-  font-weight: 600;
-}
-
+// The details wrap onto more lines rather than being cut short, the card growing to fit
 .card__details {
+  width: 100%;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-.card__detail + .card__detail::before {
-  display: inline-block;
-  width: 16px;
-  text-align: center;
-  content: '·';
+.card__detail {
+  @include lcc-dot-separated-item(16px);
 }
 
 .card__divider {
@@ -77,53 +71,15 @@ ea-card {
   visibility: hidden;
 }
 
-.countdown {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
+// The countdown's own line, so the card is as tall whether it counts down or has closed
+.card__closed {
   font-size: 20px;
   font-weight: 700;
   line-height: 28px;
   white-space: nowrap;
-  color: var(--lcc-accent-text);
-}
-
-.countdown__part {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-// Each digit holds the width of the widest on a tile of its own, so the count never shifts
-// and a narrow digit sits centred in its tile
-.countdown__digit {
-  display: inline-grid;
-  padding: 0 1px;
-  border: 1px solid var(--lcc-card-border);
-  border-radius: var(--radius-sm);
-  background-color: var(--lcc-card-inset);
-}
-
-.countdown__glyph {
-  visibility: hidden;
-  justify-self: center;
-  grid-area: 1 / 1;
-}
-
-.countdown__glyph--shown {
-  visibility: visible;
-}
-
-.countdown__separator {
-  color: var(--color-text-secondary);
-}
-
-.countdown--closed {
   color: var(--color-text-primary);
 }
 
 .register-button {
-  @include secondary-button-colors;
-
   flex-shrink: 0;
 }
