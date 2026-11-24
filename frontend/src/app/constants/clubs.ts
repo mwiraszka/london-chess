@@ -74,8 +74,7 @@ export const REGIONAL_CLUBS: Club[] = [
   {
     id: 'goderich-chess-club',
     name: 'Goderich Chess Club',
-    mapUrl:
-      'https://www.google.com/maps/search/?api=1&query=Goderich+Library+52+Montreal+Street+Goderich+ON',
+    mapUrl: 'https://maps.app.goo.gl/HyuqGAgj1CGUX5Hh9',
     location: { lat: 43.74199, lng: -81.71302 },
     addressLine1: 'Goderich Library',
     addressLine2: '52 Montreal Street',
@@ -88,8 +87,7 @@ export const REGIONAL_CLUBS: Club[] = [
   {
     id: 'woodstock-chess-club',
     name: 'Woodstock Chess Club',
-    mapUrl:
-      'https://www.google.com/maps/place/Woodstock+Public+Library/@43.1263405,-80.7558134,14.62z/data=!4m6!3m5!1s0x882c1f0cf81f0a79:0x87ba9c651ea17a28!8m2!3d43.1317485!4d-80.758693!16s%2Fg%2F1td5xsz8',
+    mapUrl: 'https://maps.app.goo.gl/ekgqAH1DwfkdnS4e8',
     location: { lat: 43.1317485, lng: -80.758693 },
     addressLine1: 'Woodstock Public Library',
     addressLine2: '445 Hunter Street',
