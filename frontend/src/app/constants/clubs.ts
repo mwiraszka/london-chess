@@ -85,4 +85,15 @@ export const REGIONAL_CLUBS: Club[] = [
     email: 'goderichchessclub@gmail.com',
     website: 'goderichchessclub.com',
   },
+  {
+    id: 'woodstock-chess-club',
+    name: 'Woodstock Chess Club',
+    mapUrl:
+      'https://www.google.com/maps/place/Woodstock+Public+Library/@43.1263405,-80.7558134,14.62z/data=!4m6!3m5!1s0x882c1f0cf81f0a79:0x87ba9c651ea17a28!8m2!3d43.1317485!4d-80.758693!16s%2Fg%2F1td5xsz8',
+    location: { lat: 43.1317485, lng: -80.758693 },
+    addressLine1: 'Woodstock Public Library',
+    addressLine2: '445 Hunter Street',
+    addressLine3: 'Woodstock, ON N4S 4G7',
+    scheduleText: 'January 5–June 29, 2027\nTuesdays, 6:00pm–8:00pm',
+  },
 ];
