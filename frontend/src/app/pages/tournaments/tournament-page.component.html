@@ -49,87 +49,86 @@
           <span class="details__value">{{ tournament.timeControl }}</span>
         </span>
       }
-      <span class="details__item">
-        <span class="details__value">
-          {{ tournament.playerCount }}
-          {{ tournament.playerCount === 1 ? 'player' : 'players' }}
+      @if (playerCount(); as playerCount) {
+        <span class="details__item">
+          <span class="details__value">{{ playerCount }}</span>
         </span>
-      </span>
+      }
     </p>
 
     @if (registration(); as registration) {
       <ea-card
         class="registration"
         [fullWidth]="true">
-        <h3 slot="header">Registration</h3>
         <div class="registration__body">
-          <p class="registration__status">{{ registration.summary }}</p>
-
-          @if (registration.isRegistered) {
-            <div class="registration__actions">
-              <p class="registration__registered">You are registered.</p>
-              @if (registration.canWithdraw) {
-                <ea-button
-                  class="withdraw-button"
-                  variant="secondary"
-                  (clicked)="onWithdraw(tournament)">
-                  Withdraw
-                </ea-button>
-              }
-            </div>
-          } @else if (registration.status === 'open') {
-            <div class="registration__actions">
-              @if (user()) {
-                <ea-button
-                  class="register-button"
-                  [loading]="registering()"
-                  (clicked)="onRegister(tournament)">
-                  Register
-                </ea-button>
-              } @else {
-                <ea-button
-                  class="log-in-button"
-                  (clicked)="onLogIn()">
-                  Log in to register
-                </ea-button>
-              }
-            </div>
+          @if (registration.until; as until) {
+            <lcc-countdown [until]="until" />
           }
-
-          @if (registration.registrants.length) {
-            <ol
-              class="registration__list"
-              aria-label="Registered players">
-              @for (
-                registrant of registration.registrants;
-                track registrant.memberNumber
-              ) {
-                <li class="registration__registrant">
-                  <lcc-member-link
-                    [memberNumber]="registrant.memberNumber"
-                    [name]="registrant.firstName + ' ' + registrant.lastName" />
-                  <span class="registration__rating">
-                    {{ registrant.rating | ratingLabel }}
-                  </span>
-                </li>
-              }
-            </ol>
-          } @else {
-            <p class="registration__empty">No one has registered yet.</p>
-          }
+          <p class="registration-status">{{ registration.summary }}</p>
         </div>
       </ea-card>
     }
 
-    @if (!hasResults()) {
-      <p class="details details__pending">
-        Standings will appear here once the tournament is under way.
-      </p>
-    }
-
     <div
       class="sections"
-      [attr.aria-busy]="vm.tournament ? null : true">
+      [attr.aria-busy]="vm.tournament ? null : true"
+      [class.sections--registration]="!!registration()">
+      @if (registration(); as registration) {
+        <section
+          class="section"
+          aria-labelledby="registrants-heading">
+          <div class="section__title">
+            <div class="registrants__title">
+              <h3
+                id="registrants-heading"
+                class="section__heading">
+                Registered players
+              </h3>
+              @if (registration.isRegistered) {
+                @if (registration.canWithdraw) {
+                  <ea-button
+                    class="withdraw-button registrants__action"
+                    variant="secondary"
+                    [fullWidth]="true"
+                    (clicked)="onWithdraw(tournament)">
+                    Withdraw
+                  </ea-button>
+                }
+              } @else if (registration.status === 'open') {
+                @if (user()) {
+                  <ea-button
+                    class="register-button registrants__action"
+                    [fullWidth]="true"
+                    [loading]="registering()"
+                    (clicked)="onRegister(tournament)">
+                    Register
+                  </ea-button>
+                } @else {
+                  <ea-button
+                    class="log-in-button registrants__action"
+                    [fullWidth]="true"
+                    (clicked)="onLogIn()">
+                    Log in to register
+                  </ea-button>
+                }
+              }
+            </div>
+            <ea-divider class="section__rule" />
+          </div>
+          @if (registrantRows().length) {
+            <lcc-data-table
+              class="registrants"
+              aria-label="Registered players"
+              [columns]="registrantColumns()"
+              [data]="registrantRows()"
+              [fullWidth]="true"
+              [sort]="registrantSort" />
+          } @else {
+            <p class="registrants__empty">No one has registered yet.</p>
+          }
+        </section>
+      }
+
       @for (section of sections(); track section.key) {
         <section class="section">
           @if (section.heading; as heading) {
@@ -223,6 +222,34 @@
     [memberNumber]="row.entry.player.memberNumber"
     [name]="row.player"
     [whenClipped]="true" />
+</ng-template>
+
+<ng-template
+  #registrantRankCell
+  let-row>
+  <span class="registrants__rank">{{ row.rank }}</span>
+</ng-template>
+
+<ng-template
+  #registrantPlayerCell
+  let-row>
+  <lcc-member-link
+    class="registrants__player"
+    nameOrder="last-first"
+    [eaTooltip]="row.player"
+    [memberNumber]="row.memberNumber"
+    [name]="row.player"
+    [whenClipped]="true" />
+</ng-template>
+
+<ng-template
+  #registrantRatingCell
+  let-row>
+  @if (row.rating === null) {
+    <span class="crosstable__unrated">Unrated</span>
+  } @else {
+    {{ row.ratingLabel }}
+  }
 </ng-template>
 
 <ng-template

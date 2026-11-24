@@ -3,6 +3,7 @@ import {
   ButtonComponent,
   CardComponent,
   DataTableColumn,
+  DataTableSortState,
   DialogService,
   DividerComponent,
   EditIconComponent,
@@ -30,6 +31,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
+import { CountdownComponent } from '@app/components/countdown/countdown.component';
 import { DataTableComponent } from '@app/components/data-table/data-table.component';
 import { LinkListComponent } from '@app/components/link-list/link-list.component';
 import { LoadFailedComponent } from '@app/components/load-failed/load-failed.component';
@@ -42,6 +44,7 @@ import {
   AdminLinkAction,
   Dialog,
   InternalLink,
+  IsoDate,
   RegistrationStatus,
   RoundResult,
   Tournament,
@@ -52,7 +55,6 @@ import {
   TournamentSummary,
   UncountedGameView,
 } from '@app/models';
-import { RatingLabelPipe } from '@app/pipes';
 import {
   AdminActionsService,
   AuthDrawerService,
@@ -63,10 +65,12 @@ import {
 import { AuthSelectors } from '@app/store/auth';
 import { TournamentsActions, TournamentsSelectors } from '@app/store/tournaments';
 import {
+  SECOND_TICKS,
   canWithdraw,
   formatDate,
   formatDateRange,
   formatScore,
+  isUnrated,
   parseSubtitlePeople,
   playerName,
   playerNameLastFirst,
@@ -93,6 +97,17 @@ export interface CrosstableRow {
   score: number | null;
   resultNote: string;
   [round: `round-${number}`]: RoundCell | null;
+}
+
+// A registered player, numbered from the highest rated down
+export interface RegistrantRow {
+  id: string;
+  rank: number;
+  player: string;
+  memberNumber: number;
+  // A number for the table to sort by, none for an unrated player
+  rating: number | null;
+  ratingLabel: string;
 }
 
 export interface SectionHeading {
@@ -217,13 +232,13 @@ type CellTemplate<T> = TemplateRef<{ $implicit: T; value: unknown }>;
   imports: [
     ButtonComponent,
     CardComponent,
+    CountdownComponent,
     DataTableComponent,
     DividerComponent,
     LinkListComponent,
     LoadFailedComponent,
     MemberLinkComponent,
     PageHeaderComponent,
-    RatingLabelPipe,
     RouterLink,
     TextSkeletonComponent,
     TooltipDirective,
@@ -246,6 +261,12 @@ export class TournamentPageComponent implements OnInit {
   private readonly roundCell = viewChild<CellTemplate<CrosstableRow>>('roundCell');
   private readonly scoreCell = viewChild<CellTemplate<CrosstableRow>>('scoreCell');
   private readonly noteCell = viewChild<CellTemplate<CrosstableRow>>('noteCell');
+  private readonly registrantRankCell =
+    viewChild<CellTemplate<RegistrantRow>>('registrantRankCell');
+  private readonly registrantPlayerCell =
+    viewChild<CellTemplate<RegistrantRow>>('registrantPlayerCell');
+  private readonly registrantRatingCell =
+    viewChild<CellTemplate<RegistrantRow>>('registrantRatingCell');
 
   protected readonly pageIcon = AwardIconComponent;
   protected readonly formatLabels = TOURNAMENT_FORMAT_LABELS;
@@ -350,20 +371,37 @@ export class TournamentPageComponent implements OnInit {
 
   protected readonly hasResults = computed(() => !!this.summary()?.playerCount);
 
-  // Worked out as the tournament loads, the server having the final word on the window
+  private readonly now = toSignal(SECOND_TICKS.pipe(map(() => new Date())), {
+    initialValue: new Date(),
+  });
+
+  // Checked each second, so the page opens and closes registration as its countdown runs
+  // out, the server having the final word on the window
+  private readonly currentRegistrationStatus = computed((): RegistrationStatus => {
+    const tournament = this.summary();
+    return tournament ? registrationStatus(tournament, this.now()) : 'none';
+  });
+
   protected readonly registration = computed(() => {
     const tournament = this.summary();
     if (!tournament || this.hasResults()) {
       return null;
     }
-    const status = registrationStatus(tournament);
+    const status = this.currentRegistrationStatus();
     if (status === 'none' && !tournament.registrants.length) {
       return null;
     }
     const memberNumber = this.user()?.memberNumber ?? null;
+    const until: IsoDate | null =
+      status === 'open'
+        ? tournament.registrationCloses
+        : status === 'not-open'
+          ? tournament.registrationOpens
+          : null;
     return {
       status,
       summary: this.registrationSummary(status, tournament),
+      until,
       registrants: tournament.registrants,
       isRegistered:
         memberNumber !== null &&
@@ -373,6 +411,66 @@ export class TournamentPageComponent implements OnInit {
       canWithdraw: canWithdraw(tournament),
     };
   });
+
+  // How many played once there are results, and how many have registered before then
+  protected readonly playerCount = computed((): string | null => {
+    const tournament = this.summary();
+    if (!tournament) {
+      return null;
+    }
+    if (this.hasResults() || !this.registration()) {
+      const count = tournament.playerCount;
+      return `${count} ${count === 1 ? 'player' : 'players'}`;
+    }
+    const count = tournament.registrants.length;
+    return `${count} ${count === 1 ? 'player' : 'players'} registered`;
+  });
+
+  protected readonly registrantRows = computed((): RegistrantRow[] =>
+    (this.registration()?.registrants ?? [])
+      .map(registrant => ({
+        id: String(registrant.memberNumber),
+        player: `${registrant.lastName}, ${registrant.firstName}`,
+        memberNumber: registrant.memberNumber,
+        rating: isUnrated(registrant.rating) ? null : parseInt(registrant.rating, 10),
+        ratingLabel: registrant.rating,
+      }))
+      .sort(
+        (a, b) => (b.rating ?? -1) - (a.rating ?? -1) || a.player.localeCompare(b.player),
+      )
+      .map((row, index) => ({ ...row, rank: index + 1 })),
+  );
+
+  protected readonly registrantSort: DataTableSortState = {
+    column: 'rating',
+    direction: 'desc',
+  };
+
+  // The standings' leading columns, the number and rating only as wide as they need to be
+  // and the rest of the width given to the names. The number follows the rating order, so
+  // it sorts nothing the rating does not
+  protected readonly registrantColumns = computed(
+    (): DataTableColumn<RegistrantRow>[] => {
+      const rank = this.registrantRankCell();
+      const player = this.registrantPlayerCell();
+      const rating = this.registrantRatingCell();
+      if (!rank || !player || !rating) {
+        return [];
+      }
+      return [
+        { key: 'rank', label: '#', align: 'right', width: '1%', cellTemplate: rank },
+        { key: 'player', label: 'Player', sortable: true, cellTemplate: player },
+        {
+          key: 'rating',
+          label: 'Rating',
+          sortable: true,
+          align: 'right',
+          width: '1%',
+          cellTemplate: rating,
+        },
+      ];
+    },
+  );
 
   protected readonly subtitlePeople = computed(() =>
     parseSubtitlePeople(this.summary()?.subtitle ?? ''),
@@ -482,13 +580,13 @@ export class TournamentPageComponent implements OnInit {
   ): string {
     switch (status) {
       case 'open':
-        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short at-time')}.`;
+        return `Registration is open until ${formatDate(registrationCloses ?? undefined, 'short at-time')}`;
       case 'not-open':
-        return `Registration opens on ${formatDate(registrationOpens ?? undefined, 'short at-time')}.`;
+        return `Registration opens on ${formatDate(registrationOpens ?? undefined, 'short at-time')}`;
       case 'closed':
-        return 'Registration has closed.';
+        return 'Registration has closed';
       default:
-        return 'This tournament does not take registrations online.';
+        return 'This tournament does not take registrations online';
     }
   }
 

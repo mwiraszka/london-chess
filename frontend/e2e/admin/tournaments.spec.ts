@@ -285,8 +285,8 @@ test.describe('registering for a tournament', () => {
   test('registers the signed-in member and lets them withdraw', async ({ page }) => {
     await logIn(page);
     await page.goto(`/tournaments/${UPCOMING.number}`);
-    const registration = page.locator('.registration');
-    const adminName = `${ADMIN.firstName} ${ADMIN.lastName}`;
+    const registrants = page.getByRole('table', { name: 'Registered players' });
+    const adminName = `${ADMIN.lastName}, ${ADMIN.firstName}`;
 
     const registered = page.waitForResponse(
       response =>
@@ -294,13 +294,10 @@ test.describe('registering for a tournament', () => {
         response.request().method() === 'POST',
       { timeout: RESPONSE_TIMEOUT },
     );
-    await registration.getByRole('button', { name: 'Register', exact: true }).click();
+    await page.getByRole('button', { name: 'Register', exact: true }).click();
 
     expect((await registered).status()).toBe(200);
-    await expect(registration).toContainText('You are registered.');
-    await expect(
-      registration.getByRole('list', { name: 'Registered players' }),
-    ).toContainText(adminName);
+    await expect(registrants).toContainText(adminName);
 
     const withdrawn = page.waitForResponse(
       response =>
@@ -308,13 +305,13 @@ test.describe('registering for a tournament', () => {
         response.request().method() === 'DELETE',
       { timeout: RESPONSE_TIMEOUT },
     );
-    await registration.getByRole('button', { name: 'Withdraw' }).click();
+    await page.getByRole('button', { name: 'Withdraw' }).click();
     await confirm(page, 'Withdraw');
 
     expect((await withdrawn).status()).toBe(200);
     await expect(
-      registration.getByRole('button', { name: 'Register', exact: true }),
+      page.getByRole('button', { name: 'Register', exact: true }),
     ).toBeVisible();
-    await expect(registration).not.toContainText(adminName);
+    await expect(page.locator('.sections')).not.toContainText(adminName);
   });
 });

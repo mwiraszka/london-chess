@@ -549,20 +549,43 @@ describe('TournamentPageComponent', () => {
 
     const registration = () => query(fixture.debugElement, '.registration');
 
-    it('should list the registered players with their ratings', () => {
+    it('should list the registered players by rating, highest first', () => {
+      openUpcoming({
+        registrants: [
+          ...MOCK_UPCOMING_TOURNAMENT.registrants,
+          {
+            memberNumber: 9,
+            firstName: 'Ann',
+            lastName: 'Lee',
+            rating: '1900',
+            registeredAt: '2026-02-03T12:00:00.000Z',
+          },
+        ],
+      });
+
+      const registrants = query(fixture.debugElement, '.registrants');
+      expect(headers(registrants)).toEqual(['#', 'Player', 'Rating']);
+      expect(tableRows(registrants)).toEqual([
+        ['1', 'Lee, Ann', '1900'],
+        ['2', 'Doe, John', '1850'],
+        ['3', 'Bloggs, Joe', '1500/7'],
+      ]);
+    });
+
+    it('should count the registered players until there are results', () => {
       openUpcoming();
 
-      expect(
-        queryAll(fixture.debugElement, '.registration__registrant').map(registrant => [
-          textOf(query(registrant, 'lcc-member-link')),
-          textOf(query(registrant, '.registration__rating')),
-        ]),
-      ).toEqual([
-        ['John Doe', '1850'],
-        ['Joe Bloggs', '1500/7'],
-      ]);
-      expect(textOf(query(fixture.debugElement, '.details__pending'))).toBe(
-        'Standings will appear here once the tournament is under way.',
+      expect(queryAll(fixture.debugElement, '.details__item').map(textOf)).toContain(
+        '2 players registered',
+      );
+    });
+
+    it('should say when no one has registered yet', () => {
+      openUpcoming({ registrants: [] });
+
+      expect(query(fixture.debugElement, '.registrants')).toBeFalsy();
+      expect(queryTextContent(fixture.debugElement, '.registrants__empty')).toBe(
+        'No one has registered yet.',
       );
     });
 
@@ -571,10 +594,8 @@ describe('TournamentPageComponent', () => {
       open(MOCK_UPCOMING_TOURNAMENT.number);
 
       expect(
-        queryAll(fixture.debugElement, '.registration__registrant lcc-member-link').map(
-          textOf,
-        ),
-      ).toEqual(['John Doe', 'Joe Bloggs']);
+        queryAll(fixture.debugElement, '.registrants lcc-member-link').map(textOf),
+      ).toEqual(['Doe, John', 'Bloggs, Joe']);
       expect(query(fixture.debugElement, '.log-in-button')).toBeTruthy();
     });
 
@@ -583,9 +604,10 @@ describe('TournamentPageComponent', () => {
 
       query(fixture.debugElement, '.log-in-button').triggerEventHandler('clicked');
 
-      expect(queryTextContent(fixture.debugElement, '.registration__status')).toMatch(
-        /^Registration is open until \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M\.$/,
+      expect(queryTextContent(fixture.debugElement, '.registration-status')).toMatch(
+        /^Registration is open until \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M$/,
       );
+      expect(query(fixture.debugElement, '.registration lcc-countdown')).toBeTruthy();
       expect(TestBed.inject(AuthDrawerService).openLogin).toHaveBeenCalled();
     });
 
@@ -620,9 +642,7 @@ describe('TournamentPageComponent', () => {
       query(fixture.debugElement, '.withdraw-button').triggerEventHandler('clicked');
       await fixture.whenStable();
 
-      expect(textOf(query(fixture.debugElement, '.registration__registered'))).toBe(
-        'You are registered.',
-      );
+      expect(query(fixture.debugElement, '.register-button')).toBeFalsy();
       expect(dialogOpenSpy).toHaveBeenCalledWith(BasicDialogComponent, expect.anything());
       expect(TestBed.inject(StoreRequestService).dispatch).toHaveBeenCalledWith(
         TournamentsActions.withdrawalRequested({
@@ -638,20 +658,21 @@ describe('TournamentPageComponent', () => {
       openUpcoming({ registrationOpens: '2049-01-01T12:00:00.000Z' });
       const beforeOpening = queryTextContent(
         fixture.debugElement,
-        '.registration__status',
+        '.registration-status',
       );
       const registerBeforeOpening = query(fixture.debugElement, '.register-button');
 
       openUpcoming({ registrationCloses: '2026-01-02T12:00:00.000Z' });
 
       expect(beforeOpening).toMatch(
-        /^Registration opens on \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M\.$/,
+        /^Registration opens on \w{3}, \w{3} \d+, \d{4} at \d+:\d{2} [AP]M$/,
       );
       expect(registerBeforeOpening).toBeFalsy();
-      expect(queryTextContent(fixture.debugElement, '.registration__status')).toBe(
-        'Registration has closed.',
+      expect(queryTextContent(fixture.debugElement, '.registration-status')).toBe(
+        'Registration has closed',
       );
       expect(query(fixture.debugElement, '.register-button')).toBeFalsy();
+      expect(query(fixture.debugElement, '.registration lcc-countdown')).toBeFalsy();
     });
 
     it('should leave out registration for a tournament that takes none online', () => {
@@ -698,10 +719,8 @@ describe('TournamentPageComponent', () => {
 
       openUpcoming({ date: '2026-01-01' });
 
-      expect(textOf(query(fixture.debugElement, '.registration__registered'))).toBe(
-        'You are registered.',
-      );
       expect(query(fixture.debugElement, '.withdraw-button')).toBeFalsy();
+      expect(query(fixture.debugElement, '.register-button')).toBeFalsy();
     });
 
     it('should let an admin delete the tournament', () => {
