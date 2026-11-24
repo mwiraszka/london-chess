@@ -5,15 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v6.10.0] - 2026-11-23
+## [v6.10.0] - 2026-11-24
 
 ### Added
 
-- Send members one email listing several schedule changes at once, instead of one email for each change
+- Add a schedule editor for admins to add, change and remove several events at once, sending members one email listing every change instead of one email for each
 
 ### Changed
 
 - Bring pages left open up to the latest version of the site when you come back to them
+- Show the players registered for a tournament in a table like its standings, highest rated first, under a countdown to when registration opens or closes
 - Update third-party packages
 
 ### Fixed
