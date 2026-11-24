@@ -17,6 +17,7 @@ export { MembersApiService } from './api/members-api.service';
 export { MetaAndTitleService } from './meta-and-title.service';
 export { PendingRequestsService } from './pending-requests.service';
 export { RefreshService } from './refresh.service';
+export { ReleaseWatcherService } from './release-watcher.service';
 export { KEEP_SCROLL, RoutingService } from './routing.service';
 export { ScrollPositionService } from './scroll-position.service';
 export { StandingsFileService } from './standings-file.service';

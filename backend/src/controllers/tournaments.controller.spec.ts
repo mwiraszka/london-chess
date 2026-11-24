@@ -1331,6 +1331,10 @@ describe('tournaments routes', () => {
     });
 
     it('should offer the archived games between the same people for a game it would add', async () => {
+      await TournamentModel.updateOne(
+        { number: 86 },
+        { $set: { gameArchiveTournament: 'Club Championship' } },
+      );
       const archived = await createGame(white, black, 'A Match', '3');
       await createGame(white, await createPlayer('Other'), 'A Match', '4');
 
@@ -1589,7 +1593,7 @@ describe('tournaments routes', () => {
       expect(player?.gameCount).toBe(0);
     });
 
-    it("should give an archived game the PGN's details once confirmed to be it", async () => {
+    it("should give an archived game the PGN's details once confirmed to be it, and drop the name it no longer uses", async () => {
       await TournamentModel.updateOne(
         { number: 86 },
         { $set: { gameArchiveTournament: 'Club Championship' } },
@@ -1627,7 +1631,6 @@ describe('tournaments routes', () => {
       expect(counts.map(({ lastName, gameCount }) => [lastName, gameCount])).toEqual([
         ['Black', 1],
         ['White', 2],
-        ['Whyte', 0],
       ]);
     });
 
@@ -1673,6 +1676,10 @@ describe('tournaments routes', () => {
           .send(body);
 
       it('should offer the archived games a pairing with no game of its own might be', async () => {
+        await TournamentModel.updateOne(
+          { number: 86 },
+          { $set: { gameArchiveTournament: 'Club Championship' } },
+        );
         const archived = await createGame(white, black, 'A Match', '3');
 
         const response = await review();
@@ -1690,7 +1697,49 @@ describe('tournaments routes', () => {
             candidates: [expect.objectContaining({ id: archived })],
           }),
         ]);
-        expect(data.unplaced).toEqual([]);
+        expect(data.unplaced).toEqual([expect.objectContaining({ id: archived })]);
+      });
+
+      it('should offer no archived game to a tournament with none filed under it', async () => {
+        await createGame(white, black, 'A Match', '3');
+
+        const response = await review();
+
+        expect(response.body.data.unlinked).toEqual([
+          expect.objectContaining({ section: 'A1', round: 1, candidates: [] }),
+        ]);
+      });
+
+      it("should not offer a game another tournament's results link to a round", async () => {
+        await TournamentModel.updateOne(
+          { number: 86 },
+          { $set: { gameArchiveTournament: 'Club Championship' } },
+        );
+        await createTournament({
+          number: 118,
+          date: '2024-09-12',
+          gameArchiveTournament: 'Club Championship',
+          sections: [{ ...recordedSection(white, black), gameArchiveSections: ['A1'] }],
+        });
+        await GameModel.create({
+          tournament: 'Club Championship',
+          section: 'A1',
+          year: 2024,
+          date: '2024-09-12',
+          round: '1',
+          whitePlayerId: white,
+          blackPlayerId: black,
+          result: '1-0',
+          plyCount: 40,
+          moves: '1. e4',
+          modificationInfo: MODIFICATION_INFO,
+        });
+
+        const response = await review();
+
+        expect(response.body.data.unlinked).toEqual([
+          expect.objectContaining({ section: 'A1', round: 1, candidates: [] }),
+        ]);
       });
 
       it('should tie a game to the round, which then links to it', async () => {

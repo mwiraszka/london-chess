@@ -56,6 +56,22 @@ export const unsavedAccountChangesGuard: CanDeactivateFn<UnsavedChangesPage> = (
   );
 };
 
+export const unsavedScheduleChangesGuard: CanDeactivateFn<UnsavedChangesPage> = (
+  component,
+  currentRoute,
+) => {
+  const dialogService = inject(DialogService);
+
+  return (
+    !canStillSave(currentRoute) ||
+    !component.hasUnsavedChanges() ||
+    confirmLeaving(
+      dialogService,
+      'Leave without saving? Your changes to the schedule will be lost.',
+    )
+  );
+};
+
 // Changes that can no longer be saved are not worth keeping anyone on a page
 // they are no longer allowed to see
 function canStillSave(route: ActivatedRouteSnapshot): boolean {

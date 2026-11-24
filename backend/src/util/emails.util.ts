@@ -103,6 +103,62 @@ export function buildScheduleChangeEmail(
   ]);
 }
 
+// One email for any number of changes, a single one told as it always was
+export function buildScheduleChangesEmail(
+  member: { firstName: string },
+  changes: ScheduleChange[],
+  scheduleUrl: string,
+  preferencesUrl: string,
+): EmailContent {
+  if (changes.length === 1) {
+    return buildScheduleChangeEmail(member, changes[0], scheduleUrl, preferencesUrl);
+  }
+  const ofKind = (kind: ScheduleChange['kind']) =>
+    changes.filter(change => change.kind === kind);
+  const added = ofKind('added');
+  const changed = ofKind('changed');
+  const removed = ofKind('removed');
+
+  return buildEmail('London Chess schedule changes', CLUB_NAME, [
+    paragraph(`Hi ${member.firstName},`),
+    paragraph('The London Chess schedule has changed.'),
+    ...(added.length
+      ? [
+          paragraph('Added:'),
+          table(
+            added.map(({ title, when, type }) => [title, when, type]),
+            ['Event', 'Date and time', 'Type'],
+          ),
+        ]
+      : []),
+    ...(changed.length
+      ? [
+          paragraph('Changed:'),
+          table(
+            changed.flatMap(({ title, rows }) =>
+              rows.map(({ label, before, after }) => [title, label, before, after]),
+            ),
+            ['Event', 'Detail', 'Previous', 'New'],
+          ),
+        ]
+      : []),
+    ...(removed.length
+      ? [
+          paragraph('Removed:'),
+          table(
+            removed.map(({ title, when }) => [title, when]),
+            ['Event', 'Date and time'],
+          ),
+        ]
+      : []),
+    paragraph('See the schedule: ', link(scheduleUrl)),
+    paragraph(
+      'To stop these emails, turn off schedule change notifications in your account preferences: ',
+      link(preferencesUrl),
+    ),
+  ]);
+}
+
 export function buildVerificationCodeEmail(code: string): EmailContent {
   return buildEmail('Your London Chess verification code', CLUB_NAME, [
     paragraph('Use this code to verify your email address. It expires in 10 minutes.'),

@@ -1,18 +1,22 @@
 import { EmailContent } from '../util/email-template.util';
 
-const { createTransport, sendMail } = vi.hoisted(() => {
+const { captureException, close, createTransport, sendMail } = vi.hoisted(() => {
   const sendMail = vi.fn<(message: Record<string, string>) => Promise<object>>(
     async () => ({}),
   );
+  const close = vi.fn<() => void>();
   return {
     sendMail,
-    createTransport: vi.fn<(options: object) => { sendMail: typeof sendMail }>(() => ({
-      sendMail,
-    })),
+    close,
+    createTransport: vi.fn<
+      (options: object) => { sendMail: typeof sendMail; close: typeof close }
+    >(() => ({ sendMail, close })),
+    captureException: vi.fn<(error: unknown, context: object) => string>(() => ''),
   };
 });
 
 vi.mock('nodemailer', () => ({ default: { createTransport } }));
+vi.mock('@sentry/node', () => ({ captureException }));
 
 const EMAIL: EmailContent = { subject: 'Subject', text: 'Text', html: '<p>Text</p>' };
 
@@ -78,5 +82,68 @@ describe('email service', () => {
     await expect(sendAdminEmail(EMAIL)).rejects.toThrow(
       'Unable to parse SMTP environment variables.',
     );
+  });
+
+  describe('sendEmails', () => {
+    it('should send every email over a few pooled connections, then close them', async () => {
+      const { sendEmails } = await loadService();
+
+      const sent = await sendEmails(
+        [
+          { to: 'jane@example.com', content: EMAIL },
+          { to: 'john@example.com', content: EMAIL },
+        ],
+        'schedule change',
+      );
+
+      expect(sent).toEqual([true, true]);
+      expect(createTransport).toHaveBeenCalledOnce();
+      expect(createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ pool: true, maxConnections: 3, secure: true }),
+      );
+      expect(sendMail).toHaveBeenCalledTimes(2);
+      expect(close).toHaveBeenCalledOnce();
+    });
+
+    it("should report each email not sent with the server's reply, but not its address", async () => {
+      sendMail
+        .mockResolvedValueOnce({})
+        .mockRejectedValueOnce(
+          Object.assign(
+            new Error('Message failed: 550 5.4.6 Unusual activity for john@example.com'),
+            { code: 'EMESSAGE', responseCode: 550, command: 'DATA' },
+          ),
+        );
+      const { sendEmails } = await loadService();
+
+      const sent = await sendEmails(
+        [
+          { to: 'jane@example.com', content: EMAIL },
+          { to: 'john@example.com', content: EMAIL },
+        ],
+        'schedule change',
+      );
+
+      expect(sent).toEqual([true, false]);
+      expect(captureException).toHaveBeenCalledOnce();
+      const [error, context] = captureException.mock.calls[0];
+      expect(String(error)).toBe(
+        'Error: Unable to send schedule change email: Message failed: 550 5.4.6 Unusual activity for <recipient>',
+      );
+      expect(context).toEqual({
+        tags: { purpose: 'schedule change' },
+        extra: { code: 'EMESSAGE', responseCode: 550, command: 'DATA' },
+      });
+      expect(close).toHaveBeenCalledOnce();
+    });
+
+    it('should not connect for no emails', async () => {
+      const { sendEmails } = await loadService();
+
+      const sent = await sendEmails([], 'schedule change');
+
+      expect(sent).toEqual([]);
+      expect(createTransport).not.toHaveBeenCalled();
+    });
   });
 });

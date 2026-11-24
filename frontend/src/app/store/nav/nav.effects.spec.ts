@@ -280,7 +280,7 @@ describe('NavEffects', () => {
       actions$.next(
         EventsActions.addEventSucceeded({
           event: MOCK_EVENTS[0],
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.navigateToSchedule$);
@@ -293,7 +293,7 @@ describe('NavEffects', () => {
         EventsActions.updateEventSucceeded({
           event: MOCK_EVENTS[0],
           originalEventTitle: 'Old Test',
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
       );
       const action = await firstValueFrom(effects.navigateToSchedule$);
@@ -506,16 +506,20 @@ describe('NavEffects', () => {
       );
     });
 
-    it.each(['/article/add', '/event/add', '/member/add', '/image/add', '/album/add'])(
-      'should load nothing for %s, an editor that starts empty',
-      url => {
-        actions$.next(mockNavigatedAction(url));
+    it.each([
+      '/article/add',
+      '/event/add',
+      '/event/edit',
+      '/member/add',
+      '/image/add',
+      '/album/add',
+    ])('should load nothing for %s, an editor that starts empty', url => {
+      actions$.next(mockNavigatedAction(url));
 
-        const results = collect(effects.handleEntityRouteNavigationRequest$);
+      const results = collect(effects.handleEntityRouteNavigationRequest$);
 
-        expect(results).toEqual([]);
-      },
-    );
+      expect(results).toEqual([]);
+    });
 
     it.each([
       ['/article/edit/not-an-id', 'articles'],

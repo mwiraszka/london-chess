@@ -3,6 +3,7 @@ import { FormControl } from '@angular/forms';
 import { EVENT_FORM_DATA_PROPERTIES } from '@app/constants';
 
 import { Id, IsoDate } from './core.model';
+import { UnnotifiedMember } from './member.model';
 import { ModificationInfo } from './modification-info.model';
 
 export type EventType =
@@ -29,7 +30,20 @@ export interface Event {
 // schedule
 export interface EventSaveResult {
   id: Id;
-  unnotifiedMemberNames: string[];
+  unnotifiedMembers: UnnotifiedMember[];
+}
+
+// Changes to the schedule saved together, so members are emailed once about all of them
+export interface ScheduleChanges {
+  added: Event[];
+  updated: Event[];
+  removed: Id[];
+}
+
+// The ids of the events added, in order, and the members who could not be emailed
+export interface ScheduleChangesResult {
+  addedIds: Id[];
+  unnotifiedMembers: UnnotifiedMember[];
 }
 
 export type EventFormData = Pick<Event, (typeof EVENT_FORM_DATA_PROPERTIES)[number]>;

@@ -6,6 +6,7 @@ import { PlayerModel } from '../models/player.model';
 import {
   GameInput,
   TournamentEntry,
+  TournamentModel,
   TournamentSection,
 } from '../models/tournament.model';
 import { useTestDatabase } from '../testing/database';
@@ -17,6 +18,7 @@ import {
   withNamedGameSections,
 } from './tournament-games.service';
 
+const NUMBER = 184;
 const TOURNAMENT = 'Club Championship';
 const YEAR = 2026;
 
@@ -119,7 +121,7 @@ describe('tournament games', () => {
       await archive(game(anna, boris));
       await archive(game(anna, clara, { round: '2' }));
 
-      const { changes } = await classifyGames(TOURNAMENT, YEAR, [
+      const { changes } = await classifyGames(NUMBER, TOURNAMENT, YEAR, [
         game(anna, boris, { moves: '1. e4   e5\n2. Nf3 1-0' }),
         game(anna, clara, { round: '2', result: '1/2-1/2' }),
         game(boris, clara, { round: '3' }),
@@ -130,7 +132,7 @@ describe('tournament games', () => {
     });
 
     it('should not look up the archive for no games', async () => {
-      const result = await classifyGames(TOURNAMENT, YEAR, []);
+      const result = await classifyGames(NUMBER, TOURNAMENT, YEAR, []);
 
       expect(result).toEqual({ changes: [], candidates: [] });
     });
@@ -138,12 +140,86 @@ describe('tournament games', () => {
     it('should count a change to whether a game counts, or to its reason', async () => {
       await archive(game(anna, boris));
 
-      const { changes } = await classifyGames(TOURNAMENT, YEAR, [
+      const { changes } = await classifyGames(NUMBER, TOURNAMENT, YEAR, [
         game(anna, boris, { notCounted: true, notCountedReason: 'Withdrew' }),
         game(anna, boris, { notCountedReason: 'Ignored while counted' }),
       ]);
 
       expect(changes).toEqual(['changed', 'unchanged']);
+    });
+
+    it('should offer the game archived in the same round with one of its players', async () => {
+      const misspelt = await createPlayer('Whyte');
+      await archive(game(anna, misspelt, { round: '3' }));
+      await archive(game(anna, clara, { round: '4' }));
+      await GameModel.create({
+        ...game(anna, boris, { round: '3' }),
+        tournament: 'Blitz',
+        location: 'London',
+        year: YEAR,
+        opening: '',
+        annotator: '',
+        modificationInfo: MODIFICATION_INFO,
+      });
+
+      const { candidates } = await classifyGames(NUMBER, TOURNAMENT, YEAR, [
+        game(anna, boris, { round: '3' }),
+      ]);
+
+      expect(candidates[0].map(({ white, black }) => [white.id, black.id])).toEqual([
+        [anna, misspelt],
+      ]);
+    });
+
+    it("should not offer a game another tournament's results link to a round", async () => {
+      await archive(game(anna, boris, { round: '1' }));
+      await TournamentModel.create({
+        number: NUMBER,
+        name: 'Championship',
+        date: '2026-09-24',
+        format: 'round-robin',
+        gameArchiveTournament: TOURNAMENT,
+        sections: [
+          {
+            ...section([], ['A1']),
+            entries: [
+              {
+                ...entry(anna),
+                rounds: [
+                  {
+                    round: 1,
+                    outcome: 'game',
+                    scores: [1],
+                    points: 1,
+                    opponentRank: 2,
+                    color: 'white',
+                  },
+                ],
+              },
+              {
+                ...entry(boris),
+                rank: 2,
+                rounds: [
+                  {
+                    round: 1,
+                    outcome: 'game',
+                    scores: [0],
+                    points: 0,
+                    opponentRank: 1,
+                    color: 'black',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      const { candidates } = await classifyGames(150, TOURNAMENT, 2025, [
+        game(anna, boris, { section: 'A', round: '6' }),
+      ]);
+
+      expect(candidates).toEqual([[]]);
     });
   });
 
@@ -263,6 +339,25 @@ describe('tournament games', () => {
         GameRecord[]
       >();
       expect(stored).toMatchObject({ year: 2025, date: '2026-01-15' });
+    });
+
+    it('should give the player a game confirmed to be an archived one was taken from', async () => {
+      const misspelt = await createPlayer('Whyte');
+      await archive(game(anna, misspelt));
+      const [stored] = await GameModel.find({ tournament: TOURNAMENT }).lean<
+        GameRecord[]
+      >();
+
+      const replaced = await archiveGames(
+        TOURNAMENT,
+        YEAR,
+        [game(anna, boris, { archivedGameId: stored._id.toString() })],
+        EDIT,
+      );
+
+      expect(replaced).toEqual([misspelt]);
+      expect(await gameCount(misspelt)).toBe(2);
+      expect(await gameCount(boris)).toBe(4);
     });
 
     it('should leave untouched a game the archive already holds as it is', async () => {

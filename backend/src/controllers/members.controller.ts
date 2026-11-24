@@ -11,6 +11,7 @@ import {
   MemberAccount,
   MemberModel,
   MemberRecord,
+  UnnotifiedMember,
   editableMemberTypes,
   memberSortingConfig,
   newMemberAccount,
@@ -18,7 +19,7 @@ import {
 } from '../models/member.model';
 import { ModificationInfo } from '../models/modification-info.model';
 import { clerkClient } from '../services/clerk.service';
-import { sendEmail } from '../services/email.service';
+import { sendEmail, sendEmails } from '../services/email.service';
 import {
   externalRatingsFreshFor,
   externalRatingsOf,
@@ -70,6 +71,7 @@ import { parseRecordNumber } from '../util/parse-record-number.util';
 import { isUnratedExpression } from '../util/rating.util';
 import { EMAILS_FROM_SITE_ONLY, profileUrlFor, siteUrlFor } from '../util/site-url.util';
 import { generateTemporaryPassword } from '../util/temporary-password.util';
+import { unnotifiedMembers } from '../util/unnotified-members.util';
 import { validateObjectByTypes } from '../util/validate-object-by-types.util';
 
 type Scope = 'public' | 'admin';
@@ -93,7 +95,7 @@ interface RatingNotice {
 
 interface RatingsUpdateResult {
   updatedIds: Id[];
-  unnotifiedMemberNames: string[];
+  unnotifiedMembers: UnnotifiedMember[];
 }
 
 function toResponse(scope: Scope): (record: MemberRecord) => PublicMember | AdminMember {
@@ -553,6 +555,7 @@ export async function updateMembers(
       _id: { $in: [...updates.keys()] },
       'account.clerkUserId': { $ne: null },
       'preferences.notifyRatingChanges': { $ne: false },
+      email: { $nin: ['', null] },
     }).lean<MemberRecord[]>();
     const notices: RatingNotice[] = accountHolders.flatMap(record => {
       const update = updates.get(record._id.toString());
@@ -615,10 +618,8 @@ export async function updateMembers(
       await session.endSession();
     }
 
-    const unnotifiedMemberNames = siteUrl
-      ? await notifyRatingChanges(notices, siteUrl)
-      : [];
-    res.status(200).json({ data: { updatedIds, unnotifiedMemberNames } });
+    const unnotified = siteUrl ? await notifyRatingChanges(notices, siteUrl) : [];
+    res.status(200).json({ data: { updatedIds, unnotifiedMembers: unnotified } });
   } catch (error) {
     res.status(500).json({ message: `Unknown error: ${error}` });
   }
@@ -845,22 +846,24 @@ async function saveForAccountHolder(
 async function notifyRatingChanges(
   notices: RatingNotice[],
   siteUrl: string,
-): Promise<string[]> {
-  const results = await Promise.allSettled(
-    notices.map(async ({ record, changes }) => {
-      const email = buildMemberChangesEmail(
+): Promise<UnnotifiedMember[]> {
+  const sent = await sendEmails(
+    notices.map(({ record, changes }) => ({
+      to: record.email,
+      content: buildMemberChangesEmail(
         record,
         changes,
         profileUrlFor(siteUrl, record),
         `${siteUrl}/account/preferences`,
-      );
-      await sendEmail(record.email, email);
-    }),
+      ),
+    })),
+    'rating change',
   );
 
-  return notices
-    .filter((_, index) => results[index].status === 'rejected')
-    .map(({ record }) => `${record.firstName} ${record.lastName}`);
+  return unnotifiedMembers(
+    notices.map(({ record }) => record),
+    sent,
+  );
 }
 
 async function failSave(

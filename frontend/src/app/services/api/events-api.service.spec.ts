@@ -12,6 +12,8 @@ import {
   Event,
   EventSaveResult,
   PaginatedItems,
+  ScheduleChanges,
+  ScheduleChangesResult,
 } from '@app/models';
 import { SET_PAGINATION_PARAMS } from '@app/tokens';
 
@@ -132,7 +134,7 @@ describe('EventsApiService', () => {
     it('should add new event', () => {
       const newEvent: Event = { ...mockEvent, id: '' };
       const mockResponse: ApiResponse<EventSaveResult> = {
-        data: { id: mockEvent.id, unnotifiedMemberNames: [] },
+        data: { id: mockEvent.id, unnotifiedMembers: [] },
       };
 
       service.addEvent(newEvent).subscribe(response => {
@@ -149,7 +151,7 @@ describe('EventsApiService', () => {
   describe('updateEvent', () => {
     it('should update existing event', () => {
       const mockResponse: ApiResponse<EventSaveResult> = {
-        data: { id: mockEvent.id, unnotifiedMemberNames: [] },
+        data: { id: mockEvent.id, unnotifiedMembers: [] },
       };
 
       service.updateEvent(mockEvent).subscribe(response => {
@@ -166,7 +168,7 @@ describe('EventsApiService', () => {
   describe('deleteEvent', () => {
     it('should delete event by id', () => {
       const mockResponse: ApiResponse<EventSaveResult> = {
-        data: { id: mockEvent.id, unnotifiedMemberNames: [] },
+        data: { id: mockEvent.id, unnotifiedMembers: [] },
       };
 
       service.deleteEvent(mockEvent.id).subscribe(response => {
@@ -176,6 +178,28 @@ describe('EventsApiService', () => {
       const req = httpMock.expectOne(`${apiBaseUrl}/${mockEvent.id}`);
       expect(req.request.method).toBe('DELETE');
       expect(req.request.body).toBeNull();
+      req.flush(mockResponse);
+    });
+  });
+
+  describe('changeEvents', () => {
+    it('should send every change to the schedule together', () => {
+      const changes: ScheduleChanges = {
+        added: [mockEvent],
+        updated: [MOCK_EVENTS[1]],
+        removed: [MOCK_EVENTS[2].id],
+      };
+      const mockResponse: ApiResponse<ScheduleChangesResult> = {
+        data: { addedIds: ['added-id'], unnotifiedMembers: [] },
+      };
+
+      service.changeEvents(changes).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(apiBaseUrl);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(changes);
       req.flush(mockResponse);
     });
   });

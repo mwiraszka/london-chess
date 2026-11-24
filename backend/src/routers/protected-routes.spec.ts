@@ -17,6 +17,7 @@ const ADMIN_ROUTES: [Method, string][] = [
   ['put', `/v1/articles/${ID}`],
   ['delete', `/v1/articles/${ID}`],
   ['post', '/v1/events'],
+  ['patch', '/v1/events'],
   ['put', `/v1/events/${ID}`],
   ['delete', `/v1/events/${ID}`],
   ['post', '/v1/images'],

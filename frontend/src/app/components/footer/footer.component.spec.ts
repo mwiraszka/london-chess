@@ -89,7 +89,9 @@ describe('FooterComponent', () => {
       it('should properly render WhatsApp link', () => {
         const whatsappLink = query(fixture.debugElement, '.socials .whatsapp');
 
-        expect(whatsappLink.nativeElement.href).toContain('bit.ly/LCC-NoticeBoard');
+        expect(whatsappLink.nativeElement.href).toBe(
+          'https://chat.whatsapp.com/LoMrYynD29fA60ah8FY1Gx',
+        );
         expect(whatsappLink.nativeElement.target).toBe('_blank');
         expect(tooltipParts(whatsappLink)).toEqual(['Club noticeboard on', 'WhatsApp']);
       });

@@ -1,0 +1,34 @@
+.unnotified-members__intro {
+  margin-bottom: 12px;
+  color: var(--color-text-primary);
+}
+
+// A long list scrolls inside the dialog, keeping its buttons in view
+.unnotified-members__list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.unnotified-members__member {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.unnotified-members__name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.unnotified-members__email {
+  overflow-wrap: anywhere;
+}

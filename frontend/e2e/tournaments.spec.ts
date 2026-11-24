@@ -137,13 +137,9 @@ test.describe('tournaments', () => {
     await upcoming.getByRole('link', { name: UPCOMING.name, exact: true }).click();
 
     await expect(page).toHaveURL(new RegExp(`/tournaments/${UPCOMING.number}$`));
-    const registration = page.locator('.registration');
-    await expect(
-      registration.getByRole('list', { name: 'Registered players' }),
-    ).toContainText(`${PROFILE_MEMBER.firstName} ${PROFILE_MEMBER.lastName}`);
-    await expect(
-      registration.getByRole('button', { name: 'Log in to register' }),
-    ).toBeVisible();
-    await expect(page.getByText('Standings will appear here')).toBeVisible();
+    await expect(page.getByRole('table', { name: 'Registered players' })).toContainText(
+      `${PROFILE_MEMBER.lastName}, ${PROFILE_MEMBER.firstName}`,
+    );
+    await expect(page.getByRole('button', { name: 'Log in to register' })).toBeVisible();
   });
 });

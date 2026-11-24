@@ -116,6 +116,7 @@ export class EventsEffects {
         EventsActions.addEventSucceeded,
         EventsActions.updateEventSucceeded,
         EventsActions.deleteEventSucceeded,
+        EventsActions.scheduleChangesSucceeded,
       ),
     );
 
@@ -139,6 +140,7 @@ export class EventsEffects {
           EventsActions.addEventSucceeded,
           EventsActions.updateEventSucceeded,
           EventsActions.deleteEventSucceeded,
+          EventsActions.scheduleChangesSucceeded,
         ),
       ),
       this.actions$.pipe(
@@ -211,7 +213,7 @@ export class EventsEffects {
           map(({ data }) =>
             EventsActions.addEventSucceeded({
               event: { ...event, id: data.id },
-              unnotifiedMemberNames: data.unnotifiedMemberNames,
+              unnotifiedMembers: data.unnotifiedMembers,
             }),
           ),
           catchError(error =>
@@ -244,7 +246,7 @@ export class EventsEffects {
             EventsActions.updateEventSucceeded({
               event: updatedEvent,
               originalEventTitle: event.title,
-              unnotifiedMemberNames: data.unnotifiedMemberNames,
+              unnotifiedMembers: data.unnotifiedMembers,
             }),
           ),
           catchError(error =>
@@ -264,7 +266,7 @@ export class EventsEffects {
             EventsActions.deleteEventSucceeded({
               eventId: event.id,
               eventTitle: event.title,
-              unnotifiedMemberNames: data.unnotifiedMemberNames,
+              unnotifiedMembers: data.unnotifiedMembers,
             }),
           ),
           catchError(error =>
@@ -272,6 +274,49 @@ export class EventsEffects {
           ),
         ),
       ),
+    );
+  });
+
+  changeSchedule$ = createEffect(() => {
+    return this.actions$.pipe(
+      ofType(EventsActions.scheduleChangesRequested),
+      concatLatestFrom(() =>
+        this.store.select(AuthSelectors.selectUser).pipe(filter(isDefined)),
+      ),
+      concatMap(([{ added, updated, removed }, user]) => {
+        const addedEvents: Event[] = added.map(formData => ({
+          ...formData,
+          id: '',
+          modificationInfo: creditEditor(user),
+        }));
+        const updatedEvents: Event[] = updated.map(event => ({
+          ...event,
+          modificationInfo: creditEditor(user, event.modificationInfo),
+        }));
+
+        return this.eventsApiService
+          .changeEvents({
+            added: addedEvents,
+            updated: updatedEvents,
+            removed: removed.map(({ id }) => id),
+          })
+          .pipe(
+            map(({ data }) =>
+              EventsActions.scheduleChangesSucceeded({
+                added: addedEvents.map((event, index) => ({
+                  ...event,
+                  id: data.addedIds[index],
+                })),
+                updated: updatedEvents,
+                removedIds: removed.map(({ id }) => id),
+                unnotifiedMembers: data.unnotifiedMembers,
+              }),
+            ),
+            catchError(error =>
+              of(EventsActions.scheduleChangesFailed({ error: this.parseError(error) })),
+            ),
+          );
+      }),
     );
   });
 

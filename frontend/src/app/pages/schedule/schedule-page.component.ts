@@ -4,6 +4,7 @@ import {
   EmptyStateComponent,
   FilterXIconComponent,
   InputComponent,
+  ListChecksIconComponent,
   PaginatorState,
   PlusCircleIconComponent,
   SearchIconComponent,
@@ -155,6 +156,13 @@ export class SchedulePageComponent implements OnInit {
     path: ['event', 'add'],
   };
 
+  public readonly editScheduleAction: AdminLinkAction = {
+    label: 'Edit the schedule',
+    icon: ListChecksIconComponent,
+    group: 'add',
+    path: ['event', 'edit'],
+  };
+
   public readonly exportEventsAction: AdminCommandAction = {
     label: 'Export events to CSV',
     icon: DownloadIconComponent,
@@ -177,6 +185,7 @@ export class SchedulePageComponent implements OnInit {
   constructor() {
     inject(AdminActionsService).register(() => [
       this.addEventAction,
+      this.editScheduleAction,
       this.exportEventsAction,
     ]);
   }

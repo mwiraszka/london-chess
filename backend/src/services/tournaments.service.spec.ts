@@ -120,6 +120,20 @@ describe('matchRoundGames', () => {
     expect(gameIds.get('1|3')).toBe(GAME_TWO);
   });
 
+  it('should link the only game of a pairing met twice to its own round alone', () => {
+    const rematch = [
+      entry(1, ANN, [played(2, 2, 1), played(5, 2, 0)]),
+      entry(2, BOB, [played(2, 1, 0), played(5, 1, 1)]),
+    ];
+
+    const gameIds = matchRoundGames(rematch, [archiveGame(GAME_ONE, ANN, BOB, '2')]);
+
+    expect(gameIds.get('1|2')).toBe(GAME_ONE);
+    expect(gameIds.get('2|2')).toBe(GAME_ONE);
+    expect(gameIds.has('1|5')).toBe(false);
+    expect(gameIds.has('2|5')).toBe(false);
+  });
+
   it('should leave a result unlinked when the round cannot tell its games apart', () => {
     const gameIds = matchRoundGames(entries, [
       archiveGame(GAME_ONE, ANN, BOB),

@@ -1,5 +1,9 @@
 @use '../../../styles/abstracts/mixins' as *;
 
+.event-type--struck {
+  text-decoration: line-through;
+}
+
 .championship-icon {
   @include icon-size(1em);
 

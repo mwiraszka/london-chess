@@ -1,6 +1,7 @@
 import {
   DialogService,
   DownloadIconComponent,
+  ListChecksIconComponent,
   PlusCircleIconComponent,
 } from '@eagami/ui';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -201,6 +202,15 @@ describe('SchedulePageComponent', () => {
       });
     });
 
+    it('should have correct editScheduleAction configuration', () => {
+      expect(component.editScheduleAction).toStrictEqual({
+        label: 'Edit the schedule',
+        icon: ListChecksIconComponent,
+        group: 'add',
+        path: ['event', 'edit'],
+      });
+    });
+
     it('should have correct exportEventsAction configuration', () => {
       expect(component.exportEventsAction).toEqual({
         label: 'Export events to CSV',
@@ -244,7 +254,11 @@ describe('SchedulePageComponent', () => {
           .actions()
           .map(action => action.label);
 
-        expect(labels).toEqual(['Add event', 'Export events to CSV']);
+        expect(labels).toEqual([
+          'Add event',
+          'Edit the schedule',
+          'Export events to CSV',
+        ]);
       });
 
       it('should render only the list in list view', () => {

@@ -1,3 +1,5 @@
+@use '../../../styles/abstracts/mixins' as *;
+
 :host {
   align-items: stretch;
   gap: 16px;
@@ -17,22 +19,13 @@ $details-gap: 24px;
 }
 
 .details__item {
-  white-space: nowrap;
+  @include lcc-dot-separated-item($details-gap);
 }
 
 // A box of its own, as a space at the edge of a value would collapse the dot's space
 .details__value {
   display: inline-block;
   max-width: 100%;
-}
-
-// The dot is drawn on a widened space, the only place a line can break between items,
-// so a line ending there drops the space and its dot along with it
-.details__item:not(:last-child)::after {
-  white-space: normal;
-  word-spacing: calc(#{$details-gap} - 0.25em);
-  background: radial-gradient(circle, var(--color-text-secondary) 1.5px, transparent 2px);
-  content: ' ';
 }
 
 // Free text that can run long, so it alone may break across lines
@@ -102,7 +95,8 @@ $details-gap: 24px;
 // The table holds each column at its set width whatever the players are called, so a
 // placeholder takes the same shape; a name too long for its column is cut short, in
 // full in a tooltip
-.crosstable__player {
+.crosstable__player,
+.registrants__player {
   overflow: hidden;
   display: block;
   white-space: nowrap;
@@ -122,35 +116,70 @@ $details-gap: 24px;
   font-weight: bold;
 }
 
+// As wide as the registered players below it: the site's narrow content width, or the
+// whole width on a phone
+.registration {
+  align-self: center;
+  width: min(100%, var(--lcc-width--narrow));
+}
+
 .registration__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.registration__status,
-.registration__registered,
-.registration__empty {
-  margin: 0;
-}
-
-.registration__actions {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.registration__list {
-  display: grid;
-  gap: 4px 24px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  padding-left: 24px;
+.registration-status {
+  max-width: 100%;
   margin: 0;
-  list-style: decimal;
+  font-size: 16px;
+  text-align: center;
+  color: var(--color-text-primary);
 }
 
-.registration__rating {
-  margin-left: 8px;
+// At least the site's narrow content width, so a few short names don't leave the table
+// cramped, and the whole width on a phone
+.sections--registration {
+  min-width: min(100%, var(--lcc-width--narrow));
+}
+
+// A grid rather than a row, as a full-width button in an auto column takes only the
+// width it needs; on a phone the button spans the width above the heading
+.registrants__title {
+  display: grid;
+  align-items: center;
+  gap: 12px 24px;
+  grid-template-columns: 1fr auto;
+
+  @include respond-to('lt-sm') {
+    grid-template-columns: 1fr;
+  }
+
+  .section__heading {
+    white-space: nowrap;
+  }
+}
+
+.registrants__action {
+  @include respond-to('lt-sm') {
+    order: -1;
+  }
+}
+
+// Two digits wide whatever the count, so the column doesn't widen at the tenth player
+.registrants__rank {
+  display: inline-block;
+  min-width: 2ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.withdraw-button {
+  --ea-button-color: var(--color-error-text);
+  --ea-button-border-color: var(--color-error-text);
+}
+
+.registrants__empty {
+  margin: 0;
   color: var(--color-text-secondary);
 }

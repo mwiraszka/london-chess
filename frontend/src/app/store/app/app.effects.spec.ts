@@ -1,4 +1,4 @@
-import { ToastService } from '@eagami/ui';
+import { DialogService, ToastService } from '@eagami/ui';
 import { provideMockActions } from '@ngrx/effects/testing';
 import { Action } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
@@ -6,6 +6,7 @@ import { Observable, ReplaySubject, of, throwError } from 'rxjs';
 
 import { TestBed } from '@angular/core/testing';
 
+import { UnnotifiedMembersDialogComponent } from '@app/components/unnotified-members-dialog/unnotified-members-dialog.component';
 import { DATASET_STORAGE_KEY } from '@app/constants/storage';
 import { MOCK_ARTICLES } from '@app/mocks/articles.mock';
 import { MOCK_EVENTS } from '@app/mocks/events.mock';
@@ -82,6 +83,7 @@ describe('AppEffects', () => {
         AppEffects,
         provideMockActions(() => actions$),
         { provide: ToastService, useValue: { show: vi.fn() } },
+        { provide: DialogService, useValue: { open: vi.fn() } },
         { provide: DatasetApiService, useValue: { getDataset: vi.fn() } },
         { provide: RELOAD_PAGE, useValue: vi.fn() },
         { provide: PARSE_ERROR, useValue: parseError },
@@ -193,6 +195,7 @@ describe('AppEffects', () => {
       EventsActions.fetchEventFailed({ error: mockError }),
       EventsActions.fetchFilteredEventsFailed({ error: mockError }),
       EventsActions.fetchHomePageEventsFailed({ error: mockError }),
+      EventsActions.scheduleChangesFailed({ error: mockError }),
       EventsActions.updateEventFailed({ error: mockError }),
       GamesActions.fetchArchiveReferenceFailed({ error: mockError }),
       GamesActions.fetchFilteredGamesFailed({ error: mockError }),
@@ -256,7 +259,7 @@ describe('AppEffects', () => {
         'Old',
       ],
       [
-        EventsActions.addEventSucceeded({ event, unnotifiedMemberNames: [] }),
+        EventsActions.addEventSucceeded({ event, unnotifiedMembers: [] }),
         'success',
         event.title,
       ],
@@ -264,29 +267,30 @@ describe('AppEffects', () => {
         EventsActions.deleteEventSucceeded({
           eventId: 'e1',
           eventTitle: 'Blitz',
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
         'success',
         'Blitz',
       ],
       [EventsActions.exportEventsToCsvSucceeded({ exportedCount: 17 }), 'success', '17'],
       [
-        EventsActions.updateEventSucceeded({
-          event,
-          originalEventTitle: 'Rapid',
-          unnotifiedMemberNames: [],
+        EventsActions.scheduleChangesSucceeded({
+          added: [event],
+          updated: [],
+          removedIds: ['e1', 'e2'],
+          unnotifiedMembers: [],
         }),
         'success',
-        'Rapid',
+        '3 changes',
       ],
       [
         EventsActions.updateEventSucceeded({
           event,
           originalEventTitle: 'Rapid',
-          unnotifiedMemberNames: ['Jane Doe'],
+          unnotifiedMembers: [],
         }),
-        'warning',
-        'Jane Doe',
+        'success',
+        'Rapid',
       ],
       [ImagesActions.addImageSucceeded({ image }), 'success', image.filename],
       [ImagesActions.addImagesSucceeded({ images: [image] }), 'success', '1'],
@@ -346,18 +350,10 @@ describe('AppEffects', () => {
       [
         MembersActions.updateMemberRatingsSucceeded({
           members: MOCK_MEMBERS,
-          unnotifiedMemberNames: [],
+          unnotifiedMembers: [],
         }),
         'success',
         String(MOCK_MEMBERS.length),
-      ],
-      [
-        MembersActions.updateMemberRatingsSucceeded({
-          members: MOCK_MEMBERS,
-          unnotifiedMemberNames: ['Jo Smith', 'Al Brown'],
-        }),
-        'warning',
-        'Jo Smith, Al Brown',
       ],
       [NavActions.pageAccessDenied({ pageHeading: 'Members' }), 'info', 'Members'],
       [
@@ -504,6 +500,67 @@ describe('AppEffects', () => {
 
         expect(toast?.message).toContain(notFound.message);
       });
+    });
+  });
+
+  describe('reportUnnotifiedMembers$', () => {
+    const unnotified = [{ name: 'Jane Doe', email: 'jane@example.com' }];
+
+    it.each([
+      [
+        `the new event ${event.title}`,
+        EventsActions.addEventSucceeded({ event, unnotifiedMembers: unnotified }),
+      ],
+      [
+        'the removal of Blitz',
+        EventsActions.deleteEventSucceeded({
+          eventId: 'e1',
+          eventTitle: 'Blitz',
+          unnotifiedMembers: unnotified,
+        }),
+      ],
+      [
+        'the schedule changes',
+        EventsActions.scheduleChangesSucceeded({
+          added: [event],
+          updated: [],
+          removedIds: [],
+          unnotifiedMembers: unnotified,
+        }),
+      ],
+      [
+        'the change to Rapid',
+        EventsActions.updateEventSucceeded({
+          event,
+          originalEventTitle: 'Rapid',
+          unnotifiedMembers: unnotified,
+        }),
+      ],
+      [
+        'their new rating',
+        MembersActions.updateMemberRatingsSucceeded({
+          members: MOCK_MEMBERS,
+          unnotifiedMembers: unnotified,
+        }),
+      ],
+    ])('should list who was not emailed about %s', (subject, action) => {
+      const open = vi.mocked(TestBed.inject(DialogService).open);
+      actions$.next(action);
+
+      collect(effects.reportUnnotifiedMembers$);
+
+      expect(open).toHaveBeenCalledExactlyOnceWith(UnnotifiedMembersDialogComponent, {
+        inputs: { subject, members: unnotified },
+      });
+    });
+
+    it('should open nothing when every email went out', () => {
+      const open = vi.mocked(TestBed.inject(DialogService).open);
+      actions$.next(EventsActions.addEventSucceeded({ event, unnotifiedMembers: [] }));
+
+      collect(effects.reportUnnotifiedMembers$);
+
+      expect(open).not.toHaveBeenCalled();
     });
   });
 

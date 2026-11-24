@@ -12,6 +12,7 @@ import {
   isLccError,
   isMac,
   isTouchDevice,
+  loadPage,
   parseCsv,
   parseError,
   reloadPage,
@@ -30,6 +31,7 @@ import {
   IS_LCC_ERROR,
   IS_MAC,
   IS_TOUCH_DEVICE,
+  LOAD_PAGE,
   PARSE_CSV,
   PARSE_ERROR,
   RELOAD_PAGE,
@@ -52,6 +54,7 @@ describe('util function tokens', () => {
     ['BUILD_IMAGES_FORM_DATA', BUILD_IMAGES_FORM_DATA, buildImagesFormData],
     ['DATA_URL_TO_FILE', DATA_URL_TO_FILE, dataUrlToFile],
     ['IS_LCC_ERROR', IS_LCC_ERROR, isLccError],
+    ['LOAD_PAGE', LOAD_PAGE, loadPage],
     ['RELOAD_PAGE', RELOAD_PAGE, reloadPage],
     ['VISIBLE_TIMER', VISIBLE_TIMER, visibleTimer],
   ])('%s provides the matching utility by default', (_name, token, utilFn) => {

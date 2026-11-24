@@ -36,6 +36,8 @@ export type {
   EventFormValue,
   EventSaveResult,
   EventType,
+  ScheduleChanges,
+  ScheduleChangesResult,
 } from './event.model';
 export type {
   ArchivePlayer,
@@ -103,6 +105,7 @@ export type {
   NameOrder,
   OptionalDetail,
   ProfileDetailsFormData,
+  UnnotifiedMember,
 } from './member.model';
 export type { ModificationInfo } from './modification-info.model';
 export type { NavPath } from './nav-path.model';

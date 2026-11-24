@@ -269,10 +269,10 @@ export async function updateTournament(
     const sections = named && games.length ? withGameSections(named, games) : named;
     // A tournament first given games through the site files them under its own name
     const gameArchiveTournament = record.gameArchiveTournament ?? input.name.trim();
-    if (games.length) {
-      // Games go in first, so saving again after a failure adds none of them twice
-      await archiveGames(gameArchiveTournament, year, games, creditEditor(editor, null));
-    }
+    // Games go in first, so saving again after a failure adds none of them twice
+    const replacedPlayerIds = games.length
+      ? await archiveGames(gameArchiveTournament, year, games, creditEditor(editor, null))
+      : [];
     await TournamentModel.updateOne(
       { number },
       {
@@ -284,9 +284,10 @@ export async function updateTournament(
         },
       },
     );
-    if (sections) {
-      await removeOrphanedPlayers(entryPlayerIds(record));
-    }
+    await removeOrphanedPlayers([
+      ...(sections ? entryPlayerIds(record) : []),
+      ...replacedPlayerIds,
+    ]);
 
     res.status(200).json({ data: number });
   } catch (error) {
@@ -351,8 +352,13 @@ export async function checkTournamentImport(
         ? null
         : await TournamentModel.findOne(
             { number },
-            { name: 1, gameArchiveTournament: 1, sections: 1 },
-          ).lean<Pick<TournamentRecord, 'name' | 'gameArchiveTournament' | 'sections'>>();
+            { number: 1, name: 1, gameArchiveTournament: 1, sections: 1 },
+          ).lean<
+            Pick<
+              TournamentRecord,
+              'number' | 'name' | 'gameArchiveTournament' | 'sections'
+            >
+          >();
     if (!record) {
       res.status(404).json({
         message: `Unable to check the import for tournament [${req.params.number}] because it could not be found.`,
@@ -380,6 +386,7 @@ export async function checkTournamentImport(
     const inputs = sections as SectionInput[];
     const { changed, removed } = await compareSections(inputs, record.sections);
     const { changes, candidates } = await classifyGames(
+      record.number,
       record.gameArchiveTournament ?? record.name,
       Number((date as string).slice(0, 4)),
       games as GameInput[],

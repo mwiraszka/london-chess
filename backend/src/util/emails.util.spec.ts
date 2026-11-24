@@ -2,10 +2,12 @@ import {
   buildAccountRequestEmail,
   buildDetailsChangeRequestEmail,
   buildMemberChangesEmail,
+  buildScheduleChangesEmail,
   buildVerificationCodeEmail,
   buildWelcomeEmail,
 } from './emails.util';
 import { MemberChange } from './member-changes.util';
+import { ScheduleChange } from './schedule-changes.util';
 
 const LOGIN_URL = 'https://londonchess.ca/account';
 const PROFILE_URL = 'https://londonchess.ca/members/7';
@@ -99,6 +101,44 @@ describe('buildMemberChangesEmail', () => {
     expect(email.text).toContain(PROFILE_URL);
     expect(email.html).toMatch(/<td[^>]*>1550<\/td>/);
     expect(email.html).toContain(`<a href="${PROFILE_URL}">`);
+  });
+});
+
+describe('buildScheduleChangesEmail', () => {
+  const SCHEDULE_URL = 'https://londonchess.ca/schedule';
+  const change = (title: string, after: string): ScheduleChange => ({
+    kind: 'changed',
+    title,
+    when: 'Thursday, October 1, 2026 at 7:00 p.m.',
+    type: 'Blitz',
+    rows: [{ label: 'Title', before: 'Blitz night', after }],
+  });
+
+  it('should list several changes in one email', () => {
+    const email = buildScheduleChangesEmail(
+      { firstName: 'Jane' },
+      [change('Bullet night', 'Bullet night'), change('Rapid night', 'Rapid night')],
+      SCHEDULE_URL,
+      PREFERENCES_URL,
+    );
+
+    expect(email.subject).toBe('London Chess schedule changes');
+    expect(email.text).toContain('Changed:');
+    expect(email.text).not.toContain('Added:');
+    expect(email.text).not.toContain('Removed:');
+    expect(email.html).toMatch(/<td[^>]*>Rapid night<\/td><td[^>]*>Title<\/td>/);
+    expect(email.text).toContain(PREFERENCES_URL);
+  });
+
+  it('should tell a single change as its own email', () => {
+    const email = buildScheduleChangesEmail(
+      { firstName: 'Jane' },
+      [change('Bullet night', 'Bullet night')],
+      SCHEDULE_URL,
+      PREFERENCES_URL,
+    );
+
+    expect(email.subject).toBe('London Chess schedule change: Bullet night');
   });
 });
 

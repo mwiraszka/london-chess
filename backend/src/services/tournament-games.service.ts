@@ -13,6 +13,7 @@ import {
 import { openingName } from '../util/opening-name.util';
 import { UNKNOWN_PLAYER, resolvePlayers } from './games.service';
 import { personPlayerIds } from './tournament-players.service';
+import { gamesLinkedElsewhere, roundNumber } from './tournaments.service';
 
 type StoredGame = Pick<
   GameRecord,
@@ -86,6 +87,7 @@ function hasChanged(stored: StoredGame, game: GameInput, filing: Filing): boolea
     (stored.notCounted ?? false) !== game.notCounted ||
     (stored.notCountedReason ?? '') !== uncountedReason(game) ||
     stored.whitePlayerId !== game.whitePlayerId ||
+    stored.blackPlayerId !== game.blackPlayerId ||
     stored.result !== game.result ||
     stored.date !== game.date ||
     stored.whiteElo !== game.whiteElo ||
@@ -143,64 +145,106 @@ async function archivedCopies(
   );
 }
 
+type CandidateGame = Pick<
+  GameRecord,
+  | '_id'
+  | 'tournament'
+  | 'year'
+  | 'section'
+  | 'round'
+  | 'date'
+  | 'whitePlayerId'
+  | 'blackPlayerId'
+  | 'result'
+  | 'tournamentLink'
+>;
+
+const CANDIDATE_GAME_FIELDS = {
+  tournament: 1,
+  year: 1,
+  section: 1,
+  round: 1,
+  date: 1,
+  whitePlayerId: 1,
+  blackPlayerId: 1,
+  result: 1,
+  tournamentLink: 1,
+};
+
+// Where a tournament's games are looked for: its archive name, in its year or the next
+export interface CandidateFiling {
+  number: number;
+  tournament: string;
+  years: number[];
+}
+
+// The games between the same two people, and with a slot, also the games filed in that
+// slot with one of them, such as a copy archived under a misspelling of the other
+export interface CandidateQuery {
+  playerIds: [Id, Id];
+  slot?: Pick<GameRecord, 'year' | 'section' | 'round'>;
+}
+
 /**
- * The archived games between the same two people, in the tournament's year or the next,
- * that the archive could hold the game under: any not already the archived copy of another
- * game being imported. A person's games under their other names count too.
+ * The archived games each query's game could be: filed under the tournament's archive name
+ * in its year or the next, and accounted for by no other round, neither the archived copy
+ * of another game being imported nor a game another tournament's results already link to
+ * or an admin tied to one of its rounds. A person's games under their other names count
+ * too.
  */
-export async function archivedGamesBetween(
-  pairs: [Id, Id][],
-  years: number[],
+export async function archivedCandidates(
+  queries: CandidateQuery[],
+  filing: CandidateFiling,
   excludedIds: ReadonlySet<Id>,
 ): Promise<ArchivedGameSummary[][]> {
-  if (!pairs.length) {
+  if (!queries.length) {
     return [];
   }
-  const people = await personPlayerIds(pairs.flat());
-  const sides = pairs.map(pair => pair.map(id => [...(people.get(id) ?? new Set([id]))]));
+  const people = await personPlayerIds(queries.flatMap(({ playerIds }) => playerIds));
+  const sides = queries.map(({ playerIds }) =>
+    playerIds.map(id => [...(people.get(id) ?? new Set([id]))]),
+  );
   const everyone = [...new Set(sides.flat(2))];
-  const stored = await GameModel.find(
-    {
-      year: { $in: years },
-      whitePlayerId: { $in: everyone },
-      blackPlayerId: { $in: everyone },
-    },
-    {
-      tournament: 1,
-      section: 1,
-      round: 1,
-      date: 1,
-      whitePlayerId: 1,
-      blackPlayerId: 1,
-      result: 1,
-    },
-  )
-    .sort({ date: 1, round: 1 })
-    .lean<
-      Pick<
-        GameRecord,
-        | '_id'
-        | 'tournament'
-        | 'section'
-        | 'round'
-        | 'date'
-        | 'whitePlayerId'
-        | 'blackPlayerId'
-        | 'result'
-      >[]
-    >();
+  const [stored, linkedElsewhere] = await Promise.all([
+    GameModel.find(
+      {
+        tournament: filing.tournament,
+        year: { $in: filing.years },
+        $or: [{ whitePlayerId: { $in: everyone } }, { blackPlayerId: { $in: everyone } }],
+      },
+      CANDIDATE_GAME_FIELDS,
+    )
+      .sort({ date: 1, round: 1 })
+      .lean<CandidateGame[]>(),
+    gamesLinkedElsewhere(filing.tournament, filing.years, filing.number),
+  ]);
+  const open = stored.filter(
+    game =>
+      !excludedIds.has(game._id.toString()) &&
+      !linkedElsewhere.has(game._id.toString()) &&
+      (!game.tournamentLink || game.tournamentLink.number === filing.number),
+  );
   const players = await resolvePlayers(
-    stored.flatMap(game => [game.whitePlayerId, game.blackPlayerId]),
+    open.flatMap(game => [game.whitePlayerId, game.blackPlayerId]),
   );
   const player = (id: Id) => players.get(id) ?? { id, ...UNKNOWN_PLAYER };
 
-  return sides.map(([one, other]) =>
-    stored
+  return queries.map(({ slot }, index) => {
+    const [one, other] = sides[index];
+    const slotRound = slot ? roundNumber(slot.round) : null;
+    const plays = (side: Id[], game: CandidateGame) =>
+      side.includes(game.whitePlayerId) || side.includes(game.blackPlayerId);
+    return open
       .filter(
         game =>
-          !excludedIds.has(game._id.toString()) &&
-          ((one.includes(game.whitePlayerId) && other.includes(game.blackPlayerId)) ||
-            (other.includes(game.whitePlayerId) && one.includes(game.blackPlayerId))),
+          (one.includes(game.whitePlayerId) && other.includes(game.blackPlayerId)) ||
+          (other.includes(game.whitePlayerId) && one.includes(game.blackPlayerId)) ||
+          (!!slot &&
+            slotRound !== null &&
+            game.year === slot.year &&
+            game.section === slot.section &&
+            roundNumber(game.round) === slotRound &&
+            (plays(one, game) || plays(other, game))),
       )
       .map(game => ({
         id: game._id.toString(),
@@ -211,15 +255,17 @@ export async function archivedGamesBetween(
         result: game.result,
         white: player(game.whitePlayerId),
         black: player(game.blackPlayerId),
-      })),
-  );
+      }));
+  });
 }
 
 /**
  * How each game compares with the archive: one it lacks, one it holds differently, or the
- * same. Each new game comes with the archived games it might be, filed differently.
+ * same. Each new game comes with the archived games it might be, filed differently or
+ * under another spelling of one of its players.
  */
 export async function classifyGames(
+  number: number,
   tournament: string,
   year: number,
   games: GameInput[],
@@ -235,9 +281,12 @@ export async function classifyGames(
   const newIndexes = changes.flatMap((change, index) =>
     change === 'new' ? [index] : [],
   );
-  const found = await archivedGamesBetween(
-    newIndexes.map(index => [games[index].whitePlayerId, games[index].blackPlayerId]),
-    [year, year + 1],
+  const found = await archivedCandidates(
+    newIndexes.map(index => ({
+      playerIds: [games[index].whitePlayerId, games[index].blackPlayerId],
+      slot: { year, section: games[index].section, round: games[index].round },
+    })),
+    { number, tournament, years: [year, year + 1] },
     claimed,
   );
   const candidates = games.map((): ArchivedGameSummary[] => []);
@@ -295,14 +344,15 @@ function countGames(counts: Map<Id, number>, ids: Id[], by: number): void {
  * Brings the archive in line with the games, filing them under the tournament's year: adds
  * the ones it lacks, counting each for both its players, and rewrites the ones it holds
  * differently, a game an admin confirmed to be an archived one taking that one's place.
- * Games it already holds as they are stay untouched.
+ * Games it already holds as they are stay untouched. Gives the players games were taken
+ * from, such as a misspelling the confirmed game was archived under.
  */
 export async function archiveGames(
   tournament: string,
   year: number,
   games: GameInput[],
   modificationInfo: ModificationInfo,
-): Promise<void> {
+): Promise<Id[]> {
   const filing = { tournament, year };
   const copies = await archivedCopies(filing, games);
   const additions: GameInput[] = [];
@@ -404,4 +454,6 @@ export async function archiveGames(
       })),
     );
   }
+
+  return changedCounts.flatMap(([id, count]) => (count < 0 ? [id] : []));
 }

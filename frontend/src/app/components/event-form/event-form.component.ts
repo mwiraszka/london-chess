@@ -21,25 +21,22 @@ import {
   output,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { BasicDialogComponent } from '@app/components/basic-dialog/basic-dialog.component';
 import { FormActionsComponent } from '@app/components/form-actions/form-actions.component';
 import { ModificationInfoComponent } from '@app/components/modification-info/modification-info.component';
 import { EVENT_TYPE_OPTIONS, initialEventFormData } from '@app/constants';
 import { FORM_ERROR_MESSAGES, WEEK_STARTS_ON } from '@app/constants/forms';
-import {
-  Dialog,
-  Event,
-  EventFormData,
-  EventFormGroup,
-  EventFormValue,
-  Id,
-} from '@app/models';
+import { Dialog, Event, EventFormData, EventFormGroup, Id } from '@app/models';
 import { StoreRequestService } from '@app/services';
 import { EventsActions } from '@app/store/events';
-import { draftDebounce, fromClubDateTime, toClubDateTime } from '@app/utils';
-import { idValidator, textValidator } from '@app/validators';
+import {
+  createEventFormGroup,
+  draftDebounce,
+  fromEventFormGroup,
+  toEventFormValue,
+} from '@app/utils';
 
 @Component({
   selector: 'lcc-event-form',
@@ -84,7 +81,7 @@ export class EventFormComponent implements OnInit {
   public form!: FormGroup<EventFormGroup>;
 
   public ngOnInit(): void {
-    this.form = this.buildForm(this.formData());
+    this.form = createEventFormGroup(this.formData());
 
     this.form.valueChanges
       .pipe(draftDebounce(this.saved), takeUntilDestroyed(this.destroyRef))
@@ -98,7 +95,7 @@ export class EventFormComponent implements OnInit {
   public onRestore(): void {
     const originalEvent = this.originalEvent();
     this.restore.emit(originalEvent?.id ?? null);
-    this.form.reset(this.toFormValue(originalEvent ?? initialEventFormData()));
+    this.form.reset(toEventFormValue(originalEvent ?? initialEventFormData()));
   }
 
   public onCancel(): void {
@@ -146,49 +143,12 @@ export class EventFormComponent implements OnInit {
         ]);
   }
 
-  private toFormValue(data: EventFormData): EventFormValue {
-    const { day, time } = toClubDateTime(data.eventDate);
-    return {
-      eventDay: day,
-      eventTime: time,
-      title: data.title,
-      details: data.details,
-      type: data.type,
-      articleId: data.articleId,
-    };
-  }
-
-  private buildForm(data: EventFormData): FormGroup<EventFormGroup> {
-    const value = this.toFormValue(data);
-    return new FormGroup<EventFormGroup>({
-      eventDay: new FormControl<Date | null>(value.eventDay, Validators.required),
-      eventTime: new FormControl<string | null>(value.eventTime, Validators.required),
-      title: new FormControl(value.title, {
-        nonNullable: true,
-        validators: [Validators.required, Validators.maxLength(100), textValidator],
-      }),
-      details: new FormControl(value.details, {
-        nonNullable: true,
-        validators: [Validators.required, Validators.maxLength(200), textValidator],
-      }),
-      type: new FormControl(value.type, {
-        nonNullable: true,
-        validators: Validators.required,
-      }),
-      articleId: new FormControl(value.articleId, {
-        nonNullable: true,
-        validators: idValidator,
-      }),
-    });
-  }
-
   // Only an edit makes a draft, so opening a form changes nothing in the store
   private emitChange(): void {
     if (!this.form.dirty) {
       return;
     }
-    const { eventDay, eventTime, ...fields } = this.form.getRawValue();
-    const eventDate = fromClubDateTime(eventDay, eventTime);
+    const { eventDate, ...fields } = fromEventFormGroup(this.form);
     this.change.emit({
       eventId: this.originalEvent()?.id ?? null,
       formData: eventDate ? { ...fields, eventDate } : fields,

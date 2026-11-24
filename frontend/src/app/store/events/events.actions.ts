@@ -1,6 +1,13 @@
 import { createAction, props } from '@ngrx/store';
 
-import { DataPaginationOptions, Event, EventFormData, Id, LccError } from '@app/models';
+import {
+  DataPaginationOptions,
+  Event,
+  EventFormData,
+  Id,
+  LccError,
+  UnnotifiedMember,
+} from '@app/models';
 
 export const fetchHomePageEventsRequested = createAction(
   '[Events] Fetch home page events requested',
@@ -42,7 +49,7 @@ export const fetchEventFailed = createAction(
 export const addEventRequested = createAction('[Events] Add event requested');
 export const addEventSucceeded = createAction(
   '[Events] Add event succeeded',
-  props<{ event: Event; unnotifiedMemberNames: string[] }>(),
+  props<{ event: Event; unnotifiedMembers: UnnotifiedMember[] }>(),
 );
 export const addEventFailed = createAction(
   '[Events] Add event failed',
@@ -55,7 +62,11 @@ export const updateEventRequested = createAction(
 );
 export const updateEventSucceeded = createAction(
   '[Events] Update event succeeded',
-  props<{ event: Event; originalEventTitle: string; unnotifiedMemberNames: string[] }>(),
+  props<{
+    event: Event;
+    originalEventTitle: string;
+    unnotifiedMembers: UnnotifiedMember[];
+  }>(),
 );
 export const updateEventFailed = createAction(
   '[Events] Update event failed',
@@ -68,10 +79,29 @@ export const deleteEventRequested = createAction(
 );
 export const deleteEventSucceeded = createAction(
   '[Events] Delete event succeeded',
-  props<{ eventId: Id; eventTitle: string; unnotifiedMemberNames: string[] }>(),
+  props<{ eventId: Id; eventTitle: string; unnotifiedMembers: UnnotifiedMember[] }>(),
 );
 export const deleteEventFailed = createAction(
   '[Events] Delete event failed',
+  props<{ error: LccError }>(),
+);
+
+// The events added, those changed with their new details, and those removed
+export const scheduleChangesRequested = createAction(
+  '[Events] Schedule changes requested',
+  props<{ added: EventFormData[]; updated: Event[]; removed: Event[] }>(),
+);
+export const scheduleChangesSucceeded = createAction(
+  '[Events] Schedule changes succeeded',
+  props<{
+    added: Event[];
+    updated: Event[];
+    removedIds: Id[];
+    unnotifiedMembers: UnnotifiedMember[];
+  }>(),
+);
+export const scheduleChangesFailed = createAction(
+  '[Events] Schedule changes failed',
   props<{ error: LccError }>(),
 );
 

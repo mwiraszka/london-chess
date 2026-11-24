@@ -28,7 +28,12 @@ import {
   PendingRequestsInterceptorProvider,
   TimeoutInterceptorProvider,
 } from '@app/interceptors';
-import { BrandService, ClerkService, UserService } from '@app/services';
+import {
+  BrandService,
+  ClerkService,
+  ReleaseWatcherService,
+  UserService,
+} from '@app/services';
 import { AppStoreModule } from '@app/store/app';
 import { ArticlesStoreModule } from '@app/store/articles';
 import { AuthStoreModule } from '@app/store/auth';
@@ -114,6 +119,12 @@ bootstrapApplication(AppComponent, {
       // Instantiate UserService so its login effect starts and the user record
       // is available app-wide once Clerk reports the session.
       inject(UserService);
+      inject(ReleaseWatcherService).watch((running, deployed) =>
+        Sentry.logger.warn('Outdated release after loading the newer one', {
+          running_version: running,
+          deployed_version: deployed,
+        }),
+      );
       // Not awaited, so the first page renders while Clerk loads behind it
       inject(ClerkService)
         .load()

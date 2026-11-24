@@ -9,7 +9,7 @@ import {
   UnlinkedPairing,
 } from '../models/tournament.model';
 import { UNKNOWN_PLAYER, resolvePlayers } from './games.service';
-import { archivedGamesBetween } from './tournament-games.service';
+import { archivedCandidates } from './tournament-games.service';
 import {
   gamesOfSection,
   matchRoundGames,
@@ -110,11 +110,18 @@ export async function reviewArchiveGames(
     );
   }
 
-  const candidates = await archivedGamesBetween(
-    unlinked.map(({ playerIds }) => playerIds),
-    [year(record), year(record) + 1],
-    linked,
-  );
+  // A tournament with no archive name has no games filed under it to tie
+  const candidates = record.gameArchiveTournament
+    ? await archivedCandidates(
+        unlinked.map(({ playerIds }) => ({ playerIds })),
+        {
+          number: record.number,
+          tournament: record.gameArchiveTournament,
+          years: [year(record), year(record) + 1],
+        },
+        linked,
+      )
+    : unlinked.map(() => []);
   const unlinkedPairings: UnlinkedPairing[] = unlinked.map((pairing, index) => ({
     section: pairing.section,
     round: pairing.round,

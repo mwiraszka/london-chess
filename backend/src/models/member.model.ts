@@ -103,6 +103,12 @@ export const profileMemberFilter = (number: number) => ({
 // Enough of a member to name them and link to their profile
 export type MemberName = Pick<MemberRecord, '_id' | 'firstName' | 'lastName' | 'number'>;
 
+// A member an email was sent to but could not reach, for admins to tell another way
+export interface UnnotifiedMember {
+  name: string;
+  email: string;
+}
+
 // The number, account and preferences belong to the member, and the external ratings to
 // the sites they come from, so admins never write them
 export type EditableMemberFields = Omit<

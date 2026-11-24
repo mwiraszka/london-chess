@@ -19,6 +19,15 @@
       ]
     },
     {
+      "source": "/assets/release.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/assets/fonts/:file",
       "headers": [
         {

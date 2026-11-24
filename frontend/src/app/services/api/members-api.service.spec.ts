@@ -194,7 +194,7 @@ describe('MembersApiService', () => {
     it('should update several members at once', () => {
       const members = [{ ...editableMember, id: mockMember.id }];
       const mockResponse: ApiResponse<MemberRatingsUpdate> = {
-        data: { updatedIds: [mockMember.id], unnotifiedMemberNames: [] },
+        data: { updatedIds: [mockMember.id], unnotifiedMembers: [] },
       };
 
       service.updateMembers(members).subscribe(response => {
