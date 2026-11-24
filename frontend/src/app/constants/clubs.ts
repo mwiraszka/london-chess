@@ -74,8 +74,7 @@ export const REGIONAL_CLUBS: Club[] = [
   {
     id: 'goderich-chess-club',
     name: 'Goderich Chess Club',
-    mapUrl:
-      'https://www.google.com/maps/search/?api=1&query=Goderich+Library+52+Montreal+Street+Goderich+ON',
+    mapUrl: 'https://maps.app.goo.gl/HyuqGAgj1CGUX5Hh9',
     location: { lat: 43.74199, lng: -81.71302 },
     addressLine1: 'Goderich Library',
     addressLine2: '52 Montreal Street',
@@ -84,5 +83,15 @@ export const REGIONAL_CLUBS: Club[] = [
       'Tuesdays, 6:00pm–8:00pm\nFridays, 6:00pm–9:00pm\n\n(Fridays at the Goderich Legion, 56 Kingston Street)',
     email: 'goderichchessclub@gmail.com',
     website: 'goderichchessclub.com',
+  },
+  {
+    id: 'woodstock-chess-club',
+    name: 'Woodstock Chess Club',
+    mapUrl: 'https://maps.app.goo.gl/ekgqAH1DwfkdnS4e8',
+    location: { lat: 43.1317485, lng: -80.758693 },
+    addressLine1: 'Woodstock Public Library',
+    addressLine2: '445 Hunter Street',
+    addressLine3: 'Woodstock, ON N4S 4G7',
+    scheduleText: 'January 5–June 29, 2027\nTuesdays, 6:00pm–8:00pm',
   },
 ];
