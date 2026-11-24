@@ -9,9 +9,11 @@
         {{ summary.name }}
       </a>
       <p class="card__details">
-        @for (detail of details(); track $index) {
-          <span class="card__detail">{{ detail }}</span>
-        }
+        <span>
+          @for (detail of details(); track $index) {
+            <span class="card__detail">{{ detail }}</span>
+          }
+        </span>
       </p>
 
       @if (registration(); as registration) {

@@ -27,9 +27,13 @@ ea-card {
   text-overflow: ellipsis;
 }
 
-// The details wrap onto more lines rather than being cut short, the card growing to fit
+// The details wrap rather than being cut short, two lines held for them whether they turn
+// out to need one or two, so the card is as tall as its placeholder once it fills in
 .card__details {
+  display: grid;
+  align-content: center;
   width: 100%;
+  min-height: 2lh;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
