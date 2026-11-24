@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Replace the outdated WhatsApp link
 - Stop tournament results from linking both games between the same two players to one recorded game
 
 ## [v6.9.1] - 2026-11-21
