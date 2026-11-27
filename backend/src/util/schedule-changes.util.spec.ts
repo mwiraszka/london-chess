@@ -16,6 +16,7 @@ describe('describeScheduleChange', () => {
     );
 
     expect(change?.kind).toBe('changed');
+    expect(change?.day).toBe('Oct 1');
     expect(change?.type).toBe('Blitz tournament (10 mins)');
     expect(change?.rows).toEqual([
       {

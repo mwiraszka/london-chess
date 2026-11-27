@@ -1,6 +1,7 @@
 import {
   buildEmail,
   codeBlock,
+  groupedTable,
   link,
   mailtoLink,
   paragraph,
@@ -58,6 +59,33 @@ describe('buildEmail', () => {
 
     expect(email.html).toMatch(/<th scope="row"[^>]*>Name<\/th><td[^>]*>Jane Doe<\/td>/);
     expect(email.text).toContain('Name: Jane Doe');
+  });
+
+  it('should name each group of a grouped table once, beside all of its rows', () => {
+    const email = buildEmail('Subject', 'Heading', [
+      groupedTable(
+        [
+          {
+            label: 'Blitz (Dec 3)',
+            rows: [
+              ['Title', 'Blitz', 'Club Closed'],
+              ['Type', 'Blitz', 'Closed'],
+            ],
+          },
+        ],
+        ['Event', 'Detail', 'Previous', 'New'],
+      ),
+    ]);
+
+    expect(email.html).toMatch(/<th scope="col"[^>]*>Event<\/th>/);
+    expect(email.html).toMatch(
+      /<tr><td rowspan="2"[^>]*>Blitz \(Dec 3\)<\/td><td[^>]*>Title<\/td>/,
+    );
+    expect(email.html).toMatch(/<tr><td[^>]*>Type<\/td>/);
+    expect(email.html.match(/Blitz \(Dec 3\)/g)).toHaveLength(1);
+    expect(email.text).toContain(
+      'Blitz (Dec 3)\nTitle: previous Blitz, new Club Closed\nType: previous Blitz, new Closed',
+    );
   });
 
   it('should escape content in the HTML but not in the text', () => {

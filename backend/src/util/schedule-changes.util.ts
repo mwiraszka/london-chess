@@ -7,6 +7,7 @@ export interface ScheduleChange {
   kind: 'added' | 'changed' | 'removed';
   title: string;
   when: string;
+  day: string;
   type: string;
   rows: Array<{ label: string; before: string; after: string }>;
 }
@@ -41,15 +42,21 @@ export function describeScheduleChange(
     const next = formatField(field, after[field]);
     return previous === next ? [] : [{ label, before: previous, after: next }];
   });
-  return rows.length ? { kind: 'changed', ...summarise(after), rows } : null;
+  // Named by its original title and date, as members know it
+  return rows.length ? { kind: 'changed', ...summarise(before), rows } : null;
 }
 
 function summarise(
   event: ScheduledEvent,
-): Pick<ScheduleChange, 'title' | 'when' | 'type'> {
+): Pick<ScheduleChange, 'title' | 'when' | 'day' | 'type'> {
   return {
     title: formatField('title', event.title),
     when: formatField('eventDate', event.eventDate),
+    day: new Date(event.eventDate.trim()).toLocaleString('en-CA', {
+      timeZone: CLUB_TIME_ZONE,
+      month: 'short',
+      day: 'numeric',
+    }),
     type: formatField('type', event.type),
   };
 }
