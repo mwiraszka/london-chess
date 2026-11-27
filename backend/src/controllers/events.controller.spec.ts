@@ -434,8 +434,8 @@ describe('events routes', () => {
       expect(emailsAfterDetails).toBe(0);
       const [{ content }] = sentEmails();
       expect(sentEmails()).toHaveLength(1);
-      expect(content.subject).toBe('London Chess schedule change: Bullet night');
-      expect(content.text).toContain('Blitz night');
+      expect(content.subject).toBe('London Chess schedule change: Blitz night');
+      expect(content.text).toContain('Bullet night');
     });
 
     it('should email the removal of an upcoming event', async () => {
