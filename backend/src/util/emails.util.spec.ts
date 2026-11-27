@@ -106,18 +106,19 @@ describe('buildMemberChangesEmail', () => {
 
 describe('buildScheduleChangesEmail', () => {
   const SCHEDULE_URL = 'https://londonchess.ca/schedule';
-  const change = (title: string, after: string): ScheduleChange => ({
+  const change = (title: string): ScheduleChange => ({
     kind: 'changed',
     title,
     when: 'Thursday, October 1, 2026 at 7:00 p.m.',
+    day: 'Oct 1',
     type: 'Blitz',
-    rows: [{ label: 'Title', before: 'Blitz night', after }],
+    rows: [{ label: 'Title', before: title, after: 'Club Closed' }],
   });
 
   it('should list several changes in one email', () => {
     const email = buildScheduleChangesEmail(
       { firstName: 'Jane' },
-      [change('Bullet night', 'Bullet night'), change('Rapid night', 'Rapid night')],
+      [change('Bullet night'), change('Rapid night')],
       SCHEDULE_URL,
       PREFERENCES_URL,
     );
@@ -126,19 +127,24 @@ describe('buildScheduleChangesEmail', () => {
     expect(email.text).toContain('Changed:');
     expect(email.text).not.toContain('Added:');
     expect(email.text).not.toContain('Removed:');
-    expect(email.html).toMatch(/<td[^>]*>Rapid night<\/td><td[^>]*>Title<\/td>/);
+    expect(email.html).toMatch(
+      /<td[^>]*>Rapid night \(Oct 1\)<\/td><td[^>]*>Title<\/td>/,
+    );
     expect(email.text).toContain(PREFERENCES_URL);
   });
 
   it('should tell a single change as its own email', () => {
     const email = buildScheduleChangesEmail(
       { firstName: 'Jane' },
-      [change('Bullet night', 'Bullet night')],
+      [change('Bullet night')],
       SCHEDULE_URL,
       PREFERENCES_URL,
     );
 
     expect(email.subject).toBe('London Chess schedule change: Bullet night');
+    expect(email.html).toMatch(
+      /<td[^>]*>Bullet night \(Oct 1\)<\/td><td[^>]*>Title<\/td>/,
+    );
   });
 });
 

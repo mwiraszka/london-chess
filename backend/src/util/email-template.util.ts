@@ -17,10 +17,22 @@ interface EmailTable {
   columns?: string[];
 }
 
+export interface EmailTableGroup {
+  label: string;
+  rows: string[][];
+}
+
+interface EmailGroupedTable {
+  kind: 'groupedTable';
+  groups: EmailTableGroup[];
+  columns: string[];
+}
+
 export type EmailBlock =
   | { kind: 'paragraph'; parts: EmailInline[] }
   | { kind: 'code'; value: string }
-  | EmailTable;
+  | EmailTable
+  | EmailGroupedTable;
 
 // The live site's copy, so emails sent during local development show the logo too
 const LOGO_URL = 'https://londonchess.ca/assets/lcc-logo.png';
@@ -39,6 +51,7 @@ const STYLES = {
   table: 'border-collapse: collapse;',
   cell: `padding: 4px ${SPACING} 4px 0;`,
   headerCell: `padding: 4px ${SPACING} 4px 0; font-weight: bold; text-align: left;`,
+  groupCell: `padding: 4px ${SPACING} 4px 0; vertical-align: top;`,
 } as const;
 
 // Renders the HTML and plain-text versions of an email from the same blocks
@@ -76,6 +89,11 @@ export function table(rows: string[][], columns?: string[]): EmailBlock {
   return { kind: 'table', rows, columns };
 }
 
+// Names each group once beside all of its rows, the first column heading being the group's
+export function groupedTable(groups: EmailTableGroup[], columns: string[]): EmailBlock {
+  return { kind: 'groupedTable', groups, columns };
+}
+
 export function link(url: string): EmailLink {
   return { href: url, label: url };
 }
@@ -92,25 +110,46 @@ function blockHtml(block: EmailBlock, margin: string): string {
       return `<p style="margin: ${margin}; ${STYLES.code}">${escapeHtml(block.value)}</p>`;
     case 'table':
       return `<table style="margin: ${margin}; ${STYLES.table}">${tableRowsHtml(block)}</table>`;
+    case 'groupedTable':
+      return `<table style="margin: ${margin}; ${STYLES.table}">${groupedTableRowsHtml(block)}</table>`;
   }
 }
 
 function tableRowsHtml({ rows, columns }: EmailTable): string {
-  const header = columns
-    ? `<tr>${columns.map(column => `<th scope="col" style="${STYLES.headerCell}">${escapeHtml(column)}</th>`).join('')}</tr>`
-    : '';
+  const header = columns ? columnsHtml(columns) : '';
   const body = rows
     .map(([label, ...cells]) => {
       const labelCell = columns
         ? `<td style="${STYLES.cell}">${escapeHtml(label)}</td>`
         : `<th scope="row" style="${STYLES.headerCell}">${escapeHtml(label)}</th>`;
-      const valueCells = cells
-        .map(cell => `<td style="${STYLES.cell}">${escapeHtml(cell)}</td>`)
-        .join('');
-      return `<tr>${labelCell}${valueCells}</tr>`;
+      return `<tr>${labelCell}${cellsHtml(cells)}</tr>`;
     })
     .join('');
   return header + body;
+}
+
+function groupedTableRowsHtml({ groups, columns }: EmailGroupedTable): string {
+  const body = groups
+    .flatMap(({ label, rows }) =>
+      rows.map((cells, index) => {
+        const labelCell = index
+          ? ''
+          : `<td rowspan="${rows.length}" style="${STYLES.groupCell}">${escapeHtml(label)}</td>`;
+        return `<tr>${labelCell}${cellsHtml(cells)}</tr>`;
+      }),
+    )
+    .join('');
+  return columnsHtml(columns) + body;
+}
+
+function columnsHtml(columns: string[]): string {
+  return `<tr>${columns.map(column => `<th scope="col" style="${STYLES.headerCell}">${escapeHtml(column)}</th>`).join('')}</tr>`;
+}
+
+function cellsHtml(cells: string[]): string {
+  return cells
+    .map(cell => `<td style="${STYLES.cell}">${escapeHtml(cell)}</td>`)
+    .join('');
 }
 
 function inlineHtml(part: EmailInline): string {
@@ -128,15 +167,21 @@ function blockText(block: EmailBlock): string {
     case 'code':
       return block.value;
     case 'table':
-      return block.rows
-        .map(([label, ...cells]) => {
-          const values = cells.map((cell, index) =>
-            block.columns ? `${block.columns[index + 1].toLowerCase()} ${cell}` : cell,
-          );
-          return `${label}: ${values.join(', ')}`;
-        })
-        .join('\n');
+      return block.rows.map(row => rowText(row, block.columns)).join('\n');
+    case 'groupedTable':
+      return block.groups
+        .map(({ label, rows }) =>
+          [label, ...rows.map(row => rowText(row, block.columns.slice(1)))].join('\n'),
+        )
+        .join('\n\n');
   }
+}
+
+function rowText([label, ...cells]: string[], columns?: string[]): string {
+  const values = cells.map((cell, index) =>
+    columns ? `${columns[index + 1].toLowerCase()} ${cell}` : cell,
+  );
+  return `${label}: ${values.join(', ')}`;
 }
 
 function escapeHtml(value: string): string {

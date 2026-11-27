@@ -1,8 +1,10 @@
 import {
   EmailBlock,
   EmailContent,
+  EmailTableGroup,
   buildEmail,
   codeBlock,
+  groupedTable,
   link,
   mailtoLink,
   paragraph,
@@ -15,6 +17,7 @@ export type ChangeRow = Pick<MemberChange, 'label' | 'before' | 'after'>;
 
 const CLUB_NAME = 'London Chess';
 const CLUB_EMAIL = 'welcome@londonchess.ca';
+const CHANGED_EVENT_COLUMNS = ['Event', 'Detail', 'Previous', 'New'];
 
 export function buildWelcomeEmail(
   member: { firstName: string; email: string },
@@ -69,7 +72,7 @@ export function buildScheduleChangeEmail(
   scheduleUrl: string,
   preferencesUrl: string,
 ): EmailContent {
-  const { kind, title, when, type, rows } = change;
+  const { kind, title, when, type } = change;
   const subject = {
     added: `New on the London Chess schedule: ${title}`,
     changed: `London Chess schedule change: ${title}`,
@@ -85,7 +88,7 @@ export function buildScheduleChangeEmail(
     ],
     changed: [
       paragraph(`${title} has changed on the London Chess schedule.`),
-      changesTable(rows, ['Detail', 'Previous', 'New']),
+      groupedTable([changedEvent(change)], CHANGED_EVENT_COLUMNS),
     ],
     removed: [
       paragraph(`${title} on ${when} has been removed from the London Chess schedule.`),
@@ -134,12 +137,7 @@ export function buildScheduleChangesEmail(
     ...(changed.length
       ? [
           paragraph('Changed:'),
-          table(
-            changed.flatMap(({ title, rows }) =>
-              rows.map(({ label, before, after }) => [title, label, before, after]),
-            ),
-            ['Event', 'Detail', 'Previous', 'New'],
-          ),
+          groupedTable(changed.map(changedEvent), CHANGED_EVENT_COLUMNS),
         ]
       : []),
     ...(removed.length
@@ -188,6 +186,13 @@ export function buildAccountRequestEmail(
     paragraph('Someone has requested a London Chess account.'),
     table(details),
   ]);
+}
+
+function changedEvent({ title, day, rows }: ScheduleChange): EmailTableGroup {
+  return {
+    label: `${title} (${day})`,
+    rows: rows.map(({ label, before, after }) => [label, before, after]),
+  };
 }
 
 function changesTable(changes: ChangeRow[], columns: string[]): EmailBlock {
